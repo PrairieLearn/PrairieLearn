@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as util from './util';
 import * as helperDb from '../helperDb';
@@ -23,10 +22,10 @@ function makeEntity() {
  * Checks that the entity present in the database matches the data
  * from the original entity in `infoCourse.json`.
  *
- * @param {any} syncedEntity - The entity from the database.
- * @param {any} entity - The entity from `infoCourse.json`.
+ * @param syncedEntity - The entity from the database.
+ * @param entity - The entity from `infoCourse.json`.
  */
-function checkEntity(syncedEntity, entity) {
+function checkEntity(syncedEntity: any, entity: any) {
   assert.isOk(syncedEntity);
   assert.equal(syncedEntity.name, entity.name);
   assert.equal(syncedEntity.color, entity.color);

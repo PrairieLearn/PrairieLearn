@@ -1,232 +1,221 @@
-// @ts-check
 import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import * as path from 'path';
 import * as sqldb from '@prairielearn/postgres';
-const stringify = require('json-stable-stringify');
+import stringify = require('json-stable-stringify');
 import { assert } from 'chai';
 
 import * as syncFromDisk from '../../sync/syncFromDisk';
 
-/**
- * @typedef {Object} CourseOptions
- * @property {boolean} useNewQuestionRenderer
- */
+interface CourseOptions {
+  useNewQuestionRenderer: boolean;
+}
 
-/**
- * @typedef {Object} Tag
- * @property {string} name
- * @property {string} color
- * @property {string} description
- */
+interface Tag {
+  name: string;
+  color: string;
+  description: string;
+}
 
-/**
- * @typedef {Object} Topic
- * @property {string} name
- * @property {string} color
- * @property {string} description
- */
+interface Topic {
+  name: string;
+  color: string;
+  description: string;
+}
 
-/**
- * @typedef {Object} AssessmentSet
- * @property {string} abbreviation
- * @property {string} name
- * @property {string} heading
- * @property {string} color
- */
+export interface AssessmentSet {
+  abbreviation: string;
+  name: string;
+  heading: string;
+  color: string;
+}
 
-/**
- * @typedef {Object} Module
- * @property {string} name
- * @property {string} heading
- */
+interface Module {
+  name: string;
+  heading: string;
+}
 
-/**
- * @typedef {Object} Course
- * @property {string} uuid
- * @property {string} name
- * @property {string} title
- * @property {string} [timezone]
- * @property {CourseOptions} [options]
- * @property {Tag[]} tags
- * @property {Topic[]} topics
- * @property {AssessmentSet[]} assessmentSets
- * @property {Module[]} [assessmentModules]
- */
+interface Course {
+  uuid: string;
+  name: string;
+  title: string;
+  timezone?: string;
+  options?: CourseOptions;
+  tags: Tag[];
+  topics: Topic[];
+  assessmentSets: AssessmentSet[];
+  assessmentModules?: Module[];
+}
 
-/**
- * @typedef {Object} CourseInstanceAllowAccess
- * @property {string[]} [uids]
- * @property {string} [startDate]
- * @property {string} [endDate]
- * @property {string} [institution]
- */
+interface CourseInstanceAllowAccess {
+  uids?: string[];
+  startDate?: string;
+  endDate?: string;
+  institution?: string;
+}
 
-/**
- * @typedef {Object} CourseInstance
- * @property {string} uuid
- * @property {string} longName
- * @property {number} [number]
- * @property {string} [timezone]
- * @property {CourseInstanceAllowAccess[]} [allowAccess]
- * @property {"Set" | "Module"} [groupAssessmentsBy]
- */
+interface CourseInstance {
+  uuid: string;
+  longName: string;
+  number?: number;
+  timezone?: string;
+  allowAccess?: CourseInstanceAllowAccess[];
+  groupAssessmentsBy?: 'Set' | 'Module';
+}
 
-/**
- * @typedef {Object} GroupRole
- * @property {string} name
- * @property {number} [minimum]
- * @property {number} [maximum]
- * @property {boolean} [canAssignRolesAtStart]
- * @property {boolean} [canAssignRolesDuringAssessment]
- * @property {boolean} [canSubmitAssessment]
- */
+export interface GroupRole {
+  name: string;
+  minimum?: number;
+  maximum?: number;
+  canAssignRolesAtStart?: boolean;
+  canAssignRolesDuringAssessment?: boolean;
+  canSubmitAssessment?: boolean;
+}
 
-/**
- * @typedef {Object} SEBConfig
- * @property {string} password
- * @property {string} quitPassword
- * @property {string[]} allowPrograms
- */
+interface SEBConfig {
+  password: string;
+  quitPassword: string;
+  allowPrograms: string[];
+}
 
-/**
- * @typedef {Object} AssessmentAllowAccess
- * @property {"Public" | "Exam" | "SEB"} [mode]
- * @property {string} [examUuid]
- * @property {string[]} [uids]
- * @property {number} [credit]
- * @property {string} [startDate]
- * @property {string} [endDate]
- * @property {number} [timeLimitMin]
- * @property {string} [password]
- * @property {SEBConfig} [SEBConfig]
- * @property {boolean} [active]
- */
+interface AssessmentAllowAccess {
+  mode?: 'Public' | 'Exam' | 'SEB';
+  examUuid?: string;
+  uids?: string[];
+  credit?: number;
+  startDate?: string;
+  endDate?: string;
+  timeLimitMin?: number;
+  password?: string;
+  SEBConfig?: SEBConfig;
+  active?: boolean;
+}
 
-/**
- * @typedef {Object} QuestionAlternative
- * @property {number | number[]} [points]
- * @property {number | number[]} [autoPoints]
- * @property {number} [maxPoints]
- * @property {number} [maxAutoPoints]
- * @property {number} [manualPoints]
- * @property {string} [id]
- * @property {boolean} [forceMaxPoints]
- * @property {number} [triesPerVariant]
- */
+interface QuestionAlternative {
+  points?: number | number[];
+  autoPoints?: number | number[];
+  maxPoints?: number;
+  maxAutoPoints?: number;
+  manualPoints?: number;
+  id?: string;
+  forceMaxPoints?: boolean;
+  triesPerVariant?: number;
+}
 
-/**
- * @typedef {Object} ZoneQuestion
- * @property {number | number[]} [points]
- * @property {number | number[]} [autoPoints]
- * @property {number} [maxPoints]
- * @property {number} [maxAutoPoints]
- * @property {number} [manualPoints]
- * @property {string} [id]
- * @property {boolean} [forceMaxPoints]
- * @property {QuestionAlternative[]} [alternatives]
- * @property {number} [numberChoose]
- * @property {number} [triesPerVariant]
- * @property {string[]} [canSubmit]
- * @property {string[]} [canView]
- */
+interface ZoneQuestion {
+  points?: number | number[];
+  autoPoints?: number | number[];
+  maxPoints?: number;
+  maxAutoPoints?: number;
+  manualPoints?: number;
+  id?: string;
+  forceMaxPoints?: boolean;
+  alternatives?: QuestionAlternative[];
+  numberChoose?: number;
+  triesPerVariant?: number;
+  canSubmit?: string[];
+  canView?: string[];
+}
 
-/**
- * @typedef {Object} Zone
- * @property {string} [title]
- * @property {number} [maxPoints]
- * @property {number} [maxChoose]
- * @property {number} [bestQuestions]
- * @property {ZoneQuestion[]} [questions]
- * @property {string[]} [canSubmit]
- * @property {string[]} [canView]
- */
+interface Zone {
+  title?: string;
+  maxPoints?: number;
+  maxChoose?: number;
+  bestQuestions?: number;
+  questions?: ZoneQuestion[];
+  canSubmit?: string[];
+  canView?: string[];
+}
 
-/**
- * @typedef {Object} Assessment
- * @property {string} uuid
- * @property {"Homework" | "Exam"} type
- * @property {string} title
- * @property {string} set
- * @property {string} [module]
- * @property {string} number
- * @property {GroupRole[]} [groupRoles]
- * @property {boolean} [allowIssueReporting]
- * @property {boolean} [allowRealTimeGrading]
- * @property {boolean} [requireHonorCode]
- * @property {boolean} [multipleInstance]
- * @property {boolean} [shuffleQuestions]
- * @property {AssessmentAllowAccess[]} [allowAccess]
- * @property {string} [text]
- * @property {number} [maxPoints]
- * @property {boolean} [autoClose]
- * @property {Zone[]} [zones]
- * @property {boolean} [constantQuestionValue]
- * @property {boolean} [groupWork]
- * @property {number} [groupMaxSize]
- * @property {number} [groupMinSize]
- * @property {boolean} [studentGroupCreate]
- * @property {boolean} [studentGroupJoin]
- * @property {boolean} [studentGroupLeave]
- * @property {boolean} [hasRoles]
- * @property {string[]} [canSubmit]
- * @property {string[]} [canView]
- */
+export interface Assessment {
+  uuid: string;
+  type: 'Homework' | 'Exam';
+  title: string;
+  set: string;
+  module?: string;
+  number: string;
+  groupRoles?: GroupRole[];
+  allowIssueReporting?: boolean;
+  allowRealTimeGrading?: boolean;
+  requireHonorCode?: boolean;
+  multipleInstance?: boolean;
+  shuffleQuestions?: boolean;
+  allowAccess?: AssessmentAllowAccess[];
+  text?: string;
+  maxPoints?: number;
+  autoClose?: boolean;
+  zones?: Zone[];
+  constantQuestionValue?: boolean;
+  groupWork?: boolean;
+  groupMaxSize?: number;
+  groupMinSize?: number;
+  studentGroupCreate?: boolean;
+  studentGroupJoin?: boolean;
+  studentGroupLeave?: boolean;
+  hasRoles?: boolean;
+  canSubmit?: string[];
+  canView?: string[];
+}
 
-/**
- * @typedef {Object} QuestionExternalGradingOptions
- * @property {boolean} [enabled]
- * @property {string} image
- * @property {string} entrypoint
- * @property {string[]} [serverFilesCourse]
- * @property {number} [timeout]
- * @property {boolean} [enableNetworking]
- * @property {Record<string, string | null>} [environment]
- */
+interface QuestionExternalGradingOptions {
+  enabled?: boolean;
+  image: string;
+  entrypoint: string;
+  serverFilesCourse?: string[];
+  timeout?: number;
+  enableNetworking?: boolean;
+  environment?: Record<string, string | null>;
+}
 
-/**
- * @typedef {Object} QuestionWorkspaceOptions
- * @property {string} image
- * @property {number} port
- * @property {string} home
- * @property {string} [args]
- * @property {string[]} [gradedFiles]
- * @property {string} [rewriteUrl]
- * @property {boolean} [enableNetworking]
- * @property {Record<string, string | null>} [environment]
- */
+interface QuestionWorkspaceOptions {
+  image: string;
+  port: number;
+  home: string;
+  args?: string;
+  gradedFiles?: string[];
+  rewriteUrl?: string;
+  enableNetworking?: boolean;
+  environment?: Record<string, string | null>;
+}
 
-/**
- * @typedef {Object} Question
- * @property {string} uuid
- * @property {"Calculation" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
- * @property {string} title
- * @property {string} topic
- * @property {string[]} [tags]
- * @property {string[]} [clientFiles]
- * @property {string[]} [clientTemplates]
- * @property {string} [template]
- * @property {"Internal" | "External" | "Manual"} [gradingMethod]
- * @property {boolean} [singleVariant]
- * @property {boolean} [showCorrectAnswer]
- * @property {boolean} [partialCredit]
- * @property {Object} [options]
- * @property {QuestionExternalGradingOptions} [externalGradingOptions]
- * @property {QuestionWorkspaceOptions} [workspaceOptions]
- */
+export interface Question {
+  uuid: string;
+  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
+  title: string;
+  topic: string;
+  tags?: string[];
+  clientFiles?: string[];
+  clientTemplates?: string[];
+  template?: string;
+  gradingMethod?: 'Internal' | 'External' | 'Manual';
+  singleVariant?: boolean;
+  showCorrectAnswer?: boolean;
+  partialCredit?: boolean;
+  options?: Record<string, unknown>;
+  externalGradingOptions?: QuestionExternalGradingOptions;
+  workspaceOptions?: QuestionWorkspaceOptions;
+}
 
-/** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
-/** @typedef {{ course: Course, questions: { [id: string]: Question }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
+export interface CourseInstanceData {
+  assessments: Record<string, Assessment>;
+  courseInstance: CourseInstance;
+}
+
+export interface CourseData {
+  course: Course;
+  questions: Record<string, Question>;
+  courseInstances: Record<string, CourseInstanceData>;
+}
 
 /**
  * Accepts a CourseData object and creates a PrairieLearn course directory
  * structure from it. Returns the path to the newly-created directory.
  *
- * @param {CourseData} courseData - The course data to write to disk
- * @returns {Promise<string>} - The path to the directory containing the course data
+ * @param courseData - The course data to write to disk
+ * @returns The path to the directory containing the course data
  */
-export async function writeCourseToTempDirectory(courseData) {
+export async function writeCourseToTempDirectory(courseData: CourseData): Promise<string> {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
   await writeCourseToDirectory(courseData, coursePath);
   return coursePath;
@@ -237,10 +226,10 @@ export async function writeCourseToTempDirectory(courseData) {
  * into the given directory. Removes any existing content from the
  * directory.
  *
- * @param {CourseData} courseData - The course data to write to disk
- * @param {string} coursePath - The path to the directory to write to
+ * @param courseData - The course data to write to disk
+ * @param coursePath - The path to the directory to write to
  */
-export async function writeCourseToDirectory(courseData, coursePath) {
+export async function writeCourseToDirectory(courseData: CourseData, coursePath: string) {
   await fs.emptyDir(coursePath);
 
   // infoCourse.json
@@ -291,8 +280,7 @@ export const MANUAL_GRADING_QUESTION_ID = 'test_manual';
 export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 
-/** @type {Course} */
-const course = {
+const course: Course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -348,8 +336,7 @@ const course = {
   ],
 };
 
-/** @type {{ [id: string]: Question }} */
-const questions = {
+const questions: Record<string, Question> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -395,8 +382,7 @@ const questions = {
   },
 };
 
-/** @type {{ [id: string]: CourseInstanceData }} */
-const courseInstances = {
+const courseInstances: Record<string, CourseInstanceData> = {
   [COURSE_INSTANCE_ID]: {
     assessments: {
       test: {
@@ -437,9 +423,9 @@ const courseInstances = {
 };
 
 /**
- * @returns {CourseData} - The base course data for syncing testing
+ * @returns The base course data for syncing testing
  */
-export function getCourseData() {
+export function getCourseData(): CourseData {
   // Round-trip through JSON.stringify to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   const courseData = {
@@ -463,9 +449,9 @@ export function getFakeLogger() {
  * Async wrapper for syncing course data from a directory. Also stubs out the
  * logger interface.
  *
- * @param {string} courseDir - The path to the course directory
+ * @param courseDir - The path to the course directory
  */
-export async function syncCourseData(courseDir) {
+export async function syncCourseData(courseDir: string) {
   const logger = getFakeLogger();
   await promisify(syncFromDisk.syncOrCreateDiskToSql)(courseDir, logger);
 }
@@ -485,10 +471,10 @@ export async function createAndSyncCourseData() {
  * Writes the given course data to a new temporary directory and returns the
  * path to the directory.
  *
- * @param {CourseData} courseData - The course data to write and sync
- * @returns {Promise<string>} the path to the new temp directory
+ * @param courseData - The course data to write and sync
+ * @returns The path to the new temp directory
  */
-export async function writeAndSyncCourseData(courseData) {
+export async function writeAndSyncCourseData(courseData: CourseData): Promise<string> {
   const courseDir = await writeCourseToTempDirectory(courseData);
   await syncCourseData(courseDir);
   return courseDir;
@@ -497,10 +483,10 @@ export async function writeAndSyncCourseData(courseData) {
 /**
  * Overwrites the course data in the given directory and
  *
- * @param {CourseData} courseData - The course data write and sync
- * @param {string} courseDir - The path to write the course data to
+ * @param courseData - The course data write and sync
+ * @param courseDir - The path to write the course data to
  */
-export async function overwriteAndSyncCourseData(courseData, courseDir) {
+export async function overwriteAndSyncCourseData(courseData: CourseData, courseDir: string) {
   await writeCourseToDirectory(courseData, courseDir);
   await syncCourseData(courseDir);
 }
@@ -508,10 +494,10 @@ export async function overwriteAndSyncCourseData(courseData, courseDir) {
 /**
  * Returns an array of all records in a particular database table.
  *
- * @param {string} tableName - The name of the table to query
- * @return {Promise<Record<string, any>[]>} - The rows of the given table
+ * @param tableName - The name of the table to query
+ * @return The rows of the given table
  */
-export async function dumpTable(tableName) {
+export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
 }
@@ -538,23 +524,18 @@ export async function captureDatabaseSnapshot() {
 /**
  * Computes setA U setB.
  *
- * @template T
- * @param {Set.<T>} setA
- * @param {Set.<T>}setB
- * @returns {Set.<T>} The union of setA and setB
+ * @returns The union of setA and setB
  */
-function setUnion(setA, setB) {
+function setUnion<T>(setA: Set<T>, setB: Set<T>) {
   return new Set([...setA, ...setB]);
 }
 
 /**
  * Checks if two sets contain the same elements.
  *
- * @param {Set.<any>} setA
- * @param {Set.<any>} setB
- * @returns {boolean} whether or not the sets contain the same elements.
+ * @returns Whether or not the sets contain the same elements.
  */
-function checkSetsSame(setA, setB) {
+function checkSetsSame<T>(setA: Set<T>, setB: Set<T>) {
   const union = setUnion(setA, setB);
   return setA.size === setB.size && union.size === setA.size;
 }
@@ -565,11 +546,15 @@ function checkSetsSame(setA, setB) {
  * of values contains the same elements. Elements may be in different orders.
  * Optionally, a subset of the keys in the snapshot can be ignored.
  *
- * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
- * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
- * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
+ * @param snapshotA - The first snapshot
+ * @param snapshotB - The second snapshot
+ * @param ignoredKeys - An optional list of keys to ignore
  */
-export function assertSnapshotsMatch(snapshotA, snapshotB, ignoredKeys = []) {
+export function assertSnapshotsMatch(
+  snapshotA: Record<string, any[]>,
+  snapshotB: Record<string, any[]>,
+  ignoredKeys: string[] = [],
+) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
@@ -588,11 +573,15 @@ export function assertSnapshotsMatch(snapshotA, snapshotB, ignoredKeys = []) {
  * Asserts that `snapshotA` is a subset of `snapshotB` using the same algorithm
  * from `assertSnapshotsMatch`.
  *
- * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
- * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
- * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
+ * @param snapshotA - The first snapshot
+ * @param snapshotB - The second snapshot
+ * @param ignoredKeys - An optional list of keys to ignore
  */
-export function assertSnapshotSubset(snapshotA, snapshotB, ignoredKeys = []) {
+export function assertSnapshotSubset(
+  snapshotA: Record<string, any[]>,
+  snapshotB: Record<string, any>,
+  ignoredKeys: string[] = [],
+) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),

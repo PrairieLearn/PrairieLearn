@@ -14,12 +14,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * Makes an empty assessment.
- *
- * @param {import('./util').CourseData} courseData
- * @param {"Homework" | "Exam"} type
- * @returns {import('./util').Assessment}
  */
-function makeAssessment(courseData, type = 'Exam') {
+function makeAssessment(
+  courseData: util.CourseData,
+  type: 'Homework' | 'Exam' = 'Exam',
+): util.Assessment {
   const assessmentSet = courseData.course.assessmentSets[0].name;
   return {
     uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
@@ -34,10 +33,8 @@ function makeAssessment(courseData, type = 'Exam') {
 
 /**
  * Makes a new assessment.
- *
- * @returns {import('./util').AssessmentSet}
  */
-function makeAssessmentSet() {
+function makeAssessmentSet(): util.AssessmentSet {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
@@ -46,10 +43,7 @@ function makeAssessmentSet() {
   };
 }
 
-/**
- * @returns {import('./util').GroupRole[]}
- */
-function getGroupRoles() {
+function getGroupRoles(): util.GroupRole[] {
   return [
     {
       name: 'Recorder',

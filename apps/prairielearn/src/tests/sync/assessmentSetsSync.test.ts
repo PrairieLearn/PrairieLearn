@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as util from './util';
 import * as helperDb from '../helperDb';
@@ -7,10 +6,10 @@ import * as helperDb from '../helperDb';
  * Checks that the assessment set present in the database matches the data
  * from the original assessment set in `infoCourse.json`.
  *
- * @param {any} syncedAssessmentSet - The assessment set from the database
- * @param {any} assessmentSet - The assessment set from `infoCourse.json`.
+ * @param syncedAssessmentSet - The assessment set from the database
+ * @param assessmentSet - The assessment set from `infoCourse.json`.
  */
-function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
+function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
   assert.isOk(syncedAssessmentSet);
   assert.equal(syncedAssessmentSet.name, assessmentSet.name);
   assert.equal(syncedAssessmentSet.abbreviation, assessmentSet.abbreviation);
@@ -23,7 +22,7 @@ function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
  *
  * @returns {import('./util').AssessmentSet}
  */
-function makeAssessmentSet() {
+function makeAssessmentSet(): util.AssessmentSet {
   return {
     name: 'new assessment set',
     abbreviation: 'new',

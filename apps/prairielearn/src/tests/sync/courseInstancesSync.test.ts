@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -8,10 +7,8 @@ import { idsEqual } from '../../lib/id';
 
 /**
  * Makes an empty course instance.
- *
- * @returns {import('./util').CourseInstanceData}
  */
-function makeCourseInstance() {
+function makeCourseInstance(): util.CourseInstanceData {
   return {
     courseInstance: {
       uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',

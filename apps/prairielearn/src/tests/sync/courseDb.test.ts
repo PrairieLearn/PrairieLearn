@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as tmp from 'tmp-promise';
 import * as fs from 'fs-extra';
@@ -6,11 +5,9 @@ import * as path from 'path';
 
 import * as courseDb from '../../sync/course-db';
 import * as infofile from '../../sync/infofile';
+import { Question } from './util';
 
-/**
- * @param {(dir: string) => Promise<void>} callback
- */
-async function withTempDirectory(callback) {
+async function withTempDirectory(callback: (dir: string) => Promise<void>) {
   const dir = await tmp.dir({ unsafeCleanup: true });
   try {
     await callback(dir.path);
@@ -19,10 +16,9 @@ async function withTempDirectory(callback) {
   }
 }
 
-/**
- * @param {(info: { path: string, dirname: string, basename: string }) => Promise<void>} callback
- */
-async function withTempFile(callback) {
+async function withTempFile(
+  callback: (info: { path: string; dirname: string; basename: string }) => Promise<void>,
+) {
   const file = await tmp.file();
   const dirname = path.dirname(file.path);
   const basename = path.basename(file.path);
@@ -33,21 +29,11 @@ async function withTempFile(callback) {
   }
 }
 
-/**
- * @param {string} courseDir
- * @param {object} course
- */
-async function writeCourse(courseDir, course) {
+async function writeCourse(courseDir: string, course: any) {
   await fs.writeJSON(path.join(courseDir, 'infoCourse.json'), course);
 }
 
-/**
- *
- * @param {string} courseDir
- * @param {string} qid
- * @param {object} question
- */
-async function writeQuestion(courseDir, qid, question) {
+async function writeQuestion(courseDir: string, qid: string, question: Question) {
   await fs.mkdirs(path.join(courseDir, 'questions', qid));
   await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
 }
@@ -63,7 +49,7 @@ function getCourse() {
   };
 }
 
-function getQuestion() {
+function getQuestion(): Question {
   return {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
@@ -73,7 +59,7 @@ function getQuestion() {
   };
 }
 
-function getAlternativeQuestion() {
+function getAlternativeQuestion(): Question {
   return {
     uuid: '697a6188-8215-4806-92a1-592987342b9e',
     title: 'Another test question',
