@@ -50,11 +50,11 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone)
+      pl_courses (id, display_timezone, path)
     VALUES
-      (1, 'UTC'),
-      (2, 'UTC'),
-      (3, 'UTC')
+      (1, 'UTC', '/path/to/course/1'),
+      (2, 'UTC', '/path/to/course/2'),
+      (3, 'UTC', '/path/to/course/3')
   ),
   setup_ci AS (
     INSERT INTO

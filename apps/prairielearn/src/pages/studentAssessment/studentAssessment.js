@@ -60,7 +60,7 @@ router.get(
               res.locals.assessment.id,
               res.locals.user.user_id,
             );
-            res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+            res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
           }
         }
       }
@@ -102,7 +102,7 @@ router.get(
                 res.locals.assessment.id,
                 res.locals.user.user_id,
               );
-              res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+              res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
             }
           }
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -149,6 +149,24 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
+      if (res.locals.assessment.group_work) {
+        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+        const groupId = await groupAssessmentHelper.getGroupId(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+        );
+        if (groupId === null) {
+          throw error.make(403, 'Cannot create a new instance while not in a group.');
+        }
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        if (!groupInfo.start) {
+          throw error.make(
+            403,
+            'Group has invalid composition or role assignment. Cannot start assessment.',
+          );
+        }
+      }
+
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
@@ -180,10 +198,20 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
+      // Check whether the user is currently in a group
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+      );
+      if (groupId == null) {
+        throw error.make(403, 'Cannot change group roles while not in a group.');
+      }
       await groupAssessmentHelper.updateGroupRoles(
         req.body,
         res.locals.assessment.id,
+        groupId,
         res.locals.user.user_id,
+        res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);

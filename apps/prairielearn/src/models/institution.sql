@@ -7,3 +7,9 @@ FROM
   JOIN course_instances AS ci ON (ci.course_id = c.id)
 WHERE
   ci.id = $course_instance_id;
+
+-- BLOCK select_all_institutions
+SELECT
+  i.*
+FROM
+  institutions AS i;

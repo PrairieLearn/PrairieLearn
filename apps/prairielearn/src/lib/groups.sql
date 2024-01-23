@@ -85,18 +85,22 @@ SELECT
 FROM
   create_group AS cg;
 
--- BLOCK get_group_members
-SELECT DISTINCT
-  u.uid,
-  u.user_id,
-  g.name AS group_name,
-  g.join_code
+-- BLOCK select_group
+SELECT
+  *
+FROM
+  groups
+WHERE
+  id = $group_id;
+
+-- BLOCK select_group_members
+SELECT
+  u.*
 FROM
   group_users AS gu
-  JOIN users as u ON u.user_id = gu.user_id
-  JOIN groups as g ON gu.group_id = g.id
+  JOIN users as u ON (u.user_id = gu.user_id)
 WHERE
-  g.id = $group_id;
+  gu.group_id = $group_id;
 
 -- BLOCK get_group_roles
 WITH
@@ -150,6 +154,21 @@ WHERE
   gc.assessment_id = $assessment_id
   AND gur.user_id = $user_id;
 
+-- BLOCK select_question_permissions
+SELECT
+  COALESCE(BOOL_OR(aqrp.can_view), FALSE) AS can_view,
+  COALESCE(BOOL_OR(aqrp.can_submit), FALSE) AS can_submit
+FROM
+  instance_questions AS iq
+  JOIN assessment_question_role_permissions AS aqrp ON (
+    aqrp.assessment_question_id = iq.assessment_question_id
+  )
+  JOIN group_user_roles AS gur ON gur.group_role_id = aqrp.group_role_id
+WHERE
+  iq.id = $instance_question_id
+  AND gur.group_id = $group_id
+  AND gur.user_id = $user_id;
+
 -- BLOCK get_role_assignments
 SELECT
   gu.user_id,
@@ -157,9 +176,13 @@ SELECT
   gr.role_name,
   gr.id as group_role_id
 FROM
-  users u
-  JOIN group_user_roles gu ON u.user_id = gu.user_id
-  JOIN group_roles gr ON gu.group_role_id = gr.id
+  group_users AS gu
+  JOIN users u ON (gu.user_id = u.user_id)
+  JOIN group_user_roles gur ON (
+    gu.group_id = gur.group_id
+    AND gu.user_id = gur.user_id
+  )
+  JOIN group_roles gr ON (gur.group_role_id = gr.id)
 WHERE
   gu.group_id = $group_id;
 
@@ -234,14 +257,9 @@ WITH
       )
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  group_logs (authn_user_id, group_id, action)
 VALUES
-  (
-    $authn_user_id,
-    $user_id,
-    $group_id,
-    'update roles'
-  );
+  ($authn_user_id, $group_id, 'update roles');
 
 -- BLOCK delete_all_groups
 WITH
