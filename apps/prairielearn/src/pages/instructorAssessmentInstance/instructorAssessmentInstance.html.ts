@@ -585,7 +585,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Time</th>
                   <th>User</th>
-                  <th>Fingerprint</th>
+                  ${resLocals.instance_user ? html`<th>Fingerprint</th>` : null}
                   <th>Event</th>
                   <th>Instructor question</th>
                   <th>Student question</th>
@@ -598,22 +598,23 @@ export function InstructorAssessmentInstance({
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
                       <td>${row.auth_user_uid}</td>
-                      ${row.client_fingerprint && row.client_fingerprint_number !== null
-                        ? html`
-                            <td>
-                              <a
-                                tabindex="0"
-                                class="badge color-${fingerprintColorsArray[
-                                  row.client_fingerprint_number % 6
-                                ]} color-hover"
-                                role="button"
-                                id="fingerprintPopover${row.client_fingerprint?.id}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Fingerprint ${row.client_fingerprint_number}"
-                                data-content="
+                      ${resLocals.instance_user
+                        ? html`${row.client_fingerprint && row.client_fingerprint_number !== null
+                            ? html`
+                                <td>
+                                  <a
+                                    tabindex="0"
+                                    class="badge color-${fingerprintColorsArray[
+                                      row.client_fingerprint_number % 6
+                                    ]} color-hover"
+                                    role="button"
+                                    id="fingerprintPopover${row.client_fingerprint?.id}"
+                                    data-toggle="popover"
+                                    data-container="body"
+                                    data-html="true"
+                                    data-placement="auto"
+                                    title="Fingerprint ${row.client_fingerprint_number}"
+                                    data-content="
                                     <div>
                                         IP Address: ${row.client_fingerprint?.ip_address}
                                     </div>
@@ -624,13 +625,14 @@ export function InstructorAssessmentInstance({
                                         User Agent: ${row.client_fingerprint?.user_agent}
                                     </div>
                                     "
-                                data-trigger="focus"
-                              >
-                                ${row.client_fingerprint_number}
-                              </a>
-                            </td>
-                          `
-                        : html`<td>&mdash;</td>`}
+                                    data-trigger="focus"
+                                  >
+                                    ${row.client_fingerprint_number}
+                                  </a>
+                                </td>
+                              `
+                            : html`<td>&mdash;</td>`}`
+                        : null}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
                         ${row.qid
