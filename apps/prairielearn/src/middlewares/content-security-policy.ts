@@ -7,7 +7,7 @@ router.all('/*', function (req, res, next) {
   //
   // Currently, we only use CSP to prevent PrairieLearn from being rendered in
   // an iframe.
-  res.header('Content-Security-Policy', "frame-ancestors: 'none';");
+  res.header('Content-Security-Policy', "frame-ancestors 'none';");
 
   // Added for backwards compatibility with older browsers.
   res.header('X-Frame-Options', 'DENY');

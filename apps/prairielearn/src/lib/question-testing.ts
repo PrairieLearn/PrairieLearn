@@ -281,7 +281,7 @@ async function testQuestion(
     renderDuration = renderEnd - renderStart;
   }
 
-  if (!variant.broken) {
+  if (!variant.broken_at) {
     const gradeStart = Date.now();
     try {
       ({ expected_submission, test_submission } = await testVariant(
@@ -335,7 +335,7 @@ async function runTest(
   );
 
   if (showDetails) {
-    const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
+    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
     const submissionKeys = [
       'broken',
       'correct',

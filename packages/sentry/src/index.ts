@@ -82,4 +82,5 @@ export {
   Integrations,
   Handlers,
   runWithAsyncContext,
+  getCurrentScope,
 } from '@sentry/node';
