@@ -1,7 +1,7 @@
 // @ts-check
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
@@ -17,6 +17,7 @@ import {
   updateAssessmentInstanceScore,
 } from '../../lib/assessment';
 import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
+import { InstructorAssessmentInstance } from './instructorAssessmentInstance.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -119,7 +120,11 @@ router.get(
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.locals.fingerprint_colors = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
+
+    // console.log(res.locals.instance_questions)
+
+    res.send(InstructorAssessmentInstance({resLocals: res.locals}));
   }),
 );
 
