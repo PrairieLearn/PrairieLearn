@@ -7,7 +7,7 @@ import * as helperServer from './helperServer';
 import * as sqldb from '@prairielearn/postgres';
 // @ts-expect-error -- Incorrectly thinks that this is ESM.
 import { io } from 'socket.io-client';
-import { setUser, parseInstanceQuestionId, saveOrGrade } from './helperClient';
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -62,10 +62,10 @@ const waitForExternalGrader = async ($questionsPage) => {
 };
 
 /**
- * @param {object} user or instructor user to load page by
+ * @param user - user to load page by
  * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
  */
-const loadHomeworkPage = async (user) => {
+const loadHomeworkPage = async (user: User) => {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
   const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
@@ -82,11 +82,8 @@ const loadHomeworkPage = async (user) => {
 
 /**
  * Gets the score text for the first submission panel on the page.
- *
- * @param {import('cheerio').CheerioAPI} $
- * @returns {string}
  */
-function getLatestSubmissionStatus($) {
+function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text();
 }
 

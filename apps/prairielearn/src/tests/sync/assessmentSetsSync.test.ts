@@ -19,8 +19,6 @@ function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
 
 /**
  * Makes a new assessment.
- *
- * @returns {import('./util').AssessmentSet}
  */
 function makeAssessmentSet(): util.AssessmentSet {
   return {

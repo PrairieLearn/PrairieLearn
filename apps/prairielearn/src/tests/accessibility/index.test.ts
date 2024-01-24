@@ -22,11 +22,8 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 
 /**
  * Loads the given URL into a JSDOM object.
- *
- * @param {string} url
- * @returns {Promise<import('jsdom').JSDOM>}
  */
-async function loadPageJsdom(url) {
+async function loadPageJsdom(url: string): Promise<JSDOM> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
       throw new Error(`Error loading page: ${res.status}`);
@@ -38,10 +35,8 @@ async function loadPageJsdom(url) {
 
 /**
  * Checks the given URL for accessibility violations.
- *
- * @param {string} url
  */
-async function checkPage(url) {
+async function checkPage(url: string) {
   const page = await loadPageJsdom(SITE_URL + url);
   const results = await axe.run(page.window.document.documentElement, {
     resultTypes: ['violations', 'incomplete'],
@@ -65,11 +60,7 @@ function getRouteParams(url) {
   return routeParams.map((p) => p.slice(1));
 }
 
-/**
- * @param {string} url
- * @param {Record<string, any>} params
- */
-function getMissingRouteParams(url, params) {
+function getMissingRouteParams(url: string, params: Record<string, any>) {
   const routeParams = getRouteParams(url);
   return routeParams.filter((p) => !(p in params));
 }

@@ -8,7 +8,7 @@ import * as tmp from 'tmp-promise';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import { syncCourseData } from './sync/util';
+import { syncCourseData, type GroupRole } from './sync/util';
 
 import * as helperServer from './helperServer';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups';
@@ -28,12 +28,13 @@ const storedConfig: Record<string, any> = {};
 
 /**
  * Switches `config` to new user, loads assessment page, and changes local CSRF token
- * @param {Object} studentUser
- * @param {string} assessmentUrl
- * @param {String} authUin
- * @param {Number} numCsrfTokens
  */
-const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, numCsrfTokens) => {
+async function switchUserAndLoadAssessment(
+  studentUser: { uid: string; name: string },
+  assessmentUrl: string,
+  authUin: string,
+  numCsrfTokens: number,
+) {
   // Load config
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
@@ -50,14 +51,12 @@ const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, 
   assert.nestedProperty(elemList[0], 'attribs.value');
   locals.__csrf_token = elemList[0].attribs.value;
   assert.isString(locals.__csrf_token);
-};
+}
 
 /**
  * Joins group as current user with CSRF token and loads page with cheerio.
- * @param {String} assessmentUrl
- * @param {String} joinCode
  */
-const joinGroup = async (assessmentUrl, joinCode) => {
+async function joinGroup(assessmentUrl: string, joinCode: string) {
   const form = {
     __action: 'join_group',
     __csrf_token: locals.__csrf_token,
@@ -69,13 +68,12 @@ const joinGroup = async (assessmentUrl, joinCode) => {
   });
   assert.isOk(res.ok);
   locals.$ = cheerio.load(await res.text());
-};
+}
 
 /**
  * Leaves group as current user
- * @param {String} assessmentUrl
  */
-const leaveGroup = async (assessmentUrl) => {
+async function leaveGroup(assessmentUrl: string) {
   const form = {
     __action: 'leave_group',
     __csrf_token: locals.__csrf_token,
@@ -85,13 +83,12 @@ const leaveGroup = async (assessmentUrl) => {
     body: new URLSearchParams(form),
   });
   assert.isOk(res.ok);
-};
+}
 
-/**
- * @param {Array} roleAssignments
- * @param {String} assessmentId
- */
-async function verifyRoleAssignmentsInDatabase(roleAssignments, assessmentId) {
+async function verifyRoleAssignmentsInDatabase(
+  roleAssignments: { roleId: number; groupUserId: number }[],
+  assessmentId: string,
+) {
   const expected = roleAssignments
     .map(({ roleId, groupUserId }) => ({
       user_id: groupUserId,
@@ -107,9 +104,10 @@ async function verifyRoleAssignmentsInDatabase(roleAssignments, assessmentId) {
 /**
  * Asserts that role table contains checked roles corresponding to role assignments.
  * The role table must be visible through cheerio.
- * @param {Array} roleAssignments
  */
-const verifyRoleAssignmentsInRoleTable = (roleAssignments) => {
+function verifyRoleAssignmentsInRoleTable(
+  roleAssignments: { roleId: string; groupUserId: string }[],
+) {
   elemList = locals.$('#role-select-form').find('tr').find('input:checked');
   assert.lengthOf(elemList, roleAssignments.length);
 
@@ -119,17 +117,18 @@ const verifyRoleAssignmentsInRoleTable = (roleAssignments) => {
     assert.lengthOf(elemList, 1);
     assert.isDefined(elemList['0'].attribs.checked);
   });
-};
+}
 
 /**
  * Sends and verifies a group roles update request using current user.
  * Updates element list to check that group role select table is changed correctly.
- * @param {Array} roleUpdates
- * @param {Array} groupRoles
- * @param {Array} studentUsers
- * @param {String} assessmentUrl
  */
-const updateGroupRoles = async (roleUpdates, groupRoles, studentUsers, assessmentUrl) => {
+async function updateGroupRoles(
+  roleUpdates: { roleId: string; groupUserId: string }[],
+  groupRoles: { id: string }[],
+  studentUsers: { user_id: string }[],
+  assessmentUrl: string,
+) {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
   const userIds = studentUsers.map((user) => user.user_id);
@@ -166,7 +165,7 @@ const updateGroupRoles = async (roleUpdates, groupRoles, studentUsers, assessmen
     body: new URLSearchParams(form),
   });
   assert.isOk(res.ok);
-};
+}
 
 describe('Test group based assessments with custom group roles from student side', function () {
   this.timeout(20000);
@@ -1061,11 +1060,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 });
 
-/**
- * @param {string} courseDir
- * @param {Partial<import('../sync/course-db').GroupRole>[]} groupRoles
- */
-const changeGroupRolesConfig = async (courseDir, groupRoles) => {
+const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRole[]) => {
   const infoAssessmentPath = path.join(
     courseDir,
     'courseInstances',
@@ -1082,10 +1077,8 @@ const changeGroupRolesConfig = async (courseDir, groupRoles) => {
 };
 
 describe('Test group role reassignments with role of minimum > 1', function () {
-  /** @type {tmp.DirectoryResult} */
-  let tempTestCourseDir;
-  /** @type {string} */
-  let assessmentId;
+  let tempTestCourseDir: tmp.DirectoryResult;
+  let assessmentId: string;
   let assessmentUrl;
 
   before('set authenticated user', function () {

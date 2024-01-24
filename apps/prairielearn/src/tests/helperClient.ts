@@ -141,7 +141,7 @@ export function parseInstanceQuestionId(url: string): number {
  * @param instanceQuestionUrl The instance question url the student is answering the question on.
  * @param payload JSON data structure type formed on the basis of the question
  * @param action The action to take
- * @param [fileData] File data to submit to the question
+ * @param fileData File data to submit to the question
  */
 export async function saveOrGrade(
   instanceQuestionUrl: string,
