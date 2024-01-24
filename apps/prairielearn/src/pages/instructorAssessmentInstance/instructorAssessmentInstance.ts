@@ -18,6 +18,7 @@ import {
 } from '../../lib/assessment';
 import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 import { InstructorAssessmentInstance } from './instructorAssessmentInstance.html';
+import { resetVariantsForInstanceQuestion } from '../../models/variant';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -244,8 +245,15 @@ router.post(
         );
       }
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'reset_question_variants') {
+      await resetVariantsForInstanceQuestion({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        unsafe_instance_question_id: req.body.unsafe_instance_question_id,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+      res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
+      throw error.make(400, `unknown __action: ${req.body.__action}`, {
         body: req.body,
       });
     }

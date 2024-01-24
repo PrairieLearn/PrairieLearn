@@ -1,49 +1,62 @@
-// @ts-check
-
-const _ = require('lodash');
+import _ = require('lodash');
 import * as async from 'async';
-const jsonStringifySafe = require('json-stringify-safe');
+import jsonStringifySafe = require('json-stringify-safe');
 
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
-import { createServerJob } from './server-jobs';
+import { type ServerJob, createServerJob } from './server-jobs';
 import { saveSubmissionAsync, gradeVariantAsync } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
-import { GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
+import {
+  GradingJobSchema,
+  IdSchema,
+  SubmissionSchema,
+  type Variant,
+  type Submission,
+  type Question,
+  type Course,
+  type CourseInstance,
+} from './db-types';
 import { promisify } from 'util';
 import { z } from 'zod';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- * @typedef TestResultStats
- * @property {number} generateDuration
- * @property {number} renderDuration
- * @property {number | undefined} gradeDuration
- */
+interface TestResultStats {
+  generateDuration: number;
+  renderDuration: number;
+  gradeDuration?: number;
+}
 
-/**
- * @typedef TestQuestionResults
- * @property {import('./db-types').Variant} variant
- * @property {import('./db-types').Submission | null} expected_submission
- * @property {import('./db-types').Submission | null} test_submission
- * @property {TestResultStats} stats
- */
+interface TestQuestionResults {
+  variant: Variant;
+  expected_submission: Submission | null;
+  test_submission: Submission | null;
+  stats: TestResultStats;
+}
+
+type TestType = 'correct' | 'incorrect' | 'invalid';
 
 /**
  * Internal worker for testVariant(). Do not call directly.
  * @protected
  *
- * @param {Object} variant - The variant to submit to.
- * @param {Object} question - The question for the variant.
- * @param {Object} variant_course - The course for the variant.
- * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
- * @param {string} authn_user_id - The currently authenticated user.
- * @returns {Promise<string>} The submission ID.
+ * @param variant - The variant to submit to.
+ * @param question - The question for the variant.
+ * @param variant_course - The course for the variant.
+ * @param test_type - The type of test to run.
+ * @param authn_user_id - The currently authenticated user.
+ * @returns The submission ID.
  */
-async function createTestSubmission(variant, question, variant_course, test_type, authn_user_id) {
+async function createTestSubmission(
+  variant: Variant,
+  question: Question,
+  variant_course: Course,
+  test_type: TestType,
+  authn_user_id: string,
+): Promise<string> {
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.test) {
     throw new Error('Question type does not support testing, must be Freeform');
@@ -117,13 +130,12 @@ async function createTestSubmission(variant, question, variant_course, test_type
  * Internal worker for testVariant(). Do not call directly.
  * @protected
  *
- * @param {Object} expected_submission - Generated reference submission data.
- * @param {Object} test_submission - Computed submission to be tested.
- * @returns {Error[]} A list of errors encountered during comparison.
+ * @param expected_submission - Generated reference submission data.
+ * @param test_submission - Computed submission to be tested.
+ * @returns A list of errors encountered during comparison.
  */
-function compareSubmissions(expected_submission, test_submission) {
-  /** @type {Error[]} */
-  const courseIssues = [];
+function compareSubmissions(expected_submission: Submission, test_submission: Submission): Error[] {
+  const courseIssues: Error[] = [];
 
   const checkEqual = (name, var1, var2) => {
     const json1 = jsonStringifySafe(var1);
@@ -144,8 +156,8 @@ function compareSubmissions(expected_submission, test_submission) {
   checkEqual('gradable', expected_submission.gradable, test_submission.gradable);
   checkEqual(
     'format_errors keys',
-    Object.keys(expected_submission.format_errors),
-    Object.keys(test_submission.format_errors),
+    Object.keys(expected_submission.format_errors ?? {}),
+    Object.keys(test_submission.format_errors ?? {}),
   );
   if (!test_submission.gradable || !expected_submission.gradable) {
     return courseIssues;
@@ -160,14 +172,19 @@ function compareSubmissions(expected_submission, test_submission) {
  * Tests a question variant. Issues will be inserted into the issues table.
  * @protected
  *
- * @param {Object} variant - The variant to submit to.
- * @param {Object} question - The question for the variant.
- * @param {Object} course - The course for the variant.
- * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
- * @param {string} authn_user_id - The currently authenticated user.
- * @returns {Promise<{expected_submission: import('./db-types').Submission; test_submission: import('./db-types').Submission}>}
+ * @param variant - The variant to submit to.
+ * @param question - The question for the variant.
+ * @param course - The course for the variant.
+ * @param test_type - The type of test to run.
+ * @param authn_user_id - The currently authenticated user.
  */
-async function testVariant(variant, question, course, test_type, authn_user_id) {
+async function testVariant(
+  variant: Variant,
+  question: Question,
+  course: Course,
+  test_type: TestType,
+  authn_user_id: string,
+): Promise<{ expected_submission: Submission; test_submission: Submission }> {
   const expected_submission_id = await createTestSubmission(
     variant,
     question,
@@ -202,30 +219,28 @@ async function testVariant(variant, question, course, test_type, authn_user_id) 
 /**
  * Test a question. Issues will be inserted into the issues table.
  *
- * @param {Object} question - The question for the variant.
- * @param {boolean} group_work - If the assessment will support group work.
- * @param {Object} variant_course - The course for the variant.
- * @param {string} authn_user_id - The currently authenticated user.
- * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
- * @returns {Promise<TestQuestionResults>}
+ * @param question - The question for the variant.
+ * @param group_work - If the assessment will support group work.
+ * @param variant_course - The course for the variant.
+ * @param authn_user_id - The currently authenticated user.
+ * @param test_type - The type of test to run.
+ * @returns
  */
 async function testQuestion(
-  question,
-  group_work,
-  course_instance,
-  variant_course,
-  test_type,
-  authn_user_id,
-) {
+  question: Question,
+  group_work: boolean,
+  course_instance: CourseInstance | null,
+  variant_course: Course,
+  test_type: TestType,
+  authn_user_id: string,
+): Promise<TestQuestionResults> {
   let generateDuration;
   let renderDuration;
   let gradeDuration;
 
   let variant;
-  /** @type {import('./db-types').Submission | null} */
-  let expected_submission = null;
-  /** @type {import('./db-types').Submission | null} */
-  let test_submission = null;
+  let expected_submission: Submission | null = null;
+  let test_submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
@@ -266,7 +281,7 @@ async function testQuestion(
     renderDuration = renderEnd - renderStart;
   }
 
-  if (!variant.broken) {
+  if (!variant.broken_at) {
     const gradeStart = Date.now();
     try {
       ({ expected_submission, test_submission } = await testVariant(
@@ -291,25 +306,24 @@ async function testQuestion(
  * Runs a single test.
  * @protected
  *
- * @param {Object} logger - The server job to run within.
- * @param {boolean} showDetails - Whether to display test data details.
- * @param {Object} question - The question for the variant.
- * @param {boolean} group_work - If the assessment will support group work.
- * @param {Object} course - The course for the variant.
- * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
- * @param {string} authn_user_id - The currently authenticated user.
- * @returns {Promise<{success: boolean; stats: TestResultStats}>}
+ * @param logger - The server job to run within.
+ * @param showDetails - Whether to display test data details.
+ * @param question - The question for the variant.
+ * @param group_work - If the assessment will support group work.
+ * @param course - The course for the variant.
+ * @param test_type - The type of test to run.
+ * @param authn_user_id - The currently authenticated user.
  */
 async function runTest(
-  logger,
-  showDetails,
-  question,
-  group_work,
-  course_instance,
-  course,
-  test_type,
-  authn_user_id,
-) {
+  logger: ServerJob,
+  showDetails: boolean,
+  question: Question,
+  group_work: boolean,
+  course_instance: CourseInstance | null,
+  course: Course,
+  test_type: TestType,
+  authn_user_id: string,
+): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
     question,
@@ -321,7 +335,7 @@ async function runTest(
   );
 
   if (showDetails) {
-    const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
+    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
     const submissionKeys = [
       'broken',
       'correct',
@@ -368,26 +382,26 @@ async function runTest(
 /**
  * Start a job sequence to test a question.
  *
- * @param {number} count - The number of times to test, will run each possible test ('correct, 'incorrect,' invalid') this many times.
- * @param {boolean} showDetails - Whether to display test data details.
- * @param {Object} question - The question for the variant.
- * @param {boolean} group_work - If the assessment will support group work
- * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
- * @param {Object} course - The course for the variant.
- * @param {string} authn_user_id - The currently authenticated user.
- * @return {Promise<string>} The job sequence ID.
+ * @param count - The number of times to test, will run each possible test ('correct, 'incorrect,' invalid') this many times.
+ * @param showDetails - Whether to display test data details.
+ * @param question - The question for the variant.
+ * @param group_work - If the assessment will support group work
+ * @param course_instance - The course instance for the variant; may be null for instructor questions
+ * @param course - The course for the variant.
+ * @param authn_user_id - The currently authenticated user.
+ * @return The job sequence ID.
  */
 export async function startTestQuestion(
-  count,
-  showDetails,
-  question,
-  group_work,
-  course_instance,
-  course,
-  authn_user_id,
-) {
+  count: number,
+  showDetails: boolean,
+  question: Question,
+  group_work: boolean,
+  course_instance: CourseInstance | null,
+  course: Course,
+  authn_user_id: string,
+): Promise<string> {
   let success = true;
-  const test_types = /** @type {const} */ (['correct', 'incorrect', 'invalid']);
+  const test_types: TestType[] = ['correct', 'incorrect', 'invalid'] as const;
 
   const serverJob = await createServerJob({
     courseId: course.id,
@@ -397,11 +411,11 @@ export async function startTestQuestion(
     description: 'Test ' + question.qid,
   });
 
-  const stats = [];
+  const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
     await async.eachSeries(_.range(count * test_types.length), async (iter) => {
-      let type = test_types[iter % test_types.length];
+      const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
         job,
@@ -419,7 +433,7 @@ export async function startTestQuestion(
       }
     });
 
-    function printStats(label, key) {
+    function printStats(label: string, key: keyof TestResultStats) {
       let min = Number.MAX_SAFE_INTEGER;
       let max = 0;
       let count = 0;
@@ -454,11 +468,6 @@ export async function startTestQuestion(
   return serverJob.jobSequenceId;
 }
 
-/**
- *
- * @param {string} submission_id
- * @returns {Promise<import('./db-types').Submission>}
- */
-async function selectSubmission(submission_id) {
+async function selectSubmission(submission_id: string): Promise<Submission> {
   return await sqldb.queryRow(sql.select_submission_by_id, { submission_id }, SubmissionSchema);
 }

@@ -537,7 +537,6 @@ export const InstanceQuestionSchema = z.object({
   id: IdSchema,
   incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
   incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
-  instructor_question_number: z.string().nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
@@ -596,6 +595,8 @@ export type Submission = z.infer<typeof SubmissionSchema>;
 export const VariantSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  broken_at: DateFromISOString.nullable(),
+  broken_by: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
