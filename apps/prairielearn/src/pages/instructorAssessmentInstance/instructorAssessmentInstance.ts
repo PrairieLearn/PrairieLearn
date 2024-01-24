@@ -85,8 +85,6 @@ router.get(
       false,
     );
 
-    const fingerprintColorsArray = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
-
     res.send(
       InstructorAssessmentInstance({
         resLocals: res.locals,
@@ -95,8 +93,7 @@ router.get(
         assessment_instance_date_formatted,
         assessment_instance_duration,
         instance_questions,
-        assessmentInstanceLog: assessmentInstanceLog,
-        fingerprintColorsArray,
+        assessmentInstanceLog,
       }),
     );
   }),

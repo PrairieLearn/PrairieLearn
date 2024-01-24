@@ -2,10 +2,9 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { EditTotalPointsForm } from './editTotalPointsForm.html';
-import { EditTotalScorePercForm } from './editTotalScorePercForm.html';
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
+import { nodeModulesAssetPath } from '../../lib/assets';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -50,6 +49,8 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+const fingerprintColorsArray = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
+
 export function InstructorAssessmentInstance({
   resLocals,
   logCsvFilename,
@@ -58,7 +59,6 @@ export function InstructorAssessmentInstance({
   assessment_instance_duration,
   instance_questions,
   assessmentInstanceLog,
-  fingerprintColorsArray,
 }: {
   resLocals: Record<string, any>;
   logCsvFilename: string;
@@ -67,7 +67,6 @@ export function InstructorAssessmentInstance({
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
-  fingerprintColorsArray: string[];
 }) {
   return html`
     <!doctype html>
@@ -75,15 +74,13 @@ export function InstructorAssessmentInstance({
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
         <link
-          href="${resLocals.node_modules_asset_path(
-            'tablesorter/dist/css/theme.bootstrap.min.css',
-          )}"
+          href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
-        <script src="${resLocals.node_modules_asset_path(
+        <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
           )}"></script>
-        <script src="${resLocals.node_modules_asset_path(
+        <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
       </head>
@@ -169,7 +166,7 @@ export function InstructorAssessmentInstance({
                         </td>
                       </tr>
                     `
-                  : null}
+                  : ''}
 
                 <tr>
                   <th>Points</th>
@@ -204,7 +201,7 @@ export function InstructorAssessmentInstance({
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
                         `
-                      : null}
+                      : ''}
                   </td>
                 </tr>
                 <tr>
@@ -236,7 +233,7 @@ export function InstructorAssessmentInstance({
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
                         `
-                      : null}
+                      : ''}
                   </td>
                 </tr>
                 <tr>
@@ -309,22 +306,22 @@ export function InstructorAssessmentInstance({
               </thead>
               <tbody>
                 ${instance_questions.map((instance_question, i_instance_question) => {
-                  return html` ${instance_question.start_new_zone && instance_question.zone_title
+                  return html`
+                    ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
                           <tr>
                             <th colspan="6">
                               ${instance_question.zone_title}
                               ${instance_question.zone_has_max_points
                                 ? html`(maximum ${instance_question.zone_max_points} points)}`
-                                : null}
+                                : ''}
                               ${instance_question.zone_has_best_questions
                                 ? html`(best ${instance_question.zone_best_questions} questions)}`
-                                : null}
+                                : ''}
                             </th>
                           </tr>
                         `
-                      : null}
-
+                      : ''}
                     <tr>
                       <td>
                         S-${instance_question.question_number}. (<a
@@ -376,7 +373,7 @@ export function InstructorAssessmentInstance({
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
                             `
-                          : null}
+                          : ''}
                       </td>
                       <td class="text-center">
                         ${renderEjs(
@@ -415,7 +412,7 @@ export function InstructorAssessmentInstance({
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
                             `
-                          : null}
+                          : ''}
                       </td>
                       <td class="text-center">
                         ${renderEjs(
@@ -449,7 +446,7 @@ export function InstructorAssessmentInstance({
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
                             `
-                          : null}
+                          : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
                         ${renderEjs(__filename, "<%- include('../partials/scorebar'); %>", {
@@ -483,7 +480,7 @@ export function InstructorAssessmentInstance({
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
                             `
-                          : null}
+                          : ''}
                       </td>
                       <td class="align-middle text-nowrap" style="width: 1em;">
                         ${resLocals.authz_data.has_course_instance_permission_edit &&
@@ -496,9 +493,10 @@ export function InstructorAssessmentInstance({
                                 >Manual grading</a
                               >
                             `
-                          : null}
+                          : ''}
                       </td>
-                    </tr>`;
+                    </tr>
+                  `;
                 })}
               </tbody>
             </table>
@@ -585,7 +583,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Time</th>
                   <th>User</th>
-                  ${resLocals.instance_user ? html`<th>Fingerprint</th>` : null}
+                  ${resLocals.instance_user ? html`<th>Fingerprint</th>` : ''}
                   <th>Event</th>
                   <th>Instructor question</th>
                   <th>Student question</th>
@@ -615,16 +613,16 @@ export function InstructorAssessmentInstance({
                                     data-placement="auto"
                                     title="Fingerprint ${row.client_fingerprint_number}"
                                     data-content="
-                                    <div>
-                                        IP Address: ${row.client_fingerprint?.ip_address}
-                                    </div>
-                                    <div>
-                                        Session ID: ${row.client_fingerprint?.user_session_id}
-                                    </div>
-                                    <div>
-                                        User Agent: ${row.client_fingerprint?.user_agent}
-                                    </div>
-                                    "
+                                        <div>
+                                            IP Address: ${row.client_fingerprint?.ip_address}
+                                        </div>
+                                        <div>
+                                            Session ID: ${row.client_fingerprint?.user_session_id}
+                                        </div>
+                                        <div>
+                                            User Agent: ${row.client_fingerprint?.user_agent}
+                                        </div>
+                                        "
                                     data-trigger="focus"
                                   >
                                     ${row.client_fingerprint_number}
@@ -632,7 +630,7 @@ export function InstructorAssessmentInstance({
                                 </td>
                               `
                             : html`<td>&mdash;</td>`}`
-                        : null}
+                        : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
                         ${row.qid
@@ -641,7 +639,7 @@ export function InstructorAssessmentInstance({
                                 I-${row.instructor_question_number} (${row.qid})
                               </a>
                             `
-                          : null}
+                          : ''}
                       </td>
                       <td>
                         ${row.student_question_number
@@ -656,19 +654,21 @@ export function InstructorAssessmentInstance({
                                 </a>
                               `
                             : html`S-${row.student_question_number}}`
-                          : null}
+                          : ''}
                       </td>
                       ${row.event_name !== 'External grading results'
                         ? html`<td style="word-break: break-all;">
-                            ${row.data != null ? JSON.stringify(row.data) : null}
+                            ${row.data != null ? JSON.stringify(row.data) : ''}
                           </td>`
-                        : html` <td>
-                            <a
-                              class="btn btn-primary"
-                              href="<%= urlPrefix %>/grading_job/<%= row.data.id %>"
-                              >View grading job ${row.data?.id}</a
-                            >
-                          </td>`}
+                        : html`
+                            <td>
+                              <a
+                                class="btn btn-primary"
+                                href="<%= urlPrefix %>/grading_job/<%= row.data.id %>"
+                                >View grading job ${row.data?.id}</a
+                              >
+                            </td>
+                          `}
                     </tr>
                   `;
                 })}
@@ -704,4 +704,76 @@ export function InstructorAssessmentInstance({
       </body>
     </html>
   `.toString();
+}
+
+function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+  return html`
+    <form name="edit-total-points-form" method="POST">
+      <input type="hidden" name="__action" value="edit_total_points" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input
+        type="hidden"
+        name="assessment_instance_id"
+        value="${resLocals.assessment_instance.id}"
+      />
+      <div class="form-group">
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            name="points"
+            value="${resLocals.assessment_instance.points}"
+          />
+          <span class="input-group-addon">/${resLocals.assessment_instance.max_points}</span>
+        </div>
+      </div>
+      <p>
+        <small
+          >This change will be overwritten if further questions are answered by the student.</small
+        >
+      </p>
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Change</button>
+      </div>
+    </form>
+  `;
+}
+
+function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+  return html`
+    <form name="edit-total-score-perc-form" method="POST">
+      <input type="hidden" name="__action" value="edit_total_score_perc" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input
+        type="hidden"
+        name="assessment_instance_id"
+        value="${resLocals.assessment_instance.id}"
+      />
+      <div class="form-group">
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            name="score_perc"
+            value="${resLocals.assessment_instance.score_perc}"
+          />
+          <span class="input-group-addon">%</span>
+        </div>
+      </div>
+      <p>
+        <small
+          >This change will be overwritten if further questions are answered by the student.</small
+        >
+      </p>
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Change</button>
+      </div>
+    </form>
+  `;
 }
