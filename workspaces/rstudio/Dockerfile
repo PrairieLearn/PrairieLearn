@@ -3,9 +3,29 @@
 # 20210831 Eric Huber - Initial version
 # 20240123 Eric Huber - Modify service file to provide server-user argument
 
+# Maintainer notes:
+
+# The s6 init system is part of the base image and we are working within its
+# expectations. As a side effect of the unusual workarounds we are using to
+# run as a limited user, it is normal to see s6 report some errors in the
+# terminal log during startup, such as "unable to read status", "operation
+# not permitted", "permission denied", "unable to chown", or "password not
+# changed".
+
+# You should test that nginx starts successfully with "OK" status, and that
+# you can load the RStudio interface in the browser successfully:
+# $ docker build -t rstudio-test .
+# $ docker run -it --rm -u 1001:1001 -p 127.0.0.1:3939:3939 rstudio-test
+# And then open your browser to: http://localhost:3939/rstudio/
+
+# As future work, it may be possible to configure s6 to run more gracefully
+# as a limited user without hacks, but it may not be worth the maintenance
+# burden if there is no added benefit.
+
 FROM rocker/rstudio
 
-# On PL, we need to use 1001:1001 for the user account.
+# On PL, we need to use 1001:1001 for the default user account. We adjust the
+# pre-existing rstudio user which is typically uid 1000 otherwise.
 USER 0
 RUN export OLD_UID=$(id -u rstudio) && \
     export OLD_GID=$(id -g rstudio) && \
@@ -20,12 +40,12 @@ RUN export OLD_UID=$(id -u rstudio) && \
 USER 0
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    # Proxy workaround for PrairieLearn:
+    # Reverse proxy workaround for PrairieLearn:
     nginx \
     gettext \
     gosu \
     fonts-dejavu \
-    # Things for our sanity in the instructor terminal:
+    # Utilities for convenience debugging this container:
     less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
     # Test:
     gosu nobody true && \
@@ -42,16 +62,23 @@ RUN mkdir -p /var/run/s6 && \
     chown -R 1001:1001 /var/lib/rstudio-server && \
     chown -R 1001:1001 /var/run/rstudio-server && \
     chown -R 1001:1001 /etc/rstudio
-# The Nginx proxy allows us to change the base URL for the RStudio session
+# The Nginx proxy allows us to change the base URL for the RStudio session,
+# which is necessary for embedding on PrairieLearn.
 COPY rstudio-nginx.conf /etc/nginx/nginx.conf
 # We store some generated files and the Nginx pid file in /var/pl-var.
 # The Nginx conf file needs to be writable so we can update the base URL
 # at startup.
 RUN mkdir -p /var/pl-var && \
     chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var /etc/nginx/nginx.conf
-# Make sure that rstudio-server runs as our normal user to prevent startup
-# errors
-RUN sed -i 's/^\(exec.*rstudio-server.*\)$/\1 --server-user rstudio/g' /etc/services.d/rstudio/run
+# Patch the service file that s6 invokes to make sure that rstudio-server
+# runs as our normal user
+RUN MATCH_REGEX='^\(exec /usr/lib/rstudio-server/bin/rserver --server-daemonize 0\)$' && \
+    SERVICE_FILE='/etc/services.d/rstudio/run' && \
+    grep -qe "$MATCH_REGEX" "$SERVICE_FILE" || { \
+        echo "Error patching rstudio service file: Format changed in upstream image. Revise Dockerfile." >&2 ; \
+        exit 1 ; \
+    } && \
+    sed -i "s#$MATCH_REGEX#\1 --server-user rstudio#g" "$SERVICE_FILE"
 
 # The proxy uses 3939 and the internal RStudio session uses 8787.
 # We only need to expose 3939 here.
