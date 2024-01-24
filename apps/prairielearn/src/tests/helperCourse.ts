@@ -1,4 +1,3 @@
-// @ts-check
 import { TEST_COURSE_PATH } from '../lib/paths';
 import * as syncFromDisk from '../sync/syncFromDisk';
 import { makeMockLogger } from './mockLogger';

@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
@@ -31,7 +30,7 @@ async function checkPermissions(users) {
 }
 
 function updatePermissions(users, uid, cr, cir) {
-  var user = users.find((user) => user.uid === uid);
+  let user = users.find((user) => user.uid === uid);
   if (!user) {
     user = { uid: uid };
     users.push(user);
@@ -79,7 +78,7 @@ function runTest(context) {
     },
   ];
 
-  var new_user = 'garbage@illinois.edu';
+  let new_user = 'garbage@illinois.edu';
 
   before('set up testing server', helperServer.before().bind(this));
 
@@ -626,7 +625,7 @@ function runTest(context) {
 describe('course admin access page through course route', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl/course/1`;
 
@@ -636,7 +635,7 @@ describe('course admin access page through course route', function () {
 describe('course admin access page through course instance route', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
 

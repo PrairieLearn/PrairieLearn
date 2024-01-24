@@ -1,16 +1,14 @@
-// @ts-check
-
 // The OpenTelemetry instrumentation for Express breaks our ability to inspect
 // the Express routes. We need to disable it before loading the server.
 import { disableInstrumentations } from '@prairielearn/opentelemetry';
 disableInstrumentations();
 
 import { test } from 'mocha';
-const axe = require('axe-core');
+import axe = require('axe-core');
 import { JSDOM } from 'jsdom';
 import fetch from 'node-fetch';
 import { A11yError } from '@sa11y/format';
-const expressListEndpoints = require('express-list-endpoints');
+import expressListEndpoints = require('express-list-endpoints');
 import * as sqldb from '@prairielearn/postgres';
 
 import * as server from '../../server';
@@ -254,8 +252,8 @@ function shouldSkipPath(path) {
 }
 
 describe('accessibility', () => {
-  let endpoints = [];
-  let routeParams = {};
+  let endpoints: expressListEndpoints.Endpoint[] = [];
+  let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
     await helperServer.before(EXAMPLE_COURSE_PATH).call(this);
@@ -307,8 +305,8 @@ describe('accessibility', () => {
   test('All pages pass accessibility checks', async function () {
     this.timeout(240_000);
 
-    const missingParamsEndpoints = [];
-    const failingEndpoints = [];
+    const missingParamsEndpoints: expressListEndpoints.Endpoint[] = [];
+    const failingEndpoints: [expressListEndpoints.Endpoint, any][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {
@@ -334,8 +332,7 @@ describe('accessibility', () => {
       }
     }
 
-    /** @type {string[]} */
-    const errLines = [];
+    const errLines: string[] = [];
 
     if (missingParamsEndpoints.length > 0) {
       errLines.push('The following endpoints are missing params:');

@@ -13,7 +13,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('effective user', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlCourse = `${context.baseUrl}/course/1`;

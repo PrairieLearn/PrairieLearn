@@ -1,4 +1,3 @@
-// @ts-check
 import ERR = require('async-stacktrace');
 import fetch from 'node-fetch';
 import fetchCookie = require('fetch-cookie');
