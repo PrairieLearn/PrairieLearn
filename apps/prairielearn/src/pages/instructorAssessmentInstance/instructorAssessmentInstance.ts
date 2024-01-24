@@ -30,7 +30,7 @@ const DateDurationResultSchema = z.object({
   assessment_instance_duration: z.string(),
 });
 
-const makeLogCsvFilename = (locals) => {
+function makeLogCsvFilename(locals) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -44,7 +44,7 @@ const makeLogCsvFilename = (locals) => {
     '_' +
     'log.csv'
   );
-};
+}
 
 router.get(
   '/',

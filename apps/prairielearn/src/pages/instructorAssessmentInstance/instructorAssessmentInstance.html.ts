@@ -728,9 +728,9 @@ function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>
         </div>
       </div>
       <p>
-        <small
-          >This change will be overwritten if further questions are answered by the student.</small
-        >
+        <small>
+          This change will be overwritten if further questions are answered by the student.
+        </small>
       </p>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
@@ -764,9 +764,9 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
         </div>
       </div>
       <p>
-        <small
-          >This change will be overwritten if further questions are answered by the student.</small
-        >
+        <small>
+          This change will be overwritten if further questions are answered by the student.
+        </small>
       </p>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
