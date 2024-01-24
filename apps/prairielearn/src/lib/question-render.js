@@ -219,7 +219,7 @@ function buildLocals(
   // ID is coerced to a string so that it matches what we get back from the client
   locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
 
-  if (variant.broken) {
+  if (variant.broken_at) {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.showTryAgainButton = true;
