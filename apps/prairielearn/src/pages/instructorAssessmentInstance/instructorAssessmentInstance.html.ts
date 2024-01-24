@@ -314,10 +314,12 @@ export function InstructorAssessmentInstance({
                           <tr>
                             <th colspan="6">
                               ${instance_question.zone_title}
-                              ${instance_question.zone_has_max_points ??
-                              html`(maximum ${instance_question.zone_max_points} points)`}
-                              ${instance_question.zone_has_best_questions ??
-                              html`(best ${instance_question.zone_best_questions} questions)`}
+                              ${instance_question.zone_has_max_points
+                                ? html`(maximum ${instance_question.zone_max_points} points)}`
+                                : null}
+                              ${instance_question.zone_has_best_questions
+                                ? html`(best ${instance_question.zone_best_questions} questions)}`
+                                : null}
                             </th>
                           </tr>
                         `
@@ -640,17 +642,19 @@ export function InstructorAssessmentInstance({
                           : null}
                       </td>
                       <td>
-                        ${row.student_question_number ?? row.variant_id
-                          ? html`
-                              <a
-                                href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                                  .course_instance
-                                  .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
-                              >
-                                S-${row.student_question_number}#${row.variant_number}
-                              </a>
-                            `
-                          : html`S-${row.student_question_number}`}
+                        ${row.student_question_number
+                          ? row.variant_id
+                            ? html`
+                                <a
+                                  href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
+                                    .course_instance
+                                    .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
+                                >
+                                  S-${row.student_question_number}#${row.variant_number}
+                                </a>
+                              `
+                            : html`S-${row.student_question_number}}`
+                          : null}
                       </td>
                       ${row.event_name !== 'External grading results'
                         ? html`<td style="word-break: break-all;">
