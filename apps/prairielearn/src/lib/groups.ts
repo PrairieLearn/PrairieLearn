@@ -346,8 +346,12 @@ export async function createGroup(
           IdSchema,
         );
       } catch (err) {
-        // TODO Check if the error was a duplicate name error
-        throw new GroupOperationError('Group name is already taken.');
+        // 23505 is the Postgres error code for unique constraint violation
+        if (err.code === '23505' && err.constraint === 'unique_group_name') {
+          throw new GroupOperationError('Group name is already taken.');
+        }
+        // Any other error is unexpected and should be handled by the main processes
+        throw err;
       }
       for (const uid of uids) {
         await addUserToGroup({
