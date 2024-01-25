@@ -1,21 +1,20 @@
 columns
     assessment_id: bigint not null
     created_at: timestamp with time zone not null default now()
-    created_by: bigint not null default now()
+    created_by: bigint
     credit: integer not null
     end_date: timestamp with time zone not null
     group_id: bigint
     id: bigint not null default nextval('assessment_access_policies_id_seq'::regclass)
     note: text
     start_date: timestamp with time zone not null
-    student_uid: text
     user_id: bigint
 
 indexes
     assessment_access_policies_pkey: PRIMARY KEY (id) USING btree (id)
 
 check constraints
-    assessment_access_policies_check: CHECK (num_nonnulls(student_uid, group_id) <= 1)
+    assessment_access_policies_check: CHECK (num_nonnulls(user_id, group_id) <= 1)
 
 foreign-key constraints
     assessment_access_policies_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

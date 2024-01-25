@@ -143,27 +143,24 @@ WHERE
   );
 
 -- BLOCK delete_assessment_access_policy
-WITH
-  deleted_rows AS (
-    DELETE FROM assessment_access_policies
-    WHERE
-      (
-        user_id = (
-          SELECT
-            user_id
-          FROM
-            users
-          WHERE
-            uid = $student_uid
-        )
-        OR group_id = (
-          SELECT
-            id
-          from
-            groups
-          where
-            name = $group_name
-        )
-      )
-      AND assessment_id = $assessment_id
+DELETE FROM assessment_access_policies
+WHERE
+  (
+    user_id = (
+      SELECT
+        user_id
+      FROM
+        users
+      WHERE
+        uid = $student_uid
+    )
+    OR group_id = (
+      SELECT
+        id
+      from
+        groups
+      where
+        name = $group_name
+    )
   )
+  AND assessment_id = $assessment_id;

@@ -33,7 +33,6 @@
 				editOverrideForm.find('#edit-credit').val(button.data('credit'));
 				var policy_start_date = new Date(button.data('start-date'))
 				var policy_start_date_string = policy_start_date.toISOString().slice(0, 16);
-				editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
 				var policy_end_date = new Date(button.data('end-date'))
 				var policy_end_date_string = policy_end_date.toISOString().slice(0, 16);
 				editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
