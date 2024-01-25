@@ -6,7 +6,6 @@ columns
 
 indexes
     assessment_question_role_permissions_pkey: PRIMARY KEY (assessment_question_id, group_role_id) USING btree (assessment_question_id, group_role_id)
-    assessment_question_role_permissions_assessment_question_id_key: UNIQUE USING btree (assessment_question_id, group_role_id)
     assessment_question_role_permissions_group_role_id_key: USING btree (group_role_id)
 
 foreign-key constraints

@@ -1,7 +1,0 @@
-<%- include('gradingPointsSection',
-            {type: 'manual', type_label: 'Manual',
-             points: locals.manual_points ?? instance_question.manual_points,
-             max_points: assessment_question.max_manual_points,
-             show_input: !locals.rubric_data,
-             show_input_edit: false,
-             show_rubric_button: locals.context === 'main' && locals.rubric_settings_visible && !locals.rubric_data?.replace_auto_points}); %>

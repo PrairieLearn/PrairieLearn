@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
 import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
@@ -18,8 +18,8 @@ export async function ensureEnrollment({
 }: {
   course_instance_id: string;
   user_id: string;
-}): Promise<Enrollment> {
-  return await queryRow(sql.ensure_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
+}): Promise<void> {
+  await queryAsync(sql.ensure_enrollment, { course_instance_id, user_id });
 }
 
 /**

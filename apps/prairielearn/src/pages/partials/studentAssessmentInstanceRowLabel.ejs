@@ -1,26 +1,29 @@
-<% if (sequence_locked) { %>
+<%
+let lockedPopoverText = null;
+if (sequence_locked) {
+  lockedPopoverText = prev_sequence_locked
+    ? `A previous question must be completed before you can access this one.` 
+    : `You must score at least ${prev_advance_score_perc}% on ${prev_title} to unlock this question.`;
+} else if (!(locals.group_role_permissions?.can_view ?? true)) {
+  lockedPopoverText = `Your current group role (${locals.user_group_roles}) restricts access to this question.`;
+}
+%>
+<% if (lockedPopoverText != null) { %>
   <span class="text-muted">
     <%= rowLabelText %>
   </span>
-<% } else { %>
-  <a href="<%= urlPrefix %>/instance_question/<%= id %>/">
-    <%= rowLabelText %>
-  </a>
-<% } %>
-
-<% if (sequence_locked) { %>
-  <%
-  var lockedPopoverText = prev_sequence_locked
-    ? `A previous question must be completed before you can access this one.` 
-    : `You must score at least ${prev_advance_score_perc}% on ${prev_title} to unlock this question.`;
-  %>
   <a tabindex="0" class="btn btn-xs border text-secondary ml-1" role="button"
     data-toggle="popover" data-trigger="focus" data-container="body"
     data-html="true"
     data-content="<%= lockedPopoverText %>"
+    data-test-id="locked-instance-question-row"
     aria-label="Locked"
   >
     <i class="fas fa-lock" aria-hidden="true"></i>
+  </a>
+<% } else { %>
+  <a href="<%= urlPrefix %>/instance_question/<%= id %>/">
+    <%= rowLabelText %>
   </a>
 <% } %>
 <% if (file_count > 0) { %>

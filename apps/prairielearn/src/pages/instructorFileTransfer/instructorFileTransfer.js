@@ -1,16 +1,17 @@
+//@ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const async = require('async');
-const sqldb = require('@prairielearn/postgres');
-const { logger } = require('@prairielearn/logger');
-const { flash } = require('@prairielearn/flash');
-const { QuestionTransferEditor } = require('../../lib/editors');
-const { config } = require('../../lib/config');
-const { idsEqual } = require('../../lib/id');
+import * as async from 'async';
+import * as sqldb from '@prairielearn/postgres';
+import { logger } from '@prairielearn/logger';
+import { flash } from '@prairielearn/flash';
+import { QuestionTransferEditor } from '../../lib/editors';
+import { config } from '../../lib/config';
+import { idsEqual } from '../../lib/id';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 function getFileTransfer(file_transfer_id, user_id, callback) {
@@ -107,4 +108,4 @@ router.get('/:file_transfer_id', function (req, res, next) {
   });
 });
 
-module.exports = router;
+export default router;

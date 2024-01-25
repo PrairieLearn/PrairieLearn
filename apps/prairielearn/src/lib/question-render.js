@@ -147,6 +147,7 @@ function buildLocals(
   locals.showGradeButton = false;
   locals.showSaveButton = false;
   locals.disableGradeButton = false;
+  locals.disableSaveButton = false;
   locals.showNewVariantButton = false;
   locals.showTryAgainButton = false;
   locals.showSubmissions = false;
@@ -218,7 +219,7 @@ function buildLocals(
   // ID is coerced to a string so that it matches what we get back from the client
   locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
 
-  if (variant.broken) {
+  if (variant.broken_at) {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.showTryAgainButton = true;
@@ -248,6 +249,14 @@ function buildLocals(
   // Manually disable correct answer panel
   if (!question?.show_correct_answer) {
     locals.showTrueAnswer = false;
+  }
+
+  if (
+    assessment?.group_config?.has_roles &&
+    !instance_question?.group_role_permissions?.can_submit
+  ) {
+    locals.disableGradeButton = true;
+    locals.disableSaveButton = true;
   }
 
   return locals;

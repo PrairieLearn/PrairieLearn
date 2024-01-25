@@ -1,11 +1,12 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { pipeline } = require('node:stream/promises');
-const { stringifyStream } = require('@prairielearn/csv');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as express from 'express';
+import { pipeline } from 'node:stream/promises';
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const sanitizeName = require('../../lib/sanitize-name');
+import * as sanitizeName from '../../lib/sanitize-name';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -104,4 +105,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

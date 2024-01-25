@@ -1,0 +1,72 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm bg-light py-4 px-4 border">
+      <h6 style="display:inline"><b>Group name: </b></h6>
+      <p style="display:inline" id="group-name"><%= groupName %></p><br>
+    <% if (groupConfig.student_authz_join) { %>
+      <h6 style="display:inline"><b>Join code: </b></h6>
+      <p style="display:inline" id='join-code'><%= joinCode %></p><br><br>
+      <p>
+        <% if (groupConfig.minimum > 1) { %>
+        This is a group assessment. Use your join code to invite others to join the group.
+        A group must have <% if (groupConfig.minimum === groupConfig.maximum) { %><%= groupConfig.minimum %><% } else if (groupConfig.maximum) { %>between <%= groupConfig.minimum %> and <%= groupConfig.maximum %><% } else { %>at least <%= groupConfig.minimum %><% } %> students.
+        <% } else { %>
+        This assessment can be done individually or in groups. Use your join code if you wish to invite others to join the group.
+        <% if (groupConfig.maximum) { %>A group must have no more than <%= groupConfig.maximum %> students.<% } %>
+        <% } %>
+      </p>
+    <% } %>
+    </div>
+    <div class="col-sm bg-light py-4 px-4 border">
+      <% if (groupConfig.student_authz_leave) { %>
+      <div style="display: flex; justify-content: flex-end">
+        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#leaveModal">
+          Leave the Group
+        </button>
+        <!-- Modal -->
+        <div class="modal fade" id="leaveModal" tabindex="-1" role="dialog" aria-labelledby="leaveModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="leaveModalLabel">Confirm leave group</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to leave the group?</p>
+                <p>You will lose access to any work done by the group and you might not be able to re-join later.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <form name="leave-group-form" method="POST">
+                  <input type="hidden" name="__action" value="leave_group">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } %>
+      <span id='group-member'><b>Group members: </b></span>
+      <% groupMembers.forEach(function(user) {%>
+      <% if (groupConfig.has_roles) { %>
+        <li><%= user.uid %> - <%= rolesInfo.roleAssignments[user.uid] ? rolesInfo.roleAssignments[user.uid].map((a) => a.role_name).join(", ") : "None"%></li>
+      <% } else { %>
+        <li><%= user.uid %></li>
+      <% } %>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<% if (groupConfig.has_roles) { %>
+  <%- include('../partials/groupRoleTable.ejs'); %>
+<% } %>
+<script>
+  $(function () {
+    $('[data-toggle="popover"]').popover({ sanitize: false })
+  });
+</script>

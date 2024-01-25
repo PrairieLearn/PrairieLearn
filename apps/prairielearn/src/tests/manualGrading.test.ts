@@ -107,6 +107,7 @@ async function submitGradeForm(
   const params = new URLSearchParams({
     __action: 'add_manual_grade',
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    submission_id: form.find('input[name=submission_id]').attr('value') || '',
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
     score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
     score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
@@ -742,6 +743,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -784,6 +786,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.5',
               max_extra_points: '0.5',
@@ -823,6 +826,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -892,6 +896,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -969,6 +974,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',

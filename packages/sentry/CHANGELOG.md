@@ -1,5 +1,17 @@
 # @prairielearn/sentry
 
+## 1.2.0
+
+### Minor Changes
+
+- eebc7f9: Export `getCurrentScope` function
+
+## 1.1.5
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
 ## 1.1.4
 
 ### Patch Changes

@@ -1,16 +1,17 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
-const { parseISO, formatDistance } = require('date-fns');
-const express = require('express');
-const router = express.Router();
+import { parseISO, formatDistance } from 'date-fns';
+import * as express from 'express';
 const SearchString = require('search-string');
 
-const error = require('@prairielearn/error');
-const paginate = require('../../lib/paginate');
-const sqldb = require('@prairielearn/postgres');
-const { idsEqual } = require('../../lib/id');
-const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
+import * as error from '@prairielearn/error';
+import * as paginate from '../../lib/paginate';
+import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from '../../lib/id';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const PAGE_SIZE = 100;
@@ -34,6 +35,9 @@ function formatForLikeClause(str) {
 
 function parseRawQuery(str) {
   const parsedQuery = SearchString.parse(str);
+  /**
+   * @type {{filter_is_open: boolean | null, filter_is_closed: boolean | null, filter_manually_reported: boolean | null, filter_automatically_reported: boolean | null, filter_qids: string[] | null, filter_not_qids: string[] | null, filter_query_text: string | null, filter_users: string[] | null, filter_not_users: string[] | null}}
+   */
   const filters = {
     filter_is_open: null,
     filter_is_closed: null,
@@ -214,7 +218,7 @@ router.get(
     res.locals.rows = issues.rows;
 
     res.locals.filterQuery = req.query.q;
-    res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
+    res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
     res.locals.filters = filters;
 
     res.locals.commonQueries = {};
@@ -266,4 +270,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

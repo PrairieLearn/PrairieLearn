@@ -1,15 +1,14 @@
 -- BLOCK create_migrations_table
-CREATE TABLE IF NOT EXISTS
-  migrations (
-    id BIGSERIAL PRIMARY KEY,
-    filename TEXT,
-    index INTEGER,
-    project TEXT DEFAULT 'prairielearn',
-    applied_at TIMESTAMP WITH TIME ZONE,
-    timestamp TEXT,
-    UNIQUE (project, index),
-    UNIQUE (project, timestamp)
-  );
+CREATE TABLE IF NOT EXISTS migrations (
+  id BIGSERIAL PRIMARY KEY,
+  filename TEXT,
+  index INTEGER,
+  project TEXT DEFAULT 'prairielearn',
+  applied_at TIMESTAMP WITH TIME ZONE,
+  timestamp TEXT,
+  UNIQUE (project, index),
+  UNIQUE (project, timestamp)
+);
 
 -- BLOCK add_projects_column
 ALTER TABLE migrations
