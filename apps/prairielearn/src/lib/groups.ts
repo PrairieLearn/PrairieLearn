@@ -82,7 +82,7 @@ interface GroupRoleAssignment {
 
 const GroupForUpdateSchema = GroupSchema.extend({
   cur_size: z.number(),
-  max_size: z.number(),
+  max_size: z.number().nullable(),
   has_roles: z.boolean(),
 });
 
@@ -250,7 +250,7 @@ export async function addUserToGroup({
       }
     }
 
-    if (enforceGroupSize && group.cur_size >= group.max_size) {
+    if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
       throw new GroupOperationError(`Group is already full.`);
     }
 
