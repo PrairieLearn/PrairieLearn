@@ -58,11 +58,17 @@ WITH
       ai.id
   )
 INSERT INTO
-  assessment_state_logs (open, assessment_instance_id, auth_user_id)
+  assessment_state_logs (
+    open,
+    assessment_instance_id,
+    auth_user_id,
+    client_fingerprint_id
+  )
 SELECT
   FALSE,
   updated_assessment_instance.id,
-  $authn_user_id
+  $authn_user_id,
+  $client_fingerprint_id
 FROM
   updated_assessment_instance;
 
@@ -160,6 +166,46 @@ FROM
   assessments_duration_stats ($assessment_id) AS duration_stats
 WHERE
   a.id = $assessment_id;
+
+-- BLOCK select_and_lock_assessment_instance_max_points
+SELECT
+  ai.max_points
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK update_assessment_instance_score
+WITH
+  updated_assessment_instances AS (
+    UPDATE assessment_instances AS ai
+    SET
+      points = $points,
+      score_perc = $score_perc,
+      modified_at = now()
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.*
+  )
+INSERT INTO
+  assessment_score_logs (
+    assessment_instance_id,
+    auth_user_id,
+    max_points,
+    points,
+    score_perc
+  )
+SELECT
+  ai.id,
+  $authn_user_id,
+  ai.max_points,
+  ai.points,
+  ai.score_perc
+FROM
+  updated_assessment_instances AS ai;
 
 -- BLOCK assessment_instance_log
 WITH
@@ -260,6 +306,34 @@ WITH
         LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
+    )
+    UNION
+    (
+      SELECT
+        2.5 AS event_order,
+        'Broken variant'::TEXT AS event_name,
+        'red3'::TEXT AS event_color,
+        v.broken_at AS date,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid AS qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        NULL::INTEGER AS submission_id,
+        v.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
+        NULL::JSONB AS data
+      FROM
+        variants AS v
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.user_id = v.broken_by)
+      WHERE
+        v.broken_at IS NOT NULL
+        AND iq.assessment_instance_id = $assessment_instance_id
     )
     UNION
     (
@@ -727,6 +801,7 @@ SELECT
   el.submission_id,
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
+  NULL AS client_fingerprint_number,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,

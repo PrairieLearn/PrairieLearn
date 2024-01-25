@@ -1,10 +1,5 @@
 import { assert } from 'chai';
-import {
-  makePostgresTestUtils,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-} from '@prairielearn/postgres';
+import { makePostgresTestUtils, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as error from '@prairielearn/error';
 
@@ -54,7 +49,7 @@ function makeTestBatchMigration() {
 }
 
 async function getBatchedMigration(migrationId: string) {
-  return queryValidatedOneRow(
+  return await queryRow(
     'SELECT * FROM batched_migrations WHERE id = $id;',
     { id: migrationId },
     BatchedMigrationRowSchema,
@@ -62,7 +57,7 @@ async function getBatchedMigration(migrationId: string) {
 }
 
 async function getBatchedMigrationJobs(migrationId: string) {
-  return queryValidatedRows(
+  return await queryRows(
     'SELECT * FROM batched_migration_jobs WHERE batched_migration_id = $batched_migration_id ORDER BY id ASC;',
     { batched_migration_id: migrationId },
     BatchedMigrationJobRowSchema,
