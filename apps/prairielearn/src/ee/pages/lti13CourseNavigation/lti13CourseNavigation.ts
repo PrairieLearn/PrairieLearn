@@ -60,7 +60,7 @@ router.get(
         // TODO: Set course/instance staff permissions for LMS course staff here?
       }
 
-      // LTI claims not used after this page so remove them from the session
+      // LTI claims are not used after this page so remove them from the session
       LTI.remove();
 
       // Redirect to linked course instance
@@ -128,7 +128,7 @@ router.post(
       throw error.make(403, 'Permission denied');
     }
 
-    // Mapping of lti13_instance to institution to course instance?
+    // TODO: Mapping of lti13_instance to institution to course instance?
 
     const ci_role_instructor = await callRow(
       'users_is_instructor_in_course_instance',
