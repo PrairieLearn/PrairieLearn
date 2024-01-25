@@ -28,10 +28,12 @@ router.get(
       CourseRequestSchema,
     );
 
-    res.send(RequestCourse({
-      course_requests,
-      resLocals: res.locals
-    }));
+    res.send(
+      RequestCourse({
+        course_requests,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
