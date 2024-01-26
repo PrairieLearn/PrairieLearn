@@ -72,7 +72,7 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset(
     [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
 )
-RANKING_DAG_ORDERED_GRADING_TYPE = frozenset(
+LCS_GRADABLE_TYPE = frozenset(
     [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
 )
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
@@ -180,7 +180,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
 
-    if grading_method not in RANKING_DAG_ORDERED_GRADING_TYPE and pl.has_attrib(
+    if grading_method not in LCS_GRADABLE_TYPE and pl.has_attrib(
         element, "partial-credit"
     ):
         raise Exception(
@@ -677,7 +677,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
-    if grading_method in RANKING_DAG_ORDERED_GRADING_TYPE:
+    if grading_method in LCS_GRADABLE_TYPE:
         for answer in student_answer:
             matching_block = next(
                 (
@@ -810,7 +810,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method in RANKING_DAG_ORDERED_GRADING_TYPE:
+    elif grading_method in LCS_GRADABLE_TYPE:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
@@ -965,7 +965,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             (
-                grading_method in RANKING_DAG_ORDERED_GRADING_TYPE
+                grading_method in LCS_GRADABLE_TYPE
                 and partial_credit_type is PartialCreditType.LCS
             )
         ):
