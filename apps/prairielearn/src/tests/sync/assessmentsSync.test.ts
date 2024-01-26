@@ -655,15 +655,13 @@ describe('Assessment syncing', () => {
     assert.isDefined(recorder);
     assert.equal(recorder?.minimum, 1);
     assert.equal(recorder?.maximum, 4);
-    assert.isTrue(recorder?.can_assign_roles_at_start);
-    assert.isTrue(recorder?.can_assign_roles_during_assessment);
+    assert.isTrue(recorder?.can_assign_roles);
 
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
     assert.isOk(contributor);
     assert.equal(contributor?.minimum, 0);
     assert.equal(contributor?.maximum, null);
-    assert.isFalse(contributor?.can_assign_roles_at_start);
-    assert.isFalse(contributor?.can_assign_roles_during_assessment);
+    assert.isFalse(contributor?.can_assign_roles);
   });
 
   it('syncs group roles and valid question-level permissions correctly', async () => {

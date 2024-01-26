@@ -82,6 +82,10 @@ SELECT
   COALESCE(gur.count, 0) AS count,
   gr.maximum,
   gr.minimum,
+  -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
+  -- course may not have synced with the new code yet. Use the old
+  -- can_assign_roles_at_start column instead for now. This will be replaced in
+  -- a future version.
   gr.can_assign_roles_at_start AS can_assign_roles
 FROM
   get_assessment_id
@@ -191,6 +195,10 @@ WITH
     SELECT
       gr.id,
       (
+        -- The can_assign_roles column is not yet guaranteed to be up-to-date,
+        -- as the course may not have synced with the new code yet. Use the old
+        -- can_assign_roles_at_start column instead for now. This will be
+        -- replaced in a future version.
         gr.can_assign_roles_at_start
         AND COALESCE($cur_size::INT, 0) = 0
       ) AS assigner_role_needed,

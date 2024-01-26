@@ -180,11 +180,6 @@
           "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
           "default": false
-        },
-        "canSubmitAssessment": {
-          "description": "Whether users with this role can submit an answer to a question.",
-          "type": "boolean",
-          "default": true
         }
       }
     },
