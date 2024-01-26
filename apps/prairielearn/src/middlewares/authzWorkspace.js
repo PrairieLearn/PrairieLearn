@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 const { promisify } = require('util');
 
 const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+const error = require('@prairielearn/error');
 
 const { isEnterprise } = require('../lib/license');
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
@@ -16,11 +16,21 @@ const authzHasCoursePreviewOrInstanceView = promisify(
   require('./authzHasCoursePreviewOrInstanceView'),
 );
 
+const sql = sqldb.loadSqlEquiv(__filename);
+
 module.exports = asyncHandler(async (req, res, next) => {
   // We rely on having res.locals.workspace_id already set to the correct value here
-  const result = await sqldb.queryOneRowAsync(sql.select_auth_data_from_workspace, {
+  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_auth_data_from_workspace, {
     workspace_id: res.locals.workspace_id,
   });
+
+  if (result.rows.length === 0) {
+    // We couldn't find the workspace. Someone could have put in a bad workspace ID,
+    // or there could be a dangling workspace after a variant was deleted. Either way,
+    // translate this to a 404 to keep the error out of or monitoring.
+    throw error.make(404, 'Workspace not found');
+  }
+
   _.assign(res.locals, result.rows[0]);
 
   if (res.locals.course_instance_id) {
