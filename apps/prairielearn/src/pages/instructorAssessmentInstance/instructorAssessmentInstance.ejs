@@ -5,15 +5,45 @@
     <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
     <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
+    <%- compiled_script_tag('instructorAssessmentInstanceClient.ts') %>
   </head>
   <body>
     <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
+      $(() => {
+        $('[data-toggle="popover"]').popover({ sanitize: false });
       });
     </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
+    <% var assessmentInstanceOwner = assessment.group_work ? instance_group.name : instance_user.name; %>
     <main id="content" class="container-fluid">
+      <div class="modal fade" id="resetQuestionVariantsModal" tabindex="-1" role="dialog" aria-labelledby="resetQuestionVariantsModalLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="resetQuestionVariantsModalLabel">Confirm reset question variants</h4>
+            </div>
+            <div class="modal-body">
+              <p>
+                Are your sure you want to reset all current variants of this question for this <%= assessment.group_work ? "group" : "student" %>?
+                <strong>All ungraded attempts will be lost.</strong>
+              </p>
+              <p>
+                This <%= assessment.group_work ? "group" : "student" %> will receive a new variant the next time they view this question.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <form name="reset-question-variants-form" method="POST">
+                <input type="hidden" name="__action" value="reset_question_variants">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" value="">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Reset question variants</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
@@ -40,6 +70,20 @@
             <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
             </td></tr>
+            <% if (instance_user) { %>
+            <tr>
+              <th>Fingerprint Changes</th>
+              <td colspan="2">
+                <%= assessment_instance.client_fingerprint_id_change_count %>
+                <a tabindex="0" class="btn btn-xs" role="button"
+                      data-toggle="popover" data-trigger="focus" data-container="body"
+                      data-html="true" title="Client Fingerprint Changes"
+                      data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
+                  ><i class="fa fa-question-circle"></i></a>
+              </td>
+            </tr>
+            <% } %>
+            
             <tr>
               <th>Points</th>
               <td colspan="2">
@@ -126,8 +170,8 @@
               <th class="text-center" colspan="2">
                 Percentage score
               </th>
-              <th>
-              </th>
+              <th><%# Manual grading column %></th>
+              <th class="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -224,6 +268,26 @@
                 <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">Manual grading</a>
                 <% } %>
               </td>
+              <td class="text-right">
+                <div class="dropdown js-question-actions">
+                  <button type="button" class="btn btn-secondary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Action <span class="caret"></span>
+                  </button>
+
+                  <div class="dropdown-menu dropdown-menu-right">
+                    <% if (authz_data.has_course_instance_permission_edit) { %>
+                      <button
+                        class="dropdown-item"
+                        data-toggle="modal"
+                        data-target="#resetQuestionVariantsModal"
+                        data-instance-question-id="<%= instance_question.id %>"
+                      >
+                        Reset question variants
+                      </button>
+                    <% } %>
+                  </div>
+                </div>
+              </td>
             </tr>
             <% }); %>
           </tbody>
@@ -307,6 +371,7 @@
             <tr>
               <th>Time</th>
               <th>User</th>
+              <th>Fingerprint</th>
               <th>Event</th>
               <th>Instructor question</th>
               <th>Student question</th>
@@ -314,10 +379,41 @@
             </tr>
           </thead>
           <tbody>
-            <% log.forEach(function(row) { %>
+            <%const fingerprint_colors = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2']; %>
+            <% log.forEach(function(row, index) { %>
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
-              <td><%= row.auth_user_uid %></td>
+              <td>
+                <% if (row.auth_user_uid) { %>
+                  <%= row.auth_user_uid %>
+                <% } else { %>
+                  &mdash;
+                <% } %>
+              </td>
+              <% if (row.client_fingerprint) { %>
+              <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %> color-hover"
+                role="button"
+                id="fingerprintPopover<%= row.client_fingerprint?.id %>"
+                data-toggle="popover" data-container="body"
+                data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_number%>"
+                data-content="
+                  <div>
+                    IP Address: <%= row.client_fingerprint?.ip_address %>
+                  </div>
+                  <div>
+                    Session ID: <%= row.client_fingerprint?.user_session_id %>
+                  </div>
+                  <div>
+                    User Agent: <%= row.client_fingerprint?.user_agent %>
+                  </div>
+                "
+                data-trigger="focus" >
+               <%= row.client_fingerprint_number %>
+                </a>
+              </td>
+              <% } else { %>
+              <td>&mdash;</td>
+              <% } %>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
               <td>
                 <% if (row.qid) { %>

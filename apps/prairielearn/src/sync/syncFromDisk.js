@@ -1,25 +1,26 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const util = require('util');
+import { callbackify, promisify } from 'node:util';
 
-const namedLocks = require('@prairielearn/named-locks');
-const courseDB = require('./course-db');
-const sqldb = require('@prairielearn/postgres');
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
+import * as courseDB from './course-db';
+import * as syncCourseInfo from './fromDisk/courseInfo';
+import * as syncCourseInstances from './fromDisk/courseInstances';
+import * as syncTopics from './fromDisk/topics';
+import * as syncQuestions from './fromDisk/questions';
+import * as syncTags from './fromDisk/tags';
+import * as syncAssessmentSets from './fromDisk/assessmentSets';
+import * as syncAssessmentModules from './fromDisk/assessmentModules';
+import * as syncAssessments from './fromDisk/assessments';
+import { flushElementCache } from '../question-servers/freeform';
+import { makePerformance } from './performance';
+import { chalk, chalkDim } from '../lib/chalk';
+import { getLockNameForCoursePath } from '../models/course';
 
-const syncCourseInfo = require('./fromDisk/courseInfo');
-const syncCourseInstances = require('./fromDisk/courseInstances');
-const syncTopics = require('./fromDisk/topics');
-const syncQuestions = require('./fromDisk/questions');
-const syncTags = require('./fromDisk/tags');
-const syncAssessmentSets = require('./fromDisk/assessmentSets');
-const syncAssessmentModules = require('./fromDisk/assessmentModules');
-const syncAssessments = require('./fromDisk/assessments');
-const freeformServer = require('../question-servers/freeform');
-const perf = require('./performance')('sync');
-const { chalk, chalkDim } = require('../lib/chalk');
-const { getLockNameForCoursePath } = require('../lib/course');
+const perf = makePerformance('sync');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
@@ -38,7 +39,7 @@ const { getLockNameForCoursePath } = require('../lib/course');
  * @param {any} logger
  * @returns Promise<SyncResults>
  */
-async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+export async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   logger.info('Loading info.json files from course repository');
   perf.start('sync');
 
@@ -77,7 +78,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.end('syncAssessments');
   if (config.devMode) {
     logger.info('Flushing course element and extensions cache...');
-    freeformServer.flushElementCache();
+    flushElementCache();
   }
   const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
   const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
@@ -114,13 +115,11 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
  * @param {any} logger
  * @param {(err: Error | null, result: SyncResults) => void} callback
  */
-module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, callback) {
-  util.callbackify(async () => {
+function _syncDiskToSqlWithLock(courseDir, course_id, logger, callback) {
+  callbackify(async () => {
     return await syncDiskToSqlWithLock(courseDir, course_id, logger);
   })(callback);
-};
-
-module.exports.syncDiskToSqlWithLock = syncDiskToSqlWithLock;
+}
 
 /**
  * @param {string} courseDir
@@ -138,7 +137,7 @@ function syncDiskToSql(courseDir, course_id, logger, callback) {
       callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
     } else {
       logger.verbose(chalkDim(`Acquired lock ${lockName}`));
-      module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
+      _syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
         namedLocks.releaseLock(lock, (lockErr) => {
           if (ERR(lockErr, callback)) return;
           if (ERR(err, callback)) return;
@@ -156,19 +155,18 @@ function syncDiskToSql(courseDir, course_id, logger, callback) {
  * @param {any} logger
  * @returns {Promise<SyncResults>}
  */
-function syncDiskToSqlAsync(courseDir, course_id, logger) {
+export function syncDiskToSqlAsync(courseDir, course_id, logger) {
   // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
   // that it'll always result in a non-undefined value if it doesn't error.
-  return util.promisify(syncDiskToSql)(courseDir, course_id, logger);
+  return promisify(syncDiskToSql)(courseDir, course_id, logger);
 }
-module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
 /**
  * @param {string} courseDir
  * @param {any} logger
  * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
-module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
+export function syncOrCreateDiskToSql(courseDir, logger, callback) {
   sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
     if (ERR(err, callback)) return;
     const course_id = result.rows[0].course_id;
@@ -177,5 +175,5 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
       callback(null, result);
     });
   });
-};
-module.exports.syncOrCreateDiskToSqlAsync = util.promisify(module.exports.syncOrCreateDiskToSql);
+}
+export const syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);

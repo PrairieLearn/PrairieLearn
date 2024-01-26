@@ -1,36 +1,37 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const util = require('util');
+import * as util from 'node:util';
 const express = require('express');
-const http = require('http');
-const fetch = require('node-fetch').default;
-const path = require('path');
-const { S3 } = require('@aws-sdk/client-s3');
-const { Upload } = require('@aws-sdk/lib-storage');
+import * as http from 'node:http';
+import fetch from 'node-fetch';
+import * as path from 'node:path';
+import { S3 } from '@aws-sdk/client-s3';
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Upload } from '@aws-sdk/lib-storage';
 const Docker = require('dockerode');
-const fs = require('fs');
-const async = require('async');
-const fsPromises = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
+import * as fs from 'node:fs';
+import * as async from 'async';
+import * as fsPromises from 'node:fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 const argv = require('yargs-parser')(process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
-const net = require('net');
+import * as net from 'node:net';
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
-const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
-const workspaceUtils = require('@prairielearn/workspace-utils');
+import { Mutex } from 'async-mutex';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-const { config, loadConfig } = require('./lib/config');
-const { parseDockerLogs } = require('./lib/docker');
-const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig } = require('./lib/aws');
-const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
+import { config, loadConfig } from './lib/config';
+import { parseDockerLogs } from './lib/docker';
+import * as socketServer from './lib/socket-server';
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const docker = new Docker();
@@ -177,7 +178,7 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => socketServer.init(server),
+    async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
       // Set up a periodic pruning of running containers
@@ -575,7 +576,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;
@@ -793,6 +795,14 @@ function _createContainer(workspace, callback) {
               PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
@@ -910,11 +920,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, {
-        workspace_id,
-        hostname,
-      });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
@@ -930,7 +935,36 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+
+      // Before we transition this workspace to running, check that the container
+      // we just launched is the same one that this workspace is still assigned to.
+      // To be more precise, we'll check that the container's launch_uuid matches
+      // the current launch_uuid for this workspace. If they don't match, then
+      // the workspace was relaunched while we were initializing it, and we should
+      // abandon it.
+      //
+      // We don't have to explicitly kill the container here - our usual
+      // background maintenance processes will soon notice that this container
+      // should not be running on this host and kill it.
+      await sqldb.runInTransactionAsync(async () => {
+        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
+          workspace_id: workspace.id,
+        });
+        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        if (launch_uuid !== workspace.launch_uuid) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+          );
+          return;
+        }
+
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+        await sqldb.queryAsync(sql.update_workspace_hostname, {
+          workspace_id,
+          hostname,
+        });
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      });
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
@@ -938,7 +972,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         'stopped',
         `Error starting container. Click "Reboot" to try again.`,
       );
-      return; // don't set host to unhealthy
+
+      // Immediately kill and remove the container, which will flush any
+      // logs to S3 for better debugging.
+      await dockerAttemptKillAndRemove(workspace.container);
+
+      // Don't set host to unhealthy.
+      return;
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);

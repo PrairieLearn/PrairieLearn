@@ -2,7 +2,7 @@ columns
     course_instance_id: bigint not null
     end_date: timestamp with time zone
     id: bigint not null default nextval('course_instance_access_rules_id_seq'::regclass)
-    institution: text default 'UIUC'::text
+    institution: text
     number: integer
     role: enum_role
     start_date: timestamp with time zone

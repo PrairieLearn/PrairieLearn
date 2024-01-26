@@ -1,6 +1,7 @@
 columns
     assessment_instance_id: bigint not null
     auth_user_id: bigint
+    client_fingerprint_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
     date_limit: timestamp with time zone
     id: bigint not null default nextval('assessment_state_logs_id_seq'::regclass)
@@ -13,3 +14,4 @@ indexes
 foreign-key constraints
     assessment_state_logs_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_state_logs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_state_logs_client_fingerprint_id_fkey: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL

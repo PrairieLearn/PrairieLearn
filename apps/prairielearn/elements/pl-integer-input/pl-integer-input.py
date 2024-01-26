@@ -1,6 +1,5 @@
 import random
 from enum import Enum
-from html import escape
 from typing import Any
 
 import chevron
@@ -68,7 +67,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
     # Test conversion, but leave as string so proper value is shown on answer panel
-    if correct_answer is not None:
+    if correct_answer is not None and not isinstance(correct_answer, int):
         try:
             int(str(correct_answer), base)
         except Exception:
@@ -89,10 +88,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     parse_error = data["format_errors"].get(name)
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    score = data["partial_scores"].get(name, {"score": None}).get("score")
+
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
         # Get info strings
         info_params = {
@@ -101,8 +104,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "default_base": base == BASE_DEFAULT or base == 0,
             "zero_base": base == 0,
         }
-        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
+
+        info = chevron.render(template, info_params).strip()
 
         if pl.has_attrib(element, "placeholder"):
             placeholder = pl.get_string_attrib(element, "placeholder")
@@ -126,18 +129,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "parse_error": parse_error,
             "use_numeric": True if 1 <= base <= 10 else False,
+            "raw_submitted_answer": raw_submitted_answer,
         }
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         html_params = {
@@ -174,13 +173,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
                 )
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score")
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -190,8 +186,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "missing_input", False
         )
 
-        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
         a_tru = pl.from_json(data["correct_answers"].get(name))
@@ -208,8 +203,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": a_tru_str,
             "suffix": suffix,
         }
-        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -229,6 +224,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     a_sub = str(a_sub)
 
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
+
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
             a_sub = str(
@@ -242,26 +240,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "default_base": base == BASE_DEFAULT or base == 0,
                 "zero_base": base == 0,
             }
-            with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                format_str = chevron.render(f, opts).strip()
-                data["format_errors"][name] = format_str
-                data["submitted_answers"][name] = None
+
+            data["format_errors"][name] = chevron.render(template, opts).strip()
+            data["submitted_answers"][name] = None
             return
 
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
     if a_sub_parsed is None:
-        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            format_str = chevron.render(
-                f,
-                {
-                    "format_error": True,
-                    "base": base,
-                    "default_base": base == BASE_DEFAULT or base == 0,
-                    "zero_base": base == 0,
-                },
-            ).strip()
-        data["format_errors"][name] = format_str
+        opts = {
+            "format_error": True,
+            "base": base,
+            "default_base": base == BASE_DEFAULT or base == 0,
+            "zero_base": base == 0,
+        }
+
+        data["format_errors"][name] = chevron.render(template, opts).strip()
         data["submitted_answers"][name] = None
     elif not pl.is_int_json_serializable(a_sub_parsed):
         data["submitted_answers"][name] = a_sub

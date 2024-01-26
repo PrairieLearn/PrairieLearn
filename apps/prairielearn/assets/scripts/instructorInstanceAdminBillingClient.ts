@@ -14,6 +14,8 @@ onDocumentReady(() => {
   const studentBillingCheckbox = document.querySelector<HTMLInputElement>('#studentBillingEnabled');
   const computeCheckbox = document.querySelector<HTMLInputElement>('#computeEnabled');
 
+  if (!billingForm || !studentBillingCheckbox || !computeCheckbox) return;
+
   billingForm.addEventListener('change', () => {
     const basicPlanEnabled = studentBillingCheckbox.checked;
     const computePlanEnabled = computeCheckbox.checked;

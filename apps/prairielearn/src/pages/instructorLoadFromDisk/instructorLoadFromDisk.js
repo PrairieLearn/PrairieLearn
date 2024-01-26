@@ -1,17 +1,18 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const express = require('express');
-const router = express.Router();
+import * as async from 'async';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as express from 'express';
 
-const { config } = require('../../lib/config');
-const { createServerJob } = require('../../lib/server-jobs');
-const syncFromDisk = require('../../sync/syncFromDisk');
-const chunks = require('../../lib/chunks');
-const { chalk } = require('../../lib/chalk');
-const { REPOSITORY_ROOT_PATH } = require('../../lib/paths');
+import { config } from '../../lib/config';
+import { createServerJob } from '../../lib/server-jobs';
+import * as syncFromDisk from '../../sync/syncFromDisk';
+import * as chunks from '../../lib/chunks';
+import { chalk } from '../../lib/chalk';
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths';
+
+const router = express.Router();
 
 async function update(locals) {
   const serverJob = await createServerJob({
@@ -67,4 +68,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

@@ -1,15 +1,15 @@
-import async = require('async');
+import * as async from 'async';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
 import fetch from 'node-fetch';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../lib/config';
 import { makeAwsClientConfig } from '../lib/aws';
-import workspaceHelper = require('../lib/workspace');
-import workspaceHostUtils = require('../lib/workspaceHost');
+import * as workspaceHostUtils from '../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -81,7 +81,7 @@ async function checkDBConsistency() {
       Array.from(hostsNotInEc2),
     );
     stoppedWorkspaces.forEach((workspace) => {
-      workspaceHelper.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
+      workspaceUtils.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
         workspace_id: workspace.workspace_id,
         state: workspace.state,
         message: workspace.message,

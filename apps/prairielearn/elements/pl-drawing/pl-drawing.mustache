@@ -42,7 +42,7 @@
 </div>
 <script>
  (function() {
-     let element = document.currentScript.previousElementSibling;
+     let element = document.getElementById("pl-drawing-{{uuid}}");
      let options = JSON.parse(`{{{options_json}}}`);
      {{^input_answer}}
      let submitted_answer = null;

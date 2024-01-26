@@ -81,4 +81,6 @@ export {
   deepReadDirSync,
   Integrations,
   Handlers,
+  runWithAsyncContext,
+  getCurrentScope,
 } from '@sentry/node';

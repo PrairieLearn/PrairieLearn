@@ -79,7 +79,7 @@ console.log(result.rows);
 
 The `queryAsync` function returns a [`pg.Result`](https://node-postgres.com/apis/result) object; see linked documentation for a list of additional properties that are available on that object.
 
-There are a variety of utility methods that can make assertions about the results:
+There are also utility methods that can make assertions about the results:
 
 - `queryOneRowAsync`: Throws an error if the result doesn't have exactly one row.
 - `queryZeroOrOneRowAsync`: Throws an error if the result has more than one row.
@@ -116,7 +116,7 @@ For increased safety and confidence, you can describe the shape of data you expe
 
 ```ts
 import { z } from 'zod';
-import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryRow, queryOptionalRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -126,11 +126,45 @@ const User = z.object({
   age: z.number(),
 });
 
-const users = await queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
-console.log(users[0].name);
+// Get all users. Returns an array of objects.
+const users = await queryRows(sql.select_users, User);
+
+// Get single user. Returns a single object.
+const user = await queryRow(sql.select_user, { user_id: '1' }, User);
+
+// Get a user that may not exist. Returns `null` if the user cannot be found.
+const maybeUser = await queryOptionalRow(sql.select_user, { user_id: '1' }, User);
+
+// Call a stored procedure. Return value is equivalent to the functions above.
+const users = await callRows('select_users', User);
+const user = await callRow('select_user', ['1'], User);
+const maybeUser = await callOptionalRow('select_user', ['1'], User);
 ```
 
-As with the non-validated query functions, there are several variants available:
+These functions have some behaviors that can make them more convenient to work with:
+
+- Passing an object or array with parameters is optional.
+
+- If the query returns a single column, that column is validated and returned directly. For example, consider the following query:
+
+  ```sql
+  -- BLOCK select_user_names
+  SELECT
+    name
+  FROM
+    users;
+  ```
+
+  If we then use that query with `queryRows`, the returned Promise resolves to an array of strings:
+
+  ```ts
+  const userNames = await queryRows(sql.select_user_names, z.string());
+
+  // Prints something like `["Alice", "Bob"]`.
+  console.log(userNames);
+  ```
+
+There are also a number of legacy functions available, though these are discouraged in new code.
 
 - `queryValidatedRows`
 - `queryValidatedOneRow`
@@ -141,6 +175,8 @@ As with the non-validated query functions, there are several variants available:
 - `callValidatedRows`
 - `callValidatedOneRow`
 - `callValidatedZeroOrOneRow`
+
+For details on the behavior of these functions, see the source code.
 
 ### Transactions
 
