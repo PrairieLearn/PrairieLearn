@@ -176,18 +176,13 @@
           "description": "The maximum number of users that should be in this role in a group.",
           "type": "number"
         },
-        "canAssignRolesAtStart": {
-          "description": "Whether users with this role can assign other users' group roles before the assessment starts.",
-          "type": "boolean",
-          "default": false
-        },
-        "canAssignRolesDuringAssessment": {
-          "description": "Whether users with this role can assign other users' group roles during an assessment.",
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
           "default": false
         },
         "canSubmitAssessment": {
-          "description": "Whether users with this role can press the 'Save and Grade All' button in an exam.",
+          "description": "Whether users with this role can submit an answer to a question.",
           "type": "boolean",
           "default": true
         }

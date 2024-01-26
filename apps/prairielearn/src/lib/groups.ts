@@ -46,16 +46,9 @@ const GroupRoleSchema = z.object({
   count: z.coerce.number(),
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
-  can_assign_roles_at_start: z.boolean(),
-  can_assign_roles_during_assessment: z.boolean(),
+  can_assign_roles: z.boolean(),
 });
 type GroupRole = z.infer<typeof GroupRoleSchema>;
-
-const AssessmentLevelPermissionsSchema = z.object({
-  can_assign_roles_at_start: z.boolean().nullable(),
-  can_assign_roles_during_assessment: z.boolean().nullable(),
-});
-type AssessmentLevelPermissions = z.infer<typeof AssessmentLevelPermissionsSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;
@@ -529,15 +522,23 @@ export async function leaveGroup(
   });
 }
 
-export async function getAssessmentPermissions(
-  assessmentId: string,
-  userId: string,
-): Promise<AssessmentLevelPermissions> {
-  return await sqldb.queryRow(
-    sql.get_assessment_level_permissions,
-    { assessment_id: assessmentId, user_id: userId },
-    AssessmentLevelPermissionsSchema,
-  );
+export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): boolean {
+  const assignerRoles =
+    groupInfo.rolesInfo?.groupRoles
+      .filter((role) => role.can_assign_roles)
+      .map((role) => role.id) ?? [];
+  const assignerUsers = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {})
+    .flat()
+    .filter((assignment) => assignerRoles.some((id) => idsEqual(id, assignment.group_role_id)))
+    .map((assignment) => assignment.user_id);
+  if (assignerUsers.length === 0) {
+    // If none of the current users in the group has an assigner role, allow any
+    // user to assign roles by default
+    return true;
+  } else {
+    // Otherwise, check if current user is in the list of assigner users
+    return assignerUsers.some((id) => idsEqual(id, user_id));
+  }
 }
 
 /**
@@ -552,18 +553,12 @@ export async function updateGroupRoles(
   authnUserId: string,
 ) {
   await sqldb.runInTransactionAsync(async () => {
-    if (!hasStaffPermission) {
-      const permissions = await getAssessmentPermissions(assessmentId, userId);
-      if (!permissions.can_assign_roles_at_start) {
-        throw error.make(
-          403,
-          'User does not have permission to assign roles at the start of this assessment',
-        );
-      }
-    }
-
     const groupConfig = await getGroupConfig(assessmentId);
     const groupInfo = await getGroupInfo(groupId, groupConfig);
+
+    if (!hasStaffPermission && !canUserAssignGroupRoles(groupInfo, userId)) {
+      throw error.make(403, 'User does not have permission to assign roles');
+    }
 
     // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
@@ -585,7 +580,7 @@ export async function updateGroupRoles(
     // If no one is being given a role with assigner permissions, give that role to the current user
     const assignerRoleIds =
       groupInfo.rolesInfo?.groupRoles
-        .filter((role) => role.can_assign_roles_at_start)
+        .filter((role) => role.can_assign_roles)
         .map((role) => role.id) ?? [];
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
       assignerRoleIds.includes(roleAssignment.group_role_id),

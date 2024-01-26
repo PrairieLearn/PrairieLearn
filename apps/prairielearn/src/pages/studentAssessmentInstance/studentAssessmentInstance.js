@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment';
 import {
-  getAssessmentPermissions,
+  canUserAssignGroupRoles,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
@@ -265,11 +265,7 @@ router.get(
       res.locals.used_join_code = req.body.used_join_code;
 
       if (groupConfig.has_roles) {
-        const result = await getAssessmentPermissions(
-          res.locals.assessment.id,
-          res.locals.user.user_id,
-        );
-        res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
+        res.locals.userCanAssignRoles = canUserAssignGroupRoles(groupInfo, res.locals.user.user_id);
 
         res.locals.user_group_roles =
           groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]

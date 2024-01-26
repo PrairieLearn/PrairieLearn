@@ -230,8 +230,8 @@ BEGIN
                     -- Insert default values where necessary
                     CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
                     (group_role->>'maximum')::integer,
-                    CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
-                    CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
+                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END,
+                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
                 DO UPDATE
                 SET

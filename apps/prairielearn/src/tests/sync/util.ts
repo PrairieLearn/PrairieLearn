@@ -68,8 +68,7 @@ export interface GroupRole {
   name: string;
   minimum?: number;
   maximum?: number;
-  canAssignRolesAtStart?: boolean;
-  canAssignRolesDuringAssessment?: boolean;
+  canAssignRoles?: boolean;
   canSubmitAssessment?: boolean;
 }
 
