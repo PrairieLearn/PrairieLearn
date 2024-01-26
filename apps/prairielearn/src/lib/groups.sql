@@ -77,11 +77,8 @@ WITH
       gur.group_role_id
   )
 SELECT
-  gr.id,
-  gr.role_name,
-  COALESCE(gur.count, 0) AS count,
-  gr.maximum,
-  gr.minimum,
+  gr.*,
+  COALESCE(gur.count, 0)::INT AS count,
   -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
   -- course may not have synced with the new code yet. Use the old
   -- can_assign_roles_at_start column instead for now. This will be replaced in

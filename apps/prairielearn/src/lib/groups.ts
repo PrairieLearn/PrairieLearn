@@ -4,7 +4,16 @@ import _ = require('lodash');
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';
-import { GroupSchema, IdSchema, User, UserSchema } from './db-types';
+import {
+  GroupSchema,
+  IdSchema,
+  type User,
+  UserSchema,
+  GroupConfigSchema,
+  type GroupConfig,
+  GroupRoleSchema,
+  type GroupUserRole,
+} from './db-types';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
 import { selectUserByUid } from '../models/user';
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -16,22 +25,6 @@ export class GroupOperationError extends Error {
   }
 }
 
-const GroupConfigSchema = z.object({
-  assessment_id: z.string().nullable(),
-  course_instance_id: z.string(),
-  date: z.date().nullable(),
-  deleted_at: z.date().nullable(),
-  has_roles: z.boolean().nullable(),
-  id: z.string(),
-  maximum: z.number().nullable(),
-  minimum: z.number().nullable(),
-  name: z.string().nullable(),
-  student_authz_create: z.boolean().nullable(),
-  student_authz_join: z.boolean().nullable(),
-  student_authz_leave: z.boolean().nullable(),
-});
-type GroupConfig = z.infer<typeof GroupConfigSchema>;
-
 const RoleAssignmentSchema = z.object({
   user_id: z.string(),
   uid: z.string(),
@@ -40,20 +33,15 @@ const RoleAssignmentSchema = z.object({
 });
 type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
-const GroupRoleSchema = z.object({
-  id: z.string(),
-  role_name: z.string(),
-  count: z.coerce.number(),
-  maximum: z.number().nullable(),
-  minimum: z.number().nullable(),
-  can_assign_roles: z.boolean(),
+const GroupRoleWithCountSchema = GroupRoleSchema.extend({
+  count: z.number(),
 });
-type GroupRole = z.infer<typeof GroupRoleSchema>;
+type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;
-  groupRoles: GroupRole[];
-  validationErrors: GroupRole[];
+  groupRoles: GroupRoleWithCount[];
+  validationErrors: GroupRoleWithCount[];
   disabledRoles: string[];
   rolesAreBalanced: boolean;
   usersWithoutRoles: User[];
@@ -68,10 +56,7 @@ interface GroupInfo {
   rolesInfo?: RolesInfo;
 }
 
-interface GroupRoleAssignment {
-  group_role_id: string;
-  user_id: string;
-}
+type GroupRoleAssignment = Pick<GroupUserRole, 'group_role_id' | 'user_id'>;
 
 const GroupForUpdateSchema = GroupSchema.extend({
   cur_size: z.number(),
@@ -145,7 +130,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
   const groupRoles = await sqldb.queryRows(
     sql.get_group_roles,
     { group_id: groupId },
-    GroupRoleSchema,
+    GroupRoleWithCountSchema,
   );
 
   // Identify errors for any roles where count is not between max and min (if they exist)
