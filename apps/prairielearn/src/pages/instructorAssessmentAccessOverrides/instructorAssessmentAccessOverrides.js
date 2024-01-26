@@ -74,6 +74,25 @@ router.post(
         start_date: new Date(req.body.start_date),
         student_uid: req.body.student_uid,
       };
+      // Validate if group belongs to the assessment
+      if (edit_params.group_name) {
+        const group_result = await sqldb.queryAsync(sql.select_group_in_assessment, {
+          group_name: edit_params.group_name,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_id: res.locals.assessment.id,
+        });
+        // Get the group_id from the result
+        if (group_result.rows.length > 0) {
+          edit_params.group_id = group_result.rows[0].id;
+        } else {
+          edit_params.group_id = null;
+        }
+
+        // If group does not belong to assessments and indirectly course instances, return error
+        if (!edit_params.group_id) {
+          throw error.make(400, 'Group does not belong to the current course instance.');
+        }
+      }
       await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
       res.redirect(req.originalUrl);
     }

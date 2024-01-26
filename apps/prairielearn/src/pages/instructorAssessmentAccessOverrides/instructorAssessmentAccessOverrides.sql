@@ -108,7 +108,14 @@ VALUES
 UPDATE assessment_access_policies
 SET
   created_at = NOW(),
-  created_by = $created_by,
+  created_by = (
+      SELECT
+        user_id
+      FROM
+        users
+      WHERE
+        uid = $created_by
+    ),
   credit = $credit,
   end_date = $end_date,
   group_id = (
