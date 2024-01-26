@@ -27,7 +27,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   if (result.rows.length === 0) {
     // We couldn't find the workspace. Someone could have put in a bad workspace ID,
     // or there could be a dangling workspace after a variant was deleted. Either way,
-    // translate this to a 404 to keep the error out of or monitoring.
+    // translate this to a 404 to keep the error out of our monitoring.
     throw error.make(404, 'Workspace not found');
   }
 
