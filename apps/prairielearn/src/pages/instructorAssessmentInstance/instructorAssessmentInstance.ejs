@@ -5,6 +5,7 @@
     <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
     <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
+    <%- compiled_script_tag('popover.ts') %>
   </head>
   <body>
     <script>
@@ -45,9 +46,9 @@
               <th>Fingerprint Changes</th>
               <td colspan="2">
                 <%= assessment_instance.client_fingerprint_id_change_count %>
-                <a tabindex="0" class="btn btn-xs" role="button"
-                      data-toggle="popover" data-trigger="focus" data-container="body"
-                      data-html="true" title="Client Fingerprint Changes"
+                <a tabindex="0" class="btn btn-xs" role="button" id="fingerprintDescriptionPopover"
+                      data-toggle="popover" data-trigger="manual" data-container="body"
+                      data-html="false" title="Client Fingerprint Changes"
                       data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
                   ><i class="fa fa-question-circle"></i></a>
               </td>
@@ -337,12 +338,12 @@
               <% if (row.client_fingerprint) { %>
               <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %> color-hover"
                 role="button"
-                id="fingerprintPopover<%= row.client_fingerprint?.id %>"
+                id="fingerprintPopover<%= row.client_fingerprint?.id %>-<%= index %>"
                 data-toggle="popover" data-container="body"
                 data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_number%>"
                 data-content="
                   <div>
-                    IP Address: <%= row.client_fingerprint?.ip_address %>
+                    IP Address: <a href=https://client.rdap.org/?type=ip&object=<%= row.client_fingerprint?.ip_address %> target=blank><%= row.client_fingerprint?.ip_address %> </a>
                   </div>
                   <div>
                     Session ID: <%= row.client_fingerprint?.user_session_id %>
@@ -351,7 +352,8 @@
                     User Agent: <%= row.client_fingerprint?.user_agent %>
                   </div>
                 "
-                data-trigger="focus" >
+                data-trigger="manual" 
+                aria-describedby="fingerprintPopover<%= row.client_fingerprint?.id %>-<%= index %>">
                <%= row.client_fingerprint_number %>
                 </a>
               </td>

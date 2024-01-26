@@ -8003,6 +8003,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"delegated-events@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "delegated-events@npm:1.1.2"
+  dependencies:
+    selector-set: ^1.1.5
+  checksum: 7f83211b802737cd02ee0b544bd2d60881911c175b49d4dbde4b9cbacca6f10a5143f0b8dfb5501a70df7c9e18c3a772bf042ad21d5ca8bcea0c49cd3a8b6814
+  languageName: node
+  linkType: hard
+
 "delegates@npm:^1.0.0":
   version: 1.0.0
   resolution: "delegates@npm:1.0.0"
@@ -13874,6 +13883,7 @@ __metadata:
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@typescript-eslint/eslint-plugin": ^6.17.0
     "@typescript-eslint/parser": ^6.17.0
+    delegated-events: ^1.1.2
     dependency-cruiser: ^13.1.5
     eslint: ^8.56.0
     eslint-config-prettier: ^9.1.0
@@ -14915,6 +14925,13 @@ __metadata:
   version: 1.1.2
   resolution: "select@npm:1.1.2"
   checksum: 4346151e94f226ea6131e44e68e6d837f3fdee64831b756dd657cc0b02f4cb5107f867cb34a1d1216ab7737d0bf0645d44546afb030bbd8d64e891f5e4c4814e
+  languageName: node
+  linkType: hard
+
+"selector-set@npm:^1.1.5":
+  version: 1.1.5
+  resolution: "selector-set@npm:1.1.5"
+  checksum: 025d3f8b98a6a43730ef39a00e2f3f5f478eb75fd783667e8ddd1066c6fd24c510c03bc104c4b15180ba037f8ef300918b929eb3a207f61b6592a75234fd6097
   languageName: node
   linkType: hard
 
