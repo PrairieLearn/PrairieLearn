@@ -1,4 +1,3 @@
-import ERR = require('async-stacktrace');
 import _ = require('lodash');
 import { assert } from 'chai';
 import fetch from 'node-fetch';
@@ -188,12 +187,9 @@ describe('Zone grading homework assessment', function () {
     });
 
     describe('the database', function () {
-      it('should contain HW4', function (callback) {
-        sqldb.queryOneRow(sql.select_hw4, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          locals.assessment_id = result.rows[0].id;
-          callback(null);
-        });
+      it('should contain HW4', async () => {
+        const result = await sqldb.queryOneRowAsync(sql.select_hw4, []);
+        locals.assessment_id = result.rows[0].id;
       });
     });
 
@@ -232,32 +228,24 @@ describe('Zone grading homework assessment', function () {
 
         locals.postStartTime = Date.now();
       });
-      it('should create one assessment_instance', function (callback) {
-        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== 1) {
-            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
-          }
-          locals.assessment_instance = result.rows[0];
-          callback(null);
-        });
+      it('should create one assessment_instance', async () => {
+        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
+        if (result.rowCount !== 1) {
+          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
+        }
+        locals.assessment_instance = result.rows[0];
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
-      it(`should create ${questionsArray.length} instance_questions`, function (callback) {
-        sqldb.query(sql.select_instance_questions, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== questionsArray.length) {
-            return callback(
-              new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
-              ),
-            );
-          }
-          locals.instance_questions = result.rows;
-          callback(null);
-        });
+      it(`should create ${questionsArray.length} instance_questions`, async () => {
+        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
+        if (result.rowCount !== questionsArray.length) {
+          throw new Error(
+            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+          );
+        }
+        locals.instance_questions = result.rows;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
