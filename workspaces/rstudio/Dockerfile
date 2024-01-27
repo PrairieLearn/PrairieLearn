@@ -2,7 +2,7 @@
 # PrairieLearn RStudio workspace template
 # 20210831 Eric Huber - Initial version
 # 20240123 Eric Huber - Modify service file to provide server-user argument
-# 20240126 Eric Huber - Pin base image version for future diagnostics
+# 20240127 Eric Huber - Pin base image, fix issues with the Nginx reverse proxy
 
 # Maintainer notes:
 
@@ -13,15 +13,37 @@
 # not permitted", "permission denied", "unable to chown", or "password not
 # changed".
 
-# You should test that nginx starts successfully with "OK" status, and that
-# you can load the RStudio interface in the browser successfully:
-# $ docker build -t rstudio-test .
-# $ docker run -it --rm -u 1001:1001 -p 127.0.0.1:3939:3939 rstudio-test
-# And then open your browser to: http://localhost:3939/rstudio/
+# If you want to test the proxy behavior locally, you should build a local
+# copy of the image and set PL to not pull workspace images, using
+# "workspacePullImagesFromDockerHub": false in config.json. Then, access a
+# question referencing the image through your local PL session. If you want
+# to test https mode, more info here:
+# https://github.com/PrairieLearn/PrairieLearn/discussions/8897
 
-# As future work, it may be possible to configure s6 to run more gracefully
-# as a limited user without hacks, but it may not be worth the maintenance
-# burden if there is no added benefit.
+# Trying to directly access the reverse proxy outside of the PL context may
+# not work due to CORS issues.
+
+# This image also MUST be tested in a question on the PrairieLearn site
+# before deploying it to students. You can push and sync a separate tag on
+# Docker Hub for testing without disrupting the official PL image.
+
+# Set up your question with these options in info.json, editing the "image"
+# parameter if you are using a custom image build for testing:
+
+#    "workspaceOptions": {
+#        "image": "prairielearn/workspace-rstudio",
+#        "port": 3939,
+#        "args": "",
+#        "rewriteUrl": false,
+#        "home": "/home/rstudio/workspace"
+#    }
+
+# If you just want to use RStudio locally for its own sake:
+# $ docker build -t rstudio-local .
+# $ docker run -it --rm -u 1001:1001 -p 127.0.0.1:8787:8787 rstudio-local
+# And then open your browser to: http://localhost:8787/
+# However, you could use the Rocker base images in that case.
+# Their site has more documentation.
 
 # Latest as of 20240126
 FROM rocker/rstudio:4.3.2
@@ -64,14 +86,14 @@ RUN mkdir -p /var/run/s6 && \
     chown -R 1001:1001 /var/lib/rstudio-server && \
     chown -R 1001:1001 /var/run/rstudio-server && \
     chown -R 1001:1001 /etc/rstudio
-# The Nginx proxy allows us to change the base URL for the RStudio session,
-# which is necessary for embedding on PrairieLearn.
-COPY rstudio-nginx.conf /etc/nginx/nginx.conf
 # We store some generated files and the Nginx pid file in /var/pl-var.
-# The Nginx conf file needs to be writable so we can update the base URL
-# at startup.
 RUN mkdir -p /var/pl-var && \
-    chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var /etc/nginx/nginx.conf
+    chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var
+# The Nginx proxy allows us to change the base URL for the RStudio session,
+# which is necessary for embedding on PrairieLearn. The Nginx conf file needs
+# to be writable so we can update the base URL at startup.
+COPY rstudio-nginx.conf /etc/nginx/nginx.conf
+RUN chown 1001:1001 /etc/nginx/nginx.conf
 # Patch the service file that s6 invokes to make sure that rstudio-server
 # runs as our normal user
 RUN MATCH_REGEX='^\(exec /usr/lib/rstudio-server/bin/rserver --server-daemonize 0\)$' && \
@@ -124,20 +146,23 @@ COPY ["pl-start.sh", "pl-gosu-helper.sh", "/pl-bin/"]
 RUN mkdir -p /pl-bin && \
     chmod a+rx /pl-bin /pl-bin/pl-start.sh /pl-bin/pl-gosu-helper.sh
 
-# Warning: Do NOT try to set RStudio Server's USERID environment variable
-# here, as this will cause the home directory to be deleted and recreated (or
-# cause startup errors). The remapping to 1001:1001 is handled earlier in this
-# file.
+# Warning: In general, don't edit the variables below. Do NOT try to set
+# RStudio Server's USERID environment variable here, as this will cause the
+# home directory to be deleted and recreated (or cause startup errors). The
+# remapping to 1001:1001 is handled earlier in this file.
 
+# Set some variables for RStudio Server to ensure everything works.
 # We need to run as user rstudio (1001:1001). Do not run as root.
 USER rstudio
-# Set some variables for RStudio Server to ensure non-root mode works.
 ENV USER rstudio
+# Judging from some discussion online, the PASSWORD variable may be necessary
+# due to a bug in RStudio Server's DISABLE_AUTH mode.
 ENV DISABLE_AUTH true
+ENV PASSWORD placeholder
+# This tells s6 to use alternative, writable locations if the paths it
+# expects to write to are read-only.
 ENV S6_READ_ONLY_ROOT 1
-# Set a default base URL for local development if you run the workspace image
-# by itself (without PL as host).
-# This will become e.g.: http://localhost:3939/rstudio/
+
 # On the production server, this will be overwritten dynamically when PL
 # creates the workspace at a different URL.
 ENV WORKSPACE_BASE_URL rstudio
@@ -145,14 +170,3 @@ ENV WORKSPACE_BASE_URL rstudio
 # make sure local testing works even if the PL Docker tries to run as root.
 ENV PL_USER rstudio
 ENTRYPOINT /pl-bin/pl-gosu-helper.sh /pl-bin/pl-start.sh
-
-# Set up your question with these options in info.json, editing the "image"
-# parameter if you are using a custom image build:
-
-#    "workspaceOptions": {
-#        "image": "prairielearn/workspace-rstudio",
-#        "port": 3939,
-#        "args": "",
-#        "rewriteUrl": false,
-#        "home": "/home/rstudio/workspace"
-#    }
