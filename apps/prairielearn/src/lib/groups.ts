@@ -229,20 +229,23 @@ export async function addUserToGroup({
     }
 
     const user = await selectUserByUid(uid);
+    const userIsInstructor =
+      user &&
+      (await sqldb.callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, group.course_instance_id],
+        z.boolean(),
+      ));
+    const userIsStudent =
+      user &&
+      !userIsInstructor &&
+      !!(await getEnrollmentForUserInCourseInstance({
+        course_instance_id: group.course_instance_id,
+        user_id: user.user_id,
+      }));
     // To be part of a group, the user needs to either be enrolled in the course
     // instance, or be an instructor
-    const isInCourseInstance = user
-      ? (await getEnrollmentForUserInCourseInstance({
-          course_instance_id: group.course_instance_id,
-          user_id: user.user_id,
-        })) != null ||
-        (await sqldb.callRow(
-          'users_is_instructor_in_course_instance',
-          [user.user_id, group.course_instance_id],
-          z.boolean(),
-        ))
-      : false;
-    if (user == null || !isInCourseInstance) {
+    if (!userIsStudent && !userIsInstructor) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
     }
 
