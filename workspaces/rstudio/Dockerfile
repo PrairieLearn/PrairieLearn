@@ -2,6 +2,7 @@
 # PrairieLearn RStudio workspace template
 # 20210831 Eric Huber - Initial version
 # 20240123 Eric Huber - Modify service file to provide server-user argument
+# 20240126 Eric Huber - Pin base image version for future diagnostics
 
 # Maintainer notes:
 
@@ -22,7 +23,8 @@
 # as a limited user without hacks, but it may not be worth the maintenance
 # burden if there is no added benefit.
 
-FROM rocker/rstudio
+# Latest as of 20240126
+FROM rocker/rstudio:4.3.2
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
