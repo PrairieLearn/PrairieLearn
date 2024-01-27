@@ -1,12 +1,20 @@
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { z } from 'zod';
 import _ = require('lodash');
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';
 import { GroupSchema, IdSchema, User, UserSchema } from './db-types';
+import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
+import { selectUserByUid } from '../models/user';
 const sql = sqldb.loadSqlEquiv(__filename);
+
+export class GroupOperationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'GroupOperationError';
+  }
+}
 
 const GroupConfigSchema = z.object({
   assessment_id: z.string().nullable(),
@@ -71,6 +79,12 @@ interface GroupRoleAssignment {
   group_role_id: string;
   user_id: string;
 }
+
+const GroupForUpdateSchema = GroupSchema.extend({
+  cur_size: z.number(),
+  max_size: z.number().nullable(),
+  has_roles: z.boolean(),
+});
 
 /**
  * Gets the group config info for a given assessment id.
@@ -191,86 +205,199 @@ export async function getQuestionGroupPermissions(
   return userPermissions ?? { can_submit: false, can_view: false };
 }
 
+export async function addUserToGroup({
+  assessment_id,
+  group_id,
+  uid,
+  authn_user_id,
+  enforceGroupSize,
+}: {
+  assessment_id: string;
+  group_id: string;
+  uid: string;
+  authn_user_id: string;
+  enforceGroupSize: boolean;
+}) {
+  await sqldb.runInTransactionAsync(async () => {
+    const group = await sqldb.queryOptionalRow(
+      sql.select_and_lock_group,
+      { group_id, assessment_id },
+      GroupForUpdateSchema,
+    );
+    if (group == null) {
+      throw new GroupOperationError(`Group does not exist.`);
+    }
+
+    const user = await selectUserByUid(uid);
+    const enrollment = user
+      ? await getEnrollmentForUserInCourseInstance({
+          course_instance_id: group.course_instance_id,
+          user_id: user.user_id,
+        })
+      : null;
+    if (enrollment == null) {
+      throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
+    }
+
+    // This is technically susceptible to race conditions. That won't be an
+    // issue once we have a unique constraint for group membership.
+    const existingGroupId = await getGroupId(assessment_id, enrollment.user_id);
+    if (existingGroupId != null) {
+      if (idsEqual(enrollment.user_id, authn_user_id)) {
+        throw new GroupOperationError('You are already in another group.');
+      } else {
+        throw new GroupOperationError('User is already in another group.');
+      }
+    }
+
+    if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
+      throw new GroupOperationError(`Group is already full.`);
+    }
+
+    // Find a group role. If none of the roles can be assigned, assign no role.
+    const groupRoleId = group.has_roles
+      ? await sqldb.queryOptionalRow(
+          sql.select_suitable_group_role,
+          { assessment_id, group_id: group.id, cur_size: group.cur_size },
+          IdSchema,
+        )
+      : null;
+
+    await sqldb.queryAsync(sql.insert_group_user, {
+      group_id: group.id,
+      user_id: enrollment.user_id,
+      group_config_id: group.group_config_id,
+      authn_user_id: authn_user_id,
+      group_role_id: groupRoleId,
+    });
+  });
+}
+
 export async function joinGroup(
   fullJoinCode: string,
-  assessmentId: string,
-  userId: string,
-  authnUserId: string,
+  assessment_id: string,
+  uid: string,
+  authn_user_id: string,
 ): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
-    flash('error', 'The join code has an incorrect format');
+    throw new GroupOperationError('The join code has an incorrect format');
     return;
   }
 
-  const groupName = splitJoinCode[0];
-  const joinCode = splitJoinCode[1].toUpperCase();
-
-  // This is a best-effort check to produce a nice error message. Even if this
-  // fails due to a race condition, the `group_users_insert` sproc below will
-  // validate that the user isn't already in a group.
-  const existingGroupId = await getGroupId(assessmentId, userId);
-  if (existingGroupId != null) {
-    flash('error', 'You are already in another group.');
-    return;
-  }
+  const group_name = splitJoinCode[0];
+  const join_code = splitJoinCode[1].toUpperCase();
 
   try {
-    await sqldb.callAsync('group_users_insert', [
-      assessmentId,
-      userId,
-      authnUserId,
-      groupName,
-      joinCode,
-    ]);
+    await sqldb.runInTransactionAsync(async () => {
+      const group = await sqldb.queryOptionalRow(
+        sql.select_and_lock_group_by_name,
+        { group_name, assessment_id },
+        GroupSchema,
+      );
+      if (group == null || group.join_code !== join_code) {
+        throw new GroupOperationError('Group does not exist.');
+      }
+      await addUserToGroup({
+        assessment_id,
+        group_id: group.id,
+        uid,
+        authn_user_id,
+        enforceGroupSize: true,
+      });
+    });
   } catch (err) {
-    flash(
-      'error',
-      `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
-    );
+    if (err instanceof GroupOperationError) {
+      throw new GroupOperationError(`Cannot join group "${fullJoinCode}": ${err.message}`);
+    }
+    throw err;
   }
 }
 
 export async function createGroup(
-  groupName: string,
-  assessmentId: string,
-  userId: string,
-  authnUserId: string,
+  group_name: string,
+  assessment_id: string,
+  uids: string[],
+  authn_user_id: string,
 ): Promise<void> {
-  if (groupName.length > 30) {
-    flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
-    return;
+  if (group_name.length > 30) {
+    throw new GroupOperationError(
+      'The group name is too long. Use at most 30 alphanumerical characters.',
+    );
   }
-  if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
-    flash(
-      'error',
+  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+    throw new GroupOperationError(
       'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
     );
-    return;
   }
 
-  // This is technically susceptible to race conditions. That won't be an
-  // issue once we have a unique constraint for group membership.
-  const existingGroupId = await getGroupId(assessmentId, userId);
-  if (existingGroupId != null) {
-    flash('error', 'You are already in a group.');
-    return;
+  if (uids.length === 0) {
+    throw new GroupOperationError('There must be at least one user in the group.');
   }
 
   try {
-    await sqldb.queryAsync(sql.create_group, {
-      assessment_id: assessmentId,
-      user_id: userId,
-      authn_user_id: authnUserId,
-      group_name: groupName,
+    await sqldb.runInTransactionAsync(async () => {
+      let group_id;
+      try {
+        group_id = await sqldb.queryRow(
+          sql.create_group,
+          { assessment_id, authn_user_id, group_name },
+          IdSchema,
+        );
+      } catch (err) {
+        // 23505 is the Postgres error code for unique constraint violation
+        // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
+        if (err.code === '23505' && err.constraint === 'unique_group_name') {
+          throw new GroupOperationError('Group name is already taken.');
+        }
+        // Any other error is unexpected and should be handled by the main processes
+        throw err;
+      }
+      for (const uid of uids) {
+        await addUserToGroup({
+          assessment_id,
+          group_id,
+          uid,
+          authn_user_id,
+          enforceGroupSize: false,
+        });
+      }
     });
   } catch (err) {
-    flash(
-      'error',
-      `Failed to create the group ${groupName}. It is already taken. Please try another one.`,
-    );
+    if (err instanceof GroupOperationError) {
+      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+    }
+    throw err;
   }
+}
+
+export async function createOrAddToGroup(
+  group_name: string,
+  assessment_id: string,
+  uids: string[],
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const group = await sqldb.queryOptionalRow(
+      sql.select_and_lock_group_by_name,
+      { group_name, assessment_id },
+      GroupSchema,
+    );
+    if (group == null) {
+      await createGroup(group_name, assessment_id, uids, authn_user_id);
+    } else {
+      for (const uid of uids) {
+        await addUserToGroup({
+          assessment_id,
+          group_id: group.id,
+          uid,
+          authn_user_id,
+          enforceGroupSize: false,
+        });
+      }
+    }
+  });
 }
 
 /**

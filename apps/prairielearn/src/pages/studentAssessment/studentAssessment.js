@@ -1,14 +1,27 @@
 const asyncHandler = require('express-async-handler');
-const express = require('express');
+import * as express from 'express';
+
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
+
+import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess';
+import { makeAssessmentInstance } from '../../lib/assessment';
+import {
+  joinGroup,
+  createGroup,
+  getGroupConfig,
+  getGroupId,
+  getGroupInfo,
+  getAssessmentPermissions,
+  updateGroupRoles,
+  leaveGroup,
+  GroupOperationError,
+} from '../../lib/groups';
+import { getClientFingerprintId } from '../../middlewares/clientFingerprint';
+
 const router = express.Router();
-
-const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
-const error = require('@prairielearn/error');
-const assessment = require('../../lib/assessment');
-const sqldb = require('@prairielearn/postgres');
-
-const sql = sqldb.loadSqlEquiv(__filename);
-const groupAssessmentHelper = require('../../lib/groups');
+const sql = loadSqlEquiv(__filename);
 
 router.get(
   '/',
@@ -34,19 +47,16 @@ router.get(
       if (!checkPasswordOrRedirect(req, res)) return;
       if (res.locals.assessment.group_work) {
         // Get the group config info
-        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+        const groupConfig = await getGroupConfig(res.locals.assessment.id);
         res.locals.groupConfig = groupConfig;
 
         // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-        const groupId = await groupAssessmentHelper.getGroupId(
-          res.locals.assessment.id,
-          res.locals.user.user_id,
-        );
+        const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
 
         if (groupId === null) {
           res.locals.notInGroup = true;
         } else {
-          const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+          const groupInfo = await getGroupInfo(groupId, groupConfig);
           res.locals.groupSize = groupInfo.groupSize;
           res.locals.groupMembers = groupInfo.groupMembers;
           res.locals.joinCode = groupInfo.joinCode;
@@ -55,7 +65,7 @@ router.get(
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
           if (groupConfig.hasRoles) {
-            const result = await groupAssessmentHelper.getAssessmentPermissions(
+            const result = await getAssessmentPermissions(
               res.locals.assessment.id,
               res.locals.user.user_id,
             );
@@ -65,7 +75,7 @@ router.get(
       }
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
-      const result = await sqldb.queryAsync(sql.select_single_assessment_instance, params);
+      const result = await queryAsync(sql.select_single_assessment_instance, params);
       if (result.rowCount === 0) {
         // Before allowing the user to create a new assessment instance, we need
         // to check if the current access rules require a password. If they do,
@@ -75,20 +85,17 @@ router.get(
 
         if (res.locals.assessment.group_work) {
           // Get the group config info
-          const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+          const groupConfig = await getGroupConfig(res.locals.assessment.id);
           res.locals.groupConfig = groupConfig;
 
           // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-          const groupId = await groupAssessmentHelper.getGroupId(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-          );
+          const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
 
           if (groupId === null) {
             res.locals.notInGroup = true;
           } else {
             res.locals.notInGroup = false;
-            const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+            const groupInfo = await getGroupInfo(groupId, groupConfig);
             res.locals.groupSize = groupInfo.groupSize;
             res.locals.groupMembers = groupInfo.groupMembers;
             res.locals.joinCode = groupInfo.joinCode;
@@ -97,7 +104,7 @@ router.get(
             res.locals.rolesInfo = groupInfo.rolesInfo;
 
             if (groupConfig.has_roles) {
-              const result = await groupAssessmentHelper.getAssessmentPermissions(
+              const result = await getAssessmentPermissions(
                 res.locals.assessment.id,
                 res.locals.user.user_id,
               );
@@ -107,7 +114,8 @@ router.get(
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         } else if (res.locals.assessment.type === 'Homework') {
           const time_limit_min = null;
-          const assessment_instance_id = await assessment.makeAssessmentInstance(
+          const client_fingerprint_id = await getClientFingerprintId(req, res);
+          const assessment_instance_id = await makeAssessmentInstance(
             res.locals.assessment.id,
             res.locals.user.user_id,
             res.locals.assessment.group_work,
@@ -115,7 +123,7 @@ router.get(
             res.locals.authz_data.mode,
             time_limit_min,
             res.locals.authz_data.date,
-            res.locals.client_fingerprint_id,
+            client_fingerprint_id,
           );
           res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         } else {
@@ -148,15 +156,12 @@ router.post(
       if (!checkPasswordOrRedirect(req, res)) return;
 
       if (res.locals.assessment.group_work) {
-        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
-        const groupId = await groupAssessmentHelper.getGroupId(
-          res.locals.assessment.id,
-          res.locals.user.user_id,
-        );
+        const groupConfig = await getGroupConfig(res.locals.assessment.id);
+        const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
         if (groupId === null) {
           throw error.make(403, 'Cannot create a new instance while not in a group.');
         }
-        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        const groupInfo = await getGroupInfo(groupId, groupConfig);
         if (!groupInfo.start) {
           throw error.make(
             403,
@@ -167,7 +172,8 @@ router.post(
 
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
-      const assessment_instance_id = await assessment.makeAssessmentInstance(
+      const client_fingerprint_id = await getClientFingerprintId(req, res);
+      const assessment_instance_id = await makeAssessmentInstance(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.assessment.group_work,
@@ -175,35 +181,44 @@ router.post(
         res.locals.authz_data.mode,
         time_limit_min,
         res.locals.req_date,
-        res.locals.client_fingerprint_id,
+        client_fingerprint_id,
       );
       res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
     } else if (req.body.__action === 'join_group') {
-      await groupAssessmentHelper.joinGroup(
+      await joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
-        res.locals.user.user_id,
+        res.locals.user.uid,
         res.locals.authn_user.user_id,
-      );
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
-      await groupAssessmentHelper.createGroup(
+      await createGroup(
         req.body.groupName,
         res.locals.assessment.id,
-        res.locals.user.user_id,
+        [res.locals.user.uid],
         res.locals.authn_user.user_id,
-      );
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       // Check whether the user is currently in a group
-      const groupId = await groupAssessmentHelper.getGroupId(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-      );
+      const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
       if (groupId == null) {
         throw error.make(403, 'Cannot change group roles while not in a group.');
       }
-      await groupAssessmentHelper.updateGroupRoles(
+      await updateGroupRoles(
         req.body,
         res.locals.assessment.id,
         groupId,
@@ -213,7 +228,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
-      await groupAssessmentHelper.leaveGroup(
+      await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,

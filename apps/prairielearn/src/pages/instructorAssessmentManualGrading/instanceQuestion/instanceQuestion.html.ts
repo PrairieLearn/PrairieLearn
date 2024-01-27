@@ -73,7 +73,7 @@ export function InstanceQuestion({
               `
             : ''}
           ${conflict_grading_job
-            ? ConflictGradingJobModal({ resLocals, conflict_grading_job })
+            ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders })
             : ''}
           <div class="row">
             <div class="col-lg-8 col-12">
@@ -117,9 +117,11 @@ export function InstanceQuestion({
 function ConflictGradingJobModal({
   resLocals,
   conflict_grading_job,
+  graders,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData;
+  graders: User[] | null;
 }) {
   return html`
     <div id="conflictGradingJobModal" class="modal fade">
@@ -175,6 +177,7 @@ function ConflictGradingJobModal({
                     custom_manual_points: conflict_grading_job.manual_points ?? 0,
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
+                    graders,
                   })}
                 </div>
               </div>

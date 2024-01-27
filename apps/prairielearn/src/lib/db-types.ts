@@ -595,6 +595,8 @@ export type Submission = z.infer<typeof SubmissionSchema>;
 export const VariantSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  broken_at: DateFromISOString.nullable(),
+  broken_by: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),

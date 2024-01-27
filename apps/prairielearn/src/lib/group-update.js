@@ -3,11 +3,18 @@ const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
-const { loadSqlEquiv, queryRow, queryRows, callRow } = require('@prairielearn/postgres');
+const {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryOptionalRow,
+  runInTransactionAsync,
+} = require('@prairielearn/postgres');
 const { z } = require('zod');
 
-const { IdSchema } = require('./db-types');
+const { IdSchema, UserSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
+import { GroupOperationError, createGroup, createOrAddToGroup } from './groups';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -15,11 +22,6 @@ const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
   course_instance_id: IdSchema,
   course_id: IdSchema,
-});
-
-const AssessmentGroupsUpdateResultSchema = z.object({
-  not_exist_user: z.array(z.string()).nullable(),
-  already_in_group: z.array(z.string()).nullable(),
 });
 
 /**
@@ -80,50 +82,27 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
-        const csvConverter = csvtojson({
-          colParser: {
-            groupname: 'string',
-            groupName: 'string',
-            uid: 'string',
-            UID: 'string',
-            Uid: 'string',
-          },
-          maxRowLength: 10000,
+        const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
+        let successCount = 0;
+        const groupAssignments = (await csvConverter.fromStream(csvStream))
+          .map((row) => _.mapKeys(row, (_v, k) => k.toLowerCase()))
+          .filter((row) => row.uid && row.groupname);
+        await runInTransactionAsync(async () => {
+          for (const { uid, groupname } of groupAssignments) {
+            await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
+              () => successCount++,
+              (err) => {
+                if (err instanceof GroupOperationError) {
+                  job.error(`Error adding ${uid} to group ${groupname}: ${err.message}`);
+                } else {
+                  throw err;
+                }
+              },
+            );
+          }
         });
-        const updateList = [];
-        await csvConverter.fromStream(csvStream).subscribe((json) => {
-          let groupName = json.groupName || json.groupname || null;
-          let uid = json.uid || json.UID || json.Uid || null;
-          updateList.push([groupName, uid]);
-        });
-        const result = await callRow(
-          'assessment_groups_update',
-          [assessment_id, updateList, authn_user_id],
-          AssessmentGroupsUpdateResultSchema,
-        );
-        let errorCount = 0;
 
-        const notExist = result.not_exist_user;
-        if (notExist) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
-          notExist.forEach((user) => {
-            job.verbose(user);
-          });
-          errorCount += notExist.length;
-        }
-
-        const inGroup = result.already_in_group;
-        if (inGroup) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users are already in a group.`);
-          inGroup.forEach((user) => {
-            job.verbose(user);
-          });
-          errorCount += inGroup.length;
-        }
-
-        const successCount = updateList.length - errorCount;
+        const errorCount = groupAssignments.length - successCount;
         job.verbose(`----------------------------------------`);
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
@@ -193,56 +172,56 @@ export async function autoGroups(
         job.verbose('Auto generate group settings for ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
-        const enrollments = await queryRows(sql.select_enrollments, { assessment_id }, z.string());
-        _.shuffle(enrollments);
-        const numStudents = enrollments.length;
-        job.verbose(`There are ` + numStudents + ' students enrolled in ' + assessmentLabel);
-        job.verbose(`----------------------------------------`);
+        const studentsToGroup = await queryRows(
+          sql.select_enrolled_students_without_group,
+          { assessment_id },
+          UserSchema,
+        );
+        _.shuffle(studentsToGroup);
+        const numStudents = studentsToGroup.length;
         job.verbose(
-          `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size,
+          `There are ${numStudents} students enrolled in ${assessmentLabel} without a group`,
         );
-        let numGroup = Math.ceil(numStudents / max_group_size);
-        let updateList = [];
-        // fill in the updateList with groupname and uid
-        for (let i = 0; i < numGroup; i++) {
-          let groupName = 'group' + i;
-          for (let j = 0; j < max_group_size; j++) {
-            if (enrollments.length > 0) {
-              let uid = enrollments.pop();
-              updateList.push([groupName, uid]);
-            }
-          }
-        }
-        const result = await callRow(
-          'assessment_groups_update',
-          [assessment_id, updateList, authn_user_id],
-          AssessmentGroupsUpdateResultSchema,
-        );
-        let errorCount = 0;
-
-        const notExist = result.not_exist_user;
-        if (notExist) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
-          notExist.forEach((user) => job.verbose(user));
-          errorCount += notExist.length;
-        }
-
-        const inGroup = result.already_in_group;
-        if (inGroup) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users are already in a group.`);
-          inGroup.forEach((user) => job.verbose(user));
-          errorCount += inGroup.length;
-        }
-
-        const successCount = updateList.length - errorCount;
         job.verbose(`----------------------------------------`);
-        if (errorCount === 0) {
-          job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
-        } else {
-          job.verbose(`Successfully updated groups for ${successCount} students`);
-          job.fail(`Error updating ${errorCount} students`);
+        job.verbose(`Creating groups with a max size of ${max_group_size}`);
+
+        let groupsCreated = 0,
+          studentsGrouped = 0;
+        await runInTransactionAsync(async () => {
+          // Find a group name of the format `groupNNN` that is not used
+          const unusedGroupNameSuffix = await queryOptionalRow(
+            sql.select_unused_group_name_suffix,
+            { assessment_id },
+            z.number(),
+          );
+          // Create groups using the groups of maximum size where possible
+          for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
+            const groupName = `group${i}`;
+            const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
+            await createGroup(groupName, assessment_id, users, authn_user_id).then(
+              () => {
+                groupsCreated++;
+                studentsGrouped += users.length;
+              },
+              (err) => {
+                if (err instanceof GroupOperationError) {
+                  job.error(err.message);
+                } else {
+                  throw err;
+                }
+              },
+            );
+          }
+        });
+        const errorCount = numStudents - studentsGrouped;
+        job.verbose(`----------------------------------------`);
+        if (studentsGrouped !== 0) {
+          job.verbose(
+            `Successfully grouped ${studentsGrouped} students into ${groupsCreated} groups`,
+          );
+        }
+        if (errorCount !== 0) {
+          job.fail(`Error adding ${errorCount} students to groups.`);
         }
       },
     );

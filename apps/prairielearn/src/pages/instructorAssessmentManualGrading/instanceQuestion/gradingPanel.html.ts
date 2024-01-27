@@ -5,6 +5,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html';
+import { type User } from '../../../lib/db-types';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;
@@ -26,7 +27,7 @@ export function GradingPanel({
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
   rubric_settings_visible?: boolean;
-  graders?: Record<string, any> | null;
+  graders?: User[] | null;
   disable?: boolean;
   hide_back_to_question?: boolean;
   skip_text?: string;
@@ -173,8 +174,8 @@ ${submission.feedback?.manual}</textarea
                       <span class="sr-only">Change assigned grader</span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-right">
-                      ${(graders || []).forEach((grader) => {
-                        html`
+                      ${(graders || []).map(
+                        (grader) => html`
                           <button
                             type="submit"
                             class="dropdown-item"
@@ -183,8 +184,8 @@ ${submission.feedback?.manual}</textarea
                           >
                             Assign to: ${grader.name} (${grader.uid})
                           </button>
-                        `;
-                      })}
+                        `,
+                      )}
                       <button
                         type="submit"
                         class="dropdown-item"

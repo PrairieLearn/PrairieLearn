@@ -44,11 +44,10 @@ router.get(
         // This is probably a detailed error from the Google API client. We'll
         // pick off the useful bits and attach them to the Sentry scope so that
         // they'll be included with the error event.
-        Sentry.configureScope((scope) => {
-          scope.setContext('OAuth', {
-            code: err.code,
-            data: err.response.data,
-          });
+        const scope = Sentry.getCurrentScope();
+        scope.setContext('OAuth', {
+          code: err.code,
+          data: err.response.data,
         });
       }
       throw err;
