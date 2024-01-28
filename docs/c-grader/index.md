@@ -12,19 +12,19 @@ A full `info.json` file should look something like:
 
 ```json
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": ["..."],
-    "type": "v3",
-    "singleVariant": true,
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "enabled": true,
-        "image": "prairielearn/grader-c",
-        "timeout": 100,
-        "entrypoint": "python3 /grade/tests/test.py"
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-c",
+    "timeout": 100,
+    "entrypoint": "python3 /grade/tests/test.py"
+  }
 }
 ```
 
