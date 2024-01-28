@@ -10,12 +10,12 @@ The question should be first set up to enable [external grading](../externalGrad
 
 A full `info.json` file should look something like:
 
-```javascript
+```json
 {
     "uuid": "...",
     "title": "...",
     "topic": "...",
-    "tags": [...],
+    "tags": ["..."],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
