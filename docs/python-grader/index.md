@@ -22,7 +22,7 @@ A full `info.json` file should look something like:
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",
-        "entrypoint": "/python_autograder/run.sh",
+        "entrypoint": "/python_autograder/run.sh"
     }
 }
 ```
