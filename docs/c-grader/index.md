@@ -10,12 +10,12 @@ The question should be first set up to enable [external grading](../externalGrad
 
 A full `info.json` file should look something like:
 
-```javascript
+```json
 {
     "uuid": "...",
     "title": "...",
     "topic": "...",
-    "tags": [...],
+    "tags": ["..."],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
@@ -23,7 +23,7 @@ A full `info.json` file should look something like:
         "enabled": true,
         "image": "prairielearn/grader-c",
         "timeout": 100,
-        "entrypoint": "python3 /grade/tests/test.py",
+        "entrypoint": "python3 /grade/tests/test.py"
     }
 }
 ```
