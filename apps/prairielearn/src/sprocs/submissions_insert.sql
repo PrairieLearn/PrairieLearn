@@ -7,7 +7,6 @@ CREATE FUNCTION
         IN broken boolean,
         IN new_true_answer jsonb,
         IN feedback jsonb,
-        IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
         IN variant_id bigint,
@@ -59,7 +58,7 @@ BEGIN
     -- ######################################################################
     -- make sure everything is ok
 
-    IF variant.broken THEN
+    IF variant.broken_at IS NOT NULL THEN
         RAISE EXCEPTION 'variant is broken: %', variant_id;
     END IF;
 
@@ -99,9 +98,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration, params, true_answer, feedback, gradable, broken, regradable, client_fingerprint_id)
+            credit, mode, duration, params, true_answer, feedback, gradable, broken, client_fingerprint_id)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta, variant.params, variant.true_answer, feedback, gradable, broken, regradable, client_fingerprint_id)
+            credit, mode, delta, variant.params, variant.true_answer, feedback, gradable, broken, client_fingerprint_id)
     RETURNING id
     INTO submission_id;
 

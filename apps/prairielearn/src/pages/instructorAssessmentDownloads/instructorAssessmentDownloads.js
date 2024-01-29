@@ -1,8 +1,6 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
@@ -10,6 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { getGroupConfig } from '../../lib/groups';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -51,14 +50,16 @@ const setFilenames = function (locals) {
   }
 };
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
-  setFilenames(res.locals);
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
+    setFilenames(res.locals);
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 /**
  * Local abstraction to adapt our internal notion of columns to the columns
@@ -355,6 +356,7 @@ router.get(
       }
       archive.finalize();
     } else if (req.params.filename === res.locals.groupsCsvFilename) {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {
         assessment_id: res.locals.assessment.id,
       });
@@ -364,6 +366,7 @@ router.get(
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
+      if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {

@@ -3,7 +3,7 @@ import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from './chalk';
 import * as serverJobs from './server-jobs-legacy';
@@ -225,7 +225,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
  * Creates a job sequence with a single job.
  */
 export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
-  const { job_sequence_id, job_id } = await queryValidatedOneRow(
+  const { job_sequence_id, job_id } = await queryRow(
     sql.insert_job_sequence,
     {
       course_id: options.courseId,

@@ -94,7 +94,7 @@ export const CourseSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   options: z.any(),
-  path: z.string().nullable(),
+  path: z.string(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
@@ -234,6 +234,29 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
+
+export const WorkspaceSchema = z.object({
+  created_at: DateFromISOString,
+  heartbeat_at: DateFromISOString.nullable(),
+  hostname: z.string().nullable(),
+  id: IdSchema,
+  launch_port: z.coerce.number(), // This is BIGINT, but always fits a number
+  launch_uuid: z.string().nullable(),
+  launched_at: DateFromISOString.nullable(),
+  launching_duration: IntervalSchema.nullable(),
+  message: z.string().nullable(),
+  message_updated_at: DateFromISOString,
+  rebooted_at: DateFromISOString.nullable(),
+  reset_at: DateFromISOString.nullable(),
+  running_at: DateFromISOString.nullable(),
+  running_duration: IntervalSchema.nullable(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
+  state_updated_at: DateFromISOString,
+  stopped_at: DateFromISOString.nullable(),
+  version: z.coerce.number(), // This is BIGINT, but always fits a number
+  workspace_host_id: IdSchema.nullable(),
+});
+export type Workspace = z.infer<typeof WorkspaceSchema>;
 
 export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
@@ -512,8 +535,8 @@ export const InstanceQuestionSchema = z.object({
   first_submission_score: z.number().nullable(),
   highest_submission_score: z.number().nullable(),
   id: IdSchema,
-  incremental_submission_points_array: z.array(z.number()).nullable(),
-  incremental_submission_score_array: z.array(z.number()).nullable(),
+  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
+  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
@@ -534,7 +557,7 @@ export const InstanceQuestionSchema = z.object({
   status: z
     .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
     .nullable(),
-  submission_score_array: z.array(z.number()).nullable(),
+  submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number()),
 });
@@ -561,7 +584,6 @@ export const SubmissionSchema = z.object({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
-  regradable: z.boolean().nullable(),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -573,6 +595,8 @@ export type Submission = z.infer<typeof SubmissionSchema>;
 export const VariantSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  broken_at: DateFromISOString.nullable(),
+  broken_by: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
@@ -763,7 +787,7 @@ export const GroupSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  group_config_id: IdSchema.nullable(),
+  group_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
@@ -771,6 +795,7 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const GroupUserSchema = z.object({
+  group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });

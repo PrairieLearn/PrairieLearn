@@ -84,7 +84,10 @@ export interface QuestionServer {
     locals: Record<string, any>,
   ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
-    submission: Submission,
+    submission: Pick<
+      Partial<Submission>,
+      'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
+    >,
     variant: Variant,
     question: Question,
     course: Course,
