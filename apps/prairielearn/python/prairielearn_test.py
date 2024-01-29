@@ -1,3 +1,4 @@
+import itertools as it
 import json
 import math
 import string
@@ -304,7 +305,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["format_errors"] = dict()
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
-    assert question_data["format_errors"][question_name] == "No answer was submitted"
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
 
 
 @pytest.mark.repeat(100)
@@ -325,3 +326,23 @@ def test_get_uuid() -> None:
 
     # Assert that the first character is a valid hex letter.
     assert pl_uuid[0] in set("abcdef")
+
+
+@pytest.mark.parametrize(
+    "length, expected_output",
+    [
+        (1, ["a"]),
+        (2, ["a", "b"]),
+        (4, ["a", "b", "c", "d"]),
+    ],
+)
+def test_iter_keys(length: int, expected_output: list[str]) -> None:
+    assert list(it.islice(pl.iter_keys(), length)) == expected_output
+
+
+@pytest.mark.parametrize(
+    "idx, expected_output",
+    [(0, "a"), (1, "b"), (3, "d"), (26, "aa"), (27, "ab")],
+)
+def test_index2key(idx: int, expected_output: str) -> None:
+    assert pl.index2key(idx) == expected_output

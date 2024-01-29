@@ -32,6 +32,7 @@ module.exports = function (pageType) {
       variant_id: res.locals.variant ? res.locals.variant.id : null,
       page_type: pageType,
       path: req.originalUrl,
+      client_fingerprint_id: res.locals.client_fingerprint_id ?? null,
     };
 
     sqldb.queryOneRow(sql.log_page_view, params, function (err, result) {

@@ -5,7 +5,6 @@ from typing import Any
 import chevron
 import lxml.html
 import prairielearn as pl
-from text_unidecode import unidecode
 from typing_extensions import assert_never
 
 
@@ -26,6 +25,7 @@ ALLOW_BLANK_DEFAULT = False
 IGNORE_CASE_DEFAULT = False
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
@@ -48,6 +48,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "size",
         "show-help-text",
         "normalize-to-ascii",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -77,8 +78,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+
+    score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+    parse_error = data["format_errors"].get(name)
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -107,6 +112,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params = {"format": True, "space_hint": space_hint}
         info = chevron.render(template, info_params).strip()
 
+        show_help_text = pl.get_boolean_attrib(
+            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
+        )
+
         html_params = {
             "question": True,
             "name": name,
@@ -116,29 +125,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "info": info,
             "placeholder": placeholder,
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
-            "show_info": pl.get_boolean_attrib(
-                element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-            ),
+            "show_info": show_help_text,
             "uuid": pl.get_uuid(),
             display.value: True,
             "raw_submitted_answer": raw_submitted_answer,
+            "parse_error": parse_error,
         }
 
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
-
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-
-        html_params["display_append_span"] = html_params["show_info"] or suffix
 
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
             "label": label,
+            "suffix": suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -154,7 +158,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_sub = pl.from_json(a_sub)
             a_sub = pl.escape_unicode_string(a_sub)
 
-            html_params["suffix"] = suffix
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -162,9 +165,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             html_params["raw_submitted_answer"] = raw_submitted_answer
 
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
-
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -199,6 +200,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     normalize_to_ascii = pl.get_boolean_attrib(
         element, "normalize-to-ascii", NORMALIZE_TO_ASCII_DEFAULT
     )
+    remove_spaces = pl.get_boolean_attrib(
+        element, "remove-spaces", REMOVE_SPACES_DEFAULT
+    )
+
+    remove_leading_trailing = pl.get_boolean_attrib(
+        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+    )
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name, None)
@@ -207,9 +215,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    # Do unicode decode
     if normalize_to_ascii:
-        a_sub = unidecode(a_sub)
-        data["submitted_answers"][name] = a_sub
+        a_sub = pl.full_unidecode(a_sub)
+
+    # Remove the leading and trailing characters
+    if remove_leading_trailing:
+        a_sub = a_sub.strip()
+
+    # Remove the blank spaces between characters
+    if remove_spaces:
+        a_sub = "".join(a_sub.split())
 
     if not a_sub and not allow_blank:
         data["format_errors"][

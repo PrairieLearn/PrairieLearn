@@ -115,24 +115,24 @@ async.series(
           receiveFromQueue(
             sqs,
             config.jobsQueueUrl,
-            (job, fail, success) => {
+            (job, done) => {
               globalLogger.info(`received ${job.jobId} from queue`);
 
               // Ensure that this job wasn't canceled in the time since job submission.
               isJobCanceled(job, (err, canceled) => {
-                if (ERR(err, fail)) return;
+                if (ERR(err, done)) return;
 
                 if (canceled) {
                   globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
-                  success();
+                  done();
                   return;
                 }
 
                 handleJob(job, (err) => {
                   globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
-                  if (ERR(err, fail)) return;
+                  if (ERR(err, done)) return;
                   globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                  success();
+                  done();
                 });
               });
             },

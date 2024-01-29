@@ -11,7 +11,7 @@
             "credit": 100,
             "timeLimitMin": 3,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2023-11-07T23:59:59",
+            "endDate": "2323-11-07T23:59:59",
             "showClosedAssessment": false,
             "showClosedAssessmentScore": false
        },
@@ -19,8 +19,8 @@
            "comment": "students will have access to their final total score at a later time, after all the questions are manually graded and scores are uploaded",
            "mode": "Public",
            "credit": 0,
-           "startDate": "2023-11-08T00:00:00",
-           "endDate": "2023-11-15T23:59:59",
+           "startDate": "2323-11-08T00:00:00",
+           "endDate": "2323-11-15T23:59:59",
            "showClosedAssessment": false
       }
     ],

@@ -1,9 +1,9 @@
 import {
   loadSqlEquiv,
   queryAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-  queryValidatedZeroOrOneRow,
+  queryRow,
+  queryRows,
+  queryOptionalRow,
 } from '@prairielearn/postgres';
 import { z } from 'zod';
 
@@ -76,37 +76,25 @@ type NewBatchedMigration = Pick<
 export async function insertBatchedMigration(
   migration: NewBatchedMigration,
 ): Promise<BatchedMigrationRow | null> {
-  return queryValidatedZeroOrOneRow(
-    sql.insert_batched_migration,
-    migration,
-    BatchedMigrationRowSchema,
-  );
+  return await queryOptionalRow(sql.insert_batched_migration, migration, BatchedMigrationRowSchema);
 }
 
 export async function selectAllBatchedMigrations(project: string) {
-  return queryValidatedRows(
-    sql.select_all_batched_migrations,
-    { project },
-    BatchedMigrationRowSchema,
-  );
+  return await queryRows(sql.select_all_batched_migrations, { project }, BatchedMigrationRowSchema);
 }
 
 export async function selectBatchedMigration(
   project: string,
   id: string,
 ): Promise<BatchedMigrationRow> {
-  return queryValidatedOneRow(
-    sql.select_batched_migration,
-    { project, id },
-    BatchedMigrationRowSchema,
-  );
+  return await queryRow(sql.select_batched_migration, { project, id }, BatchedMigrationRowSchema);
 }
 
 export async function selectBatchedMigrationForTimestamp(
   project: string,
   timestamp: string,
 ): Promise<BatchedMigrationRow> {
-  return queryValidatedOneRow(
+  return await queryRow(
     sql.select_batched_migration_for_timestamp,
     { project, timestamp },
     BatchedMigrationRowSchema,
@@ -117,7 +105,7 @@ export async function updateBatchedMigrationStatus(
   id: string,
   status: BatchedMigrationStatus,
 ): Promise<BatchedMigrationRow> {
-  return queryValidatedOneRow(
+  return await queryRow(
     sql.update_batched_migration_status,
     { id, status },
     BatchedMigrationRowSchema,

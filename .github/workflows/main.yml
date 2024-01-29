@@ -153,7 +153,7 @@ jobs:
         run: sudo apt-get install -y graphviz graphviz-dev
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: pip
@@ -162,7 +162,7 @@ jobs:
         run: pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
           cache: 'yarn'
@@ -192,8 +192,16 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Check dependency structure
+        run: make check-dependencies
 
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for tools
         run: make typecheck-tools
+
+      # This step runs at the end, since it is common for it to fail in
+      # dependabot PRs, but we still want all other tests above to run
+      # in those cases.
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check

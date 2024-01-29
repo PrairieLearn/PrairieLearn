@@ -107,6 +107,7 @@ async function submitGradeForm(
   const params = new URLSearchParams({
     __action: 'add_manual_grade',
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    submission_id: form.find('input[name=submission_id]').attr('value') || '',
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
     score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
     score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
@@ -742,6 +743,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -783,6 +785,48 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              use_rubric: 'true',
+              replace_auto_points: 'false',
+              starting_points: '0', // Positive grading
+              min_points: '-0.5',
+              max_extra_points: '0.5',
+              ...buildRubricItemFields(rubric_items),
+            }).toString(),
+          });
+
+          assert.equal(response.ok, true);
+        });
+
+        checkSettingsResults(0, -0.5, 0.5);
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+      });
+
+      describe('Grading without rubric items', () => {
+        step('submit a grade using a positive rubric', async () => {
+          setUser(mockStaff[0]);
+          selected_rubric_items = [];
+          score_points = 0;
+          score_percent = 0;
+          feedback_note = 'Test feedback note without any rubric items';
+          await submitGradeForm();
+        });
+
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+
+        step('update rubric items should succeed', async () => {
+          setUser(mockStaff[0]);
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
+
+          const response = await fetch(manualGradingIQUrl, {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -852,6 +896,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -929,6 +974,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',

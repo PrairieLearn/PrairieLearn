@@ -72,6 +72,9 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset(
     [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
 )
+LCS_GRADABLE_TYPES = frozenset(
+    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
+)
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -177,13 +180,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
 
-    if (
-        grading_method is not GradingMethodType.DAG
-        and grading_method is not GradingMethodType.RANKING
-        and pl.has_attrib(element, "partial-credit")
+    if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
+        element, "partial-credit"
     ):
         raise Exception(
-            "You may only specify partial credit options in the DAG and ranking grading modes."
+            "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
         )
 
     if (
@@ -676,7 +677,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
-    if grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    if grading_method in LCS_GRADABLE_TYPES:
         for answer in student_answer:
             matching_block = next(
                 (
@@ -774,8 +775,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     true_answer_list = data["correct_answers"][answer_name]
@@ -805,17 +810,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method is GradingMethodType.ORDERED:
-        student_answer = [ans["inner_html"] for ans in student_answer]
-        true_answer = [ans["inner_html"] for ans in true_answer_list]
-        final_score = 1 if student_answer == true_answer else 0
-
-    elif grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method is GradingMethodType.RANKING:
+        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
+            if grading_method is GradingMethodType.ORDERED:
+                for index, answer in enumerate(true_answer_list):
+                    answer["ranking"] = index
+
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
@@ -865,6 +869,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
+
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -902,6 +907,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
 
+def get_default_partial_credit_type(
+    grading_method: GradingMethodType,
+) -> PartialCreditType:
+    # For backward compatibility, we need to override the default partial credit type
+    # when grading_method = ORDERED
+    return (
+        PartialCreditType.NONE
+        if grading_method is GradingMethodType.ORDERED
+        else PartialCreditType.LCS
+    )
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     grading_method = pl.get_enum_attrib(
@@ -914,8 +931,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     # Right now invalid input must mean an empty response. Because user input is only
@@ -944,7 +965,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             (
-                grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]
+                grading_method in LCS_GRADABLE_TYPES
                 and partial_credit_type is PartialCreditType.LCS
             )
         ):

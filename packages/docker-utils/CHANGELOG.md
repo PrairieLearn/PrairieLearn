@@ -1,5 +1,33 @@
 # @prairielearn/docker-utils
 
+## 2.0.6
+
+### Patch Changes
+
+- Updated dependencies [abfd5cc]
+  - @prairielearn/logger@1.0.11
+
+## 2.0.5
+
+### Patch Changes
+
+- Updated dependencies [2da23ab]
+  - @prairielearn/logger@1.0.10
+
+## 2.0.4
+
+### Patch Changes
+
+- Updated dependencies [1523b97b0]
+  - @prairielearn/logger@1.0.9
+
+## 2.0.3
+
+### Patch Changes
+
+- Updated dependencies [8dd894623]
+  - @prairielearn/logger@1.0.8
+
 ## 2.0.2
 
 ### Patch Changes

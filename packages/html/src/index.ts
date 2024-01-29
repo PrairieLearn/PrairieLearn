@@ -76,7 +76,7 @@ export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): Htm
 }
 
 /**
- * Pre-escpapes the rendered HTML. Useful for when you want to inline the HTML
+ * Pre-escapes the rendered HTML. Useful for when you want to inline the HTML
  * in something else, for instance in a `data-content` attribute for a Bootstrap
  * popover.
  */
@@ -93,4 +93,14 @@ export function escapeHtml(html: HtmlSafeString): HtmlSafeString {
  */
 export function unsafeHtml(value: string): HtmlSafeString {
   return new HtmlSafeString([value], []);
+}
+
+/**
+ * Joins a list of HTML values with a separator.
+ *
+ * @param values The values to join.
+ * @param separator The separator to use between values.
+ */
+export function joinHtml(values: HtmlValue[], separator: HtmlValue = ''): HtmlSafeString {
+  return unsafeHtml(values.map(escapeValue).join(escapeValue(separator)));
 }

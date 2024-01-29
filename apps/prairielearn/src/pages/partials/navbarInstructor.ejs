@@ -1,23 +1,40 @@
 
     <%# Course admin %> 
-    <li class="nav-item btn-group">
-        <a class="nav-link" <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %> <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>"
-         href="<%= urlPrefix %>/course_admin" role="button">
+    <li class="nav-item btn-group" id="navbar-course-switcher">
+        <a
+            class="nav-link <% if (navPage == 'course_admin' && !(typeof navSubPage !== 'undefined' && (navSubPage == 'issues' || navSubPage == 'questions' || navSubPage == 'syncs'))) { %> active <% } %> <% if (!authz_data.has_course_permission_view) { %> disabled <% } %>"
+            href="<%= urlPrefix %>/course_admin"
+            role="button"
+        >
             <%= course.short_name %>
         </a>
-        <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.authn_courses && authz_data.authn_courses.length > 0) { %>
-        <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-label="Change course" aria-haspopup="true" aria-expanded="false">
+        <a
+            class="nav-link dropdown-toggle dropdown-toggle-split"
+            href="#"
+            id="navbarDropdownMenuCourseAdminLink"
+            role="button"
+            data-toggle="dropdown"
+            aria-label="Change course"
+            aria-haspopup="true"
+            aria-expanded="false"
+            <% if (!authz_data.overrides) { %>
+            hx-get="/pl/navbar/course/<%= course.id %>/switcher"
+            hx-trigger="show-course-switcher once delay:200ms"
+            hx-target="#navbarDropdownMenuCourseAdmin"
+            <% } %>
+        >
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
             <% if (authz_data.overrides) { %>
                 <span class="dropdown-item-text small">Effective users may not switch between courses</span>
             <% } else { %>
-                <% authz_data.authn_courses.forEach(function(c) { %>
-                    <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
-                <% }); %>
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading courses...</span>
+                    </div>
+                </div>
             <% }%>
         </div>
-        <% } %>
     </li>
 
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "issues") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
@@ -28,23 +45,30 @@
 
         <%# Instance admin %> 
         <li class="navbar-text mx-2 no-select">/</li>
-        <li class="nav-item btn-group">
+        <li class="nav-item btn-group" id="navbar-course-instance-switcher">
             <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
-            <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
-                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-label="Change course instance" aria-haspopup="true" aria-expanded="false">
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
-                    <% authz_data.course_instances.forEach(function(ci) { %>
-                        <% if ((navPage == "instance_admin") || (navPage == "course_admin")) { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
-                        <% } else { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
-                        <% } %>
-                    <% }); %>
+            <a
+                class="nav-link dropdown-toggle dropdown-toggle-split"
+                href="#"
+                id="navbarDropdownMenuInstanceAdminLink"
+                role="button"
+                data-toggle="dropdown"
+                aria-label="Change course instance"
+                aria-haspopup="true"
+                aria-expanded="false"
+                hx-get="/pl/navbar/course/<%= course.id %>/course_instance_switcher/<%= course_instance.id %>"
+                hx-trigger="show-course-instance-switcher once delay:200ms"
+                hx-target="#navbarDropdownMenuInstanceAdmin"
+            ></a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading course instances...</span>
+                    </div>
                 </div>
-            <% } %>
+            </div>
         </li>
 
         <%# Instance non-admin %> 
@@ -58,9 +82,9 @@
                 <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
-                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Change assessment">
-                </a>
                 <% if (typeof assessments != 'undefined') { %>
+                    <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Change assessment">
+                    </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
                         <% assessments.forEach(function(a) { %>
                             <a class="dropdown-item <% if (navPage == "assessment" && assessment.id == a.id) { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= a.id %><% if (navPage == "assessment" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= a.assessment_label %></a>
@@ -70,18 +94,29 @@
             </li>
         <% } %>
     <% } else { %>
-        <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.course_instances && authz_data.course_instances.length > 0) { %>
-            <li class="navbar-text mx-2 no-select">/</li>
+        <li class="navbar-text mx-2 no-select">/</li>
 
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceChoose" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Choose course instance...
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChoose">
-                    <% authz_data.course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
-                    <% }); %>
+        <li class="nav-item dropdown" id="navbar-course-instance-switcher">
+            <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdownMenuInstanceChooseLink"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                hx-get="/pl/navbar/course/<%= course.id %>/course_instance_switcher"
+                hx-trigger="show-course-instance-switcher once delay:200ms"
+                hx-target="#navbarDropdownMenuInstanceChoose"
+            >
+                Choose course instance...
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChooseLink" id="navbarDropdownMenuInstanceChoose">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading course instances...</span>
+                    </div>
                 </div>
-            </li>
-        <% } %>
+            </div>
+        </li>
     <% } %>

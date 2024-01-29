@@ -9,16 +9,23 @@ updates:
     open-pull-requests-limit: 99
     rebase-strategy: disabled
     groups:
-      aws:
-        patterns:
-          - '@aws-sdk/*'
-      opentelemetry:
-        patterns:
-          - '@opentelemetry/*'
       ace:
         patterns:
           - 'ace-code'
           - 'ace-builds'
+      aws:
+        patterns:
+          - '@aws-sdk/*'
+          - '@smithy/*'
+      opentelemetry:
+        patterns:
+          - '@opentelemetry/*'
+      sentry:
+        patterns:
+          - '@sentry/*'
+      typescript-eslint:
+        patterns:
+          - '@typescript-eslint/*'
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
@@ -98,6 +105,14 @@ updates:
           - 'pandas-stubs'
   - package-ecosystem: docker
     directory: '/workspaces/jupyterlab'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: pip
+    directory: '/workspaces/jupyterlab-python'
     schedule:
       interval: monthly
       time: '06:00'

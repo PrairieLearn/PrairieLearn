@@ -1,7 +1,10 @@
 // @ts-check
 const scopedData = {};
 
-module.exports = function (scopeName) {
+/**
+ * @param {string} scopeName
+ */
+export function makePerformance(scopeName) {
   if (!scopedData[scopeName]) {
     scopedData[scopeName] = {};
   }
@@ -63,4 +66,4 @@ module.exports = function (scopeName) {
     timedFunc,
     timedAsync,
   };
-};
+}

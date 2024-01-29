@@ -1,10 +1,10 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { queryAsync } from '@prairielearn/postgres';
 
 import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../../tests/ee-helpers';
-import helperServer = require('../../../tests/helperServer');
+import * as helperServer from '../../../tests/helperServer';
 import {
   reconcilePlanGrantsForCourseInstance,
   reconcilePlanGrantsForInstitution,

@@ -14,9 +14,9 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
 - On the shell of your WSL 2 instance, make sure the instance has the `docker` command installed. The installation process may depend on your distribution, but most distributions provide a `docker` package. For example, if you are using Debian, Ubuntu or similar distributions, you may install it with:
 
-```sh
-sudo apt install docker
-```
+  ```sh
+  sudo apt install docker
+  ```
 
 **NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
@@ -30,7 +30,7 @@ If you are using Windows, you have two options to store your course repository(i
 
 - Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
 
-- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
+- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/mwest/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
 
 ## Running instructions
 

@@ -1,11 +1,11 @@
 // @ts-check
-const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
-const { generateSignedToken } = require('@prairielearn/signed-token');
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
-const { config } = require('../lib/config');
-const { shouldSecureCookie } = require('../lib/cookie');
-const { InstitutionSchema, UserSchema } = require('./db-types');
+import { config } from './config';
+import { shouldSecureCookie } from '../lib/cookie';
+import { InstitutionSchema, UserSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -29,7 +29,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {LoadUserAuth} authnParams
  * @param {LoadUserOptions} [optionsParams]
  */
-module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
+export async function loadUser(req, res, authnParams, optionsParams = {}) {
   let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
 
   let user_id;
@@ -47,6 +47,11 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
+    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    if (result === 'invalid_authn_provider') {
+      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`);
+      return;
+    }
   }
 
   const selectedUser = await sqldb.queryOptionalRow(
@@ -113,4 +118,4 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
-};
+}
