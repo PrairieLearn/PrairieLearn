@@ -1,7 +1,7 @@
 // We support running our tests in two modes:
 //
 // - Directly against the source files in `src/`, in which case we use
-// `ts-node` to transpile it on the fly. Useful for quick iteration during
+// `tsx` to transpile it on the fly. Useful for quick iteration during
 // development.
 //
 // - Against the compiled files in `dist/`, in which case we use the compiled
