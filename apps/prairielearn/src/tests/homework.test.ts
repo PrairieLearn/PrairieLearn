@@ -1,4 +1,3 @@
-import ERR = require('async-stacktrace');
 import _ = require('lodash');
 import { assert } from 'chai';
 import request = require('request');
@@ -252,12 +251,9 @@ describe('Homework assessment', function () {
     });
 
     describe('the database', function () {
-      it('should contain HW1', function (callback) {
-        sqldb.queryOneRow(sql.select_hw1, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          locals.assessment_id = result.rows[0].id;
-          callback(null);
-        });
+      it('should contain HW1', async () => {
+        const result = await sqldb.queryOneRowAsync(sql.select_hw1, []);
+        locals.assessment_id = result.rows[0].id;
       });
     });
 
@@ -311,32 +307,24 @@ describe('Homework assessment', function () {
         locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
         assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
       });
-      it('should create one assessment_instance', function (callback) {
-        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== 1) {
-            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
-          }
-          locals.assessment_instance = result.rows[0];
-          callback(null);
-        });
+      it('should create one assessment_instance', async () => {
+        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
+        if (result.rowCount !== 1) {
+          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
+        }
+        locals.assessment_instance = result.rows[0];
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
-      it(`should create ${questionsArray.length} instance_questions`, function (callback) {
-        sqldb.query(sql.select_instance_questions, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== questionsArray.length) {
-            return callback(
-              new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
-              ),
-            );
-          }
-          locals.instance_questions = result.rows;
-          callback(null);
-        });
+      it(`should create ${questionsArray.length} instance_questions`, async () => {
+        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
+        if (result.rowCount !== questionsArray.length) {
+          throw new Error(
+            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+          );
+        }
+        locals.instance_questions = result.rows;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
@@ -847,13 +835,10 @@ describe('Homework assessment', function () {
     helperQuestion.checkQuestionScore(locals);
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
-      it('should succeed', function (callback) {
-        sqldb.queryOneRow(sql.select_last_submission, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          const submission = result.rows[0];
-          if (submission.gradable) return callback(new Error('submission.gradable is true'));
-          callback(null);
-        });
+      it('should succeed', async () => {
+        const result = await sqldb.queryOneRowAsync(sql.select_last_submission, []);
+        const submission = result.rows[0];
+        if (submission.gradable) throw new Error('submission.gradable is true');
       });
     });
     describe('the submission panel contents', function () {
@@ -1279,11 +1264,8 @@ describe('Homework assessment', function () {
 
   describe('regrading', function () {
     describe('change max_points', function () {
-      it('should succeed', function (callback) {
-        sqldb.query(sql.update_max_points, [], function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      it('should succeed', async () => {
+        await sqldb.queryAsync(sql.update_max_points, []);
       });
     });
     helperQuestion.regradeAssessment(locals);
