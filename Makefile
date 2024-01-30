@@ -91,4 +91,4 @@ typecheck-python:
 changeset:
 	@yarn changeset
 
-ci: lint typecheck test
+ci: lint typecheck test check-dependencies
