@@ -27,20 +27,21 @@ WITH
           )
       ) AS exists
   ),
-  has_dev_mode_feature AS (
+  course_dev_mode_features AS (
     SELECT
-      COALESCE(c.options ->> 'devModeFeatures', '[]')::jsonb ? $name AS exists
+      c.options -> 'devModeFeatures' AS dev_mode_features
     FROM
       pl_courses AS c
     WHERE
-      c.id = $course_id
+      $course_id IS NOT NULL
+      AND c.id = $course_id
   )
 SELECT
-  COALESCE(has_feature_grant.exists, false) AS has_feature_grant,
-  COALESCE(has_dev_mode_feature.exists, false) AS has_dev_mode_feature
+  has_feature_grant.exists AS has_feature_grant,
+  course_dev_mode_features.dev_mode_features AS course_dev_mode_features
 FROM
   has_feature_grant
-  FULL JOIN has_dev_mode_feature ON true;
+  FULL JOIN course_dev_mode_features ON true;
 
 -- BLOCK enable_feature
 INSERT INTO

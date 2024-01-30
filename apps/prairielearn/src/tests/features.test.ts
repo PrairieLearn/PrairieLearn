@@ -82,7 +82,7 @@ describe('features', () => {
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
   });
 
-  it('enables and disables a flag for a user in a course instance', async () => {
+  it('enables and disables a feature flag for a user in a course instance', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
     const context = { institution_id: '1', course_id: '1', course_instance_id: '1', user_id: '1' };
 
@@ -104,25 +104,6 @@ describe('features', () => {
         devModeFeatures: ['test:example-feature-flag'],
       },
     });
-
-    console.dir((await queryAsync('SELECT * FROM pl_courses', {})).rows, { depth: null });
-    console.dir(
-      (
-        await queryAsync(
-          `
-    SELECT
-    COALESCE(c.options ->> 'devModeFeatures', '[]')::jsonb ? $name AS exists
-  FROM
-    pl_courses AS c
-    `,
-          {
-            name: 'test:example-feature-flag',
-          },
-        )
-      ).rows,
-      { depth: null },
-    );
-
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
 
     await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {

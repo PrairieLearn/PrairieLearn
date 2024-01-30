@@ -8,7 +8,7 @@ const sql = loadSqlEquiv(__filename);
 
 const IsFeatureEnabledSchema = z.object({
   has_feature_grant: z.boolean(),
-  has_dev_mode_feature: z.boolean(),
+  course_dev_mode_features: z.unknown(),
 });
 
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
@@ -108,9 +108,21 @@ export class FeatureManager<FeatureName extends string> {
 
     if (featureIsEnabled.has_feature_grant) return true;
 
-    if (config.devMode && featureIsEnabled.has_dev_mode_feature) return true;
+    // Allow features to be enabled in dev mode via `options.devModeFeatures`
+    // in `infoCourse.json`.
+    //
+    // We could check for the feature in the array in SQL, but it's easier to
+    // write this more defensively in JavaScript.
+    if (
+      config.devMode &&
+      Array.isArray(featureIsEnabled.course_dev_mode_features) &&
+      featureIsEnabled.course_dev_mode_features.includes(name)
+    ) {
+      return true;
+    }
 
-    // Default to disabled if not explicitly enabled by a specific grant or config.
+    // Default to disabled if not explicitly enabled by a specific grant, config,
+    // or course options.
     return false;
   }
 
