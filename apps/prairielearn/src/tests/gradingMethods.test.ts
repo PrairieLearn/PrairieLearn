@@ -5,7 +5,6 @@ import { config } from '../lib/config';
 import fetch from 'node-fetch';
 import * as helperServer from './helperServer';
 import * as sqldb from '@prairielearn/postgres';
-// @ts-expect-error -- Incorrectly thinks that this is ESM.
 import { io } from 'socket.io-client';
 import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 
