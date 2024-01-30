@@ -1,12 +1,12 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { CourseRequest } from '../../lib/db-types';
+import { type CourseRequestRow } from './instructorRequestCourse';
 
 export const RequestCourse = ({
   course_requests,
   resLocals,
 }: {
-  course_requests: CourseRequest[];
+  course_requests: CourseRequestRow[];
   resLocals: Record<string, any>;
 }) => {
   return html`
@@ -51,20 +51,34 @@ export const RequestCourse = ({
                         </tr>
                       </thead>
                       <tbody>
-                        ${course_requests.map(
-                          (req) => html`
+                        ${course_requests.map((req) => {
+                          let details = '';
+                          switch (req.course_request.approved_status) {
+                            case 'approved':
+                              if (req.approved_by_user) {
+                                details = `Approved by ${req.approved_by_user?.name}`;
+                              } else {
+                                details = 'Automatically approved';
+                              }
+                              break;
+                            case 'denied':
+                              details = `Denied by ${req.approved_by_user?.name}`;
+                              break;
+                          }
+
+                          return html`
                             <tr>
-                              <td>${req.short_name}</td>
-                              <td>${req.title}</td>
+                              <td>${req.course_request.short_name}</td>
+                              <td>${req.course_request.title}</td>
                               <td>
                                 ${renderEjs(__filename, "<%- include('approvalStatusIcon')%>", {
-                                  status: req.approved_status,
+                                  status: req.course_request.approved_status,
                                 })}
                               </td>
-                              <td>${req['details']}</td>
+                              <td>${details}</td>
                             </tr>
-                          `,
-                        )}
+                          `;
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -214,7 +228,8 @@ export const RequestCourse = ({
                       <b>This is the wrong form for you.</b> If you would like to enroll in an
                       existing course, please use the
                       <a href="enroll">form to Enroll in a course</a>. If your course is not listed
-                      there, your instructor is not yet using PrairieLearn for the course.
+                      there, contact your instructor for instructions on how to access your
+                      assessments.
                     </p>
                   </div>
                 </div>

@@ -17,6 +17,12 @@ import { RequestCourse } from './instructorRequestCourse.html';
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
 
+const CourseRequestRowSchema = z.object({
+  course_request: CourseRequestSchema,
+  approved_by_user: UserSchema.nullable(),
+});
+export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -25,27 +31,8 @@ router.get(
       {
         user_id: res.locals.authn_user.user_id,
       },
-      CourseRequestSchema,
+      CourseRequestRowSchema,
     );
-
-    for (const cr of course_requests) {
-      cr['details'] = null;
-
-      if (cr.approved_by && ['approved', 'denied'].includes(cr.approved_status)) {
-        const approver = await queryRow(
-          'SELECT * FROM users WHERE user_id = $user_id',
-          {
-            user_id: cr.approved_by,
-          },
-          UserSchema,
-        );
-
-        const status = cr.approved_status.charAt(0).toUpperCase() + cr.approved_status.slice(1);
-        cr['details'] = `${status} by ${approver.name}`;
-      } else if (cr.approved_status === 'approved') {
-        cr['details'] = 'Automatically approved';
-      }
-    }
 
     res.send(
       RequestCourse({

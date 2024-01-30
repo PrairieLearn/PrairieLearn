@@ -1,8 +1,10 @@
 -- BLOCK get_requests
 SELECT
-  r.*
+  to_json(r.*) AS course_request,
+  to_json(u.*) AS approved_by_user
 FROM
   course_requests AS r
+  LEFT JOIN users AS u ON u.user_id = r.approved_by
 WHERE
   r.user_id = $user_id
 ORDER BY
