@@ -3,6 +3,7 @@ columns
     can_assign_roles: boolean not null default false
     can_assign_roles_at_start: boolean default false
     can_assign_roles_during_assessment: boolean default false
+    can_submit_assessment: boolean default true
     id: bigint not null default nextval('group_roles_id_seq'::regclass)
     maximum: integer
     minimum: integer default 0
