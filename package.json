@@ -20,7 +20,7 @@
     "@prairielearn/prettier-plugin-sql": "workspace:^",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
-    "dependency-cruiser": "^13.1.5",
+    "dependency-cruiser": "^16.1.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -41,7 +41,7 @@
     "packages/*"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "packageManager": "yarn@3.5.0"
 }

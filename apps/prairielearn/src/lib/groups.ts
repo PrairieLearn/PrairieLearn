@@ -82,7 +82,7 @@ interface GroupRoleAssignment {
 
 const GroupForUpdateSchema = GroupSchema.extend({
   cur_size: z.number(),
-  max_size: z.number(),
+  max_size: z.number().nullable(),
   has_roles: z.boolean(),
 });
 
@@ -229,28 +229,38 @@ export async function addUserToGroup({
     }
 
     const user = await selectUserByUid(uid);
-    const enrollment = user
-      ? await getEnrollmentForUserInCourseInstance({
-          course_instance_id: group.course_instance_id,
-          user_id: user.user_id,
-        })
-      : null;
-    if (enrollment == null) {
+    const userIsInstructor =
+      user &&
+      (await sqldb.callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, group.course_instance_id],
+        z.boolean(),
+      ));
+    const userIsStudent =
+      user &&
+      !userIsInstructor &&
+      !!(await getEnrollmentForUserInCourseInstance({
+        course_instance_id: group.course_instance_id,
+        user_id: user.user_id,
+      }));
+    // To be part of a group, the user needs to either be enrolled in the course
+    // instance, or be an instructor
+    if (!userIsStudent && !userIsInstructor) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
     }
 
     // This is technically susceptible to race conditions. That won't be an
     // issue once we have a unique constraint for group membership.
-    const existingGroupId = await getGroupId(assessment_id, enrollment.user_id);
+    const existingGroupId = await getGroupId(assessment_id, user.user_id);
     if (existingGroupId != null) {
-      if (idsEqual(enrollment.user_id, authn_user_id)) {
+      if (idsEqual(user.user_id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
         throw new GroupOperationError('User is already in another group.');
       }
     }
 
-    if (enforceGroupSize && group.cur_size >= group.max_size) {
+    if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
       throw new GroupOperationError(`Group is already full.`);
     }
 
@@ -265,7 +275,7 @@ export async function addUserToGroup({
 
     await sqldb.queryAsync(sql.insert_group_user, {
       group_id: group.id,
-      user_id: enrollment.user_id,
+      user_id: user.user_id,
       group_config_id: group.group_config_id,
       authn_user_id: authn_user_id,
       group_role_id: groupRoleId,
