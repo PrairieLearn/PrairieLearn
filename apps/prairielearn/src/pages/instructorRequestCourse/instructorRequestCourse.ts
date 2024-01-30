@@ -20,7 +20,7 @@ const sql = loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const course_requests = await queryRows(
+    const rows = await queryRows(
       sql.get_requests,
       {
         user_id: res.locals.authn_user.user_id,
@@ -30,7 +30,7 @@ router.get(
 
     res.send(
       RequestCourse({
-        course_requests,
+        rows,
         resLocals: res.locals,
       }),
     );
