@@ -11,7 +11,7 @@ import * as Sentry from '@prairielearn/sentry';
 import * as opsbot from '../../lib/opsbot';
 import * as github from '../../lib/github';
 import { config } from '../../lib/config';
-import { CourseRequestSchema, IdSchema } from '../../lib/db-types';
+import { CourseRequestSchema, IdSchema, UserSchema } from '../../lib/db-types';
 import { RequestCourse } from './instructorRequestCourse.html';
 
 const router = express.Router();
@@ -27,6 +27,25 @@ router.get(
       },
       CourseRequestSchema,
     );
+
+    for (const cr of course_requests) {
+      cr['details'] = null;
+
+      if (cr.approved_by && ['approved', 'denied'].includes(cr.approved_status)) {
+        const approver = await queryRow(
+          'SELECT * FROM users WHERE user_id = $user_id',
+          {
+            user_id: cr.approved_by,
+          },
+          UserSchema,
+        );
+
+        const status = cr.approved_status.charAt(0).toUpperCase() + cr.approved_status.slice(1);
+        cr['details'] = `${status} by ${approver.name}`;
+      } else if (cr.approved_status === 'approved') {
+        cr['details'] = 'Automatically approved';
+      }
+    }
 
     res.send(
       RequestCourse({

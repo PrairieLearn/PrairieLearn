@@ -47,6 +47,7 @@ export const RequestCourse = ({
                           <th>Short Name</th>
                           <th>Title</th>
                           <th>Status</th>
+                          <th>Details</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -60,6 +61,7 @@ export const RequestCourse = ({
                                   status: req.approved_status,
                                 })}
                               </td>
+                              <td>${req['details']}</td>
                             </tr>
                           `,
                         )}
