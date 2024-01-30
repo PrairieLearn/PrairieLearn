@@ -10,10 +10,13 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 #
 # We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,
 # both of which are necessary for Yarn to correctly install dependencies.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json /PrairieLearn/
+#
+# Finally, we copy `packages/bind-mount/` since this package contains native
+# code that will be built during the install process.
+COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
-RUN cd /PrairieLearn && yarn install --immutable  && yarn cache clean
+RUN cd /PrairieLearn && yarn install --immutable && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
