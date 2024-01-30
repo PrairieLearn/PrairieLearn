@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
