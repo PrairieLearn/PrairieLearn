@@ -8,8 +8,8 @@
     "test": "mocha --no-config --require tsx src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.484.0",
-    "@aws-sdk/client-secrets-manager": "^3.484.0",
+    "@aws-sdk/client-ec2": "^3.502.0",
+    "@aws-sdk/client-secrets-manager": "^3.502.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.2.0",
     "lodash": "^4.17.21",
@@ -20,8 +20,8 @@
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.14.202",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^18.19.4",
-    "chai": "^4.3.10",
+    "@types/node": "^20.11.11",
+    "chai": "^4.4.1",
     "mocha": "^10.2.0",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.7.0",
