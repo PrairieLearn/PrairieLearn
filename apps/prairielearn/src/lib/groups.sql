@@ -77,13 +77,13 @@ WITH
       gur.group_role_id
   )
 SELECT
-  gr.id,
-  gr.role_name,
-  COALESCE(gur.count, 0) AS count,
-  gr.maximum,
-  gr.minimum,
-  gr.can_assign_roles_at_start,
-  gr.can_assign_roles_during_assessment
+  gr.*,
+  COALESCE(gur.count, 0)::INT AS count,
+  -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
+  -- course may not have synced with the new code yet. Use the old
+  -- can_assign_roles_at_start column instead for now. This will be replaced in
+  -- a future version.
+  gr.can_assign_roles_at_start AS can_assign_roles
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -92,19 +92,6 @@ FROM
   LEFT JOIN count_group_user_per_role AS gur ON gur.group_role_id = gr.id
 ORDER BY
   minimum DESC;
-
--- BLOCK get_assessment_level_permissions
-SELECT
-  bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
-  bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
-FROM
-  group_configs as gc
-  JOIN groups as g ON (gc.id = g.group_config_id)
-  JOIN group_user_roles as gur ON (gur.group_id = g.id)
-  JOIN group_roles AS gr ON (gr.id = gur.group_role_id)
-WHERE
-  gc.assessment_id = $assessment_id
-  AND gur.user_id = $user_id;
 
 -- BLOCK select_question_permissions
 SELECT
@@ -205,6 +192,10 @@ WITH
     SELECT
       gr.id,
       (
+        -- The can_assign_roles column is not yet guaranteed to be up-to-date,
+        -- as the course may not have synced with the new code yet. Use the old
+        -- can_assign_roles_at_start column instead for now. This will be
+        -- replaced in a future version.
         gr.can_assign_roles_at_start
         AND COALESCE($cur_size::INT, 0) = 0
       ) AS assigner_role_needed,
