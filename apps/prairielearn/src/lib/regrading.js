@@ -20,7 +20,7 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
     { assessment_instance_id },
     z.object({
       assessment_instance_label: z.string(),
-      user_uid: z.string().optional(),
+      user_uid: z.string().nullable(),
       group_name: z.string().nullable(),
       assessment_id: IdSchema,
       course_instance_id: IdSchema,
