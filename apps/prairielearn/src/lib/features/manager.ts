@@ -6,6 +6,11 @@ import { config } from '../config';
 
 const sql = loadSqlEquiv(__filename);
 
+const IsFeatureEnabledSchema = z.object({
+  has_feature_grant: z.boolean(),
+  has_dev_mode_feature: z.boolean(),
+});
+
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
 const DEFAULT_CONTEXT = {
   institution_id: null,
@@ -98,9 +103,12 @@ export class FeatureManager<FeatureName extends string> {
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.boolean(),
+      IsFeatureEnabledSchema,
     );
-    if (featureIsEnabled) return true;
+
+    if (featureIsEnabled.has_feature_grant) return true;
+
+    if (config.devMode && featureIsEnabled.has_dev_mode_feature) return true;
 
     // Default to disabled if not explicitly enabled by a specific grant or config.
     return false;

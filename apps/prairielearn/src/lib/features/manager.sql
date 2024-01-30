@@ -1,29 +1,46 @@
 -- BLOCK is_feature_enabled
-SELECT
-  EXISTS (
+WITH
+  has_feature_grant AS (
     SELECT
-      1
+      EXISTS (
+        SELECT
+          1
+        FROM
+          feature_grants
+        WHERE
+          name = $name
+          AND (
+            institution_id IS NULL
+            OR $institution_id = institution_id
+          )
+          AND (
+            course_id IS NULL
+            OR $course_id = course_id
+          )
+          AND (
+            course_instance_id IS NULL
+            OR $course_instance_id = course_instance_id
+          )
+          AND (
+            user_id IS NULL
+            OR $user_id = user_id
+          )
+      ) AS exists
+  ),
+  has_dev_mode_feature AS (
+    SELECT
+      COALESCE(c.options ->> 'devModeFeatures', '[]')::jsonb ? $name AS exists
     FROM
-      feature_grants
+      pl_courses AS c
     WHERE
-      name = $name
-      AND (
-        institution_id IS NULL
-        OR $institution_id = institution_id
-      )
-      AND (
-        course_id IS NULL
-        OR $course_id = course_id
-      )
-      AND (
-        course_instance_id IS NULL
-        OR $course_instance_id = course_instance_id
-      )
-      AND (
-        user_id IS NULL
-        OR $user_id = user_id
-      )
-  ) as exists;
+      c.id = $course_id
+  )
+SELECT
+  COALESCE(has_feature_grant.exists, false) AS has_feature_grant,
+  COALESCE(has_dev_mode_feature.exists, false) AS has_dev_mode_feature
+FROM
+  has_feature_grant
+  FULL JOIN has_dev_mode_feature ON true;
 
 -- BLOCK enable_feature
 INSERT INTO
