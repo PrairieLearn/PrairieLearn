@@ -1,6 +1,13 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type CourseRequestRow } from './instructorRequestCourse';
+import { z } from 'zod';
+import { CourseRequestSchema, UserSchema } from '../../lib/db-types';
+
+export const CourseRequestRowSchema = z.object({
+  course_request: CourseRequestSchema,
+  approved_by_user: UserSchema.nullable(),
+});
+type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
 export const RequestCourse = ({
   course_requests,

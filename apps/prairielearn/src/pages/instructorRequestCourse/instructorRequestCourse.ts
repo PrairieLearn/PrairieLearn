@@ -11,17 +11,11 @@ import * as Sentry from '@prairielearn/sentry';
 import * as opsbot from '../../lib/opsbot';
 import * as github from '../../lib/github';
 import { config } from '../../lib/config';
-import { CourseRequestSchema, IdSchema, UserSchema } from '../../lib/db-types';
-import { RequestCourse } from './instructorRequestCourse.html';
+import { IdSchema } from '../../lib/db-types';
+import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
-
-const CourseRequestRowSchema = z.object({
-  course_request: CourseRequestSchema,
-  approved_by_user: UserSchema.nullable(),
-});
-export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
 router.get(
   '/',
