@@ -2026,6 +2026,17 @@ module.exports.startServer = async () => {
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
   if (!server.listening) return callback(null);
+
+  // This exists mostly for tests, where we might have dangling connections
+  // from `fetch()` requests whose bodies we never read. `server.close()` won't
+  // actually stop the server until all connections are closed, so we need to
+  // manually close said connections.
+  //
+  // In production environments, PrairieLearn should always be deployed behind
+  // a load balancer that will drain and close any open connections before
+  // PrairieLearn is stopped.
+  server.closeAllConnections();
+
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
