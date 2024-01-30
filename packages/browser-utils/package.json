@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "js-base64": "^3.7.5"
+    "js-base64": "^3.7.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
