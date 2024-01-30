@@ -16,14 +16,14 @@ nltk==3.8.1
 numpy==1.26.3
 openpyxl==3.1.2
 pandas-stubs==2.1.4.231227
-pandas==2.2.0
+pandas==2.1.4
 Pint==0.23
 psutil==5.9.8
 PuLP==2.8.0
 pycryptodome==3.20.0
 Pygments==2.17.2
 pygments-ansi-color==0.3.0
-pygraphviz==1.12
+pygraphviz==1.6
 pyquaternion==0.9.9
 pytest-cov==4.1.0
 pytest-lazy-fixture==0.6.3
@@ -31,7 +31,7 @@ pytest-repeat==0.9.3
 pytest==8.0.0
 recommonmark==0.7.1
 regex==2023.12.25
-rpy2==3.5.15
+rpy2==3.5.12
 schemdraw==0.18
 scikit-learn==1.4.0
 scipy==1.12.0
@@ -44,4 +44,4 @@ types-chevron==0.14.2.20240106
 types-Pygments==2.17.0.20240106
 types-pytest-lazy-fixture==0.6.3.4
 typing-extensions==4.9.0
-tzlocal==5.2
+tzlocal==4.3
