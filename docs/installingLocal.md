@@ -19,7 +19,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 
   This will launch a shell inside a Docker container running the PrairieLearn image, but using the current working directory for its code. If you'd rather run the command from somewhere other than the root of the repo, replace `.` with the path to the directory in `.:/PrairieLearn`.
 
-  If you get an error like `no matching manifest for linux/arm64/v8 in the manifest list entries` (if you're running for example on a recent Mac), then add `--platform linux/x86_64`.
+  If you're running on an Apple Silicon Mac or another ARM-based machine, you may get an error like `no matching manifest for linux/arm64/v8 in the manifest list entries`. To resolve this, add `--platform linux/x86_64` before the image in the command (`prairielearn/prairielearn`).
 
   You can now run the following commands inside the container:
 
