@@ -26,6 +26,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
+import * as cache from '@prairielearn/cache';
 
 import { config, loadConfig } from './lib/config';
 import { parseDockerLogs } from './lib/docker';
@@ -250,6 +251,10 @@ async
         );
         await dockerAttemptKillAndRemove(docker.getContainer(container.Id));
       }
+    },
+    async () => {
+      // cache.init({ cacheType: config.cacheType, redisUrl: config.redisUrl });
+      cache.init({ cacheType: 'redis', redisUrl: config.redisUrl });
     },
   ])
   .then(() => {
@@ -603,7 +608,8 @@ async function _pullImage(workspace) {
   // will tend to go faster at the start (when we only know
   // about a few layers) and slow down at the end (when we
   // know about all layers).
-  let progressDetails = {};
+  let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
+  let progressDetailsInit = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
@@ -628,6 +634,15 @@ async function _pullImage(workspace) {
         }
 
         const toDatabase = false;
+        console.log('cache set here');
+        cache.set({
+          // cacheType: config.cacheType,
+          cacheType: 'redis',
+          redisUrl: config.redisUrl,
+          key: `workspaceProgressInit:${workspace_image}`,
+          value: progressDetailsInit,
+          maxAgeMS: 1000 * 60 * 60,
+        });
         workspaceUtils
           .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
           .catch((err) => {
@@ -643,7 +658,9 @@ async function _pullImage(workspace) {
           // separately by making them separate keys
           const key = `${output.id}/${output.status}`;
           progressDetails[key] = output.progressDetail;
+          progressDetailsInit[key] = { ...output.progressDetail, current: 0 };
         }
+        console.log('progressDetails', progressDetails);
         current = Object.values(progressDetails).reduce(
           (current, detail) => detail.current + current,
           0,
