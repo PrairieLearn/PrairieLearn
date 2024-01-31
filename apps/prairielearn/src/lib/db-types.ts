@@ -828,3 +828,24 @@ export const AssessmentQuestionRolePermissionsSchema = z.object({
 export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
 >;
+
+export const IssueSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_caused: z.boolean().nullable(),
+  course_data: z.record(z.string(), z.any()).nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString.nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  instructor_message: z.string().nullable(),
+  manually_reported: z.boolean().nullable(),
+  open: z.boolean().nullable(),
+  question_id: IdSchema.nullable(),
+  student_message: z.string().nullable(),
+  system_data: z.record(z.string(), z.any()).nullable(),
+  user_id: IdSchema.nullable(),
+  variant_id: IdSchema.nullable(),
+});
+export type Issue = z.infer<typeof IssueSchema>;
