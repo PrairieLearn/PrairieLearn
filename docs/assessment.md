@@ -335,11 +335,7 @@ Additionally, when an instructor restricts the submitting of a question to certa
 
 ![Question cannot be submitted due to group role](grouproles_submit_question.png)
 
-When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed.
-
-![Invalid group role configuration](grouproles_invalid_config.png)
-
-Users with both assigner and non-assigner roles can view these errors. For users with assigner roles, these errors appear right above the role assignment table, so they can easily reference what issues to fix.
+When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
 
 ![Group configuration errors](grouproles_invalid_config_errors.png)
 
