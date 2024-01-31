@@ -279,6 +279,7 @@ class TestExceptions:
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
     INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
     INVALID_VARIABLE_CASES = ["x", "y", "z*n"]
+    FUNCTION_AS_VARIABLE_CASES = ["2/exp", "cos*n"]
     INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
     INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
     INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
@@ -317,6 +318,11 @@ class TestExceptions:
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
         with pytest.raises(phs.HasInvalidSymbolError):
+            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+
+    @pytest.mark.parametrize("a_sub", FUNCTION_AS_VARIABLE_CASES)
+    def test_invalid_variable(self, a_sub: str) -> None:
+        with pytest.raises(phs.HasFunctionConfusedForVariableError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)

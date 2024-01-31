@@ -198,6 +198,10 @@ class HasInvalidVariableError(BaseSympyError):
     offset: int
     text: str
 
+@dataclass
+class HasFunctionConfusedForVariableError(BaseSympyError):
+    offset: int
+    text: str
 
 @dataclass
 class HasParseError(BaseSympyError):
@@ -243,15 +247,22 @@ class CheckFunctions(ast.NodeVisitor):
 
 
 class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables: SympyMapT) -> None:
+    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
+        # functions is only used for error type, if someone writes "exp + 2"
         self.variables = variables
+        self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
         if isinstance(node.ctx, ast.Load):
             if not is_name_of_function(node):
                 if node.id not in self.variables:
                     err_node = get_parent_with_location(node)
-                    raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+                    if node.id in self.functions:
+                        raise HasFunctionConfusedForVariableError(
+                            err_node.col_offset, err_node.id
+                        )
+                    else:
+                        raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
 
@@ -297,7 +308,7 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     CheckFunctions(locals_for_eval["functions"]).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"]).visit(root)
+    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(root)
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -654,6 +665,12 @@ def validate_string_as_sympy(
     except HasInvalidVariableError as err:
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
+            f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except HasFunctionConfusedForVariableError as err:
+        return (
+            f'Your answer tries to use the function "{err.text}" like a variable. '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
