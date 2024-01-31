@@ -224,9 +224,9 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
-## Enabling custom group roles for collaborative assessments
+### Enabling custom group roles
 
-By default, students working in a collaborative group assessments can view and submit every question. However, instructors can define **custom group roles**, which can be assigned different permissions to facilitate role-based teamwork. Roles can receive the following permissions:
+By default, students working in a collaborative group assessments can view and submit every question. However, instructors can define **custom group roles**, which can be assigned different permissions to facilitate role-based teamwork. Assessments can be configured to allow or restrict some operations to students with specific roles, such as:
 
 - Submitting specific questions
 - Viewing specific questions
@@ -271,7 +271,7 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 
 Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a group's role configuration does not meet the instructor's specification.
 
-### Adding permissions for an assessment
+#### Adding permissions for an assessment
 
 Permissions can be configured at the _assessment_, _zone_, or _question_ level.
 
@@ -291,7 +291,25 @@ The schema for permissions is defined as follows:
 
 Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. Setting either attribute to `null` means that **every role** can view/submit that part.
 
-Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Reflector"]`, then only the _Reflector_ can submit that particular question.
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
+
+```json
+{
+  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+  "zones": [
+    {
+      "canSubmit": ["Recorder"],
+      "questions": [
+        { "id": "question1", "points": 1 },
+        { "id": "question2", "points": 1, "canView": ["Recorder"] },
+        { "id": "question3", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
+      ]
+    }
+  ]
+}
+```
+
+In the example above, question 1 can be viewed by students in any of the four roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector.
 
 ### Students joining assessments with custom group roles
 
