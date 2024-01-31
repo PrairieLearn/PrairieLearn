@@ -198,10 +198,12 @@ class HasInvalidVariableError(BaseSympyError):
     offset: int
     text: str
 
+
 @dataclass
 class FunctionNameUsedWithoutArguments(BaseSympyError):
     offset: int
     text: str
+
 
 @dataclass
 class HasParseError(BaseSympyError):
@@ -308,7 +310,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     CheckFunctions(locals_for_eval["functions"]).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(root)
+    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
+        root
+    )
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -671,7 +675,7 @@ def validate_string_as_sympy(
     except FunctionNameUsedWithoutArguments as err:
         return (
             f'Your answer mentions the function "{err.text}" without '
-            'applying it to anything. '
+            "applying it to anything. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
