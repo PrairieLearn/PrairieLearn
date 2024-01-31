@@ -33,9 +33,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const VariantSelectResultSchema = VariantSchema.extend({
   assessment: AssessmentSchema,
-  assessment_instance: AssessmentInstanceSchema,
-  assessment_instance_date: DateFromISOString,
-  formatted_date: z.string(),
+  assessment_instance: AssessmentInstanceSchema.extend({
+    formatted_date: z.string().nullable(),
+  }).nullable(),
+  assessment_instance_date: DateFromISOString.nullable(),
+  formatted_date: z.string().nullable(),
 });
 
 const detailedSubmissionColumns = /** @type {const} */ ({
