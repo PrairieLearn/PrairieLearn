@@ -311,7 +311,7 @@ Permissions defined at a higher level are propagated down the assessment hierarc
 
 In the example above, question 1 can be viewed by students in any of the four roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector.
 
-### Students joining assessments with custom group roles
+#### Assigning roles to students
 
 When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. Students can click "View role info" to see more information about the assessment's group roles.
 
@@ -325,7 +325,7 @@ Any student with an assigner role can view additional controls to change the rol
 
 ![Group role assignment controls](grouproles_assign_roles.png)
 
-### Permission enforcement during assessment
+#### Restrictions based on role permissions
 
 When an instructor restricts the viewing of a question to certain roles, users without those roles will be unable to view that question.
 
@@ -334,8 +334,6 @@ When an instructor restricts the viewing of a question to certain roles, users w
 Additionally, when an instructor restricts the submitting of a question to certain roles, users without those roles will be unable to submit that question.
 
 ![Question cannot be submitted due to group role](grouproles_submit_question.png)
-
-### Invalid role configurations
 
 When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed.
 
