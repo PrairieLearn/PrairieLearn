@@ -199,7 +199,7 @@ class HasInvalidVariableError(BaseSympyError):
     text: str
 
 @dataclass
-class HasFunctionConfusedForVariableError(BaseSympyError):
+class FunctionNameUsedWithoutArguments(BaseSympyError):
     offset: int
     text: str
 
@@ -258,7 +258,7 @@ class CheckVariables(ast.NodeVisitor):
                 if node.id not in self.variables:
                     err_node = get_parent_with_location(node)
                     if node.id in self.functions:
-                        raise HasFunctionConfusedForVariableError(
+                        raise FunctionNameUsedWithoutArguments(
                             err_node.col_offset, err_node.id
                         )
                     else:
@@ -668,9 +668,10 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except HasFunctionConfusedForVariableError as err:
+    except FunctionNameUsedWithoutArguments as err:
         return (
-            f'Your answer tries to use the function "{err.text}" like a variable. '
+            f'Your answer mentions the function "{err.text}" without '
+            'applying it to anything. '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
