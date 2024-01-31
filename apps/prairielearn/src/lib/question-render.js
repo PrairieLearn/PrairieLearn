@@ -32,7 +32,7 @@ import {
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const VariantSelectResultSchema = VariantSchema.extend({
-  assessment: AssessmentSchema,
+  assessment: AssessmentSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
