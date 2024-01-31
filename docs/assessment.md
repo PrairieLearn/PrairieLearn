@@ -289,13 +289,13 @@ The schema for permissions is defined as follows:
 | `canView`   | Array of string | -       | The names of roles that can view this part of the assessment.   |
 | `canSubmit` | Array of string | -       | The names of roles that can submit this part of the assessment. |
 
-Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. Setting either attribute to `null` means that **every role** can view/submit that part.
+Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. If a question does not set the value of either attribute, it means that **every role** can view/submit that part.
 
 Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
 
 ```json
 {
-  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+  "canView": ["Manager", "Reflector", "Recorder"],
   "zones": [
     {
       "canSubmit": ["Recorder"],
@@ -303,13 +303,14 @@ Permissions defined at a higher level are propagated down the assessment hierarc
         { "id": "question1", "points": 1 },
         { "id": "question2", "points": 1, "canView": ["Recorder"] },
         { "id": "question3", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
+        { "id": "question4", "points": 1, "canView": null }
       ]
     }
   ]
 }
 ```
 
-In the example above, question 1 can be viewed by students in any of the four roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector.
+In the example above, question 1 can be viewed by students in Manager, Reflector or Recorder roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector. Question 4 overrides the default settings by using the `null` special value, and allows students in any role to view the question, though only students with the Recorder role can submit an answer.
 
 #### Assigning roles to students
 
