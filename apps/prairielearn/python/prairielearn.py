@@ -265,9 +265,6 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
 
-    This function does not try to preserve information like the assumptions on
-    variables in a sympy expression.
-
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
@@ -369,9 +366,6 @@ def from_json(v):
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
-
-    This function does not try to recover information like the assumptions on
-    variables in a sympy expression.
 
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
