@@ -230,9 +230,9 @@ By default, students working in a collaborative group assessments can view and s
 
 - Submitting specific questions
 - Viewing specific questions
-- Assigning group roles before & during an assessment
+- Assigning group roles for other students
 
-Students are allowed to take on multiple roles. This may be necessary when users leave and join groups after assessments have started.
+Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join groups after assessments have started.
 
 To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
@@ -243,7 +243,7 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
       "name": "Manager",
       "minimum": 1,
       "maximum": 1,
-      "canAssignRolesAtStart": true
+      "canAssignRoles": true
     },
     {
       "name": "Recorder",
@@ -265,11 +265,11 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 | Attribute               | Type    | Default | Description                                                              |
 | ----------------------- | ------- | ------- | ------------------------------------------------------------------------ |
 | `name`                  | string  | -       | The name of the role.                                                    |
-| `minimum`               | integer | 0       | The minimum required number of this role in the assessment.              |
-| `maximum`               | integer | -       | The maximum required number of this role in the assessment.              |
-| `canAssignRolesAtStart` | boolean | false   | Allow students with this role to assign roles throughout the assessment. |
+| `minimum`               | integer | 0       | The minimum required number of students holding this role in the assessment.              |
+| `maximum`               | integer | -       | The maximum required number of students holding this role in the assessment.              |
+| `canAssignRoles` | boolean | false   | Allow students with this role to assign roles to other students. |
 
-Students select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents all question submissions if a group's role configuration does not meet the instructor's specification.
+Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a group's role configuration does not meet the instructor's specification.
 
 ### Adding permissions for an assessment
 
@@ -319,7 +319,7 @@ Additionally, when an instructor restricts the submitting of a question to certa
 
 ### Invalid role configurations
 
-When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, **question submissions are prevented** and users receive visual feedback on how to fix the role configuration.
+When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed.
 
 ![Invalid group role configuration](grouproles_invalid_config.png)
 
