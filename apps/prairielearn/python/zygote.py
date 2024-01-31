@@ -16,6 +16,7 @@
 
 import base64
 import copy
+import importlib
 import io
 import json
 import os
@@ -84,6 +85,31 @@ matplotlib.use("PDF")
 prairielearn.get_unit_registry()
 
 
+# We want to conditionally allow/block importing specific modules, namely `rpy2`.
+# This custom importer will allow us to do so, and throw a custom error message.
+#
+# While this won't prevent anything more complex than an `import` statement, it
+# will make it clear to the user that they're not allowed to use `rpy2`. If they
+# try to bypass the block, it's up to them to deal with the consequences.
+class ForbidModuleMetaPathFinder(importlib.abc.MetaPathFinder):
+    def __init__(self):
+        self.forbidden_modules: set[str] = set()
+
+    def forbid_module(self, forbidden_module):
+        self.forbidden_modules.add(forbidden_module)
+
+    def reset_forbidden_modules(self):
+        self.forbidden_modules.clear()
+
+    def find_spec(self, fullname, path, target=None):
+        if any(
+            fullname == module or fullname.startswith(module + ".")
+            for module in self.forbidden_modules
+        ):
+            raise ImportError(f"module '{fullname}' is not allowed")
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
@@ -99,8 +125,11 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
 
 
 def worker_loop():
-    # whether the PRNGs have already been seeded in this worker_loop() call
+    # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
+
+    path_finder = ForbidModuleMetaPathFinder()
+    sys.meta_path.insert(0, path_finder)
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -119,6 +148,13 @@ def worker_loop():
             args = inp.get("args", None)
             cwd = inp.get("cwd", None)
             paths = inp.get("paths", None)
+            forbidden_modules = inp.get("forbidden_modules", None)
+
+            # Wire up the custom importer to forbid modules as needed.
+            path_finder.reset_forbidden_modules()
+            if forbidden_modules is not None and isinstance(forbidden_modules, list):
+                for module in forbidden_modules:
+                    path_finder.forbid_module(module)
 
             # "ping" is a special fake function name that the parent process
             # will use to check if the worker is active and able to respond to
