@@ -13,6 +13,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 - Run PrairieLearn with:
 
   ```sh
+  cd PrairieLearn
   docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
   ```
 
