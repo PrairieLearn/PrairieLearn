@@ -329,7 +329,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
     const instance_question_id = locals.instance_question?.id;
-    const course_instance_id = locals.course_instance_id || locals.course_instance?.id || null;
+    const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
     const options = { variant_seed };
     const assessmentGroupWork = locals.assessment?.group_work ?? false;
     locals.variant = await ensureVariant(
