@@ -78,12 +78,7 @@ WITH
   )
 SELECT
   gr.*,
-  COALESCE(gur.count, 0)::INT AS count,
-  -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
-  -- course may not have synced with the new code yet. Use the old
-  -- can_assign_roles_at_start column instead for now. This will be replaced in
-  -- a future version.
-  gr.can_assign_roles_at_start AS can_assign_roles
+  COALESCE(gur.count, 0)::INT AS count
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -192,11 +187,7 @@ WITH
     SELECT
       gr.id,
       (
-        -- The can_assign_roles column is not yet guaranteed to be up-to-date,
-        -- as the course may not have synced with the new code yet. Use the old
-        -- can_assign_roles_at_start column instead for now. This will be
-        -- replaced in a future version.
-        gr.can_assign_roles_at_start
+        gr.can_assign_roles
         AND COALESCE($cur_size::INT, 0) = 0
       ) AS assigner_role_needed,
       (
