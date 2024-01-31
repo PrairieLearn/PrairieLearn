@@ -13,10 +13,16 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 - Run PrairieLearn with:
 
   ```sh
-  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
+  ```
 
-  # You can now run the following commands inside the container:
+  This will launch a shell inside a Docker container running the PrairieLearn image, but using the current working directory for its code. If you'd rather run the command from somewhere other than the root of the repo, replace `.` with the path to the directory in `.:/PrairieLearn`.
 
+  If you get an error like `no matching manifest for linux/arm64/v8 in the manifest list entries` (if you're running for example on a recent Mac), then add `--platform linux/x86_64`.
+
+  You can now run the following commands inside the container:
+
+  ```sh
   # Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
   # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
   # If editing code in `packages/`, you should also repeat either this command or `make build`.
