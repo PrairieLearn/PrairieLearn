@@ -803,9 +803,7 @@ export type GroupUser = z.infer<typeof GroupUserSchema>;
 
 export const GroupRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
-  can_assign_roles_at_start: z.boolean().nullable(),
-  can_assign_roles_during_assessment: z.boolean().nullable(),
-  can_submit_assessment: z.boolean().nullable(),
+  can_assign_roles: z.boolean().nullable(),
   id: IdSchema,
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
