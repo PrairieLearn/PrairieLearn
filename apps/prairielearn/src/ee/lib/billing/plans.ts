@@ -107,7 +107,7 @@ export function getPlanNamesFromPlanGrants(planGrants: PlanGrant[]): PlanName[] 
 export async function getRequiredPlansForCourseInstance(
   course_instance_id: string,
 ): Promise<PlanName[]> {
-  return queryRows(
+  return await queryRows(
     sql.select_required_plans_for_course_instance,
     { course_instance_id },
     z.enum(PLAN_NAMES),
@@ -230,7 +230,7 @@ export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], required
 }
 
 async function getInstitutionForCourseInstance(course_instance_id: string): Promise<Institution> {
-  return queryRow(
+  return await queryRow(
     sql.select_institution_for_course_instance,
     { course_instance_id },
     InstitutionSchema,

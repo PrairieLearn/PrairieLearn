@@ -26,21 +26,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the workspace-desktop docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
       - name: Build the workspace-jupyterlab docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab:latest
+      - name: Build the workspace-jupyterlab-python docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/jupyterlab-python prairielearn/workspace-jupyterlab-python:latest
       - name: Build the workspace-rstudio docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
       - name: Build the workspace-xtermjs docker image if needed
@@ -50,16 +52,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the grader-c docker image if needed
         run: ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c:latest
@@ -77,7 +79,7 @@ jobs:
       DOCKERHUB_USERNAME_SECRET: ${{ secrets.DOCKERHUB_USERNAME }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -104,7 +106,7 @@ jobs:
       # here, so we copy them to an environment variable at the start of the job
       # and then check that here.
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -145,13 +147,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install OS packages
         run: sudo apt-get install -y graphviz graphviz-dev
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: pip
@@ -160,9 +162,9 @@ jobs:
         run: pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
           cache: 'yarn'
       - name: Install Node dependencies
         run: yarn install --immutable
@@ -190,8 +192,16 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Check dependency structure
+        run: make check-dependencies
 
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for tools
         run: make typecheck-tools
+
+      # This step runs at the end, since it is common for it to fail in
+      # dependabot PRs, but we still want all other tests above to run
+      # in those cases.
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check

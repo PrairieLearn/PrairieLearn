@@ -2,27 +2,31 @@ import collections
 import html
 import importlib
 import importlib.util
+import itertools as it
 import json
 import math
 import numbers
 import os
 import random
 import re
+import string
 import unicodedata
 import uuid
 from enum import Enum
-from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
+from io import StringIO
+from typing import Any, Callable, Generator, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
+import python_helper_sympy as phs
 import sympy
 import to_precision
 from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
+from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 
@@ -101,8 +105,9 @@ def grade_answer_parameterized(
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
+    # If there is no submitted answer, we shouldn't do anything. Issues with blank
+    # answers should be handled in parse.
     if question_name not in data["submitted_answers"]:
-        data["format_errors"][question_name] = "No answer was submitted"
         return
 
     submitted_answer = data["submitted_answers"][question_name]
@@ -260,9 +265,6 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
 
-    This function does not try to preserve information like the assumptions on
-    variables in a sympy expression.
-
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
@@ -288,7 +290,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
-        return sympy_to_json(v)
+        return phs.sympy_to_json(v)
     elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -365,9 +367,6 @@ def from_json(v):
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
 
-    This function does not try to recover information like the assumptions on
-    variables in a sympy expression.
-
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
     """
@@ -420,7 +419,7 @@ def from_json(v):
                         "variable of type complex_ndarray should have value with real and imaginary pair"
                     )
             elif v["_type"] == "sympy":
-                return json_to_sympy(v)
+                return phs.json_to_sympy(v)
             elif v["_type"] == "sympy_matrix":
                 if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
                     value = v["_value"]
@@ -429,7 +428,9 @@ def from_json(v):
                     M = sympy.Matrix.zeros(shape[0], shape[1])
                     for i in range(0, shape[0]):
                         for j in range(0, shape[1]):
-                            M[i, j] = convert_string_to_sympy(value[i][j], variables)
+                            M[i, j] = phs.convert_string_to_sympy(
+                                value[i][j], variables
+                            )
                     return M
                 else:
                     raise Exception(
@@ -453,7 +454,7 @@ def from_json(v):
             elif v["_type"] == "dataframe_v2":
                 # Convert native JSON back to a string representation so that
                 # pandas read_json() can process it.
-                value_str = json.dumps(v["_value"])
+                value_str = StringIO(json.dumps(v["_value"]))
                 return pandas.read_json(value_str, orient="table")
             elif v["_type"] == "networkx_graph":
                 return nx.adjacency_graph(v["_value"])
@@ -550,20 +551,17 @@ def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
-    ...
+def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str: ...
 
 
 @overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
-    ...
+def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
 
 
 @overload
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None:
-    ...
+) -> str | None: ...
 
 
 def get_string_attrib(element, name, *args):
@@ -579,20 +577,19 @@ def get_string_attrib(element, name, *args):
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
-    ...
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
 
 
 @overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool:
-    ...
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: bool
+) -> bool: ...
 
 
 @overload
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> bool | None:
-    ...
+) -> bool | None: ...
 
 
 def get_boolean_attrib(element, name, *args):
@@ -632,20 +629,19 @@ def get_boolean_attrib(element, name, *args):
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
-    ...
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int: ...
 
 
 @overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) -> int:
-    ...
+def get_integer_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: int
+) -> int: ...
 
 
 @overload
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> int | None:
-    ...
+) -> int | None: ...
 
 
 def get_integer_attrib(element, name, *args):
@@ -693,15 +689,13 @@ def get_float_attrib(element, name, *args):
 
 
 @overload
-def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
-    ...
+def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
 
 
 @overload
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None:
-    ...
+) -> str | None: ...
 
 
 def get_color_attrib(element, name, *args):
@@ -1063,8 +1057,8 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
     if s is None:
         return None
 
-    # Replace unicode minus with hyphen minus wherever it occurs
-    s = s.replace("\u2212", "-").strip()
+    # Do unidecode before parsing
+    s = full_unidecode(s).strip()
 
     # Try to parse as int
     try:
@@ -1168,9 +1162,9 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 value = a_frac
                 data["submitted_answers"] = to_json(value)
             except FloatingPointError:  # Caused by numpy division
-                data[
-                    "format_errors"
-                ] = "Your expression resulted in a division by zero."
+                data["format_errors"] = (
+                    "Your expression resulted in a division by zero."
+                )
             except Exception as error:
                 data["format_errors"] = f"Invalid format: {str(error)}"
         else:
@@ -1785,7 +1779,19 @@ def load_host_script(script_name):
     return __import__(script_name)
 
 
-def index2key(i):
+def iter_keys() -> Generator[str, None, None]:
+    """
+    from:
+    https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603
+    """
+    ascii_set = string.ascii_lowercase
+
+    return (
+        "".join(s) for size in it.count(1) for s in it.product(ascii_set, repeat=size)
+    )
+
+
+def index2key(i: int) -> str:
     """
     index2key(i)
 
@@ -1793,22 +1799,13 @@ def index2key(i):
 
     Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
     """
-    if i >= 26:
-        n = i
-        base_26_str = ""
-        while not n < 26:
-            base_26_str = "{:02d}".format(n % 26) + base_26_str
-            n = n // 26 - 1
-        base_26_str = "{:02d}".format(n) + base_26_str
-        base_26_int = [
-            int(base_26_str[i : i + 2]) for i in range(0, len(base_26_str), 2)
-        ]
-        key = "".join([chr(ord("a") + i) for i in base_26_int])
-    else:
-        key = chr(ord("a") + i)
-
-    return key
+    return next(it.islice(iter_keys(), i, None))
 
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
+
+
+def full_unidecode(input_str: str) -> str:
+    """Does unidecode of input and replaces the unicode minus with the normal one."""
+    return unidecode(input_str.replace("\u2212", "-"))

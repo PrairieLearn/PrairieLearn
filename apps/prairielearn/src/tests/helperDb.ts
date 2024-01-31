@@ -1,7 +1,5 @@
-// @ts-check
 import * as pg from 'pg';
 import * as path from 'path';
-import { promisify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
 import {
@@ -69,7 +67,7 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');
-  await promisify(sprocs.init)();
+  await sprocs.init();
 
   await stopBatchedMigrations();
   await namedLocks.close();

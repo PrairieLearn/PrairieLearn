@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import util = require('util');
 import { config } from '../../lib/config';
 
 const router = Router();
@@ -20,10 +19,10 @@ router.get(
       res.cookie('pl_disable_auto_authn', '1');
     }
 
-    await util.promisify(req.session.destroy);
-    // I don't like hardcoding this cookie name, but I didn't see how to get
-    // the name from express-session. Hacky until we replace with our own.
+    await req.session.destroy();
+    // Hold-over from the old express-session implementation
     res.clearCookie('connect.sid');
+    res.clearCookie('prairielearn_session');
 
     const redirect = req.query.redirect;
     if (redirect && typeof redirect === 'string') {

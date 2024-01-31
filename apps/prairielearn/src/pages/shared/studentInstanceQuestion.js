@@ -1,10 +1,10 @@
 const _ = require('lodash');
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
-const fileStore = require('../../lib/file-store');
-const { idsEqual } = require('../../lib/id');
-const issues = require('../../lib/issues');
+import { uploadFile, deleteFile } from '../../lib/file-store';
+import { idsEqual } from '../../lib/id';
+import * as issues from '../../lib/issues';
 
 /*
  * Get a validated variant_id from a request, or throw an exception.
@@ -36,7 +36,7 @@ module.exports.processFileUpload = async (req, res) => {
   if (!req.file) {
     throw error.make(400, 'No file uploaded');
   }
-  await fileStore.upload(
+  await uploadFile(
     req.file.originalname,
     req.file.buffer,
     'student_upload',
@@ -54,7 +54,7 @@ module.exports.processTextUpload = async (req, res) => {
   if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
   }
-  await fileStore.upload(
+  await uploadFile(
     req.body.filename,
     Buffer.from(req.body.contents),
     'student_upload',
@@ -82,7 +82,7 @@ module.exports.processDeleteFile = async (req, res) => {
     throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await fileStore.delete(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.user_id);
 
   const variant_id = await module.exports.getValidVariantId(req, res);
   return variant_id;

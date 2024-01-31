@@ -1,6 +1,6 @@
 import { callbackify } from 'util';
 import { logger } from '@prairielearn/logger';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
 

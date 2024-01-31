@@ -82,7 +82,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       debug('before(): initialize freeform server');
       await freeformServer.init();
 
-      await promisify(externalGrader.init)();
+      externalGrader.init();
       await promisify(externalGradingSocket.init)();
     } finally {
       debug('before(): completed');
@@ -103,14 +103,14 @@ export async function after(): Promise<void> {
     debug('after(): stop server');
     await promisify(server.stopServer)();
 
+    debug('after(): close socket server');
+    await socketServer.close();
+
     debug('after(): close load estimators');
     load.close();
 
     debug('after(): stop cron');
     await cron.stop();
-
-    debug('after(): close socket server');
-    await socketServer.close();
 
     debug('after(): close server jobs');
     await serverJobs.stop();

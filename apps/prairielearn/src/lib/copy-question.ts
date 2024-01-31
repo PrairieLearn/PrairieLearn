@@ -1,6 +1,6 @@
 import { type Response } from 'express';
-import fs = require('fs-extra');
-import path = require('node:path');
+import * as fs from 'fs-extra';
+import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -8,11 +8,22 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types';
+import { selectCoursesWithEditAccess } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function setQuestionCopyTargets(res: Response) {
-  res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
+export async function setQuestionCopyTargets(res: Response) {
+  // Avoid querying for editable courses if we won't be able to copy this
+  // question anyways.
+  if (!res.locals.course.template_course) {
+    return;
+  }
+
+  const editableCourses = await selectCoursesWithEditAccess({
+    user_id: res.locals.user.user_id,
+    is_administrator: res.locals.is_administrator,
+  });
+  res.locals.question_copy_targets = editableCourses.map((course) => {
     const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
 
     // The question copy form will POST to a different URL for each course, so
@@ -52,10 +63,6 @@ export async function copyQuestionBetweenCourses(
   // does not have explicit view permissions.
   if (!res.locals.authz_data.has_course_permission_view && !fromCourse.template_course) {
     throw error.make(403, 'Access denied (must be a course Viewer)');
-  }
-
-  if (!fromCourse.path) {
-    throw new Error(`Course ${fromCourse.id} does not have a path`);
   }
 
   if (!question.qid) {

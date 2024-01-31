@@ -222,6 +222,10 @@ BEGIN
                     assessment_id,
                     minimum,
                     maximum,
+                    can_assign_roles,
+                    -- These two columns are deprecated, but are maintained
+                    -- until we are able to remove code that uses them. For now,
+                    -- they receive the same value as can_assign_roles.
                     can_assign_roles_at_start,
                     can_assign_roles_during_assessment
                 ) VALUES (
@@ -230,14 +234,16 @@ BEGIN
                     -- Insert default values where necessary
                     CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
                     (group_role->>'maximum')::integer,
-                    CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
-                    CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
+                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END,
+                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END,
+                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
                 DO UPDATE
                 SET
                     role_name = EXCLUDED.role_name,
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
+                    can_assign_roles = EXCLUDED.can_assign_roles,
                     can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
                     can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment
                 RETURNING group_roles.role_name INTO new_group_role_name;

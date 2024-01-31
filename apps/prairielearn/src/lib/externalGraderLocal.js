@@ -1,21 +1,21 @@
 // @ts-check
-const path = require('path');
+import * as path from 'path';
 const Docker = require('dockerode');
-const os = require('os');
+import * as os from 'os';
 const EventEmitter = require('events');
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const byline = require('byline');
 const execa = require('execa');
 
-const { logger } = require('@prairielearn/logger');
-const externalGraderCommon = require('./externalGraderCommon');
-const { config } = require('./config');
-const sqldb = require('@prairielearn/postgres');
-const { promisify } = require('util');
+import { logger } from '@prairielearn/logger';
+import { buildDirectory, makeGradingResult } from './externalGraderCommon';
+import { config } from './config';
+import * as sqldb from '@prairielearn/postgres';
+import { promisify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-class Grader {
+export class ExternalGraderLocal {
   handleGradingRequest(grading_job, submission, variant, question, course) {
     const emitter = new EventEmitter();
 
@@ -23,7 +23,10 @@ class Grader {
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
-    const timeout = question.external_grading_timeout || config.externalGradingDefaultTimeout;
+    const timeout = Math.min(
+      question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+      config.externalGradingMaximumTimeout,
+    );
 
     const docker = new Docker();
 
@@ -40,13 +43,7 @@ class Grader {
       results.received_time = new Date().toISOString();
       emitter.emit('received', results.received_time);
 
-      await promisify(externalGraderCommon.buildDirectory)(
-        dir,
-        submission,
-        variant,
-        question,
-        course,
-      );
+      await promisify(buildDirectory)(dir, submission, variant, question, course);
 
       if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.
@@ -90,8 +87,8 @@ class Grader {
         NetworkDisabled: !question.external_grading_enable_networking,
         HostConfig: {
           Binds: [`${hostDir}:/grade`],
-          Memory: 1 << 30, // 1 GiB
-          MemorySwap: 1 << 30, // same as Memory, so no access to swap
+          Memory: (1 << 30) * 2, // 2 GiB
+          MemorySwap: (1 << 30) * 2, // same as Memory, so no access to swap
           KernelMemory: 1 << 29, // 512 MiB
           DiskQuota: 1 << 30, // 1 GiB
           IpcMode: 'private',
@@ -185,7 +182,7 @@ class Grader {
         }
       }
 
-      return externalGraderCommon.makeGradingResult(grading_job.id, results);
+      return makeGradingResult(grading_job.id, results);
     })()
       .then((res) => {
         emitter.emit('results', res);
@@ -238,5 +235,3 @@ function getDevHostJobDirectory(jobId) {
     return getDevJobDirectory(jobId);
   }
 }
-
-module.exports = Grader;

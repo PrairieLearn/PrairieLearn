@@ -18,7 +18,7 @@ const { sanitizeObject } = require('@prairielearn/sanitize');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
-const jobLogger = require('./lib/jobLogger');
+const { makeJobLogger } = require('./lib/jobLogger');
 const { config, loadConfig } = require('./lib/config');
 const healthCheck = require('./lib/healthCheck');
 const lifecycle = require('./lib/lifecycle');
@@ -115,24 +115,24 @@ async.series(
           receiveFromQueue(
             sqs,
             config.jobsQueueUrl,
-            (job, fail, success) => {
+            (job, done) => {
               globalLogger.info(`received ${job.jobId} from queue`);
 
               // Ensure that this job wasn't canceled in the time since job submission.
               isJobCanceled(job, (err, canceled) => {
-                if (ERR(err, fail)) return;
+                if (ERR(err, done)) return;
 
                 if (canceled) {
                   globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
-                  success();
+                  done();
                   return;
                 }
 
                 handleJob(job, (err) => {
                   globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
-                  if (ERR(err, fail)) return;
+                  if (ERR(err, done)) return;
                   globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                  success();
+                  done();
                 });
               });
             },
@@ -177,17 +177,12 @@ function isJobCanceled(job, callback) {
 function handleJob(job, done) {
   load.startJob();
 
-  const loggerOptions = {
-    bucket: job.s3Bucket,
-    rootKey: job.s3RootKey,
-  };
-
-  const logger = jobLogger(loggerOptions);
+  const logger = makeJobLogger();
   globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
   const info = {
     docker: new Docker(),
-    s3: new S3(makeS3ClientConfig()),
+    s3: new S3(makeS3ClientConfig({ maxAttempts: 3 })),
     logger,
     job,
   };
@@ -724,6 +719,17 @@ function uploadArchive(results, callback) {
             Bucket: s3Bucket,
             Key: `${s3RootKey}/archive.tar.gz`,
             Body: fs.createReadStream(tempArchive),
+          },
+        }).done();
+      },
+      async () => {
+        // Upload all logs to S3.
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/output.log`,
+            Body: logger.getBuffer(),
           },
         }).done();
       },

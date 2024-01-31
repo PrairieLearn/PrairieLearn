@@ -7,7 +7,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const { isEnterprise } = require('../lib/license');
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
-const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));
+const selectAndAuthzInstanceQuestion = promisify(
+  require('./selectAndAuthzInstanceQuestion').default,
+);
 const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
 const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
 const authzHasCoursePreviewOrInstanceView = promisify(
