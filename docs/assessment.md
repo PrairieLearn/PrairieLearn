@@ -289,7 +289,7 @@ The schema for permissions is defined as follows:
 | `canView`   | Array of string | -       | The names of roles that can view this part of the assessment.   |
 | `canSubmit` | Array of string | -       | The names of roles that can submit this part of the assessment. |
 
-Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. If a question does not set the value of either attribute, it means that **every role** can view/submit that part.
+Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no role** can view or submit that part of the assessment, respectively. If either attribute is not set, it means that **every role** has the permission associated to the attribute, i.e., any student with any role can view or submit that part of the assessment.
 
 Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
 
