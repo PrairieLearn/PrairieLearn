@@ -48,6 +48,7 @@ async function getImageSizes(image) {
 
     // Get the manifest for this particular platform image.
     const platformManifest = await getImageManifest(token, image, imageManifest.digest);
+    console.log(platformManifest);
     const totalSize = platformManifest.layers.reduce((acc, layer) => acc + layer.size, 0);
 
     sizes[platform] = totalSize;
