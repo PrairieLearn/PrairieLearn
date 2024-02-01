@@ -3194,7 +3194,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@sa11y/format": ^6.2.2
+    "@sa11y/format": ^6.3.1
     "@sentry/profiling-node": ^1.3.5
     "@sentry/tracing": ^7.99.0
     "@socket.io/redis-adapter": ^8.2.1
@@ -3693,32 +3693,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sa11y/common@npm:6.2.2":
-  version: 6.2.2
-  resolution: "@sa11y/common@npm:6.2.2"
+"@sa11y/common@npm:6.3.1":
+  version: 6.3.1
+  resolution: "@sa11y/common@npm:6.3.1"
   dependencies:
     axe-core: 4.7.0
-  checksum: 91a3b7385c31cc3b46620ed192a17f2fade2941f559a7a3c0db2c12d4157f602e7862de55963c4ac4847652e7ffb21cf1d1e846364869873f8b7add3920a1aae
+  checksum: 213f7ac4f70999c8fd7c368fd808dc0bd15c4f0a3be3ad3088490ded4257cf36999d95ccc8f3355e524da5ceb402b68cf79c4feeb6118982640cdd9000b219d3
   languageName: node
   linkType: hard
 
-"@sa11y/format@npm:^6.2.2":
-  version: 6.2.2
-  resolution: "@sa11y/format@npm:6.2.2"
+"@sa11y/format@npm:^6.3.1":
+  version: 6.3.1
+  resolution: "@sa11y/format@npm:6.3.1"
   dependencies:
-    "@sa11y/common": 6.2.2
-    "@sa11y/preset-rules": 6.2.2
+    "@sa11y/common": 6.3.1
+    "@sa11y/preset-rules": 6.3.1
     axe-core: 4.7.0
-  checksum: 0fb0c98eb543ad05fcd8e2831e3f89a5638690381af53f5de53f0f3c5afee1b6b03bcfad381c64f4c0b205dedabe29a6b7cb6a989eb73ff6b3fd9398ce75ddbf
+  checksum: 568205aa8f1d9453b95028b27c815fb2214b3303f46eaf4f97b482e41b1b228eb6af9b7ec4fdabf859fbcda6bd1ac4c3cdbc6c500479bfbdd00940f7d9e8da10
   languageName: node
   linkType: hard
 
-"@sa11y/preset-rules@npm:6.2.2":
-  version: 6.2.2
-  resolution: "@sa11y/preset-rules@npm:6.2.2"
+"@sa11y/preset-rules@npm:6.3.1":
+  version: 6.3.1
+  resolution: "@sa11y/preset-rules@npm:6.3.1"
   dependencies:
-    "@sa11y/common": 6.2.2
-  checksum: de3b2af1a5569ca083aa50cf46638af0ea8eb3bcb9a6303692bc4ac3cb532a12ea0cc781e85d021d1c29316df08183e02f986798bdc4fa40155cbd309f122d46
+    "@sa11y/common": 6.3.1
+  checksum: 9a07b6cffaab8b453ec17f3f592bc84c85948490dc676b2cd749b761e57f76cb0f42ff7bc28406edc2d254cd93a8009025517539c611ac7c12c1065ec74f4e14
   languageName: node
   linkType: hard
 
