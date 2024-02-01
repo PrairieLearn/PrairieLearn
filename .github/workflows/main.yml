@@ -48,7 +48,7 @@ jobs:
       - name: Build the workspace-xtermjs docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
 
-      - uses: ./github/actions/report-image-sizes
+      - uses: ./.github/actions/report-image-sizes
         with:
           title: Workspace images
           images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs
@@ -77,7 +77,7 @@ jobs:
       - name: Build the grader-r docker image if needed
         run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
       
-      - uses: ./github/actions/report-image-sizes
+      - uses: ./.github/actions/report-image-sizes
         with:
           title: Grader images
           images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
@@ -132,7 +132,7 @@ jobs:
         if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
         run: docker push prairielearn/executor:latest
 
-      - uses: ./github/actions/report-image-sizes
+      - uses: ./.github/actions/report-image-sizes
         with:
           title: Core images
           images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
