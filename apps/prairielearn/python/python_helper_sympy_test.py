@@ -322,7 +322,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", FUNCTION_NOT_CALLED_CASES)
     def test_function_not_called(self, a_sub: str) -> None:
-        with pytest.raises(phs.FunctionNameWithoutArgumentsError):
+        with pytest.raises(phs.FunctionNameUsedWithoutArguments):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)
