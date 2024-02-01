@@ -20,6 +20,7 @@ async function getImageManifest(token, image, version) {
     {
       headers: {
         Authorization: `Bearer ${token}`,
+        Accept: ' application/vnd.oci.image.manifest.v1+json',
       },
     },
   );
