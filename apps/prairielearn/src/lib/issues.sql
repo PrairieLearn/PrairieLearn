@@ -9,7 +9,9 @@ WITH
       AND i.course_caused
       AND i.open IS DISTINCT FROM $open
     RETURNING
-      i.*
+      i.course_id,
+      i.id,
+      i.open
   )
 INSERT INTO
   audit_logs (
