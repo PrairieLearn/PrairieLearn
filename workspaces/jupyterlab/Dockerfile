@@ -18,3 +18,4 @@ RUN /bin/bash /install.sh
 USER jovyan
 
 CMD ["start.sh", "jupyter", "lab"]
+

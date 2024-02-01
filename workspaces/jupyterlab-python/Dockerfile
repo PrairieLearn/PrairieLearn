@@ -18,3 +18,4 @@ COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
 CMD ["start.sh", "jupyter", "lab"]
+

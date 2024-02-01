@@ -170,3 +170,4 @@ ENV WORKSPACE_BASE_URL rstudio
 # make sure local testing works even if the PL Docker tries to run as root.
 ENV PL_USER rstudio
 ENTRYPOINT /pl-bin/pl-gosu-helper.sh /pl-bin/pl-start.sh
+

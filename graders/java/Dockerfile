@@ -25,3 +25,4 @@ RUN rm -rf /usr/lib/jvm/java-18-openjdk-amd64/lib/libmanagement.so /usr/lib/jvm/
 
 COPY autograder.sh /bin
 RUN chmod 700 /bin/autograder.sh
+

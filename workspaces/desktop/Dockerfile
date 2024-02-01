@@ -18,3 +18,4 @@ USER 1001
 ENV PL_USER prairielearner
 
 CMD /pl-gosu-helper.sh /start-vnc.sh
+
