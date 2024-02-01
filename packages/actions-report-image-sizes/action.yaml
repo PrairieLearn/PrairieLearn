@@ -9,4 +9,5 @@ inputs:
     required: true
 runs:
   using: 'node20'
+  pre: setup.mjs
   main: 'index.mjs'
