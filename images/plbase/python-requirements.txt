@@ -16,12 +16,13 @@ nltk==3.8.1
 numpy==1.26.3
 openpyxl==3.1.2
 pandas-stubs==2.1.4.231227
-pandas==2.1.4
+pandas==2.2.0
 Pint==0.23
 psutil==5.9.8
 PuLP==2.8.0
 pycryptodome==3.20.0
 Pygments==2.17.2
+pyarrow==15.0.0
 pygments-ansi-color==0.3.0
 pygraphviz==1.6
 pyquaternion==0.9.9
