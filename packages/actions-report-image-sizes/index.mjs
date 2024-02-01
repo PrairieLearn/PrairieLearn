@@ -1,5 +1,6 @@
 import core from '@actions/core';
 import github from '@actions/github';
+import exec from '@actions/exec';
 
 function getImages() {
   const images = core.getInput('images');
@@ -27,7 +28,7 @@ async function getImageManifest(token, image, version) {
   return await manifestResponse.json();
 }
 
-async function getImageSizes(image) {
+async function getImageSizesFromRegistry(image) {
   const token = await getDockerHubToken(image);
   console.log(token);
 
@@ -58,12 +59,18 @@ async function getImageSizes(image) {
   return sizes;
 }
 
+async function getImageSizesFromDisk(image) {}
+
 try {
   const images = getImages();
   const title = core.getInput('title');
 
   for (const image of images) {
-    console.log(await getImageSizes(image));
+    const registrySizes = await getImageSizesFromRegistry(image);
+    console.log(registrySizes);
+
+    const diskSizes = await getImageSizesFromDisk(image);
+    console.log(diskSizes);
   }
 
   console.log('Hello, world!', images, title);
