@@ -14,12 +14,12 @@ const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
+import { cacheGet, cacheSet } from '@prairielearn/cache';
 
 import * as schemas from '../schemas';
 import { config } from '../lib/config';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
 import * as jsonLoad from '../lib/json-load';
-import * as cache from '../lib/cache';
 import { getOrUpdateCourseCommitHash } from '../models/course';
 import * as markdown from '../lib/markdown';
 import * as chunks from '../lib/chunks';
@@ -1875,7 +1875,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
     // tl;dr: don't cache any results that would create course issues.
     const hasCourseIssues = computedData?.courseIssues?.length > 0;
     if (cacheKey && !hasCourseIssues) {
-      cache.set(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
+      cacheSet(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
     }
 
     return {
@@ -1891,7 +1891,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
     let cachedData;
 
     try {
-      cachedData = await cache.get(cacheKey);
+      cachedData = await cacheGet(cacheKey);
     } catch (err) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal

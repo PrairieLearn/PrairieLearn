@@ -54,7 +54,7 @@ const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs-legacy');
 const freeformServer = require('./question-servers/freeform.js');
-const cache = require('./lib/cache');
+const { cacheInit } = require('@prairielearn/cache');
 const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
@@ -2384,7 +2384,11 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      async () => await cache.init(),
+      async () =>
+        await cacheInit({
+          cacheType: config.cacheType,
+          redisUrl: config.redisUrl,
+        }),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);

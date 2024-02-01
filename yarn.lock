@@ -2789,6 +2789,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/cache@workspace:packages/cache":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/cache@workspace:packages/cache"
+  dependencies:
+    "@prairielearn/logger": "workspace:^"
+    "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/tsconfig": "*"
+    ioredis: ^5.3.2
+    lru-cache: ^10.1.0
+    typescript: ^5.3.3
+    zod: ^3.22.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/compiled-assets@workspace:^, @prairielearn/compiled-assets@workspace:packages/compiled-assets":
   version: 0.0.0-use.local
   resolution: "@prairielearn/compiled-assets@workspace:packages/compiled-assets"

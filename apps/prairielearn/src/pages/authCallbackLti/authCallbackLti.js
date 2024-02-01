@@ -6,13 +6,13 @@ const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
 const util = require('node:util');
 const debug = require('debug')('prairielearn:authCallbackLti');
+const { cacheGet, cacheSet } = require('@prairielearn/cache');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const error = require('@prairielearn/error');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
-const cache = require('../../lib/cache');
 const { shouldSecureCookie } = require('../../lib/cookie');
 
 var timeTolerance = 3000; // seconds
@@ -79,12 +79,12 @@ router.post('/', function (req, res, next) {
       // https://oauth.net/core/1.0/#nonce
       var nonceReused = false;
       var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
-      util.callbackify(cache.get)(nonceKey, (err, val) => {
+      util.callbackify(cacheGet)(nonceKey, (err, val) => {
         if (ERR(err, next)) return;
         if (val) {
           nonceReused = true;
         } else {
-          cache.set(nonceKey, true, timeTolerance * 1000);
+          cacheSet(nonceKey, true, timeTolerance * 1000);
         }
       });
       if (nonceReused) return next(error.make(500, 'Invalid nonce reuse'));

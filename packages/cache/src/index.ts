@@ -2,10 +2,15 @@ import { Redis } from 'ioredis';
 import { LRUCache } from 'lru-cache';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
-
-import { config } from './config';
+import { z } from 'zod';
 
 const CACHE_KEY_PREFIX = 'prairielearn-cache:';
+
+const CacheConfigSchema = z.object({
+  cacheType: z.enum(['none', 'memory', 'redis']).default('none'),
+  redisUrl: z.string().nullable().default('redis://localhost:6379/'),
+});
+type CacheConfig = z.infer<typeof CacheConfigSchema>;
 
 let cacheEnabled = false;
 let cacheType: 'redis' | 'memory' | 'none';
@@ -16,8 +21,8 @@ function cacheKey(key: string): string {
   return CACHE_KEY_PREFIX + key;
 }
 
-export async function init() {
-  cacheType = config.questionRenderCacheType;
+export async function cacheInit(config: CacheConfig) {
+  cacheType = config.cacheType;
   if (!cacheType || cacheType === 'none') {
     // No caching
     cacheEnabled = false;
@@ -44,7 +49,7 @@ export async function init() {
   }
 }
 
-export function set(key: string, value: any, maxAgeMS: number) {
+export function cacheSet(key: string, value: any, maxAgeMS: number) {
   if (!cacheEnabled) return;
 
   const scopedKey = cacheKey(key);
@@ -70,7 +75,7 @@ export function set(key: string, value: any, maxAgeMS: number) {
   }
 }
 
-export async function del(key: string) {
+export async function cacheDel(key: string) {
   if (!cacheEnabled) return;
 
   const scopedKey = cacheKey(key);
@@ -91,7 +96,7 @@ export async function del(key: string) {
 /**
  * Returns the value for the corresponding key if it exists in the cache; null otherwise.
  */
-export async function get(key: string): Promise<any> {
+export async function cacheGet(key: string): Promise<any> {
   if (!cacheEnabled) return null;
 
   const scopedKey = cacheKey(key);
@@ -122,7 +127,7 @@ export async function get(key: string): Promise<any> {
 /**
  * Clear all entries from the cache.
  */
-export async function reset() {
+export async function cacheReset() {
   if (!cacheEnabled) return;
 
   switch (cacheType) {
@@ -150,7 +155,7 @@ export async function reset() {
 /**
  * Releases any connections associated with the cache.
  */
-export async function close() {
+export async function cacheClose() {
   if (!cacheEnabled) return;
   cacheEnabled = false;
 

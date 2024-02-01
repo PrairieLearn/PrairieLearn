@@ -10,9 +10,9 @@ import { URL } from 'url';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { cacheGet, cacheSet } from '@prairielearn/cache';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
-import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 import { Lti13Test } from './lti13Auth.html';
 import { getCanonicalHost } from '../../../lib/url';
 

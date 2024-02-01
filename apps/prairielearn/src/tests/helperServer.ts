@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { assert } from 'chai';
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import debugfn from 'debug';
+import { cacheInit, cacheClose } from '@prairielearn/cache';
 
 import * as assets from '../lib/assets';
 import { config } from '../lib/config';
@@ -13,7 +14,6 @@ import * as cron from '../cron';
 import * as socketServer from '../lib/socket-server';
 import * as serverJobs from '../lib/server-jobs-legacy';
 import * as freeformServer from '../question-servers/freeform';
-import * as cache from '../lib/cache';
 import * as localCache from '../lib/local-cache';
 import * as codeCaller from '../lib/code-caller';
 import * as externalGrader from '../lib/externalGrader';
@@ -74,9 +74,11 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       socketServer.init(httpServer);
 
       debug('before(): initialize cache');
-      await cache.init();
-
-      debug('before(): initialize server jobs');
+      await cacheInit({
+        cacheType: config.cacheType,
+        redisUrl: config.redisUrl,
+      }),
+        debug('before(): initialize server jobs');
       serverJobs.init();
 
       debug('before(): initialize freeform server');
@@ -116,7 +118,7 @@ export async function after(): Promise<void> {
     await serverJobs.stop();
 
     debug('after(): close cache');
-    await cache.close();
+    await cacheClose();
 
     debug('after(): close local cache');
     localCache.close();
