@@ -78,10 +78,10 @@ jobs:
       - name: Build the grader-r docker image if needed
         run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
       
-      - uses: ./packages/actions-report-image-sizes
-        with:
-          title: Grader images
-          images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
+      # - uses: ./packages/actions-report-image-sizes
+      #   with:
+      #     title: Grader images
+      #     images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
 
   build-core-images:
     runs-on: ubuntu-latest
@@ -134,10 +134,10 @@ jobs:
         if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
         run: docker push prairielearn/executor:latest
 
-      - uses: ./packages/actions-report-image-sizes
-        with:
-          title: Core images
-          images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
+      # - uses: ./packages/actions-report-image-sizes
+      #   with:
+      #     title: Core images
+      #     images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
 
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
