@@ -200,7 +200,7 @@ class HasInvalidVariableError(BaseSympyError):
 
 
 @dataclass
-class FunctionNameUsedWithoutArguments(BaseSympyError):
+class FunctionNameWithoutArgumentsError(BaseSympyError):
     offset: int
     text: str
 
@@ -226,10 +226,37 @@ class HasInvalidSymbolError(BaseSympyError):
 
 
 class CheckAST(ast.NodeVisitor):
-    def __init__(
-        self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
-    ) -> None:
-        self.whitelist = whitelist
+    whitelist: ASTWhiteListT
+
+    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
+        # Disallow AST nodes that are not in whitelist
+        #
+        # Be very careful about adding to the list below. In particular,
+        # do not add `ast.Attribute` without fully understanding the
+        # reflection-based attacks described by
+        # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+        # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
+        #
+        # Note some whitelist items were removed in this PR:
+        # https://github.com/PrairieLearn/PrairieLearn/pull/7020
+        # If there are compatibility issues, try adding those items back.
+        self.whitelist = (
+            ast.Load,
+            ast.Expression,
+            ast.Call,
+            ast.Name,
+            ast.Constant,
+            ast.UnaryOp,
+            ast.UAdd,
+            ast.USub,
+            ast.BinOp,
+            ast.Add,
+            ast.Sub,
+            ast.Mult,
+            ast.Div,
+            ast.Mod,
+            ast.Pow,
+        )
         self.variables = variables
         self.functions = functions
 
@@ -253,7 +280,9 @@ class CheckAST(ast.NodeVisitor):
         ):
             err_node = self.get_parent_with_location(node)
             if node.id in self.functions:
-                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+                raise FunctionNameWithoutArgumentsError(
+                    err_node.col_offset, err_node.id
+                )
             else:
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
@@ -305,38 +334,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     if ind != -1:
         raise HasCommentError(ind)
 
-    # Disallow AST nodes that are not in whitelist
-    #
-    # Be very careful about adding to the list below. In particular,
-    # do not add `ast.Attribute` without fully understanding the
-    # reflection-based attacks described by
-    # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
-    # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
-    #
-    # Note some whitelist items were removed in this PR:
-    # https://github.com/PrairieLearn/PrairieLearn/pull/7020
-    # If there are compatibility issues, try adding those items back.
-    whitelist: ASTWhiteListT = (
-        ast.Load,
-        ast.Expression,
-        ast.Call,
-        ast.Name,
-        ast.Constant,
-        ast.UnaryOp,
-        ast.UAdd,
-        ast.USub,
-        ast.BinOp,
-        ast.Add,
-        ast.Sub,
-        ast.Mult,
-        ast.Div,
-        ast.Mod,
-        ast.Pow,
-    )
-
-    CheckAST(
-        whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
-    ).visit_str(expr)
+    CheckAST(locals_for_eval["variables"], locals_for_eval["functions"]).visit_str(expr)
 
 
 def sympy_check(
@@ -665,7 +663,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except FunctionNameUsedWithoutArguments as err:
+    except FunctionNameWithoutArgumentsError as err:
         return (
             f'Your answer mentions the function "{err.text}" without '
             "applying it to anything. "
