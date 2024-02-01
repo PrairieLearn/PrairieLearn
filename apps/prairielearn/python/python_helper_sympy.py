@@ -225,9 +225,13 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
-class CheckWhiteList(ast.NodeVisitor):
-    def __init__(self, whitelist: ASTWhiteListT) -> None:
+class CheckAST(ast.NodeVisitor):
+    def __init__(
+        self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
+    ) -> None:
         self.whitelist = whitelist
+        self.variables = variables
+        self.functions = functions
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
@@ -235,23 +239,11 @@ class CheckWhiteList(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-
-class CheckFunctions(ast.NodeVisitor):
-    def __init__(self, functions: SympyMapT) -> None:
-        self.functions = functions
-
     def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
-
-
-class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
-        # functions is only used for error type, if someone writes "exp + 2"
-        self.variables = variables
-        self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
         if (
@@ -265,6 +257,37 @@ class CheckVariables(ast.NodeVisitor):
             else:
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
+
+
+# class CheckFunctions(ast.NodeVisitor):
+#     def __init__(self, functions: SympyMapT) -> None:
+#         self.functions = functions
+
+#     def visit_Call(self, node: ast.Call) -> None:
+#         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+#             err_node = get_parent_with_location(node)
+#             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+#         self.generic_visit(node)
+
+
+# class CheckVariables(ast.NodeVisitor):
+#     def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
+#         # functions is only used for error type, if someone writes "exp + 2"
+#         self.variables = variables
+#         self.functions = functions
+
+#     def visit_Name(self, node: ast.Name) -> None:
+#         if (
+#             isinstance(node.ctx, ast.Load)
+#             and not is_name_of_function(node)
+#             and node.id not in self.variables
+#         ):
+#             err_node = get_parent_with_location(node)
+#             if node.id in self.functions:
+#                 raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+#             else:
+#                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+#         self.generic_visit(node)
 
 
 def is_name_of_function(node: ast.AST) -> bool:
@@ -305,14 +328,6 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
         for child in ast.iter_child_nodes(node):
             child.parent = node  # type: ignore
 
-    # Disallow functions that are not in locals_for_eval
-    CheckFunctions(locals_for_eval["functions"]).visit(root)
-
-    # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
-        root
-    )
-
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -342,7 +357,19 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
         ast.Pow,
     )
 
-    CheckWhiteList(whitelist).visit(root)
+    CheckAST(
+        whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
+    ).visit(root)
+
+    # Disallow functions that are not in locals_for_eval
+    # CheckFunctions(locals_for_eval["functions"]).visit(root)
+
+    # Disallow variables that are not in locals_for_eval
+    # CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
+    #    root
+    # )
+
+    # CheckWhiteList(whitelist).visit(root)
 
 
 def sympy_check(
