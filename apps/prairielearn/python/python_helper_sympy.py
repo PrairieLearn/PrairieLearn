@@ -264,7 +264,11 @@ class CheckAST(ast.NodeVisitor):
         # 1) it has type ast.Name
         # 2) its parent has type ast.Call
         # 3) it is not in the list of parent's args
-        return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)  # type: ignore
+        return (
+            isinstance(node, ast.Name)
+            and isinstance(node.parent, ast.Call)
+            and (node not in node.parent.args)
+        )
 
     @staticmethod
     def get_parent_with_location(node: ast.AST) -> Any:
@@ -273,7 +277,7 @@ class CheckAST(ast.NodeVisitor):
                 return node
 
             node = node.parent
-            # return CheckAST.get_parent_with_location(node.parent)  # type: ignore
+            # return CheckAST.get_parent_with_location(node.parent)
 
     def visit_str(self, expr: str) -> None:
         # Parse (convert string to AST)
