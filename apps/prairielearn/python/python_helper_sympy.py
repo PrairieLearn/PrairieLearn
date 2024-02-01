@@ -266,8 +266,8 @@ class CheckAST(ast.NodeVisitor):
         # 3) it is not in the list of parent's args
         return (
             isinstance(node, ast.Name)
-            and isinstance(node.parent, ast.Call)
-            and (node not in node.parent.args)
+            and isinstance(node.parent, ast.Call)  # type: ignore
+            and (node not in node.parent.args)  # type: ignore
         )
 
     @staticmethod
@@ -276,8 +276,7 @@ class CheckAST(ast.NodeVisitor):
             if hasattr(node, "col_offset"):
                 return node
 
-            node = node.parent
-            # return CheckAST.get_parent_with_location(node.parent)
+            node = node.parent  # type: ignore
 
     def visit_str(self, expr: str) -> None:
         # Parse (convert string to AST)
