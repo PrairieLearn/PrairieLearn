@@ -29,9 +29,31 @@ async function getImageManifest(token, image, version) {
 async function getImageSizes(image) {
   const token = await getDockerHubToken(image);
   console.log(token);
+
   const manifest = await getImageManifest(token, image, 'latest');
   console.dir(manifest, { depth: null });
-  return 12345;
+
+  // This original manifest will have multiple manifests listed within it.
+  // We'll pick out only the ones we want to compare sizes for. Notably, this
+  // means excluding attestation manifests. We identify those by os/architecture
+  // being "unknown".
+  const imageManifests = manifest.manifests.filter(
+    (m) => m.platform.os !== 'unknown' && m.platform.architecture !== 'unknown',
+  );
+
+  const sizes = {};
+
+  for (const imageManifest of imageManifests) {
+    const platform = `${imageManifest.platform.os}/${imageManifest.platform.architecture}`;
+
+    // Get the manifest for this particular platform image.
+    const platformManifest = await getImageManifest(token, image, imageManifest.digest);
+    const totalSize = platformManifest.layers.reduce((acc, layer) => acc + layer.size, 0);
+
+    sizes[platform] = totalSize;
+  }
+
+  return sizes;
 }
 
 try {
