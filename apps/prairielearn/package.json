@@ -96,7 +96,7 @@
     "folder-hash": "^4.0.4",
     "fs-extra": "^11.2.0",
     "generic-pool": "^3.9.0",
-    "google-auth-library": "^9.6.0",
+    "google-auth-library": "^9.6.1",
     "he": "^1.2.0",
     "highlight.js": "^11.9.0",
     "htmx.org": "^1.9.9",
