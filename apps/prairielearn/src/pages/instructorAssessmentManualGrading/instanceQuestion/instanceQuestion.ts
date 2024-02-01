@@ -33,7 +33,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw error.make(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
-  await util.promisify(getAndRenderVariant)(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
 
   const rubric_settings_visible = await features.enabledFromLocals(
     'manual-grading-rubrics',

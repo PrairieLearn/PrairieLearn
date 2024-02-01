@@ -331,8 +331,7 @@ const FILE_UUID_REGEX =
  * @property {string} name
  * @property {number} minimum
  * @property {number} maximum
- * @property {boolean} canAssignRolesAtStart
- * @property {boolean} canAssignRolesDuringAssessment
+ * @property {boolean} canAssignRoles
  */
 
 /**
@@ -1225,28 +1224,13 @@ async function validateAssessment(assessment, questions) {
   }
 
   if (assessment.groupRoles) {
-    // Ensure at least one role can assign roles before and during an assessment
-    let foundCanAssignRolesAtStart = false;
-    let foundCanAssignRolesDuringAssessment = false;
+    // Ensure at least one mandatory role can assign roles
+    let foundCanAssignRoles = assessment.groupRoles.some(
+      (role) => role.canAssignRoles && role.minimum >= 1,
+    );
 
-    assessment.groupRoles.forEach((role) => {
-      if (role.canAssignRolesAtStart && role.minimum >= 1) {
-        foundCanAssignRolesAtStart = true;
-      }
-      if (role.canAssignRolesDuringAssessment && role.minimum >= 1) {
-        foundCanAssignRolesDuringAssessment = true;
-      }
-    });
-
-    if (!foundCanAssignRolesAtStart) {
-      errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".',
-      );
-    }
-    if (!foundCanAssignRolesDuringAssessment) {
-      errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".',
-      );
+    if (!foundCanAssignRoles) {
+      errors.push('Could not find a role with minimum >= 1 and "canAssignRoles" set to "true".');
     }
 
     // Ensure values for role minimum and maximum are within bounds

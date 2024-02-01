@@ -251,12 +251,9 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 router.get('/', function (req, res, next) {
   async.series(
     [
-      (callback) => {
+      async () => {
         const variant_id = res.locals.assessment.type === 'Exam' ? null : req.query.variant_id;
-        questionRender.getAndRenderVariant(variant_id, null, res.locals, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await questionRender.getAndRenderVariant(variant_id, null, res.locals);
       },
       (callback) => {
         logPageView(req, res, (err) => {
