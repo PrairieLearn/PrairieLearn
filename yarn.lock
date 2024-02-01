@@ -3366,7 +3366,7 @@ __metadata:
     stripe: ^14.14.0
     tablesorter: ^2.31.3
     tar: ^6.2.0
-    three: ^0.160.1
+    three: ^0.161.0
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
     tsx: ^4.7.0
@@ -15748,10 +15748,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"three@npm:^0.160.1":
-  version: 0.160.1
-  resolution: "three@npm:0.160.1"
-  checksum: 5f4be21df6ee5abf63a21513e9650a4956e3699d59f16b4545b27e1c421405d452c132253381e8f5cca3f609d41c4e29dad24fddab526156017ec215ab244ad1
+"three@npm:^0.161.0":
+  version: 0.161.0
+  resolution: "three@npm:0.161.0"
+  checksum: eb4df25a794dcd92b62ca4705b62c9391735863b4016fabe6d136e220449e5d840c0cfd183eb07caef3d6aeb241e78f58845087b4d27a30a420ed8f35a2ab12d
   languageName: node
   linkType: hard
 
