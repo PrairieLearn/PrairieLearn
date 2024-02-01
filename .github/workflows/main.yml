@@ -52,7 +52,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-desktop
       - name: Check whether workspaces/desktop was modified
-        run: tools/check_path_changed.sh workspaces/desktop workspaces_desktop_modified
+        run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
       - name: Build and push prairielearn/workspace-desktop
         uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
@@ -65,7 +65,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-jupyterlab
       - name: Check whether workspaces/jupyterlab was modified
-        run: tools/check_path_changed.sh workspaces/jupyterlab workspaces_jupyterlab_modified
+        run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
       - name: Build and push prairielearn/workspace-jupyterlab
         uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
@@ -78,7 +78,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-jupyterlab-python
       - name: Check whether workspaces/jupyterlab-python was modified
-        run: tools/check_path_changed.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
+        run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
       - name: Build and push prairielearn/workspace-jupyterlab-python
         uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
@@ -91,7 +91,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-rstudio
       - name: Check whether workspaces/rstudio was modified
-        run: tools/check_path_changed.sh workspaces/rstudio workspaces_rstudio_modified
+        run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
       - name: Build and push prairielearn/workspace-rstudio
         uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
@@ -104,7 +104,7 @@ jobs:
       ######################################################################################################
       # prairielearn/workspace-xtermjs
       - name: Check whether workspaces/xtermjs was modified
-        run: tools/check_path_changed.sh workspaces/xtermjs workspaces_xtermjs_modified
+        run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
       - name: Build and push prairielearn/workspace-xtermjs
         uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
