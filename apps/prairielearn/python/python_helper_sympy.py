@@ -235,77 +235,63 @@ class CheckAST(ast.NodeVisitor):
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> None:
         if (
             isinstance(node.ctx, ast.Load)
-            and not is_name_of_function(node)
+            and not self.is_name_of_function(node)
             and node.id not in self.variables
         ):
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             if node.id in self.functions:
                 raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
             else:
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
+    @staticmethod
+    def is_name_of_function(node: ast.AST) -> bool:
+        # The node is the name of a function if all of the following are true:
+        # 1) it has type ast.Name
+        # 2) its parent has type ast.Call
+        # 3) it is not in the list of parent's args
+        return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)  # type: ignore
 
-# class CheckFunctions(ast.NodeVisitor):
-#     def __init__(self, functions: SympyMapT) -> None:
-#         self.functions = functions
+    @staticmethod
+    def get_parent_with_location(node: ast.AST) -> Any:
+        while True:
+            if hasattr(node, "col_offset"):
+                return node
 
-#     def visit_Call(self, node: ast.Call) -> None:
-#         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
-#             err_node = get_parent_with_location(node)
-#             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
-#         self.generic_visit(node)
+            node = node.parent
+            # return CheckAST.get_parent_with_location(node.parent)  # type: ignore
 
+    def visit_str(self, expr: str) -> None:
+        # Parse (convert string to AST)
+        try:
+            root = ast.parse(expr, mode="eval")
+        except SyntaxError as err:
+            offset = err.offset if err.offset is not None else -1
+            raise HasParseError(offset)
 
-# class CheckVariables(ast.NodeVisitor):
-#     def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
-#         # functions is only used for error type, if someone writes "exp + 2"
-#         self.variables = variables
-#         self.functions = functions
+        # Link each node to its parent
+        for node in ast.walk(root):
+            for child in ast.iter_child_nodes(node):
+                child.parent = node  # type: ignore
 
-#     def visit_Name(self, node: ast.Name) -> None:
-#         if (
-#             isinstance(node.ctx, ast.Load)
-#             and not is_name_of_function(node)
-#             and node.id not in self.variables
-#         ):
-#             err_node = get_parent_with_location(node)
-#             if node.id in self.functions:
-#                 raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
-#             else:
-#                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
-#         self.generic_visit(node)
-
-
-def is_name_of_function(node: ast.AST) -> bool:
-    # The node is the name of a function if all of the following are true:
-    # 1) it has type ast.Name
-    # 2) its parent has type ast.Call
-    # 3) it is not in the list of parent's args
-    return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)  # type: ignore
+        self.visit(root)
 
 
-def get_parent_with_location(node: ast.AST) -> Any:
-    if hasattr(node, "col_offset"):
-        return node
-
-    return get_parent_with_location(node.parent)  # type: ignore
-
-
-def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
+def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -315,18 +301,6 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     ind = expr.find("#")
     if ind != -1:
         raise HasCommentError(ind)
-
-    # Parse (convert string to AST)
-    try:
-        root = ast.parse(expr, mode="eval")
-    except SyntaxError as err:
-        offset = err.offset if err.offset is not None else -1
-        raise HasParseError(offset)
-
-    # Link each node to its parent
-    for node in ast.walk(root):
-        for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -359,17 +333,7 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
 
     CheckAST(
         whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
-    ).visit(root)
-
-    # Disallow functions that are not in locals_for_eval
-    # CheckFunctions(locals_for_eval["functions"]).visit(root)
-
-    # Disallow variables that are not in locals_for_eval
-    # CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
-    #    root
-    # )
-
-    # CheckWhiteList(whitelist).visit(root)
+    ).visit_str(expr)
 
 
 def sympy_check(
@@ -446,7 +410,7 @@ def evaluate_with_source(
         oo=sympy.oo,
     )
 
-    ast_check(code, parsed_locals_to_eval)
+    ast_check_str(code, parsed_locals_to_eval)
 
     # Now that it's safe, get sympy expression
     try:
