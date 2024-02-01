@@ -200,7 +200,7 @@ class HasInvalidVariableError(BaseSympyError):
 
 
 @dataclass
-class FunctionNameUsedWithoutArguments(BaseSympyError):
+class FunctionNameWithoutArgumentsError(BaseSympyError):
     offset: int
     text: str
 
@@ -253,7 +253,9 @@ class CheckAST(ast.NodeVisitor):
         ):
             err_node = self.get_parent_with_location(node)
             if node.id in self.functions:
-                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+                raise FunctionNameWithoutArgumentsError(
+                    err_node.col_offset, err_node.id
+                )
             else:
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
@@ -665,7 +667,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except FunctionNameUsedWithoutArguments as err:
+    except FunctionNameWithoutArgumentsError as err:
         return (
             f'Your answer mentions the function "{err.text}" without '
             "applying it to anything. "
