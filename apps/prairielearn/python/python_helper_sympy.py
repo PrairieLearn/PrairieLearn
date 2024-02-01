@@ -274,11 +274,13 @@ class CheckAST(ast.NodeVisitor):
 
     @staticmethod
     def get_parent_with_location(node: ast.AST) -> Any:
-        while True:
+        while hasattr(node, "parent"):
             if hasattr(node, "col_offset"):
                 return node
 
             node = node.parent  # type: ignore
+
+        return None
 
     def visit_str(self, expr: str) -> None:
         # Parse (convert string to AST)
