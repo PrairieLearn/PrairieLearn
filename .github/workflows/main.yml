@@ -77,9 +77,6 @@ jobs:
       - name: Build the grader-r docker image if needed
         run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
       
-      - name: Report image sizes
-        run: ./tools/report-image-sizes.mjs prairielearn/grader-c prairielearn/grader-java prairielearn/grader-python prairielearn/grader-r
-
       - uses: ./github/actions/report-image-sizes
         with:
           title: Grader images
