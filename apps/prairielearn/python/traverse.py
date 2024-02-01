@@ -110,7 +110,7 @@ def traverse_and_replace(
 
             if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
-            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
+            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):  # type: ignore
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
                 # that produce SVG documents.
                 #
