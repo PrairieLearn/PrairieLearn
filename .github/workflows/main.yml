@@ -48,6 +48,11 @@ jobs:
       - name: Build the workspace-xtermjs docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
 
+      - uses: ./github/actions/report-image-sizes
+        with:
+          title: Workspace images
+          images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-xtermjs
+
   build-grader-images:
     runs-on: ubuntu-latest
 
@@ -71,6 +76,14 @@ jobs:
         run: ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python:latest
       - name: Build the grader-r docker image if needed
         run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
+      
+      - name: Report image sizes
+        run: ./tools/report-image-sizes.mjs prairielearn/grader-c prairielearn/grader-java prairielearn/grader-python prairielearn/grader-r
+
+      - uses: ./github/actions/report-image-sizes
+        with:
+          title: Grader images
+          images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
 
   build-core-images:
     runs-on: ubuntu-latest
@@ -121,6 +134,11 @@ jobs:
       - name: Push latest executor image to Docker registry
         if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
         run: docker push prairielearn/executor:latest
+
+      - uses: ./github/actions/report-image-sizes
+        with:
+          title: Core images
+          images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
 
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
