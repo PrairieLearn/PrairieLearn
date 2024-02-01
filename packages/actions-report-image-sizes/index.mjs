@@ -30,7 +30,7 @@ async function getImageSizes(image) {
   const token = await getDockerHubToken(image);
   console.log(token);
   const manifest = await getImageManifest(token, image, 'latest');
-  console.log(manifest);
+  console.dir(manifest, { depth: null });
   return 12345;
 }
 
