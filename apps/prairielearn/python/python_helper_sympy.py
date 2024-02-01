@@ -241,10 +241,9 @@ class CheckFunctions(ast.NodeVisitor):
         self.functions = functions
 
     def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Name):
-            if node.func.id not in self.functions:
-                err_node = get_parent_with_location(node)
-                raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+            err_node = get_parent_with_location(node)
+            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
 
@@ -255,16 +254,16 @@ class CheckVariables(ast.NodeVisitor):
         self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
-        if isinstance(node.ctx, ast.Load):
-            if not is_name_of_function(node):
-                if node.id not in self.variables:
-                    err_node = get_parent_with_location(node)
-                    if node.id in self.functions:
-                        raise FunctionNameUsedWithoutArguments(
-                            err_node.col_offset, err_node.id
-                        )
-                    else:
-                        raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+        if (
+            isinstance(node.ctx, ast.Load)
+            and not is_name_of_function(node)
+            and node.id not in self.variables
+        ):
+            err_node = get_parent_with_location(node)
+            if node.id in self.functions:
+                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+            else:
+                raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
 
