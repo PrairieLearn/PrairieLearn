@@ -49,7 +49,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-const fingerprintColorsArray = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
+const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
   resLocals,
@@ -602,7 +602,7 @@ export function InstructorAssessmentInstance({
                                 <td>
                                   <a
                                     tabindex="0"
-                                    class="badge color-${fingerprintColorsArray[
+                                    class="badge color-${FINGERPRINT_COLORS[
                                       row.client_fingerprint_number % 6
                                     ]} color-hover"
                                     role="button"
@@ -664,9 +664,10 @@ export function InstructorAssessmentInstance({
                             <td>
                               <a
                                 class="btn btn-primary"
-                                href="<%= urlPrefix %>/grading_job/<%= row.data.id %>"
-                                >View grading job ${row.data?.id}</a
+                                href="${resLocals.urlPrefix}/grading_job/${row.data?.id}"
                               >
+                                View grading job ${row.data?.id}
+                              </a>
                             </td>
                           `}
                     </tr>
