@@ -3287,7 +3287,7 @@ __metadata:
     express-session: ^1.18.0
     fabric: ^4.6.0
     fast-glob: ^3.3.2
-    fetch-cookie: ^2.1.0
+    fetch-cookie: ^2.2.0
     file-type: ^16.5.4
     filesize: ^10.1.0
     folder-hash: ^4.0.4
@@ -3443,7 +3443,7 @@ __metadata:
     cookie-signature: ^1.2.1
     express: ^4.18.2
     express-async-handler: ^1.2.0
-    fetch-cookie: ^2.1.0
+    fetch-cookie: ^2.2.0
     mocha: ^10.2.0
     node-fetch: ^2.7.0
     nyc: ^15.1.0
@@ -9031,13 +9031,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fetch-cookie@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "fetch-cookie@npm:2.1.0"
+"fetch-cookie@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "fetch-cookie@npm:2.2.0"
   dependencies:
     set-cookie-parser: ^2.4.8
     tough-cookie: ^4.0.0
-  checksum: d9d6b1e1ef75c0c72258edbf6fe4f7f39e36b17d0f52c37cc2f9fffe97a36134f43fefcaaff5ab78055e481e2929e626e158e381b91b1f11c8f85caf10b271aa
+  checksum: 854fa03df596ddf0ed53cf9e52bae1c224d04d71e439b1c04732c05cadb677a6710aca654efa31ec5b8dd7223880821b12da153107d749a48fbfdc4f2d2540cd
   languageName: node
   linkType: hard
 
