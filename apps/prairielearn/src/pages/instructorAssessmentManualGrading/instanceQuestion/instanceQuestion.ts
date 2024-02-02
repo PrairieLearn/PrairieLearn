@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler = require('express-async-handler');
-import * as util from 'util';
 import * as qs from 'qs';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
@@ -77,7 +76,7 @@ router.get(
 router.get(
   '/variant/:variant_id/submission/:submission_id',
   asyncHandler(async (req, res) => {
-    const results = await util.promisify(renderPanelsForSubmission)(
+    const results = await renderPanelsForSubmission(
       req.params.submission_id,
       res.locals.question.id,
       res.locals.instance_question.id,

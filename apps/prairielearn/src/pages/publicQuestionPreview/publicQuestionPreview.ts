@@ -65,8 +65,8 @@ router.post('/', function (req, res, next) {
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   setLocals(req, res)
-    .then(() => {
-      renderPanelsForSubmission(
+    .then(async () => {
+      const { submissionPanel } = await renderPanelsForSubmission(
         req.params.submission_id,
         res.locals.question.id,
         null, // instance_question_id,
@@ -76,11 +76,8 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
         null, // csrfToken
         null, // authorizedEdit
         false, // renderScorePanels
-        (err, results) => {
-          if (ERR(err, next)) return;
-          res.send({ submissionPanel: results.submissionPanel });
-        },
       );
+      res.send({ submissionPanel });
     })
     .catch((err) => next(err));
 });

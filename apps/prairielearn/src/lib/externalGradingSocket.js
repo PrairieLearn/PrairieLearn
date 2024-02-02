@@ -79,15 +79,8 @@ export function connection(socket) {
       msg.csrf_token,
       msg.authorized_edit,
       true, // renderScorePanels
-      (err, panels) => {
-        if (
-          ERR(err, (err) => {
-            logger.error('Error rendering panels for submission', err);
-            Sentry.captureException(err);
-          })
-        ) {
-          return;
-        }
+    ).then(
+      (panels) => {
         callback({
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
@@ -97,6 +90,10 @@ export function connection(socket) {
           questionPanelFooter: panels.questionPanelFooter,
           questionNavNextButton: panels.questionNavNextButton,
         });
+      },
+      (err) => {
+        logger.error('Error rendering panels for submission', err);
+        Sentry.captureException(err);
       },
     );
   });

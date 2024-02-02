@@ -4,8 +4,11 @@ const express = require('express');
 const async = require('async');
 const path = require('path');
 const { callbackify } = require('util');
+const asyncHandler = require('express-async-handler');
+
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
+
 const {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -73,23 +76,23 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  renderPanelsForSubmission(
-    req.params.submission_id,
-    res.locals.question.id,
-    null, // instance_question_id,
-    req.params.variant_id,
-    res.locals.urlPrefix,
-    null, // questionContext
-    null, // csrfToken
-    null, // authorizedEdit
-    false, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, next)) return;
-      res.send({ submissionPanel: results.submissionPanel });
-    },
-  );
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    const { submissionPanel } = await renderPanelsForSubmission(
+      req.params.submission_id,
+      res.locals.question.id,
+      null, // instance_question_id,
+      req.params.variant_id,
+      res.locals.urlPrefix,
+      null, // questionContext
+      null, // csrfToken
+      null, // authorizedEdit
+      false, // renderScorePanels
+    );
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
