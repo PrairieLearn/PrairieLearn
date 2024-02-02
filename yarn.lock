@@ -808,9 +808,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/credential-providers@npm:^3.504.0":
-  version: 3.504.0
-  resolution: "@aws-sdk/credential-providers@npm:3.504.0"
+"@aws-sdk/credential-providers@npm:^3.504.1":
+  version: 3.504.1
+  resolution: "@aws-sdk/credential-providers@npm:3.504.1"
   dependencies:
     "@aws-sdk/client-cognito-identity": 3.504.0
     "@aws-sdk/client-sso": 3.502.0
@@ -828,7 +828,7 @@ __metadata:
     "@smithy/property-provider": ^2.1.1
     "@smithy/types": ^2.9.1
     tslib: ^2.5.0
-  checksum: 6a0840476c3d648887a3e4dfc188bd05e947c508a0b11103b80e792a338f4a26e737577edc34a0d137919dd781952c571533351913cd180af9a18db62f239fa0
+  checksum: d27d06c982560ed1925573ef14f55fc6784c02103c570834a6fbaab2083c9d006dfc842484d1ed44477f1607da99d30edcbcdf1b61e28ad1a541dc7e639b182d
   languageName: node
   linkType: hard
 
@@ -2938,7 +2938,7 @@ __metadata:
     "@aws-sdk/client-ecr": ^3.504.0
     "@aws-sdk/client-s3": ^3.504.0
     "@aws-sdk/client-sqs": ^3.504.0
-    "@aws-sdk/credential-providers": ^3.504.0
+    "@aws-sdk/credential-providers": ^3.504.1
     "@aws-sdk/lib-storage": ^3.504.0
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
@@ -3165,7 +3165,7 @@ __metadata:
     "@aws-sdk/client-ecr": ^3.504.0
     "@aws-sdk/client-s3": ^3.504.0
     "@aws-sdk/client-sqs": ^3.504.0
-    "@aws-sdk/credential-providers": ^3.504.0
+    "@aws-sdk/credential-providers": ^3.504.1
     "@aws-sdk/lib-storage": ^3.504.0
     "@fortawesome/fontawesome-free": ^6.5.1
     "@octokit/rest": ^19.0.13
@@ -3483,7 +3483,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-ecr": ^3.504.0
     "@aws-sdk/client-s3": ^3.504.0
-    "@aws-sdk/credential-providers": ^3.504.0
+    "@aws-sdk/credential-providers": ^3.504.1
     "@aws-sdk/lib-storage": ^3.504.0
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
