@@ -2,7 +2,7 @@
 
 Utilities to help connect to and store information in a cache. This package _does not_ load configurations directly. Instead, configs should be passed in when the package is initialized upon loading the application. Then, the package can be used in the throughout the application to interact with the cache.
 
-## USAGE
+## Usage
 
 First, you will need to initialize the library with the cache type that you are intending to use and optionally, a redis server URL if that is the cach type being used:
 

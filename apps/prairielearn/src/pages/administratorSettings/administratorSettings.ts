@@ -1,6 +1,6 @@
 import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import { cacheReset } from '@prairielearn/cache';
+import { cache } from '@prairielearn/cache';
 
 import * as error from '@prairielearn/error';
 import * as chunks from '../../lib/chunks';
@@ -22,7 +22,7 @@ router.post(
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'invalidate_question_cache') {
-      await cacheReset();
+      await cache.reset();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string: string = req.body.course_ids || '';

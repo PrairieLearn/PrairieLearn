@@ -14,7 +14,7 @@ const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
-import { cacheGet, cacheSet } from '@prairielearn/cache';
+import { cache } from '@prairielearn/cache';
 
 import * as schemas from '../schemas';
 import { config } from '../lib/config';
@@ -1875,7 +1875,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
     // tl;dr: don't cache any results that would create course issues.
     const hasCourseIssues = computedData?.courseIssues?.length > 0;
     if (cacheKey && !hasCourseIssues) {
-      cacheSet(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
+      cache.set(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
     }
 
     return {
@@ -1891,7 +1891,7 @@ async function getCachedDataOrCompute(course, data, context, computeFcn) {
     let cachedData;
 
     try {
-      cachedData = await cacheGet(cacheKey);
+      cachedData = await cache.get(cacheKey);
     } catch (err) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal

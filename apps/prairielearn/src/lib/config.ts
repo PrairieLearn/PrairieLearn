@@ -5,6 +5,7 @@ import {
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
+import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
 
@@ -264,7 +265,7 @@ const ConfigSchema = z.object({
   syncExamIdAccessRules: z.boolean().default(false),
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
-  questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
@@ -533,6 +534,15 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
+  console.log(config.questionRenderCacheType);
+  if (config.questionRenderCacheType !== null) {
+    logger.warn(
+      'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
+    );
+    if (config.cacheType === 'none') {
+      config.cacheType = config.questionRenderCacheType;
+    }
+  }
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { cacheSet, cacheGet, cacheDel } from '@prairielearn/cache';
+import { cache } from '@prairielearn/cache';
 import { config } from '../../../lib/config';
 import { selectAndLockUserById, selectUserById } from '../../../models/user';
 import { PlanName } from './plans-types';
@@ -64,18 +64,18 @@ function stripeProductCacheKey(id: string): string {
  */
 export async function getStripeProduct(id: string): Promise<Stripe.Product> {
   const cacheKey = stripeProductCacheKey(id);
-  let product: Stripe.Product = await cacheGet(cacheKey);
+  let product: Stripe.Product = await cache.get(cacheKey);
   if (!product) {
     const stripe = getStripeClient();
     product = await stripe.products.retrieve(id, { expand: ['default_price'] });
-    cacheSet(cacheKey, product, 1000 * 60 * 10);
+    cache.set(cacheKey, product, 1000 * 60 * 10);
   }
   return product;
 }
 
 export async function clearStripeProductCache(id: string) {
   const cacheKey = stripeProductCacheKey(id);
-  await cacheDel(cacheKey);
+  await cache.del(cacheKey);
 }
 
 export async function getDefaultPriceForStripeProduct(id: string): Promise<Stripe.Price> {

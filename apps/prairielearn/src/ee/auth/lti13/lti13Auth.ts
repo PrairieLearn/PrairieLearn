@@ -10,7 +10,7 @@ import { URL } from 'url';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
-import { cacheGet, cacheSet } from '@prairielearn/cache';
+import { cache } from '@prairielearn/cache';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { Lti13Test } from './lti13Auth.html';
@@ -308,11 +308,11 @@ async function verify(req: Request, tokenSet: TokenSet) {
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
-  const cacheResult = await cacheGet(nonceKey);
+  const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
     throw error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
-  cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+  cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
 
   // Save parameters about the platform back to the lti13_instance

@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { assert } from 'chai';
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import debugfn from 'debug';
-import { cacheInit, cacheClose } from '@prairielearn/cache';
+import { cache } from '@prairielearn/cache';
 
 import * as assets from '../lib/assets';
 import { config } from '../lib/config';
@@ -74,11 +74,12 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       socketServer.init(httpServer);
 
       debug('before(): initialize cache');
-      await cacheInit({
+      await cache.init({
         cacheType: config.cacheType,
         redisUrl: config.redisUrl,
-      }),
-        debug('before(): initialize server jobs');
+      });
+
+      debug('before(): initialize server jobs');
       serverJobs.init();
 
       debug('before(): initialize freeform server');
@@ -118,7 +119,7 @@ export async function after(): Promise<void> {
     await serverJobs.stop();
 
     debug('after(): close cache');
-    await cacheClose();
+    await cache.close();
 
     debug('after(): close local cache');
     localCache.close();
