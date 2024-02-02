@@ -178,7 +178,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@sa11y/format": "^6.3.1",
+    "@sa11y/format": "^6.3.2",
     "@types/archiver": "^6.0.2",
     "@types/async": "^3.2.24",
     "@types/body-parser": "^1.19.5",
