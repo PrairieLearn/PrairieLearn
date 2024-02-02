@@ -4,7 +4,7 @@ import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Type, TypedDict, cast
+from typing import Any, Callable, Literal, Optional, Type, TypedDict, cast
 
 import prairielearn as pl
 import sympy
@@ -226,12 +226,18 @@ class HasInvalidSymbolError(BaseSympyError):
 
 
 class CheckAST(ast.NodeVisitor):
+    whitelist: ASTWhiteListT
+    variables: SympyMapT
+    functions: SympyMapT
+    __parents: dict[int, ast.AST]
+
     def __init__(
         self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
+        self.__parents = dict()
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
@@ -260,29 +266,28 @@ class CheckAST(ast.NodeVisitor):
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
-    @staticmethod
-    def is_name_of_function(node: ast.AST) -> bool:
+    def is_name_of_function(self, node: ast.AST) -> bool:
         # The node is the name of a function if all of the following are true:
         # 1) it has type ast.Name
         # 2) its parent has type ast.Call
         # 3) it is not in the list of parent's args
-        return (
-            isinstance(node, ast.Name)
-            and isinstance(node.parent, ast.Call)  # type: ignore
-            and (node not in node.parent.args)  # type: ignore
-        )
+        if not isinstance(node, ast.Name):
+            return False
 
-    @staticmethod
-    def get_parent_with_location(node: ast.AST) -> Any:
-        while hasattr(node, "parent"):
+        parent = self.__parents[id(node)]
+
+        return isinstance(parent, ast.Call) and (node not in parent.args)
+
+    def get_parent_with_location(self, node: ast.AST) -> Any:
+        while id(node) in self.__parents:  # hasattr(node, "parent"):
             if hasattr(node, "col_offset"):
                 return node
 
-            node = node.parent  # type: ignore
+            node = self.__parents[id(node)]
 
         return node
 
-    def visit_str(self, expr: str) -> None:
+    def check_expression(self, expr: str) -> None:
         # Parse (convert string to AST)
         try:
             root = ast.parse(expr, mode="eval")
@@ -290,12 +295,18 @@ class CheckAST(ast.NodeVisitor):
             offset = err.offset if err.offset is not None else -1
             raise HasParseError(offset)
 
+        self.__parents = dict()
+
         # Link each node to its parent
         for node in ast.walk(root):
             for child in ast.iter_child_nodes(node):
-                child.parent = node  # type: ignore
+                self.__parents[id(child)] = node
 
         self.visit(root)
+
+        # Empty parents dict after execution
+        # dict is only populated during execution
+        self.__parents = dict()
 
 
 def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
@@ -340,7 +351,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
 
     CheckAST(
         whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
-    ).visit_str(expr)
+    ).check_expression(expr)
 
 
 def sympy_check(
