@@ -4,7 +4,7 @@ import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Optional, Type, TypedDict, cast
+from typing import Any, Callable, Literal, Type, TypedDict, cast
 
 import prairielearn as pl
 import sympy
