@@ -279,7 +279,7 @@ class CheckAST(ast.NodeVisitor):
         return isinstance(parent, ast.Call) and (node not in parent.args)
 
     def get_parent_with_location(self, node: ast.AST) -> Any:
-        while id(node) in self.__parents:  # hasattr(node, "parent"):
+        while id(node) in self.__parents:
             if hasattr(node, "col_offset"):
                 return node
 
@@ -295,12 +295,12 @@ class CheckAST(ast.NodeVisitor):
             offset = err.offset if err.offset is not None else -1
             raise HasParseError(offset)
 
-        self.__parents = dict()
-
         # Link each node to its parent
-        for node in ast.walk(root):
-            for child in ast.iter_child_nodes(node):
-                self.__parents[id(child)] = node
+        self.__parents = {
+            id(child): node
+            for node in ast.walk(root)
+            for child in ast.iter_child_nodes(node)
+        }
 
         self.visit(root)
 
