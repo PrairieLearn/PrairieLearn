@@ -10,6 +10,7 @@ import * as paginate from '../../lib/paginate';
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { closeAllIssuesForCourse } from '../../lib/issues';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -254,12 +255,7 @@ router.post(
       await sqldb.callAsync('issues_update_open', params);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_all') {
-      let params = [
-        false, // open status
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open_all', params);
+      await closeAllIssuesForCourse(res.locals.course.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, 'unknown __action', {
