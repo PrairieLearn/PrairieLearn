@@ -39,4 +39,4 @@ The following example will use the key `foo` to delete the key value pair `foo: 
 await cacheDel('foo');
 ```
 
-Using `cache.reset` will clear the currently stored data in the cache. Using `cache.close` will disable the currently used cache and, if using Redis, close the connection.
+Using `cacheReset` will clear the currently stored data in the cache. Using `cacheClose` will disable the currently used cache and, if using Redis, close the connection.
