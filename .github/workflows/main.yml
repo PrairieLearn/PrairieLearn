@@ -218,8 +218,25 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
-      - name: Build the plbase docker image if needed
-        run: ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase:${{ env.COMMIT_SHA }}
+      - name: Login to DockerHub
+        if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Check whether images/plbase was modified
+        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+      - name: Build and push prairielearn/plbase
+        if: ${{ env.images_plbase_modified }}
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: images/plbase
+          platforms: linux/amd64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
+
       - name: Build the prairielearn docker image
         run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
         env:
@@ -233,17 +250,6 @@ jobs:
       - name: Tag executor image as latest
         run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
 
-      # The following steps won't run correctly for forks since the Dockerhub
-      # credentials secrets will be missing. We only run them if the secrets are
-      # provided. Note that we can't use `secrets.*` directly in an `if` conditional
-      # here, so we copy them to an environment variable at the start of the job
-      # and then check that here.
-      - name: Login to DockerHub
-        if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push prairielearn image to Docker registry
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         run: docker push prairielearn/prairielearn:${{ env.COMMIT_SHA }}

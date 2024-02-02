@@ -7,3 +7,4 @@ COPY plbase-install.sh python-requirements.txt /
 RUN /bin/bash /plbase-install.sh
 
 CMD /bin/bash
+
