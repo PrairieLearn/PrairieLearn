@@ -2797,7 +2797,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/cache@workspace:packages/cache":
+"@prairielearn/cache@workspace:^, @prairielearn/cache@workspace:packages/cache":
   version: 0.0.0-use.local
   resolution: "@prairielearn/cache@workspace:packages/cache"
   dependencies:
@@ -3186,6 +3186,7 @@ __metadata:
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/bind-mount": "workspace:^"
     "@prairielearn/browser-utils": "workspace:^"
+    "@prairielearn/cache": "workspace:^"
     "@prairielearn/compiled-assets": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/csv": "workspace:^"
