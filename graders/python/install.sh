@@ -1,8 +1,8 @@
 #!/bin/bash
 
-yum -y update
+dnf -y update
 
-yum install -y \
+dnf install -y \
     sudo \
     gcc \
     make \
