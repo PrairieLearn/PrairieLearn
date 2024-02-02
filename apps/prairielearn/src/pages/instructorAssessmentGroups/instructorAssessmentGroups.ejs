@@ -137,7 +137,7 @@
                     <label for="formUids">UIDs</label>
                     <input type="text" class="form-control" id="formUids" name="uids"
                       placeholder="one@example.com, two@example.com, three@example.com">
-                    <small id="uidHelp" class="form-text text-muted">Seperate with ","
+                    <small id="uidHelp" class="form-text text-muted">Separate with ","
                       <br>Please make sure they are not in any other groups</small>
                   </div>
                 </div>
@@ -232,7 +232,7 @@
           </thead>
           <tbody>
             <% groups.forEach(function(row, iRow) { %>
-            <tr>
+            <tr data-test-group-id="<%= row.group_id %>">
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
               <td class="text-center" style="word-break:break-all;">

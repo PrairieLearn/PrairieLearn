@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "nyc --reporter=html --reporter=text mocha --no-config --require ts-node/register --watch-files src/ src/**/*.test.ts"
+    "test": "nyc --reporter=html --reporter=text mocha --no-config --require tsx --watch-files src/ src/**/*.test.ts"
   },
   "dependencies": {
     "@types/express": "^4.17.21",
@@ -27,19 +27,19 @@
     "@types/chai": "^4.3.11",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^18.19.4",
-    "@types/node-fetch": "^2.6.10",
+    "@types/node": "^20.11.11",
+    "@types/node-fetch": "^2.6.11",
     "@types/on-headers": "^1.0.3",
     "@types/set-cookie-parser": "^2.4.7",
     "@types/uid-safe": "^2.1.5",
-    "chai": "^4.3.10",
+    "chai": "^4.4.1",
     "express": "^4.18.2",
     "fetch-cookie": "^2.1.0",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
 }

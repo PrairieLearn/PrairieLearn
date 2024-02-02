@@ -25,65 +25,17 @@ WITH
     RETURNING
       id,
       group_config_id
-  ),
-  create_log AS (
-    INSERT INTO
-      group_logs (authn_user_id, user_id, group_id, action)
-    SELECT
-      $authn_user_id,
-      $user_id,
-      cg.id,
-      'create'
-    FROM
-      create_group AS cg
-  ),
-  get_role AS (
-    SELECT
-      gr.id AS role_id
-    FROM
-      group_roles AS gr
-    WHERE
-      (
-        gr.assessment_id = $assessment_id
-        AND gr.can_assign_roles_at_start
-      )
-    ORDER BY
-      gr.maximum
-    LIMIT
-      1
-  ),
-  join_group AS (
-    INSERT INTO
-      group_users AS gu (user_id, group_id, group_config_id)
-    SELECT
-      $user_id,
-      cg.id,
-      cg.group_config_id
-    FROM
-      create_group AS cg
-    RETURNING
-      gu.*
-  ),
-  assign_role AS (
-    INSERT INTO
-      group_user_roles (user_id, group_id, group_role_id)
-    SELECT
-      jg.user_id,
-      jg.group_id,
-      gr.role_id
-    FROM
-      join_group AS jg,
-      get_role as gr
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  group_logs (authn_user_id, group_id, action)
 SELECT
   $authn_user_id,
-  $user_id,
   cg.id,
-  'join'
+  'create'
 FROM
-  create_group AS cg;
+  create_group AS cg
+RETURNING
+  group_id;
 
 -- BLOCK select_group
 SELECT
@@ -125,13 +77,13 @@ WITH
       gur.group_role_id
   )
 SELECT
-  gr.id,
-  gr.role_name,
-  COALESCE(gur.count, 0) AS count,
-  gr.maximum,
-  gr.minimum,
-  gr.can_assign_roles_at_start,
-  gr.can_assign_roles_during_assessment
+  gr.*,
+  COALESCE(gur.count, 0)::INT AS count,
+  -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
+  -- course may not have synced with the new code yet. Use the old
+  -- can_assign_roles_at_start column instead for now. This will be replaced in
+  -- a future version.
+  gr.can_assign_roles_at_start AS can_assign_roles
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -140,19 +92,6 @@ FROM
   LEFT JOIN count_group_user_per_role AS gur ON gur.group_role_id = gr.id
 ORDER BY
   minimum DESC;
-
--- BLOCK get_assessment_level_permissions
-SELECT
-  bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
-  bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
-FROM
-  group_configs as gc
-  JOIN groups as g ON (gc.id = g.group_config_id)
-  JOIN group_user_roles as gur ON (gur.group_id = g.id)
-  JOIN group_roles AS gr ON (gr.id = gur.group_role_id)
-WHERE
-  gc.assessment_id = $assessment_id
-  AND gur.user_id = $user_id;
 
 -- BLOCK select_question_permissions
 SELECT
@@ -197,6 +136,132 @@ WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id
   AND g.deleted_at IS NULL;
+
+-- BLOCK select_and_lock_group_by_name
+SELECT
+  g.*
+FROM
+  groups AS g
+  JOIN group_configs AS gc ON g.group_config_id = gc.id
+WHERE
+  g.name = $group_name
+  AND gc.assessment_id = $assessment_id
+  AND g.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+FOR NO KEY UPDATE of
+  g;
+
+-- BLOCK select_and_lock_group
+SELECT
+  g.*,
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      group_users AS gu
+    WHERE
+      gu.group_id = g.id
+  )::INT AS cur_size,
+  gc.maximum AS max_size,
+  gc.has_roles
+FROM
+  groups AS g
+  JOIN group_configs AS gc ON g.group_config_id = gc.id
+WHERE
+  g.id = $group_id
+  AND gc.assessment_id = $assessment_id
+  AND g.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+FOR NO KEY UPDATE of
+  g;
+
+-- BLOCK select_suitable_group_role
+WITH
+  users_per_group_role AS (
+    SELECT
+      gur.group_role_id,
+      COUNT(*) AS user_count
+    FROM
+      group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+    GROUP BY
+      gur.group_role_id
+  ),
+  suitable_group_roles AS (
+    SELECT
+      gr.id,
+      (
+        -- The can_assign_roles column is not yet guaranteed to be up-to-date,
+        -- as the course may not have synced with the new code yet. Use the old
+        -- can_assign_roles_at_start column instead for now. This will be
+        -- replaced in a future version.
+        gr.can_assign_roles_at_start
+        AND COALESCE($cur_size::INT, 0) = 0
+      ) AS assigner_role_needed,
+      (
+        upgr.user_count IS NULL
+        AND gr.minimum > 0
+      ) AS mandatory_with_no_user,
+      GREATEST(0, gr.minimum - COALESCE(upgr.user_count, 0)) AS needed_users,
+      (gr.maximum - COALESCE(upgr.user_count, 0)) AS remaining
+    FROM
+      group_roles AS gr
+      LEFT JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
+    WHERE
+      gr.assessment_id = $assessment_id
+      AND (
+        gr.maximum IS NULL
+        OR gr.maximum > COALESCE(upgr.user_count, 0)
+      )
+  )
+SELECT
+  sgr.id
+FROM
+  suitable_group_roles AS sgr
+ORDER BY
+  -- If there are no users in the group, assign to an assigner role.
+  assigner_role_needed DESC,
+  -- Assign to a mandatory role with no users, if one exists.
+  mandatory_with_no_user DESC,
+  -- Assign to role that has not reached their minimum.
+  needed_users DESC,
+  -- Assign to role that has the most remaining spots.
+  remaining DESC NULLS LAST
+LIMIT
+  1;
+
+-- BLOCK insert_group_user
+WITH
+  inserted_user AS (
+    INSERT INTO
+      group_users (group_id, user_id, group_config_id)
+    VALUES
+      ($group_id, $user_id, $group_config_id)
+    RETURNING
+      *
+  ),
+  inserted_user_roles AS (
+    INSERT INTO
+      group_user_roles (user_id, group_id, group_role_id)
+    SELECT
+      iu.user_id,
+      iu.group_id,
+      $group_role_id
+    FROM
+      inserted_user AS iu
+    WHERE
+      $group_role_id::bigint IS NOT NULL
+  )
+INSERT INTO
+  group_logs (authn_user_id, user_id, group_id, action)
+SELECT
+  $authn_user_id,
+  iu.user_id,
+  iu.group_id,
+  'join'
+FROM
+  inserted_user AS iu;
 
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur USING group_roles AS gr

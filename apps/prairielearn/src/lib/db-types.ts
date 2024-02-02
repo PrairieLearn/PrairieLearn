@@ -803,9 +803,7 @@ export type GroupUser = z.infer<typeof GroupUserSchema>;
 
 export const GroupRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
-  can_assign_roles_at_start: z.boolean().nullable(),
-  can_assign_roles_during_assessment: z.boolean().nullable(),
-  can_submit_assessment: z.boolean().nullable(),
+  can_assign_roles: z.boolean().nullable(),
   id: IdSchema,
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
@@ -830,3 +828,24 @@ export const AssessmentQuestionRolePermissionsSchema = z.object({
 export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
 >;
+
+export const IssueSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_caused: z.boolean().nullable(),
+  course_data: z.record(z.string(), z.any()).nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString.nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  instructor_message: z.string().nullable(),
+  manually_reported: z.boolean().nullable(),
+  open: z.boolean().nullable(),
+  question_id: IdSchema.nullable(),
+  student_message: z.string().nullable(),
+  system_data: z.record(z.string(), z.any()).nullable(),
+  user_id: IdSchema.nullable(),
+  variant_id: IdSchema.nullable(),
+});
+export type Issue = z.infer<typeof IssueSchema>;

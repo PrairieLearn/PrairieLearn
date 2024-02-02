@@ -92,11 +92,8 @@ router.get('/', function (req, res, next) {
       const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
       return async.series(
         [
-          (callback) => {
-            getAndRenderVariant(variant_id, variant_seed, res.locals, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+          async () => {
+            await getAndRenderVariant(variant_id, variant_seed, res.locals);
           },
           (callback) => {
             logPageView(req, res, (err) => {

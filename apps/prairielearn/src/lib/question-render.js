@@ -8,6 +8,7 @@ import * as ejs from 'ejs';
 import { differenceInMilliseconds, parseISO } from 'date-fns';
 import * as util from 'util';
 import { EncodedData } from '@prairielearn/browser-utils';
+import { z } from 'zod';
 
 import { config, setLocalsFromConfig } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
@@ -17,8 +18,55 @@ import * as questionServers from '../question-servers';
 import * as error from '@prairielearn/error';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { writeCourseIssues } from './issues';
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  DateFromISOString,
+  GradingJobSchema,
+  IdSchema,
+  IssueSchema,
+  SubmissionSchema,
+  VariantSchema,
+} from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+const VariantSelectResultSchema = VariantSchema.extend({
+  assessment: AssessmentSchema.nullable(),
+  assessment_instance: AssessmentInstanceSchema.extend({
+    formatted_date: z.string().nullable(),
+  }).nullable(),
+  assessment_instance_date: DateFromISOString.nullable(),
+  formatted_date: z.string().nullable(),
+});
+
+const detailedSubmissionColumns = /** @type {const} */ ({
+  feedback: true,
+  format_errors: true,
+  params: true,
+  partial_scores: true,
+  raw_submitted_answer: true,
+  submitted_answer: true,
+  true_answer: true,
+});
+
+const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
+  grading_job: GradingJobSchema.nullable(),
+  grading_job_id: IdSchema.nullable(),
+  grading_job_status: z
+    .enum(['none', 'canceled', 'queued', 'grading', 'graded', 'requested'])
+    .nullable(),
+  formatted_date: z.string().nullable(),
+  elapsed_grading_time: z.string().nullable(),
+});
+
+const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
+
+const IssueRenderDataSchema = IssueSchema.extend({
+  formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
+  user_name: z.string().nullable(),
+});
 
 /**
  * To improve performance, we'll only render at most three submissions on page
@@ -268,212 +316,177 @@ function buildLocals(
  * @param {string | null} variant_id - The variant to render, or null if it should be generated.
  * @param {string | null} variant_seed - Random seed for variant, or null if it should be generated.
  * @param {Object} locals - The current locals structure to read/write.
- * @param {function} callback - A callback(err) function.
  */
-export function getAndRenderVariant(variant_id, variant_seed, locals, callback) {
-  async.series(
-    [
-      async () => {
-        locals.question_course = await getQuestionCourse(locals.question, locals.course);
-      },
-      async () => {
-        if (variant_id != null) {
-          const result = await sqldb.callOneRowAsync('variants_select', [
-            variant_id,
-            locals.question.id,
-            locals.instance_question?.id,
-          ]);
-          _.assign(locals, result.rows[0]);
-        } else {
-          const require_open = locals.assessment && locals.assessment.type !== 'Exam';
-          const instance_question_id = locals.instance_question
-            ? locals.instance_question.id
-            : null;
-          const course_instance_id =
-            locals.course_instance_id ||
-            (locals.course_instance && locals.course_instance.id) ||
-            null;
-          const options = {
-            variant_seed,
-          };
-          const assessmentGroupWork = locals.assessment ? locals.assessment.group_work : false;
-          locals.variant = await ensureVariant(
-            locals.question.id,
-            instance_question_id,
-            locals.user.user_id,
-            locals.authn_user.user_id,
-            assessmentGroupWork,
-            course_instance_id,
-            locals.course,
-            locals.question_course,
-            options,
-            require_open,
-            locals.client_fingerprint_id,
-          );
-        }
-      },
-      (callback) => {
-        const { urlPrefix, variant, question, instance_question, assessment } = locals;
+export async function getAndRenderVariant(variant_id, variant_seed, locals) {
+  locals.question_course = await getQuestionCourse(locals.question, locals.course);
 
-        const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question, assessment);
-        _.assign(locals, urls);
-        callback(null);
-      },
-      // `_buildLocals` can throw, for instance if an instructor creates an
-      // assessment instance, changes the assessment type from Homework to Exam,
-      // and then views the original instance. So, we use an `async` function
-      // here so that the error will be caught and propagated without us having
-      // to manually catch it and pass it along via `callback`.
-      async () => {
-        const {
-          variant,
-          question,
-          instance_question,
-          assessment,
-          assessment_instance,
-          assessment_question,
-          authz_result,
-        } = locals;
+  if (variant_id != null) {
+    locals.variant = await sqldb.callRow(
+      'variants_select',
+      [variant_id, locals.question.id, locals.instance_question?.id],
+      VariantSelectResultSchema,
+    );
+  } else {
+    const require_open = locals.assessment && locals.assessment.type !== 'Exam';
+    const instance_question_id = locals.instance_question?.id;
+    const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
+    const options = { variant_seed };
+    const assessmentGroupWork = locals.assessment?.group_work ?? false;
+    locals.variant = await ensureVariant(
+      locals.question.id,
+      instance_question_id,
+      locals.user.user_id,
+      locals.authn_user.user_id,
+      assessmentGroupWork,
+      course_instance_id,
+      locals.course,
+      locals.question_course,
+      options,
+      require_open,
+      locals.client_fingerprint_id,
+    );
+  }
 
-        const newLocals = buildLocals(
-          variant,
-          question,
-          instance_question,
-          assessment,
-          assessment_instance,
-          assessment_question,
-          authz_result,
-        );
-        _.assign(locals, newLocals);
-        if (locals.manualGradingInterface && question?.show_correct_answer) {
-          locals.showTrueAnswer = true;
-        }
-      },
-      async () => {
-        // We only fully render a small number of submissions on initial page
-        // load; the rest only require basic information like timestamps. As
-        // such, we'll load submissions in two passes: we'll load basic
-        // information for all submissions to this variant, and then we'll
-        // load the full submission for only the submissions that we'll
-        // actually render.
-        const result = await sqldb.queryAsync(sql.select_basic_submissions, {
-          variant_id: locals.variant.id,
-          req_date: locals.req_date,
-        });
-        const submissionCount = result.rowCount ?? 0;
+  const {
+    urlPrefix,
+    variant,
+    question,
+    instance_question,
+    assessment,
+    assessment_instance,
+    assessment_question,
+    authz_result,
+  } = locals;
 
-        if (submissionCount >= 1) {
-          // Load detailed information for the submissions that we'll render.
-          // Note that for non-Freeform questions, we unfortunately have to
-          // eagerly load detailed data for all submissions, as that ends up
-          // being serialized in the HTML. v2 questions don't have any easy
-          // way to support async rendering of submissions.
-          const needsAllSubmissions = locals.question.type !== 'Freeform';
-          const submissionsToRender = needsAllSubmissions
-            ? result.rows
-            : result.rows.slice(0, MAX_RECENT_SUBMISSIONS);
-          const detailedSubmissionResult = await sqldb.queryAsync(sql.select_detailed_submissions, {
-            submission_ids: submissionsToRender.map((s) => s.id),
-          });
-          const detailedSubmissionCount = detailedSubmissionResult.rowCount ?? 0;
+  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question, assessment);
+  Object.assign(locals, urls);
 
-          locals.submissions = result.rows.map((s, idx) => ({
-            grading_job_stats: buildGradingJobStats(s.grading_job),
-            submission_number: submissionCount - idx,
-            ...s,
-            // Both queries order results consistently, so we can just use
-            // the array index to match up the basic and detailed results.
-            ...(idx < detailedSubmissionCount ? detailedSubmissionResult.rows[idx] : {}),
-          }));
-          locals.submission = locals.submissions[0]; // most recent submission
-
-          locals.showSubmissions = true;
-          if (!locals.assessment && locals.question.show_correct_answer) {
-            // instructor question pages, only show if true answer is
-            // allowed by this question
-            locals.showTrueAnswer = true;
-          }
-        }
-      },
-      async () => {
-        locals.effectiveQuestionType = questionServers.getEffectiveQuestionType(
-          locals.question.type,
-        );
-      },
-      async () => {
-        const renderSelection = {
-          header: true,
-          question: true,
-          submissions: locals.showSubmissions,
-          answer: locals.showTrueAnswer,
-        };
-        const htmls = await render(
-          renderSelection,
-          locals.variant,
-          locals.question,
-          locals.submission,
-          locals.submissions.slice(0, MAX_RECENT_SUBMISSIONS),
-          locals.course,
-          locals.question_course,
-          locals.course_instance,
-          locals,
-        );
-        locals.extraHeadersHtml = htmls.extraHeadersHtml;
-        locals.questionHtml = htmls.questionHtml;
-        locals.submissionHtmls = htmls.submissionHtmls;
-        locals.answerHtml = htmls.answerHtml;
-      },
-      async () => {
-        // Load issues last in case there are issues from rendering.
-        //
-        // We'll only load the data that will be needed for this specific
-        // page render. The checks here should match those in
-        // `pages/partials/question.ejs`.
-        const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
-        const result = await sqldb.queryAsync(sql.select_issues, {
-          variant_id: locals.variant.id,
-          load_course_data: loadExtraData,
-          load_system_data: loadExtraData,
-        });
-        locals.issues = result.rows;
-      },
-      async () => {
-        if (locals.instance_question) {
-          await manualGrading.populateRubricData(locals);
-          await async.each(locals.submissions, manualGrading.populateManualGradingData);
-        }
-      },
-      async () => {
-        if (locals.question.type !== 'Freeform') {
-          const questionJson = JSON.stringify({
-            questionFilePath: locals.calculationQuestionFileUrl,
-            questionGeneratedFilePath: locals.calculationQuestionGeneratedFileUrl,
-            effectiveQuestionType: locals.effectiveQuestionType,
-            course: locals.course,
-            courseInstance: locals.course_instance,
-            variant: {
-              id: locals.variant.id,
-              params: locals.variant.params,
-            },
-            submittedAnswer:
-              locals.showSubmissions && locals.submission
-                ? locals.submission.submitted_answer
-                : null,
-            feedback: locals.showFeedback && locals.submission ? locals.submission.feedback : null,
-            trueAnswer: locals.showTrueAnswer ? locals.variant.true_answer : null,
-            submissions: locals.showSubmissions ? locals.submissions : null,
-          });
-
-          const encodedJson = encodeURIComponent(questionJson);
-          locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
-        }
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
+  const newLocals = buildLocals(
+    variant,
+    question,
+    instance_question,
+    assessment,
+    assessment_instance,
+    assessment_question,
+    authz_result,
   );
+  Object.assign(locals, newLocals);
+  if (locals.manualGradingInterface && question?.show_correct_answer) {
+    locals.showTrueAnswer = true;
+  }
+
+  // We only fully render a small number of submissions on initial page
+  // load; the rest only require basic information like timestamps. As
+  // such, we'll load submissions in two passes: we'll load basic
+  // information for all submissions to this variant, and then we'll
+  // load the full submission for only the submissions that we'll
+  // actually render.
+  const submissions = await sqldb.queryRows(
+    sql.select_basic_submissions,
+    { variant_id: locals.variant.id, req_date: locals.req_date },
+    SubmissionBasicSchema,
+  );
+  const submissionCount = submissions.length;
+
+  if (submissionCount >= 1) {
+    // Load detailed information for the submissions that we'll render.
+    // Note that for non-Freeform questions, we unfortunately have to
+    // eagerly load detailed data for all submissions, as that ends up
+    // being serialized in the HTML. v2 questions don't have any easy
+    // way to support async rendering of submissions.
+    const needsAllSubmissions = locals.question.type !== 'Freeform';
+    const submissionsToRender = needsAllSubmissions
+      ? submissions
+      : submissions.slice(0, MAX_RECENT_SUBMISSIONS);
+    const submissionDetails = await sqldb.queryRows(
+      sql.select_detailed_submissions,
+      { submission_ids: submissionsToRender.map((s) => s.id) },
+      SubmissionDetailedSchema,
+    );
+
+    locals.submissions = submissions.map((s, idx) => ({
+      grading_job_stats: buildGradingJobStats(s.grading_job),
+      submission_number: submissionCount - idx,
+      ...s,
+      // Both queries order results consistently, so we can just use
+      // the array index to match up the basic and detailed results.
+      ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
+    }));
+    locals.submission = locals.submissions[0]; // most recent submission
+
+    locals.showSubmissions = true;
+    if (!locals.assessment && locals.question.show_correct_answer) {
+      // instructor question pages, only show if true answer is
+      // allowed by this question
+      locals.showTrueAnswer = true;
+    }
+  }
+
+  locals.effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
+
+  const renderSelection = {
+    header: true,
+    question: true,
+    submissions: locals.showSubmissions,
+    answer: locals.showTrueAnswer,
+  };
+  const htmls = await render(
+    renderSelection,
+    locals.variant,
+    locals.question,
+    locals.submission,
+    locals.submissions.slice(0, MAX_RECENT_SUBMISSIONS),
+    locals.course,
+    locals.question_course,
+    locals.course_instance,
+    locals,
+  );
+  locals.extraHeadersHtml = htmls.extraHeadersHtml;
+  locals.questionHtml = htmls.questionHtml;
+  locals.submissionHtmls = htmls.submissionHtmls;
+  locals.answerHtml = htmls.answerHtml;
+
+  // Load issues last in case there are issues from rendering.
+  //
+  // We'll only load the data that will be needed for this specific page render.
+  // The checks here should match those in `pages/partials/question.ejs`.
+  const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
+  locals.issues = await sqldb.queryRows(
+    sql.select_issues,
+    {
+      variant_id: locals.variant.id,
+      load_course_data: loadExtraData,
+      load_system_data: loadExtraData,
+    },
+    IssueRenderDataSchema,
+  );
+
+  if (locals.instance_question) {
+    await manualGrading.populateRubricData(locals);
+    await async.each(locals.submissions, manualGrading.populateManualGradingData);
+  }
+
+  if (locals.question.type !== 'Freeform') {
+    const questionJson = JSON.stringify({
+      questionFilePath: locals.calculationQuestionFileUrl,
+      questionGeneratedFilePath: locals.calculationQuestionGeneratedFileUrl,
+      effectiveQuestionType: locals.effectiveQuestionType,
+      course: locals.course,
+      courseInstance: locals.course_instance,
+      variant: {
+        id: locals.variant.id,
+        params: locals.variant.params,
+      },
+      submittedAnswer:
+        locals.showSubmissions && locals.submission ? locals.submission.submitted_answer : null,
+      feedback: locals.showFeedback && locals.submission ? locals.submission.feedback : null,
+      trueAnswer: locals.showTrueAnswer ? locals.variant.true_answer : null,
+      submissions: locals.showSubmissions ? locals.submissions : null,
+    });
+
+    const encodedJson = encodeURIComponent(questionJson);
+    locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
+  }
 }
 
 function buildGradingJobStats(job) {
