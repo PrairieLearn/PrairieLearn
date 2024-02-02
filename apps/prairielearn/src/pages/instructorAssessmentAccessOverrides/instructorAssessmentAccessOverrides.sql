@@ -1,42 +1,20 @@
--- BLOCK select_assessment_access_policy
+-- BLOCK select_assessment_access_policies
 SELECT
-  COALESCE(
-    format_date_full_compact (aap.created_at, 'America/Chicago'),
-    '—'
-  ) AS created_at,
-  COALESCE(aap.created_by::text, '—') AS created_by,
-  COALESCE(aap.credit::text, '—') AS credit,
-  COALESCE(
-    format_date_full_compact (aap.end_date, 'America/Chicago'),
-    '—'
-  ) AS end_date,
-  COALESCE(aap.note, '—') AS note,
-  COALESCE(
-    format_date_full_compact (aap.start_date, 'America/Chicago'),
-    '—'
-  ) AS start_date,
-  COALESCE(
-    (
+  format_date_full_compact (aap.created_at, 'America/Chicago') AS created_at,
+  aap.created_by::text AS created_by,
+  aap.credit::text AS credit,
+  format_date_full_compact (aap.end_date, 'America/Chicago')AS end_date,
+  aap.note AS note,
+  format_date_full_compact (aap.start_date, 'America/Chicago') AS start_date,
+  (
       SELECT
         name
       from
         groups
       where
         id = aap.group_id
-    ),
-    '-'
-  ) as group_name,
-  COALESCE(
-    (
-      SELECT
-        uid
-      FROM
-        users
-      WHERE
-        user_id = aap.user_id
-    ),
-    '-'
-  ) AS student_uid
+    )
+   as group_name
 FROM
   assessment_access_policies AS aap
 WHERE
@@ -74,14 +52,7 @@ VALUES
   (
     $assessment_id,
     NOW(),
-    (
-      SELECT
-        user_id
-      FROM
-        users
-      WHERE
-        uid = $created_by
-    ),
+    $created_by,
     $credit,
     $end_date,
     (
@@ -94,38 +65,17 @@ VALUES
     ),
     $note,
     $start_date,
-    (
-      SELECT
-        user_id
-      FROM
-        users
-      WHERE
-        uid = $student_uid
-    )
+    user_id = $student_uid
+    
   );
 
 -- BLOCK update_assessment_access_policy
 UPDATE assessment_access_policies
 SET
   created_at = NOW(),
-  created_by = (
-    SELECT
-      user_id
-    FROM
-      users
-    WHERE
-      uid = $created_by
-  ),
   credit = $credit,
   end_date = $end_date,
-  group_id = (
-    SELECT
-      id
-    from
-      groups
-    where
-      name = $group_name
-  ),
+  group_id = $group_id,
   note = $note,
   start_date = $start_date,
   user_id = (

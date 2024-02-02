@@ -21,6 +21,7 @@
 					$('#group_id').addClass('is-invalid');
 					$('#group_id_error').text('Either user ID or group ID should be filled.').show();
 				}
+				
 			});
 			$('.edit-override-button').on('click', function (event) {
 				event.preventDefault();
@@ -97,10 +98,18 @@
 								<input type="hidden" name="__action" value="add_new_override">
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 								<input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= user.uid %>" required readonly>
-								<div class="form-group">
-									<label for="student_uid">Student UID</label>
-									<input type="text" class="form-control" id="student_uid" name="student_uid">
-								</div>
+								<% if (!assessment.group_work) { %>
+									<div class="form-group">
+										<label for="student_uid">Student UID</label>
+										<input type="text" class="form-control" id="student_uid" name="student_uid">
+									</div>
+								<% } else { %>
+									<div class="form-group">
+										<label for="group_id">Group Name</label>
+										<input type="text" class="form-control" id="group_name" name="group_name">
+										<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
+									</div>
+								<% } %>
 								<div class="form-group">
 									<label for="start_date">Start Date</label>
 									<input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
@@ -109,11 +118,6 @@
 									<label for="end_date">End Date</label>
 									<input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
 									<div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
-								</div>
-								<div class="form-group">
-									<label for="group_id">Group Name</label>
-									<input type="text" class="form-control" id="group_name" name="group_name">
-									<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
 								</div>
 								<div class="form-group">
 									<label for="credit">Credit</label>
@@ -145,19 +149,18 @@
 							<form id="edit-override-form" method="POST">
 								<input type="hidden" name="__action" value="edit_override">
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+								<% if (!assessment.group_work) { %>
 								<div class="form-group">
 									<label for="student_uid">Student UID</label>
 									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
 								</div>
+								<% } else { %>
 								<div class="form-group">
 									<label for="group_name">Group Name</label>
 									<input type="text" class="form-control" id="edit-group_name" name="group_name">
 									<div id="edit-group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
 								</div>
-								<div class="form-group">
-									<label for="edit-credit">Credit</label>
-									<input type="number" class="form-control" id="edit-credit" name="credit">
-								</div>
+								<% } %>
 								<div class="form-group">
 									<label for="edit-start_date">Start Date</label>
 									<input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
@@ -167,7 +170,10 @@
 									<input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
 									<div id="edit-end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
 								</div>
-
+								<div class="form-group">
+									<label for="edit-credit">Credit</label>
+									<input type="number" class="form-control" id="edit-credit" name="credit">
+								</div>
 								<div class="form-group">
 									<label for="edit-note">Note</label>
 									<textarea class="form-control" id="edit-note" name="note"></textarea>
@@ -185,8 +191,11 @@
 				<table class="table table-sm table-hover">
 					<thead>
 						<tr>
-							<th>Student UID</th>
-							<th>Group Name</th>
+							<% if (assessment.group_work) { %>
+								<th>Group Name</th>
+							<% } else { %>
+								<th>Student UID</th>
+							<% } %>
 							<th>Created At</th>
 							<th>Start Date</th>
 							<th>End Date</th>
@@ -199,14 +208,17 @@
 					<tbody>
 						<% policies.forEach(function (policy) { %>
 							<tr>
-								<td><%= policy.student_uid %></td>
-								<td><%= policy.group_name %></td>
+								<% if (assessment.group_work) { %>
+									<td><%= policy.group_name %></td>
+								<% } else { %>
+									<td><%= policy.student_uid %></td>
+								<% } %>
 								<td><%= policy.created_at %></td>
 								<td><%= policy.start_date %></td>
 								<td><%= policy.end_date %></td>
 								<td><%= policy.created_by %></td>
 								<td><%= policy.credit %></td>
-								<td><%= policy.note %></td>
+								<td><%= policy.note ? policy.note : '-' %></td>
 								<td>
 									<div class="dropdown">
 										<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -225,7 +237,6 @@
 												<input type="hidden" name="student_uid" value="<%= policy.student_uid %>">
 												<input type="hidden" name="assessment_id" value="<%= policy.assessment_id %>"> 
   												<input type="hidden" name="group_name" value="<%= policy.group_name %>">
-												<!-- <button type="submit" class="btn delete-button"> -->
 													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
 													<i class="fas fa-remove"></i> Delete
 												</button>

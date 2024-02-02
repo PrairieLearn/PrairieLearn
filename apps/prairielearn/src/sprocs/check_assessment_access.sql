@@ -39,9 +39,7 @@ BEGIN
     INTO end_date_from_override , credit_from_override , start_date_from_override
     FROM assessment_access_policies as aap
     WHERE aap.assessment_id = check_assessment_access.assessment_id
-        AND (aap.user_id= check_assessment_access.user_id)
-        -- AND start_date <= check_assessment_access.date
-        -- AND end_date >= check_assessment_access.date
+        AND (aap.user_id= check_assessment_access.user_id)  
     ORDER BY end_date DESC
     LIMIT 1;
 
@@ -88,10 +86,6 @@ BEGIN
             -- If timer hits 0:00 at end_date, exam might end after end_date (overdue submission).
             -- Resolve race condition by subtracting 31 sec from end_date.
             -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
-            -- CASE WHEN aar.time_limit_min IS NULL THEN NULL
-            --      WHEN aar.mode = 'Exam' THEN NULL
-            --      ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
-            -- END AS time_limit_min,
             CASE WHEN aar.time_limit_min IS NULL THEN NULL
                 WHEN aar.mode = 'Exam' THEN NULL
                 ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', CASE
