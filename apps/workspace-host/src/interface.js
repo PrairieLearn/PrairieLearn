@@ -742,9 +742,6 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
-          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
-          // second argument with a `cause` property. Once we're running on
-          // Node 18, we can bump to ES2022 and this will no longer error.
           throw Error('Could not access workspace files.', { cause: err });
         }
       },

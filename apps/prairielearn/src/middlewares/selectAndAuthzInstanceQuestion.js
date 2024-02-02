@@ -26,7 +26,10 @@ const middleware = asyncHandler(async (req, res, next) => {
       res.locals.assessment.group_config,
     );
     if (res.locals.assessment.group_config.has_roles) {
-      if (!res.locals.assessment_instance.group_info.start) {
+      if (
+        !res.locals.assessment_instance.group_info.start &&
+        !res.locals.authz_data.has_course_instance_permission_view
+      ) {
         throw error.make(
           400,
           'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',

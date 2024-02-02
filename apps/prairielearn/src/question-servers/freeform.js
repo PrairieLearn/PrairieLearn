@@ -50,40 +50,12 @@ let courseElementsCache = {};
 let courseExtensionsCache = {};
 
 /**
- * This subclass of Error supports chaining.
- * If available, it uses the built-in support for property `.cause`.
- * Otherwise, it sets it up itself.
- *
- * @see https://github.com/tc39/proposal-error-cause
- */
-class CausedError extends Error {
-  /**
-   *
-   * @param {string} message
-   * @param {{ cause?: Error }} [options]
-   */
-  constructor(message, options) {
-    // @ts-expect-error -- Node 14 does not yet support `.cause`
-    super(message, options);
-    if (options?.cause && !('cause' in this)) {
-      const cause = options.cause;
-      // @ts-expect-error -- Node 14 does not yet support `.cause`
-      this.cause = cause;
-      if ('stack' in cause) {
-        // @ts-expect-error -- Node 14 does not yet support `.cause`
-        this.stack = this.stack + '\nCAUSE: ' + cause.stack;
-      }
-    }
-  }
-}
-
-/**
  * @typedef {Object} CourseIssueErrorOptions
  * @property {any} [data]
  * @property {boolean} [fatal]
  * @property {Error} [cause]
  */
-class CourseIssueError extends CausedError {
+class CourseIssueError extends Error {
   /**
    *
    * @param {string} message
@@ -1091,7 +1063,7 @@ export async function generate(question, course, variant_seed) {
 
 export async function prepare(question, course, variant) {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken) throw new Error('attemped to prepare broken variant');
+    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
     const data = {
@@ -1143,7 +1115,7 @@ export async function prepare(question, course, variant) {
 async function renderPanel(panel, codeCaller, variant, submission, course, locals, context) {
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
-  if (variant.broken) {
+  if (variant.broken_at) {
     return {
       courseIssues: [],
       html: 'Broken question due to error in question code',
@@ -1640,7 +1612,7 @@ export async function render(
 export async function file(filename, variant, question, course) {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
-    if (variant.broken) throw new Error('attemped to get a file for a broken variant');
+    if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
 
@@ -1683,7 +1655,7 @@ export async function file(filename, variant, question, course) {
 export async function parse(submission, variant, question, course) {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
-    if (variant.broken) throw new Error('attemped to parse broken variant');
+    if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
     const data = {
@@ -1725,8 +1697,8 @@ export async function parse(submission, variant, question, course) {
 export async function grade(submission, variant, question, question_course) {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
-    if (variant.broken) throw new Error('attemped to grade broken variant');
-    if (submission.broken) throw new Error('attemped to grade broken submission');
+    if (variant.broken_at) throw new Error('attempted to grade broken variant');
+    if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
     let data = {
@@ -1772,7 +1744,7 @@ export async function grade(submission, variant, question, question_course) {
 export async function test(variant, question, course, test_type) {
   return instrumented('freeform.test', async () => {
     debug('test()');
-    if (variant.broken) throw new Error('attemped to test broken variant');
+    if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
     let data = {

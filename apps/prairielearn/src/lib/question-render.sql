@@ -49,6 +49,7 @@ SELECT
   -- submissions in the `select_detailed_submissions` query below.
   s.auth_user_id,
   s.broken,
+  s.client_fingerprint_id,
   s.correct,
   s.credit,
   s.date,

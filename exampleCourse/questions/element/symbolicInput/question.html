@@ -120,6 +120,19 @@
 
 <div class="card my-2">
     <div class="card-header">
+        An example in which trig functions are not allowed (<code>allow-trig-functions="false"</code>)
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>What is the value of $\cos(\pi) * x$?</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="no_trig" allow-trig-functions="false"
+            variables="x" correct-answer="-x" label="$\cos(\pi) * x = $"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
         Custom functions test.
     </div>
     <div class="card-body">

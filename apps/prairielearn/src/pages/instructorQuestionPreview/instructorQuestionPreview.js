@@ -96,12 +96,9 @@ router.get('/', function (req, res, next) {
   debug(`variant_seed ${variant_seed}`);
   async.series(
     [
-      (callback) => {
+      async () => {
         // req.query.variant_id might be undefined, which will generate a new variant
-        getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await getAndRenderVariant(req.query.variant_id, variant_seed, res.locals);
       },
       (callback) => {
         logPageView(req, res, (err) => {

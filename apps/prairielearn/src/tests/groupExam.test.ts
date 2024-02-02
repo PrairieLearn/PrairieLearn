@@ -277,7 +277,7 @@ describe('Group based exam assessments', function () {
         'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
-      const elemList = $('.alert:contains(It is already full)');
+      const elemList = $('.alert:contains(Group is already full)');
       assert.lengthOf(elemList, 1, 'Page should show that group is already full');
 
       // Switch to second user and start assessment
@@ -509,7 +509,7 @@ describe('cross exam assessment access', function () {
     $ = cheerio.load(await crossAssessmentJoinResponse.text());
 
     // Error message should show
-    const elemList = $('.alert:contains(It is already full or does not exist)');
+    const elemList = $('.alert:contains(Group does not exist)');
     assert.lengthOf(elemList, 1);
   });
 });

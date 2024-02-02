@@ -8,6 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { getGroupConfig } from '../../lib/groups';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -355,6 +356,7 @@ router.get(
       }
       archive.finalize();
     } else if (req.params.filename === res.locals.groupsCsvFilename) {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {
         assessment_id: res.locals.assessment.id,
       });
@@ -364,6 +366,7 @@ router.get(
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
+      if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {
