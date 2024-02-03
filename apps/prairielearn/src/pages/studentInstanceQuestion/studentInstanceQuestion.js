@@ -234,17 +234,17 @@ router.post('/', function (req, res, next) {
 router.get(
   '/variant/:variant_id/submission/:submission_id',
   asyncHandler(async (req, res) => {
-    const { submissionPanel } = await questionRender.renderPanelsForSubmission(
-      req.params.submission_id,
-      res.locals.question.id,
-      res.locals.instance_question.id,
-      req.params.variant_id,
-      res.locals.urlPrefix,
-      null, // questionContext
-      null, // csrfToken
-      null, // authorizedEdit
-      false, // renderScorePanels
-    );
+    const { submissionPanel } = await questionRender.renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: res.locals.instance_question.id,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
     res.send({ submissionPanel });
   }),
 );

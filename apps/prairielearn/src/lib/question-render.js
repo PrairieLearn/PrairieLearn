@@ -1,19 +1,19 @@
 // @ts-check
-
 import * as async from 'async';
 import * as path from 'path';
 import * as ejs from 'ejs';
 import { differenceInMilliseconds, parseISO } from 'date-fns';
 import * as util from 'util';
-import { EncodedData } from '@prairielearn/browser-utils';
 import { z } from 'zod';
 
-import { config, setLocalsFromConfig } from './config';
+import { EncodedData } from '@prairielearn/browser-utils';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import * as manualGrading from './manualGrading';
 import * as sqldb from '@prairielearn/postgres';
-import * as questionServers from '../question-servers';
 import * as error from '@prairielearn/error';
+
+import { config, setLocalsFromConfig } from './config';
+import * as manualGrading from './manualGrading';
+import * as questionServers from '../question-servers';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { writeCourseIssues } from './issues';
 import {
@@ -96,9 +96,6 @@ const SubmissionInfoSchema = z.object({
 });
 
 /**
- * Panels that can be rendered on demand for submissions that are retrieved
- * asynchronously (e.g., externally graded submissions or older submissions that
- * are not rendered on page load).
  * @typedef {Object} SubmissionPanels
  * @property {string?} submissionPanel
  * @property {string?} scorePanel
@@ -122,7 +119,7 @@ const SubmissionInfoSchema = z.object({
 const MAX_RECENT_SUBMISSIONS = 3;
 
 /**
- * Internal worker. Do not call directly. Renders the HTML for a variant.
+ * Renders the HTML for a variant.
  * @protected
  *
  * @param variant_course - The course for the variant.
@@ -570,18 +567,19 @@ function buildGradingJobStats(job) {
  * back to the client. This includes the submission panel by default, and if renderScorePanels is
  * set, also the side panels for score, navigation and the question footer.
  *
- * @param  {string | number} submission_id        The id of the submission
- * @param  {string | number} question_id          The id of the question (for authorization check)
- * @param  {string | number | null} instance_question_id The id of the instance question (for authorization check)
- * @param  {string | number | null} variant_id           The id of the variant (for authorization check)
- * @param  {String}  urlPrefix            URL prefix to be used when rendering
- * @param  {String?} questionContext      The rendering context of this question
- * @param  {String?} csrfToken            CSRF token for this question page
- * @param  {boolean?} authorizedEdit       If true the user is authorized to edit the submission
- * @param  {boolean} renderScorePanels    If true, render all side panels, otherwise only the submission panel
+ * @param {Object} param
+ * @param  {string | number} param.submission_id The id of the submission
+ * @param  {string | number} param.question_id The id of the question (for authorization check)
+ * @param  {string | number | null} param.instance_question_id The id of the instance question (for authorization check)
+ * @param  {string | number | null} param.variant_id The id of the variant (for authorization check)
+ * @param  {String}  param.urlPrefix URL prefix to be used when rendering
+ * @param  {String?} param.questionContext The rendering context of this question
+ * @param  {String?} param.csrfToken CSRF token for this question page
+ * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
+ * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
  * @returns {Promise<SubmissionPanels>}
  */
-export async function renderPanelsForSubmission(
+export async function renderPanelsForSubmission({
   submission_id,
   question_id,
   instance_question_id,
@@ -591,7 +589,7 @@ export async function renderPanelsForSubmission(
   csrfToken,
   authorizedEdit,
   renderScorePanels,
-) {
+}) {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
     { submission_id, question_id, instance_question_id, variant_id },
