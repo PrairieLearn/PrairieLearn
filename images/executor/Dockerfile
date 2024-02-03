@@ -1,4 +1,4 @@
-FROM prairielearn/prairielearn:${PRAIRIELEARN_IMAGE_TAG:-latest}
+FROM prairielearn/prairielearn:latest
 WORKDIR /PrairieLearn/
 
 # Create our unprivileged user
