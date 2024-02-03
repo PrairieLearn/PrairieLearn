@@ -38,13 +38,16 @@ To run PrairieLearn using the example course only, open a terminal window and ty
 
 ```sh
 docker run -it --rm -p 3000:3000 prairielearn/prairielearn
-```
 
-> If you're running on an Apple Silicon Mac or another ARM-based machine, you may get an error like `no matching manifest for linux/arm64/v8 in the manifest list entries`. To resolve this, add `--platform linux/amd64` before the image in the command, e.g.:
->
-> ```sh
-> docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
-> ```
+# If you're using an Apple Silicon Mac or another ARM-based machine,
+# you may see an error like the following for the above command:
+#
+# no matching manifest for linux/arm64/v8 in the manifest list entries
+#
+# To fix this, add `--platform linux/amd64` before the image in any
+# `docker run` commands. For example:
+docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
+```
 
 To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory. For example, if your course is stored in `$HOME/pl-tam212`, the command is:
 
