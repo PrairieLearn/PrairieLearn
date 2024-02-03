@@ -31,7 +31,6 @@ on('click', '[data-toggle="popover"]', (e: Event) => {
     return;
   }
   if (alreadyOpen) return;
-  console.log('not open');
   // Create a new popover instance and open it.
   const newPopover = new Popover(e.target as HTMLElement);
   newPopover.show();

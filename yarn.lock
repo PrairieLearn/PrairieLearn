@@ -3276,6 +3276,7 @@ __metadata:
     date-fns: ^2.30.0
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
+    delegated-events: ^1.1.2
     dockerode: ^3.3.5
     dompurify: ^3.0.8
     dropzone: ^5.9.3
