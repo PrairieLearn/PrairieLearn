@@ -4,6 +4,7 @@ import * as async from 'async';
 import * as path from 'path';
 import * as error from '@prairielearn/error';
 import { z } from 'zod';
+import asyncHandler = require('express-async-handler');
 
 import { selectQuestionById } from '../../models/question';
 import { selectCourseById } from '../../models/course';
@@ -63,24 +64,24 @@ router.post('/', function (req, res, next) {
     .catch((err) => next(err));
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  setLocals(req, res)
-    .then(async () => {
-      const { submissionPanel } = await renderPanelsForSubmission({
-        submission_id: req.params.submission_id,
-        question_id: res.locals.question.id,
-        instance_question_id: null,
-        variant_id: req.params.variant_id,
-        urlPrefix: res.locals.urlPrefix,
-        questionContext: null,
-        csrfToken: null,
-        authorizedEdit: null,
-        renderScorePanels: false,
-      });
-      res.send({ submissionPanel });
-    })
-    .catch((err) => next(err));
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    await setLocals(req, res);
+    const { submissionPanel } = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: null,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   setLocals(req, res)
