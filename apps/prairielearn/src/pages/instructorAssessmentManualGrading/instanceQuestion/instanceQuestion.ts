@@ -139,18 +139,20 @@ const PostBodySchema = z.union([
       .literal('true')
       .optional()
       .transform((val) => val === 'true'),
-    rubric_item: z.record(
-      z.string(),
-      z.object({
-        id: z.string().optional(),
-        order: z.coerce.number(),
-        points: z.coerce.number(),
-        description: z.string(),
-        explanation: z.string().optional(),
-        grader_note: z.string().optional(),
-        always_show_to_students: z.string().transform((val) => val === 'true'),
-      }),
-    ),
+    rubric_item: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string().optional(),
+          order: z.coerce.number(),
+          points: z.coerce.number(),
+          description: z.string(),
+          explanation: z.string().optional(),
+          grader_note: z.string().optional(),
+          always_show_to_students: z.string().transform((val) => val === 'true'),
+        }),
+      )
+      .default({}),
   }),
   z.object({
     __action: z.custom<`reassign_${string}`>(
@@ -219,7 +221,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item || {}), // rubric items
+          Object.values(body.rubric_item), // rubric items
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
