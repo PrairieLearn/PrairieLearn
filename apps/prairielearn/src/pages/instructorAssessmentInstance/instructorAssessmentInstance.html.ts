@@ -158,7 +158,7 @@ export function InstructorAssessmentInstance({
                             role="button"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
-                            data-trigger="manual"
+                            data-trigger="focus"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
@@ -631,7 +631,7 @@ export function InstructorAssessmentInstance({
                                     aria-describedby="fingerprintPopover${row.client_fingerprint
                                       ?.id}-${index}"
                                   >
-                                    > ${row.client_fingerprint_number}
+                                    ${row.client_fingerprint_number}
                                   </a>
                                 </td>
                               `

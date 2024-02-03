@@ -6,7 +6,8 @@ import { on } from 'delegated-events';
  * script changes that behavior so that popovers only close when the user clicks outside the
  * popover or presses the escape key.
  */
-let openingPopover: Popover | null, openPopover: Popover | null;
+let openingPopover: (Popover & { element?: HTMLElement }) | null,
+  openPopover: (Popover & { element?: HTMLElement }) | null;
 
 function closeOpenPopovers() {
   openPopover?.hide();
@@ -23,7 +24,7 @@ on('keydown', 'body', (e) => {
 on('click', '[data-toggle="popover"]', (e: Event) => {
   // If this click occurred on an already-open popover trigger element, close the element.
   let alreadyOpen = false;
-  if (openPopover?.element.id === e.target?.id) {
+  if (openPopover?.element?.id === (e.target as Element).id) {
     openPopover?.hide();
     openPopover = null;
     alreadyOpen = true;
