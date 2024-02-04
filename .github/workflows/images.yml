@@ -180,3 +180,16 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
+      ######################################################################################################
+      # workspace-vscode-python
+      - name: Check whether workspaces/vscode-python was modified
+        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
+      - name: Build and push prairielearn/vscode-python
+        if: ${{ env.workspaces_vscode_python_modified }}
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-python
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-vscode-python:latest,prairielearn/workspace-vscode-python:${{ github.sha }}

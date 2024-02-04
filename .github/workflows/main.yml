@@ -47,6 +47,8 @@ jobs:
         run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
       - name: Build the workspace-xtermjs docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
+      - name: Build the workspace-vscode-python docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/vscode-python prairielearn/vscode-python:latest
 
   build-grader-images:
     runs-on: ubuntu-latest
