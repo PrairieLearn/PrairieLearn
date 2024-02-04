@@ -1,6 +1,3 @@
-# Enhanced code-server workspace template for PrairieLearn.
-# As discussed here: https://github.com/PrairieLearn/PrairieLearn/issues/3170
-
 FROM --platform=linux/amd64 codercom/code-server:4.20.1-bookworm
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
@@ -36,7 +33,6 @@ RUN ( code-server --disable-telemetry --force \
 		# Install only one extension per line.
 		--install-extension ms-python.python \
 		--install-extension njpwerner.autodocstring \
-		# --install-extension ms-python.debugpy \ # Cannot find the debugger.
 		--install-extension KevinRose.vsc-python-indent \
         --install-extension oderwat.indent-rainbow \
 		--install-extension mechatroner.rainbow-csv \
@@ -77,33 +73,6 @@ RUN rm -f /run/fixuid.ran && \
 
 
 EXPOSE 8080
-
-
-# RUN /bin/sh -c echo "**** install runtime dependencies ****" && \
-# 	sudo apt-get update && \
-# 	sudo apt-get install -y \
-# 	software-properties-common \
-# 	jq \
-# 	libatomic1 \
-# 	net-tools \
-# 	netcat-traditional 
-    	
-# RUN /bin/sh -c echo "**** install Coretto JDK 11 & 17" && \
-# 	sudo apt-get install -y gnupg && \
-# 	#sudo wget -O- https://apt.corretto.aws/corretto.key | sudo apt-key add - && \
-# 	#sudo add-apt-repository 'deb https://apt.corretto.aws stable main' && \
-# 	wget -O - https://apt.corretto.aws/corretto.key | sudo gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg && \
-# 	echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | sudo tee /etc/apt/sources.list.d/corretto.list && \
-# 	sudo apt-get update && \
-# 	sudo apt-get install -y -11-amazon-corretto-jdk && \
-# 	sudo apt-get install -y java-17-amazon-corretto-jdk  && \
-# 	echo "**** clean up ****" && \
-# 	sudo apt-get clean && \
-# 	sudo rm -rf \
-# 	/config/* \
-# 	/tmp/* \
-# 	/var/lib/apt/lists/* \
-# 	/var/tmp/*
 
 # TODO: Maybe customize the preferences to set the theme to auto-adjust to the
 # browser, turn off more telemetry, etc.
