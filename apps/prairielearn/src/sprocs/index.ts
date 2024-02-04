@@ -114,8 +114,6 @@ export async function init() {
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
-      'assessment_questions_calculate_stats_for_assessment.sql',
-      'assessment_questions_calculate_stats.sql',
       'instance_questions_calculate_stats.sql',
       'issues_select_with_filter.sql',
       'access_tokens_insert.sql',
