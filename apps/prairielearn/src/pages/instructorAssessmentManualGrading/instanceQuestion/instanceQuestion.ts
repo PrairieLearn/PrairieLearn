@@ -112,6 +112,9 @@ const PostBodySchema = z.union([
     submission_id: IdSchema,
     modified_at: z.string(),
     rubric_item_selected_manual: IdSchema.or(IdSchema.array())
+      // For 22+ items, qs will convert the array to an object. This converts it back.
+      // (https://github.com/ljharb/qs#parsing-arrays)
+      .or(z.record(z.string(), IdSchema).transform((val) => Object.values(val)))
       .nullish()
       .transform((val) => (val == null ? [] : Array.isArray(val) ? val : [val])),
     score_manual_adjust_points: z.coerce.number().nullish(),
