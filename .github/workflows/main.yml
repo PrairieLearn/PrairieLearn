@@ -121,7 +121,6 @@ jobs:
 
   build-grader-images:
     runs-on: ubuntu-latest
-    if: false
 
     env:
       # Secrets aren't accessible for PRs coming from forks, and we also can't
@@ -205,7 +204,6 @@ jobs:
 
   build-core-images:
     runs-on: ubuntu-latest
-    if: false
 
     env:
       # Secrets aren't accessible for PRs coming from forks, and we also can't
@@ -294,7 +292,6 @@ jobs:
 
   native-checks:
     runs-on: ubuntu-latest
-    if: false
 
     steps:
       - uses: actions/checkout@v4
