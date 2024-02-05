@@ -180,7 +180,6 @@ router.post(
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
-      console.log(req.body.rubric_item_selected_manual, body.rubric_item_selected_manual);
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
             rubric_id: res.locals.assessment_question.manual_rubric_id,
