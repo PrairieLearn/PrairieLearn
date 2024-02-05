@@ -1,0 +1,14 @@
+<pl-question-panel>
+
+<p>What is the size of the {{params.dname}}?</p>
+
+<!-- "figure0.png" here is not a physical file. -->
+<!-- Since this pl-figure is the "dynamic" type, the figure is generated via server.py's `file()`. -->
+<pl-figure file-name="figure0.png" type="dynamic" width="200px"></pl-figure>
+
+</pl-question-panel>
+
+<p>
+<pl-integer-input answers-name="dim" label="{{params.dname}} $ \,=$" ></pl-integer-input>
+</p>
+

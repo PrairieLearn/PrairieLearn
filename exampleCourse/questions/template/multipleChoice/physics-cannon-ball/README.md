@@ -1,0 +1,1 @@
+This question asks students to compute how long a ball is in the air given several randomly-generated parameters. The student is provided with five multiple-choice options, four of which are distractors based on common misconceptions or mistakes. One of options can be randomly assigned as "none of the above".

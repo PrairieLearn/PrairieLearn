@@ -21,8 +21,8 @@
                     "numberChoose": 1,
                     "points": 25,
                     "alternatives": [
-                        {"id": "template/checkbox"},
-                        {"id": "template/multipleChoiceMultipleCorrect"}
+                        {"id": "demo/annotated/mathNumbersConcept-all"},
+                        {"id": "template/multipleChoice/multipleChoiceMultipleCorrect"}
                     ]
                 }
             ]
@@ -34,16 +34,16 @@
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "template/multipleChoiceWithFigure"},
-                        {"id": "template/multipleChoiceSingleCorrect"}
+                        {"id": "template/multipleChoice/multipleChoiceWithFigure"},
+                        {"id": "demo/multipleChoiceSingleCorrect"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "template/multipleChoiceTrueFalseFromList"},
-                        {"id": "template/multipleChoiceFromList"}
+                        {"id": "template/multipleChoice/multipleChoiceTrueFalseFromList"},
+                        {"id": "template/multipleChoice/multipleChoiceFromList"}
                     ]
                 }
            ]

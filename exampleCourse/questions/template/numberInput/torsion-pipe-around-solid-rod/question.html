@@ -1,0 +1,13 @@
+<pl-question-panel>
+<p>
+ A composite shaft with length $L = {{params.L}} \rm\ in$ is made by fitting an aluminum sleeve ($G_a = {{params.Ga}} \times 10^3  \rm\ ksi$) over a steel core ($G_s = {{params.Gs}} \times 10^3 \rm\ ksi$). The outside diameter is $d_a = {{params.da}} \rm\ in$. The steel core has diameter $d_s = {{params.ds}} \rm\ in$. The composite shaft is fixed against rotation at one end, while a  a torque $T_B = {{params.tb}}  \rm\ kip \cdot in$ is applied at the other end.
+</p>
+
+
+<p>
+Determine the <em>magnitude</em> of the maximum shear stress, $|\tau_{max}|$, in the <strong>{{params.option}} </strong>.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="taumax" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|\tau_{max}|=$" suffix="$ \rm\ ksi$ " >
+</pl-number-input>

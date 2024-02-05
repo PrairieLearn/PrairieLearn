@@ -1,0 +1,27 @@
+<pl-question-panel>
+<p>
+A specimen has circular cross-sectional area with initial diameter $d = {{params.d}} \rm\ mm$ and a gauge length $L_o = {{params.Lo}} \rm\ mm$. A force $P = {{params.P}} \rm\ kN$ elongates the specimen by $\delta = {{params.delta}} \rm\ mm$. The specimen material has yielding strength $\sigma_y = {{params.sigmay}} \rm\ MPa$ and shear modulus $G = {{params.G}} \rm\ GPa$.
+</p>
+
+<p>
+Determine the elastic modulus $E$:
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="E" comparison="relabs" rtol="1e-2" atol="1e-5" label="$E=$" suffix="$ \rm\ GPa$" weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Determine the Poisson ratio $\nu$:
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="nu" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\nu=$" weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Determine the reduction in diameter $\delta_d$:
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="deltad" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\delta_d=$" suffix="$ \rm\ mm$  " weight="2"></pl-number-input>
