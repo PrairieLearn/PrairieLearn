@@ -211,7 +211,7 @@ try {
       changedImages.push({
         name: image,
         platform,
-        newTag: platform,
+        newTag: sha,
         newDigest: info.digest,
         oldSize,
         newSize: info.size,
