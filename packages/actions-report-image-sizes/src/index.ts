@@ -11,6 +11,10 @@ interface ChangedImage {
   newSize: number;
 }
 
+const DockerApiTokenSchema = z.object({
+  token: z.string(),
+});
+
 const DockerApiManifestListSchema = z.object({
   mediaType: z.literal('application/vnd.oci.image.index.v1+json'),
   manifests: z.array(
@@ -53,7 +57,7 @@ async function getDockerHubToken(image: string): Promise<string> {
   const tokenResponse = await fetch(
     `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${image}:pull`,
   );
-  const { token } = await tokenResponse.json();
+  const { token } = DockerApiTokenSchema.parse(await tokenResponse.json());
   return token;
 }
 
