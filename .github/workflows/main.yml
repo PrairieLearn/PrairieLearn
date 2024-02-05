@@ -362,6 +362,7 @@ jobs:
       - build-workspace-images
       - build-grader-images
       - build-core-images
+    if: ${{ always() }}
 
     steps:
       - uses: ./packages/actions-report-image-sizes
