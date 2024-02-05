@@ -1,7 +1,6 @@
-// @ts-check
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
@@ -16,59 +15,22 @@ import {
   updateAssessmentInstancePoints,
   updateAssessmentInstanceScore,
 } from '../../lib/assessment';
-import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 import { resetVariantsForInstanceQuestion } from '../../models/variant';
+import {
+  InstructorAssessmentInstance,
+  AssessmentInstanceStatsSchema,
+  InstanceQuestionRowSchema,
+} from './instructorAssessmentInstance.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-export const AssessmentInstanceStatsSchema = z.object({
-  assessment_instance_id: IdSchema,
-  average_submission_score: z.number().nullable(),
-  client_fingerprint_id_change_count: z.number(),
-  first_submission_score: z.number().nullable(),
-  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
-  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
-  instance_question_id: IdSchema,
-  last_submission_score: z.number().nullable(),
-  max_submission_score: z.number().nullable(),
-  number: z.string().nullable(),
-  qid: z.string(),
-  question_id: IdSchema,
-  some_nonzero_submission: z.boolean().nullable(),
-  some_perfect_submission: z.boolean().nullable(),
-  some_submission: z.boolean().nullable(),
-  submission_score_array: z.array(z.number().nullable()).nullable(),
-  title: z.string().nullable(),
-});
 
 const DateDurationResultSchema = z.object({
   assessment_instance_date_formatted: z.string(),
   assessment_instance_duration: z.string(),
 });
 
-const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  instructor_question_number: z.string(),
-  manual_rubric_id: IdSchema.nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  max_points: z.number().nullable(),
-  modified_at: z.string(),
-  qid: z.string().nullable(),
-  question_id: IdSchema,
-  question_number: z.string(),
-  question_title: z.string().nullable(),
-  row_order: z.number(),
-  start_new_zone: z.boolean(),
-  zone_best_questions: z.number().nullable(),
-  zone_has_best_questions: z.boolean(),
-  zone_has_max_points: z.boolean(),
-  zone_id: IdSchema,
-  zone_max_points: z.number().nullable(),
-  zone_title: z.string().nullable(),
-});
-
-const logCsvFilename = (locals) => {
+function makeLogCsvFilename(locals) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -82,7 +44,7 @@ const logCsvFilename = (locals) => {
     '_' +
     'log.csv'
   );
-};
+}
 
 router.get(
   '/',
@@ -90,8 +52,8 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    res.locals.logCsvFilename = logCsvFilename(res.locals);
-    res.locals.assessment_instance_stats = await sqldb.queryRows(
+    const logCsvFilename = makeLogCsvFilename(res.locals);
+    const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
@@ -106,11 +68,11 @@ router.get(
       },
       DateDurationResultSchema,
     );
-    res.locals.assessment_instance_date_formatted =
+    const assessment_instance_date_formatted =
       dateDurationResult.assessment_instance_date_formatted;
-    res.locals.assessment_instance_duration = dateDurationResult.assessment_instance_duration;
+    const assessment_instance_duration = dateDurationResult.assessment_instance_duration;
 
-    res.locals.instance_questions = await sqldb.queryRows(
+    const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
@@ -118,9 +80,22 @@ router.get(
       InstanceQuestionRowSchema,
     );
 
-    res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
+    const assessmentInstanceLog = await selectAssessmentInstanceLog(
+      res.locals.assessment_instance.id,
+      false,
+    );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessmentInstance({
+        resLocals: res.locals,
+        logCsvFilename,
+        assessment_instance_stats,
+        assessment_instance_date_formatted,
+        assessment_instance_duration,
+        instance_questions,
+        assessmentInstanceLog,
+      }),
+    );
   }),
 );
 
@@ -130,7 +105,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    if (req.params.filename === logCsvFilename(res.locals)) {
+    if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
         false,
