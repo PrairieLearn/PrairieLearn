@@ -76,6 +76,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       debug('before(): initialize cache');
       await cache.init({
         cacheType: config.cacheType,
+        cacheKeyPrefix: config.cacheKeyPrefix,
         redisUrl: config.redisUrl,
       });
 

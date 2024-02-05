@@ -267,6 +267,7 @@ const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
@@ -534,14 +535,11 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
-  console.log(config.questionRenderCacheType);
   if (config.questionRenderCacheType !== null) {
     logger.warn(
       'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
     );
-    if (config.cacheType === 'none') {
-      config.cacheType = config.questionRenderCacheType;
-    }
+    config.cacheType = config.questionRenderCacheType;
   }
 }
 

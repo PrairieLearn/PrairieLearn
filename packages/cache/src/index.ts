@@ -3,54 +3,54 @@ import { LRUCache } from 'lru-cache';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-const CACHE_KEY_PREFIX = 'prairielearn-cache:';
-
-let cacheEnabled = false;
-let cacheType: 'redis' | 'memory' | 'none';
-let memoryCache: LRUCache<string, string>;
-let client: Redis;
-
-function cacheKey(key: string): string {
-  return CACHE_KEY_PREFIX + key;
-}
-
 class Cache {
-  async init(config: { cacheType: 'none' | 'memory' | 'redis'; redisUrl: string | null }) {
-    cacheType = config.cacheType;
-    if (!cacheType || cacheType === 'none') {
+  cacheEnabled = false;
+  cacheType = 'none';
+  memoryCache?: LRUCache<string, string>;
+  client?: Redis;
+  cacheKeyPrefix = 'prairielearn-cache:';
+
+  async init(config: {
+    cacheType: 'none' | 'memory' | 'redis';
+    cacheKeyPrefix: string;
+    redisUrl?: string | null;
+  }) {
+    this.cacheType = config.cacheType;
+    this.cacheKeyPrefix = config.cacheKeyPrefix;
+    if (!this.cacheType || this.cacheType === 'none') {
       // No caching
-      cacheEnabled = false;
+      this.cacheEnabled = false;
       return;
     }
 
-    if (cacheType === 'redis') {
+    if (this.cacheType === 'redis') {
       if (!config.redisUrl) throw new Error('redisUrl not set in config');
-      cacheEnabled = true;
-      client = new Redis(config.redisUrl);
-      client.on('error', (err) => {
+      this.cacheEnabled = true;
+      this.client = new Redis(config.redisUrl);
+      this.client.on('error', (err) => {
         logger.error('Redis error', err);
         Sentry.captureException(err);
       });
-    } else if (cacheType === 'memory') {
-      cacheEnabled = true;
-      memoryCache = new LRUCache({
+    } else if (this.cacheType === 'memory') {
+      this.cacheEnabled = true;
+      this.memoryCache = new LRUCache({
         // The in-memory cache is really only suited for development, so we'll
         // hardcode a relatively low limit here.
         max: 1000,
       });
     } else {
-      throw new Error(`Unknown cache type "${cacheType}"`);
+      throw new Error(`Unknown cache type "${this.cacheType}"`);
     }
   }
 
   set(key: string, value: any, maxAgeMS: number) {
-    if (!cacheEnabled) return;
+    if (!this.cacheEnabled) return;
 
-    const scopedKey = cacheKey(key);
+    const scopedKey = this.cacheKeyPrefix + key;
 
-    switch (cacheType) {
+    switch (this.cacheType) {
       case 'memory': {
-        memoryCache.set(scopedKey, JSON.stringify(value), { ttl: maxAgeMS });
+        this.memoryCache?.set(scopedKey, JSON.stringify(value), { ttl: maxAgeMS });
         break;
       }
 
@@ -61,8 +61,8 @@ class Cache {
         //
         // We don't log the error because it contains the cached value,
         // which can be huge and which fills up the logs.
-        client
-          .set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
+        this.client
+          ?.set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
           .catch((_err) => logger.error('Cache set error', { key, scopedKey, maxAgeMS }));
         break;
       }
@@ -70,18 +70,18 @@ class Cache {
   }
 
   async del(key: string) {
-    if (!cacheEnabled) return;
+    if (!this.cacheEnabled) return;
 
-    const scopedKey = cacheKey(key);
+    const scopedKey = this.cacheKeyPrefix + key;
 
-    switch (cacheType) {
+    switch (this.cacheType) {
       case 'memory': {
-        memoryCache.delete(scopedKey);
+        this.memoryCache?.delete(scopedKey);
         break;
       }
 
       case 'redis': {
-        await client.del(scopedKey);
+        await this.client?.del(scopedKey);
         break;
       }
     }
@@ -91,13 +91,13 @@ class Cache {
    * Returns the value for the corresponding key if it exists in the cache; null otherwise.
    */
   async get(key: string): Promise<any> {
-    if (!cacheEnabled) return null;
+    if (!this.cacheEnabled) return null;
 
-    const scopedKey = cacheKey(key);
+    const scopedKey = this.cacheKeyPrefix + key;
 
-    switch (cacheType) {
+    switch (this.cacheType) {
       case 'memory': {
-        const value = memoryCache.get(scopedKey);
+        const value = this.memoryCache?.get(scopedKey);
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
@@ -105,7 +105,7 @@ class Cache {
       }
 
       case 'redis': {
-        const value = await client.get(scopedKey);
+        const value = await this.client?.get(scopedKey);
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
@@ -122,23 +122,32 @@ class Cache {
    * Clear all entries from the cache.
    */
   async reset() {
-    if (!cacheEnabled) return;
+    if (!this.cacheEnabled) return;
 
-    switch (cacheType) {
+    switch (this.cacheType) {
       case 'memory': {
-        memoryCache.clear();
+        this.memoryCache?.clear();
         break;
       }
 
       case 'redis': {
         let cursor = '0';
         do {
-          const reply = await client.scan(cursor, 'MATCH', `${CACHE_KEY_PREFIX}*`, 'COUNT', 1000);
+          if (!this.client) {
+            throw new Error('Redis client not initialized');
+          }
+          const reply = await this.client.scan(
+            cursor,
+            'MATCH',
+            `${this.cacheKeyPrefix}*`,
+            'COUNT',
+            1000,
+          );
           cursor = reply[0];
 
           const keys = reply[1];
           if (keys.length > 0) {
-            await client.del(keys);
+            await this.client?.del(keys);
           }
         } while (cursor !== '0');
         break;
@@ -149,11 +158,11 @@ class Cache {
    * Releases any connections associated with the cache.
    */
   async close() {
-    if (!cacheEnabled) return;
-    cacheEnabled = false;
+    if (!this.cacheEnabled) return;
+    this.cacheEnabled = false;
 
-    if (cacheType === 'redis') {
-      await client.quit();
+    if (this.cacheType === 'redis') {
+      await this.client?.quit();
     }
   }
 }
