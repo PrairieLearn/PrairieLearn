@@ -25,6 +25,9 @@ async function getImageManifest(token, image, version) {
       },
     },
   );
+
+  console.log(manifestResponse);
+
   return await manifestResponse.json();
 }
 
@@ -59,18 +62,15 @@ async function getImageSizesFromRegistry(image) {
   return sizes;
 }
 
-async function getImageSizesFromDisk(image) {}
-
 try {
   const images = getImages();
   const title = core.getInput('title');
+  const sha = core.getInput('sha');
 
   for (const image of images) {
-    const registrySizes = await getImageSizesFromRegistry(image);
-    console.log(registrySizes);
-
-    const diskSizes = await getImageSizesFromDisk(image);
-    console.log(diskSizes);
+    const oldRegistrySizes = await getImageSizesFromRegistry(image, 'latest');
+    const newRegistrySizes = await getImageSizesFromRegistry(image, sha);
+    console.log(oldRegistrySizes, newRegistrySizes);
   }
 
   console.log('Hello, world!', images, title);
