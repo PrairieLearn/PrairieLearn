@@ -14,4 +14,4 @@ inputs:
     description: 'GitHub token to use for commenting'
 runs:
   using: 'node20'
-  main: 'index.mjs'
+  main: 'dist/index.js'

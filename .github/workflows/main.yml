@@ -145,7 +145,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       ######################################################################################################
       # grader-c
       - name: Check whether graders/c was modified
@@ -371,6 +371,10 @@ jobs:
 
       - name: Install Node dependencies
         run: yarn workspaces focus @prairielearn/actions-report-image-sizes
+
+      - name: Build
+        run: yarn build
+        working-directory: packages/actions-report-image-sizes
 
       - name: Report image sizes
         uses: ./packages/actions-report-image-sizes
