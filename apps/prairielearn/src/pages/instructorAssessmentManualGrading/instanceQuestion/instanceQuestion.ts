@@ -176,6 +176,7 @@ router.post(
       // we don't want to double-handle, so we always receive an object and
       // convert it to an array if necessary
       // (https://github.com/ljharb/qs#parsing-arrays).
+      // The order of the items in arrays is never important, so using Object.values is fine.
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
