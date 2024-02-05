@@ -4,9 +4,14 @@ inputs:
   images:
     description: 'Which images to check'
     required: true
+  sha:
+    description: 'SHA of the commit'
+    required: true
   title:
     description: 'Title of the comment'
     required: true
+  token:
+    description: 'GitHub token to use for commenting'
 runs:
   using: 'node20'
   main: 'index.mjs'
