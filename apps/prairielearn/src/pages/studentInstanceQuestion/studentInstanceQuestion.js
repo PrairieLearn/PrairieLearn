@@ -6,6 +6,7 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
+const asyncHandler = require('express-async-handler');
 
 const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
@@ -230,23 +231,23 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  questionRender.renderPanelsForSubmission(
-    req.params.submission_id,
-    res.locals.question.id,
-    res.locals.instance_question.id,
-    req.params.variant_id,
-    res.locals.urlPrefix,
-    null, // questionContext
-    null, // csrfToken
-    null, // authorizedEdit
-    false, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, next)) return;
-      res.send({ submissionPanel: results.submissionPanel });
-    },
-  );
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    const { submissionPanel } = await questionRender.renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: res.locals.instance_question.id,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   async.series(
