@@ -111,12 +111,11 @@ const PostBodySchema = z.union([
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
     modified_at: z.string(),
-    rubric_item_selected_manual: IdSchema.or(IdSchema.array())
-      // For 22+ items, qs will convert the array to an object. This converts it back.
-      // (https://github.com/ljharb/qs#parsing-arrays)
-      .or(z.record(z.string(), IdSchema).transform((val) => Object.values(val)))
+    rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
-      .transform((val) => (val == null ? [] : Array.isArray(val) ? val : [val])),
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
     score_manual_adjust_points: z.coerce.number().nullish(),
     use_score_perc: z.literal('on').optional(),
     score_manual_points: z.coerce.number().nullish(),
@@ -173,9 +172,14 @@ router.post(
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      qs.parse(qs.stringify(req.body)),
+      // Array parsing is disabled, as it has special cases for 22+ items that
+      // we don't want to double-handle, so we always receive an object and
+      // convert it to an array if necessary
+      // (https://github.com/ljharb/qs#parsing-arrays).
+      qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
+      console.log(req.body.rubric_item_selected_manual, body.rubric_item_selected_manual);
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
             rubric_id: res.locals.assessment_question.manual_rubric_id,
