@@ -79,7 +79,7 @@ const SubmissionInfoSchema = z.object({
     allow_grade_date: DateFromISOString.nullable(),
     allow_grade_interval: z.string(),
   }).nullable(),
-  next_instance_question: z.object({ id: IdSchema, sequence_locked: z.boolean() }).nullable(),
+  next_instance_question: z.object({ id: IdSchema.nullable(), sequence_locked: z.boolean().nullable() }),
   question: QuestionSchema,
   assessment_question: AssessmentQuestionSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.nullable(),
