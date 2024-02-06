@@ -3,6 +3,7 @@ Custom colors for the PrairieLearn project based on Coloraide.
 
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
+
 import re
 from typing import Any, cast
 

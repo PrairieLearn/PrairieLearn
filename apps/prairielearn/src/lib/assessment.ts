@@ -40,7 +40,7 @@ export const InstanceLogSchema = z.object({
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -108,6 +108,7 @@ export async function makeAssessmentInstance(
   mode: 'Exam' | 'Homework',
   time_limit_min: number | null,
   date: Date,
+  client_fingerprint_id: string | null,
 ): Promise<string> {
   const result = await sqldb.callOneRowAsync('assessment_instances_insert', [
     assessment_id,
@@ -117,6 +118,7 @@ export async function makeAssessmentInstance(
     mode,
     time_limit_min,
     date,
+    client_fingerprint_id,
   ]);
   return result.rows[0].assessment_instance_id;
 }
@@ -179,6 +181,7 @@ export async function gradeAssessmentInstanceAsync(
   requireOpen: boolean,
   close: boolean,
   overrideGradeRate: boolean,
+  client_fingerprint_id: string | null,
 ): Promise<void> {
   debug('gradeAssessmentInstance()');
   overrideGradeRate = close || overrideGradeRate;
@@ -195,6 +198,7 @@ export async function gradeAssessmentInstanceAsync(
         await sqldb.queryAsync(sql.close_assessment_instance, {
           assessment_instance_id,
           authn_user_id,
+          client_fingerprint_id,
         });
       }
     });
@@ -302,6 +306,7 @@ export async function gradeAllAssessmentInstances(
         requireOpen,
         close,
         overrideGradeRate,
+        null,
       );
     });
   });

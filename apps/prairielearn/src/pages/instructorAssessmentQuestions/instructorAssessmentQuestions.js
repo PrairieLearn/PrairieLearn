@@ -4,12 +4,15 @@ import * as express from 'express';
 import AnsiUp from 'ansi_up';
 import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
+import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+
 import { AssessmentQuestionSchema, IdSchema, TopicSchema } from '../../lib/db-types';
+import { resetVariantsForAssessmentQuestion } from '../../models/variant';
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 
 const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: z.number().nullable(),
@@ -59,7 +62,7 @@ const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await sqldb.queryRows(
+    const questions = await queryRows(
       sql.questions,
       {
         assessment_id: res.locals.assessment.id,
@@ -73,6 +76,24 @@ router.get(
       return row;
     });
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'reset_question_variants') {
+      await resetVariantsForAssessmentQuestion({
+        assessment_id: res.locals.assessment.id,
+        unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+      res.redirect(req.originalUrl);
+    } else {
+      throw error.make(400, `unknown __action: ${req.body.__action}`, {
+        body: req.body,
+      });
+    }
   }),
 );
 

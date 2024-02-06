@@ -1,9 +1,12 @@
+import { getQuestionGroupPermissions } from '../../lib/groups';
+
 const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
+const asyncHandler = require('express-async-handler');
 
 const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
@@ -23,6 +26,17 @@ function processSubmission(req, res, callback) {
   }
   if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
+  }
+  if (
+    res.locals.assessment.group_config?.has_roles &&
+    !res.locals.instance_question.group_role_permissions.can_submit
+  ) {
+    return callback(
+      error.make(
+        403,
+        'Your current group role does not give you permission to submit to this question.',
+      ),
+    );
   }
   let variant_id, submitted_answer;
   if (res.locals.question.type === 'Freeform') {
@@ -217,33 +231,30 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  questionRender.renderPanelsForSubmission(
-    req.params.submission_id,
-    res.locals.question.id,
-    res.locals.instance_question.id,
-    req.params.variant_id,
-    res.locals.urlPrefix,
-    null, // questionContext
-    null, // csrfToken
-    null, // authorizedEdit
-    false, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, next)) return;
-      res.send({ submissionPanel: results.submissionPanel });
-    },
-  );
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    const { submissionPanel } = await questionRender.renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: res.locals.instance_question.id,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   async.series(
     [
-      (callback) => {
+      async () => {
         const variant_id = res.locals.assessment.type === 'Exam' ? null : req.query.variant_id;
-        questionRender.getAndRenderVariant(variant_id, null, res.locals, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await questionRender.getAndRenderVariant(variant_id, null, res.locals);
       },
       (callback) => {
         logPageView(req, res, (err) => {
@@ -252,6 +263,27 @@ router.get('/', function (req, res, next) {
         });
       },
       async () => await setQuestionCopyTargets(res),
+      async () => {
+        if (
+          res.locals.assessment.group_config?.has_roles &&
+          !res.locals.authz_data.has_course_instance_permission_view
+        ) {
+          if (res.locals.instance_question_info.prev_instance_question.id != null) {
+            res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.prev_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+          if (res.locals.instance_question_info.next_instance_question.id) {
+            res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.next_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+        }
+      },
     ],
     (err) => {
       if (ERR(err, next)) return;
