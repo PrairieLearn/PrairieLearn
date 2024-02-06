@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 
-FROM prairielearn/plbase:${PRAIRIELEARN_IMAGE_TAG:-latest}
+FROM prairielearn/plbase:latest
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 

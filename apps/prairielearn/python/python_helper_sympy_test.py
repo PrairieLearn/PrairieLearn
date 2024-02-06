@@ -278,7 +278,8 @@ class TestExceptions:
     NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
     INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
-    INVALID_VARIABLE_CASES = ["x", "y", "z*n"]
+    INVALID_VARIABLE_CASES = ["x", "exp(y)", "z*n"]
+    FUNCTION_NOT_CALLED_CASES = ["2+exp", "cos*n"]
     INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
     INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
     INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
@@ -316,7 +317,12 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidSymbolError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidVariableError)):
+            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
+
+    @pytest.mark.parametrize("a_sub", FUNCTION_NOT_CALLED_CASES)
+    def test_function_not_called(self, a_sub: str) -> None:
+        with pytest.raises(phs.FunctionNameUsedWithoutArguments):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)
