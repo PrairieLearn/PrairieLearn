@@ -181,30 +181,6 @@
   <div class="card-body">
     <pl-question-panel>
       <p>
-        Here, the <code>pl-multiple-choice</code> element does not contain any
-        <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if
-        they exist, from <code>sky-color.json</code> file inside
-        <code>serverFilesQuestion/</code> directory. By default, the external json file should have
-        <code>"correct"</code> and <code>"incorrect"</code> attributes of type list to store
-        choices, these attribute names can be overridden with
-        <code>"external-json-correct-key"</code> and <code>"external-json-incorrect-key"</code>.
-      </p>
-
-      <p>What is the color of the sky?</p>
-    </pl-question-panel>
-
-    <pl-multiple-choice answers-name="sky-color7" external-json="serverFilesQuestion/sky-color.json"
-      external-json-incorrect-key="incorrect_choices">
-    </pl-multiple-choice>
-  </div>
-</div>
-
-<div class="card my-2">
-  <div class="card-header">Part 8</div>
-
-  <div class="card-body">
-    <pl-question-panel>
-      <p>
         Here, you can observe the behavior of the <code>feedback</code> attribute in
         <code>pl-answer</code>. Feedback is expected to convey a small piece of information that
         explains why an answer is correct or incorrect. When an answer with a feedback setting is
@@ -228,7 +204,7 @@
 
 <div class="card my-2">
   <div class="card-header">
-    Part 9
+    Part 8
   </div>
 
   <div class="card-body">
@@ -254,13 +230,14 @@
 </div>
 
 <div class="card my-2">
-  <div class="card-header">Part 10</div>
+  <div class="card-header">Part 9</div>
 
   <div class="card-body">
     <pl-question-panel>
       <p>
         Here, we observe the dropdown display option. This lets students input an answer from a
-        dropdown list instead of choosing from multiple choice radio buttons.
+        dropdown list instead of choosing from multiple choice radio buttons. Note that the
+        dropdown list supports $\LaTeX$ rendering.
       </p>
 
       <p>What is the color of the sky?</p>
@@ -268,12 +245,12 @@
 
     <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random">
       <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
-      <pl-answer>Pink $L$</pl-answer>
-      <pl-answer score="0.5">Purple</pl-answer>
-      <pl-answer feedback="Not quite" score="0.1">Orange</pl-answer>
-      <pl-answer>Yellow</pl-answer>
-      <pl-answer score="0.3">Brown</pl-answer>
-      <pl-answer score="0.2">Red</pl-answer>
+      <pl-answer>$Pink$</pl-answer>
+      <pl-answer score="0.5">$Purple$</pl-answer>
+      <pl-answer feedback="Not quite" score="0.1">$Orange$</pl-answer>
+      <pl-answer>$Yellow$</pl-answer>
+      <pl-answer score="0.3">$Brown$</pl-answer>
+      <pl-answer score="0.2">$Red$</pl-answer>
     </pl-multiple-choice>
   </div>
 </div>

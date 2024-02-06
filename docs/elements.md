@@ -728,7 +728,10 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `incorrect`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
 - `true`: same as `random`, accepted for backwards compatibility.
 
-Note that "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+**Notes**
+
+- "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+- Defining answer choices with external JSON files is now deprecated.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
