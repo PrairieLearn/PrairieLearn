@@ -26,7 +26,7 @@ class AotaNotaType(Enum):
     CORRECT = 4
 
 
-class SortType(Enum):
+class OrderType(Enum):
     RANDOM = "random"
     ASCEND = "ascend"
     DESCEND = "descend"
@@ -109,7 +109,7 @@ def categorize_options(
                 f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
             )
 
-    # Next, check JSON file for answer choices
+    # NOTE Reading in answer choices from JSON is deprecated.
     file_path = pl.get_string_attrib(element, "external-json", EXTERNAL_JSON_DEFAULT)
     if file_path is not None:
         correct_attrib = pl.get_string_attrib(
@@ -129,7 +129,6 @@ def categorize_options(
         with open(json_file, mode="r", encoding="utf-8") as f:
             obj = json.load(f)
 
-        # TODO allow feedback and partial credit to be set in answers from a JSON file.
         for text in obj.get(correct_attrib, []):
             correct_answers.append(
                 AnswerTuple(
@@ -169,13 +168,13 @@ def get_nota_aota_attrib(
     return pl.get_enum_attrib(element, name, AotaNotaType, default)
 
 
-def get_sort_type(element: lxml.html.HtmlElement) -> SortType:
-    """Gets sort type in a backwards-compatible way. New display overwrites old."""
+def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
+    """Gets order type in a backwards-compatible way. New display overwrites old."""
 
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
-    sort_type_default = SortType.FIXED if fixed_order else SortType.RANDOM
+    order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
 
-    return pl.get_enum_attrib(element, "sort", SortType, sort_type_default)
+    return pl.get_enum_attrib(element, "order", OrderType, order_type_default)
 
 
 def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
@@ -196,7 +195,7 @@ def prepare_answers_to_display(
     nota: AotaNotaType,
     aota_feedback: Optional[str],
     nota_feedback: Optional[str],
-    sort_type: SortType,
+    order_type: OrderType,
     display_type: DisplayType,
 ) -> list[AnswerTuple]:
     len_correct = len(correct_answers)
@@ -313,16 +312,16 @@ def prepare_answers_to_display(
     sampled_answers = sampled_correct + sampled_incorrect
 
     # 3. Sort sampled choices based on user preference.
-    if sort_type is SortType.FIXED:
+    if order_type is OrderType.FIXED:
         sampled_answers.sort(key=lambda a: a.idx)
-    elif sort_type is SortType.DESCEND:
+    elif order_type is OrderType.DESCEND:
         sampled_answers.sort(key=lambda a: a.html, reverse=True)
-    elif sort_type is SortType.ASCEND:
+    elif order_type is OrderType.ASCEND:
         sampled_answers.sort(key=lambda a: a.html, reverse=False)
-    elif sort_type is SortType.RANDOM:
+    elif order_type is OrderType.RANDOM:
         random.shuffle(sampled_answers)
     else:
-        assert_never(sort_type)
+        assert_never(order_type)
 
     use_inline_display = display_type is DisplayType.INLINE
 
@@ -381,9 +380,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "external-json",
         "external-json-correct-key",
         "external-json-incorrect-key",
-        "sort",
+        "order",
         "display",
-        "hide-score-badge",  # TODO maybe rename this???
+        "hide-score-badge",
         "allow-blank",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -430,7 +429,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         nota_feedback=pl.get_string_attrib(
             element, "none-of-the-above-feedback", FEEDBACK_DEFAULT
         ),
-        sort_type=get_sort_type(element),
+        order_type=get_order_type(element),
         display_type=get_display_type(element),
     )
 
@@ -440,7 +439,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     display_answers = []
     correct_answer = None
     for key, answer in zip(pl.iter_keys(), answers_to_display):
-        # TODO replace with a fancy key generator function off of the web.
         keyed_answer = {
             "key": key,
             "html": answer.html,
@@ -523,14 +521,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        hide_letter_keys = pl.get_boolean_attrib(
+            element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+        )
         html_params = {
             "submission": True,
             "parse_error": parse_error,
             "inline": inline,
             "uuid": pl.get_uuid(),
-            "hide_letter_keys": pl.get_boolean_attrib(
-                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-            ),
+            "hide_letter_keys": hide_letter_keys or submitted_key is None,
         }
 
         if parse_error is None:

@@ -68,7 +68,6 @@
     <select name="{{name}}" data-style="btn-outline-secondary"
             id="pl-multiple-choice-select-{{uuid}}" {{^editable}}disabled{{/editable}}>
         <option disabled selected value></option>
-        <!-- TODO disable blank option to use if blank is expected -->
         {{#answers}}
             <option {{#selected}}selected{{/selected}}
                 value="{{key}}"
