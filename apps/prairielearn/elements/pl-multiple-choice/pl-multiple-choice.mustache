@@ -12,7 +12,7 @@
 
             <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
                 {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
-                <div class="ml-1 mr-1">{{{html}}}</div>
+                <div class="ml-1 mr-1 pl-answer">{{{html}}}</div>
             </label>
 
             {{#display_feedback}}
@@ -70,6 +70,7 @@
         <option disabled selected value></option>
         {{#answers}}
             <option {{#selected}}selected{{/selected}}
+                class="pl-answer"
                 value="{{key}}"
                 data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"></option>
         {{/answers}}
