@@ -16,7 +16,7 @@ def grade(data):
     if Ftrue == Fsub:
         data["score"] = 1
     else:
-        data["feedback"][
-            "F"
-        ] = "Fot the given input, the correct answer should have been " + str(Ftrue)
+        data["feedback"]["F"] = (
+            "Fot the given input, the correct answer should have been " + str(Ftrue)
+        )
         data["score"] = 0
