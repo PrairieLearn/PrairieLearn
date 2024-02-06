@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
-const util = require('node:util');
 const debug = require('debug')('prairielearn:authCallbackLti');
 const { cache } = require('@prairielearn/cache');
 
