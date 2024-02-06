@@ -79,8 +79,7 @@ router.post('/', function (req, res, next) {
       // https://oauth.net/core/1.0/#nonce
       var nonceReused = false;
       var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
-      util.callbackify(cache.get)(nonceKey, (err, val) => {
-        if (ERR(err, next)) return;
+      cache.get(nonceKey).then((val) => {
         if (val) {
           nonceReused = true;
         } else {
