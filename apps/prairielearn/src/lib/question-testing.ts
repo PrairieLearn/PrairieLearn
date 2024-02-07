@@ -19,7 +19,6 @@ import {
   type Course,
   type CourseInstance,
 } from './db-types';
-import { promisify } from 'util';
 import { z } from 'zod';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -270,7 +269,7 @@ async function testQuestion(
 
   const renderStart = Date.now();
   try {
-    await promisify(getAndRenderVariant)(variant.id, null, {
+    await getAndRenderVariant(variant.id, null, {
       question,
       course: variant_course,
       urlPrefix: `/pl/course/${variant_course.id}`,

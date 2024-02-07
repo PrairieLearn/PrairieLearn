@@ -1,19 +1,18 @@
-// @ts-check
-const _ = require('lodash');
-const streamifier = require('streamifier');
-const csvtojson = require('csvtojson');
-const namedLocks = require('@prairielearn/named-locks');
-const {
+import * as _ from 'lodash';
+import * as streamifier from 'streamifier';
+import csvtojson = require('csvtojson');
+import * as namedLocks from '@prairielearn/named-locks';
+import {
   loadSqlEquiv,
   queryRow,
   queryRows,
   queryOptionalRow,
   runInTransactionAsync,
-} = require('@prairielearn/postgres');
-const { z } = require('zod');
+} from '@prairielearn/postgres';
+import { z } from 'zod';
 
-const { IdSchema, UserSchema } = require('./db-types');
-const { createServerJob } = require('./server-jobs');
+import { IdSchema, UserSchema } from './db-types';
+import { createServerJob } from './server-jobs';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups';
 
 const sql = loadSqlEquiv(__filename);
@@ -24,34 +23,34 @@ const AssessmentInfoSchema = z.object({
   course_id: IdSchema,
 });
 
-/**
- * @param {string} assessment_id
- */
-function groupUpdateLockName(assessment_id) {
+function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
 }
 
 /**
  * Update groups from a CSV file.
  *
- * @param {string} assessment_id - The assessment to update.
- * @param {object} csvFile - An object with keys {originalname, size, buffer}.
- * @param {string} user_id - The current user performing the update.
- * @param {string} authn_user_id - The current authenticated user.
+ * @param assessment_id - The assessment to update.
+ * @param csvFile - An object with keys {originalname, size, buffer}.
+ * @param user_id - The current user performing the update.
+ * @param authn_user_id - The current authenticated user.
+ * @returns The job sequence ID.
  */
-export async function uploadInstanceGroups(assessment_id, csvFile, user_id, authn_user_id) {
+export async function uploadInstanceGroups(
+  assessment_id: string,
+  csvFile: Express.Multer.File | null | undefined,
+  user_id: string,
+  authn_user_id: string,
+): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
   }
 
-  const assessmentInfo = await queryRow(
+  const { assessment_label, course_id, course_instance_id } = await queryRow(
     sql.select_assessment_info,
     { assessment_id },
     AssessmentInfoSchema,
   );
-  const assessmentLabel = assessmentInfo.assessment_label;
-  const course_instance_id = assessmentInfo.course_instance_id;
-  const course_id = assessmentInfo.course_id;
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -60,7 +59,7 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_groups',
-    description: `Upload group settings for ${assessmentLabel}`,
+    description: `Upload group settings for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -75,7 +74,7 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
         },
       },
       async () => {
-        job.verbose('Uploading group settings for ' + assessmentLabel);
+        job.verbose('Uploading group settings for ' + assessment_label);
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
         job.verbose(`----------------------------------------`);
         job.verbose(`Processing group updates...`);
@@ -120,31 +119,29 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
 /**
  * Auto generate group settings from input
  *
- * @param {string} assessment_id - The assessment to update.
- * @param {string} user_id - The current user performing the update.
- * @param {string} authn_user_id - The current authenticated user.
- * @param {number} max_group_size - max size of the group
- * @param {number} min_group_size - min size of the group
+ * @param assessment_id - The assessment to update.
+ * @param user_id - The current user performing the update.
+ * @param authn_user_id - The current authenticated user.
+ * @param max_group_size - max size of the group
+ * @param min_group_size - min size of the group
+ * @returns The job sequence ID.
  */
 export async function autoGroups(
-  assessment_id,
-  user_id,
-  authn_user_id,
-  max_group_size,
-  min_group_size,
-) {
+  assessment_id: string,
+  user_id: string,
+  authn_user_id: string,
+  max_group_size: number,
+  min_group_size: number,
+): Promise<string> {
   if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const assessmentInfo = await queryRow(
+  const { assessment_label, course_id, course_instance_id } = await queryRow(
     sql.select_assessment_info,
     { assessment_id },
     AssessmentInfoSchema,
   );
-  const assessmentLabel = assessmentInfo.assessment_label;
-  const course_instance_id = assessmentInfo.course_instance_id;
-  const course_id = assessmentInfo.course_id;
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -153,7 +150,7 @@ export async function autoGroups(
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'auto_generate_groups',
-    description: `Auto generate group settings for ${assessmentLabel}`,
+    description: `Auto generate group settings for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -169,7 +166,7 @@ export async function autoGroups(
       },
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
-        job.verbose('Auto generate group settings for ' + assessmentLabel);
+        job.verbose('Auto generate group settings for ' + assessment_label);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
         const studentsToGroup = await queryRows(
@@ -180,7 +177,7 @@ export async function autoGroups(
         _.shuffle(studentsToGroup);
         const numStudents = studentsToGroup.length;
         job.verbose(
-          `There are ${numStudents} students enrolled in ${assessmentLabel} without a group`,
+          `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
         job.verbose(`----------------------------------------`);
         job.verbose(`Creating groups with a max size of ${max_group_size}`);

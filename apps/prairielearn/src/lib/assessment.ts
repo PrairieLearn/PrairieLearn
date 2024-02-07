@@ -40,7 +40,7 @@ export const InstanceLogSchema = z.object({
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
