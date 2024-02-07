@@ -5,20 +5,20 @@
 </pl-question-panel>
 
 <p>
-  The
-  <pl-multiple-choice answers-name="aristotle" display="dropdown" hide-letter-keys="true">
-    {{#params.question1}}
+  The 
+  <pl-dropdown answers-name="aristotle">
+    {{#params.aristotle}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-    {{/params.question1}}
-  </pl-multiple-choice>
+    {{/params.aristotle}}
+  </pl-dropdown> 
   is more than the sum of its parts.
 </p>
 <p>
   A
-  <pl-multiple-choice sort="ascend" answers-name="hume" display="dropdown" hide-letter-keys="true">
+  <pl-dropdown sort="ascend" answers-name="hume">
     <pl-answer correct="true">wise</pl-answer>
     <pl-answer correct="false">clumsy</pl-answer>
     <pl-answer correct="false">reckless</pl-answer>
-  </pl-multiple-choice>
+  </pl-dropdown>
   man proportions his belief to the evidence.
 </p>
