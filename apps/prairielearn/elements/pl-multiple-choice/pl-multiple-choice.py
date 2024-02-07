@@ -171,6 +171,11 @@ def get_nota_aota_attrib(
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Gets order type in a backwards-compatible way. New display overwrites old."""
 
+    if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
+        raise ValueError(
+            'Setting answer choice order should be done with the "order" attribute.'
+        )
+
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
     order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
 
@@ -179,6 +184,11 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 
 def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Gets display type in a backwards-compatible way. New display overwrites old."""
+
+    if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
+        raise ValueError(
+            'Setting answer choice display should be done with the "display" attribute.'
+        )
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     display_default = DisplayType.INLINE if inline else DisplayType.BLOCK
