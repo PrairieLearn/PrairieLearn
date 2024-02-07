@@ -16,7 +16,6 @@ DECLARE
     course_id bigint;
     course_instance_id bigint;
     assessment_instance_updated boolean;
-    new_instance_question_ids bigint[];
 BEGIN
     PERFORM assessment_instances_lock(assessment_instance_id);
 
@@ -31,8 +30,7 @@ BEGIN
     -- first update Homeworks
     updated := FALSE;
     IF assessment_type = 'Homework' THEN
-        SELECT *
-        INTO updated, new_instance_question_ids
+        SELECT updated INTO updated
         FROM assessment_instances_update(assessment_instance_id, authn_user_id);
     END IF;
 
