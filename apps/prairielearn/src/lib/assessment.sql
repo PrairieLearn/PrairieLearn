@@ -58,11 +58,17 @@ WITH
       ai.id
   )
 INSERT INTO
-  assessment_state_logs (open, assessment_instance_id, auth_user_id)
+  assessment_state_logs (
+    open,
+    assessment_instance_id,
+    auth_user_id,
+    client_fingerprint_id
+  )
 SELECT
   FALSE,
   updated_assessment_instance.id,
-  $authn_user_id
+  $authn_user_id,
+  $client_fingerprint_id
 FROM
   updated_assessment_instance;
 
@@ -300,6 +306,34 @@ WITH
         LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
+    )
+    UNION
+    (
+      SELECT
+        2.5 AS event_order,
+        'Broken variant'::TEXT AS event_name,
+        'red3'::TEXT AS event_color,
+        v.broken_at AS date,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid AS qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        NULL::INTEGER AS submission_id,
+        v.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
+        NULL::JSONB AS data
+      FROM
+        variants AS v
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.user_id = v.broken_by)
+      WHERE
+        v.broken_at IS NOT NULL
+        AND iq.assessment_instance_id = $assessment_instance_id
     )
     UNION
     (
@@ -731,7 +765,9 @@ WITH
         NULL::INTEGER AS submission_id,
         gl.id AS log_id,
         NULL::BIGINT AS client_fingerprint_id,
-        jsonb_build_object('user', gu.uid) AS data
+        jsonb_strip_nulls(
+          jsonb_build_object('user', gu.uid, 'roles', gl.roles)
+        ) AS data
       FROM
         assessment_instances AS ai
         JOIN group_logs AS gl ON (gl.group_id = ai.group_id)

@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { Institution, InstitutionSchema } from '../lib/db-types';
 
@@ -16,4 +16,8 @@ export async function selectInstitutionForCourseInstance({
     },
     InstitutionSchema,
   );
+}
+
+export async function selectAllInstitutions() {
+  return await queryRows(sql.select_all_institutions, InstitutionSchema);
 }

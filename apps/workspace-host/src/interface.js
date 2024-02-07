@@ -1,37 +1,37 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const util = require('util');
+import * as util from 'node:util';
 const express = require('express');
-const http = require('http');
-const fetch = require('node-fetch').default;
-const path = require('path');
-const { S3 } = require('@aws-sdk/client-s3');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const { Upload } = require('@aws-sdk/lib-storage');
+import * as http from 'node:http';
+import fetch from 'node-fetch';
+import * as path from 'node:path';
+import { S3 } from '@aws-sdk/client-s3';
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Upload } from '@aws-sdk/lib-storage';
 const Docker = require('dockerode');
-const fs = require('fs');
-const async = require('async');
-const fsPromises = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
+import * as fs from 'node:fs';
+import * as async from 'async';
+import * as fsPromises from 'node:fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 const argv = require('yargs-parser')(process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
-const net = require('net');
+import * as net from 'node:net';
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
-const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
-const workspaceUtils = require('@prairielearn/workspace-utils');
+import { Mutex } from 'async-mutex';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-const { config, loadConfig } = require('./lib/config');
-const { parseDockerLogs } = require('./lib/docker');
-const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig, makeAwsClientConfig } = require('./lib/aws');
-const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
+import { config, loadConfig } from './lib/config';
+import { parseDockerLogs } from './lib/docker';
+import * as socketServer from './lib/socket-server';
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const docker = new Docker();
@@ -742,9 +742,6 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
-          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
-          // second argument with a `cause` property. Once we're running on
-          // Node 18, we can bump to ES2022 and this will no longer error.
           throw Error('Could not access workspace files.', { cause: err });
         }
       },

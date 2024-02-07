@@ -3,9 +3,6 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["node"]
+    "types": ["node"],
   },
-  "ts-node": {
-    "transpileOnly": true
-  }
 }

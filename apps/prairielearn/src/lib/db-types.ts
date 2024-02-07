@@ -94,7 +94,7 @@ export const CourseSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   options: z.any(),
-  path: z.string().nullable(),
+  path: z.string(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
@@ -537,7 +537,6 @@ export const InstanceQuestionSchema = z.object({
   id: IdSchema,
   incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
   incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
-  instructor_question_number: z.string().nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
@@ -585,7 +584,6 @@ export const SubmissionSchema = z.object({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
-  regradable: z.boolean().nullable(),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -597,6 +595,8 @@ export type Submission = z.infer<typeof SubmissionSchema>;
 export const VariantSchema = z.object({
   authn_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  broken_at: DateFromISOString.nullable(),
+  broken_by: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
@@ -787,7 +787,7 @@ export const GroupSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  group_config_id: IdSchema.nullable(),
+  group_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
@@ -795,6 +795,7 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const GroupUserSchema = z.object({
+  group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });
@@ -802,9 +803,7 @@ export type GroupUser = z.infer<typeof GroupUserSchema>;
 
 export const GroupRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
-  can_assign_roles_at_start: z.boolean().nullable(),
-  can_assign_roles_during_assessment: z.boolean().nullable(),
-  can_submit_assessment: z.boolean().nullable(),
+  can_assign_roles: z.boolean().nullable(),
   id: IdSchema,
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
@@ -829,3 +828,46 @@ export const AssessmentQuestionRolePermissionsSchema = z.object({
 export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
 >;
+
+export const IssueSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_caused: z.boolean().nullable(),
+  course_data: z.record(z.string(), z.any()).nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString.nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  instructor_message: z.string().nullable(),
+  manually_reported: z.boolean().nullable(),
+  open: z.boolean().nullable(),
+  question_id: IdSchema.nullable(),
+  student_message: z.string().nullable(),
+  system_data: z.record(z.string(), z.any()).nullable(),
+  user_id: IdSchema.nullable(),
+  variant_id: IdSchema.nullable(),
+});
+export type Issue = z.infer<typeof IssueSchema>;
+
+export const AssessmentSetSchema = z.object({
+  abbreviation: z.string().nullable(),
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  heading: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
+
+// Result of grading_job_status sproc
+export const GradingJobStatusSchema = z.enum([
+  'none',
+  'canceled',
+  'queued',
+  'grading',
+  'graded',
+  'requested',
+]);
+export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;

@@ -1,3 +1,4 @@
+//@ts-check
 const ERR = require('async-stacktrace');
 const path = require('path');
 const fs = require('fs');

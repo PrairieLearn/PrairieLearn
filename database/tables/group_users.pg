@@ -1,5 +1,5 @@
 columns
-    group_config_id: bigint
+    group_config_id: bigint not null
     group_id: bigint not null
     id: bigint not null default nextval('group_users_id_seq'::regclass)
     user_id: bigint not null

@@ -103,14 +103,14 @@ export async function after(): Promise<void> {
     debug('after(): stop server');
     await promisify(server.stopServer)();
 
+    debug('after(): close socket server');
+    await socketServer.close();
+
     debug('after(): close load estimators');
     load.close();
 
     debug('after(): stop cron');
     await cron.stop();
-
-    debug('after(): close socket server');
-    await socketServer.close();
 
     debug('after(): close server jobs');
     await serverJobs.stop();

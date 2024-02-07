@@ -49,6 +49,7 @@ SELECT
   -- submissions in the `select_detailed_submissions` query below.
   s.auth_user_id,
   s.broken,
+  s.client_fingerprint_id,
   s.correct,
   s.credit,
   s.date,
@@ -60,7 +61,6 @@ SELECT
   s.id,
   s.mode,
   s.override_score,
-  s.regradable,
   s.score,
   s.v2_score,
   s.variant_id,
@@ -72,11 +72,7 @@ SELECT
   format_date_full_compact (
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
-  CASE
-    WHEN s.grading_requested_at IS NOT NULL THEN format_interval ($req_date - s.grading_requested_at)
-    ELSE NULL
-  END AS elapsed_grading_time
+  ) AS formatted_date
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -188,7 +184,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  to_jsonb(ci) AS course_instance,
   lgj.id AS grading_job_id,
   grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (

@@ -5,6 +5,7 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { OAuth2Client } = require('google-auth-library');
 const { logger } = require('@prairielearn/logger');
+const error = require('@prairielearn/error');
 
 const authnLib = require('../../lib/authn');
 const { config } = require('../../lib/config');
@@ -20,7 +21,7 @@ router.get(
       !config.googleClientSecret ||
       !config.googleRedirectUrl
     ) {
-      throw new Error('Google login is not enabled');
+      throw error.make(404, 'Google login is not enabled');
     }
 
     const code = req.query.code;
@@ -43,11 +44,10 @@ router.get(
         // This is probably a detailed error from the Google API client. We'll
         // pick off the useful bits and attach them to the Sentry scope so that
         // they'll be included with the error event.
-        Sentry.configureScope((scope) => {
-          scope.setContext('OAuth', {
-            code: err.code,
-            data: err.response.data,
-          });
+        const scope = Sentry.getCurrentScope();
+        scope.setContext('OAuth', {
+          code: err.code,
+          data: err.response.data,
         });
       }
       throw err;

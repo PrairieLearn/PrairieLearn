@@ -2,10 +2,10 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "esModuleInterop": true,
-    // Corresponds to Node 16.x, which we currently run on.
+    // Corresponds to Node 20.x, which we currently run on.
     // To check compatibility in the future, see https://node.green/.
-    "lib": ["ES2021"],
-    "target": "ES2021",
+    "lib": ["ES2022"],
+    "target": "ES2022",
     // Checking the types for *all* our dependencies is unnecessarily slow in
     // CI, so we'll only check the types our code actually refers to.
     "skipLibCheck": true
