@@ -30,8 +30,8 @@ BEGIN
     -- first update Homeworks
     updated := FALSE;
     IF assessment_type = 'Homework' THEN
-        SELECT updated INTO updated
-        FROM assessment_instances_update(assessment_instance_id, authn_user_id);
+        SELECT aiu.updated INTO updated
+        FROM assessment_instances_update(assessment_instance_id, authn_user_id) AS aiu;
     END IF;
 
     -- store old points/score_perc
