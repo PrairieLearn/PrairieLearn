@@ -765,7 +765,9 @@ WITH
         NULL::INTEGER AS submission_id,
         gl.id AS log_id,
         NULL::BIGINT AS client_fingerprint_id,
-        jsonb_build_object('user', gu.uid) AS data
+        jsonb_strip_nulls(
+          jsonb_build_object('user', gu.uid, 'roles', gl.roles)
+        ) AS data
       FROM
         assessment_instances AS ai
         JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
