@@ -1,19 +1,10 @@
 -- BLOCK get_requests
 SELECT
-  r.*,
-  CASE
-    WHEN r.approved_status = 'approved' THEN (
-      CASE -- If the request was auto-approved, there wont be an approver
-        WHEN r.approved_by IS NULL THEN 'Automatically approved'
-        ELSE CONCAT('Approved by ', u.name)
-      END
-    )
-    WHEN r.approved_status = 'denied' THEN CONCAT('Denied by ', u.name)
-    ELSE ''
-  END AS details
+  to_json(r.*) AS course_request,
+  to_json(u.*) AS approved_by_user
 FROM
   course_requests AS r
-  LEFT JOIN users as u on r.approved_by = u.user_id
+  LEFT JOIN users AS u ON u.user_id = r.approved_by
 WHERE
   r.user_id = $user_id
 ORDER BY
