@@ -6,9 +6,15 @@
 {{/inline}}
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1">
-            <input class="form-check-input mt-0" type="radio"
-                name="{{name}}" value="{{key}}" {{^editable}}disabled{{/editable}}
-                {{#selected}}checked{{/selected}} id="{{name}}-{{key}}">
+            <input
+                class="form-check-input mt-0"
+                type="radio"
+                name="{{name}}"
+                value="{{key}}"
+                id="{{name}}-{{key}}"
+                {{^editable}}disabled{{/editable}}
+                {{#selected}}checked{{/selected}}
+            >
 
             <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
                 {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
@@ -65,9 +71,13 @@
                 });
         });
     </script>
-    <select name="{{name}}" data-style="btn-outline-secondary"
-            id="pl-multiple-choice-select-{{uuid}}" {{^editable}}disabled{{/editable}}>
-        <option disabled selected value></option>
+    <select
+        name="{{name}}"
+        data-style="btn-outline-secondary"
+        id="pl-multiple-choice-select-{{uuid}}"
+        title="Nothing selected"
+        {{^editable}}disabled{{/editable}}
+    >
         {{#answers}}
             <option {{#selected}}selected{{/selected}}
                 value="{{key}}"
