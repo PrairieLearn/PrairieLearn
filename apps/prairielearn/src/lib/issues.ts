@@ -4,6 +4,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 import { Variant } from './db-types';
 
+const sql = sqldb.loadSqlEquiv(__filename);
+
 interface IssueForErrorData {
   variantId: string;
   studentMessage: string | null;
@@ -96,5 +98,13 @@ export async function writeCourseIssues(
       courseData,
       authnUserId: authn_user_id,
     });
+  });
+}
+
+export async function closeAllIssuesForCourse(course_id: string, authn_user_id: string) {
+  await sqldb.queryAsync(sql.open_close_all_issues_for_course, {
+    course_id,
+    authn_user_id,
+    open: false,
   });
 }

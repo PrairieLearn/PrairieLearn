@@ -68,9 +68,7 @@ export interface GroupRole {
   name: string;
   minimum?: number;
   maximum?: number;
-  canAssignRolesAtStart?: boolean;
-  canAssignRolesDuringAssessment?: boolean;
-  canSubmitAssessment?: boolean;
+  canAssignRoles?: boolean;
 }
 
 interface SEBConfig {

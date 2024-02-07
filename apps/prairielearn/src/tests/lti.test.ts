@@ -39,19 +39,19 @@ describe('LTI', function () {
   });
 
   describe('test LTI callback', function () {
-    it('should throw 500 with an invalid consumer_key', async () => {
+    it('should throw 403 with an invalid consumer_key', async () => {
       const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
-      assert.equal(res.status, 500);
+      assert.equal(res.status, 403);
     });
-    it('should throw 500 with an invalid secret', async () => {
+    it('should throw 403 with an invalid secret', async () => {
       await sqldb.queryAsync(sql.invalid_secret, {});
       const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
-      assert.equal(res.status, 500);
+      assert.equal(res.status, 403);
     });
     it('should throw 400 as a Learner with no LTI link defined', async () => {
       body.oauth_signature = genSignature;
       const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
-      assert.equal(res.status, 400);
+      assert.equal(res.status, 403);
     });
     it('should 302 (redirect) as a Learner with an LTI link created', async () => {
       await sqldb.queryAsync(sql.lti_link, {});

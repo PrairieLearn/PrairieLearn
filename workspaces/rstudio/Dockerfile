@@ -1,4 +1,3 @@
-
 # PrairieLearn RStudio workspace template
 # 20210831 Eric Huber - Initial version
 # 20240123 Eric Huber - Modify service file to provide server-user argument
