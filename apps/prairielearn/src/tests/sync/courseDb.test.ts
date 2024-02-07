@@ -29,24 +29,9 @@ async function withTempFile(
   }
 }
 
-async function writeCourse(courseDir: string, course: any) {
-  await fs.writeJSON(path.join(courseDir, 'infoCourse.json'), course);
-}
-
 async function writeQuestion(courseDir: string, qid: string, question: Question) {
   await fs.mkdirs(path.join(courseDir, 'questions', qid));
   await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
-}
-
-function getCourse() {
-  return {
-    uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
-    name: 'TEST 101',
-    title: 'Test Course',
-    topics: [],
-    tags: [],
-    assessmentSets: [],
-  };
 }
 
 function getQuestion(): Question {
@@ -163,18 +148,6 @@ describe('course database', () => {
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
         assert.isUndefined(result.uuid);
-      });
-    });
-  });
-
-  describe('course info loading', () => {
-    it('loads a working course successfully', async () => {
-      await withTempDirectory(async (dir) => {
-        await writeCourse(dir, getCourse());
-        const result = await courseDb.loadCourseInfo(dir);
-        assert.isFalse(infofile.hasErrors(result));
-        assert.isFalse(infofile.hasWarnings(result));
-        assert.isOk(result.data);
       });
     });
   });

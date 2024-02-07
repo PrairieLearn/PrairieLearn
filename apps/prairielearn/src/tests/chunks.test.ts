@@ -347,7 +347,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
@@ -371,7 +371,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload chunks.
@@ -424,7 +424,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: tempTestCourseDir.path,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Load and unpack chunks
@@ -470,7 +470,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload the chunks
@@ -547,7 +547,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload the chunks
