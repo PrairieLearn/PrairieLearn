@@ -1,4 +1,4 @@
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 import { CourseRequestSchema, UserSchema } from '../../lib/db-types';
@@ -48,63 +48,61 @@ export function RequestCourse({
   `.toString();
 }
 
-function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlSafeString {
+function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
   if (rows.length === 0) {
-    return html``;
-  } else {
-    return html`
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          Course Requests
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped">
-            <thead>
-              <tr>
-                <th>Short Name</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(({ course_request, approved_by_user }) => {
-                let details = '';
-                switch (course_request.approved_status) {
-                  case 'approved':
-                    if (approved_by_user) {
-                      details = `Approved by ${approved_by_user?.name}`;
-                    } else {
-                      details = 'Automatically approved';
-                    }
-                    break;
-                  case 'denied':
-                    details = `Denied by ${approved_by_user?.name}`;
-                    break;
-                }
-
-                return html`
-                  <tr>
-                    <td>${course_request.short_name}</td>
-                    <td>${course_request.title}</td>
-                    <td>
-                      ${renderEjs(__filename, "<%- include('approvalStatusIcon')%>", {
-                        status: course_request.approved_status,
-                      })}
-                    </td>
-                    <td>${details}</td>
-                  </tr>
-                `;
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
+    return '';
   }
+
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">Course Requests</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Short Name</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(({ course_request, approved_by_user }) => {
+              let details = '';
+              switch (course_request.approved_status) {
+                case 'approved':
+                  if (approved_by_user) {
+                    details = `Approved by ${approved_by_user.name}`;
+                  } else {
+                    details = 'Automatically approved';
+                  }
+                  break;
+                case 'denied':
+                  details = `Denied by ${approved_by_user?.name ?? 'unknown'}`;
+                  break;
+              }
+
+              return html`
+                <tr>
+                  <td>${course_request.short_name}</td>
+                  <td>${course_request.title}</td>
+                  <td>
+                    ${renderEjs(__filename, "<%- include('approvalStatusIcon')%>", {
+                      status: course_request.approved_status,
+                    })}
+                  </td>
+                  <td>${details}</td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
-function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlSafeString {
+function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
