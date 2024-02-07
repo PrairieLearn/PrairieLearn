@@ -83,7 +83,7 @@ fi
 #
 # TODO: We can probably undo this change once we're removed R and `rpy2`.
 # TODO: We could also probably remove this when Amazon Linux picks up a newer version of the `gcc` suite.
-ln -s /usr/local/lib/libstdc++.so.6 /usr/lib64/libstdc++.so.6
+ln -sf /usr/local/lib/libstdc++.so.6 /usr/lib64/libstdc++.so.6
 
 # Clear various caches to minimize the final image size.
 dnf clean all
