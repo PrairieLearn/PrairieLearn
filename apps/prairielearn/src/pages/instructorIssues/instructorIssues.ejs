@@ -21,8 +21,15 @@
               <h4 class="modal-title" id="closeMatchingIssuesModalLabel">Close matching issues</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to close <strong><%= rows.length %></strong> matching
-              <%= rows.length === 1 ? 'issue' : 'issues' %>?
+              <p>
+                Are you sure you want to close <strong><%= rows.length %></strong> matching
+                <%= rows.length === 1 ? 'issue' : 'issues' %>?
+              </p>
+              <% if (rows.length < issueCount) { %>
+                <p>
+                  Only the issues visible on the current page will be closed.
+                </p>
+              <% } %>
             </div>
             <div class="modal-footer">
               <form name="close-matching-form" method="POST">

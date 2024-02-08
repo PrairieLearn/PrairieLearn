@@ -12,7 +12,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { closeAllIssuesForCourse } from '../../lib/issues';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -278,8 +277,6 @@ router.post(
         z.number(),
       );
       flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
-    } else if (req.body.__action === 'close_all') {
-      await closeAllIssuesForCourse(res.locals.course.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);

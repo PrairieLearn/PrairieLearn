@@ -116,7 +116,6 @@ export async function init() {
       'assessment_questions_calculate_stats_for_assessment.sql',
       'assessment_questions_calculate_stats.sql',
       'instance_questions_calculate_stats.sql',
-      'issues_select_with_filter.sql',
       'access_tokens_insert.sql',
       'access_tokens_delete.sql',
       'assessment_instances_points.sql',
