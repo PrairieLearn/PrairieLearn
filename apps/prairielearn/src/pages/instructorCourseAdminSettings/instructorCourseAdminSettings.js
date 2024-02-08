@@ -18,7 +18,6 @@ router.get(
       res.locals.needToSync = true;
     } else {
       const jsonExists = await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
-      console.log('jsonExists', jsonExists);
       if (!jsonExists) {
         res.locals.noInfo = true;
       }
