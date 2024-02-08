@@ -569,8 +569,8 @@ async function saveAndSync(fileEdit, locals) {
           // If we're using chunks, then always sync on edit. We need the sync
           // data to force-generate new chunks.
           const result = await syncFromDisk.syncDiskToSqlWithLock(
-            locals.course.path,
             locals.course.id,
+            locals.course.path,
             job,
           );
 
