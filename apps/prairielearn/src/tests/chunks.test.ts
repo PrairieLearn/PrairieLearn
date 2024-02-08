@@ -347,7 +347,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
@@ -365,13 +365,13 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks.
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload chunks.
@@ -424,7 +424,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: tempTestCourseDir.path,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Load and unpack chunks
@@ -464,13 +464,13 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload the chunks
@@ -541,13 +541,13 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
       // Sync course to DB.
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId,
-        courseData: await courseDB.loadFullCourse(courseDir),
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
       });
 
       // Reload the chunks
