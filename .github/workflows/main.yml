@@ -352,3 +352,46 @@ jobs:
       # in those cases.
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
+
+  report-image-sizes:
+    runs-on: ubuntu-latest
+    needs:
+      - build-workspace-images
+      - build-grader-images
+      - build-core-images
+    if: ${{ always() }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: yarn workspaces focus @prairielearn/actions-report-image-sizes
+
+      - name: Build
+        run: yarn build
+        working-directory: packages/actions-report-image-sizes
+
+      - name: Report image sizes
+        uses: ./packages/actions-report-image-sizes
+        with:
+          title: All images
+          sha: ${{ env.COMMIT_SHA }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          images: |
+            prairielearn/workspace-desktop
+            prairielearn/workspace-jupyterlab
+            prairielearn/workspace-jupyterlab-python
+            prairielearn/workspace-rstudio
+            prairielearn/workspace-xtermjs
+            prairielearn/grader-c
+            prairielearn/grader-java
+            prairielearn/grader-python
+            prairielearn/grader-r
+            prairielearn/plbase
+            prairielearn/prairielearn
+            prairielearn/executor

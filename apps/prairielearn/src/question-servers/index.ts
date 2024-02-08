@@ -1,4 +1,4 @@
-import { Question, Course, Variant, Submission, CourseInstance } from '../lib/db-types';
+import { Question, Course, Variant, Submission } from '../lib/db-types';
 
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
@@ -80,7 +80,6 @@ export interface QuestionServer {
     submission: Submission,
     submissions: Submission[],
     course: Course,
-    course_instance: CourseInstance,
     locals: Record<string, any>,
   ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
