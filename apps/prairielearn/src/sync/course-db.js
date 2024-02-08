@@ -762,8 +762,7 @@ export async function loadCourseInfo(courseId, coursePath) {
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
-  // In production environments, check if any features specified in `devModeFeatures`
-  // aren't also enabled for the course. If so,
+  /** @type {string[]} */
   const devModeFeatures = _.get(info, 'options.devModeFeatures', []);
   if (devModeFeatures.length > 0) {
     const institution = await selectInstitutionForCourse({ course_id: courseId });
