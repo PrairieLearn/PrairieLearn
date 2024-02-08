@@ -34,7 +34,7 @@ async function getValidVariant(unsafe_variant_id, instance_question_id) {
   const variant = await selectVariantById(unsafe_variant_id);
   if (!variant || !idsEqual(variant.instance_question_id, instance_question_id)) {
     throw error.make(
-      403,
+      400,
       `Client-provided variant id "${unsafe_variant_id}" does not belong to the authorized instance question "${instance_question_id}"`,
     );
   }
@@ -55,7 +55,7 @@ async function getValidVariant(unsafe_variant_id, instance_question_id) {
  * @returns {string} The validated variant ID
  */
 async function getValidVariantId(req, res) {
-  return (await getValidVariant(req.body.__variant_id, res.locals.instance_question_id)).id;
+  return (await getValidVariant(req.body.__variant_id, res.locals.instance_question.id)).id;
 }
 
 async function processFileUpload(req, res) {
