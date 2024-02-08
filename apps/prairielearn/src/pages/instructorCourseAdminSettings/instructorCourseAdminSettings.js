@@ -2,7 +2,6 @@
 import * as express from 'express';
 import * as path from 'path';
 const asyncHandler = require('express-async-handler');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as fs from 'fs-extra';
 const ERR = require('async-stacktrace');
 import { CourseInfoEditor } from '../../lib/editors';
