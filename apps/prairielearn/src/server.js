@@ -2386,8 +2386,8 @@ if (require.main === module && config.startServer) {
       async () => await assets.init(),
       async () =>
         await cache.init({
-          cacheType: config.cacheType,
-          cacheKeyPrefix: config.cacheKeyPrefix,
+          type: config.cacheType,
+          keyPrefix: config.cacheKeyPrefix,
           redisUrl: config.redisUrl,
         }),
       async () => await freeformServer.init(),

@@ -2,55 +2,57 @@ import { Redis } from 'ioredis';
 import { LRUCache } from 'lru-cache';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
+import assert from 'node:assert';
 
 class Cache {
-  cacheEnabled = false;
-  cacheType = 'none';
+  enabled = false;
+  type = 'none';
   memoryCache?: LRUCache<string, string>;
-  client?: Redis;
-  cacheKeyPrefix = 'prairielearn-cache:';
+  redisClient?: Redis;
+  keyPrefix = 'prairielearn-cache:';
 
   async init(config: {
-    cacheType: 'none' | 'memory' | 'redis';
-    cacheKeyPrefix: string;
+    type: 'none' | 'memory' | 'redis';
+    keyPrefix: string;
     redisUrl?: string | null;
   }) {
-    this.cacheType = config.cacheType;
-    this.cacheKeyPrefix = config.cacheKeyPrefix;
-    if (!this.cacheType || this.cacheType === 'none') {
+    this.type = config.type;
+    this.keyPrefix = config.keyPrefix;
+    if (!this.type || this.type === 'none') {
       // No caching
-      this.cacheEnabled = false;
+      this.enabled = false;
       return;
     }
 
-    if (this.cacheType === 'redis') {
+    if (this.type === 'redis') {
       if (!config.redisUrl) throw new Error('redisUrl not set in config');
-      this.cacheEnabled = true;
-      this.client = new Redis(config.redisUrl);
-      this.client.on('error', (err) => {
+      this.enabled = true;
+      this.redisClient = new Redis(config.redisUrl);
+      this.redisClient.on('error', (err) => {
         logger.error('Redis error', err);
         Sentry.captureException(err);
       });
-    } else if (this.cacheType === 'memory') {
-      this.cacheEnabled = true;
+    } else if (this.type === 'memory') {
+      this.enabled = true;
       this.memoryCache = new LRUCache({
         // The in-memory cache is really only suited for development, so we'll
         // hardcode a relatively low limit here.
         max: 1000,
       });
     } else {
-      throw new Error(`Unknown cache type "${this.cacheType}"`);
+      throw new Error(`Unknown cache type "${this.type}"`);
     }
   }
 
   set(key: string, value: any, maxAgeMS: number) {
-    if (!this.cacheEnabled) return;
+    if (!this.enabled) return;
 
-    const scopedKey = this.cacheKeyPrefix + key;
+    const scopedKey = this.keyPrefix + key;
 
-    switch (this.cacheType) {
+    switch (this.type) {
       case 'memory': {
-        this.memoryCache?.set(scopedKey, JSON.stringify(value), { ttl: maxAgeMS });
+        assert(this.memoryCache, 'Memory cache is enabled but not configured');
+        this.memoryCache.set(scopedKey, JSON.stringify(value), { ttl: maxAgeMS });
         break;
       }
 
@@ -61,8 +63,9 @@ class Cache {
         //
         // We don't log the error because it contains the cached value,
         // which can be huge and which fills up the logs.
-        this.client
-          ?.set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
+        assert(this.redisClient, 'Redis client is enabled but not configured');
+        this.redisClient
+          .set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
           .catch((_err) => logger.error('Cache set error', { key, scopedKey, maxAgeMS }));
         break;
       }
@@ -70,18 +73,20 @@ class Cache {
   }
 
   async del(key: string) {
-    if (!this.cacheEnabled) return;
+    if (!this.enabled) return;
 
-    const scopedKey = this.cacheKeyPrefix + key;
+    const scopedKey = this.keyPrefix + key;
 
-    switch (this.cacheType) {
+    switch (this.type) {
       case 'memory': {
-        this.memoryCache?.delete(scopedKey);
+        assert(this.memoryCache, 'Memory cache is enabled but not configured');
+        this.memoryCache.delete(scopedKey);
         break;
       }
 
       case 'redis': {
-        await this.client?.del(scopedKey);
+        assert(this.redisClient, 'Redis client is enabled but not configured');
+        await this.redisClient.del(scopedKey);
         break;
       }
     }
@@ -91,13 +96,14 @@ class Cache {
    * Returns the value for the corresponding key if it exists in the cache; null otherwise.
    */
   async get(key: string): Promise<any> {
-    if (!this.cacheEnabled) return null;
+    if (!this.enabled) return null;
 
-    const scopedKey = this.cacheKeyPrefix + key;
+    const scopedKey = this.keyPrefix + key;
 
-    switch (this.cacheType) {
+    switch (this.type) {
       case 'memory': {
-        const value = this.memoryCache?.get(scopedKey);
+        assert(this.memoryCache, 'Memory cache is enabled but not configured');
+        const value = this.memoryCache.get(scopedKey);
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
@@ -105,7 +111,8 @@ class Cache {
       }
 
       case 'redis': {
-        const value = await this.client?.get(scopedKey);
+        assert(this.redisClient, 'Redis client is enabled but not configured');
+        const value = await this.redisClient.get(scopedKey);
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
@@ -122,24 +129,25 @@ class Cache {
    * Clear all entries from the cache.
    */
   async reset() {
-    if (!this.cacheEnabled) return;
+    if (!this.enabled) return;
 
-    switch (this.cacheType) {
+    switch (this.type) {
       case 'memory': {
-        this.memoryCache?.clear();
+        assert(this.memoryCache, 'Memory cache is enabled but not configured');
+        this.memoryCache.clear();
         break;
       }
 
       case 'redis': {
         let cursor = '0';
         do {
-          if (!this.client) {
+          if (!this.redisClient) {
             throw new Error('Redis client not initialized');
           }
-          const reply = await this.client.scan(
+          const reply = await this.redisClient.scan(
             cursor,
             'MATCH',
-            `${this.cacheKeyPrefix}*`,
+            `${this.keyPrefix}*`,
             'COUNT',
             1000,
           );
@@ -147,7 +155,8 @@ class Cache {
 
           const keys = reply[1];
           if (keys.length > 0) {
-            await this.client?.del(keys);
+            assert(this.redisClient, 'Redis client is enabled but not configured');
+            await this.redisClient.del(keys);
           }
         } while (cursor !== '0');
         break;
@@ -158,11 +167,12 @@ class Cache {
    * Releases any connections associated with the cache.
    */
   async close() {
-    if (!this.cacheEnabled) return;
-    this.cacheEnabled = false;
+    if (!this.enabled) return;
+    this.enabled = false;
 
-    if (this.cacheType === 'redis') {
-      await this.client?.quit();
+    if (this.type === 'redis') {
+      assert(this.redisClient, 'Redis client is enabled but not configured');
+      await this.redisClient.quit();
     }
   }
 }

@@ -11,8 +11,8 @@ import { cache } from '@prairielearn/cache';
 import { config } from 'lib/config.js';
 
 await cache.init({
-  cacheType: config.cacheType,
-  cacheKeyPrefix: config.cacheKeyPrefix,
+  type: config.cacheType,
+  keyPrefix: config.cacheKeyPrefix,
   redisUrl: config.redisUrl,
 });
 ```
