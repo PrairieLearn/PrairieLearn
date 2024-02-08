@@ -26,7 +26,7 @@ import { cache } from '@prairielearn/cache';
 
 const myCache = new cache();
 
-mychace.init({
+myCache.init({
   cachetype: 'redis',
   cacheKeyPrefix: 'prairielearn-cache2:',
   redisUrl: 'redis://localhost:6379/',
