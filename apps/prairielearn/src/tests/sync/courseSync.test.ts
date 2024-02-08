@@ -3,8 +3,8 @@ import * as util from './util';
 import * as helperDb from '../helperDb';
 import { config } from '../../lib/config';
 import { features } from '../../lib/features';
-import { callOneRowAsync, callRow } from '@prairielearn/postgres';
-import { CourseSchema, IdSchema } from '../../lib/db-types';
+import { callRow } from '@prairielearn/postgres';
+import { IdSchema } from '../../lib/db-types';
 
 describe('Course syncing', () => {
   before('set up testing database', helperDb.before);

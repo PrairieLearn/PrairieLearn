@@ -33,9 +33,8 @@ const perf = makePerformance('sync');
  */
 
 /**
- *
+ * @param {string} courseId
  * @param {string} courseDir
- * @param {any} courseId
  * @param {any} logger
  * @returns Promise<SyncResults>
  */
