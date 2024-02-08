@@ -349,7 +349,7 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
    * A mapping from assessment "TIDs" to a list of questions they import.
    * @type {Map<string, string[]>}
    */
-  const importedQidAssessmentMap = new Map();
+  const assessmentImportedQids = new Map();
 
   Object.entries(assessments).forEach(([tid, assessment]) => {
     if (!assessment.data) return;
@@ -363,10 +363,10 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
           if (qid[0] !== '@') return;
 
           importedQids.add(qid);
-          let qids = importedQidAssessmentMap.get(tid);
+          let qids = assessmentImportedQids.get(tid);
           if (!qids) {
             qids = [];
-            importedQidAssessmentMap.set(tid, qids);
+            assessmentImportedQids.set(tid, qids);
           }
           qids.push(qid);
         });
@@ -386,7 +386,7 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
       institution_id: institutionId,
     });
     if (!questionSharingEnabled && config.checkSharingOnSync) {
-      for (const [tid, qids] of importedQidAssessmentMap.entries()) {
+      for (const [tid, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(
             assessments[tid],
@@ -406,7 +406,7 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
   }
   let missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
   if (config.checkSharingOnSync) {
-    for (const [tid, qids] of importedQidAssessmentMap.entries()) {
+    for (const [tid, qids] of assessmentImportedQids.entries()) {
       const assessmentMissingQids = qids.filter((qid) => missingQids.has(qid));
       if (assessmentMissingQids.length > 0) {
         infofile.addError(
