@@ -154,10 +154,10 @@ function syncDiskToSql(course_id, courseDir, logger, callback) {
  * @param {any} logger
  * @returns {Promise<SyncResults>}
  */
-export function syncDiskToSqlAsync(courseDir, course_id, logger) {
+export function syncDiskToSqlAsync(course_id, courseDir, logger) {
   // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
   // that it'll always result in a non-undefined value if it doesn't error.
-  return promisify(syncDiskToSql)(courseDir, course_id, logger);
+  return promisify(syncDiskToSql)(course_id, courseDir, logger);
 }
 
 /**

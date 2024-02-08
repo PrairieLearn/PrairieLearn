@@ -365,7 +365,7 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks.
       await chunksLib.updateChunksForCourse({
@@ -464,7 +464,7 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
@@ -541,7 +541,7 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
       // Sync course to DB.
-      await syncDiskToSqlAsync(courseDir, courseId, logger);
+      await syncDiskToSqlAsync(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
