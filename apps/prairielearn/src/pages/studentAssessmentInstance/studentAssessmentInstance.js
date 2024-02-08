@@ -197,9 +197,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(
-        error.make(400, `unknown __action: ${req.body.__action}`),
-      );
+      next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

@@ -126,9 +126,7 @@ router.post('/', function (req, res, next) {
     res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else {
-    return next(
-      error.make(400, 'unknown action: ' + res.locals.__action),
-    );
+    return next(error.make(400, 'unknown action: ' + res.locals.__action));
   }
 });
 

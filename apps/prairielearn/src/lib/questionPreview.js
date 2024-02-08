@@ -18,9 +18,7 @@ export function processSubmission(req, res, callback) {
     try {
       postData = JSON.parse(req.body.postData);
     } catch (e) {
-      return callback(
-        error.make(400, 'JSON parse failed on body.postData'),
-      );
+      return callback(error.make(400, 'JSON parse failed on body.postData'));
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -55,9 +53,7 @@ export function processSubmission(req, res, callback) {
           callback(null, submission.variant_id);
         });
       } else {
-        callback(
-          error.make(400, `unknown __action: ${req.body.__action}`),
-        );
+        callback(error.make(400, `unknown __action: ${req.body.__action}`));
       }
     },
   );

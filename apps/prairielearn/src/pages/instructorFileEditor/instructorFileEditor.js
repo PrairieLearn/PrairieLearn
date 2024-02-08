@@ -64,9 +64,7 @@ router.get('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -207,9 +205,7 @@ router.post('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -233,7 +229,10 @@ router.post('/*', (req, res, next) => {
     fileEdit.editHash = getHash(fileEdit.editContents);
     if (fileEdit.editHash === fileEdit.origHash) {
       return next(
-        error.make(400, `attempting to save a file without having made any changes: ${workingPath}`),
+        error.make(
+          400,
+          `attempting to save a file without having made any changes: ${workingPath}`,
+        ),
       );
     }
 
@@ -293,9 +292,7 @@ router.post('/*', (req, res, next) => {
       },
     );
   } else {
-    next(
-      error.make(400, `unknown __action: ${req.body.__action}`),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

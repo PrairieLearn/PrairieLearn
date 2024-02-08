@@ -233,9 +233,7 @@ router.post('/', function (req, res, next) {
       })
       .catch((err) => next(err));
   } else {
-    next(
-      error.make(400, `unknown __action: ${req.body.__action}`),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
