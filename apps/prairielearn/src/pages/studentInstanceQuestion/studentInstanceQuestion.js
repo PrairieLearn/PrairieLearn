@@ -1,3 +1,4 @@
+// @ts-check
 import { promisify } from 'util';
 import * as _ from 'lodash';
 import * as express from 'express';
@@ -28,11 +29,15 @@ const router = express.Router();
  *
  * @param {string} unsafe_variant_id The unsafe variant ID to validate
  * @param {string} instance_question_id The validated instance_question_id to validate against
- * @returns {import('../../lib/db-types').Variant} The validated variant
+ * @returns {Promise<import('../../lib/db-types').Variant>} The validated variant
  */
 async function getValidVariant(unsafe_variant_id, instance_question_id) {
   const variant = await selectVariantById(unsafe_variant_id);
-  if (!variant || !idsEqual(variant.instance_question_id, instance_question_id)) {
+  if (
+    !variant ||
+    !variant.instance_question_id ||
+    !idsEqual(variant.instance_question_id, instance_question_id)
+  ) {
     throw error.make(
       400,
       `Client-provided variant id "${unsafe_variant_id}" does not belong to the authorized instance question "${instance_question_id}"`,
@@ -52,7 +57,7 @@ async function getValidVariant(unsafe_variant_id, instance_question_id) {
  *
  * @param {express.Request} req The request object
  * @param {express.Response} res The response object
- * @returns {string} The validated variant ID
+ * @returns {Promise<string>} The validated variant ID
  */
 async function getValidVariantId(req, res) {
   return (await getValidVariant(req.body.__variant_id, res.locals.instance_question.id)).id;
@@ -258,6 +263,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
+        null, // client_fingerprint_id
       );
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
@@ -309,7 +315,10 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const variant_id = res.locals.assessment.type === 'Exam' ? null : req.query.variant_id;
+    const variant_id =
+      res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
+        ? null
+        : req.query.variant_id;
     await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView(req, res);
