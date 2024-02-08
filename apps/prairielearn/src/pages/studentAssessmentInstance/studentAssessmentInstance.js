@@ -123,7 +123,7 @@ router.post(
       !res.locals.authz_result.authorized_edit &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      throw error.make(403, 'Not authorized', res.locals);
+      throw error.make(403, 'Not authorized');
     }
     if (
       !res.locals.authz_result.authorized_edit &&
@@ -131,7 +131,7 @@ router.post(
         req.body.__action,
       )
     ) {
-      throw error.make(403, 'Action is only permitted to students, not staff', res.locals);
+      throw error.make(403, 'Action is only permitted to students, not staff');
     }
 
     if (req.body.__action === 'attach_file') {
@@ -160,10 +160,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        });
+        throw error.make(400, 'unknown __action');
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstanceAsync(
@@ -201,10 +198,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else {
       next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
+        error.make(400, 'unknown __action'),
       );
     }
   }),

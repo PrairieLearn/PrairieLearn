@@ -54,10 +54,7 @@ router.post('/', function (req, res, next) {
         res.redirect(req.originalUrl);
       } else {
         next(
-          error.make(400, 'unknown __action: ' + req.body.__action, {
-            locals: res.locals,
-            body: req.body,
-          }),
+          error.make(400, 'unknown __action: ' + req.body.__action),
         );
       }
     })

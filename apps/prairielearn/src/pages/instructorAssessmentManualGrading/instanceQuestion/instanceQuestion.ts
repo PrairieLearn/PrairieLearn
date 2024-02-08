@@ -255,10 +255,7 @@ router.post(
         ),
       );
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body,
-      });
+      throw error.make(400, 'unknown __action');
     }
   }),
 );

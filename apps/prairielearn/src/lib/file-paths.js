@@ -66,11 +66,7 @@ export async function questionFilePathAsync(
     };
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
     if (result.rowCount === 0) {
-      throw error.make(
-        500,
-        `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
-        { sql: sql.select_question, params: params },
-      );
+      throw error.make(500, `Could not find template question "${question.template_directory}" from question "${question.directory}"`);
     }
 
     const templateQuestion = result.rows[0];

@@ -23,10 +23,7 @@ router.get('/:filename', function (req, res, next) {
     if (ERR(err, next)) return;
     if (!result.rows[0].access_allowed) {
       return next(
-        error.make(403, 'Access denied', {
-          locals: res.locals,
-          filename: filename,
-        }),
+        error.make(403, 'Access denied'),
       );
     }
 

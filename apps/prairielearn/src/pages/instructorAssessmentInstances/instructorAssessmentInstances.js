@@ -195,9 +195,7 @@ router.post(
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
-      throw error.make(400, 'unknown __action', {
-        body: req.body,
-      });
+      throw error.make(400, 'unknown __action');
     }
   }),
 );
