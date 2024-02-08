@@ -56,7 +56,7 @@ export function processSubmission(req, res, callback) {
         });
       } else {
         callback(
-          error.make(400, 'unknown __action'),
+          error.make(400, `unknown __action: ${req.body.__action}`),
         );
       }
     },

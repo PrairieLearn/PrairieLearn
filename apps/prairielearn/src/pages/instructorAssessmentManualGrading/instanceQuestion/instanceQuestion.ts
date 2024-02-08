@@ -255,7 +255,7 @@ router.post(
         ),
       );
     } else {
-      throw error.make(400, 'unknown __action');
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

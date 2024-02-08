@@ -160,7 +160,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw error.make(400, 'unknown __action');
+        throw error.make(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstanceAsync(
@@ -198,7 +198,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else {
       next(
-        error.make(400, 'unknown __action'),
+        error.make(400, `unknown __action: ${req.body.__action}`),
       );
     }
   }),

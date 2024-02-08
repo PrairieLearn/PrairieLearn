@@ -258,7 +258,7 @@ router.post(
       await closeAllIssuesForCourse(res.locals.course.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action');
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

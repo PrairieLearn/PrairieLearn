@@ -379,7 +379,7 @@ ${given_cp_and_cip.join(',\n')}
       await sqldb.callAsync('course_instance_permissions_delete_all', params);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action');
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

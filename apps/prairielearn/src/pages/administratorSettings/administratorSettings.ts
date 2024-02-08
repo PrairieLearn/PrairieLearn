@@ -40,7 +40,7 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, 'unknown __action');
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

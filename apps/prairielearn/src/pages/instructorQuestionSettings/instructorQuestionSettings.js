@@ -76,7 +76,7 @@ router.post(
         throw new Error('Not supported for externally-graded questions');
       }
     } else {
-      throw error.make(400, 'unknown __action: ' + req.body.__action);
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -234,7 +234,7 @@ router.post('/', function (req, res, next) {
       .catch((err) => next(err));
   } else {
     next(
-      error.make(400, 'unknown __action: ' + req.body.__action),
+      error.make(400, `unknown __action: ${req.body.__action}`),
     );
   }
 });

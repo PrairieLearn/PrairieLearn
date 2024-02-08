@@ -76,7 +76,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
     } else {
-      throw error.make(400, 'unknown __action');
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
 
     res.redirect(req.originalUrl);
