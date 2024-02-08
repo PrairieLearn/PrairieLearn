@@ -16,10 +16,7 @@ module.exports = function (options = { publicEndpoint: false }) {
     asyncHandler(async function (req, res) {
       const filename = req.params[0];
       if (!filename) {
-        throw error.make(400, 'No filename provided within clientFilesQuestion directory', {
-          locals: res.locals,
-          body: req.body,
-        });
+        throw error.make(400, 'No filename provided within clientFilesQuestion directory');
       }
 
       if (options.publicEndpoint) {

@@ -44,18 +44,13 @@ function processSubmission(req, res, callback) {
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
-      return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
+      return callback(error.make(400, 'No postData'));
     }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
     } catch (e) {
-      return callback(
-        error.make(400, 'JSON parse failed on body.postData', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      return callback(error.make(400, 'JSON parse failed on body.postData'));
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -99,12 +94,7 @@ function processSubmission(req, res, callback) {
           },
         );
       } else {
-        callback(
-          error.make(400, 'unknown __action', {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
+        callback(error.make(400, `unknown __action: ${req.body.__action}`));
       }
     },
   );
@@ -112,7 +102,7 @@ function processSubmission(req, res, callback) {
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_result.authorized_edit) {
-    return next(error.make(403, 'Not authorized', res.locals));
+    return next(error.make(403, 'Not authorized'));
   }
 
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
@@ -222,12 +212,7 @@ router.post('/', function (req, res, next) {
       );
     });
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
