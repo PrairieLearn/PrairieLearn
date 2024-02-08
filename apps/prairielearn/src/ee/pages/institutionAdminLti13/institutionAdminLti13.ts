@@ -92,6 +92,7 @@ router.get(
         instance: paramInstance ?? null,
         resLocals: res.locals,
         platform_defaults,
+        canonicalHost: getCanonicalHost(req),
       }),
     );
   }),
@@ -153,10 +154,7 @@ router.post(
         flash('success', `Key ${key.kid} deleted.`);
         return res.redirect(req.originalUrl);
       } else {
-        throw error.make(500, 'error removing key', {
-          locals: res.locals,
-          body: req.body,
-        });
+        throw error.make(500, 'error removing key');
       }
     } else if (req.body.__action === 'update_platform') {
       const url = getCanonicalHost(req);
@@ -220,10 +218,7 @@ router.post(
       flash('success', `Instance deleted.`);
       return res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

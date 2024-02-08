@@ -4,7 +4,7 @@ import * as async from 'async';
 import * as express from 'express';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import QR from 'qrcode-svg';
+const QR = require('qrcode-svg');
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -156,12 +156,7 @@ router.post('/', function (req, res, next) {
       });
     }
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

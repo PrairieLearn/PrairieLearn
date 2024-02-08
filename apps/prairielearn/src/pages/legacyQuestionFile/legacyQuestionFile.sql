@@ -11,12 +11,9 @@ SELECT
       $filename = 'client.js'
       AND (
         type = 'MultipleChoice'
-        OR
-        type = 'Checkbox'
-        OR
-        type = 'MultipleTrueFalse'
-        OR
-        type = 'File'
+        OR type = 'Checkbox'
+        OR type = 'MultipleTrueFalse'
+        OR type = 'File'
       )
     )
   ) AS access_allowed

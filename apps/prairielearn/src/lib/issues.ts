@@ -1,9 +1,10 @@
 import * as async from 'async';
-import { callbackify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 import { Variant } from './db-types';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 interface IssueForErrorData {
   variantId: string;
@@ -83,7 +84,7 @@ export async function insertIssueForError(
  * @param studentMessage - The message to display to the student.
  * @param courseData - Arbitrary data to be associated with the issues.
  */
-export async function writeCourseIssuesAsync(
+export async function writeCourseIssues(
   courseIssues: ErrorMaybeWithData[],
   variant: Variant,
   authn_user_id: string | null,
@@ -99,4 +100,11 @@ export async function writeCourseIssuesAsync(
     });
   });
 }
-export const writeCourseIssues = callbackify(writeCourseIssuesAsync);
+
+export async function closeAllIssuesForCourse(course_id: string, authn_user_id: string) {
+  await sqldb.queryAsync(sql.open_close_all_issues_for_course, {
+    course_id,
+    authn_user_id,
+    open: false,
+  });
+}

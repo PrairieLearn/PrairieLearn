@@ -1,5 +1,21 @@
 # @prairielearn/postgres
 
+## 1.9.1
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+
+## 1.9.0
+
+### Minor Changes
+
+- 3249e13: Add functions for validating sproc calls
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
 ## 1.8.1
 
 ### Patch Changes

@@ -1,19 +1,20 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
+import * as express from 'express';
 const async = require('async');
 
-const { html } = require('@prairielearn/html');
-const { logger } = require('@prairielearn/logger');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { idsEqual } = require('../../lib/id');
-const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from '../../lib/id';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
-const path = require('path');
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
 
 router.get(
   '/',
@@ -99,6 +100,9 @@ router.post(
       const result = await async.reduce(
         [...uids],
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
+        /**
+         * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
+         */
         async (memo, uid) => {
           let result;
           try {
@@ -140,6 +144,9 @@ router.post(
       );
 
       if (result.errors.length > 0) {
+        /**
+         * @type {Error & { info?: string }}
+         */
         const err = error.make(409, 'Failed to grant access to some users');
         err.info = '';
         const given_cp_and_cip = result.given_cp.filter(
@@ -372,12 +379,9 @@ ${given_cp_and_cip.join(',\n')}
       await sqldb.callAsync('course_instance_permissions_delete_all', params);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
-module.exports = router;
+export default router;

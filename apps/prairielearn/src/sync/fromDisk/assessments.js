@@ -122,8 +122,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  let assessmentCanView = assessment?.canView ?? [];
-  let assessmentCanSubmit = assessment?.canSubmit ?? [];
+  let allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
+  let assessmentCanView = assessment?.canView ?? allRoleNames;
+  let assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
@@ -261,15 +262,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     });
   });
 
-  assessmentParams.groupRoles = (assessment.groupRoles ?? []).map((role) => {
-    return {
-      role_name: role.name,
-      minimum: role.minimum,
-      maximum: role.maximum,
-      can_assign_roles_at_start: role.canAssignRolesAtStart,
-      can_assign_roles_during_assessment: role.canAssignRolesDuringAssessment,
-    };
-  });
+  assessmentParams.groupRoles = (assessment.groupRoles ?? []).map((role) => ({
+    role_name: role.name,
+    minimum: role.minimum,
+    maximum: role.maximum,
+    can_assign_roles: role.canAssignRoles,
+  }));
 
   // Needed when deleting unused alternative groups
   assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;

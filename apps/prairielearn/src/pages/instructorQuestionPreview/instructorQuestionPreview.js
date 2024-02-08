@@ -4,8 +4,11 @@ const express = require('express');
 const async = require('async');
 const path = require('path');
 const { callbackify } = require('util');
+const asyncHandler = require('express-async-handler');
+
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
+
 const {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -64,44 +67,36 @@ router.post('/', function (req, res, next) {
       );
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  renderPanelsForSubmission(
-    req.params.submission_id,
-    res.locals.question.id,
-    null, // instance_question_id,
-    req.params.variant_id,
-    res.locals.urlPrefix,
-    null, // questionContext
-    null, // csrfToken
-    null, // authorizedEdit
-    false, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, next)) return;
-      res.send({ submissionPanel: results.submissionPanel });
-    },
-  );
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    const { submissionPanel } = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: null,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);
   async.series(
     [
-      (callback) => {
+      async () => {
         // req.query.variant_id might be undefined, which will generate a new variant
-        getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await getAndRenderVariant(req.query.variant_id, variant_seed, res.locals);
       },
       (callback) => {
         logPageView(req, res, (err) => {

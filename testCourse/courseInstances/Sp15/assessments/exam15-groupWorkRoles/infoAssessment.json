@@ -3,20 +3,20 @@
   "type": "Exam",
   "title": "Group Activity Exam with Roles",
   "set": "Exam",
-  "number": "14",
+  "number": "15",
   "groupWork": true,
   "groupMaxSize": 4,
   "groupMinSize": 2,
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true,
+  "shuffleQuestions": false,
   "groupRoles": [
       {
           "name": "Manager",
           "minimum": 1,
           "maximum": 1,
-          "canAssignRolesAtStart": true,
-          "canAssignRolesDuringAssessment": true
+          "canAssignRoles": true
       },
       {
           "name": "Recorder",
@@ -38,19 +38,15 @@
       "credit": 100
     }
   ],
+  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "zones": [
     {
+      "canSubmit": ["Recorder"],
       "title": "Hard questions",
       "questions": [
-        {
-          "id": "addVectors", "points": [10, 5, 1],
-          "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-          "canSubmit": ["Recorder"]
-        },
-        { "id": "positionTimeGraph", "points": [10], 
-          "canView": ["Reflector"],
-          "canSubmit": ["Reflector"]
-       }
+          {"id": "demo/demoNewton-page1",          "points": 1},
+          {"id": "demo/demoNewton-page2",        "points": 1, "canView": ["Recorder"]},
+          {"id": "addNumbers",        "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"]}
       ]
     }
   ]

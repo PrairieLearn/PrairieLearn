@@ -14,6 +14,8 @@ import * as schemas from '../schemas';
 import * as infofile from './infofile';
 import { validateJSON } from '../lib/json-load';
 import { makePerformance } from './performance';
+import { selectInstitutionForCourse } from '../models/institution';
+import { features } from '../lib/features';
 
 const perf = makePerformance('course-db');
 
@@ -331,8 +333,7 @@ const FILE_UUID_REGEX =
  * @property {string} name
  * @property {number} minimum
  * @property {number} maximum
- * @property {boolean} canAssignRolesAtStart
- * @property {boolean} canAssignRolesDuringAssessment
+ * @property {boolean} canAssignRoles
  */
 
 /**
@@ -426,11 +427,12 @@ const FILE_UUID_REGEX =
  */
 
 /**
+ * @param {string} courseId
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-export async function loadFullCourse(courseDir) {
-  const courseInfo = await loadCourseInfo(courseDir);
+export async function loadFullCourse(courseId, courseDir) {
+  const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
   perf.end('loadQuestions');
@@ -681,10 +683,11 @@ export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissi
 }
 
 /**
+ * @param {string} courseId
  * @param {string} coursePath
  * @returns {Promise<InfoFile<Course>>}
  */
-export async function loadCourseInfo(coursePath) {
+export async function loadCourseInfo(courseId, coursePath) {
   /** @type {import('./infofile').InfoFile<Course> | null} */
   const maybeNullLoadedData = await loadInfoFile({
     coursePath,
@@ -759,6 +762,32 @@ export async function loadCourseInfo(coursePath) {
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
+  /** @type {string[]} */
+  const devModeFeatures = _.get(info, 'options.devModeFeatures', []);
+  if (devModeFeatures.length > 0) {
+    const institution = await selectInstitutionForCourse({ course_id: courseId });
+
+    for (const feature of new Set(devModeFeatures)) {
+      // Check if the feature even exists.
+      if (!features.hasFeature(feature)) {
+        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+        continue;
+      }
+
+      // If we're in dev mode, any feature is allowed.
+      if (config.devMode) continue;
+
+      // If the feature exists, check if it's granted to the course and warn if not.
+      const featureEnabled = await features.enabled(feature, {
+        institution_id: institution.id,
+        course_id: courseId,
+      });
+      if (!featureEnabled) {
+        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+      }
+    }
+  }
+
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
     info.title === 'Example Course' &&
@@ -777,6 +806,7 @@ export async function loadCourseInfo(coursePath) {
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      devModeFeatures,
     },
   };
 
@@ -1030,10 +1060,10 @@ async function validateQuestion(question) {
 
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
-      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
       warnings.push(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
+      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
     }
   }
 
@@ -1225,28 +1255,13 @@ async function validateAssessment(assessment, questions) {
   }
 
   if (assessment.groupRoles) {
-    // Ensure at least one role can assign roles before and during an assessment
-    let foundCanAssignRolesAtStart = false;
-    let foundCanAssignRolesDuringAssessment = false;
+    // Ensure at least one mandatory role can assign roles
+    let foundCanAssignRoles = assessment.groupRoles.some(
+      (role) => role.canAssignRoles && role.minimum >= 1,
+    );
 
-    assessment.groupRoles.forEach((role) => {
-      if (role.canAssignRolesAtStart && role.minimum >= 1) {
-        foundCanAssignRolesAtStart = true;
-      }
-      if (role.canAssignRolesDuringAssessment && role.minimum >= 1) {
-        foundCanAssignRolesDuringAssessment = true;
-      }
-    });
-
-    if (!foundCanAssignRolesAtStart) {
-      errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".',
-      );
-    }
-    if (!foundCanAssignRolesDuringAssessment) {
-      errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".',
-      );
+    if (!foundCanAssignRoles) {
+      errors.push('Could not find a role with minimum >= 1 and "canAssignRoles" set to "true".');
     }
 
     // Ensure values for role minimum and maximum are within bounds

@@ -1,32 +1,29 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
-const async = require('async');
-const error = require('@prairielearn/error');
-const { startTestQuestion } = require('../../lib/question-testing');
-const sqldb = require('@prairielearn/postgres');
-const path = require('path');
+import * as express from 'express';
+import * as async from 'async';
+import * as error from '@prairielearn/error';
+import { startTestQuestion } from '../../lib/question-testing';
+import * as sqldb from '@prairielearn/postgres';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { logger } = require('@prairielearn/logger');
-const {
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
-} = require('../../lib/editors');
-const { config } = require('../../lib/config');
+import { logger } from '@prairielearn/logger';
+import { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } from '../../lib/editors';
+import { config } from '../../lib/config';
+import { encodePath } from '../../lib/uri-util';
+import { idsEqual } from '../../lib/id';
+import { generateSignedToken } from '@prairielearn/signed-token';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question';
+import { callbackify } from 'node:util';
+import { flash } from '@prairielearn/flash';
+import { features } from '../../lib/features/index';
+import { getCanonicalHost } from '../../lib/url';
+import { isEnterprise } from '../../lib/license';
+import { selectCoursesWithEditAccess } from '../../models/course';
+
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-const { encodePath } = require('../../lib/uri-util');
-const { idsEqual } = require('../../lib/id');
-const { generateSignedToken } = require('@prairielearn/signed-token');
-const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
-const { callbackify } = require('node:util');
-const { flash } = require('@prairielearn/flash');
-const { features } = require('../../lib/features/index');
-const { getCanonicalHost } = require('../../lib/url');
-const { isEnterprise } = require('../../lib/license');
-const { selectCoursesWithEditAccess } = require('../../models/course');
 
 router.post(
   '/test',
@@ -79,10 +76,7 @@ router.post(
         throw new Error('Not supported for externally-graded questions');
       }
     } else {
-      throw error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -239,12 +233,7 @@ router.post('/', function (req, res, next) {
       })
       .catch((err) => next(err));
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
@@ -344,4 +333,4 @@ router.get('/', function (req, res, next) {
   );
 });
 
-module.exports = router;
+export default router;

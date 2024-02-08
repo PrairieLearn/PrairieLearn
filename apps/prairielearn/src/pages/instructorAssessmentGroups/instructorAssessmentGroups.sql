@@ -35,7 +35,7 @@ SELECT
   ag.id AS group_id,
   ag.name,
   COALESCE(agu.size, 0) AS size,
-  COALESCE(agu.uid_list, ARRAY[]::TEXT[]) AS uid_list
+  COALESCE(agu.uid_list, ARRAY[]::TEXT []) AS uid_list
 FROM
   assessment_groups AS ag
   LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)

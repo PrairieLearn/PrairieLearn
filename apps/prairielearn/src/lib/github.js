@@ -286,7 +286,7 @@ export async function createCourseRepoJob(options, authn_user) {
     });
 
     job.info('Sync git repository to database');
-    const sync_result = await syncDiskToSqlAsync(inserted_course.path, inserted_course.id, job);
+    const sync_result = await syncDiskToSqlAsync(inserted_course.id, inserted_course.path, job);
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {

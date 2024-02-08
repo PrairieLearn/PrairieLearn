@@ -368,9 +368,11 @@ def render(element_html, data):
                 else:
                     counter = f"{get_counter(student_answer + 1, counter_type)}. "
                 statement_html = {
-                    "option": "[blank]"
-                    if student_answer == -1
-                    else display_options[student_answer]["html"],
+                    "option": (
+                        "[blank]"
+                        if student_answer == -1
+                        else display_options[student_answer]["html"]
+                    ),
                     "counter": counter,
                     "disabled": "disabled",
                     "display_score_badge": display_score_badge,
