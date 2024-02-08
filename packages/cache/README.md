@@ -4,7 +4,7 @@ Utilities to help connect to and store information in a cache. This package _doe
 
 ## Usage
 
-First, you will need to initialize the library with the cache type that you are intending to use, a prefix that will be the start of all of your cache keys, and optionally, a redis server URL if that is the cach type being used:
+First, you will need to initialize the library with the cache type that you are intending to use, a prefix that will be the start of all of your cache keys, and optionally, a redis server URL if that is the cache type being used:
 
 ```ts
 import { cache } from '@prairielearn/cache';
