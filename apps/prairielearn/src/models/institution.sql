@@ -1,3 +1,12 @@
+-- BLOCK select_institution_for_course
+SELECT
+  i.*
+FROM
+  institutions AS i
+  JOIN pl_courses AS c ON (c.institution_id = i.id)
+WHERE
+  c.id = $course_id;
+
 -- BLOCK select_institution_for_course_instance
 SELECT
   i.*

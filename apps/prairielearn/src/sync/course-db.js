@@ -14,6 +14,8 @@ import * as schemas from '../schemas';
 import * as infofile from './infofile';
 import { validateJSON } from '../lib/json-load';
 import { makePerformance } from './performance';
+import { selectInstitutionForCourse } from '../models/institution';
+import { features } from '../lib/features';
 
 const perf = makePerformance('course-db');
 
@@ -425,11 +427,12 @@ const FILE_UUID_REGEX =
  */
 
 /**
+ * @param {string} courseId
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-export async function loadFullCourse(courseDir) {
-  const courseInfo = await loadCourseInfo(courseDir);
+export async function loadFullCourse(courseId, courseDir) {
+  const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
   perf.end('loadQuestions');
@@ -680,10 +683,11 @@ export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissi
 }
 
 /**
+ * @param {string} courseId
  * @param {string} coursePath
  * @returns {Promise<InfoFile<Course>>}
  */
-export async function loadCourseInfo(coursePath) {
+export async function loadCourseInfo(courseId, coursePath) {
   /** @type {import('./infofile').InfoFile<Course> | null} */
   const maybeNullLoadedData = await loadInfoFile({
     coursePath,
@@ -758,6 +762,32 @@ export async function loadCourseInfo(coursePath) {
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
+  /** @type {string[]} */
+  const devModeFeatures = _.get(info, 'options.devModeFeatures', []);
+  if (devModeFeatures.length > 0) {
+    const institution = await selectInstitutionForCourse({ course_id: courseId });
+
+    for (const feature of new Set(devModeFeatures)) {
+      // Check if the feature even exists.
+      if (!features.hasFeature(feature)) {
+        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+        continue;
+      }
+
+      // If we're in dev mode, any feature is allowed.
+      if (config.devMode) continue;
+
+      // If the feature exists, check if it's granted to the course and warn if not.
+      const featureEnabled = await features.enabled(feature, {
+        institution_id: institution.id,
+        course_id: courseId,
+      });
+      if (!featureEnabled) {
+        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+      }
+    }
+  }
+
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
     info.title === 'Example Course' &&
@@ -776,6 +806,7 @@ export async function loadCourseInfo(coursePath) {
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      devModeFeatures,
     },
   };
 
