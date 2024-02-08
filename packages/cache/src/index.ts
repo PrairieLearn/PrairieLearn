@@ -9,7 +9,7 @@ class Cache {
   type = 'none';
   memoryCache?: LRUCache<string, string>;
   redisClient?: Redis;
-  keyPrefix = 'prairielearn-cache:';
+  keyPrefix = '';
 
   async init(config: {
     type: 'none' | 'memory' | 'redis';
@@ -141,9 +141,7 @@ class Cache {
       case 'redis': {
         let cursor = '0';
         do {
-          if (!this.redisClient) {
-            throw new Error('Redis client not initialized');
-          }
+          assert(this.redisClient, 'Redis client is enabled but not configured');
           const reply = await this.redisClient.scan(
             cursor,
             'MATCH',
