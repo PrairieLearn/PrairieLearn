@@ -73,15 +73,17 @@
     </script>
     <select
         name="{{name}}"
-        data-style="btn-outline-secondary"
+        data-style="btn-light border border-secondary"
         id="pl-multiple-choice-select-{{uuid}}"
         title="Nothing selected"
         {{^editable}}disabled{{/editable}}
     >
         {{#answers}}
-            <option {{#selected}}selected{{/selected}}
+            <option
                 value="{{key}}"
-                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"></option>
+                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"
+                {{#selected}}selected{{/selected}}
+            ></option>
         {{/answers}}
     </select>
 
