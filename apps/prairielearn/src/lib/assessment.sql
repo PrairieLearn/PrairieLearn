@@ -1071,16 +1071,14 @@ FROM
 WHERE
   aq.id = $assessment_question_id;
 
--- BLOCK select_and_lock_assessment_questions
+-- BLOCK select_assessment_questions
 SELECT
   aq.id
 FROM
   assessment_questions AS aq
 WHERE
   aq.assessment_id = $assessment_id
-  AND aq.deleted_at IS NULL
-FOR NO KEY UPDATE OF
-  aq;
+  AND aq.deleted_at IS NULL;
 
 -- BLOCK update_assessment_stats_last_updated
 UPDATE assessments AS a

@@ -447,7 +447,7 @@ export async function updateAssessmentQuestionStatsForAssessment(
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const assessment_questions = await sqldb.queryRows(
-      sql.select_and_lock_assessment_questions,
+      sql.select_assessment_questions,
       { assessment_id },
       IdSchema,
     );
