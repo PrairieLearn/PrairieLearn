@@ -13,23 +13,14 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    try {
-      await fs.access(res.locals.course.path);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        res.locals.needToSync = true;
-      } else {
-        throw new Error(err);
-      }
-    }
-
-    try {
-      await fs.access(path.join(res.locals.course.path, 'infoCourse.json'));
-    } catch (err) {
-      if (err.code === 'ENOENT') {
+    const pathExists = await fs.pathExists(res.locals.course.path);
+    if (!pathExists) {
+      res.locals.needToSync = true;
+    } else {
+      const jsonExists = await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
+      console.log('jsonExists', jsonExists);
+      if (!jsonExists) {
         res.locals.noInfo = true;
-      } else {
-        throw new Error(err);
       }
     }
 
