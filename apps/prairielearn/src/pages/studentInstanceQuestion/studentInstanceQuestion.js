@@ -263,7 +263,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
-        null, // client_fingerprint_id
+        res.locals.client_fingerprint_id,
       );
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
