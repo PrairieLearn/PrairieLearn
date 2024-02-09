@@ -45,15 +45,14 @@ function doTest(issuesUrl: string, label: string) {
         .attr('value');
       assert(typeof variantId === 'string');
 
-      const form = {
-        __action: 'report_issue',
-        __csrf_token: csrfToken,
-        description: 'Something bad happened',
-        __variant_id: variantId,
-      };
       res = await fetch(questionUrl, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams({
+          __action: 'report_issue',
+          __csrf_token: csrfToken,
+          __variant_id: variantId,
+          description: 'Something bad happened',
+        }),
       });
       $ = cheerio.load(await res.text());
 
@@ -61,20 +60,28 @@ function doTest(issuesUrl: string, label: string) {
       assert.equal(result.rowCount, 1, 'Expected one open issue');
     });
 
-    step('should close question', async () => {
+    step('should close all matching issues', async () => {
       let res = await fetch(issuesUrl);
       let $ = cheerio.load(await res.text());
 
-      const csrfToken = $('div[id="closeAllIssuesModal"] input[name="__csrf_token"]')
+      const csrfToken = $('div#closeMatchingIssuesModal input[name="__csrf_token"]')
         .first()
         .attr('value');
       assert(typeof csrfToken === 'string');
 
-      const form = {
-        __action: 'close_all',
-        __csrf_token: csrfToken,
-      };
-      res = await fetch(issuesUrl, { method: 'POST', body: new URLSearchParams(form) });
+      const issueIds = $('div#closeMatchingIssuesModal input[name="unsafe_issue_ids"]')
+        .first()
+        .attr('value');
+      assert(typeof issueIds === 'string');
+
+      res = await fetch(issuesUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'close_matching',
+          __csrf_token: csrfToken,
+          unsafe_issue_ids: issueIds,
+        }),
+      });
       $ = cheerio.load(await res.text());
 
       const result = await sqldb.queryAsync(sql.select_open_issues, []);
