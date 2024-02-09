@@ -22,14 +22,9 @@
             </div>
             <div class="modal-body">
               <p>
-                Are you sure you want to close <strong><%= rows.length %></strong> matching
-                <%= rows.length === 1 ? 'issue' : 'issues' %>?
+                Are you sure you want to close the <strong><%= openFilteredIssuesCount %></strong> open
+                <%= openFilteredIssuesCount === 1 ? 'issue' : 'issues' %> visible on the current page?
               </p>
-              <% if (rows.length < issueCount) { %>
-                <p>
-                  Only the issues visible on the current page will be closed.
-                </p>
-              <% } %>
             </div>
             <div class="modal-footer">
               <form name="close-matching-form" method="POST">
@@ -127,7 +122,7 @@
                 </a>
               </small>
             </div>
-            <% if (authz_data.has_course_permission_edit && anyFilteredIssuesOpen) { %>
+            <% if (authz_data.has_course_permission_edit && openFilteredIssuesCount > 0) { %>
             <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeMatchingIssuesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
             </button>

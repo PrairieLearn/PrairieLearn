@@ -231,7 +231,10 @@ router.get(
     res.locals.filterQuery = req.query.q;
     res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
     res.locals.filters = filters;
-    res.locals.anyFilteredIssuesOpen = issues.rows.some((row) => row.open);
+    res.locals.openFilteredIssuesCount = issues.rows.reduce(
+      (acc, row) => (row.open ? acc + 1 : acc),
+      0,
+    );
 
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
