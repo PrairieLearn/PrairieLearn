@@ -2,7 +2,7 @@
 import * as async from 'async';
 import * as path from 'path';
 import * as ejs from 'ejs';
-import { differenceInMilliseconds, parseISO } from 'date-fns';
+import { differenceInMilliseconds } from 'date-fns';
 import * as util from 'util';
 import { z } from 'zod';
 
@@ -534,31 +534,35 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   }
 }
 
+/**
+ * @param {import('./db-types').GradingJob | null} job
+ */
 function buildGradingJobStats(job) {
   if (job) {
-    const phases = [];
-    const totalDuration = differenceInMilliseconds(
-      parseISO(job.graded_at),
-      parseISO(job.grading_requested_at),
-    );
+    /** @type {(number | null)[]} */
+    const durations = [];
     const formatDiff = (start, end, addToPhases = true) => {
-      const duration = differenceInMilliseconds(parseISO(end), parseISO(start));
-      if (addToPhases) {
-        const percentage = duration / totalDuration;
-        // Round down to avoid width being greater than 100% with floating point errors
-        phases.push(Math.floor(percentage * 1000) / 10);
-      }
-      return (duration / 1000).toFixed(3).replace(/\.?0+$/, '');
+      const duration = end == null || start == null ? null : differenceInMilliseconds(end, start);
+      if (addToPhases) durations.push(duration);
+      return duration == null ? '\u2212' : (duration / 1000).toFixed(3).replace(/\.?0+$/, '') + 's';
     };
 
-    return {
+    const stats = {
       submitDuration: formatDiff(job.grading_requested_at, job.grading_submitted_at),
       queueDuration: formatDiff(job.grading_submitted_at, job.grading_received_at),
       prepareDuration: formatDiff(job.grading_received_at, job.grading_started_at),
       runDuration: formatDiff(job.grading_started_at, job.grading_finished_at),
       reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
       totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
-      phases,
+    };
+    const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
+
+    return {
+      ...stats,
+      phases: durations.map(
+        // Round down to avoid width being greater than 100% with floating point errors
+        (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
+      ),
     };
   }
 
