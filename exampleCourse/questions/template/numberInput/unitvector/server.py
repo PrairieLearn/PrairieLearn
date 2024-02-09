@@ -35,5 +35,3 @@ def generate(data):
     data["correct_answers"]["ix"] = ix
     data["correct_answers"]["iy"] = iy
     data["correct_answers"]["iz"] = iz
-
-    return data

@@ -38,5 +38,3 @@ def generate(data):
     data["params"]["option"] = option
 
     data["correct_answers"]["taumax"] = taumax
-
-    return data

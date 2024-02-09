@@ -22,5 +22,3 @@ def generate(data):
     data["correct_answers"]["MB"] = MB
     data["correct_answers"]["FE"] = FE
     data["correct_answers"]["ME"] = ME
-
-    return data

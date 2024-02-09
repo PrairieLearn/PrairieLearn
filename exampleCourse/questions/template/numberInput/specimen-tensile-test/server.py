@@ -36,5 +36,3 @@ def generate(data):
     data["correct_answers"]["E"] = E
     data["correct_answers"]["nu"] = nu
     data["correct_answers"]["deltad"] = deltad
-
-    return data
