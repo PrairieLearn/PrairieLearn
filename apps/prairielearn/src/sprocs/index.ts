@@ -105,7 +105,6 @@ export async function init() {
       'issues_update_open.sql',
       'variants_lock.sql',
       'variants_select.sql',
-      'variants_ensure_question.sql',
       'variants_insert.sql',
       'variants_select_submission_for_grading.sql',
       'variants_update_after_grading.sql',
