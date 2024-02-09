@@ -22,11 +22,18 @@ def generate(data):
     h = round(v0y * t + 0.5 * g * t**2, 1)
 
     # computing distractors
-    distractors = [round(math.sqrt(2 * h / g), 3), round(d / v0, 3), round(d / v0y, 3), round(h / v0y, 3)]
+    distractors = [
+        round(math.sqrt(2 * h / g), 3),
+        round(d / v0, 3),
+        round(d / v0y, 3),
+        round(h / v0y, 3),
+    ]
     final_distractors = list(set(distractors))
     n = len(final_distractors)
     if n < 4:
-        final_distractors = final_distractors + [round(random.randint(111,999)/1000,3) for _ in range(4-n)]
+        final_distractors = final_distractors + [
+            round(random.randint(111, 999) / 1000, 3) for _ in range(4 - n)
+        ]
 
     # storing the parameters
     data["params"]["m"] = m
