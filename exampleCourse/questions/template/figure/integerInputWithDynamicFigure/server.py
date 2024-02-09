@@ -4,50 +4,54 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams.update({"font.size": 30})
-
 
 def generate(data):
-    # p = 1: the figure is a diamond
-    # p = 2: the figure is a circle
-    p = random.choice([1, 2])
-    data["params"]["p"] = p
-    # define the desired dimension of the figure
-    d = random.choice([1, 2, 3])
-    data["params"]["d"] = d
+    # Select a random shape.
+    shape = random.choice(["diamond", "circle"])
+    data["params"]["shape"] = shape
 
-    if p == 1:
-        data["params"]["dname"] = "diamond diagonal"
+    # Select a random radius.
+    radius = random.choice([1, 2, 3])
+    data["params"]["radius"] = radius
+
+    # Provide a label for the dimension.
+    if shape == "diamond":
+        data["params"]["dimension_name"] = "diamond diagonal"
     else:
-        data["params"]["dname"] = "circle diameter"
+        data["params"]["dimension_name"] = "circle diameter"
 
-    data["correct_answers"]["dim"] = 2 * d
+    # Compute the correct answer.
+    data["correct_answers"]["dimension"] = 2 * radius
 
 
-# The function 'file(data)' is used to generate the figure dynamically,
-# given data defined in the 'generate' function
 def file(data):
     # This creates a dynamic figure (either a circle or diamond)
-    # depending on the parameters d and p defined in the 'generate' function
-    if data["filename"] == "figure0.png":
-        d = data["params"]["d"]
-        p = data["params"]["p"]
+    # depending on the parameters defined in the `generate` function.
+    if data["filename"] == "shape.png":
+        shape = data["params"]["shape"]
+        radius = data["params"]["radius"]
 
-        phi = np.linspace(0, 2 * np.pi, 500)
-        x = np.cos(phi)
-        y = np.sin(phi)
-        r = np.zeros(len(x))
-
-        for i in range(len(x)):
-            r[i] = np.linalg.norm([x[i], y[i]], p)
-
+        # Set up a figure.
+        plt.rcParams.update({"font.size": 30})
         plt.figure(figsize=(10, 10))
-        plt.plot(d * x / r, d * y / r, "o")
         plt.grid()
         plt.xlim([-4, 4])
         plt.ylim([-4, 4])
 
-    # Save the figure and return it as a buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    return buf
+        if shape == "circle":
+            # Compute a set of points to plot a circle.
+            phi = np.linspace(0, 2 * np.pi, 500)
+            x = radius * np.cos(phi)
+            y = radius * np.sin(phi)
+        else:
+            # Compute a set of points to plot a diamond.
+            x = [0, radius, 0, -radius, 0]
+            y = [radius, 0, -radius, 0, radius]
+
+        # Plot the points.
+        plt.plot(x, y, "-", linewidth=6)
+
+        # Return the figure as a file-like object.
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png")
+        return buf

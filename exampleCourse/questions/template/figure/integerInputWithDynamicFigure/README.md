@@ -1,1 +1,1 @@
-This question generates an image dynamically, either a diamond or a circle, and students need to submit the diagonal or diameter of the image.
+This question selects a random shape (either a diamond or a circle) and asks students to submit the diagonal or diameter of the shape. The shape is drawn dynamically with Matplotlib via the `file()` function in `server.py` and is displayed with the `<pl-figure>` element.
