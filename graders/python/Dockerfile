@@ -1,4 +1,4 @@
-FROM amazonlinux:2
+FROM amazonlinux:2023
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8

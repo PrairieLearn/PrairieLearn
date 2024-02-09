@@ -33,18 +33,17 @@ const perf = makePerformance('sync');
  */
 
 /**
- *
+ * @param {string} courseId
  * @param {string} courseDir
- * @param {any} courseId
  * @param {any} logger
  * @returns Promise<SyncResults>
  */
-export async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+export async function syncDiskToSqlWithLock(courseId, courseDir, logger) {
   logger.info('Loading info.json files from course repository');
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir),
+    courseDB.loadFullCourse(courseId, courseDir),
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
@@ -110,24 +109,24 @@ export async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
 }
 
 /**
+ * @param {string} course_id
  * @param {string} courseDir
- * @param {any} course_id
  * @param {any} logger
  * @param {(err: Error | null, result: SyncResults) => void} callback
  */
-function _syncDiskToSqlWithLock(courseDir, course_id, logger, callback) {
+function _syncDiskToSqlWithLock(course_id, courseDir, logger, callback) {
   callbackify(async () => {
-    return await syncDiskToSqlWithLock(courseDir, course_id, logger);
+    return await syncDiskToSqlWithLock(course_id, courseDir, logger);
   })(callback);
 }
 
 /**
- * @param {string} courseDir
  * @param {string} course_id
+ * @param {string} courseDir
  * @param {any} logger
  * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
-function syncDiskToSql(courseDir, course_id, logger, callback) {
+function syncDiskToSql(course_id, courseDir, logger, callback) {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
   namedLocks.tryLock(lockName, (err, lock) => {
@@ -137,7 +136,7 @@ function syncDiskToSql(courseDir, course_id, logger, callback) {
       callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
     } else {
       logger.verbose(chalkDim(`Acquired lock ${lockName}`));
-      _syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
+      _syncDiskToSqlWithLock(course_id, courseDir, logger, (err, result) => {
         namedLocks.releaseLock(lock, (lockErr) => {
           if (ERR(lockErr, callback)) return;
           if (ERR(err, callback)) return;
@@ -155,10 +154,10 @@ function syncDiskToSql(courseDir, course_id, logger, callback) {
  * @param {any} logger
  * @returns {Promise<SyncResults>}
  */
-export function syncDiskToSqlAsync(courseDir, course_id, logger) {
+export function syncDiskToSqlAsync(course_id, courseDir, logger) {
   // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
   // that it'll always result in a non-undefined value if it doesn't error.
-  return promisify(syncDiskToSql)(courseDir, course_id, logger);
+  return promisify(syncDiskToSql)(course_id, courseDir, logger);
 }
 
 /**
@@ -170,7 +169,7 @@ export function syncOrCreateDiskToSql(courseDir, logger, callback) {
   sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
     if (ERR(err, callback)) return;
     const course_id = result.rows[0].course_id;
-    syncDiskToSql(courseDir, course_id, logger, function (err, result) {
+    syncDiskToSql(course_id, courseDir, logger, function (err, result) {
       if (ERR(err, callback)) return;
       callback(null, result);
     });

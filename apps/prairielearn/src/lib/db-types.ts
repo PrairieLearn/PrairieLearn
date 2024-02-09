@@ -828,3 +828,46 @@ export const AssessmentQuestionRolePermissionsSchema = z.object({
 export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
 >;
+
+export const IssueSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_caused: z.boolean().nullable(),
+  course_data: z.record(z.string(), z.any()).nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString.nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  instructor_message: z.string().nullable(),
+  manually_reported: z.boolean().nullable(),
+  open: z.boolean().nullable(),
+  question_id: IdSchema.nullable(),
+  student_message: z.string().nullable(),
+  system_data: z.record(z.string(), z.any()).nullable(),
+  user_id: IdSchema.nullable(),
+  variant_id: IdSchema.nullable(),
+});
+export type Issue = z.infer<typeof IssueSchema>;
+
+export const AssessmentSetSchema = z.object({
+  abbreviation: z.string().nullable(),
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  heading: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
+
+// Result of grading_job_status sproc
+export const GradingJobStatusSchema = z.enum([
+  'none',
+  'canceled',
+  'queued',
+  'grading',
+  'graded',
+  'requested',
+]);
+export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;

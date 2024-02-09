@@ -11,7 +11,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
-from lxml import etree
+from lxml.etree import Comment
 from typing_extensions import NotRequired, assert_never
 
 
@@ -312,7 +312,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is etree.Comment:
+        if html_tags.tag is Comment:
             continue
         elif html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
@@ -329,7 +329,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
-                if html_tags.tag is etree.Comment:
+                if html_tags.tag is Comment:
                     continue
                 else:
                     prepare_tag(
@@ -720,7 +720,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             indent = int(answer["indent"] or 0)
             answer_code += (
                 ("    " * indent)
-                + lxml.html.fromstring(answer["inner_html"]).text_content()  # type: ignore
+                + lxml.html.fromstring(answer["inner_html"]).text_content()
                 + "\n"
             )
 

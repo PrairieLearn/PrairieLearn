@@ -4,6 +4,7 @@ import * as async from 'async';
 import * as path from 'path';
 import * as error from '@prairielearn/error';
 import { z } from 'zod';
+import asyncHandler = require('express-async-handler');
 
 import { selectQuestionById } from '../../models/question';
 import { selectCourseById } from '../../models/course';
@@ -52,38 +53,30 @@ router.post('/', function (req, res, next) {
         // we currently don't report issues for public facing previews
         res.redirect(req.originalUrl);
       } else {
-        next(
-          error.make(400, 'unknown __action: ' + req.body.__action, {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
+        next(error.make(400, `unknown __action: ${req.body.__action}`));
       }
     })
     .catch((err) => next(err));
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  setLocals(req, res)
-    .then(() => {
-      renderPanelsForSubmission(
-        req.params.submission_id,
-        res.locals.question.id,
-        null, // instance_question_id,
-        req.params.variant_id,
-        res.locals.urlPrefix,
-        null, // questionContext
-        null, // csrfToken
-        null, // authorizedEdit
-        false, // renderScorePanels
-        (err, results) => {
-          if (ERR(err, next)) return;
-          res.send({ submissionPanel: results.submissionPanel });
-        },
-      );
-    })
-    .catch((err) => next(err));
-});
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res) => {
+    await setLocals(req, res);
+    const { submissionPanel } = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: null,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel });
+  }),
+);
 
 router.get('/', function (req, res, next) {
   setLocals(req, res)
@@ -92,11 +85,8 @@ router.get('/', function (req, res, next) {
       const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
       return async.series(
         [
-          (callback) => {
-            getAndRenderVariant(variant_id, variant_seed, res.locals, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+          async () => {
+            await getAndRenderVariant(variant_id, variant_seed, res.locals);
           },
           (callback) => {
             logPageView(req, res, (err) => {

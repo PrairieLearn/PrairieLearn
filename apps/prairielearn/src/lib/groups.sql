@@ -78,12 +78,7 @@ WITH
   )
 SELECT
   gr.*,
-  COALESCE(gur.count, 0)::INT AS count,
-  -- The can_assign_roles column is not yet guaranteed to be up-to-date, as the
-  -- course may not have synced with the new code yet. Use the old
-  -- can_assign_roles_at_start column instead for now. This will be replaced in
-  -- a future version.
-  gr.can_assign_roles_at_start AS can_assign_roles
+  COALESCE(gur.count, 0)::INT AS count
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -192,11 +187,7 @@ WITH
     SELECT
       gr.id,
       (
-        -- The can_assign_roles column is not yet guaranteed to be up-to-date,
-        -- as the course may not have synced with the new code yet. Use the old
-        -- can_assign_roles_at_start column instead for now. This will be
-        -- replaced in a future version.
-        gr.can_assign_roles_at_start
+        gr.can_assign_roles
         AND COALESCE($cur_size::INT, 0) = 0
       ) AS assigner_role_needed,
       (
@@ -252,16 +243,23 @@ WITH
       inserted_user AS iu
     WHERE
       $group_role_id::bigint IS NOT NULL
+    RETURNING
+      *
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  group_logs (authn_user_id, user_id, group_id, action, roles)
 SELECT
   $authn_user_id,
   iu.user_id,
   iu.group_id,
-  'join'
+  'join',
+  CASE
+    WHEN gr.id IS NOT NULL THEN ARRAY[gr.role_name]
+  END
 FROM
-  inserted_user AS iu;
+  inserted_user AS iu
+  LEFT JOIN inserted_user_roles AS ur ON TRUE
+  LEFT JOIN group_roles AS gr ON ur.group_role_id = gr.id;
 
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur USING group_roles AS gr
@@ -322,9 +320,27 @@ WITH
       )
   )
 INSERT INTO
-  group_logs (authn_user_id, group_id, action)
-VALUES
-  ($authn_user_id, $group_id, 'update roles');
+  group_logs (authn_user_id, user_id, group_id, action, roles)
+SELECT
+  $authn_user_id,
+  gu.user_id,
+  $group_id,
+  'update roles',
+  COALESCE(
+    array_agg(gr.role_name) FILTER (
+      WHERE
+        gr.id IS NOT NULL
+    ),
+    array[]::text []
+  )
+FROM
+  group_users AS gu
+  LEFT JOIN json_roles AS jr on jr.user_id = gu.user_id
+  LEFT JOIN group_roles AS gr ON jr.group_role_id = gr.id
+WHERE
+  gu.group_id = $group_id
+GROUP BY
+  gu.user_id;
 
 -- BLOCK delete_all_groups
 WITH

@@ -113,7 +113,6 @@ export async function render(
   _submission,
   submissions,
   _course,
-  _course_instance,
   _locals,
 ) {
   const data = {

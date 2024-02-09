@@ -110,7 +110,11 @@ def traverse_and_replace(
 
             if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
-            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
+                # NOTE ignore comment needed because the HtmlProcessingInstruction class
+                # is missing from the upstream type stubs package. Can be removed once the
+                # following issue gets resolved upstream.
+                # https://github.com/abelcheung/types-lxml/issues/28
+            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):  # type: ignore
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
                 # that produce SVG documents.
                 #

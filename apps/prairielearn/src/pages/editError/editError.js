@@ -93,12 +93,7 @@ router.post('/:job_sequence_id', (req, res, next) => {
       })
       .catch((err) => ERR(err, next));
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
