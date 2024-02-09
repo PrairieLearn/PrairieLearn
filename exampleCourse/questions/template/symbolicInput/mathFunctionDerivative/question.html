@@ -1,16 +1,11 @@
 <pl-question-panel>
-    <p>
-        Find the derivative of
-    </p>
-    <p>
-        $\qquad {{params.f}}$
-    </p>
-    <p>
-        with respect to ${{params.x}}$:
-    </p>
-
+  <p>Find the derivative of the following expression with respect to ${{params.x}}$.</p>
+  <p>${{params.f}}$</p>
 </pl-question-panel>
 
-<p>
-$\qquad\dfrac{df(x)}{dx}$ = <pl-symbolic-input answers-name="df" variables="{{params.x}}"></pl-symbolic-input>
-</p>
+<pl-symbolic-input
+  answers-name="df"
+  label="$\dfrac{df(x)}{dx} =$"
+  variables="{{params.x}}"
+  display="block"
+></pl-symbolic-input>
