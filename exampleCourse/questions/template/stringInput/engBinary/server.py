@@ -6,5 +6,3 @@ def generate(data):
     ans = "{0:b}".format(a)
     data["params"]["a"] = a
     data["correct_answers"]["b"] = ans
-
-    return data
