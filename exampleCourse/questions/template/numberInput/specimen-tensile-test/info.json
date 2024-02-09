@@ -1,11 +1,10 @@
 {
     "uuid": "e4c7fca2-05b1-4779-9be9-fb0d298bf655",
-    "title": "Multi-part question with number input",
+    "title": "Tensile test to obtain material properties",
 	"topic": "Solid Mechanics",
 	"type": "v3",
 	"tags": [
 		"author:prairielearn.com",
-		"license:CC-BY-NC",	
-		"fa15"
+		"license:CC-BY-NC"
 	]
 }

@@ -21,7 +21,7 @@
                     "numberChoose": 1,
                     "points": 25,
                     "alternatives": [
-                        {"id": "demo/annotated/mathNumbersConcept-all"},
+                        {"id": "template/checkbox/mathNumbersConcept-all"},
                         {"id": "template/multipleChoice/multipleChoiceMultipleCorrect"}
                     ]
                 }

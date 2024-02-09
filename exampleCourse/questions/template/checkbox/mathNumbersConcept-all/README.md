@@ -1,0 +1,1 @@
+This question displays a list of integers that are randomly generated as checkbox options. Students need to identify the numbers that are either prime, even or odd (these options are also randomly selected).

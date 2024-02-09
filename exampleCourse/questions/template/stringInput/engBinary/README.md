@@ -1,0 +1,1 @@
+This question given an integer number randomly generated, and asks students to convert the number to its binary representation. The answer should be submitted as a string. Before checking for correctness, the grader removes any trailing, leading or empty spaces from the submitted answer.
