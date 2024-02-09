@@ -14,15 +14,15 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const needToSync = false;
-    const noInfo = false;
+    let needToSync = false;
+    let noInfo = false;
     const pathExists = await fs.pathExists(res.locals.course.path);
     if (!pathExists) {
-      res.locals.needToSync = true;
+      needToSync = true;
     } else {
       const jsonExists = await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
       if (!jsonExists) {
-        res.locals.noInfo = true;
+        noInfo = true;
       }
     }
 

@@ -1,0 +1,10 @@
+{
+    "uuid": "6e7a79bb-a704-4ffd-9b2c-e4ca5652953a",
+    "name": "newCourse",
+    "title": "newCourse",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+    "tags": [],
+    "topics": []
+}

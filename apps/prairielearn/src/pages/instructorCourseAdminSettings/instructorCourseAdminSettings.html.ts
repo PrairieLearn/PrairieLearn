@@ -107,29 +107,31 @@ export function InstructorCourseAdminSettings({
                               `
                             : ''} `
                       : ''}
-                    ${resLocals.authz_data.has_course_permission_view
-                      ? html`
-                          <a
-                            href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
-                          >
-                            infoCourse.json
-                          </a>
-                          ${resLocals.authz_data.has_course_permission_edit &&
-                          !resLocals.course.example_course
-                            ? html`
-                                <a
-                                  tabindex="0"
-                                  class="btn btn-xs btn-secondary mx-2"
-                                  role="button"
-                                  href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
-                                >
-                                  <i class="fa fa-edit"></i>
-                                  <span>Edit</span>
-                                </a>
-                              `
-                            : ''}
-                        `
-                      : 'infoCourse.json'}
+                    ${!needToSync && !noInfo
+                      ? resLocals.authz_data.has_course_permission_view
+                        ? html`
+                            <a
+                              href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
+                            >
+                              infoCourse.json
+                            </a>
+                            ${resLocals.authz_data.has_course_permission_edit &&
+                            !resLocals.course.example_course
+                              ? html`
+                                  <a
+                                    tabindex="0"
+                                    class="btn btn-xs btn-secondary mx-2"
+                                    role="button"
+                                    href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
+                                  >
+                                    <i class="fa fa-edit"></i>
+                                    <span>Edit</span>
+                                  </a>
+                                `
+                              : ''}
+                          `
+                        : 'infoCourse.json'
+                      : ''}
                   </td>
                 </tr>
               </tbody>
