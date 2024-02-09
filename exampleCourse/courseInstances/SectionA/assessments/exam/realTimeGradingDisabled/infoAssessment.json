@@ -56,7 +56,7 @@
                     "points": 5,
                     "alternatives": [
                         {"id": "demo/fixedCheckbox"},
-                        {"id": "demo/randomSymbolic"}
+                        {"id": "template/symbolicInput/mathFunctionDerivative"}
                     ]
                 },
                 {"id": "demo/randomMultipleChoice", "points": 5}

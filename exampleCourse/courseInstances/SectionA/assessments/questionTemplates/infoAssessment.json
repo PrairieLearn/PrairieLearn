@@ -18,7 +18,7 @@
               {"id": "template/integerInput/integerInput", "points": 1, "maxPoints": 2},
               {"id": "template/numberInput/numberInput", "points": 1, "maxPoints": 2},
               {"id": "demo/matrixAlgebra",                   "points": 2, "maxPoints": 10},
-              {"id": "demo/randomSymbolic",                  "points": 2, "maxPoints": 10},
+              {"id": "template/symbolicInput/mathFunctionDerivative",                  "points": 2, "maxPoints": 10},
               {"id": "template/figure/integerInputWithDynamicFigure", "points": 1, "maxPoints": 4}
           ]
       },
