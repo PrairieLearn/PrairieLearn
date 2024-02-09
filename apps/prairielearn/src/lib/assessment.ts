@@ -437,3 +437,21 @@ export async function selectAssessmentInstanceLogCursor(
     InstanceLogSchema,
   );
 }
+
+export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
+  await sqldb.queryAsync(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+}
+
+export async function updateAssessmentQuestionStatsForAssessment(
+  assessment_id: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const assessment_questions = await sqldb.queryRows(
+      sql.select_assessment_questions,
+      { assessment_id },
+      IdSchema,
+    );
+    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
+  });
+}
