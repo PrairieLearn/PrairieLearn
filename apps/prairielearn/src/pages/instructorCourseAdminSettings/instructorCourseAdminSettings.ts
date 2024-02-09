@@ -1,18 +1,21 @@
-//@ts-check
 import * as express from 'express';
 import * as path from 'path';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as fs from 'fs-extra';
-const ERR = require('async-stacktrace');
+import ERR = require('async-stacktrace');
 import { CourseInfoEditor } from '../../lib/editors';
 import { logger } from '@prairielearn/logger';
 import * as error from '@prairielearn/error';
+
+import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
 
 const router = express.Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const needToSync = false;
+    const noInfo = false;
     const pathExists = await fs.pathExists(res.locals.course.path);
     if (!pathExists) {
       res.locals.needToSync = true;
@@ -23,7 +26,7 @@ router.get(
       }
     }
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorCourseAdminSettings({ resLocals: res.locals, needToSync, noInfo }));
   }),
 );
 
