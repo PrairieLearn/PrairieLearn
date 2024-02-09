@@ -3,32 +3,25 @@ import random
 import numpy as np
 
 
+def is_prime(a):
+    if a == 1:
+        return False
+    return all(a % i for i in np.arange(2, a))
+
+
 def generate(data):
     concept = random.choice(["prime", "even", "odd"])
     data["params"]["concept"] = concept
 
-    def is_prime(a):
-        return all(a % i for i in np.arange(2, a))
+    is_odd_correct = str(concept == "odd").lower()
+    is_even_correct = str(concept == "even").lower()
 
-    if concept == "odd":
-        is_odd = "true"
-        is_even = "false"
-    elif concept == "even":
-        is_odd = "false"
-        is_even = "true"
+    options = []
+    for num in np.arange(1, 20):
+        if concept == "prime":
+            options.append({"correct": str(is_prime(num)).lower(), "answer": str(num)})
+        else:
+            correct = is_even_correct if num % 2 == 0 else is_odd_correct
+            options.append({"correct": correct, "answer": str(num)})
 
-    dic = []
-    if concept == "prime":
-        for num in np.arange(1, 20):
-            if num == 1:
-                dic.append({"tag": "false", "ans": str(num)})
-            else:
-                dic.append({"tag": str(is_prime(num)).lower(), "ans": str(num)})
-    else:
-        for num in np.arange(1, 20):
-            if num % 2 == 0:  # this is an even number
-                dic.append({"tag": is_even, "ans": str(num)})
-            else:  # this is an odd number
-                dic.append({"tag": is_odd, "ans": str(num)})
-
-    data["params"]["t_options"] = dic
+    data["params"]["options"] = options
