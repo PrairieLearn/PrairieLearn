@@ -1,9 +1,9 @@
 import asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import { cache } from '@prairielearn/cache';
 
 import * as error from '@prairielearn/error';
 import * as chunks from '../../lib/chunks';
-import * as cache from '../../lib/cache';
 import { AdministratorSettings } from './administratorSettings.html';
 import { IdSchema } from '../../lib/db-types';
 
@@ -40,7 +40,7 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -10,10 +10,10 @@
     "test": "mocha --no-config --require tsx src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.484.0",
-    "@aws-sdk/client-s3": "^3.484.0",
-    "@aws-sdk/credential-providers": "^3.484.0",
-    "@aws-sdk/lib-storage": "^3.484.0",
+    "@aws-sdk/client-ecr": "^3.504.0",
+    "@aws-sdk/client-s3": "^3.504.0",
+    "@aws-sdk/credential-providers": "^3.504.1",
+    "@aws-sdk/lib-storage": "^3.504.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -25,7 +25,7 @@
     "@socket.io/redis-emitter": "^5.1.0",
     "archiver": "^6.0.1",
     "async": "^3.2.5",
-    "async-mutex": "^0.4.0",
+    "async-mutex": "^0.4.1",
     "async-stacktrace": "^0.0.2",
     "body-parser": "^1.20.2",
     "debug": "^4.3.4",
@@ -40,10 +40,10 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^18.19.4",
-    "chai": "^4.3.10",
+    "@types/node": "^20.11.11",
+    "chai": "^4.4.1",
     "mocha": "^10.2.0",
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.0.3",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "typescript-cp": "^0.1.9"

@@ -14,12 +14,12 @@ const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
+import { cache } from '@prairielearn/cache';
 
 import * as schemas from '../schemas';
 import { config } from '../lib/config';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
 import * as jsonLoad from '../lib/json-load';
-import * as cache from '../lib/cache';
 import { getOrUpdateCourseCommitHash } from '../models/course';
 import * as markdown from '../lib/markdown';
 import * as chunks from '../lib/chunks';
@@ -1105,10 +1105,10 @@ export async function prepare(question, course, variant) {
 /**
  * @param {'question' | 'answer' | 'submission'} panel
  * @param {import('../lib/code-caller').CodeCaller} codeCaller
- * @param {any} variant
- * @param {any} submission
- * @param {any} course
- * @param {any} locals
+ * @param {import('../lib/db-types').Variant} variant
+ * @param {import('../lib/db-types').Submission?} submission
+ * @param {import('../lib/db-types').Course} course
+ * @param {Record<string, any>} locals
  * @param {QuestionProcessingContext} context
  * @returns {Promise<RenderPanelResult>}
  */
@@ -1144,8 +1144,8 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed, 36),
-    options: _.get(variant, 'options', {}),
+    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    options: _.get(variant, 'options') ?? {},
     raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
@@ -1231,7 +1231,6 @@ export async function render(
   submission,
   submissions,
   course,
-  course_instance,
   locals,
 ) {
   return instrumented('freeform.render', async () => {

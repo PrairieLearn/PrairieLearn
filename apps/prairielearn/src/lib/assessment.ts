@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import { gradeVariantAsync } from './grading';
+import { gradeVariant } from './grading';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
@@ -40,7 +40,7 @@ export const InstanceLogSchema = z.object({
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -213,7 +213,7 @@ export async function gradeAssessmentInstanceAsync(
   await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
-    await gradeVariantAsync(
+    await gradeVariant(
       row.variant,
       check_submission_id,
       row.question,

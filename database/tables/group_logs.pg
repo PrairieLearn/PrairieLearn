@@ -4,6 +4,7 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     group_id: bigint
     id: bigint not null default nextval('group_logs_id_seq'::regclass)
+    roles: text[]
     user_id: bigint
 
 indexes

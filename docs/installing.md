@@ -60,7 +60,21 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+### Running on ARM64 hardware
+
+If you're using an Apple Silicon Mac or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+To fix this, add `--platform linux/amd64` before the image in any `docker run` commands. For example:
+
+```sh
+docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
+```
+
+Note that the use of R in `server.py` is not currently supported on ARM64 hardware.
 
 ### Support for external graders and workspaces
 

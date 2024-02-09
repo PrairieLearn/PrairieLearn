@@ -22,6 +22,7 @@ SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
+ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
@@ -42,6 +43,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "display",
         "allow-complex",
         "imaginary-unit-for-display",
+        "allow-trig-functions",
         "size",
         "show-help-text",
         "allow-blank",
@@ -69,13 +71,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_complex = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
+        allow_trig = pl.get_boolean_attrib(
+            element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+        )
         # Validate that the answer can be parsed before storing
         try:
             phs.convert_string_to_sympy(
                 a_true,
                 variables,
                 allow_complex=allow_complex,
-                allow_trig_functions=True,
+                allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
             )
         except phs.BaseSympyError:
@@ -108,6 +113,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
@@ -118,7 +126,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     operators: list[str] = list(phs.STANDARD_OPERATORS)
     operators.extend(custom_functions)
     operators.extend(constants_class.functions.keys())
-    operators.extend(constants_class.trig_functions.keys())
+    if allow_trig:
+        operators.extend(constants_class.trig_functions.keys())
 
     constants = list(constants_class.variables.keys())
 
@@ -149,11 +158,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 variables,
                 allow_complex=allow_complex,
                 custom_functions=custom_functions,
-                allow_trig_functions=True,
+                allow_trig_functions=allow_trig,
             )
         else:
             a_sub_parsed = phs.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=True
+                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
         a_sub_converted = sympy.latex(
             a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
@@ -228,10 +237,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 a_tru,
                 variables,
                 allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
             )
         else:
-            a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+            a_tru = phs.json_to_sympy(
+                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+            )
 
         a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
         html_params = {
@@ -260,6 +272,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
 
@@ -276,7 +291,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub,
         variables,
         allow_complex=allow_complex,
-        allow_trig_functions=True,
+        allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
     )
@@ -297,7 +312,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
-        allow_trig_functions=True,
+        allow_trig_functions=allow_trig,
         assumptions=assumptions_dict,
         custom_functions=custom_functions,
     )
@@ -330,6 +345,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
@@ -345,6 +363,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_tru,
             variables,
             allow_complex=allow_complex,
+            allow_trig_functions=allow_trig,
             custom_functions=custom_functions,
         )
     else:
@@ -358,13 +377,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 variables,
                 allow_complex=allow_complex,
-                allow_trig_functions=True,
+                allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
             )
         else:
             a_sub_sympy = phs.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=True
+                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
@@ -388,6 +407,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
 
     # Get raw correct answer
     a_tru = data["correct_answers"][name]
@@ -398,17 +420,29 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             a_tru,
             variables,
             allow_complex=allow_complex,
+            allow_trig_functions=allow_trig,
             custom_functions=custom_functions,
         )
     else:
-        a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+        a_tru = phs.json_to_sympy(
+            a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+        )
 
     # Substitute in imaginary unit symbol
     a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
 
     result = data["test_type"]
     if result == "correct":
-        data["raw_submitted_answers"][name] = a_tru_str
+        correct_answers = [
+            a_tru_str,
+            f"{a_tru_str} + 0",
+        ]
+        if allow_complex:
+            correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+        if allow_trig:
+            correct_answers.append(f"cos(0) * ( {a_tru_str} )")
+
+        data["raw_submitted_answers"][name] = random.choice(correct_answers)
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
@@ -418,21 +452,23 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
-        invalid_answer = random.choice(
-            [
-                "n + 1.234",
-                "x + (1+2j)",
-                "1 and 0",
-                "aatan(n)",
-                "x + y",
-                "x +* 1",
-                "x + 1\\n",
-                "x # some text",
-            ]
-        )
+        invalid_answers = [
+            "n + 1.234",
+            "x + (1+2j)",
+            "1 and 0",
+            "aatan(n)",
+            "x + y",
+            "x +* 1",
+            "x + 1\\n",
+            "x # some text",
+        ]
+        if not allow_complex:
+            invalid_answers.append("3j")
+        if not allow_trig:
+            invalid_answers.append("cos(2)")
 
         # TODO add back detailed format errors if this gets checked in the future
-        data["raw_submitted_answers"][name] = invalid_answer
+        data["raw_submitted_answers"][name] = random.choice(invalid_answers)
         data["format_errors"][name] = ""
     else:
         assert_never(result)

@@ -10,6 +10,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: string[];
 }
 
 interface Tag {
@@ -68,9 +69,7 @@ export interface GroupRole {
   name: string;
   minimum?: number;
   maximum?: number;
-  canAssignRolesAtStart?: boolean;
-  canAssignRolesDuringAssessment?: boolean;
-  canSubmitAssessment?: boolean;
+  canAssignRoles?: boolean;
 }
 
 interface SEBConfig {
