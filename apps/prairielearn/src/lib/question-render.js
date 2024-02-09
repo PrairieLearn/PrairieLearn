@@ -560,9 +560,8 @@ function buildGradingJobStats(job) {
     return {
       ...stats,
       phases: durations.map(
-        (duration) =>
-          // Round down to avoid width being greater than 100% with floating point errors
-          Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
+        // Round down to avoid width being greater than 100% with floating point errors
+        (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
       ),
     };
   }
