@@ -41,23 +41,14 @@ function parseRawQuery(str) {
    * @type {{filter_is_open: boolean | null, filter_is_closed: boolean | null, filter_manually_reported: boolean | null, filter_automatically_reported: boolean | null, filter_qids: string[] | null, filter_not_qids: string[] | null, filter_query_text: string | null, filter_users: string[] | null, filter_not_users: string[] | null}}
    */
   const filters = {
-    /** @type {boolean | null} */
     filter_is_open: null,
-    /** @type {boolean | null} */
     filter_is_closed: null,
-    /** @type {boolean | null} */
     filter_manually_reported: null,
-    /** @type {boolean | null} */
     filter_automatically_reported: null,
-    /** @type {string[] | null} */
     filter_qids: null,
-    /** @type {string[] | null} */
     filter_not_qids: null,
-    /** @type {string | null} */
     filter_query_text: null,
-    /** @type {string[] | null} */
     filter_users: null,
-    /** @type {string[] | null} */
     filter_not_users: null,
   };
 
