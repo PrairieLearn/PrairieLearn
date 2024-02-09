@@ -2,7 +2,7 @@
 import * as async from 'async';
 import * as path from 'path';
 import * as ejs from 'ejs';
-import { differenceInMilliseconds, parseISO } from 'date-fns';
+import { differenceInMilliseconds } from 'date-fns';
 import * as util from 'util';
 import { z } from 'zod';
 
@@ -538,11 +538,14 @@ function buildGradingJobStats(job) {
   if (job) {
     const phases = [];
     const totalDuration = differenceInMilliseconds(
-      parseISO(job.graded_at),
-      parseISO(job.grading_requested_at),
+      DateFromISOString.parse(job.graded_at),
+      DateFromISOString.parse(job.grading_requested_at),
     );
     const formatDiff = (start, end, addToPhases = true) => {
-      const duration = differenceInMilliseconds(parseISO(end), parseISO(start));
+      const duration = differenceInMilliseconds(
+        DateFromISOString.parse(end),
+        DateFromISOString.parse(start),
+      );
       if (addToPhases) {
         const percentage = duration / totalDuration;
         // Round down to avoid width being greater than 100% with floating point errors
