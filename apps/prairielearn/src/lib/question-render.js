@@ -555,7 +555,7 @@ function buildGradingJobStats(job) {
       reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
       totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
     };
-    const totalDuration = durations.reduce((a, b) => a + (b ?? 0), 0) || 1;
+    const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
 
     return {
       ...stats,
