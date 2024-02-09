@@ -29,16 +29,13 @@ export async function processSubmission(req, res) {
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
-      throw error.make(400, 'No postData', { locals: res.locals, body: req.body });
+      throw error.make(400, 'No postData');
     }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
     } catch (e) {
-      throw error.make(400, 'JSON parse failed on body.postData', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, 'JSON parse failed on body.postData');
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -66,9 +63,6 @@ export async function processSubmission(req, res) {
     await saveSubmission(submission, variant, res.locals.question, res.locals.course);
     return submission.variant_id;
   } else {
-    throw error.make(400, 'unknown __action', {
-      locals: res.locals,
-      body: req.body,
-    });
+    throw error.make(400, `unknown __action: ${req.body.__action}`);
   }
 }

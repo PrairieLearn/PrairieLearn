@@ -47,10 +47,7 @@ router.post(
       // we currently don't report issues for public facing previews
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

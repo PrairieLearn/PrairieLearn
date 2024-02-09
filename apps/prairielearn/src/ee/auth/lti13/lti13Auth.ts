@@ -246,8 +246,6 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
           error.make(400, 'Authentication failed, before user validation.', {
-            err,
-            user,
             info_raw: info,
             info: info?.toString(),
           }),
