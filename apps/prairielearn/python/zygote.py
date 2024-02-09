@@ -16,7 +16,6 @@
 
 import base64
 import copy
-import importlib
 import io
 import json
 import os
@@ -24,7 +23,10 @@ import signal
 import subprocess
 import sys
 import time
+import types
+from importlib.abc import MetaPathFinder
 from inspect import signature
+from typing import Sequence
 
 import question_phases
 import zygote_utils as zu
@@ -91,17 +93,19 @@ prairielearn.get_unit_registry()
 # While this won't prevent anything more complex than an `import` statement, it
 # will make it clear to the user that they're not allowed to use `rpy2`. If they
 # try to bypass the block, it's up to them to deal with the consequences.
-class ForbidModuleMetaPathFinder(importlib.abc.MetaPathFinder):
+class ForbidModuleMetaPathFinder(MetaPathFinder):
     def __init__(self):
         self.forbidden_modules: set[str] = set()
 
-    def forbid_module(self, forbidden_module):
+    def forbid_module(self, forbidden_module: str):
         self.forbidden_modules.add(forbidden_module)
 
     def reset_forbidden_modules(self):
         self.forbidden_modules.clear()
 
-    def find_spec(self, fullname, path, target=None):
+    def find_spec(
+        self, fullname: str, path: Sequence[str] | None, target: types.ModuleType = None
+    ):
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
