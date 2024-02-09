@@ -2,7 +2,7 @@ import random
 
 
 def generate(data):
-    # Create a list of question prompts and the corresponding answers
+    # Create a list of question prompts and the corresponding answers.
     scenarios = [
         {
             "question": "North",
@@ -22,10 +22,10 @@ def generate(data):
         },
     ]
 
-    # Randomize the order of the scenarios
+    # Randomize the order of the scenarios.
     random.shuffle(scenarios)
 
-    # First shuffled scenario is the one we will take as correct
+    # First shuffled scenario is the one we will take as correct.
     data["params"]["question_prompt"] = scenarios[0]["question"]
 
     # Depending on the truth statement, set the appropriate answer.
