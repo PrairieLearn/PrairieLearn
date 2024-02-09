@@ -1,29 +1,47 @@
 -- BLOCK is_feature_enabled
-SELECT
-  EXISTS (
+WITH
+  has_feature_grant AS (
     SELECT
-      1
+      EXISTS (
+        SELECT
+          1
+        FROM
+          feature_grants
+        WHERE
+          name = $name
+          AND (
+            institution_id IS NULL
+            OR $institution_id = institution_id
+          )
+          AND (
+            course_id IS NULL
+            OR $course_id = course_id
+          )
+          AND (
+            course_instance_id IS NULL
+            OR $course_instance_id = course_instance_id
+          )
+          AND (
+            user_id IS NULL
+            OR $user_id = user_id
+          )
+      ) AS exists
+  ),
+  course_dev_mode_features AS (
+    SELECT
+      c.options -> 'devModeFeatures' AS dev_mode_features
     FROM
-      feature_grants
+      pl_courses AS c
     WHERE
-      name = $name
-      AND (
-        institution_id IS NULL
-        OR $institution_id = institution_id
-      )
-      AND (
-        course_id IS NULL
-        OR $course_id = course_id
-      )
-      AND (
-        course_instance_id IS NULL
-        OR $course_instance_id = course_instance_id
-      )
-      AND (
-        user_id IS NULL
-        OR $user_id = user_id
-      )
-  ) as exists;
+      $course_id IS NOT NULL
+      AND c.id = $course_id
+  )
+SELECT
+  has_feature_grant.exists AS has_feature_grant,
+  course_dev_mode_features.dev_mode_features AS course_dev_mode_features
+FROM
+  has_feature_grant
+  FULL JOIN course_dev_mode_features ON true;
 
 -- BLOCK enable_feature
 INSERT INTO

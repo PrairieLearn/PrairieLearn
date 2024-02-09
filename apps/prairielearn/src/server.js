@@ -1462,7 +1462,7 @@ module.exports.initExpress = function () {
     require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
-    require('./pages/studentInstanceQuestion/studentInstanceQuestion'),
+    require('./pages/studentInstanceQuestion/studentInstanceQuestion').default,
   ]);
   if (config.devMode) {
     app.use(

@@ -10,6 +10,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: string[];
 }
 
 interface Tag {
