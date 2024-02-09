@@ -5,7 +5,7 @@ import jsonStringifySafe = require('json-stringify-safe');
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { type ServerJob, createServerJob } from './server-jobs';
-import { saveSubmissionAsync, gradeVariantAsync } from './grading';
+import { saveSubmission, gradeVariant } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
@@ -198,8 +198,8 @@ async function testVariant(
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
-  const test_submission_id = await saveSubmissionAsync(submission_data, variant, question, course);
-  await gradeVariantAsync(variant, test_submission_id, question, course, authn_user_id, true);
+  const test_submission_id = await saveSubmission(submission_data, variant, question, course);
+  await gradeVariant(variant, test_submission_id, question, course, authn_user_id, true);
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);

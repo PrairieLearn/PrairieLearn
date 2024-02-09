@@ -7,7 +7,7 @@ const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 
 const LogPageView = require('../../middlewares/logPageView');
-import { saveAndGradeSubmissionAsync, saveSubmissionAsync } from '../../lib/grading';
+import { saveAndGradeSubmission, saveSubmission } from '../../lib/grading';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -199,7 +199,7 @@ async function processSubmission(req, res) {
   const variant = await getValidVariant(submission.variant_id, res.locals.instance_question.id);
   if (req.body.__action === 'grade') {
     const overrideRateLimits = false;
-    await saveAndGradeSubmissionAsync(
+    await saveAndGradeSubmission(
       submission,
       variant,
       res.locals.question,
@@ -208,7 +208,7 @@ async function processSubmission(req, res) {
     );
     return submission.variant_id;
   } else if (req.body.__action === 'save') {
-    await saveSubmissionAsync(submission, variant, res.locals.question, res.locals.course);
+    await saveSubmission(submission, variant, res.locals.question, res.locals.course);
     return submission.variant_id;
   } else {
     throw error.make(400, `unknown __action: ${req.body.__action}`);
