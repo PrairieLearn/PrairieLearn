@@ -1,9 +1,9 @@
 import asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import { cache } from '@prairielearn/cache';
 
 import * as error from '@prairielearn/error';
 import * as chunks from '../../lib/chunks';
-import * as cache from '../../lib/cache';
 import { AdministratorSettings } from './administratorSettings.html';
 import { IdSchema } from '../../lib/db-types';
 
