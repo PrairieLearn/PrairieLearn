@@ -32,6 +32,6 @@ def generate(data):
         data["params"]["statement"] = message
         mu = (0.5 * v0**2 - g * d * math.sin(theta)) / (d * g * math.cos(theta))
         data["correct_answers"]["ans"] = mu
-        data["params"]["variable"] = "$\mu = $"
+        data["params"]["variable"] = "$\\mu = $"
         data["params"]["unit"] = ""
         data["params"]["dig"] = 2

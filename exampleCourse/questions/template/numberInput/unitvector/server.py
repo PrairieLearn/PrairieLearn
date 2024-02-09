@@ -22,11 +22,11 @@ def generate(data):
     f_string = (
         "$"
         + a_string
-        + "\;\hat\imath"
+        + "\\;\\hat\\imath"
         + b_string
-        + "\;\hat\jmath +"
+        + "\\;\\hat\\jmath +"
         + str(c)
-        + "\;\hat k$"
+        + "\\;\\hat k$"
     )
     data["params"]["f_string"] = f_string
 
