@@ -30,7 +30,6 @@ const qidsExampleCourse = [
   'demo/randomFakeData',
   'demo/randomMultipleChoice',
   'demo/randomPlot',
-  'demo/randomSymbolic',
   'demo/proofBlocks',
   'element/checkbox',
   'element/code',
@@ -62,6 +61,7 @@ const qidsExampleCourse = [
   'element/unitsInput',
   'element/variableOutput',
   'element/orderBlocks',
+  'template/symbolicInput/mathFunctionDerivative',
 ];
 
 describe('Auto-test questions in exampleCourse', function () {
