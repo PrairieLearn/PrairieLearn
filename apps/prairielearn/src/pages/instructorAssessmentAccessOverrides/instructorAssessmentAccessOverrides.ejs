@@ -210,7 +210,7 @@
 							<tr>
 								<% if (assessment.group_work) { %>
 									<td><%= policy.group_name %></td>
-								<% } else { %>
+								<% } else { console.log(policy); %>
 									<td><%= policy.student_uid %></td>
 								<% } %>
 								<td><%= policy.created_at %></td>
@@ -232,11 +232,10 @@
 												</button>												
 											</form>
 											<form name="delete-override-form" method="POST">
+												<% console.log(policy); %>
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 												<input type="hidden" name="__action" value="delete_override">
-												<input type="hidden" name="student_uid" value="<%= policy.student_uid %>">
-												<input type="hidden" name="assessment_id" value="<%= policy.assessment_id %>"> 
-  												<input type="hidden" name="group_name" value="<%= policy.group_name %>">
+												<input type="hidden" name="policy_id" value="<%= policy.id %>">
 													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
 													<i class="fas fa-remove"></i> Delete
 												</button>

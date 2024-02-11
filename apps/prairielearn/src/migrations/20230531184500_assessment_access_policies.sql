@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
   assessment_id BIGINT NOT NULL REFERENCES assessments (id ) ON UPDATE CASCADE ON DELETE CASCADE,
   user_id BIGINT REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
   group_id BIGINT REFERENCES groups (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  UNIQUE (assessment_id, user_id),
+  UNIQUE (assessment_id, group_id),
   start_date TIMESTAMP WITH TIME ZONE NOT NULL,
   end_date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INTEGER NOT NULL,

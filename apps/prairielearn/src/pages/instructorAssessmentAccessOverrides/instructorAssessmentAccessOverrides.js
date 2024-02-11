@@ -4,6 +4,8 @@ const asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment';
+import { selectUserByUid } from '../../models/user';
+
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -16,6 +18,7 @@ router.get(
       student_uid: req.body.student_uid,
     });
     res.locals.policies = result.rows;
+    console.log(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -32,7 +35,9 @@ router.post(
         group_name: req.body.group_name || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
+        user_id: req.body.student_uid,
         student_uid: req.body.student_uid,
+        group_id: null
       };
       // First, validate if group belongs to the assessment
       if (params.group_name) {
@@ -52,13 +57,34 @@ router.post(
         if (!params.group_id) {
           throw error.make(400, 'Group not found in this assessment.');
         }
+      } else if (params.user_id) {
+        const user = await selectUserByUid(params.user_id);
+        if (!user) {
+          throw error.make(400, 'Student UID does not exist.');
+        }
+        params.user_id = user.user_id;
+        console.log(params.user_id);
+        console.log(res.locals.course_instance.id);
+        // console.log(res.locals);
+
+        const enrollment = await getEnrollmentForUserInCourseInstance({
+          user_id :  params.user_id, 
+          course_instance_id : res.locals.course_instance.id
+        });
+        console.log(enrollment);
+        if (!enrollment) {
+          throw error.make(400, 'Student is not enrolled in the current course instance.');
+        }
+
+        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
-        unsafe_assessment_access_policies_id: req.body.unsafe_assessment_access_policies_id,
+        unsafe_assessment_access_policies_id: req.body.policy_id,
       });
+      console.log(req.body.policy_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
       const edit_params = {
@@ -68,15 +94,23 @@ router.post(
         group_name: req.body.group_name || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
-        student_uid: req.body.student_uid,
+        user_id: req.body.student_uid,
+        group_id: null,
+        student_uid: req.body.student_uid
       };
+      const user = await selectUserByUid(edit_params.user_id);
+        if (!user) {
+          throw error.make(400, 'Student UID does not exist.');
+        }
       const enrollment = await getEnrollmentForUserInCourseInstance({
-        user_id: edit_params.student_uid,
+        user_id: user.user_id,
         course_instance_id: res.locals.course_instance.id,
       });
+      
       if (!enrollment) {
         throw error.make(400, 'Student is not enrolled in the current course instance.');
       }
+      edit_params.user_id = user.user_id;
       // Validate if group belongs to the assessment
       if (edit_params.group_name) {
         const group_result = await sqldb.queryAsync(sql.select_group_in_assessment, {

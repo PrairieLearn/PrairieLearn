@@ -14,7 +14,16 @@ SELECT
       where
         id = aap.group_id
     )
-   as group_name
+   as group_name,
+   (
+    SELECT
+      uid
+    FROM
+      users
+    WHERE
+      user_id = aap.user_id
+   ) as student_uid,
+   aap.id as id
 FROM
   assessment_access_policies AS aap
 WHERE
@@ -55,17 +64,10 @@ VALUES
     $created_by,
     $credit,
     $end_date,
-    (
-      SELECT
-        id
-      from
-        groups
-      where
-        name = $group_name
-    ),
+    $group_id,
     $note,
     $start_date,
-    user_id = $student_uid
+    $user_id
     
   );
 
@@ -102,22 +104,6 @@ WHERE
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
 WHERE
-  (
-    user_id = (
-      SELECT
-        user_id
-      FROM
-        users
-      WHERE
-        uid = $student_uid
-    )
-    OR group_id = (
-      SELECT
-        id
-      from
-        groups
-      where
-        name = $group_name
-    )
-  )
-  AND assessment_id = $assessment_id;
+  id = $unsafe_assessment_access_policies_id
+  
+ 
