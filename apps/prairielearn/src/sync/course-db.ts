@@ -225,11 +225,8 @@ interface Course {
   assessmentModules: AssessmentModule[];
 }
 
-// This type is only used in legacy access rules. Any new rules are only defined for students.
-type UserRole = 'Student' | 'TA' | 'Instructor' | 'Superuser';
-
 interface CourseInstanceAllowAccess {
-  role: UserRole;
+  role: string; // Role is only allowed in legacy questions
   uids: string[];
   startDate: string;
   endDate: string;
@@ -256,7 +253,7 @@ interface SEBConfig {
 interface AssessmentAllowAccess {
   mode: 'Public' | 'Exam' | 'SEB';
   examUuid: string;
-  role: UserRole;
+  role: string; // Role is only allowed in legacy questions
   uids: string[];
   credit: number;
   startDate: string;
@@ -938,7 +935,7 @@ function checkDuplicateUUIDs<T>(
  * Checks that roles are not present.
  * @returns A list of warnings, if any
  */
-function checkAllowAccessRoles(rule: { role?: UserRole }): string[] {
+function checkAllowAccessRoles(rule: { role?: string }): string[] {
   const warnings: string[] = [];
   if ('role' in rule) {
     if (rule.role !== 'Student') {
