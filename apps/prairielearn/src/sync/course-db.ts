@@ -507,8 +507,7 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
- * @param {object} options
- * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
+ * @param tolerateMissing Whether or not a missing file constitutes an error
  */
 export async function loadInfoFile<T extends { uuid: string }>({
   coursePath,
@@ -761,8 +760,7 @@ export async function loadCourseInfo(
 }
 
 /**
- * @param options
- * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
+ * @param tolerateMissing Whether or not a missing file constitutes an error
  */
 async function loadAndValidateJson<T extends { uuid: string }>({
   coursePath,
@@ -808,10 +806,9 @@ async function loadAndValidateJson<T extends { uuid: string }>({
 
 /**
  * Loads and schema-validates all info files in a directory.
- * @param {Object} options - Options for loading and validating files
- * @param {string} options.coursePath The path of the course being synced
- * @param {string} options.directory The path of the directory relative to `coursePath`
- * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
+ * @param coursePath The path of the course being synced
+ * @param directory The path of the directory relative to `coursePath`
+ * @param recursive Whether or not info files should be searched for recursively
  */
 async function loadInfoForDirectory<T extends { uuid: string }>({
   coursePath,
