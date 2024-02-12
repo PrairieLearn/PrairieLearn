@@ -435,15 +435,12 @@ export async function loadFullCourse(courseId: string, courseDir: string): Promi
 }
 
 function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
-  courseId: string,
   filePath: string,
   infoFile: InfoFile<T>,
   writeLine: (line?: string) => void,
 ): void {
   if (!hasErrorsOrWarnings(infoFile)) return;
-  // TODO: if https://github.com/drudru/ansi_up/issues/58 is ever resolved,
-  // add a direct link to a file editor with `terminal-link` package
-  // const editorLink = `/pl/course/${courseId}/file_edit/${filePath}`;
+
   writeLine(chalk.bold(`• ${filePath}`));
   if (hasErrors(infoFile)) {
     infoFile.errors.forEach((error) => {
@@ -464,20 +461,14 @@ export function writeErrorsAndWarningsForCourseData(
   courseData: CourseData,
   writeLine: (line?: string) => void,
 ): void {
-  writeErrorsAndWarningsForInfoFileIfNeeded(
-    courseId,
-    'infoCourse.json',
-    courseData.course,
-    writeLine,
-  );
+  writeErrorsAndWarningsForInfoFileIfNeeded('infoCourse.json', courseData.course, writeLine);
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     const questionPath = path.posix.join('questions', qid, 'info.json');
-    writeErrorsAndWarningsForInfoFileIfNeeded(courseId, questionPath, question, writeLine);
+    writeErrorsAndWarningsForInfoFileIfNeeded(questionPath, question, writeLine);
   });
   Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceData]) => {
     const courseInstancePath = path.posix.join('courseInstances', ciid, 'infoCourseInstance.json');
     writeErrorsAndWarningsForInfoFileIfNeeded(
-      courseId,
       courseInstancePath,
       courseInstanceData.courseInstance,
       writeLine,
@@ -490,7 +481,7 @@ export function writeErrorsAndWarningsForCourseData(
         aid,
         'infoAssessment.json',
       );
-      writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
+      writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
     });
   });
 }
