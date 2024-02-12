@@ -105,7 +105,7 @@ export async function syncDiskToSqlWithLock(
   };
 }
 
-export async function syncDiskToSqlAsync(
+export async function syncDiskToSql(
   course_id: string,
   courseDir: string,
   logger: Logger,
@@ -133,5 +133,5 @@ export async function syncOrCreateDiskToSql(
   logger: Logger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
-  return await syncDiskToSqlAsync(course.id, courseDir, logger);
+  return await syncDiskToSql(course.id, courseDir, logger);
 }
