@@ -112,19 +112,22 @@ export async function syncDiskToSql(
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
-  const lock = await namedLocks.tryLockAsync(lockName);
-  if (lock == null) {
-    logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
-    throw new Error(`Another user is already syncing or modifying the course: ${courseDir}`);
-  }
-  let result: SyncResults;
-  try {
-    logger.verbose(chalkDim(`Acquired lock ${lockName}`));
-    result = await syncDiskToSqlWithLock(course_id, courseDir, logger);
-  } finally {
-    await namedLocks.releaseLockAsync(lock);
-    logger.verbose(chalkDim(`Released lock ${lockName}`));
-  }
+  const result = await namedLocks.doWithLock(
+    lockName,
+    {
+      timeout: 0,
+      onNotAcquired: () => {
+        logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+        throw new Error(`Another user is already syncing or modifying the course: ${courseDir}`);
+      },
+    },
+    async () => {
+      logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+      return await syncDiskToSqlWithLock(course_id, courseDir, logger);
+    },
+  );
+
+  logger.verbose(chalkDim(`Released lock ${lockName}`));
   return result;
 }
 
