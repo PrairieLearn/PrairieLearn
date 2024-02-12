@@ -10,18 +10,7 @@ import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 import { chalk } from '../lib/chalk';
 import { config } from '../lib/config';
 import * as schemas from '../schemas';
-import {
-  hasErrors,
-  hasErrorsOrWarnings,
-  hasWarnings,
-  makeError,
-  type InfoFile,
-  addError,
-  makeInfoFile,
-  addWarning,
-  addErrors,
-  addWarnings,
-} from './infofile';
+import * as infofile from './infofile';
 import { validateJSON } from '../lib/json-load';
 import { makePerformance } from './performance';
 import { selectInstitutionForCourse } from '../models/institution';
@@ -190,6 +179,9 @@ const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 // For finding all v4 UUIDs in a string/file
 const FILE_UUID_REGEX =
   /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
+
+// This type is used a lot, so make an alias
+type InfoFile<T> = infofile.InfoFile<T>;
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
@@ -439,16 +431,16 @@ function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
   infoFile: InfoFile<T>,
   writeLine: (line?: string) => void,
 ): void {
-  if (!hasErrorsOrWarnings(infoFile)) return;
+  if (!infofile.hasErrorsOrWarnings(infoFile)) return;
 
   writeLine(chalk.bold(`• ${filePath}`));
-  if (hasErrors(infoFile)) {
+  if (infofile.hasErrors(infoFile)) {
     infoFile.errors.forEach((error) => {
       const indentedError = error.replace(/\n/g, '\n    ');
       writeLine(chalk.red(`  ✖ ${indentedError}`));
     });
   }
-  if (hasWarnings(infoFile)) {
+  if (infofile.hasWarnings(infoFile)) {
     infoFile.warnings.forEach((warning) => {
       const indentedWarning = warning.replace(/\n/g, '\n    ');
       writeLine(chalk.yellow(`  ⚠ ${indentedWarning}`));
@@ -487,12 +479,12 @@ export function writeErrorsAndWarningsForCourseData(
 }
 
 export function courseDataHasErrors(courseData: CourseData): boolean {
-  if (hasErrors(courseData.course)) return true;
-  if (Object.values(courseData.questions).some(hasErrors)) return true;
+  if (infofile.hasErrors(courseData.course)) return true;
+  if (Object.values(courseData.questions).some(infofile.hasErrors)) return true;
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
-      if (hasErrors(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(hasErrors);
+      if (infofile.hasErrors(courseInstance.courseInstance)) return true;
+      return Object.values(courseInstance.assessments).some(infofile.hasErrors);
     })
   ) {
     return true;
@@ -501,12 +493,12 @@ export function courseDataHasErrors(courseData: CourseData): boolean {
 }
 
 export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
-  if (hasErrorsOrWarnings(courseData.course)) return true;
-  if (Object.values(courseData.questions).some(hasErrorsOrWarnings)) return true;
+  if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
+  if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
-      if (hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(hasErrorsOrWarnings);
+      if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
+      return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
     })
   ) {
     return true;
@@ -565,7 +557,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 
     // If it wasn't a missing file, this is another error. Propagate it to
     // the caller.
-    return makeError(`Error reading JSON file ${filePath}: ${err.code}`);
+    return infofile.makeError(`Error reading JSON file ${filePath}: ${err.code}`);
   }
 
   try {
@@ -575,15 +567,15 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // a better error report for users.
     const json = JSON.parse(contents);
     if (!json.uuid) {
-      return makeError('UUID is missing');
+      return infofile.makeError('UUID is missing');
     }
     if (!UUID_REGEX.test(json.uuid)) {
-      return makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+      return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
     }
 
     if (!schema) {
       // Skip schema validation, just return the data
-      return makeInfoFile({
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
       });
@@ -594,20 +586,20 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       validate(json);
       if (validate.errors) {
-        const result = makeInfoFile<T>({ uuid: json.uuid });
+        const result = infofile.makeInfoFile<T>({ uuid: json.uuid });
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
         const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
-        addError(result, errorTextString);
+        infofile.addError(result, errorTextString);
         return result;
       }
-      return makeInfoFile({
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
       });
     } catch (err) {
-      return makeError(err.message);
+      return infofile.makeError(err.message);
     }
   } catch (err) {
     // Invalid JSON; let's reparse with jju to get a better error message
@@ -617,18 +609,18 @@ export async function loadInfoFile<T extends { uuid: string }>({
       // This should always throw
       jju.parse(contents, { mode: 'json' });
     } catch (e) {
-      result = makeError(`Error parsing JSON: ${e.message}`);
+      result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
     // The document was still valid JSON, but we may still be able to
     // extract a UUID from the raw files contents with a regex.
     const match = (contents || '').match(FILE_UUID_REGEX);
     if (!match) {
-      addError(result, 'UUID not found in file');
+      infofile.addError(result, 'UUID not found in file');
       return result;
     }
     if (match.length > 1) {
-      addError(result, 'More than one UUID found in file');
+      infofile.addError(result, 'More than one UUID found in file');
       return result;
     }
 
@@ -636,7 +628,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // required, but it keeps TypeScript happy.
     const uuid = match[0].match(UUID_REGEX);
     if (!uuid) {
-      addError(result, 'UUID not found in file');
+      infofile.addError(result, 'UUID not found in file');
       return result;
     }
 
@@ -655,7 +647,7 @@ export async function loadCourseInfo(
     schema: schemas.infoCourse,
   });
 
-  if (maybeNullLoadedData && hasErrors(maybeNullLoadedData)) {
+  if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
     // We'll only have an error if we couldn't parse JSON data; abort
     return maybeNullLoadedData;
   }
@@ -694,7 +686,7 @@ export async function loadCourseInfo(
         .map((name) => `"${name}"`)
         .join(', ');
       const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
-      addWarning(loadedData, warning);
+      infofile.addWarning(loadedData, warning);
     }
 
     if (defaults) {
@@ -727,7 +719,7 @@ export async function loadCourseInfo(
     for (const feature of new Set(devModeFeatures)) {
       // Check if the feature even exists.
       if (!features.hasFeature(feature)) {
-        addWarning(loadedData, `Feature "${feature}" does not exist.`);
+        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
         continue;
       }
 
@@ -740,7 +732,7 @@ export async function loadCourseInfo(
         course_id: courseId,
       });
       if (!featureEnabled) {
-        addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
       }
     }
   }
@@ -802,18 +794,18 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     // tolerating missing files, as we'd need to for nesting support.
     return null;
   }
-  if (hasErrors(loadedJson) || !loadedJson.data) {
+  if (infofile.hasErrors(loadedJson) || !loadedJson.data) {
     return loadedJson;
   }
 
   const validationResult = await validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
-    addErrors(loadedJson, validationResult.errors);
+    infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
   }
 
   loadedJson.data = _.defaults(loadedJson.data, defaults);
-  addWarnings(loadedJson, validationResult.warnings);
+  infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }
 
@@ -870,7 +862,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
         try {
           const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.isEmpty(subInfoFiles)) {
-            infoFiles[path.join(relativeDir, dir)] = makeError(
+            infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}`,
             );
           }
@@ -880,7 +872,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
             // This wasn't a directory; ignore it.
           } else if (e.code === 'ENOENT') {
             // Missing directory; record it
-            infoFiles[path.join(relativeDir, dir)] = makeError(
+            infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}`,
             );
           } else {
@@ -936,7 +928,7 @@ function checkDuplicateUUIDs<T>(
     }
     ids.forEach((id) => {
       const otherIds = ids.filter((other) => other !== id);
-      addWarning(infos[id], makeErrorMessage(uuid, otherIds));
+      infofile.addWarning(infos[id], makeErrorMessage(uuid, otherIds));
       infos[id].uuid = undefined;
     });
   });
@@ -1352,7 +1344,7 @@ export async function loadQuestions(
   // used to import questions from other courses.
   for (const qid in questions) {
     if (qid[0] === '@') {
-      addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
     }
   }
   checkDuplicateUUIDs(
