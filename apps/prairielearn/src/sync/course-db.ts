@@ -840,7 +840,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
     // hooray, we're done.
     await async.each(files, async (dir: string) => {
       const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-      const info: InfoFile<T> | null = await loadAndValidateJson({
+      const info = await loadAndValidateJson({
         coursePath,
         filePath: infoFilePath,
         defaults: defaultInfo,
