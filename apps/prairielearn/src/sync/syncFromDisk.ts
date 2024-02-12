@@ -1,5 +1,3 @@
-import { callbackify } from 'node:util';
-
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { config } from '../lib/config';
@@ -16,7 +14,6 @@ import { flushElementCache } from '../question-servers/freeform';
 import { makePerformance } from './performance';
 import { chalk, chalkDim } from '../lib/chalk';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course';
-import { ServerJob } from '../lib/server-jobs';
 
 const perf = makePerformance('sync');
 
@@ -29,10 +26,15 @@ interface SyncResults {
   courseData: courseDB.CourseData;
 }
 
+interface Logger {
+  info: (msg: string) => void;
+  verbose: (msg: string) => void;
+}
+
 export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
-  logger: ServerJob,
+  logger: Logger,
 ): Promise<SyncResults> {
   logger.info('Loading info.json files from course repository');
   perf.start('sync');
@@ -106,7 +108,7 @@ export async function syncDiskToSqlWithLock(
 export async function syncDiskToSqlAsync(
   course_id: string,
   courseDir: string,
-  logger: ServerJob,
+  logger: Logger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
@@ -126,11 +128,10 @@ export async function syncDiskToSqlAsync(
   return result;
 }
 
-export async function syncOrCreateDiskToSqlAsync(
+export async function syncOrCreateDiskToSql(
   courseDir: string,
-  logger: ServerJob,
+  logger: Logger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSqlAsync(course.id, courseDir, logger);
 }
-export const syncOrCreateDiskToSql = callbackify(syncOrCreateDiskToSqlAsync);
