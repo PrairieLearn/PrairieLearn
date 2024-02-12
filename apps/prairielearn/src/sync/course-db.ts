@@ -896,22 +896,19 @@ function checkDuplicateUUIDs<T>(
   makeErrorMessage: (uuid: string, otherIds: string[]) => string,
 ) {
   // First, create a map from UUIDs to questions that use them
-  const uuids = Object.entries(infos).reduce(
-    (map, [id, info]) => {
-      if (!info.uuid) {
-        // Couldn't find UUID in the file
-        return map;
-      }
-      let ids = map.get(info.uuid);
-      if (!ids) {
-        ids = [];
-        map.set(info.uuid, ids);
-      }
-      ids.push(id);
+  const uuids = Object.entries(infos).reduce((map, [id, info]) => {
+    if (!info.uuid) {
+      // Couldn't find UUID in the file
       return map;
-    },
-    new Map() as Map<string, string[]>,
-  );
+    }
+    let ids = map.get(info.uuid);
+    if (!ids) {
+      ids = [];
+      map.set(info.uuid, ids);
+    }
+    ids.push(id);
+    return map;
+  }, new Map<string, string[]>());
 
   // Do a second pass to add errors for things with duplicate IDs
   // We also null out UUIDs for items where duplicates are found
