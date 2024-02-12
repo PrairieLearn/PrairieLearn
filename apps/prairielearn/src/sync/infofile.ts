@@ -97,7 +97,9 @@ export function addWarnings(infoFile, warnings) {
   infoFile.warnings = infoFile.warnings.concat(warnings);
 }
 
-export function makeInfoFile<T>(infoFile: Omit<InfoFile<T>, 'errors' | 'warnings'> = {}) {
+export function makeInfoFile<T>(
+  infoFile: Omit<InfoFile<T>, 'errors' | 'warnings'> = {},
+): InfoFile<T> {
   return { ...infoFile, errors: [], warnings: [] };
 }
 
