@@ -1,4 +1,4 @@
-import { promisify } from 'node:util';
+import { callbackify } from 'node:util';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
@@ -133,4 +133,4 @@ export async function syncOrCreateDiskToSqlAsync(
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSqlAsync(course.id, courseDir, logger);
 }
-export const syncOrCreateDiskToSql = promisify(syncOrCreateDiskToSqlAsync);
+export const syncOrCreateDiskToSql = callbackify(syncOrCreateDiskToSqlAsync);
