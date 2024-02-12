@@ -3,41 +3,27 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 export function InstructorCourseAdminSettings({
   resLocals,
-  needToSync,
-  noInfo,
+  coursePathExists,
+  courseInfoExists,
 }: {
   resLocals: Record<string, any>;
-  needToSync: boolean;
-  noInfo: boolean;
+  coursePathExists: boolean;
+  courseInfoExists: boolean;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
-        <style>
-          .popover {
-            max-width: 50%;
-          }
-        </style>
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", { ...resLocals })}
         <main id="content" class="container-fluid">
           ${renderEjs(__filename, "<%- include('../partials/courseSyncErrorsAndWarnings'); %>", {
             ...resLocals,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">
-              Course ${resLocals.course.short_name}
-            </div>
+            <div class="card-header bg-primary text-white d-flex">Settings</div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>
@@ -67,7 +53,7 @@ export function InstructorCourseAdminSettings({
                 <tr>
                   <th>Configuration</th>
                   <td>
-                    ${needToSync
+                    ${!coursePathExists
                       ? resLocals.authz_data.has_course_permission_edit &&
                         !resLocals.course.example_course
                         ? html`
@@ -80,11 +66,11 @@ export function InstructorCourseAdminSettings({
                         : html`
                             <span class="text-danger">
                               A course editor must sync this course before anyone can view or edit
-                              its configuration</span
-                            >
+                              its configuration
+                            </span>
                           `
                       : ''}
-                    ${noInfo
+                    ${coursePathExists && !courseInfoExists
                       ? html`<span class="text-danger">Missing configuration file</span>
                           ${resLocals.authz_data.has_course_permission_edit &&
                           !resLocals.course.example_course
@@ -107,7 +93,7 @@ export function InstructorCourseAdminSettings({
                               `
                             : ''} `
                       : ''}
-                    ${!needToSync && !noInfo
+                    ${coursePathExists && courseInfoExists
                       ? resLocals.authz_data.has_course_permission_view
                         ? html`
                             <a
@@ -119,9 +105,7 @@ export function InstructorCourseAdminSettings({
                             !resLocals.course.example_course
                               ? html`
                                   <a
-                                    tabindex="0"
                                     class="btn btn-xs btn-secondary mx-2"
-                                    role="button"
                                     href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
                                   >
                                     <i class="fa fa-edit"></i>

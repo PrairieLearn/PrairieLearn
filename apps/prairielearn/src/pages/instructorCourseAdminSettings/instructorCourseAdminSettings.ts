@@ -14,19 +14,14 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    let needToSync = false;
-    let noInfo = false;
-    const pathExists = await fs.pathExists(res.locals.course.path);
-    if (!pathExists) {
-      needToSync = true;
-    } else {
-      const jsonExists = await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
-      if (!jsonExists) {
-        noInfo = true;
-      }
-    }
+    const coursePathExists = await fs.pathExists(res.locals.course.path);
+    const courseInfoExists = await fs.pathExists(
+      path.join(res.locals.course.path, 'infoCourse.json'),
+    );
 
-    res.send(InstructorCourseAdminSettings({ resLocals: res.locals, needToSync, noInfo }));
+    res.send(
+      InstructorCourseAdminSettings({ resLocals: res.locals, coursePathExists, courseInfoExists }),
+    );
   }),
 );
 
