@@ -32,3 +32,47 @@ ORDER BY
   c.short_name,
   c.title,
   c.id;
+
+-- BLOCK select_or_insert_course_by_path
+WITH
+  select_course AS (
+    SELECT
+      c.*
+    FROM
+      pl_courses AS c
+    WHERE
+      path = $path
+    ORDER BY
+      c.id DESC
+    LIMIT
+      1
+  ),
+  inserted_course AS (
+    INSERT INTO
+      pl_courses AS c (path, display_timezone, institution_id)
+    SELECT
+      $path,
+      i.display_timezone,
+      i.id
+    FROM
+      institutions i
+    WHERE
+      i.id = 1
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          select_course
+      )
+    RETURNING
+      c.*
+  )
+SELECT
+  *
+FROM
+  select_course sc
+UNION ALL
+SELECT
+  *
+FROM
+  inserted_course;

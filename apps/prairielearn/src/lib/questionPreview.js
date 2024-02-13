@@ -1,29 +1,41 @@
 //@ts-check
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { saveAndGradeSubmission, saveSubmission } from './grading';
+import { idsEqual } from './id';
+import { selectVariantById } from '../models/variant';
 
-export function processSubmission(req, res, callback) {
+export async function validateVariantAgainstQuestion(unsafe_variant_id, question_id) {
+  const variant = await selectVariantById(unsafe_variant_id);
+  if (variant == null || !idsEqual(variant.question_id, question_id)) {
+    throw error.make(
+      400,
+      `Client-provided variant ID ${unsafe_variant_id} is not valid for question ID ${question_id}.`,
+    );
+  }
+  return variant;
+}
+
+/**
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+export async function processSubmission(req, res) {
   let variant_id, submitted_answer;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
-      return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
+      throw error.make(400, 'No postData');
     }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
     } catch (e) {
-      return callback(
-        error.make(400, 'JSON parse failed on body.postData', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      throw error.make(400, 'JSON parse failed on body.postData');
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -33,38 +45,24 @@ export function processSubmission(req, res, callback) {
     auth_user_id: res.locals.authn_user.user_id,
     submitted_answer: submitted_answer,
   };
-  sqldb.callOneRow(
-    'variants_ensure_question',
-    [submission.variant_id, res.locals.question.id],
-    (err, result) => {
-      if (ERR(err, callback)) return;
-      const variant = result.rows[0];
-      if (req.body.__action === 'grade') {
-        const overrideRateLimits = true;
-        saveAndGradeSubmission(
-          submission,
-          variant,
-          res.locals.question,
-          res.locals.course,
-          overrideRateLimits,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, submission.variant_id);
-          },
-        );
-      } else if (req.body.__action === 'save') {
-        saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null, submission.variant_id);
-        });
-      } else {
-        callback(
-          error.make(400, 'unknown __action', {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
-      }
-    },
+  const variant = await validateVariantAgainstQuestion(
+    submission.variant_id,
+    res.locals.question.id,
   );
+  if (req.body.__action === 'grade') {
+    const overrideRateLimits = true;
+    await saveAndGradeSubmission(
+      submission,
+      variant,
+      res.locals.question,
+      res.locals.course,
+      overrideRateLimits,
+    );
+    return submission.variant_id;
+  } else if (req.body.__action === 'save') {
+    await saveSubmission(submission, variant, res.locals.question, res.locals.course);
+    return submission.variant_id;
+  } else {
+    throw error.make(400, `unknown __action: ${req.body.__action}`);
+  }
 }

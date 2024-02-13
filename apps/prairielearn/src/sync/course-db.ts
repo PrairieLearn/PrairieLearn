@@ -1,10 +1,9 @@
-// @ts-check
 import * as path from 'path';
-const _ = require('lodash');
+import _ = require('lodash');
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import * as jju from 'jju';
-import Ajv from 'ajv';
+import Ajv, { type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 
@@ -14,6 +13,8 @@ import * as schemas from '../schemas';
 import * as infofile from './infofile';
 import { validateJSON } from '../lib/json-load';
 import { makePerformance } from './performance';
+import { selectInstitutionForCourse } from '../models/institution';
+import { features } from '../lib/features';
 
 const perf = makePerformance('course-db');
 
@@ -179,262 +180,232 @@ const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 const FILE_UUID_REGEX =
   /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
 
-/**
- * @template T
- * @typedef {import('./infofile').InfoFile<T>} InfoFile<T>
- */
+// This type is used a lot, so make an alias
+type InfoFile<T> = infofile.InfoFile<T>;
 
-/**
- * @typedef {Object} CourseOptions
- * @property {boolean} useNewQuestionRenderer
- */
+interface CourseOptions {
+  useNewQuestionRenderer: boolean;
+}
 
-/**
- * @typedef {Object} Tag
- * @property {string} name
- * @property {string} color
- * @property {string} [description]
- */
+interface Tag {
+  name: string;
+  color: string;
+  description?: string;
+}
 
-/**
- * @typedef {Object} Topic
- * @property {string} name
- * @property {string} color
- * @property {string} description
- */
+interface Topic {
+  name: string;
+  color: string;
+  description?: string;
+}
 
-/**
- * @typedef {Object} AssessmentSet
- * @property {string} abbreviation
- * @property {string} name
- * @property {string} heading
- * @property {string} color
- */
+interface AssessmentSet {
+  abbreviation: string;
+  name: string;
+  heading: string;
+  color: string;
+}
 
-/**
- * @typedef AssessmentModule
- * @property {string} name
- * @property {string} heading
- */
+interface AssessmentModule {
+  name: string;
+  heading: string;
+}
 
-/**
- * @typedef {Object} Course
- * @property {string} uuid
- * @property {string} name
- * @property {string} title
- * @property {string} path
- * @property {string} timezone
- * @property {boolean} exampleCourse
- * @property {CourseOptions} options
- * @property {Tag[]} tags
- * @property {Topic[]} topics
- * @property {AssessmentSet[]} assessmentSets
- * @property {AssessmentModule[]} assessmentModules
- */
+interface Course {
+  uuid: string;
+  name: string;
+  title: string;
+  path: string;
+  timezone: string;
+  exampleCourse: boolean;
+  options: CourseOptions;
+  tags: Tag[];
+  topics: Topic[];
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+}
 
-/** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
-/** @typedef {"UIUC" | "ZJUI" | "LTI" | "Any"} Institution */
+interface CourseInstanceAllowAccess {
+  role: string; // Role is only allowed in legacy questions
+  uids: string[];
+  startDate: string;
+  endDate: string;
+  institution: string;
+}
 
-/**
- * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRole} role
- * @property {string[]} uids
- * @property {string} startDate
- * @property {string} endDate
- * @property {Institution} institution
- */
+export interface CourseInstance {
+  uuid: string;
+  longName: string;
+  number: number;
+  timezone: string;
+  hideInEnrollPage: boolean;
+  allowAccess: CourseInstanceAllowAccess[];
+  allowIssueReporting: boolean;
+  groupAssessmentsBy: 'Set' | 'Module';
+}
 
-/**
- * @typedef {Object} CourseInstance
- * @property {string} uuid
- * @property {string} longName
- * @property {number} number
- * @property {string} timezone
- * @property {boolean} hideInEnrollPage
- * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
- * @property {CourseInstanceAllowAccess[]} allowAccess
- * @property {boolean} allowIssueReporting
- * @property {"Set" | "Module"} groupAssessmentsBy
- */
+interface SEBConfig {
+  password: string;
+  quitPassword: string;
+  allowPrograms: string[];
+}
 
-/**
- * @typedef {Object} SEBConfig
- * @property {string} password
- * @property {string} quitPassword
- * @property {string[]} allowPrograms
- */
+interface AssessmentAllowAccess {
+  mode: 'Public' | 'Exam' | 'SEB';
+  examUuid: string;
+  role: string; // Role is only allowed in legacy questions
+  uids: string[];
+  credit: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  timeLimitMin: number;
+  password: string;
+  SEBConfig: SEBConfig;
+}
 
-/**
- * @typedef {Object} AssessmentAllowAccess
- * @property {"Public" | "Exam" | "SEB"} mode
- * @property {string} examUuid
- * @property {"Student" | "TA" | "Instructor"} role
- * @property {string[]} uids
- * @property {number} credit
- * @property {string} startDate
- * @property {string} endDate
- * @property {boolean} active
- * @property {number} timeLimitMin
- * @property {string} password
- * @property {SEBConfig} SEBConfig
- */
+interface QuestionAlternative {
+  points: number | number[];
+  autoPoints: number | number[];
+  maxPoints: number;
+  manualPoints: number;
+  maxAutoPoints: number;
+  id: string;
+  forceMaxPoints: boolean;
+  triesPerVariant: number;
+  advanceScorePerc: number;
+  gradeRateMinutes: number;
+  canView: string[];
+  canSubmit: string[];
+}
 
-/**
- * @typedef {Object} QuestionAlternative
- * @property {number | number[]} points
- * @property {number | number[]} autoPoints
- * @property {number} maxPoints
- * @property {number} manualPoints
- * @property {number} maxAutoPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {number} triesPerVariant
- * @property {number} advanceScorePerc
- * @property {number} gradeRateMinutes
- * @property {string[]} canView
- * @property {string[]} canSubmit
- */
+interface ZoneQuestion {
+  points: number | number[];
+  autoPoints: number | number[];
+  maxPoints: number;
+  manualPoints: number;
+  maxAutoPoints: number;
+  id?: string;
+  forceMaxPoints: boolean;
+  alternatives?: QuestionAlternative[];
+  numberChoose: number;
+  triesPerVariant: number;
+  advanceScorePerc: number;
+  gradeRateMinutes: number;
+  canView: string[];
+  canSubmit: string[];
+}
 
-/**
- * @typedef {Object} ZoneQuestion
- * @property {number | number[]} points
- * @property {number | number[]} autoPoints
- * @property {number} maxPoints
- * @property {number} manualPoints
- * @property {number} maxAutoPoints
- * @property {string} [id]
- * @property {boolean} forceMaxPoints
- * @property {QuestionAlternative[]} [alternatives]
- * @property {number} numberChoose
- * @property {number} triesPerVariant
- * @property {number} advanceScorePerc
- * @property {number} gradeRateMinutes
- * @property {string[]} canView
- * @property {string[]} canSubmit
- */
+interface Zone {
+  title: string;
+  maxPoints: number;
+  numberChoose: number;
+  bestQuestions: number;
+  questions: ZoneQuestion[];
+  advanceScorePerc: number;
+  gradeRateMinutes: number;
+  canView: string[];
+  canSubmit: string[];
+}
 
-/**
- * @typedef {Object} Zone
- * @property {string} title
- * @property {number} maxPoints
- * @property {number} numberChoose
- * @property {number} bestQuestions
- * @property {ZoneQuestion[]} questions
- * @property {number} advanceScorePerc
- * @property {number} gradeRateMinutes
- * @property {string[]} canView
- * @property {string[]} canSubmit
- */
+interface GroupRole {
+  name: string;
+  minimum: number;
+  maximum: number;
+  canAssignRoles: boolean;
+}
 
-/**
- * @typedef {Object} GroupRole
- * @property {string} name
- * @property {number} minimum
- * @property {number} maximum
- * @property {boolean} canAssignRoles
- */
+export interface Assessment {
+  uuid: string;
+  type: 'Homework' | 'Exam';
+  title: string;
+  set: string;
+  module: string;
+  number: string;
+  allowIssueReporting: boolean;
+  allowRealTimeGrading: boolean;
+  multipleInstance: boolean;
+  shuffleQuestions: boolean;
+  allowAccess: AssessmentAllowAccess[];
+  text: string;
+  maxBonusPoints: number;
+  maxPoints: number;
+  autoClose: boolean;
+  zones: Zone[];
+  constantQuestionValue: boolean;
+  groupWork: boolean;
+  groupMaxSize: number;
+  groupMinSize: number;
+  studentGroupCreate: boolean;
+  studentGroupJoin: boolean;
+  studentGroupLeave: boolean;
+  groupRoles: GroupRole[];
+  canView: string[];
+  canSubmit: string[];
+  advanceScorePerc: number;
+  gradeRateMinutes: number;
+}
 
-/**
- * @typedef {Object} Assessment
- * @property {string} uuid
- * @property {"Homework" | "Exam"} type
- * @property {string} title
- * @property {string} set
- * @property {string} module
- * @property {string} number
- * @property {boolean} allowIssueReporting
- * @property {boolean} allowRealTimeGrading
- * @property {boolean} multipleInstance
- * @property {boolean} shuffleQuestions
- * @property {AssessmentAllowAccess[]} allowAccess
- * @property {string} text
- * @property {number} maxBonusPoints
- * @property {number} maxPoints
- * @property {boolean} autoClose
- * @property {Zone[]} zones
- * @property {boolean} constantQuestionValue
- * @property {boolean} groupWork
- * @property {number} groupMaxSize
- * @property {number} groupMinSize
- * @property {boolean} studentGroupCreate
- * @property {boolean} studentGroupJoin
- * @property {boolean} studentGroupLeave
- * @property {GroupRole[]} groupRoles
- * @property {string[]} canView
- * @property {string[]} canSubmit
- * @property {number} advanceScorePerc
- * @property {number} gradeRateMinutes
- */
+interface QuestionExternalGradingOptions {
+  enabled: boolean;
+  image: string;
+  entrypoint: string;
+  serverFilesCourse: string[];
+  timeout: number;
+  enableNetworking: boolean;
+  environment: Record<string, string | null>;
+}
 
-/**
- * @typedef {Object} QuestionExternalGradingOptions
- * @property {boolean} enabled
- * @property {string} image
- * @property {string} entrypoint
- * @property {string[]} serverFilesCourse
- * @property {number} timeout
- * @property {boolean} enableNetworking
- * @property {Record<string, string | null>} environment
- */
+interface QuestionWorkspaceOptions {
+  image: string;
+  port: number;
+  home: string;
+  args: string;
+  gradedFiles: string[];
+  rewriteUrl: string;
+  enableNetworking: boolean;
+  environment: Record<string, string | null>;
+}
 
-/**
- * @typedef {Object} QuestionWorkspaceOptions
- * @property {string} image
- * @property {number} port
- * @property {string} home
- * @property {string} args
- * @property {string[]} gradedFiles
- * @property {string} rewriteUrl
- * @property {boolean} enableNetworking
- * @property {Record<string, string | null>} environment
- */
+export interface Question {
+  id: string;
+  qid: string;
+  uuid: string;
+  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
+  title: string;
+  topic: string;
+  tags: string[];
+  clientFiles: string[];
+  clientTemplates: string[];
+  template: string;
+  gradingMethod: 'Internal' | 'External' | 'Manual';
+  singleVariant: boolean;
+  showCorrectAnswer: boolean;
+  partialCredit: boolean;
+  options: Record<string, any>;
+  externalGradingOptions: QuestionExternalGradingOptions;
+  workspaceOptions?: QuestionWorkspaceOptions;
+  dependencies: Record<string, string>;
+}
 
-/**
- * @typedef {Object} Question
- * @property {any} id
- * @property {string} qid
- * @property {string} uuid
- * @property {"Calculation" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
- * @property {string} title
- * @property {string} topic
- * @property {string[]} tags
- * @property {string[]} clientFiles
- * @property {string[]} clientTemplates
- * @property {string} template
- * @property {"Internal" | "External" | "Manual"} gradingMethod
- * @property {boolean} singleVariant
- * @property {boolean} showCorrectAnswer
- * @property {boolean} partialCredit
- * @property {Object} options
- * @property {QuestionExternalGradingOptions} externalGradingOptions
- * @property {QuestionWorkspaceOptions} [workspaceOptions]
- * @property {Object} dependencies
- */
+interface CourseInstanceData {
+  courseInstance: InfoFile<CourseInstance>;
+  assessments: Record<string, InfoFile<Assessment>>;
+}
 
-/**
- * @typedef {object} CourseInstanceData
- * @property {InfoFile<CourseInstance>} courseInstance
- * @property {{ [tid: string]: InfoFile<Assessment> }} assessments
- */
+export interface CourseData {
+  course: InfoFile<Course>;
+  questions: Record<string, InfoFile<Question>>;
+  courseInstances: Record<string, CourseInstanceData>;
+}
 
-/**
- * @typedef {object} CourseData
- * @property {InfoFile<Course>} course
- * @property {{ [qid: string]: InfoFile<Question> }} questions
- * @property {{ [ciid: string]: CourseInstanceData }} courseInstances
- */
-
-/**
- * @param {string} courseDir
- * @returns {Promise<CourseData>}
- */
-export async function loadFullCourse(courseDir) {
-  const courseInfo = await loadCourseInfo(courseDir);
+export async function loadFullCourse(courseId: string, courseDir: string): Promise<CourseData> {
+  const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
   perf.end('loadQuestions');
   const courseInstanceInfos = await loadCourseInstances(courseDir);
-  const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
+  const courseInstances: Record<string, CourseInstanceData> = {};
   for (const courseInstanceId in courseInstanceInfos) {
     // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
     // If so, duplicate all that here
@@ -452,18 +423,13 @@ export async function loadFullCourse(courseDir) {
   };
 }
 
-/**
- * @template T
- * @param {any} courseId
- * @param {string} filePath
- * @param {InfoFile<T>} infoFile
- * @param {(line?: string) => void} writeLine
- */
-function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
+function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
+  filePath: string,
+  infoFile: InfoFile<T>,
+  writeLine: (line?: string) => void,
+): void {
   if (!infofile.hasErrorsOrWarnings(infoFile)) return;
-  // TODO: if https://github.com/drudru/ansi_up/issues/58 is ever resolved,
-  // add a direct link to a file editor with `terminal-link` package
-  // const editorLink = `/pl/course/${courseId}/file_edit/${filePath}`;
+
   writeLine(chalk.bold(`• ${filePath}`));
   if (infofile.hasErrors(infoFile)) {
     infoFile.errors.forEach((error) => {
@@ -479,26 +445,19 @@ function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile,
   }
 }
 
-/**
- * @param {any} courseId
- * @param {CourseData} courseData
- * @param {(line?: string) => void} writeLine
- */
-export function writeErrorsAndWarningsForCourseData(courseId, courseData, writeLine) {
-  writeErrorsAndWarningsForInfoFileIfNeeded(
-    courseId,
-    'infoCourse.json',
-    courseData.course,
-    writeLine,
-  );
+export function writeErrorsAndWarningsForCourseData(
+  courseId: string,
+  courseData: CourseData,
+  writeLine: (line?: string) => void,
+): void {
+  writeErrorsAndWarningsForInfoFileIfNeeded('infoCourse.json', courseData.course, writeLine);
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     const questionPath = path.posix.join('questions', qid, 'info.json');
-    writeErrorsAndWarningsForInfoFileIfNeeded(courseId, questionPath, question, writeLine);
+    writeErrorsAndWarningsForInfoFileIfNeeded(questionPath, question, writeLine);
   });
   Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceData]) => {
     const courseInstancePath = path.posix.join('courseInstances', ciid, 'infoCourseInstance.json');
     writeErrorsAndWarningsForInfoFileIfNeeded(
-      courseId,
       courseInstancePath,
       courseInstanceData.courseInstance,
       writeLine,
@@ -511,16 +470,12 @@ export function writeErrorsAndWarningsForCourseData(courseId, courseData, writeL
         aid,
         'infoAssessment.json',
       );
-      writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
+      writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
     });
   });
 }
 
-/**
- * @param {CourseData} courseData
- * @returns {boolean}
- */
-export function courseDataHasErrors(courseData) {
+export function courseDataHasErrors(courseData: CourseData): boolean {
   if (infofile.hasErrors(courseData.course)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrors)) return true;
   if (
@@ -534,11 +489,7 @@ export function courseDataHasErrors(courseData) {
   return false;
 }
 
-/**
- * @param {CourseData} courseData
- * @returns {boolean}
- */
-export function courseDataHasErrorsOrWarnings(courseData) {
+export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
   if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
   if (
@@ -556,17 +507,21 @@ export function courseDataHasErrorsOrWarnings(courseData) {
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
- * @template {{ uuid: string }} T
- * @param {Object} options - Options for loading and validating the file
- * @param {string} options.coursePath
- * @param {string} options.filePath
- * @param {object} [options.schema]
- * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @returns {Promise<InfoFile<T> | null>}
  */
-export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissing = false }) {
+export async function loadInfoFile<T extends { uuid: string }>({
+  coursePath,
+  filePath,
+  schema,
+  tolerateMissing = false,
+}: {
+  coursePath: string;
+  filePath: string;
+  schema?: JSONSchemaType<T>;
+  /** Whether or not a missing file constitutes an error */
+  tolerateMissing?: boolean;
+}): Promise<InfoFile<T> | null> {
   const absolutePath = path.join(coursePath, filePath);
-  let contents;
+  let contents: string;
   try {
     // perf.start(`readfile:${absolutePath}`);
     // fs-extra uses graceful-fs, which in turn will enqueue open operations.
@@ -623,11 +578,11 @@ export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissi
     }
 
     // Validate file against schema
-    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
+    const validate = ajv.compile<T>(schema);
     try {
       validate(json);
       if (validate.errors) {
-        const result = infofile.makeInfoFile({ uuid: /** @type {any} */ (json).uuid });
+        const result = infofile.makeInfoFile<T>({ uuid: json.uuid });
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
@@ -645,8 +600,7 @@ export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissi
   } catch (err) {
     // Invalid JSON; let's reparse with jju to get a better error message
     // for the user.
-    /** @type {import('./infofile').InfoFile<T>} */
-    let result = {};
+    let result: InfoFile<T> = { errors: [], warnings: [] };
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
@@ -679,13 +633,11 @@ export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissi
   }
 }
 
-/**
- * @param {string} coursePath
- * @returns {Promise<InfoFile<Course>>}
- */
-export async function loadCourseInfo(coursePath) {
-  /** @type {import('./infofile').InfoFile<Course> | null} */
-  const maybeNullLoadedData = await loadInfoFile({
+export async function loadCourseInfo(
+  courseId: string,
+  coursePath: string,
+): Promise<InfoFile<Course>> {
+  const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -708,14 +660,12 @@ export async function loadCourseInfo(coursePath) {
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
-   * @template {'tags' | 'topics' | 'assessmentSets' | 'assessmentModules'} K
-   * @template T
-   * @param {K} fieldName The member of `info` to inspect
-   * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
-   * @param {Course[K]} [defaults]
-   * @returns {Course[K]}
+   * @param fieldName The member of `info` to inspect
+   * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
-  function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
+  function getFieldWithoutDuplicates<
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+  >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -758,6 +708,31 @@ export async function loadCourseInfo(coursePath) {
   const topics = getFieldWithoutDuplicates('topics', 'name');
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
+  const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
+  if (devModeFeatures.length > 0) {
+    const institution = await selectInstitutionForCourse({ course_id: courseId });
+
+    for (const feature of new Set(devModeFeatures)) {
+      // Check if the feature even exists.
+      if (!features.hasFeature(feature)) {
+        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+        continue;
+      }
+
+      // If we're in dev mode, any feature is allowed.
+      if (config.devMode) continue;
+
+      // If the feature exists, check if it's granted to the course and warn if not.
+      const featureEnabled = await features.enabled(feature, {
+        institution_id: institution.id,
+        course_id: courseId,
+      });
+      if (!featureEnabled) {
+        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+      }
+    }
+  }
+
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
     info.title === 'Example Course' &&
@@ -776,6 +751,7 @@ export async function loadCourseInfo(coursePath) {
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      devModeFeatures,
     },
   };
 
@@ -783,33 +759,28 @@ export async function loadCourseInfo(coursePath) {
   return loadedData;
 }
 
-/**
- * @template {{ uuid: string }} T
- * @param {Object} options - Options for loading and validating the file
- * @param {string} options.coursePath
- * @param {string} options.filePath
- * @param {any} options.defaults
- * @param {any} options.schema
- * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @param {(info: T) => Promise<{ warnings: string[], errors: string[] }>} options.validate
- * @returns {Promise<InfoFile<T> | null>}
- */
-async function loadAndValidateJson({
+async function loadAndValidateJson<T extends { uuid: string }>({
   coursePath,
   filePath,
   defaults,
   schema,
   validate,
   tolerateMissing,
-}) {
-  const loadedJson = /** @type {InfoFile<T>} */ (
-    await loadInfoFile({
-      coursePath,
-      filePath,
-      schema,
-      tolerateMissing,
-    })
-  );
+}: {
+  coursePath: string;
+  filePath: string;
+  defaults: any;
+  schema: any;
+  /** Whether or not a missing file constitutes an error */
+  tolerateMissing?: boolean;
+  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+}): Promise<InfoFile<T> | null> {
+  const loadedJson: InfoFile<T> | null = await loadInfoFile({
+    coursePath,
+    filePath,
+    schema,
+    tolerateMissing,
+  });
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
     // as would happen if there was a .DS_Store file, or if we're
@@ -833,18 +804,8 @@ async function loadAndValidateJson({
 
 /**
  * Loads and schema-validates all info files in a directory.
- * @template {{ uuid: string }} T
- * @param {Object} options - Options for loading and validating files
- * @param {string} options.coursePath The path of the course being synced
- * @param {string} options.directory The path of the directory relative to `coursePath`
- * @param {string} options.infoFilename
- * @param {any} options.defaultInfo
- * @param {object} options.schema
- * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
- * @param {(info: T) => Promise<{ warnings: string[], errors: string[] }>} options.validate
- * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
-async function loadInfoForDirectory({
+async function loadInfoForDirectory<T extends { uuid: string }>({
   coursePath,
   directory,
   infoFilename,
@@ -852,32 +813,41 @@ async function loadInfoForDirectory({
   schema,
   validate,
   recursive = false,
-}) {
+}: {
+  /** The path of the course being synced */
+  coursePath: string;
+  /** The path of the directory relative to `coursePath` */
+  directory: string;
+  infoFilename: string;
+  defaultInfo: any;
+  schema: any;
+  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  /** Whether or not info files should be searched for recursively */
+  recursive?: boolean;
+}): Promise<Record<string, InfoFile<T>>> {
   // Recursive lookup might not be enabled for some info types - if it's
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir) => {
-    const infoFiles = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
+    const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory
     // and attempt to access `info.json`. If we can successfully read it,
     // hooray, we're done.
-    await async.each(files, async (/** @type {string} */ dir) => {
+    await async.each(files, async (dir: string) => {
       const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-      const info = /** @type {InfoFile<T>} */ (
-        await loadAndValidateJson({
-          coursePath,
-          filePath: infoFilePath,
-          defaults: defaultInfo,
-          schema,
-          validate,
-          // If we aren't operating in recursive mode, we want to ensure
-          // that missing files are correctly reflected as errors.
-          tolerateMissing: recursive,
-        })
-      );
+      const info = await loadAndValidateJson({
+        coursePath,
+        filePath: infoFilePath,
+        defaults: defaultInfo,
+        schema,
+        validate,
+        // If we aren't operating in recursive mode, we want to ensure
+        // that missing files are correctly reflected as errors.
+        tolerateMissing: recursive,
+      });
       if (info) {
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
@@ -912,19 +882,17 @@ async function loadInfoForDirectory({
   } catch (e) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
-      return /** @type {{ [id: string]: InfoFile<T> }} */ ({});
+      return {};
     }
     // Some other error; Throw it to abort.
     throw e;
   }
 }
 
-/**
- * @template T
- * @param {{ [id: string]: InfoFile<T>}} infos
- * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
- */
-function checkDuplicateUUIDs(infos, makeErrorMessage) {
+function checkDuplicateUUIDs<T>(
+  infos: Record<string, InfoFile<T>>,
+  makeErrorMessage: (uuid: string, otherIds: string[]) => string,
+) {
   // First, create a map from UUIDs to questions that use them
   const uuids = Object.entries(infos).reduce((map, [id, info]) => {
     if (!info.uuid) {
@@ -938,7 +906,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
     }
     ids.push(id);
     return map;
-  }, /** @type {Map<string, string[]>} */ (new Map()));
+  }, new Map<string, string[]>());
 
   // Do a second pass to add errors for things with duplicate IDs
   // We also null out UUIDs for items where duplicates are found
@@ -957,11 +925,10 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 
 /**
  * Checks that roles are not present.
- * @param {{ role?: UserRole }} rule
- * @returns {string[]} A list of warnings, if any
+ * @returns A list of warnings, if any
  */
-function checkAllowAccessRoles(rule) {
-  const warnings = [];
+function checkAllowAccessRoles(rule: { role?: string }): string[] {
+  const warnings: string[] = [];
   if ('role' in rule) {
     if (rule.role !== 'Student') {
       warnings.push(
@@ -974,12 +941,15 @@ function checkAllowAccessRoles(rule) {
 
 /**
  * Checks that dates, if present, are valid and sequenced correctly.
- * @param {{ startDate?: string, endDate?: string }} rule
- * @returns {{errors: string[], dateInFuture: boolean}} A list of errors, if any, and whether there are any dates in the future
+ * @returns A list of errors, if any, and whether there are any dates in the future
  */
-function checkAllowAccessDates(rule) {
-  const errors = [];
-  let startDate, endDate;
+function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): {
+  errors: string[];
+  dateInFuture: boolean;
+} {
+  const errors: string[] = [];
+  let startDate: Date | null = null,
+    endDate: Date | null = null;
   if (rule.startDate) {
     startDate = parseISO(rule.startDate);
     if (!isValid(startDate)) {
@@ -1009,13 +979,11 @@ function checkAllowAccessDates(rule) {
   return { errors, dateInFuture };
 }
 
-/**
- * @param {Question} question
- * @returns {Promise<{ warnings: string[], errors: string[] }>}
- */
-async function validateQuestion(question) {
-  const warnings = [];
-  const errors = [];
+async function validateQuestion(
+  question: Question,
+): Promise<{ warnings: string[]; errors: string[] }> {
+  const warnings: string[] = [];
+  const errors: string[] = [];
 
   if (question.type && question.options) {
     try {
@@ -1039,14 +1007,12 @@ async function validateQuestion(question) {
   return { warnings, errors };
 }
 
-/**
- * @param {Assessment} assessment
- * @param {{ [qid: string]: any }} questions
- * @returns {Promise<{ warnings: string[], errors: string[] }>}
- */
-async function validateAssessment(assessment, questions) {
-  const warnings = [];
-  const errors = [];
+async function validateAssessment(
+  assessment: Assessment,
+  questions: Record<string, InfoFile<Question>>,
+): Promise<{ warnings: string[]; errors: string[] }> {
+  const warnings: string[] = [];
+  const errors: string[] = [];
 
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
   if (assessment.type === 'Homework') {
@@ -1088,8 +1054,7 @@ async function validateAssessment(assessment, questions) {
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
-  /** @type {(qid: string) => void} */
-  const checkAndRecordQid = (qid) => {
+  const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
       // sync time because we need to query the database to verify that the question exists
@@ -1106,7 +1071,6 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      /** @type {number | number[]} */
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
@@ -1115,14 +1079,18 @@ async function validateAssessment(assessment, questions) {
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
-      let alternatives = [];
+      let alternatives: {
+        points: number | number[];
+        autoPoints: number | number[];
+        maxPoints: number;
+        maxAutoPoints: number;
+        manualPoints: number;
+      }[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          /** @type {number | number[]} */
           const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
@@ -1225,7 +1193,7 @@ async function validateAssessment(assessment, questions) {
 
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
-    let foundCanAssignRoles = assessment.groupRoles.some(
+    const foundCanAssignRoles = assessment.groupRoles.some(
       (role) => role.canAssignRoles && role.minimum >= 1,
     );
 
@@ -1262,8 +1230,11 @@ async function validateAssessment(assessment, questions) {
       validRoleNames.add(role.name);
     });
 
-    /** @type {(canView: string[], canSubmit: string[], area: string) => void} */
-    const validateViewAndSubmitRolePermissions = (canView, canSubmit, area) => {
+    const validateViewAndSubmitRolePermissions = (
+      canView: string[] | null | undefined,
+      canSubmit: string[] | null | undefined,
+      area: string,
+    ): void => {
       (canView || []).forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
@@ -1300,13 +1271,11 @@ async function validateAssessment(assessment, questions) {
   return { warnings, errors };
 }
 
-/**
- * @param {CourseInstance} courseInstance
- * @returns {Promise<{ warnings: string[], errors: string[] }>}
- */
-async function validateCourseInstance(courseInstance) {
-  const warnings = [];
-  const errors = [];
+async function validateCourseInstance(
+  courseInstance: CourseInstance,
+): Promise<{ warnings: string[]; errors: string[] }> {
+  const warnings: string[] = [];
+  const errors: string[] = [];
 
   if (_(courseInstance).has('allowIssueReporting')) {
     if (courseInstance.allowIssueReporting) {
@@ -1347,11 +1316,10 @@ async function validateCourseInstance(courseInstance) {
 
 /**
  * Loads all questions in a course directory.
- *
- * @param {string} coursePath
  */
-export async function loadQuestions(coursePath) {
-  /** @type {{ [qid: string]: InfoFile<Question> }} */
+export async function loadQuestions(
+  coursePath: string,
+): Promise<Record<string, InfoFile<Question>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
@@ -1363,7 +1331,7 @@ export async function loadQuestions(coursePath) {
   });
   // Don't allow question directories to start with '@', because it is
   // used to import questions from other courses.
-  for (let qid in questions) {
+  for (const qid in questions) {
     if (qid[0] === '@') {
       infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
     }
@@ -1377,11 +1345,10 @@ export async function loadQuestions(coursePath) {
 
 /**
  * Loads all course instances in a course directory.
- *
- * @param {string} coursePath
  */
-export async function loadCourseInstances(coursePath) {
-  /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
+export async function loadCourseInstances(
+  coursePath: string,
+): Promise<Record<string, InfoFile<CourseInstance>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
@@ -1400,16 +1367,15 @@ export async function loadCourseInstances(coursePath) {
 
 /**
  * Loads all assessments in a course instance.
- *
- * @param {string} coursePath
- * @param {string} courseInstance
- * @param {{ [qid: string]: any }} questions
  */
-export async function loadAssessments(coursePath, courseInstance, questions) {
+export async function loadAssessments(
+  coursePath: string,
+  courseInstance: string,
+  questions: Record<string, InfoFile<Question>>,
+): Promise<Record<string, InfoFile<Assessment>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
-  /** @type {(assessment: Assessment) => Promise<{ warnings: string[], errors: string[] }>} */
-  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
-  /** @type {{ [tid: string]: InfoFile<Assessment> }} */
+  const validateAssessmentWithQuestions = (assessment: Assessment) =>
+    validateAssessment(assessment, questions);
   const assessments = await loadInfoForDirectory({
     coursePath,
     directory: assessmentsPath,

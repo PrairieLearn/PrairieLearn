@@ -1,4 +1,3 @@
-import * as util from 'util';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
@@ -43,7 +42,7 @@ type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
  * @param variant_course - The course for the variant.
  * @returns submission_id
  */
-export async function saveSubmissionAsync(
+export async function saveSubmission(
   submissionData: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
@@ -132,7 +131,6 @@ export async function saveSubmissionAsync(
   );
   return submission_id;
 }
-export const saveSubmission = util.callbackify(saveSubmissionAsync);
 
 /**
  * Grade the most recent submission for a given variant.
@@ -144,7 +142,7 @@ export const saveSubmission = util.callbackify(saveSubmissionAsync);
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
  */
-export async function gradeVariantAsync(
+export async function gradeVariant(
   variant: Variant,
   check_submission_id: string | null,
   question: Question,
@@ -242,7 +240,6 @@ export async function gradeVariantAsync(
     }
   }
 }
-export const gradeVariant = util.callbackify(gradeVariantAsync);
 
 /**
  * Save and grade a new submission to a variant.
@@ -254,15 +251,15 @@ export const gradeVariant = util.callbackify(gradeVariantAsync);
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
  * @returns submission_id
  */
-export async function saveAndGradeSubmissionAsync(
+export async function saveAndGradeSubmission(
   submissionData: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmissionAsync(submissionData, variant, question, course);
-  await gradeVariantAsync(
+  const submission_id = await saveSubmission(submissionData, variant, question, course);
+  await gradeVariant(
     variant,
     submission_id,
     question,
@@ -272,4 +269,3 @@ export async function saveAndGradeSubmissionAsync(
   );
   return submission_id;
 }
-export const saveAndGradeSubmission = util.callbackify(saveAndGradeSubmissionAsync);

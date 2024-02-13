@@ -1,9 +1,4 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-import { callbackify, promisify } from 'node:util';
-
 import * as namedLocks from '@prairielearn/named-locks';
-import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
 import * as courseDB from './course-db';
@@ -18,33 +13,34 @@ import * as syncAssessments from './fromDisk/assessments';
 import { flushElementCache } from '../question-servers/freeform';
 import { makePerformance } from './performance';
 import { chalk, chalkDim } from '../lib/chalk';
-import { getLockNameForCoursePath } from '../models/course';
+import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course';
 
 const perf = makePerformance('sync');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
-/**
- * @typedef {Object} SyncResults
- * @property {boolean} hadJsonErrors
- * @property {boolean} hadJsonErrorsOrWarnings
- * @property {string} courseId
- * @property {import('./course-db').CourseData} courseData
- */
+interface SyncResults {
+  hadJsonErrors: boolean;
+  hadJsonErrorsOrWarnings: boolean;
+  courseId: string;
+  courseData: courseDB.CourseData;
+}
 
-/**
- *
- * @param {string} courseDir
- * @param {any} courseId
- * @param {any} logger
- * @returns Promise<SyncResults>
- */
-export async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+interface Logger {
+  info: (msg: string) => void;
+  verbose: (msg: string) => void;
+}
+
+export async function syncDiskToSqlWithLock(
+  courseId: string,
+  courseDir: string,
+  logger: Logger,
+): Promise<SyncResults> {
   logger.info('Loading info.json files from course repository');
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir),
+    courseDB.loadFullCourse(courseId, courseDir),
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
@@ -109,71 +105,36 @@ export async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   };
 }
 
-/**
- * @param {string} courseDir
- * @param {any} course_id
- * @param {any} logger
- * @param {(err: Error | null, result: SyncResults) => void} callback
- */
-function _syncDiskToSqlWithLock(courseDir, course_id, logger, callback) {
-  callbackify(async () => {
-    return await syncDiskToSqlWithLock(courseDir, course_id, logger);
-  })(callback);
-}
-
-/**
- * @param {string} courseDir
- * @param {string} course_id
- * @param {any} logger
- * @param {(err: Error | null, result?: SyncResults) => void} callback
- */
-function syncDiskToSql(courseDir, course_id, logger, callback) {
+export async function syncDiskToSql(
+  course_id: string,
+  courseDir: string,
+  logger: Logger,
+): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
-  namedLocks.tryLock(lockName, (err, lock) => {
-    if (ERR(err, callback)) return;
-    if (lock == null) {
-      logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
-      callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-    } else {
+  const result = await namedLocks.doWithLock(
+    lockName,
+    {
+      timeout: 0,
+      onNotAcquired: () => {
+        logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+        throw new Error(`Another user is already syncing or modifying the course: ${courseDir}`);
+      },
+    },
+    async () => {
       logger.verbose(chalkDim(`Acquired lock ${lockName}`));
-      _syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
-        namedLocks.releaseLock(lock, (lockErr) => {
-          if (ERR(lockErr, callback)) return;
-          if (ERR(err, callback)) return;
-          logger.verbose(chalkDim(`Released lock ${lockName}`));
-          callback(null, result);
-        });
-      });
-    }
-  });
+      return await syncDiskToSqlWithLock(course_id, courseDir, logger);
+    },
+  );
+
+  logger.verbose(chalkDim(`Released lock ${lockName}`));
+  return result;
 }
 
-/**
- * @param {string} courseDir
- * @param {string} course_id
- * @param {any} logger
- * @returns {Promise<SyncResults>}
- */
-export function syncDiskToSqlAsync(courseDir, course_id, logger) {
-  // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
-  // that it'll always result in a non-undefined value if it doesn't error.
-  return promisify(syncDiskToSql)(courseDir, course_id, logger);
+export async function syncOrCreateDiskToSql(
+  courseDir: string,
+  logger: Logger,
+): Promise<SyncResults> {
+  const course = await selectOrInsertCourseByPath(courseDir);
+  return await syncDiskToSql(course.id, courseDir, logger);
 }
-
-/**
- * @param {string} courseDir
- * @param {any} logger
- * @param {(err: Error | null, result?: SyncResults) => void} callback
- */
-export function syncOrCreateDiskToSql(courseDir, logger, callback) {
-  sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
-    if (ERR(err, callback)) return;
-    const course_id = result.rows[0].course_id;
-    syncDiskToSql(courseDir, course_id, logger, function (err, result) {
-      if (ERR(err, callback)) return;
-      callback(null, result);
-    });
-  });
-}
-export const syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);
