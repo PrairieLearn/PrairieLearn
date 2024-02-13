@@ -9,91 +9,43 @@ export interface InfoFile<T> {
   data?: T;
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @returns {boolean}
- */
-export function hasUuid(infoFile) {
+export function hasUuid<T>(infoFile: InfoFile<T>): boolean {
   return !!infoFile.uuid;
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @returns {boolean}
- */
-export function hasErrors(infoFile) {
+export function hasErrors<T>(infoFile: InfoFile<T>): boolean {
   return infoFile.errors.length > 0;
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @returns {boolean}
- */
-export function hasWarnings(infoFile) {
+export function hasWarnings<T>(infoFile: InfoFile<T>): boolean {
   return infoFile.warnings.length > 0;
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @returns {boolean}
- */
-export function hasErrorsOrWarnings(infoFile) {
+export function hasErrorsOrWarnings<T>(infoFile: InfoFile<T>): boolean {
   return hasErrors(infoFile) || hasWarnings(infoFile);
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- */
-export function stringifyErrors(infoFile) {
+export function stringifyErrors<T>(infoFile: InfoFile<T>): string {
   return infoFile.errors.join('\n');
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- */
-export function stringifyWarnings(infoFile) {
+export function stringifyWarnings<T>(infoFile: InfoFile<T>): string {
   return infoFile.warnings.join('\n');
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @param {string} error
- */
-export function addError(infoFile, error) {
+export function addError<T>(infoFile: InfoFile<T>, error: string): void {
   infoFile.errors.push(error);
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @param {string[]} errors
- */
-export function addErrors(infoFile, errors) {
+export function addErrors<T>(infoFile: InfoFile<T>, errors: string[]): void {
   infoFile.errors = infoFile.errors.concat(errors);
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @param {string} warning
- */
-export function addWarning(infoFile, warning) {
+export function addWarning<T>(infoFile: InfoFile<T>, warning: string): void {
   infoFile.warnings.push(warning);
 }
 
-/**
- * @template T
- * @param {InfoFile<T>} infoFile
- * @param {string[]} warnings
- */
-export function addWarnings(infoFile, warnings) {
+export function addWarnings<T>(infoFile: InfoFile<T>, warnings: string[]): void {
   infoFile.warnings = infoFile.warnings.concat(warnings);
 }
 
@@ -103,20 +55,10 @@ export function makeInfoFile<T>(
   return { ...infoFile, errors: [], warnings: [] };
 }
 
-/**
- * @template T
- * @param {string} error
- * @returns {InfoFile<T>}
- */
-export function makeError(error) {
+export function makeError<T>(error: string): InfoFile<T> {
   return { errors: [error], warnings: [] };
 }
 
-/**
- * @template T
- * @param {string} warning
- * @returns {InfoFile<T>}
- */
-export function makeWarning(warning) {
+export function makeWarning<T>(warning: string): InfoFile<T> {
   return { warnings: [warning], errors: [] };
 }
