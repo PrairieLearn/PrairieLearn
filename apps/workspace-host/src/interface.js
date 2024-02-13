@@ -253,7 +253,7 @@ async
       }
     },
     async () => {
-      cache.init({
+      await cache.init({
         type: config.cacheType,
         keyPrefix: config.cacheKeyPrefix,
         redisUrl: config.redisUrl,
@@ -610,7 +610,11 @@ async function _pullImage(workspace) {
   // decreases. It has the disadvantage that the percentage
   // will tend to go faster at the start (when we only know
   // about a few layers) and slow down at the end (when we
-  // know about all layers).
+  // know about all layers). To allow for more accurate
+  // progress reporting, we cache the layer details after
+  // the first successful pull. This allows us to reference
+  // the previously pulled layers and provide a more accurate
+  // percantage calculation on any subsequent pulls.
   let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
   let progressDetailsInit = {};
   let current = 0;
@@ -637,7 +641,11 @@ async function _pullImage(workspace) {
         }
 
         const toDatabase = false;
-        cache.set(`workspaceProgressInit:${workspace_image}`, progressDetailsInit, 1000 * 60 * 60);
+        cache.set(
+          `workspaceProgressInit:${workspace_image}`,
+          progressDetailsInit,
+          1000 * 60 * 60 * 24, // 24 hours
+        );
         workspaceUtils
           .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
           .catch((err) => {
