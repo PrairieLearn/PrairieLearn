@@ -14,12 +14,12 @@ const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
+import { cache } from '@prairielearn/cache';
 
 import * as schemas from '../schemas';
 import { config } from '../lib/config';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
 import * as jsonLoad from '../lib/json-load';
-import * as cache from '../lib/cache';
 import { getOrUpdateCourseCommitHash } from '../models/course';
 import * as markdown from '../lib/markdown';
 import * as chunks from '../lib/chunks';

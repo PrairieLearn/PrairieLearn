@@ -3,8 +3,7 @@ import * as util from './util';
 import * as helperDb from '../helperDb';
 import { config } from '../../lib/config';
 import { features } from '../../lib/features';
-import { callRow } from '@prairielearn/postgres';
-import { IdSchema } from '../../lib/db-types';
+import { selectOrInsertCourseByPath } from '../../models/course';
 
 describe('Course syncing', () => {
   before('set up testing database', helperDb.before);
@@ -58,11 +57,11 @@ describe('Course syncing', () => {
       const courseDir = await util.writeCourseToTempDirectory(courseData);
 
       // We need to create the course first so that we can enable a feature for it.
-      const course_id = await callRow('select_or_insert_course_by_path', [courseDir], IdSchema);
+      const course = await selectOrInsertCourseByPath(courseDir);
 
       await features.enable('manual-grading-rubrics', {
         institution_id: '1',
-        course_id,
+        course_id: course.id,
       });
 
       await util.syncCourseData(courseDir);
