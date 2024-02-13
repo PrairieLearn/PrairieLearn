@@ -114,7 +114,12 @@ To produce output that will be visible to students, tests may be optionally decl
     @Test
     @DisplayName("Test addition of values 1 and 1")
     void addition(TestReporter reporter) {
+        // Produce a single line of output
         reporter.publishEntry("Calculating the addition of 1 and 1, which should result in 2");
+        // Alternatively, multiple key-value entries may be provided instead
+        reporter.publishEntry("TEST", "Adding 1 plus 1");
+        reporter.publishEntry("EXPECTED", "2");
+        reporter.publishEntry("RESULT", calculator.add(1, 1).toString());
         assertEquals(2, calculator.add(1, 1));
     }
 ```
