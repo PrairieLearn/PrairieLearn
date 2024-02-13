@@ -1,4 +1,3 @@
-import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import * as path from 'path';
@@ -452,7 +451,7 @@ export function getFakeLogger() {
  */
 export async function syncCourseData(courseDir: string) {
   const logger = getFakeLogger();
-  await promisify(syncFromDisk.syncOrCreateDiskToSql)(courseDir, logger);
+  await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
 }
 
 export async function createAndSyncCourseData() {
