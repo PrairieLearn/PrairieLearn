@@ -1,14 +1,13 @@
-// @ts-check
 /**
  * Represents the result of attempting to load and validate an info file. May
  * contain any combination of errors, warnings, data, and a UUID.
- * @template T
- * @typedef {object} InfoFile
- * @property {string[]} errors
- * @property {string[]} warnings
- * @property {string} [uuid]
- * @property {T} [data]
  */
+export interface InfoFile<T> {
+  errors: string[];
+  warnings: string[];
+  uuid?: string;
+  data?: T;
+}
 
 /**
  * @template T
@@ -98,12 +97,9 @@ export function addWarnings(infoFile, warnings) {
   infoFile.warnings = infoFile.warnings.concat(warnings);
 }
 
-/**
- * @template T
- * @param {Partial<Pick<InfoFile<T>, 'uuid' | 'data'>>} infoFile
- * @returns {InfoFile<T>}
- */
-export function makeInfoFile(infoFile = {}) {
+export function makeInfoFile<T>(
+  infoFile: Omit<InfoFile<T>, 'errors' | 'warnings'> = {},
+): InfoFile<T> {
   return { ...infoFile, errors: [], warnings: [] };
 }
 
