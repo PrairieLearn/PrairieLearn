@@ -44,7 +44,7 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.access_rules.forEach(function (access_rule) {
+                  ${resLocals.access_rules.map((access_rule) => {
                     return html`
                       <tr>
                         <td>${access_rule.mode}</td>
@@ -85,21 +85,18 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
                           ${access_rule.pt_exam_name
                             ? html`
                                 <a
-                                  href="<%= config.ptHost %>/pt/course/<%= access_rule.pt_course_id %>/staff/exam/<%= access_rule.pt_exam_id %>"
+                                  href="${resLocals.config
+                                    .ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
                                   >${access_rule.pt_course_name}: ${access_rule.pt_exam_name}</a
                                 >
                               `
-                            : ''}
-                          ${!access_rule.pt_exam_name &&
-                          access_rule.exam_uuid &&
-                          !access_rule.ps_exam_id
-                            ? resLocals.devMode
-                              ? access_rule.exam_uuid
-                              : resLocals.devMode
-                            : ''}
-                          }
-                          <span class="text-danger">Exam not found: ${access_rule.exam_uuid}</span>
-                          ${resLocals.devMode ? resLocals.devMode : `&mdash;`}
+                            : access_rule.exam_uuid && !access_rule.ps_exam_id
+                              ? resLocals.devMode
+                                ? access_rule.exam_uuid
+                                : html`<span class="text-danger"
+                                    >Exam not found: ${access_rule.exam_uuid}</span
+                                  >`
+                              : html`&mdash;`}
                           ${access_rule.pt_exam}
                         </td>
                       </tr>
