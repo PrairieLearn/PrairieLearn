@@ -11,7 +11,7 @@ import { config } from '../lib/config';
 import { TEST_COURSE_PATH } from '../lib/paths';
 import { makeMockLogger } from './mockLogger';
 import * as helperServer from './helperServer';
-import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { syncDiskToSql } from '../sync/syncFromDisk';
 import { makeInfoFile } from '../sync/infofile';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -365,7 +365,7 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseId, courseDir, logger);
+      await syncDiskToSql(courseId, courseDir, logger);
 
       // Regenerate chunks.
       await chunksLib.updateChunksForCourse({
@@ -464,7 +464,7 @@ describe('chunks', () => {
 
       // Sync course to DB.
       const { logger } = makeMockLogger();
-      await syncDiskToSqlAsync(courseId, courseDir, logger);
+      await syncDiskToSql(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
@@ -541,7 +541,7 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
       // Sync course to DB.
-      await syncDiskToSqlAsync(courseId, courseDir, logger);
+      await syncDiskToSql(courseId, courseDir, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
