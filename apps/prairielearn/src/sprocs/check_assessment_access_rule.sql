@@ -4,6 +4,7 @@ CREATE FUNCTION
         IN mode enum_mode,
         IN user_id bigint,
         IN uid text,
+        IN group_id bigint,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
         OUT authorized boolean,

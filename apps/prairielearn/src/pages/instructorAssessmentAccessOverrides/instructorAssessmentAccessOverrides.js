@@ -18,7 +18,7 @@ router.get(
       student_uid: req.body.student_uid,
     });
     res.locals.policies = result.rows;
-    console.log(res.locals);
+    // console.log(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -49,6 +49,7 @@ router.post(
         // Get the group_id from the result
         if (group_result.rows.length > 0) {
           params.group_id = group_result.rows[0].id;
+          console.log("GROUP ID: " + params.group_id);
         } else {
           params.group_id = null;
         }
@@ -96,7 +97,7 @@ router.post(
         start_date: new Date(req.body.start_date),
         user_id: req.body.student_uid,
         group_id: null,
-        student_uid: req.body.student_uid
+        student_uid: req.body.student_uid || null
       };
       const user = await selectUserByUid(edit_params.user_id);
         if (!user) {
@@ -114,13 +115,14 @@ router.post(
       // Validate if group belongs to the assessment
       if (edit_params.group_name) {
         const group_result = await sqldb.queryAsync(sql.select_group_in_assessment, {
-          group_id: edit_params.group_id,
+          group_name: edit_params.group_name,
           course_instance_id: res.locals.course_instance.id,
           assessment_id: res.locals.assessment.id,
         });
         // Get the group_id from the result
         if (group_result.rows.length > 0) {
           edit_params.group_id = group_result.rows[0].id;
+
         } else {
           edit_params.group_id = null;
         }
