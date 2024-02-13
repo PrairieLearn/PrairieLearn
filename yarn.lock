@@ -3657,6 +3657,7 @@ __metadata:
     "@aws-sdk/credential-providers": ^3.504.1
     "@aws-sdk/lib-storage": ^3.504.0
     "@prairielearn/aws": "workspace:^"
+    "@prairielearn/cache": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/logger": "workspace:^"
