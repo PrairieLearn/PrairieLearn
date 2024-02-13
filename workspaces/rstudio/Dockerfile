@@ -70,9 +70,8 @@ RUN apt-get update && \
     fonts-dejavu \
     # Utilities for convenience debugging this container:
     less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 man-db && \
-    # Run 'unminimize' (which wants a current system so upgrade first) to add docs
-    apt upgrade -y && \
-    echo 'Y' | unminimize && \
+    # Run 'unminimize' to add docs
+    yes | unminimize && \
     # Test:
     gosu nobody true && \
     # Cleanup:
