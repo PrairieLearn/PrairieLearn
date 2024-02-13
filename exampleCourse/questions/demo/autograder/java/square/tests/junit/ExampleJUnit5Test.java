@@ -1,5 +1,3 @@
-import org.prairielearn.autograder.AutograderInfo;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
