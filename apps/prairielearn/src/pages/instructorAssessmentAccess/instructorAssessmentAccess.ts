@@ -1,10 +1,11 @@
 // @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
+import { InstructorAssessmentAccess } from './instructorAssessmentAccess.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -35,7 +36,8 @@ router.get(
       AssessmentAccessRulesSchema,
     );
     res.locals.access_rules = result;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentAccess({ resLocals: res.locals }));
   }),
 );
 
