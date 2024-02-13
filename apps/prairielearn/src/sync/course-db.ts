@@ -507,7 +507,6 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
- * @param tolerateMissing Whether or not a missing file constitutes an error
  */
 export async function loadInfoFile<T extends { uuid: string }>({
   coursePath,
@@ -518,6 +517,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
   coursePath: string;
   filePath: string;
   schema?: JSONSchemaType<T>;
+  /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
 }): Promise<InfoFile<T> | null> {
   const absolutePath = path.join(coursePath, filePath);
@@ -759,9 +759,6 @@ export async function loadCourseInfo(
   return loadedData;
 }
 
-/**
- * @param tolerateMissing Whether or not a missing file constitutes an error
- */
 async function loadAndValidateJson<T extends { uuid: string }>({
   coursePath,
   filePath,
@@ -774,6 +771,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
   filePath: string;
   defaults: any;
   schema: any;
+  /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
   validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
 }): Promise<InfoFile<T> | null> {
@@ -806,9 +804,6 @@ async function loadAndValidateJson<T extends { uuid: string }>({
 
 /**
  * Loads and schema-validates all info files in a directory.
- * @param coursePath The path of the course being synced
- * @param directory The path of the directory relative to `coursePath`
- * @param recursive Whether or not info files should be searched for recursively
  */
 async function loadInfoForDirectory<T extends { uuid: string }>({
   coursePath,
@@ -819,12 +814,15 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   validate,
   recursive = false,
 }: {
+  /** The path of the course being synced */
   coursePath: string;
+  /** The path of the directory relative to `coursePath` */
   directory: string;
   infoFilename: string;
   defaultInfo: any;
   schema: any;
   validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<T>>> {
   // Recursive lookup might not be enabled for some info types - if it's
