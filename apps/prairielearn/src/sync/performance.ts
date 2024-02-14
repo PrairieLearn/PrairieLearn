@@ -1,4 +1,3 @@
-// @ts-check
 const scopedData = {};
 
 /**
@@ -14,14 +13,14 @@ export function makePerformance(scopeName) {
   /**
    * @param {string} name
    */
-  function start(name) {
+  function start(name: string): void {
     scope[name] = new Date();
   }
 
   /**
    * @param {string} name
    */
-  function end(name) {
+  function end(name: string): void {
     if (!(name in scope)) {
       return;
     }
@@ -31,6 +30,7 @@ export function makePerformance(scopeName) {
   }
 
   /**
+   * @deprecated
    * @param {string} name
    * @param {(callback: (err: Error | null) => void) => void} func
    * @param {*} callback
@@ -49,7 +49,7 @@ export function makePerformance(scopeName) {
    * @param {() => Promise<T>} asyncFunc
    * @returns {Promise<T>}
    */
-  async function timedAsync(name, asyncFunc) {
+  async function timedAsync<T>(name: string, asyncFunc: () => Promise<T>): Promise<T> {
     start(name);
     let res;
     try {
