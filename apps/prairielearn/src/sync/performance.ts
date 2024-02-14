@@ -25,13 +25,11 @@ export function makePerformance(scopeName: string): Performance {
 
   async function timedAsync<T>(name: string, asyncFunc: () => Promise<T>): Promise<T> {
     start(name);
-    let res: T;
     try {
-      res = await asyncFunc();
+      return await asyncFunc();
     } finally {
       end(name);
     }
-    return res;
   }
 
   return { start, end, timedAsync };
