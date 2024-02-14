@@ -154,7 +154,7 @@ async function validateAndProcessSubmission(req, res) {
       'Your current group role does not give you permission to submit to this question.',
     );
   }
-  return processSubmission(req, res, true);
+  return await processSubmission(req, res, true);
 }
 
 router.post(

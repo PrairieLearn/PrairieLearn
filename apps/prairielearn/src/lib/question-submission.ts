@@ -26,7 +26,7 @@ export async function validateVariantAgainstQuestion(
   ) {
     throw error.make(
       400,
-      `Client-provided variant id "${unsafe_variant_id}" does not belong to the authorized instance question "${instance_question_id}"`,
+      `Client-provided variant ID ${unsafe_variant_id} is not valid for instance question ID ${instance_question_id}.`,
     );
   }
   return variant;
