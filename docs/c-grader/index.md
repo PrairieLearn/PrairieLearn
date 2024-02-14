@@ -206,17 +206,16 @@ In most cases, though, this program will be executed to check the output of the 
 self.test_run("./square", exp_output="SUCCESS")
 ```
 
-The `exp_output` argument can also be used to check for multiple outputs by passing in a list of outputs. In that case, the test will pass if any of the strings in the list is found in the output.
+The `exp_output` argument can also be used to check for multiple output patterns by passing in a list of strings. The test will then look for all the patterns in the program output, and the result of the test will depend on the `must_match_all_outputs` flag. This flag may be set to:
+
+- `must_match_all_outputs=False`: if any of the patterns is found in the program output, the test passes and full points are assigned (this is the default);
+- `must_match_all_outputs=True`: all patterns must be found in the program output to pass the test; or
+- `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.25 points).
 
 ```python
-self.test_run("./square", exp_output=["SUCCESS", "CORRECT"])
-```
-
-Alternatively, if multiple output strings should be checked and all of them must be in the output of the program, you may use the `must_match_all_outputs` flag:
-
-```python
+self.test_run("./square", exp_output=["SUCCESS", "CORRECT"]) # default, either SUCCESS or CORRECT are enough for full points
 self.test_run("./square", exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
-              must_match_all_outputs=True)
+              must_match_all_outputs="partial") # Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
 ```
 
 This method can also be provided with an input string to be passed to the standard input of the program, with the `input` argument:

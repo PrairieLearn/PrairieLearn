@@ -370,7 +370,7 @@ class CGrader:
         command,
         input=None,
         exp_output=None,
-        must_match_all_outputs=False,
+        must_match_all_outputs=False,  # True, False or 'partial'
         reject_output=None,
         field=None,
         ignore_case=True,
@@ -476,20 +476,28 @@ class CGrader:
         elif msg is None:
             msg = ""
 
-        points = True
+        points = max_points
         if timeout and "TIMEOUT" in outcmp:
-            points = False
+            points = 0
         elif size_limit and len(outcmp) > size_limit:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
-            points = False
+            points = 0
+        elif any(r.search(outcmp) is not None for _, r in reject_output):
+            points = 0
+        elif must_match_all_outputs == "partial":
+            points = (
+                max_points
+                * len([_ for _, r in exp_output if r.search(outcmp) is not None])
+                / len(exp_output)
+            )
         elif not (all if must_match_all_outputs else any)(
             r.search(outcmp) is not None for _, r in exp_output
-        ) or any(r.search(outcmp) is not None for _, r in reject_output):
-            points = False
+        ):
+            points = 0
 
         return self.add_test_result(
             name,
-            points=max_points if points else 0,
+            points=points,
             msg=msg,
             output=out,
             max_points=max_points,
