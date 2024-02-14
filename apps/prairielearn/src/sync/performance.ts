@@ -1,57 +1,31 @@
-const scopedData = {};
+const scopedData: Record<string, Record<string, number>> = {};
 
-/**
- * @param {string} scopeName
- */
-export function makePerformance(scopeName) {
+interface Performance {
+  start: (name: string) => void;
+  end: (name: string) => void;
+  timedAsync: <T>(name: string, asyncFunc: () => Promise<T>) => Promise<T>;
+}
+
+export function makePerformance(scopeName: string): Performance {
   if (!scopedData[scopeName]) {
     scopedData[scopeName] = {};
   }
 
   const scope = scopedData[scopeName];
 
-  /**
-   * @param {string} name
-   */
   function start(name: string): void {
-    scope[name] = new Date();
+    scope[name] = Date.now();
   }
 
-  /**
-   * @param {string} name
-   */
   function end(name: string): void {
-    if (!(name in scope)) {
-      return;
-    }
-    if (process.env.PROFILE_SYNC) {
+    if (name in scope && process.env.PROFILE_SYNC) {
       console.log(`${name} took ${Date.now() - scope[name]}ms`);
     }
   }
 
-  /**
-   * @deprecated
-   * @param {string} name
-   * @param {(callback: (err: Error | null) => void) => void} func
-   * @param {*} callback
-   */
-  function timedFunc(name, func, callback) {
-    start(name);
-    func((err) => {
-      end(name);
-      callback(err);
-    });
-  }
-
-  /**
-   * @template T
-   * @param {string} name
-   * @param {() => Promise<T>} asyncFunc
-   * @returns {Promise<T>}
-   */
   async function timedAsync<T>(name: string, asyncFunc: () => Promise<T>): Promise<T> {
     start(name);
-    let res;
+    let res: T;
     try {
       res = await asyncFunc();
     } finally {
@@ -60,10 +34,5 @@ export function makePerformance(scopeName) {
     return res;
   }
 
-  return {
-    start,
-    end,
-    timedFunc,
-    timedAsync,
-  };
+  return { start, end, timedAsync };
 }
