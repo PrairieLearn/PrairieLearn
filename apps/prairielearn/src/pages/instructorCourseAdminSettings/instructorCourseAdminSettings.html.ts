@@ -127,9 +127,9 @@ export function InstructorCourseAdminSettings({
                       ? html`
                           <span class="text-danger">
                             You must
-                            <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"
-                              >sync your course</a
-                            >
+                            <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">
+                              sync your course
+                            </a>
                             before viewing or editing its configuration
                           </span>
                         `
