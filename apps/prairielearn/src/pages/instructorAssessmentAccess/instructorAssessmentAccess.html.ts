@@ -1,7 +1,32 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
-export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<string, any> }) {
+export const AssessmentAccessRulesSchema = z.object({
+  mode: z.string(),
+  uids: z.string(),
+  start_date: z.string(),
+  end_date: z.string(),
+  credit: z.string(),
+  time_limit: z.string(),
+  password: z.string(),
+  exam_uuid: z.string().nullable(),
+  ps_exam_id: z.string().nullable(),
+  pt_course_id: z.string().nullable(),
+  pt_course_name: z.string().nullable(),
+  pt_exam_id: z.string().nullable(),
+  pt_exam_name: z.string().nullable(),
+  active: z.string(),
+});
+type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
+
+export function InstructorAssessmentAccess({
+  resLocals,
+  accessRules,
+}: {
+  resLocals: Record<string, any>;
+  accessRules: AssessmentAccessRules[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -44,18 +69,18 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.access_rules.map((access_rule) => {
+                  ${accessRules.map((access_rule) => {
+                    // Only users with permission to view student data are allowed
+                    // to see the list of uids associated with an access rule. Note,
+                    // however, that any user with permission to view course code
+                    // (or with access to the course git repository) will be able to
+                    // see the list of uids, because these access rules are defined
+                    // in course code. This should be changed in future, to protect
+                    // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                     return html`
                       <tr>
                         <td>${access_rule.mode}</td>
                         <td>
-                          <!-- Only users with permission to view student data are allowed // to see
-                      the list of uids associated with an access rule. Note, // however, that any
-                      user with permission to view course code // (or with access to the course git
-                      repository) will be able to // see the list of uids, because these access
-                      rules are defined // in course code. This should be changed in future, to
-                      protect // student data. See
-                      https://github.com/PrairieLearn/PrairieLearn/issues/3342 -->
                           ${access_rule.uids === '—' ||
                           resLocals.authz_data.has_course_instance_permission_view
                             ? access_rule.uids
@@ -70,7 +95,8 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
                                   data-placement="auto"
                                   title="Hidden UIDs"
                                   data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
-                                  >Hidden
+                                >
+                                  Hidden
                                 </a>
                               `}
                         </td>
@@ -87,15 +113,18 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
                                 <a
                                   href="${resLocals.config
                                     .ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
-                                  >${access_rule.pt_course_name}: ${access_rule.pt_exam_name}</a
                                 >
+                                  ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
+                                </a>
                               `
                             : access_rule.exam_uuid && !access_rule.ps_exam_id
                               ? resLocals.devMode
                                 ? access_rule.exam_uuid
-                                : html`<span class="text-danger"
-                                    >Exam not found: ${access_rule.exam_uuid}</span
-                                  >`
+                                : html`
+                                    <span class="text-danger">
+                                      Exam not found: ${access_rule.exam_uuid}
+                                    </span>
+                                  `
                               : html`&mdash;`}
                           ${access_rule.pt_exam}
                         </td>
@@ -106,8 +135,8 @@ export function InstructorAssessmentAccess({ resLocals }: { resLocals: Record<st
               </table>
             </div>
             <div class="card-footer">
-              <small
-                >Instructions on how to change the access rules can be found in the
+              <small>
+                Instructions on how to change the access rules can be found in the
                 <a
                   href="https://prairielearn.readthedocs.io/en/latest/accessControl/"
                   target="_blank"
