@@ -11,6 +11,7 @@ import { type Variant } from './db-types';
 export async function validateVariantAgainstQuestion(
   unsafe_variant_id: string,
   question_id: string,
+  instance_question_id: string | null = null,
 ): Promise<Variant> {
   const variant = await selectVariantById(unsafe_variant_id);
   if (variant == null || !idsEqual(variant.question_id, question_id)) {
@@ -19,10 +20,23 @@ export async function validateVariantAgainstQuestion(
       `Client-provided variant ID ${unsafe_variant_id} is not valid for question ID ${question_id}.`,
     );
   }
+  if (
+    instance_question_id != null &&
+    (!variant.instance_question_id || !idsEqual(variant.instance_question_id, instance_question_id))
+  ) {
+    throw error.make(
+      400,
+      `Client-provided variant id "${unsafe_variant_id}" does not belong to the authorized instance question "${instance_question_id}"`,
+    );
+  }
   return variant;
 }
 
-export async function processSubmission(req: Request, res: Response): Promise<string> {
+export async function processSubmission(
+  req: Request,
+  res: Response,
+  studentSubmission = false,
+): Promise<string> {
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
@@ -44,13 +58,21 @@ export async function processSubmission(req: Request, res: Response): Promise<st
     variant_id: variant_id,
     auth_user_id: res.locals.authn_user.user_id,
     submitted_answer: submitted_answer,
+    ...(studentSubmission
+      ? {
+          credit: res.locals.authz_result.credit,
+          mode: res.locals.authz_data.mode,
+          client_fingerprint_id: res.locals.client_fingerprint_id,
+        }
+      : {}),
   };
   const variant = await validateVariantAgainstQuestion(
     submission.variant_id,
     res.locals.question.id,
+    res.locals.instance_question?.id,
   );
   if (req.body.__action === 'grade') {
-    const overrideRateLimits = true;
+    const overrideRateLimits = !studentSubmission;
     await saveAndGradeSubmission(
       submission,
       variant,
