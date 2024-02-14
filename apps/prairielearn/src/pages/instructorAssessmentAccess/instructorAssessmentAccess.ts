@@ -1,6 +1,7 @@
 import * as express from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { z } from 'zod';
 
 import { config } from '../../lib/config';
 import {
@@ -17,8 +18,9 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id, link_exam_id: config.syncExamIdAccessRules },
-      AssessmentAccessRulesSchema,
+      z.any(),
     );
+    console.log(accessRules);
     res.send(InstructorAssessmentAccess({ resLocals: res.locals, accessRules }));
   }),
 );
