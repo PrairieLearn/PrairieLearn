@@ -17,4 +17,4 @@ RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
-CMD ["start.sh", "jupyter", "lab"]
+CMD ["start.sh", "jupyter", "lab", "--debug"]
