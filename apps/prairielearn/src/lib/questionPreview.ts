@@ -1,11 +1,17 @@
-//@ts-check
-const _ = require('lodash');
+import { omit } from 'lodash';
+import { type Request, type Response } from 'express';
+
 import * as error from '@prairielearn/error';
+
 import { saveAndGradeSubmission, saveSubmission } from './grading';
 import { idsEqual } from './id';
 import { selectVariantById } from '../models/variant';
+import { type Variant } from './db-types';
 
-export async function validateVariantAgainstQuestion(unsafe_variant_id, question_id) {
+export async function validateVariantAgainstQuestion(
+  unsafe_variant_id: string,
+  question_id: string,
+): Promise<Variant> {
   const variant = await selectVariantById(unsafe_variant_id);
   if (variant == null || !idsEqual(variant.question_id, question_id)) {
     throw error.make(
@@ -16,17 +22,11 @@ export async function validateVariantAgainstQuestion(unsafe_variant_id, question
   return variant;
 }
 
-/**
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @returns {Promise<void>}
- */
-export async function processSubmission(req, res) {
-  let variant_id, submitted_answer;
+export async function processSubmission(req: Request, res: Response): Promise<string> {
+  let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
       throw error.make(400, 'No postData');
