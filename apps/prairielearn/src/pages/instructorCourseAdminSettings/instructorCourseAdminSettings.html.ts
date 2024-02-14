@@ -185,7 +185,7 @@ export function InstructorCourseAdminSettings({
                       : 'infoCourse.json'
                     : ''}
                 </div>
-                <small class="form-text text-muted"> The configuration file for the course. </small>
+                <small class="form-text text-muted">The configuration file for the course.</small>
               </div>
             </form>
           </div>
