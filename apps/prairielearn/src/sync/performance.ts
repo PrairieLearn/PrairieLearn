@@ -3,7 +3,7 @@ const scopedData: Record<string, Record<string, number>> = {};
 interface Performance {
   start: (name: string) => void;
   end: (name: string) => void;
-  timedAsync: <T>(name: string, asyncFunc: () => Promise<T>) => Promise<T>;
+  timed: <T>(name: string, asyncFunc: () => Promise<T>) => Promise<T>;
 }
 
 export function makePerformance(scopeName: string): Performance {
@@ -23,7 +23,7 @@ export function makePerformance(scopeName: string): Performance {
     }
   }
 
-  async function timedAsync<T>(name: string, asyncFunc: () => Promise<T>): Promise<T> {
+  async function timed<T>(name: string, asyncFunc: () => Promise<T>): Promise<T> {
     start(name);
     try {
       return await asyncFunc();
@@ -32,5 +32,5 @@ export function makePerformance(scopeName: string): Performance {
     }
   }
 
-  return { start, end, timedAsync };
+  return { start, end, timed };
 }
