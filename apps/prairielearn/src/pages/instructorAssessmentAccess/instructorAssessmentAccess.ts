@@ -36,7 +36,6 @@ router.get(
       AssessmentAccessRulesSchema,
     );
     res.locals.access_rules = result;
-    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     res.send(InstructorAssessmentAccess({ resLocals: res.locals }));
   }),
 );
