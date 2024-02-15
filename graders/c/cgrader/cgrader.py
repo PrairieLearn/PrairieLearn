@@ -487,7 +487,7 @@ class CGrader:
         elif must_match_all_outputs == "partial":
             points = (
                 max_points
-                * len([_ for _, r in exp_output if r.search(outcmp) is not None])
+                * sum(1 if r.search(outcmp) is not None else 0 for _, r in exp_output)
                 / len(exp_output)
             )
         elif not (all if must_match_all_outputs else any)(
