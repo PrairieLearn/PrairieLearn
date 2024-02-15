@@ -13,6 +13,8 @@ const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
+  cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  cacheKeyPrefix: z.string().default('workspace-host-cache:'),
   redisUrl: z.string().optional().default('redis://localhost:6379/'),
   runningInEc2: z.boolean().default(false),
   cacheImageRegistry: z.string().nullable().default(null),
