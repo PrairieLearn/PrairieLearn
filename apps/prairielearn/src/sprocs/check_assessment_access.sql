@@ -5,7 +5,6 @@ CREATE FUNCTION
         IN course_role enum_course_role,
         IN course_instance_role enum_course_instance_role,
         IN user_id bigint,
-        IN group_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN display_timezone text,
@@ -40,8 +39,7 @@ BEGIN
     INTO end_date_from_override , credit_from_override , start_date_from_override
     FROM assessment_access_policies as aap
     WHERE aap.assessment_id = check_assessment_access.assessment_id
-        AND ((aap.user_id= check_assessment_access.user_id) 
-        OR (aap.group_id = check_assessment_access.group_id))
+        AND (aap.user_id= check_assessment_access.user_id) 
     ORDER BY end_date DESC
     LIMIT 1;
 
@@ -117,7 +115,7 @@ BEGIN
         FROM
             assessment_access_rules AS aar
             JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-                check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.group_id, check_assessment_access.date, TRUE) AS caar ON TRUE
+                check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
         WHERE
             aar.assessment_id = check_assessment_access.assessment_id
             AND caar.authorized
@@ -152,7 +150,7 @@ BEGIN
             FROM
                 assessment_access_rules AS aar
                 JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-                    check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.group_id, NULL, FALSE) AS caar ON TRUE
+                    check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
             WHERE
                 aar.assessment_id = check_assessment_access.assessment_id
                 AND aar.start_date IS NOT NULL
@@ -211,7 +209,7 @@ BEGIN
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-            check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.group_id, NULL, FALSE) AS caar ON TRUE
+            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
        
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id

@@ -16,11 +16,14 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is visible but not active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules JSONB,       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT group_id INT
     )
 AS $$
 DECLARE
     user_result record;
+-- DECLARE
+--     group_id bigint;
 BEGIN
     -- authorization for the effective user
     SELECT *
@@ -32,12 +35,21 @@ BEGIN
             (authz_data->>'course_role')::enum_course_role,
             (authz_data->>'course_instance_role')::enum_course_instance_role,
             (authz_data->'user'->>'user_id')::bigint,
-            (authz_data->>'group_id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
             display_timezone
         );
 
+    SELECT g.id  
+    -- INTO group_id
+    FROM groups as g JOIN group_configs AS gc 
+                ON g.group_config_id = gc.id 
+        JOIN group_users AS gu 
+                ON gu.group_id = g.id 
+    WHERE gc.assessment_id = authz_assessment.assessment_id 
+        AND gu.user_id = (authz_data->'user'->>'user_id')::bigint 
+        AND g.deleted_at IS NULL;
+    
     -- Assessment access is granted based only on effective user permissions.
     --
     -- You might wonder if it is necessary to check authn user permissions as well.
@@ -83,7 +95,6 @@ BEGIN
     -- "has_course_instance_permission_edit" - permissions that, as we've said, the
     -- authn user is already known to have.
     authorized := user_result.authorized;
-
     -- all other variables are from the effective user authorization
     exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;
@@ -97,5 +108,6 @@ BEGIN
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
     next_active_time := user_result.next_active_time;
+    -- group_id:=group_id.group_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
