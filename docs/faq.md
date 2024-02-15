@@ -31,7 +31,7 @@ To allow students to see their entire exam after it is over, you can add an [acc
 
 Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing [limited access post-exam under controlled conditions](faq.md#should-students-be-able-to-review-their-exams-after-they-are-over) (although this requires in-person access by students and doesn't work online).
 
-Note that when granting access via `"active": false`, students can still access and modify files in any [workspaces](workspaces/index.md) associated with questions on the assessment.
+Note that when granting access via `"active": false`, students can still access and modify files in any [workspaces](workspaces/index.md) associated with questions on the assessment. However, they will not be able to submit any changed workspace files for grading.
 
 ## How can question pool development be managed over semesters?
 

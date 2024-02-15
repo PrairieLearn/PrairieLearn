@@ -210,7 +210,7 @@ The `active` access rule restriction is useful for allowing students to see what
 
 If `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
 
-Note that when `"active": false` is used to make assessments visible to students after they've finished the assessment, students can still access and modify files in any [workspaces](workspaces/index.md) associated with questions on the assessment.
+Note that when `"active": false` is used to make assessments visible to students after they've finished the assessment, students can still access and modify files in any [workspaces](workspaces/index.md) associated with questions on the assessment. However, they will not be able to submit any changed workspace files for grading.
 
 An example of the `active` access rule restriction is shown below:
 
