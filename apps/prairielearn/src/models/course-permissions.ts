@@ -1,6 +1,11 @@
-import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { type User, type CoursePermission } from '../lib/db-types';
+import { type User, type CoursePermission, CoursePermissionSchema } from '../lib/db-types';
 import { selectOrInsertUserByUid } from './user';
 
 const sql = loadSqlEquiv(__filename);
@@ -26,4 +31,25 @@ export async function insertCoursePermissionsByUserUid({
     });
     return user;
   });
+}
+
+export async function updateCoursePermissionsRole({
+  course_id,
+  user_id,
+  course_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  user_id: string;
+  course_role: NonNullable<CoursePermission['course_role']>;
+  authn_user_id: string;
+}): Promise<void> {
+  const result = await queryOptionalRow(
+    sql.update_course_permissions_role,
+    { course_id, user_id, course_role, authn_user_id },
+    CoursePermissionSchema,
+  );
+  if (!result) {
+    throw new Error('No course permissions to update');
+  }
 }

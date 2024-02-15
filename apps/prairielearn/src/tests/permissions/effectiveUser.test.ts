@@ -7,7 +7,10 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
+import {
+  insertCoursePermissionsByUserUid,
+  updateCoursePermissionsRole,
+} from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -282,7 +285,12 @@ describe('effective user', function () {
   });
 
   step('cannot request uid of course editor as course viewer', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
@@ -292,7 +300,12 @@ describe('effective user', function () {
   });
 
   step('can request uid of student data viewer as student data editor', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Owner', 1]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     await sqldb.callOneRowAsync('course_instance_permissions_insert', [
       1,
       3,
@@ -332,7 +345,12 @@ describe('effective user', function () {
   });
 
   step('instructor can request lower course role', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Previewer',

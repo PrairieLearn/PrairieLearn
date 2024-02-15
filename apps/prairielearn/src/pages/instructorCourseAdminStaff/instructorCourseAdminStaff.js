@@ -11,7 +11,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
+import {
+  insertCoursePermissionsByUserUid,
+  updateCoursePermissionsRole,
+} from '../../models/course-permissions';
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -248,23 +251,22 @@ ${given_cp_and_cip.join(',\n')}
       }
 
       // Before proceeding, we *could* make some effort to verify that the user
-      // is still a member of the course staff. The reason we might want to do so
-      // is that sql.update_course_permissions will throw an "incorrect row count"
-      // error if the user has been removed from the course staff, and we might
-      // want to throw a more informative error beforehand.
+      // is still a member of the course staff. The reason we might want to do
+      // so is that updateCoursePermissionsRole will throw an error if the user
+      // has been removed from the course staff, and we might want to throw a
+      // more informative error beforehand.
       //
       // We are making the design choice *not* to do this verification, because
-      // it is unlikely that a course will have many owners all making changes to
-      // permissions simultaneously, and so we are choosing to prioritize speed
-      // in responding to the POST request.
+      // it is unlikely that a course will have many owners all making changes
+      // to permissions simultaneously, and so we are choosing to prioritize
+      // speed in responding to the POST request.
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        req.body.course_role,
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_permissions_update_role', params);
+      await updateCoursePermissionsRole({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        course_role: req.body.course_role,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_delete') {
       if (
