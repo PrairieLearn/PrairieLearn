@@ -2,15 +2,17 @@
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 const async = require('async');
+import * as path from 'path';
 
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
 
-import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -104,15 +106,15 @@ router.post(
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
          */
         async (memo, uid) => {
+          /** @type {import('../../lib/db-types').CoursePermission} */
           let result;
           try {
-            const c_params = [
-              res.locals.course.id,
+            result = await insertCoursePermissionsByUserUid({
+              course_id: res.locals.course.id,
               uid,
-              req.body.course_role,
-              res.locals.authz_data.authn_user.user_id,
-            ];
-            result = await sqldb.callAsync('course_permissions_insert_by_user_uid', c_params);
+              course_role: req.body.course_role,
+              authn_user_id: res.locals.authz_data.authn_user.user_id,
+            });
           } catch (err) {
             logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
             memo.not_given_cp.push(uid);
@@ -127,7 +129,7 @@ router.post(
           try {
             const ci_params = [
               res.locals.course.id,
-              result.rows[0].user_id,
+              result.user_id,
               course_instance.id,
               req.body.course_instance_role,
               res.locals.authz_data.authn_user.user_id,

@@ -6,6 +6,7 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -42,12 +43,12 @@ describe('student data access', function () {
       '000000001',
       'dev',
     ]);
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@illinois.edu',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     await ensureEnrollment({
       user_id: '3',
       course_instance_id: '1',
