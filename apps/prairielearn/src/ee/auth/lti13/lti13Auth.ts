@@ -10,9 +10,9 @@ import { Lti13ClaimType, Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { cache } from '@prairielearn/cache';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
-import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 import { Lti13Test } from './lti13Auth.html';
 import { getCanonicalHost } from '../../../lib/url';
 
@@ -175,8 +175,6 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
           error.make(400, 'Authentication failed, before user validation.', {
-            err,
-            user,
             info_raw: info,
             info: info?.toString(),
           }),
@@ -237,11 +235,11 @@ async function verify(req: Request, tokenSet: TokenSet) {
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
-  const cacheResult = await cacheGet(nonceKey);
+  const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
     throw error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
-  cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+  await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
 
   // Save parameters about the platform back to the lti13_instance

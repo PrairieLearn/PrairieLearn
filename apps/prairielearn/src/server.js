@@ -54,7 +54,7 @@ const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs-legacy');
 const freeformServer = require('./question-servers/freeform.js');
-const cache = require('./lib/cache');
+const { cache } = require('@prairielearn/cache');
 const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
@@ -1470,7 +1470,7 @@ module.exports.initExpress = function () {
     require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
-    require('./pages/studentInstanceQuestion/studentInstanceQuestion'),
+    require('./pages/studentInstanceQuestion/studentInstanceQuestion').default,
   ]);
   if (config.devMode) {
     app.use(
@@ -2034,6 +2034,17 @@ module.exports.startServer = async () => {
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
   if (!server.listening) return callback(null);
+
+  // This exists mostly for tests, where we might have dangling connections
+  // from `fetch()` requests whose bodies we never read. `server.close()` won't
+  // actually stop the server until all connections are closed, so we need to
+  // manually close said connections.
+  //
+  // In production environments, PrairieLearn should always be deployed behind
+  // a load balancer that will drain and close any open connections before
+  // PrairieLearn is stopped.
+  server.closeAllConnections();
+
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -2381,7 +2392,12 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      async () => await cache.init(),
+      async () =>
+        await cache.init({
+          type: config.cacheType,
+          keyPrefix: config.cacheKeyPrefix,
+          redisUrl: config.redisUrl,
+        }),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);

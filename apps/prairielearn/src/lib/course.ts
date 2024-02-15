@@ -160,7 +160,7 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(path, courseId, job);
+        const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
 
         if (config.chunksGenerator) {
           const chunkChanges = await chunks.updateChunksForCourse({

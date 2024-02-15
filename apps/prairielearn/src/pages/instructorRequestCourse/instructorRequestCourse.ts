@@ -1,5 +1,4 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as path from 'path';
 import { z } from 'zod';
@@ -12,7 +11,8 @@ import * as Sentry from '@prairielearn/sentry';
 import * as opsbot from '../../lib/opsbot';
 import * as github from '../../lib/github';
 import { config } from '../../lib/config';
-import { CourseRequestSchema, IdSchema } from '../../lib/db-types';
+import { IdSchema } from '../../lib/db-types';
+import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -20,16 +20,20 @@ const sql = loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.navPage = 'request_course';
-    res.locals.course_requests = await queryRows(
+    const rows = await queryRows(
       sql.get_requests,
       {
         user_id: res.locals.authn_user.user_id,
       },
-      CourseRequestSchema,
+      CourseRequestRowSchema,
     );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      RequestCourse({
+        rows,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 

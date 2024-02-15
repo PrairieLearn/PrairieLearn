@@ -11,6 +11,6 @@ module.exports = function (req, res, next) {
   ) {
     return next();
   } else {
-    return next(error.make(403, 'Access denied', { locals: res.locals }));
+    return next(error.make(403, 'Access denied'));
   }
 };

@@ -64,12 +64,7 @@ router.get('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -80,10 +75,7 @@ router.get('/*', (req, res, next) => {
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
     );
   }
 
@@ -213,12 +205,7 @@ router.post('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -229,10 +216,7 @@ router.post('/*', (req, res, next) => {
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
     );
   }
 
@@ -248,10 +232,6 @@ router.post('/*', (req, res, next) => {
         error.make(
           400,
           `attempting to save a file without having made any changes: ${workingPath}`,
-          {
-            locals: res.locals,
-            body: req.body,
-          },
         ),
       );
     }
@@ -312,12 +292,7 @@ router.post('/*', (req, res, next) => {
       },
     );
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
@@ -569,8 +544,8 @@ async function saveAndSync(fileEdit, locals) {
           // If we're using chunks, then always sync on edit. We need the sync
           // data to force-generate new chunks.
           const result = await syncFromDisk.syncDiskToSqlWithLock(
-            locals.course.path,
             locals.course.id,
+            locals.course.path,
             job,
           );
 

@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment';
 import {
-  getAssessmentPermissions,
+  canUserAssignGroupRoles,
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
@@ -123,7 +123,7 @@ router.post(
       !res.locals.authz_result.authorized_edit &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      throw error.make(403, 'Not authorized', res.locals);
+      throw error.make(403, 'Not authorized');
     }
     if (
       !res.locals.authz_result.authorized_edit &&
@@ -131,7 +131,7 @@ router.post(
         req.body.__action,
       )
     ) {
-      throw error.make(403, 'Action is only permitted to students, not staff', res.locals);
+      throw error.make(403, 'Action is only permitted to students, not staff');
     }
 
     if (req.body.__action === 'attach_file') {
@@ -160,10 +160,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        });
+        throw error.make(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstanceAsync(
@@ -200,12 +197,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );
@@ -265,11 +257,7 @@ router.get(
       res.locals.used_join_code = req.body.used_join_code;
 
       if (groupConfig.has_roles) {
-        const result = await getAssessmentPermissions(
-          res.locals.assessment.id,
-          res.locals.user.user_id,
-        );
-        res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
+        res.locals.userCanAssignRoles = canUserAssignGroupRoles(groupInfo, res.locals.user.user_id);
 
         res.locals.user_group_roles =
           groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
