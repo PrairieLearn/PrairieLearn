@@ -63,15 +63,11 @@ router.post(
           throw error.make(400, 'Student UID does not exist.');
         }
         params.user_id = user.user_id;
-        console.log(params.user_id);
-        console.log(res.locals.course_instance.id);
-        // console.log(res.locals);
-
+        
         const enrollment = await getEnrollmentForUserInCourseInstance({
           user_id: params.user_id,
           course_instance_id: res.locals.course_instance.id,
         });
-        console.log(enrollment);
         if (!enrollment) {
           throw error.make(400, 'Student is not enrolled in the current course instance.');
         }
@@ -82,7 +78,6 @@ router.post(
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
         unsafe_assessment_access_policies_id: req.body.policy_id,
       });
-      console.log(req.body.policy_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
       const edit_params = {

@@ -29,7 +29,6 @@
 				var editOverrideForm = $('#edit-override-form');
 				
 				editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
-				console.log(button.data('assessment-id'))
 				editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
 				editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
 				editOverrideForm.find('#edit-credit').val(button.data('credit'));
@@ -210,7 +209,7 @@
 							<tr>
 								<% if (assessment.group_work) { %>
 									<td><%= policy.group_name %></td>
-								<% } else { console.log(policy); %>
+								<% } else { %>
 									<td><%= policy.student_uid %></td>
 								<% } %>
 								<td><%= policy.created_at %></td>
@@ -232,7 +231,6 @@
 												</button>												
 											</form>
 											<form name="delete-override-form" method="POST">
-												<% console.log(policy); %>
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 												<input type="hidden" name="__action" value="delete_override">
 												<input type="hidden" name="policy_id" value="<%= policy.id %>">
