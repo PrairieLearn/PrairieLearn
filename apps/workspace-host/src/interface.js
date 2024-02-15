@@ -644,7 +644,7 @@ async function _pullImage(workspace) {
         cache.set(
           `workspaceProgressInit:${workspace_image}`,
           progressDetailsInit,
-          1000 * 60 * 60 * 24, // 24 hours
+          1000 * 60 * 60 * 24 * 30, // 30 days
         );
         workspaceUtils
           .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
