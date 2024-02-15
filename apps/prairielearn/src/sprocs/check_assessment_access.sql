@@ -219,44 +219,5 @@ BEGIN
             (aar.active AND caar.authorized)
             OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
         );
---     IF end_date_from_override IS NOT NULL AND credit_from_override IS NOT NULL THEN
---         access_rules = jsonb_build_array(jsonb_build_object(
---             'credit', credit_from_override::text || '%',
---             'time_limit_min' , (DATE_PART('epoch', end_date_from_override - now() - INTERVAL '31 seconds') / 60)::integer,
---             'start_date', format_date_full(start_date_from_override, display_timezone),
---             'end_date', format_date_full(end_date_from_override, display_timezone),
---             'mode' , NULL,
---             'active', 0
---         ));
---     ELSE
---         SELECT
---         coalesce(jsonb_agg(jsonb_build_object(
---             'credit', CASE 
---                 WHEN credit_from_override IS NOT NULL THEN credit_from_override::text || '%' 
---                 ELSE CASE WHEN aar.credit IS NOT NULL THEN aar.credit::text || '%' ELSE 'None' END
---             END,
---             'time_limit_min', CASE WHEN aar.time_limit_min IS NOT NULL THEN aar.time_limit_min::text || ' min' ELSE '—' END,
---             'start_date', CASE WHEN aar.start_date IS NOT NULL THEN format_date_full(aar.start_date, display_timezone) ELSE '—' END,
---             'end_date', CASE 
---                 WHEN end_date_from_override IS NOT NULL THEN format_date_full(end_date_from_override, display_timezone) 
---                 ELSE CASE WHEN aar.end_date IS NOT NULL THEN format_date_full(aar.end_date, display_timezone) ELSE '—' END
---             END,
---             'mode', aar.mode,
---             'active', aar.id = active_access_rule_id
---         ) ORDER BY aar.number), '[]'::jsonb)
---         INTO
---             access_rules
---         FROM
---             assessment_access_rules AS aar
---             JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
---                 check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
---         WHERE
---             aar.assessment_id = check_assessment_access.assessment_id
---             AND ((aar.role > 'Student') IS NOT TRUE)
---             AND (
---                 (aar.active AND caar.authorized)
---                 OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
---             );
---     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
