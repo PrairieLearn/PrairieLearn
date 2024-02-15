@@ -137,6 +137,7 @@ export function InstructorCourseAdminSettings({
                       !resLocals.course.example_course
                       ? html`
                           <a
+                            id="edit-course-configuration"
                             href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
                           >
                             Edit course configuration
