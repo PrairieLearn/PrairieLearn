@@ -25,6 +25,7 @@
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/bind-mount": "workspace:^",
     "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/cache": "workspace:^",
     "@prairielearn/compiled-assets": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/csv": "workspace:^",

@@ -7,7 +7,10 @@ import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
 
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
-import { updateAssessmentStatistics } from '../../lib/assessment';
+import {
+  updateAssessmentQuestionStatsForAssessment,
+  updateAssessmentStatistics,
+} from '../../lib/assessment';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -130,15 +133,10 @@ router.post(
     // e.g., every time this page is loaded, but until then we will let anyone who
     // can view the page post this action and trigger a recalculation.
     if (req.body.__action === 'refresh_stats') {
-      await sqldb.callAsync('assessment_questions_calculate_stats_for_assessment', [
-        res.locals.assessment.id,
-      ]);
+      await updateAssessmentQuestionStatsForAssessment(res.locals.assessment.id);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
