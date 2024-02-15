@@ -33,9 +33,9 @@ async function update(locals) {
         if (index !== config.courseDirs.length - 1) job.info('');
         return;
       }
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(courseDir, job);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
       if (index !== config.courseDirs.length - 1) job.info('');
-      if (!result) throw new Error('syncOrCreateDiskToSqlAsync() returned null');
+      if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
       if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await chunks.updateChunksForCourse({

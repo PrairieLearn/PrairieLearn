@@ -10,20 +10,20 @@ The question should be first set up to enable [external grading](../externalGrad
 
 A full `info.json` file should look something like:
 
-```javascript
+```json
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "enabled": true,
-        "image": "prairielearn/grader-python",
-        "entrypoint": "/python_autograder/run.sh",
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh"
+  }
 }
 ```
 
@@ -194,11 +194,11 @@ numpy.linalg.pinv = Feedback.not_allowed
 
 the `inv` and `pinv` functions will be effectively banned from use. Any time the student tries to use the functions their code will raise an exception. This will survive library reimports.
 
-# Overview
+## Overview
 
 ![](grader-structure.png)
 
-# Course-specific libraries
+## Course-specific libraries
 
 Some courses may use libraries that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse` directory. Any files in this directory are automatically added to the Python PATH, so they can be imported in any of the files above as needed. If this option is used, however, the question's `info.json` file should indicate that these files should be added to the grading container, as below:
 
@@ -213,7 +213,7 @@ Some courses may use libraries that are common across multiple questions. For su
 }
 ```
 
-# Security
+## Security
 
 At the start of a grading job, the script `run.sh` is run with `root` privileges. This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is passed into the grading code via command-line argument. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
 

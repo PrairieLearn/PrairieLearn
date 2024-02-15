@@ -17,8 +17,7 @@
             "name": "Manager",
             "minimum": 1,
             "maximum": 1,
-            "canAssignRolesAtStart": true,
-            "canAssignRolesDuringAssessment": true
+            "canAssignRoles": true
         },
         {
             "name": "Recorder",

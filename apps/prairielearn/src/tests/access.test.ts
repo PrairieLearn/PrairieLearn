@@ -125,12 +125,9 @@ describe('Access control', function () {
   });
 
   describe('2. the student user', function () {
-    it('should select from the DB', function (callback) {
-      sqldb.queryOneRow(sql.select_student_user, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        user = result.rows[0];
-        callback(null);
-      });
+    it('should select from the DB', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_student_user, []);
+      user = result.rows[0];
     });
   });
 
@@ -155,12 +152,9 @@ describe('Access control', function () {
   /**********************************************************************/
 
   describe('5. database', function () {
-    it('should contain E1', function (callback) {
-      sqldb.queryOneRow(sql.select_e1, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assessment_id = result.rows[0].id;
-        callback(null);
-      });
+    it('should contain E1', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_e1, []);
+      assessment_id = result.rows[0].id;
     });
   });
 
@@ -325,19 +319,14 @@ describe('Access control', function () {
     it('should parse', function () {
       $ = cheerio.load(page);
     });
-    it('should produce an addVectors instance_question in the DB', function (callback) {
-      sqldb.query(sql.select_instance_question_addVectors, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount == null || result.rowCount === 0) {
-          return callback(new Error('did not find addVectors instance question in DB'));
-        } else if (result.rowCount > 1) {
-          return callback(
-            new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    ')),
-          );
-        }
-        instance_question = result.rows[0];
-        callback(null);
-      });
+    it('should produce an addVectors instance_question in the DB', async () => {
+      const result = await sqldb.queryAsync(sql.select_instance_question_addVectors, []);
+      if (result.rowCount == null || result.rowCount === 0) {
+        throw new Error('did not find addVectors instance question in DB');
+      } else if (result.rowCount > 1) {
+        throw new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    '));
+      }
+      instance_question = result.rows[0];
     });
     it('should link to addVectors question', function () {
       const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
@@ -449,11 +438,8 @@ describe('Access control', function () {
   /**********************************************************************/
 
   describe('13. Insert PrairieSchedule course link', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.insert_ps_course_link, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.insert_ps_course_link, []);
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -461,12 +447,8 @@ describe('Access control', function () {
   });
 
   describe('14. Insert PrairieSchedule reservation', function () {
-    it('should succeed', function (callback) {
-      const params = { user_id: user.user_id };
-      sqldb.query(sql.insert_ps_reservation, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.insert_ps_reservation, { user_id: user.user_id });
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -480,11 +462,8 @@ describe('Access control', function () {
   });
 
   describe('15. check in PrairieSchedule reservation', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.update_ps_reservation_to_checked_in, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.update_ps_reservation_to_checked_in, []);
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
@@ -500,11 +479,8 @@ describe('Access control', function () {
   /**********************************************************************/
 
   describe('16. delete PrairieSchedule course link', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.delete_ps_course_link, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.delete_ps_course_link, []);
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
@@ -512,11 +488,8 @@ describe('Access control', function () {
   });
 
   describe('17. delete all reservations', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.delete_all_reservations, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.delete_all_reservations, []);
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
@@ -524,11 +497,8 @@ describe('Access control', function () {
   });
 
   describe('18. delete all access rules', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.delete_access_rules, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.delete_access_rules, []);
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -536,11 +506,8 @@ describe('Access control', function () {
   });
 
   describe('19. insert exam-linked access rule', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.insert_ps_exam_access_rule, { assessment_id }, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.insert_ps_exam_access_rule, { assessment_id });
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -548,12 +515,8 @@ describe('Access control', function () {
   });
 
   describe('20. insert PrairieSchedule reservation', function () {
-    it('should succeed', function (callback) {
-      const params = { user_id: user.user_id };
-      sqldb.query(sql.insert_ps_reservation, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.insert_ps_reservation, { user_id: user.user_id });
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -567,11 +530,8 @@ describe('Access control', function () {
   });
 
   describe('21. check in PrairieSchedule reservation', function () {
-    it('should succeed', function (callback) {
-      sqldb.query(sql.update_ps_reservation_to_checked_in, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryAsync(sql.update_ps_reservation_to_checked_in, []);
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
