@@ -23,8 +23,8 @@ export function InstructorCourseAdminSettings({
             ...resLocals,
           })}
           <div class="card">
-            <div class="card-header bg-primary text-white d-flex mb-2">Course Settings</div>
-            <form class="mx-4">
+            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <form class="card-body">
               <div class="form-group">
                 <label for="short_name">Short Name</label>
                 <input
@@ -111,83 +111,75 @@ export function InstructorCourseAdminSettings({
                   The Github repository that can be used to sync course files.
                 </small>
               </div>
-            </form>
-            <form name="add-configuration-form" class="mb-3 mx-4" method="POST">
               <div class="form-group">
-                <label for="configuration">Configuration</label>
-                <div
-                  class="form-control"
-                  id="configuration"
-                  name="configuration"
-                  value="infoCourse.json"
-                >
-                  ${!coursePathExists
+                ${!coursePathExists
+                  ? resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                    ? html`
+                        <span class="text-danger">
+                          You must
+                          <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">
+                            sync your course
+                          </a>
+                          before viewing or editing its configuration
+                        </span>
+                      `
+                    : html`
+                        <span class="text-danger">
+                          A course editor must sync this course before anyone can view or edit its
+                          configuration
+                        </span>
+                      `
+                  : ''}
+                ${coursePathExists && courseInfoExists
+                  ? resLocals.authz_data.has_course_permission_view
                     ? resLocals.authz_data.has_course_permission_edit &&
                       !resLocals.course.example_course
                       ? html`
-                          <span class="text-danger">
-                            You must
-                            <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">
-                              sync your course
-                            </a>
-                            before viewing or editing its configuration
-                          </span>
+                          <a
+                            href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
+                          >
+                            Edit course configuration
+                          </a>
+                          in <code>infoCourse.json</code>
                         `
                       : html`
-                          <span class="text-danger">
-                            A course editor must sync this course before anyone can view or edit its
-                            configuration
-                          </span>
-                        `
-                    : ''}
-                  ${coursePathExists && !courseInfoExists
-                    ? html`<span class="text-danger">Missing configuration file</span>
-                        ${resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
-                          ? html`
-                              <input
-                                type="hidden"
-                                name="__csrf_token"
-                                value="${resLocals.__csrf_token}"
-                              />
-                              <button
-                                name="__action"
-                                value="add_configuration"
-                                class="btn btn-xs btn-secondary mx-2"
-                              >
-                                <i class="fa fa-edit"></i>
-                                <span class="d-none d-sm-inline">Create infoCourse.json</span>
-                              </button>
-                            `
-                          : ''} `
-                    : ''}
-                  ${coursePathExists && courseInfoExists
-                    ? resLocals.authz_data.has_course_permission_view
-                      ? html`
                           <a
                             href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
                           >
-                            infoCourse.json
+                            View course configuration
                           </a>
-                          ${resLocals.authz_data.has_course_permission_edit &&
-                          !resLocals.course.example_course
-                            ? html`
-                                <a
-                                  class="btn btn-xs btn-secondary mx-2"
-                                  href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
-                                >
-                                  <i class="fa fa-edit"></i>
-                                  <span>Edit</span>
-                                </a>
-                              `
-                            : ''}
+                          in <code>infoCourse.json</code>
                         `
-                      : 'infoCourse.json'
-                    : ''}
-                </div>
-                <small class="form-text text-muted">The configuration file for the course.</small>
+                    : html`<code>infoCourse.json</code>`
+                  : ''}
               </div>
             </form>
+            ${coursePathExists && !courseInfoExists
+              ? html`
+                  <form name="add-configuration-form" class="card-body mt-n5" method="POST">
+                    <span class="text-danger">Missing configuration file</span>
+                    ${resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? html`
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <button
+                            name="__action"
+                            value="add_configuration"
+                            class="btn btn-xs btn-secondary mx-2"
+                          >
+                            <i class="fa fa-edit"></i>
+                            <span class="d-none d-sm-inline">Create infoCourse.json</span>
+                          </button>
+                        `
+                      : ''}
+                  </form>
+                `
+              : ''}
           </div>
         </main>
       </body>
