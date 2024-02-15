@@ -12,6 +12,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 import {
+  deleteCoursePermissions,
+  deleteCoursePermissionsForNonOwners,
+  deleteCoursePermissionsForUsersWithoutAccess,
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
@@ -286,12 +289,11 @@ ${given_cp_and_cip.join(',\n')}
         );
       }
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_permissions_delete', params);
+      await deleteCoursePermissions({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_instance_permissions_update_role_or_delete') {
       // Again, we could make some effort to verify that the user is still a
@@ -369,13 +371,17 @@ ${given_cp_and_cip.join(',\n')}
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_non_owners') {
       debug('Delete non-owners');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_permissions_delete_non_owners', params);
+      await deleteCoursePermissionsForNonOwners({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_no_access') {
       debug('Delete users with no access');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_permissions_delete_users_without_access', params);
+      await deleteCoursePermissionsForUsersWithoutAccess({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_all_student_data_access') {
       debug('Remove all student data access');

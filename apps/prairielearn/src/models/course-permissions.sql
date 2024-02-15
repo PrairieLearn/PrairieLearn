@@ -77,3 +77,94 @@ SELECT
   *
 FROM
   updated_course_permissions;
+
+-- BLOCK delete_course_permissions
+WITH
+  deleted_course_permissions AS (
+    DELETE FROM course_permissions AS cp
+    WHERE
+      cp.user_id = $user_id
+      AND cp.course_id = $course_id
+    RETURNING
+      cp.*
+  ),
+  inserted_audit_log AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        user_id,
+        table_name,
+        row_id,
+        action,
+        old_state
+      )
+    SELECT
+      $authn_user_id,
+      cp.course_id,
+      cp.user_id,
+      'course_permissions',
+      cp.id,
+      'delete',
+      to_jsonb(cp)
+    FROM
+      deleted_course_permissions AS cp
+  ),
+  deleted_enrollments AS (
+    -- Delete all enrollments of this user from instances of the course, for two
+    -- reasons:
+    -- 1) So they will still be ignored when computing statistics. Only users
+    --    who are enrolled and who do not have access to course content or
+    --    student data are considered when computing statistics.
+    -- 2) So their role, displayed in the list of assessment instances, will
+    --    change from "Staff" to "None" instead of to "Student".
+    DELETE FROM enrollments AS e USING course_instances AS ci
+    WHERE
+      ci.id = e.course_instance_id
+      AND e.user_id = $user_id
+      AND ci.course_id = $course_id
+    RETURNING
+      e.*
+  ),
+SELECT
+  *
+FROM
+  deleted_course_permissions;
+
+-- BLOCK select_and_lock_non_owners
+SELECT
+  *
+FROM
+  course_permissions AS cp
+WHERE
+  cp.course_id = $course_id
+  AND cp.course_role != 'Owner'
+FOR NO KEY UPDATE OF
+  cp;
+
+-- BLOCK select_and_lock_course_permissions_without_access
+WITH
+  ci_permissions_by_cp AS (
+    SELECT
+      cip.course_permission_id,
+      MAX(cip.course_instance_role) AS max_course_instance_role
+    FROM
+      course_instance_permissions AS cip
+      JOIN course_permissions AS cp ON (cip.course_permission_id = cp.id)
+    WHERE
+      cp.course_id = $course_id
+      AND cip.course_instance_role != 'None'
+    GROUP BY
+      cip.course_permission_id
+  )
+SELECT
+  cp.*
+FROM
+  course_permissions AS cp
+  LEFT JOIN ci_permissions_by_cp AS cip ON (cp.id = cip.course_permission_id)
+WHERE
+  cp.course_id = $course_id
+  AND cp.course_role = 'None'
+  AND cip.max_course_instance_role IS NULL
+FOR NO KEY UPDATE OF
+  cp;
