@@ -3,27 +3,26 @@ SELECT
   format_date_full_compact (aap.created_at, 'America/Chicago') AS created_at,
   aap.created_by::text AS created_by,
   aap.credit::text AS credit,
-  format_date_full_compact (aap.end_date, 'America/Chicago')AS end_date,
+  format_date_full_compact (aap.end_date, 'America/Chicago') AS end_date,
   aap.note AS note,
   format_date_full_compact (aap.start_date, 'America/Chicago') AS start_date,
   (
-      SELECT
-        name
-      from
-        groups
-      where
-        id = aap.group_id
-    )
-   as group_name,
-   (
+    SELECT
+      name
+    from
+      groups
+    where
+      id = aap.group_id
+  ) as group_name,
+  (
     SELECT
       uid
     FROM
       users
     WHERE
       user_id = aap.user_id
-   ) as student_uid,
-   aap.id as id
+  ) as student_uid,
+  aap.id as id
 FROM
   assessment_access_policies AS aap
 WHERE
@@ -68,7 +67,6 @@ VALUES
     $note,
     $start_date,
     $user_id
-    
   );
 
 -- BLOCK update_assessment_access_policy
@@ -105,5 +103,3 @@ WHERE
 DELETE FROM assessment_access_policies
 WHERE
   id = $unsafe_assessment_access_policies_id
-  
- 

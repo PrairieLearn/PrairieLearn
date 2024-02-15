@@ -39,7 +39,8 @@ BEGIN
     INTO end_date_from_override , credit_from_override , start_date_from_override
     FROM assessment_access_policies as aap
     WHERE aap.assessment_id = check_assessment_access.assessment_id
-        AND (aap.user_id= check_assessment_access.user_id) 
+        AND ((aap.user_id= check_assessment_access.user_id) 
+        OR (aap.group_id = group_id))
     ORDER BY end_date DESC
     LIMIT 1;
 

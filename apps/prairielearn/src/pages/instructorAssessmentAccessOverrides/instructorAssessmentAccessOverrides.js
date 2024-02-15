@@ -6,7 +6,6 @@ import * as error from '@prairielearn/error';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment';
 import { selectUserByUid } from '../../models/user';
 
-
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -37,7 +36,7 @@ router.post(
         start_date: new Date(req.body.start_date),
         user_id: req.body.student_uid,
         student_uid: req.body.student_uid,
-        group_id: null
+        group_id: null,
       };
       // First, validate if group belongs to the assessment
       if (params.group_name) {
@@ -49,7 +48,7 @@ router.post(
         // Get the group_id from the result
         if (group_result.rows.length > 0) {
           params.group_id = group_result.rows[0].id;
-          console.log("GROUP ID: " + params.group_id);
+          console.log('GROUP ID: ' + params.group_id);
         } else {
           params.group_id = null;
         }
@@ -69,15 +68,13 @@ router.post(
         // console.log(res.locals);
 
         const enrollment = await getEnrollmentForUserInCourseInstance({
-          user_id :  params.user_id, 
-          course_instance_id : res.locals.course_instance.id
+          user_id: params.user_id,
+          course_instance_id: res.locals.course_instance.id,
         });
         console.log(enrollment);
         if (!enrollment) {
           throw error.make(400, 'Student is not enrolled in the current course instance.');
         }
-
-        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
@@ -97,17 +94,17 @@ router.post(
         start_date: new Date(req.body.start_date),
         user_id: req.body.student_uid,
         group_id: null,
-        student_uid: req.body.student_uid || null
+        student_uid: req.body.student_uid || null,
       };
       const user = await selectUserByUid(edit_params.user_id);
-        if (!user) {
-          throw error.make(400, 'Student UID does not exist.');
-        }
+      if (!user) {
+        throw error.make(400, 'Student UID does not exist.');
+      }
       const enrollment = await getEnrollmentForUserInCourseInstance({
         user_id: user.user_id,
         course_instance_id: res.locals.course_instance.id,
       });
-      
+
       if (!enrollment) {
         throw error.make(400, 'Student is not enrolled in the current course instance.');
       }
@@ -122,7 +119,6 @@ router.post(
         // Get the group_id from the result
         if (group_result.rows.length > 0) {
           edit_params.group_id = group_result.rows[0].id;
-
         } else {
           edit_params.group_id = null;
         }
