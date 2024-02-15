@@ -64,7 +64,7 @@ export async function deleteCoursePermissions({
   user_id: string;
   authn_user_id: string;
 }): Promise<void> {
-  await queryAsync(sql.update_course_permissions_role, { course_id, user_id, authn_user_id });
+  await queryAsync(sql.delete_course_permissions, { course_id, user_id, authn_user_id });
   // Do not throw an exception if no course permissions to delete
 }
 

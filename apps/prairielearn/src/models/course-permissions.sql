@@ -125,7 +125,7 @@ WITH
       AND ci.course_id = $course_id
     RETURNING
       e.*
-  ),
+  )
 SELECT
   *
 FROM
