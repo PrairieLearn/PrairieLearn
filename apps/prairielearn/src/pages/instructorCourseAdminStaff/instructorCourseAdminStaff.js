@@ -106,7 +106,7 @@ router.post(
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
          */
         async (memo, uid) => {
-          /** @type {import('../../lib/db-types').CoursePermission} */
+          /** @type {import('../../lib/db-types').User} */
           let result;
           try {
             result = await insertCoursePermissionsByUserUid({

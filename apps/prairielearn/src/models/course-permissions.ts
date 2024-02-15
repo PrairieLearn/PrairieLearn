@@ -1,6 +1,6 @@
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { CoursePermission, CoursePermissionSchema } from '../lib/db-types';
+import { type User, type CoursePermission } from '../lib/db-types';
 import { selectOrInsertUserByUid } from './user';
 
 const sql = loadSqlEquiv(__filename);
@@ -15,13 +15,15 @@ export async function insertCoursePermissionsByUserUid({
   uid: string;
   course_role: NonNullable<CoursePermission['course_role']>;
   authn_user_id: string;
-}): Promise<CoursePermission> {
+}): Promise<User> {
   return await runInTransactionAsync(async () => {
     const user = await selectOrInsertUserByUid(uid);
-    return await queryRow(
-      sql.insert_course_permissions,
-      { user_id: user.user_id, course_id, course_role, authn_user_id },
-      CoursePermissionSchema,
-    );
+    await queryAsync(sql.insert_course_permissions, {
+      user_id: user.user_id,
+      course_id,
+      course_role,
+      authn_user_id,
+    });
+    return user;
   });
 }
