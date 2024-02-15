@@ -22,8 +22,7 @@ CREATE FUNCTION
 AS $$
 DECLARE
     user_result record;
--- DECLARE
---     group_id bigint;
+    group_id bigint;
 BEGIN
     -- authorization for the effective user
     SELECT *
@@ -41,7 +40,7 @@ BEGIN
         );
 
     SELECT g.id  
-    -- INTO group_id
+    INTO group_id
     FROM groups as g JOIN group_configs AS gc 
                 ON g.group_config_id = gc.id 
         JOIN group_users AS gu 
@@ -108,6 +107,6 @@ BEGIN
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
     next_active_time := user_result.next_active_time;
-    -- group_id:=group_id.group_id;
+    group_id:=group_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
