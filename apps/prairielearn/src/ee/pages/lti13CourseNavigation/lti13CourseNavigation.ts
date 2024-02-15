@@ -72,6 +72,17 @@ router.get(
 
     if (!role_instructor) {
       // Students get a "come back later" message
+
+      /*
+       * TODO: Give the student a "come back later message" but
+       *       to not break things for current testing courses,
+       *       fall back to the previous PR behavior of simply
+       *       redirecting to /pl
+       */
+      res.redirect('/pl/');
+      return;
+
+      /*
       res.send(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
@@ -79,6 +90,7 @@ router.get(
         }),
       );
       return;
+      */
     }
 
     // Instructor so lookup their existing information in PL
