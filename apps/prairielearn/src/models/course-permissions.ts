@@ -11,6 +11,7 @@ import {
   type CoursePermission,
   CoursePermissionSchema,
   type CourseInstancePermission,
+  CourseInstancePermissionSchema,
 } from '../lib/db-types';
 import { selectOrInsertUserByUid } from './user';
 
@@ -131,5 +132,28 @@ export async function insertCourseInstancePermissions({
   );
   if (!coursePermission) {
     throw new Error('Cannot add permissions for a course instance without course permissions');
+  }
+}
+
+export async function updateCourseInstancePermissionsRole({
+  course_id,
+  course_instance_id,
+  user_id,
+  course_instance_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
+  authn_user_id: string;
+}): Promise<void> {
+  const result = await queryOptionalRow(
+    sql.update_course_instance_permissions_role,
+    { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
+    CourseInstancePermissionSchema,
+  );
+  if (!result) {
+    throw new Error('No course instance permissions to update');
   }
 }

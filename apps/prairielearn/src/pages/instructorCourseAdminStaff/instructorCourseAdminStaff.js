@@ -17,6 +17,7 @@ import {
   deleteCoursePermissionsForUsersWithoutAccess,
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
+  updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
 
@@ -319,14 +320,13 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_role) {
         // In this case, we update the role associated with the course instance permission
-        const params = [
-          res.locals.course.id,
-          req.body.user_id,
-          req.body.course_instance_id,
-          req.body.course_instance_role,
-          res.locals.authz_data.authn_user.user_id,
-        ];
-        await sqldb.callAsync('course_instance_permissions_update_role', params);
+        await updateCourseInstancePermissionsRole({
+          course_id: res.locals.course.id,
+          user_id: req.body.user_id,
+          course_instance_id: req.body.course_instance_id,
+          course_instance_role: req.body.course_instance_role,
+          authn_user_id: res.locals.authz_data.authn_user.user_id,
+        });
         res.redirect(req.originalUrl);
       } else {
         // In this case, we delete the course instance permission

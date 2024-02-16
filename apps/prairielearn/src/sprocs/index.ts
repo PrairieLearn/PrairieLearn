@@ -50,7 +50,6 @@ export async function init() {
       'assessment_instance_label.sql',
       'assessment_label.sql',
       'admin_assessment_question_number.sql',
-      'course_instance_permissions_update_role.sql',
       'course_instance_permissions_delete.sql',
       'course_instance_permissions_delete_all.sql',
       'authz_course.sql',
