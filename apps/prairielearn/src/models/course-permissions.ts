@@ -6,7 +6,12 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { type User, type CoursePermission, CoursePermissionSchema } from '../lib/db-types';
+import {
+  type User,
+  type CoursePermission,
+  CoursePermissionSchema,
+  type CourseInstancePermission,
+} from '../lib/db-types';
 import { selectOrInsertUserByUid } from './user';
 
 const sql = loadSqlEquiv(__filename);
@@ -104,4 +109,27 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
       await deleteCoursePermissions({ course_id, user_id: user.user_id, authn_user_id });
     }
   });
+}
+
+export async function insertCourseInstancePermissions({
+  course_id,
+  course_instance_id,
+  user_id,
+  course_instance_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
+  authn_user_id: string;
+}): Promise<void> {
+  const coursePermission = await queryOptionalRow(
+    sql.insert_course_instance_permissions,
+    { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
+    CoursePermissionSchema,
+  );
+  if (!coursePermission) {
+    throw new Error('Cannot add permissions for a course instance without course permissions');
+  }
 }

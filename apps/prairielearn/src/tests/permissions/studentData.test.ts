@@ -6,7 +6,10 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -163,13 +166,13 @@ describe('student data access', function () {
   });
 
   step('instructor (student data viewer) can view HW1 instance of student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,

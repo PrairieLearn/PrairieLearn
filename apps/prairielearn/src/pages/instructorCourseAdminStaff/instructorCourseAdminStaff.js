@@ -15,6 +15,7 @@ import {
   deleteCoursePermissions,
   deleteCoursePermissionsForNonOwners,
   deleteCoursePermissionsForUsersWithoutAccess,
+  insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
@@ -113,9 +114,9 @@ router.post(
          */
         async (memo, uid) => {
           /** @type {import('../../lib/db-types').User} */
-          let result;
+          let user;
           try {
-            result = await insertCoursePermissionsByUserUid({
+            user = await insertCoursePermissionsByUserUid({
               course_id: res.locals.course.id,
               uid,
               course_role: req.body.course_role,
@@ -133,14 +134,13 @@ router.post(
           if (!course_instance) return memo;
 
           try {
-            const ci_params = [
-              res.locals.course.id,
-              result.user_id,
-              course_instance.id,
-              req.body.course_instance_role,
-              res.locals.authz_data.authn_user.user_id,
-            ];
-            await sqldb.callAsync('course_instance_permissions_insert', ci_params);
+            await insertCourseInstancePermissions({
+              course_id: res.locals.course.id,
+              user_id: user.user_id,
+              course_instance_id: course_instance.id,
+              course_instance_role: req.body.course_instance_role,
+              authn_user_id: res.locals.authz_data.authn_user.user_id,
+            });
           } catch (err) {
             logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
             memo.not_given_cip.push(uid);
@@ -360,14 +360,13 @@ ${given_cp_and_cip.join(',\n')}
         throw error.make(400, `Undefined course instance id`);
       }
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        req.body.course_instance_id,
-        'Student Data Viewer',
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_instance_permissions_insert', params);
+      await insertCourseInstancePermissions({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        course_instance_id: req.body.course_instance_id,
+        course_instance_role: 'Student Data Viewer',
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_non_owners') {
       debug('Delete non-owners');

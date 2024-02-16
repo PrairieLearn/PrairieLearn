@@ -9,7 +9,10 @@ import { features } from '../lib/features/index';
 import * as helperServer from './helperServer';
 import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -384,12 +387,13 @@ describe('Manual Grading', function () {
           authn_user_id: '1',
         });
         staff.user_id = courseStaffPermissions.user_id;
-        const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqldb.callAsync(
-          'course_instance_permissions_insert',
-          ciStaffParams,
-        );
-        assert.equal(ciStaffResult.rowCount, 1);
+        await insertCourseInstancePermissions({
+          course_id: '1',
+          user_id: staff.user_id,
+          course_instance_id: '1',
+          course_instance_role: 'Student Data Editor',
+          authn_user_id: '1',
+        });
       }),
     );
   });

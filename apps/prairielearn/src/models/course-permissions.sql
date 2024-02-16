@@ -168,3 +168,68 @@ WHERE
   AND cip.max_course_instance_role IS NULL
 FOR NO KEY UPDATE OF
   cp;
+
+-- BLOCK insert_course_instance_permissions
+WITH
+  existing_course_permission AS (
+    SELECT
+      cp.id AS course_permission_id
+    FROM
+      course_permissions AS cp
+    WHERE
+      cp.user_id = $user_id
+      AND cp.course_id = $course_id
+  ),
+  inserted_course_instance_permissions AS (
+    INSERT INTO
+      course_instance_permissions AS cip (
+        course_instance_id,
+        course_instance_role,
+        course_permission_id
+      )
+    SELECT
+      ci.course_instance_id,
+      $course_instance_role,
+      cp.course_permission_id
+    FROM
+      existing_course_permission AS cp
+      -- Course instance ID is provided by the user, so must be validated against the course ID.
+      JOIN course_instances AS ci ON (ci.course_id = cp.course_id)
+    WHERE
+      ci.course_instance_id = $course_instance_id
+    ON CONFLICT (course_instance_id, course_permission_id) DO
+    UPDATE
+    SET
+      course_instance_role = EXCLUDED.course_instance_role
+    WHERE
+      cip.course_instance_role < EXCLUDED.course_instance_role
+    RETURNING
+      cip.*
+  ),
+  inserted_audit_log AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        user_id,
+        table_name,
+        row_id,
+        action,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      cp.course_id,
+      cp.user_id,
+      'course_instance_permissions',
+      cip.id,
+      'insert',
+      to_jsonb(cip)
+    FROM
+      inserted_course_instance_permissions AS cip
+      JOIN existing_course_permission AS cp ON TRUE
+  )
+SELECT
+  *
+FROM
+  existing_course_permission;

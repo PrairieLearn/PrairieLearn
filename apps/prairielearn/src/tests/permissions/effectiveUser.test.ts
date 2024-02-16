@@ -8,6 +8,7 @@ import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
 import {
+  insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
@@ -141,13 +142,13 @@ describe('effective user', function () {
   });
 
   step('instructor (student data viewer) cannot emulate student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
     };
@@ -306,13 +307,13 @@ describe('effective user', function () {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      3,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '3',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
