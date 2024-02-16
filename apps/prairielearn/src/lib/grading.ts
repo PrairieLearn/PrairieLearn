@@ -16,11 +16,13 @@ import {
   DateFromISOString,
   GradingJobSchema,
   IdSchema,
+  IntervalSchema,
   Question,
   QuestionSchema,
   Submission,
   SubmissionSchema,
   Variant,
+  VariantSchema,
 } from './db-types';
 import { idsEqual } from './id';
 
@@ -43,6 +45,102 @@ type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
   };
+
+export async function insertSubmission({
+  submitted_answer,
+  raw_submitted_answer,
+  format_errors,
+  gradable,
+  broken,
+  true_answer,
+  feedback,
+  credit,
+  mode,
+  variant_id,
+  auth_user_id,
+  client_fingerprint_id,
+}: {
+  submitted_answer: Record<string, any> | null;
+  raw_submitted_answer: Record<string, any> | null;
+  format_errors: Record<string, any> | null;
+  gradable: boolean | null;
+  broken: boolean | null;
+  true_answer: Record<string, any> | null;
+  feedback: Record<string, any> | null;
+  credit?: number | null;
+  mode?: Submission['mode'];
+  variant_id: string;
+  auth_user_id: string | null;
+  client_fingerprint_id?: string | null;
+}): Promise<string> {
+  return await sqldb.runInTransactionAsync(async () => {
+    await sqldb.callAsync('variants_lock', [variant_id]);
+
+    // Select the variant, while updating the variant's `correct_answer`, which
+    // is permitted to change during the `parse` phase (which occurs before this
+    // submission is inserted).
+    const variant = await sqldb.queryRow(
+      sql.update_variant_true_answer,
+      { variant_id, true_answer },
+      VariantSchema.extend({
+        assessment_instance_id: z.string().nullable(),
+        max_manual_points: z.number().nullable(),
+      }),
+    );
+
+    if (variant.broken_at != null) {
+      throw error.make(400, 'Variant is broken', { variant_id });
+    }
+
+    await sqldb.callAsync('instance_questions_ensure_open', [variant.instance_question_id]);
+    if (variant.instance_question_id != null) {
+      await sqldb.callAsync('instance_questions_ensure_open', [variant.instance_question_id]);
+    }
+    if (variant.assessment_instance_id != null) {
+      await sqldb.callAsync('assessment_instances_ensure_open', [variant.assessment_instance_id]);
+    }
+
+    const delta = await sqldb.queryOptionalRow(
+      sql.select_and_update_last_access,
+      { user_id: variant.user_id, course_id: variant.course_id },
+      IntervalSchema.nullable(),
+    );
+
+    const submission_id = await sqldb.queryRow(
+      sql.insert_submission,
+      {
+        variant_id,
+        auth_user_id,
+        raw_submitted_answer,
+        submitted_answer,
+        format_errors,
+        credit,
+        mode,
+        delta,
+        params: variant.params,
+        true_answer,
+        feedback,
+        gradable,
+        broken,
+        client_fingerprint_id,
+      },
+      IdSchema,
+    );
+
+    if (variant.assessment_instance_id != null) {
+      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+        instance_question_id: variant.instance_question_id,
+        assessment_instance_id: variant.assessment_instance_id,
+        delta,
+        status: gradable ? 'saved' : 'invalid',
+        requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+      });
+      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+    }
+
+    return submission_id;
+  });
+}
 
 /**
  * Save a new submission to a variant into the database.
@@ -122,25 +220,12 @@ export async function saveSubmission(
 
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-  const submission_id = await sqldb.callRow(
-    'submissions_insert',
-    [
-      data.submitted_answer,
-      data.raw_submitted_answer,
-      data.format_errors,
-      data.gradable && !hasFatalIssue,
-      hasFatalIssue,
-      data.true_answer,
-      data.feedback,
-      submission.credit,
-      submission.mode,
-      submission.variant_id,
-      submission.auth_user_id,
-      submission.client_fingerprint_id,
-    ],
-    IdSchema,
-  );
-  return submission_id;
+  return await insertSubmission({
+    ...submission,
+    ...data,
+    gradable: data.gradable && !hasFatalIssue,
+    broken: hasFatalIssue,
+  });
 }
 
 async function selectSubmissionForGrading(

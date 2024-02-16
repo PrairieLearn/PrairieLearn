@@ -5,13 +5,12 @@ import jsonStringifySafe = require('json-stringify-safe');
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { type ServerJob, createServerJob } from './server-jobs';
-import { saveSubmission, gradeVariant } from './grading';
+import { saveSubmission, gradeVariant, insertSubmission } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
 import {
   GradingJobSchema,
-  IdSchema,
   SubmissionSchema,
   type Variant,
   type Submission,
@@ -76,28 +75,22 @@ async function createTestSubmission(
 
   if (hasFatalIssue) data.gradable = false;
 
-  const submission_id = await sqldb.callRow(
-    'submissions_insert',
-    [
-      {}, // submitted_answer
-      data.raw_submitted_answer,
-      data.format_errors,
-      data.gradable,
-      hasFatalIssue,
-      // The `test` phase is not allowed to mutate `correct_answers`
-      // (aliased here to `true_answer`), so we just pick the original
-      // `true_answer` so we can use our standard `submissions_insert`
-      // sproc.
-      variant.true_answer,
-      null, // feedback
-      null, // credit
-      null, // mode
-      variant.id,
-      authn_user_id,
-      null, // client_fingerprint_id
-    ],
-    IdSchema,
-  );
+  const submission_id = await insertSubmission({
+    submitted_answer: {},
+    raw_submitted_answer: data.raw_submitted_answer,
+    format_errors: data.format_errors,
+    gradable: data.gradable,
+    broken: hasFatalIssue,
+    // The `test` phase is not allowed to mutate `true_answers`, so we just pick
+    // the original `true_answer` so we can use our standard `insertSubmission`.
+    true_answer: variant.true_answer,
+    feedback: null,
+    credit: null,
+    mode: null,
+    variant_id: variant.id,
+    auth_user_id: authn_user_id,
+    client_fingerprint_id: null,
+  });
 
   const grading_job = await sqldb.callRow(
     'grading_jobs_insert',
