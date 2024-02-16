@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+
 import * as externalGrader from './externalGrader';
 import * as ltiOutcomes from './ltiOutcomes';
 import { writeCourseIssues } from './issues';
@@ -15,10 +17,12 @@ import {
   GradingJobSchema,
   IdSchema,
   Question,
+  QuestionSchema,
   Submission,
   SubmissionSchema,
   Variant,
 } from './db-types';
+import { idsEqual } from './id';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -26,6 +30,13 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_interval: z.string(),
+});
+
+const VariantDataSchema = z.object({
+  instance_question_id: z.string().nullable(),
+  grading_method: QuestionSchema.shape.grading_method,
+  max_auto_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
 });
 
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
@@ -132,6 +143,61 @@ export async function saveSubmission(
   return submission_id;
 }
 
+async function selectSubmissionForGrading(
+  variant_id: string,
+  check_submission_id: string | null,
+): Promise<Submission | null> {
+  return sqldb.runInTransactionAsync(async () => {
+    await sqldb.callAsync('variants_lock', [variant_id]);
+
+    const variantData = await sqldb.queryOptionalRow(
+      sql.select_variant_data,
+      { variant_id },
+      VariantDataSchema,
+    );
+    if (variantData == null) return null;
+
+    // We only select variants that will be auto-graded, so ignore this variant
+    // if this is manual grading only. Typically we would not reach this point
+    // for these cases, since the grade button is not shown to students, so this
+    // is an extra precaution.
+    if (variantData.instance_question_id == null) {
+      if (variantData.grading_method === 'Manual') return null;
+    } else {
+      if ((variantData.max_auto_points ?? 0) === 0 || (variantData.max_manual_points ?? 0) !== 0) {
+        return null;
+      }
+    }
+
+    // Select the most recent submission
+    const submission = await sqldb.queryOptionalRow(
+      sql.select_last_submission_of_variant,
+      { variant_id },
+      SubmissionSchema,
+    );
+    if (submission == null) return null;
+
+    if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
+      throw error.make(400, 'Submission ID mismatch', {
+        submission_id: submission.id,
+        check_submission_id,
+      });
+    }
+
+    // Check if the submission needs grading
+    if (
+      submission.score != null || // already graded
+      submission.grading_requested_at != null || // grading is in progress
+      submission.broken || // submission is broken
+      !submission.gradable // submission did not pass parsing
+    ) {
+      return null;
+    }
+
+    return submission;
+  });
+}
+
 /**
  * Grade the most recent submission for a given variant.
  *
@@ -152,11 +218,7 @@ export async function gradeVariant(
 ): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await sqldb.callOptionalRow(
-    'variants_select_submission_for_grading',
-    [variant.id, check_submission_id],
-    SubmissionSchema,
-  );
+  const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
   if (submission == null) return;
 
   if (!overrideGradeRateCheck) {
