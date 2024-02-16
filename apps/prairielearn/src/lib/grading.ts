@@ -44,6 +44,8 @@ const VariantDataSchema = z.object({
 const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_id: z.string().nullable(),
   max_manual_points: z.number().nullable(),
+  instance_question_open: z.boolean().nullable(),
+  assessment_instance_open: z.boolean().nullable(),
 });
 
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
@@ -97,12 +99,11 @@ export async function insertSubmission({
     if (!variant.open) {
       throw error.make(403, 'Variant is not open', { variant_id });
     }
-
-    if (variant.instance_question_id != null) {
-      await sqldb.callAsync('instance_questions_ensure_open', [variant.instance_question_id]);
+    if (variant.instance_question_id != null && !variant.instance_question_open) {
+      throw error.make(403, 'Instance question is not open', { variant_id });
     }
-    if (variant.assessment_instance_id != null) {
-      await sqldb.callAsync('assessment_instances_ensure_open', [variant.assessment_instance_id]);
+    if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
+      throw error.make(403, 'Assessment instance is not open', { variant_id });
     }
 
     const delta = await sqldb.queryOptionalRow(

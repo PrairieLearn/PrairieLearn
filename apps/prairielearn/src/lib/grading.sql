@@ -58,11 +58,14 @@ WITH
   )
 SELECT
   v.*,
+  iq.open AS instance_question_open,
   iq.assessment_instance_id,
+  ai.open AS assessment_instance_open,
   aq.max_manual_points
 FROM
   updated_variant v
   LEFT JOIN instance_questions iq ON (v.instance_question_id = iq.id)
+  LEFT JOIN assessment_instances ai ON (iq.assessment_instance_id = ai.id)
   LEFT JOIN assessment_questions aq ON (iq.assessment_question_id = aq.id);
 
 -- BLOCK select_and_update_last_access
