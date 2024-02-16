@@ -105,7 +105,6 @@ export async function init() {
       'variants_select.sql',
       'variants_insert.sql',
       'variants_update_after_grading.sql',
-      'variants_ensure_open.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',

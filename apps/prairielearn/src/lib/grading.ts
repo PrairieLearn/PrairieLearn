@@ -94,7 +94,10 @@ export async function insertSubmission({
       throw error.make(400, 'Variant is broken', { variant_id });
     }
 
-    await sqldb.callAsync('variants_ensure_open', [variant_id]);
+    if (!variant.open) {
+      throw error.make(403, 'Variant is not open', { variant_id });
+    }
+
     if (variant.instance_question_id != null) {
       await sqldb.callAsync('instance_questions_ensure_open', [variant.instance_question_id]);
     }
