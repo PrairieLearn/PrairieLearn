@@ -4,17 +4,32 @@ import { z } from 'zod';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
-import { Course, Question, Variant, VariantSchema } from './db-types';
+import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types';
+import { idsEqual } from './id';
+import { selectCourseInstanceById } from '../models/course-instances';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),
 });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
+
+const InstanceQuestionDataSchema = z.object({
+  question_id: IdSchema,
+  user_id: IdSchema.nullable(),
+  group_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema,
+  course_instance_id: IdSchema,
+  instance_question_open: z.boolean().nullable(),
+  assessment_instance_open: z.boolean().nullable(),
+});
 
 interface VariantCreationData {
   variant_seed: string;
@@ -180,26 +195,104 @@ async function makeAndInsertVariant(
     question_course,
     options,
   );
-  const variant = await sqldb.callRow(
-    'variants_insert',
-    [
-      variantData.variant_seed,
-      variantData.params,
-      variantData.true_answer,
-      variantData.options,
-      variantData.broken,
-      instance_question_id,
-      question.id,
-      course_instance_id,
-      user_id,
-      authn_user_id,
-      group_work,
-      require_open,
-      variant_course.id,
-      client_fingerprint_id,
-    ],
-    VariantWithFormattedDateSchema,
-  );
+
+  const variant = await sqldb.runInTransactionAsync(async () => {
+    let real_user_id: string | null = user_id;
+    let real_group_id: string | null = null;
+    let new_number: number | null = 1;
+
+    if (instance_question_id != null) {
+      await sqldb.callAsync('instance_questions_lock', [instance_question_id]);
+      const instance_question = await sqldb.queryOptionalRow(
+        sql.select_instance_question_data,
+        { instance_question_id },
+        InstanceQuestionDataSchema,
+      );
+      if (instance_question == null) {
+        throw error.make(404, 'Instance question not found');
+      }
+
+      // This handles the race condition where we simultaneously start
+      // generating two variants for the same instance question. If we're the
+      // second one to try and insert a variant, just pull the existing variant
+      // back out of the database and use that instead.
+      const existing_variant = await sqldb.callOptionalRow(
+        'instance_questions_select_variant',
+        [instance_question_id, require_open],
+        VariantWithFormattedDateSchema.nullable(),
+      );
+      if (existing_variant != null) {
+        return await sqldb.callRow(
+          'variants_select',
+          [existing_variant.id, instance_question.question_id, instance_question_id],
+          VariantWithFormattedDateSchema,
+        );
+      }
+
+      if (!instance_question.instance_question_open) {
+        throw error.make(403, 'Instance question is not open');
+      }
+      if (!instance_question.assessment_instance_open) {
+        throw error.make(403, 'Assessment instance is not open');
+      }
+
+      question_id = instance_question.question_id;
+      course_instance_id = instance_question.course_instance_id;
+      real_user_id = instance_question.user_id;
+      real_group_id = instance_question.group_id;
+
+      new_number = await sqldb.queryOptionalRow(
+        sql.next_variant_number,
+        { instance_question_id },
+        z.number().nullable(),
+      );
+    } else {
+      if (question_id == null) {
+        throw new Error(
+          'Attempt to create a variant without a question ID or instance question ID',
+        );
+      }
+      if (user_id == null) {
+        throw new Error('Attempt to create a variant without a user ID');
+      }
+
+      if (course_instance_id != null) {
+        const course_instance = await selectCourseInstanceById(course_instance_id);
+        if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
+          throw error.make(403, 'Course instance not found in course');
+        }
+      }
+    }
+
+    const question = await selectQuestionById(question_id);
+    let workspace_id: string | null = null;
+    if (question.workspace_image !== null) {
+      workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
+    }
+
+    const variant_id = await sqldb.queryRow(
+      sql.insert_variant,
+      {
+        ...variantData,
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id: real_user_id,
+        group_id: real_group_id,
+        number: new_number ?? 1,
+        authn_user_id,
+        workspace_id,
+        course_id: variant_course.id,
+        client_fingerprint_id,
+      },
+      IdSchema,
+    );
+    return await sqldb.callRow(
+      'variants_select',
+      [variant_id, question_id, instance_question_id],
+      VariantWithFormattedDateSchema,
+    );
+  });
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };
