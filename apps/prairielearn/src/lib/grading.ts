@@ -41,6 +41,11 @@ const VariantDataSchema = z.object({
   max_manual_points: z.number().nullable(),
 });
 
+const VariantForSubmissionSchema = VariantSchema.extend({
+  assessment_instance_id: z.string().nullable(),
+  max_manual_points: z.number().nullable(),
+});
+
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
@@ -82,10 +87,7 @@ export async function insertSubmission({
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
       { variant_id, true_answer },
-      VariantSchema.extend({
-        assessment_instance_id: z.string().nullable(),
-        max_manual_points: z.number().nullable(),
-      }),
+      VariantForSubmissionSchema,
     );
 
     if (variant.broken_at != null) {
