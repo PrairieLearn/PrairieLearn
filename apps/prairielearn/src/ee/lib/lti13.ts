@@ -39,7 +39,8 @@ export const Lti13ClaimSchema = z.object({
       type: z.string().array().nullish(),
       label: z.string().nullish(),
       title: z.string().nullish(),
-    }).nullish(),
+    })
+    .nullish(),
 
   'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
     .object({
@@ -80,11 +81,16 @@ export class Lti13Claim {
   private valid = false;
 
   constructor(req: Request) {
-    this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
+    try {
+      this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
+    } catch {
+      throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
+    }
+    this.valid = true;
     this.req = req;
 
+    // Check to see that it's not expired
     this.isValid();
-    this.valid = true;
   }
 
   // Accessors
@@ -112,11 +118,8 @@ export class Lti13Claim {
   // Functions
 
   isValid() {
-    try {
-      if (this.valid && Math.floor(Date.now() / 1000) > this.claims.exp) {
-        throw new Error();
-      }
-    } catch {
+    if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
+      this.valid = false;
       delete this.req.session['lti13_claims'];
       throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
     }
@@ -166,6 +169,6 @@ export class Lti13Claim {
   remove() {
     this.valid = false;
     delete this.req.session['lti13_claims'];
-    //delete this.req.session['authn_lti13_instance_id'];
+    delete this.req.session['authn_lti13_instance_id'];
   }
 }

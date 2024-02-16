@@ -9,7 +9,7 @@ import { selectCoursesWithEditAccess } from '../../../models/course';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
 import {
   Lti13CourseNavigationInstructor,
-  Lti13CourseNavigationNotReady,
+  //Lti13CourseNavigationNotReady,
   Lti13CourseNavigationDone,
 } from './lti13CourseNavigation.html';
 import { Lti13Claim } from '../../lib/lti13';
@@ -74,8 +74,7 @@ router.get(
       // Students get a "come back later" message
 
       /*
-       * TODO: Give the student a "come back later message" but
-       *       to not break things for current testing courses,
+       * TODO: to not break things for current testing courses,
        *       fall back to the previous PR behavior of simply
        *       redirecting to /pl
        */
@@ -103,6 +102,7 @@ router.get(
     let course_instances: CourseInstance[] = [];
 
     // This should match our policy for who can link courses (only instructors? TAs?)
+    // TODO: Course owner access
     for (const course of courses) {
       const loopCI = await selectCourseInstancesWithStaffAccess({
         course_id: course.id,
