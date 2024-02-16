@@ -78,7 +78,7 @@ WITH
     WHERE
       (
         CASE
-          WHEN $user_id IS NOT NULL THEN la.user_id = $user_id
+          WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
           ELSE la.group_id = $group_id
         END
       )
@@ -90,7 +90,7 @@ WITH
     WHERE
       (
         CASE
-          WHEN $user_id IS NOT NULL THEN la.user_id = $user_id
+          WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
           ELSE la.group_id = $group_id
         END
       )
@@ -161,8 +161,10 @@ WITH
       duration = duration + ($delta * interval '1 ms'),
       first_duration = coalesce(first_duration, $delta * interval '1 ms'),
       modified_at = now(),
-      requires_manual_grading = requires_manual_grading
-      OR $requires_manual_grading
+      requires_manual_grading = (
+        requires_manual_grading
+        OR $requires_manual_grading
+      )
     WHERE
       id = $instance_question_id
   )
@@ -171,4 +173,4 @@ SET
   duration = duration + ($delta * interval '1 ms'),
   modified_at = now()
 WHERE
-  AND id = $assessment_instance_id;
+  id = $assessment_instance_id;

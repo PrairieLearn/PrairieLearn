@@ -108,7 +108,7 @@ export async function insertSubmission({
 
     const delta = await sqldb.queryOptionalRow(
       sql.select_and_update_last_access,
-      { user_id: variant.user_id, course_id: variant.course_id },
+      { user_id: variant.user_id, group_id: variant.group_id },
       IntervalSchema.nullable(),
     );
 
