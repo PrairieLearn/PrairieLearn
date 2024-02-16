@@ -116,7 +116,7 @@ export function InstructorCourseAdminSettings({
                   The Github repository that can be used to sync course files.
                 </small>
               </div>
-              <div class="form-group">
+              <p class="mb-0">
                 ${coursePathExists && courseInfoExists
                   ? resLocals.authz_data.has_course_permission_view
                     ? resLocals.authz_data.has_course_permission_edit &&
@@ -140,7 +140,7 @@ export function InstructorCourseAdminSettings({
                         `
                     : ''
                   : ''}
-              </div>
+              </p>
             </form>
           </div>
         </main>
