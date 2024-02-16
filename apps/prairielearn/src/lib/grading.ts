@@ -255,7 +255,7 @@ async function selectSubmissionForGrading(
     if (variantData.instance_question_id == null) {
       if (variantData.grading_method === 'Manual') return null;
     } else {
-      if ((variantData.max_auto_points ?? 0) === 0 || (variantData.max_manual_points ?? 0) !== 0) {
+      if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;
       }
     }
