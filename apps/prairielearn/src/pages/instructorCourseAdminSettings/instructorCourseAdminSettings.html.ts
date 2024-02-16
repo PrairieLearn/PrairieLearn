@@ -24,6 +24,11 @@ export function InstructorCourseAdminSettings({
           })}
           <div class="card">
             <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            ${!courseInfoExists || !coursePathExists
+              ? html`<div class="card-body pb-0">
+                  ${CourseDirectoryMissingAlert({ resLocals, coursePathExists, courseInfoExists })}
+                </div>`
+              : ''}
             <form class="card-body">
               <div class="form-group">
                 <label for="short_name">Short Name</label>
@@ -112,25 +117,6 @@ export function InstructorCourseAdminSettings({
                 </small>
               </div>
               <div class="form-group">
-                ${!coursePathExists
-                  ? resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                    ? html`
-                        <span class="text-danger">
-                          You must
-                          <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">
-                            sync your course
-                          </a>
-                          before viewing or editing its configuration
-                        </span>
-                      `
-                    : html`
-                        <span class="text-danger">
-                          A course editor must sync this course before anyone can view or edit its
-                          configuration
-                        </span>
-                      `
-                  : ''}
                 ${coursePathExists && courseInfoExists
                   ? resLocals.authz_data.has_course_permission_view
                     ? resLocals.authz_data.has_course_permission_edit &&
@@ -152,38 +138,52 @@ export function InstructorCourseAdminSettings({
                           </a>
                           in <code>infoCourse.json</code>
                         `
-                    : html`<code>infoCourse.json</code>`
+                    : ''
                   : ''}
               </div>
             </form>
-            ${coursePathExists && !courseInfoExists
-              ? html`
-                  <form name="add-configuration-form" class="card-body mt-n5" method="POST">
-                    <span class="text-danger">Missing configuration file</span>
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? html`
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button
-                            name="__action"
-                            value="add_configuration"
-                            class="btn btn-xs btn-secondary mx-2"
-                          >
-                            <i class="fa fa-edit"></i>
-                            <span class="d-none d-sm-inline">Create infoCourse.json</span>
-                          </button>
-                        `
-                      : ''}
-                  </form>
-                `
-              : ''}
           </div>
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function CourseDirectoryMissingAlert({
+  resLocals,
+  coursePathExists,
+  courseInfoExists,
+}: {
+  resLocals: Record<string, any>;
+  coursePathExists: boolean;
+  courseInfoExists: boolean;
+}) {
+  if (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course) {
+    if (!coursePathExists) {
+      return html`
+        <div class="alert alert-danger">
+          Course directory not found. You must
+          <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
+          .
+        </div>
+      `;
+    } else if (!courseInfoExists) {
+      return html`
+        <form name="add-configuration-form" method="POST" class="alert alert-danger">
+          <code>infoCourse.json</code> is missing. You must
+          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+          <button
+            name="__action"
+            value="add_configuration"
+            class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+          >
+            create this file
+          </button>
+          to edit your course settings.
+        </form>
+      `;
+    } else {
+      return;
+    }
+  }
 }
