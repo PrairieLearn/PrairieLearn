@@ -265,8 +265,8 @@ WITH
       )
     SELECT
       $authn_user_id,
-      cp.course_id,
-      cp.user_id,
+      $course_id,
+      $user_id,
       'course_instance_permissions',
       'course_instance_role',
       cip.id,
@@ -275,9 +275,74 @@ WITH
       to_jsonb(cip)
     FROM
       updated_course_instance_permissions AS cip
-      JOIN course_permissions AS cp ON (cip.course_permission_id = cp.id)
   )
 SELECT
   *
 FROM
   updated_course_instance_permissions;
+
+-- BLOCK delete_course_instance_permissions
+WITH
+  deleted_course_instance_permissions AS (
+    DELETE FROM course_instance_permissions AS cip USING course_permissions AS cp
+    WHERE
+      cip.course_permission_id = cp.id
+      AND cp.user_id = $user_id
+      AND cp.course_id = $course_id
+      AND cip.course_instance_id = $course_instance_id
+    RETURNING
+      cip.*
+  ),
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    old_state
+  )
+SELECT
+  $authn_user_id,
+  $course_id,
+  $user_id,
+  'course_instance_permissions',
+  cip.id,
+  'delete',
+  to_jsonb(cip)
+FROM
+  deleted_course_instance_permissions AS cip;
+
+-- BLOCK delete_all_course_instance_permissions_for_course
+WITH
+  deleted_course_instance_permissions AS (
+    DELETE FROM course_instance_permissions AS cip USING course_permissions AS cp
+    WHERE
+      cip.course_permission_id = cp.id
+      AND cp.course_id = $course_id
+    RETURNING
+      to_jsonb(cip) AS old_state,
+      cip.id,
+      cp.user_id
+  ),
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    old_state
+  )
+SELECT
+  $authn_user_id,
+  $course_id,
+  cip.user_id,
+  'course_instance_permissions',
+  cip.id,
+  'delete',
+  cip.old_state
+FROM
+  deleted_course_instance_permissions AS cip;

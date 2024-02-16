@@ -157,3 +157,36 @@ export async function updateCourseInstancePermissionsRole({
     throw new Error('No course instance permissions to update');
   }
 }
+
+export async function deleteCourseInstancePermissions({
+  course_id,
+  course_instance_id,
+  user_id,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  authn_user_id: string;
+}): Promise<void> {
+  await queryAsync(sql.delete_course_instance_permissions, {
+    course_id,
+    course_instance_id,
+    user_id,
+    authn_user_id,
+  });
+  // Do not throw an exception if no course instance permissions to delete
+}
+
+export async function deleteAllCourseInstancePermissionsForCourse({
+  course_id,
+  authn_user_id,
+}: {
+  course_id: string;
+  authn_user_id: string;
+}): Promise<void> {
+  await queryAsync(sql.delete_all_course_instance_permissions_for_course, {
+    course_id,
+    authn_user_id,
+  });
+}

@@ -12,6 +12,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 import {
+  deleteAllCourseInstancePermissionsForCourse,
+  deleteCourseInstancePermissions,
   deleteCoursePermissions,
   deleteCoursePermissionsForNonOwners,
   deleteCoursePermissionsForUsersWithoutAccess,
@@ -330,13 +332,12 @@ ${given_cp_and_cip.join(',\n')}
         res.redirect(req.originalUrl);
       } else {
         // In this case, we delete the course instance permission
-        const params = [
-          res.locals.course.id,
-          req.body.user_id,
-          req.body.course_instance_id,
-          res.locals.authz_data.authn_user.user_id,
-        ];
-        await sqldb.callAsync('course_instance_permissions_delete', params);
+        await deleteCourseInstancePermissions({
+          course_id: res.locals.course.id,
+          user_id: req.body.user_id,
+          course_instance_id: req.body.course_instance_id,
+          authn_user_id: res.locals.authz_data.authn_user.user_id,
+        });
         res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'course_instance_permissions_insert') {
@@ -384,8 +385,10 @@ ${given_cp_and_cip.join(',\n')}
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_all_student_data_access') {
       debug('Remove all student data access');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_instance_permissions_delete_all', params);
+      await deleteAllCourseInstancePermissionsForCourse({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
