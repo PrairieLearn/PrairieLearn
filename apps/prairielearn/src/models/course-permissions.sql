@@ -292,7 +292,7 @@ WITH
       AND cip.course_instance_id = $course_instance_id
     RETURNING
       cip.*
-  ),
+  )
 INSERT INTO
   audit_logs (
     authn_user_id,
@@ -325,7 +325,7 @@ WITH
       to_jsonb(cip) AS old_state,
       cip.id,
       cp.user_id
-  ),
+  )
 INSERT INTO
   audit_logs (
     authn_user_id,
