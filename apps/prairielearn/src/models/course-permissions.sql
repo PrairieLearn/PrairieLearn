@@ -173,7 +173,7 @@ FOR NO KEY UPDATE OF
 WITH
   existing_course_permission AS (
     SELECT
-      cp.id AS course_permission_id
+      cp.*
     FROM
       course_permissions AS cp
     WHERE
@@ -188,15 +188,15 @@ WITH
         course_permission_id
       )
     SELECT
-      ci.course_instance_id,
+      ci.id,
       $course_instance_role,
-      cp.course_permission_id
+      cp.id
     FROM
       existing_course_permission AS cp
       -- Course instance ID is provided by the user, so must be validated against the course ID.
       JOIN course_instances AS ci ON (ci.course_id = cp.course_id)
     WHERE
-      ci.course_instance_id = $course_instance_id
+      ci.id = $course_instance_id
     ON CONFLICT (course_instance_id, course_permission_id) DO
     UPDATE
     SET
