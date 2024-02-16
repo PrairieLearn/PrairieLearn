@@ -383,7 +383,7 @@ const ConfigSchema = z.object({
    * Note that the `console` exporter should almost definitely NEVER be used in
    * production environments.
    */
-  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).default('console'),
+  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).nullable().default(null),
   openTelemetryMetricExporter: z.enum(['console', 'honeycomb']).nullable().default(null),
   openTelemetryMetricExportIntervalMillis: z.number().default(30_000),
   openTelemetrySamplerType: z

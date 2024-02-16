@@ -12,6 +12,7 @@ export {
   ObservableCounter,
   ObservableUpDownCounter,
   ObservableGauge,
+  ObservableResult,
 } from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
 

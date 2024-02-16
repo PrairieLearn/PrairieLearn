@@ -127,7 +127,7 @@ let tracerProvider: NodeTracerProvider | null;
 
 export interface OpenTelemetryConfigEnabled {
   openTelemetryEnabled: true;
-  openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
+  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
@@ -156,7 +156,9 @@ function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
+function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | null {
+  if (!config.openTelemetryExporter) return null;
+
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
@@ -254,18 +256,22 @@ export async function init(config: OpenTelemetryConfig) {
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
   }
 
-  let spanProcessor: SpanProcessor;
-  switch (config.openTelemetrySpanProcessor ?? 'batch') {
-    case 'batch': {
-      spanProcessor = new FilterBatchSpanProcessor(traceExporter, filter);
-      break;
-    }
-    case 'simple': {
-      spanProcessor = new SimpleSpanProcessor(traceExporter);
-      break;
-    }
-    default: {
-      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
+  let spanProcessor: SpanProcessor | null = null;
+  if (traceExporter) {
+    switch (config.openTelemetrySpanProcessor ?? 'batch') {
+      case 'batch': {
+        spanProcessor = new FilterBatchSpanProcessor(traceExporter, filter);
+        break;
+      }
+      case 'simple': {
+        spanProcessor = new SimpleSpanProcessor(traceExporter);
+        break;
+      }
+      default: {
+        throw new Error(
+          `Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`,
+        );
+      }
     }
   }
 
@@ -290,7 +296,9 @@ export async function init(config: OpenTelemetryConfig) {
     sampler,
     resource,
   });
-  nodeTracerProvider.addSpanProcessor(spanProcessor);
+  if (spanProcessor) {
+    nodeTracerProvider.addSpanProcessor(spanProcessor);
+  }
   nodeTracerProvider.register();
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
