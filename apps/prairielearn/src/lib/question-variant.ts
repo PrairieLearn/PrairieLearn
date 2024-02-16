@@ -222,11 +222,7 @@ async function makeAndInsertVariant(
         VariantWithFormattedDateSchema.nullable(),
       );
       if (existing_variant != null) {
-        return await sqldb.callRow(
-          'variants_select',
-          [existing_variant.id, instance_question.question_id, instance_question_id],
-          VariantWithFormattedDateSchema,
-        );
+        return existing_variant;
       }
 
       if (!instance_question.instance_question_open) {
