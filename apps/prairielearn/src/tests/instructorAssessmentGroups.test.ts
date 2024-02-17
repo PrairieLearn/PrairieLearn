@@ -114,6 +114,26 @@ describe('Instructor group controls', () => {
     group2RowId = groupRow.attr('data-test-group-id');
   });
 
+  step('can create a group with an instructor', async () => {
+    const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+
+    const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: csrfToken,
+        __action: 'add_group',
+        group_name: 'TestGroupWithInstructor',
+        // Add instructor to the group
+        uids: 'dev@illinois.edu',
+      }),
+    });
+    assert.equal(response.status, 200);
+    const groupRow = response.$('#usersTable tr:contains(TestGroupWithInstructor)');
+    assert.lengthOf(groupRow, 1);
+    assert.ok(groupRow.is(`:contains("dev@illinois.edu")`));
+  });
+
   step('can add a user to an existing group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
 

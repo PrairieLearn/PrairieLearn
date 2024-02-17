@@ -69,12 +69,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

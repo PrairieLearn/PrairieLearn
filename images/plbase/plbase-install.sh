@@ -37,7 +37,7 @@ cd /nvm
 git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 16
+nvm install 20
 npm install yarn@latest -g
 for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 
@@ -64,6 +64,26 @@ else
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
+
+# `pyarrow` and `rpy2` conflict in a horrible way:
+#
+# - `pyarrow` will load `/usr/lib64/libstdc++.so.6.0.29`
+# - `rpy2` will load `/usr/local/lib/libstdc++.so.6.0.32`
+#
+# `pyarrow` gets autoloaded by `pandas`, which we in turn load in the zygote.
+# If someone then tries to load `rpy2` in question code, it will fail to load
+# with the following error:
+#
+# cannot load library '/usr/local/lib/R/lib/libR.so': /lib64/libstdc++.so.6: version `GLIBCXX_3.4.30' not found
+#
+# This is because `rpy2` needs a version of `libstdc++` that supports libstd++ 3.4.30,
+# but `pyarrow` has already loaded a version of `libstdc++` that only supports up to 3.4.29.
+#
+# We work around that by setting up a symlink to the newer version of `libstdc++`.
+#
+# TODO: We can probably undo this change once we're removed R and `rpy2`.
+# TODO: We could also probably remove this when Amazon Linux picks up a newer version of the `gcc` suite.
+ln -sf /usr/local/lib/libstdc++.so.6 /usr/lib64/libstdc++.so.6
 
 # Clear various caches to minimize the final image size.
 dnf clean all

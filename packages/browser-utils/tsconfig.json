@@ -5,6 +5,6 @@
     "rootDir": "./src",
     // Unlike other PrairieLearn packages, we use another tool to actually
     // emit transpiled JavaScript. See note in `README.md`.
-    "emitDeclarationOnly": true
-  }
+    "emitDeclarationOnly": true,
+  },
 }
