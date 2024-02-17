@@ -63,7 +63,7 @@ router.post(
           throw error.make(400, 'Student UID does not exist.');
         }
         params.user_id = user.user_id;
-        
+
         const enrollment = await getEnrollmentForUserInCourseInstance({
           user_id: params.user_id,
           course_instance_id: res.locals.course_instance.id,

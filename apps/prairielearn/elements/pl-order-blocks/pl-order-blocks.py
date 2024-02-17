@@ -515,9 +515,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "solution-header": solution_header,
             "options": source_blocks,
             "submission_dict": student_previous_submission,
-            "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout is SolutionPlacementType.BOTTOM
-            else "pl-order-blocks-right",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
+            ),
             "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
@@ -563,9 +565,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 block.get("badge_type", "") == "" for block in student_submission
             ),
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
-            "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout is SolutionPlacementType.BOTTOM
-            else "pl-order-blocks-right",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
+            ),
         }
 
         if score is not None:
@@ -638,9 +642,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
-            "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout is SolutionPlacementType.BOTTOM
-            else "pl-order-blocks-right",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
+            ),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
