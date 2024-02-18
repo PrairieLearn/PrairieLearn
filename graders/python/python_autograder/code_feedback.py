@@ -300,6 +300,59 @@ class Feedback:
         return True
 
     @classmethod
+    def check_dict(
+        cls,
+        name,
+        ref,
+        data,
+        entry_type=None,
+        accuracy_critical=False,
+        report_failure=True,
+    ):
+        """
+        Feedback.check_dict(name, ref, data)
+
+        Check that a student dict has correct length with respect to a reference dict.  Can also check for a homogeneous data type for the list.
+
+        - ``name``: Name of the dictionary that is being checked. This will be used to give feedback.
+        - ``ref``: Reference dictionary.
+        - ``data``: Student dictionary to be checked.
+        - entry_type: If not None, checks if each value in the student dictionary has this type.
+        - ``accuracy_critical``: If true, grading will halt on failure.
+        - ``report_failure``: If true, feedback will be given on failure.
+        """
+
+        def bad(msg):
+            if report_failure:
+                cls.add_feedback(msg)
+            if accuracy_critical:
+                cls.finish("")
+            else:
+                return False
+
+        if data is None:
+            return bad("'%s' is None or not defined" % name)
+
+        if not isinstance(data, dict):
+            return bad("'%s' is not a list" % name)
+
+        if len(ref) != len(data):
+            return bad(
+                "'%s' has the wrong length--expected %d, got %d"
+                % (name, len(ref), len(data))
+            )
+
+        if entry_type is not None:
+            for _, value in data.items():
+                if not isinstance(value, entry_type):
+                    return bad("'%s[%s]' has the wrong type" % (name, value))
+
+        if ref == data:
+            return True
+        else:
+            return bad("'%s' is incorrect" % (name))
+
+    @classmethod
     def check_tuple(
         cls,
         name,

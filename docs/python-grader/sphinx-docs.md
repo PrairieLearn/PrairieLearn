@@ -62,6 +62,22 @@ Check that a student list has correct length with respect to a reference list. C
 
 - `report_failure`: If true, feedback will be given on failure.
 
+#### classmethod check_dict(name, ref, data)
+
+Check that a student dict has correct length with respect to a reference dict. Can also check for a homogeneous data type for the dict's value.
+
+- `name`: Name of the dict that is being checked. This will be used to give feedback.
+
+- `ref`: Reference dict.
+
+- `data`: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+
+- `entry_type`: If not None, requires that each element in the student solution be of this type.
+
+- `accuracy_critical`: If true, grading will halt on failure.
+
+- `report_failure`: If true, feedback will be given on failure.
+
 #### classmethod check_numpy_array_allclose(name, ref, data, accuracy_critical=False, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
 
 Feedback.check_numpy_allclose(name, ref, data)

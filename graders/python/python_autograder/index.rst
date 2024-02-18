@@ -11,7 +11,7 @@ Python Autograder documentation
    :caption: Contents:
 
 .. autoclass:: code_feedback.Feedback
-   :members: set_score, add_feedback, finish, not_allowed, check_numpy_array_sanity, check_numpy_array_features, check_numpy_array_allclose, check_list, check_tuple, check_scalar, call_user, check_plot, check_dataframe
+   :members: set_score, add_feedback, finish, not_allowed, check_numpy_array_sanity, check_numpy_array_features, check_numpy_array_allclose, check_list, check_dict, check_tuple, check_scalar, call_user, check_plot, check_dataframe
 
 =============================================
 
