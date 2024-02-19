@@ -16,18 +16,35 @@
             <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
+        {{^multiline}}
         <input
+        {{/multiline}}
+        {{#multiline}}
+        <textarea
+            wrap="soft"
+        {{/multiline}}
             name="{{name}}"
             type="text"
             inputmode="text"
             class="form-control pl-string-input-input"
-            size="{{size}}"
+            {{^multiline}}
+                size="{{size}}"
+                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            {{/multiline}}
+            {{#multiline}}
+                cols="{{size}}"
+                rows="1"
+            {{/multiline}}
             autocomplete="off"
             {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
             placeholder="{{placeholder}}"
-        />
+        {{^multiline}}
+        >
+        {{/multiline}}
+        {{#multiline}}
+        >{{#raw_submitted_answer}}{{raw_submitted_answer}}{{/raw_submitted_answer}}</textarea>
+        {{/multiline}}
         <span class="input-group-append">
             {{#suffix}}<span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
 

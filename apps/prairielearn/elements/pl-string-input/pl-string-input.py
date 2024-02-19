@@ -27,6 +27,7 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
+MULTILINE_DEFAULT = False
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -49,6 +50,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "normalize-to-ascii",
         "show-score",
+        "multiline",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -130,6 +132,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "raw_submitted_answer": raw_submitted_answer,
             "parse_error": parse_error,
+            "multiline": pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT),
         }
 
         if show_score and score is not None:
