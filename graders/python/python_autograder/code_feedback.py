@@ -359,7 +359,7 @@ class Feedback:
                 if not isinstance(key, entry_type_key):
                     return bad(f"{name} has the wrong type for key {key}")
 
-        if partial_keys is not None:
+        if partial_keys is not None and len(partial_keys) > 1:
             for partial_key in partial_keys:
                 if partial_key not in data:
                     return bad(f"{name} does not contain key {key}")
