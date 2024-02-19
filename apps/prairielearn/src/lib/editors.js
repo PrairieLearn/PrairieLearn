@@ -24,6 +24,7 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import * as sqldb from '@prairielearn/postgres';
+import { callbackify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -95,118 +96,124 @@ export class Editor {
     callback(null);
   }
 
-  doEdit(callback) {
-    let jobSequenceId = null;
-    async.series(
-      [
-        async () => {
-          const serverJob = await createServerJob({
-            courseId: this.course.id,
-            userId: this.user.user_id,
-            authnUserId: this.authz_data.authn_user.user_id,
-            type: 'sync',
-            description: this.description,
-          });
-          jobSequenceId = serverJob.jobSequenceId;
+  assertCanEdit() {
+    // Do not allow users to edit without permission
+    if (!this.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied (must be course editor)');
+    }
 
-          // We deliberately use `executeUnsafe` here because we want to wait
-          // for the edit to complete during the request during which it was
-          // made. We use `executeUnsafe` instead of `execute` because we want
-          // errors to be thrown and handled by the caller.
-          await serverJob.executeUnsafe(async (job) => {
-            const gitEnv = process.env;
-            if (config.gitSshCommand != null) {
-              gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-            }
-
-            const lockName = getLockNameForCoursePath(this.course.path);
-            await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
-              if (config.fileEditorUseGit) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-              }
-
-              try {
-                job.info('Write changes to disk');
-                await this.write();
-              } catch (err) {
-                if (config.fileEditorUseGit) {
-                  await cleanAndResetRepository(this.course, gitEnv, job);
-                }
-
-                throw err;
-              }
-
-              if (!config.fileEditorUseGit) {
-                await syncCourseFromDisk(this.course, startGitHash, job);
-                return;
-              }
-
-              try {
-                await job.exec('git', ['add', ...this.pathsToAdd], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-                await job.exec(
-                  'git',
-                  [
-                    '-c',
-                    `user.name="${this.user.name}"`,
-                    '-c',
-                    `user.email="${this.user.uid}"`,
-                    'commit',
-                    '-m',
-                    this.commitMessage,
-                  ],
-                  {
-                    cwd: this.course.path,
-                    env: gitEnv,
-                  },
-                );
-              } catch (err) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-                throw err;
-              }
-
-              try {
-                job.data.pushAttempted = true;
-
-                await job.exec('git', ['push'], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-
-                // We'll look for this flag on the `editError` page to know if
-                // we need to display instructions to recover from a failed push.
-                job.data.pushSucceeded = true;
-              } finally {
-                // Regardless of whether we error, we'll do a clean and reset:
-                //
-                // If pushing succeeded, the clean will remove any empty directories
-                // that might have been left behind by operations like renames.
-                //
-                // If pushing errored, the reset will get us back to a known good state.
-                await cleanAndResetRepository(this.course, gitEnv, job);
-              }
-
-              job.data.syncAttempted = true;
-
-              await syncCourseFromDisk(this.course, startGitHash, job);
-
-              // As with `job.data.pushSucceeded` above, we'll check this flag
-              // on the `editError` page to know if syncing failed so we can
-              // display appropriate instructions.
-              job.data.syncSucceeded = true;
-            });
-          });
-        },
-      ],
-      (err) => {
-        callback(err, jobSequenceId);
-      },
-    );
+    // Do not allow users to edit the exampleCourse
+    if (this.course.example_course) {
+      throw new Error(`Access denied (cannot edit the example course)`);
+    }
   }
+
+  async doEditAsync() {
+    let jobSequenceId = null;
+    const serverJob = await createServerJob({
+      courseId: this.course.id,
+      userId: this.user.user_id,
+      authnUserId: this.authz_data.authn_user.user_id,
+      type: 'sync',
+      description: this.description,
+    });
+    jobSequenceId = serverJob.jobSequenceId;
+
+    // We deliberately use `executeUnsafe` here because we want to wait
+    // for the edit to complete during the request during which it was
+    // made. We use `executeUnsafe` instead of `execute` because we want
+    // errors to be thrown and handled by the caller.
+    await serverJob.executeUnsafe(async (job) => {
+      const gitEnv = process.env;
+      if (config.gitSshCommand != null) {
+        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+      }
+
+      const lockName = getLockNameForCoursePath(this.course.path);
+      await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+
+        if (config.fileEditorUseGit) {
+          await cleanAndResetRepository(this.course, gitEnv, job);
+        }
+
+        try {
+          job.info('Write changes to disk');
+          await this.write();
+        } catch (err) {
+          if (config.fileEditorUseGit) {
+            await cleanAndResetRepository(this.course, gitEnv, job);
+          }
+
+          throw err;
+        }
+
+        if (!config.fileEditorUseGit) {
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          return;
+        }
+
+        try {
+          await job.exec('git', ['add', ...this.pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.uid}"`,
+              'commit',
+              '-m',
+              this.commitMessage,
+            ],
+            {
+              cwd: this.course.path,
+              env: gitEnv,
+            },
+          );
+        } catch (err) {
+          await cleanAndResetRepository(this.course, gitEnv, job);
+          throw err;
+        }
+
+        try {
+          job.data.pushAttempted = true;
+
+          await job.exec('git', ['push'], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+
+          // We'll look for this flag on the `editError` page to know if
+          // we need to display instructions to recover from a failed push.
+          job.data.pushSucceeded = true;
+        } finally {
+          // Regardless of whether we error, we'll do a clean and reset:
+          //
+          // If pushing succeeded, the clean will remove any empty directories
+          // that might have been left behind by operations like renames.
+          //
+          // If pushing errored, the reset will get us back to a known good state.
+          await cleanAndResetRepository(this.course, gitEnv, job);
+        }
+
+        job.data.syncAttempted = true;
+
+        await syncCourseFromDisk(this.course, startGitHash, job);
+
+        // As with `job.data.pushSucceeded` above, we'll check this flag
+        // on the `editError` page to know if syncing failed so we can
+        // display appropriate instructions.
+        job.data.syncSucceeded = true;
+      });
+    });
+    return jobSequenceId;
+  }
+
+  doEdit = callbackify(this.doEditAsync);
 
   /**
    * Remove empty preceding subfolders for a question, assessment, etc. based on its ID.

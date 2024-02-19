@@ -68,7 +68,6 @@ export async function copyQuestionBetweenCourses(
   if (!question.qid) {
     throw new Error(`Question ${question.id} does not have a qid`);
   }
-
   const f = uuidv4();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
@@ -81,6 +80,11 @@ export async function copyQuestionBetweenCourses(
   };
 
   if (config.filesRoot == null) throw new Error('config.filesRoot is null');
+  console.log('params.from_filename', params.from_filename);
+  console.log(
+    'path.join, filesRoot & storage_filename',
+    path.join(config.filesRoot, params.storage_filename),
+  );
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
