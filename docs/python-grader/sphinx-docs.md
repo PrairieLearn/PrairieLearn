@@ -64,7 +64,7 @@ Check that a student list has correct length with respect to a reference list. C
 
 #### classmethod check_dict(name, ref, data)
 
-Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys.  Can also check for a homogeneous data type for either the dict's key, dict's value, or both.
+Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys.  Can also check for a homogeneous data type for either the dict's key, dict's value, or both. Can also check if only some particular keys present in the student dict or not. Can also check student dict with respect to a reference dict only based on either keys, values, or both.
 
 - `name`: Name of the dict that is being checked. This will be used to give feedback.
 
@@ -72,7 +72,15 @@ Checks that a student dict has all correct key-value mappings with respect to a 
 
 - `data`: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
 
-- `entry_type`: If not None, requires that each element in the student solution be of this type.
+- `partial_keys`: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
+
+- `check_only_keys`: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
+
+- `check_only_values`: If true, grading will be done only based on checking all valeus in student's dict and reference's dict match or not.
+
+- `entry_type_key`: If not None, requires that each key in the student's dictionary in solution be of this type.
+
+- `entry_type_value`: If not None, requires that each value in the student's dictionary in solution be of this type.
 
 - `accuracy_critical`: If true, grading will halt on failure.
 
