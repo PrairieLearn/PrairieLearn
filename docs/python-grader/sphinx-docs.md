@@ -64,7 +64,7 @@ Check that a student list has correct length with respect to a reference list. C
 
 #### classmethod check_dict(name, ref, data)
 
-Check that a student dict has correct length with respect to a reference dict. Can also check for a homogeneous data type for the dict's value.
+Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys.  Can also check for a homogeneous data type for either the dict's key, dict's value, or both.
 
 - `name`: Name of the dict that is being checked. This will be used to give feedback.
 

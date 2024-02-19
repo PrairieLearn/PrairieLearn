@@ -305,19 +305,21 @@ class Feedback:
         name,
         ref,
         data,
-        entry_type=None,
+        entry_type_key=None,
+        entry_type_value=None,
         accuracy_critical=False,
         report_failure=True,
     ):
         """
         Feedback.check_dict(name, ref, data)
 
-        Check that a student dict has correct length with respect to a reference dict.  Can also check for a homogeneous data type for the list.
+        Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys.  Can also check for a homogeneous data type for either the dict's key, dict's value, or both.
 
         - ``name``: Name of the dictionary that is being checked. This will be used to give feedback.
         - ``ref``: Reference dictionary.
         - ``data``: Student dictionary to be checked.
-        - entry_type: If not None, checks if each value in the student dictionary has this type.
+        - ``entry_type_key``: If not None, requires that each key in the student's dictionary in solution be of this type.
+        - ``entry_type_value``: If not None, requires that each value in the student's dictionary in solution be of this type.
         - ``accuracy_critical``: If true, grading will halt on failure.
         - ``report_failure``: If true, feedback will be given on failure.
         """
@@ -331,26 +333,34 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"{name} is None or not defined")
 
         if not isinstance(data, dict):
-            return bad("'%s' is not a list" % name)
+            return bad(f"{name} is not a dict")
 
         if len(ref) != len(data):
             return bad(
-                "'%s' has the wrong length--expected %d, got %d"
-                % (name, len(ref), len(data))
+                f"{name} has the wrong length--expected {len(ref)}, got {len(data)}"
             )
 
-        if entry_type is not None:
+        if entry_type_value is not None:
             for _, value in data.items():
-                if not isinstance(value, entry_type):
-                    return bad("'%s[%s]' has the wrong type" % (name, value))
+                if not isinstance(value, entry_type_value):
+                    return bad(f"{name} has the wrong type for value {value}")
 
-        if ref == data:
+        if entry_type_key is not None:
+            for key, _ in data.items():
+                if not isinstance(key, entry_type_key):
+                    return bad(f"{name} has the wrong type for key {key}")
+
+        if (
+            ref == data
+        ):  # will check equality of both keys and values between reference dict and student's dict
             return True
         else:
-            return bad("'%s' is incorrect" % (name))
+            return bad(
+                f"{name} is incorrect as one (or more) key-value pairs do not match"
+            )
 
     @classmethod
     def check_tuple(
