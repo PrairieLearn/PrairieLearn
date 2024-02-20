@@ -21,4 +21,8 @@ WHERE
 SELECT
   i.*
 FROM
-  institutions AS i;
+  institutions AS i
+ORDER BY
+  i.short_name,
+  i.long_name,
+  i.id;
