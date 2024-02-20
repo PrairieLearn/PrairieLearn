@@ -30,4 +30,6 @@ SET
   yearly_enrollment_limit = $yearly_enrollment_limit,
   course_instance_enrollment_limit = $course_instance_enrollment_limit
 WHERE
-  id = $course_id;
+  id = $course_id
+RETURNING
+  c.*;
