@@ -17,6 +17,7 @@ docker-compose.override.yml
 ### VSCode
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 
 ### tmux
 .tmux.conf
@@ -46,9 +47,6 @@ docker-compose.override.yml
 
 ### mkdocs
 /site/
-
-### jsdoc
-/docs/code-docs/
 
 ## Runtime artifacts
 

@@ -63,7 +63,9 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
     """
     seen = set()
     for i, node in enumerate(submission):
-        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
+        if node is None or not all(
+            u in seen for (u, _) in graph.in_edges(node)  # type: ignore
+        ):
             return i
         seen.add(node)
     return len(submission)
@@ -135,7 +137,7 @@ def add_edges_for_groups(
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
-        for dependency, _ in graph.in_edges(group_tag):
+        for dependency, _ in graph.in_edges(group_tag):  # type: ignore
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
@@ -173,7 +175,7 @@ def grade_dag(
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
-    https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
+    https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)

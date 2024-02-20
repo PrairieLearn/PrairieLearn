@@ -1,12 +1,15 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const express = require('express');
+import * as express from 'express';
 const debug = require('debug')('prairielearn:instructorAssessment');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const scoreUpload = require('../../lib/score-upload');
+import {
+  uploadInstanceQuestionScores,
+  uploadAssessmentInstanceScores,
+} from '../../lib/score-upload';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -35,7 +38,7 @@ router.post(
     }
 
     if (req.body.__action === 'upload_instance_question_scores') {
-      const jobSequenceId = await scoreUpload.uploadInstanceQuestionScores(
+      const jobSequenceId = await uploadInstanceQuestionScores(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -43,7 +46,7 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
-      const jobSequenceId = await scoreUpload.uploadAssessmentInstanceScores(
+      const jobSequenceId = await uploadAssessmentInstanceScores(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -51,12 +54,9 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
-module.exports = router;
+export default router;

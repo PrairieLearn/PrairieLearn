@@ -35,7 +35,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
         return "integer"
     elif pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
         return "character"
-    elif pd.api.types.is_categorical_dtype(s):
+    elif isinstance(s, pd.CategoricalDtype):
         # Check if ordered
         if s.cat.ordered:
             return "ordered factor"
@@ -46,7 +46,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
         return "complex"
     elif pd.api.types.is_datetime64_any_dtype(s):
         return "POSIXct"
-    elif pd.api.types.is_timedelta64_dtype(s) or pd.api.types.is_period_dtype(s):
+    elif pd.api.types.is_timedelta64_dtype(s) or isinstance(s, pd.PeriodDtype):
         return "Not supported"
 
     return "Unknown"
@@ -57,7 +57,9 @@ def get_pandas_dtype(s: pd.Series) -> str:
 
 
 def using_default_index(df: pd.DataFrame) -> bool:
-    return df.index.is_integer() and pd.Index(range(len(df))).equals(df.index)
+    return pd.api.types.is_integer_dtype(df.index) and pd.Index(range(len(df))).equals(
+        df.index
+    )
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -140,7 +142,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
-        other = descriptors.style.applymap(lambda v: "font-weight: bold;")
+        other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )

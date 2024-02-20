@@ -30,7 +30,7 @@ nav:
       - 'Workshop': 'workshop/index.md'
   - User Guide:
       - 'Installing and running locally': 'installing.md'
-      - 'Syncing course content': 'sync.md'
+      - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
       - 'Course instance configuration': 'courseInstance.md'
       - 'Assessment configuration': 'assessment.md'
@@ -63,6 +63,9 @@ nav:
       - 'Code execution': 'codeExecution.md'
       - 'Docker packaging': 'docker.md'
       - 'Contributing to PL development': 'contributing.md'
+  - Administrators:
+      - 'SAML SSO configuration': 'saml.md'
+      - 'LTI 1.3 configuration': 'lti13.md'
   - Running in Production:
       - 'Setup': 'running-in-production/setup.md'
       - 'Using Docker Compose': 'running-in-production/docker-compose.md'

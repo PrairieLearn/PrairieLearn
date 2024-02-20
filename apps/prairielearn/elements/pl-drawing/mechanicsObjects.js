@@ -981,10 +981,19 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         use.parentNode.replaceChild(replacement, use);
       });
 
-    let svgSource = svg.outerHTML;
     const exScale = 1.0 - MathJax.config.svg.font.params.x_height;
-    let width = parseFloat(svg.getAttribute('width')) * parseFloat(options.fontSize) * exScale;
-    let height = parseFloat(svg.getAttribute('height')) * parseFloat(options.fontSize) * exScale;
+
+    // Convert width/height from `ex` units to `px` units. This ensures that
+    // the image renders consistently regardless of the browser's configured
+    // font size.
+    const parsedWidth = parseFloat(svg.getAttribute('width'));
+    const parsedHeight = parseFloat(svg.getAttribute('height'));
+    const width = parsedWidth * exScale * options.fontSize;
+    const height = parsedHeight * exScale * options.fontSize;
+    svg.setAttribute('width', width + 'px');
+    svg.setAttribute('height', height + 'px');
+
+    let svgSource = svg.outerHTML;
 
     // Fix for Safari, https://stackoverflow.com/questions/30273775/namespace-prefix-ns1-for-href-on-tagelement-is-not-defined-setattributens
     svgSource = svgSource.replace(/NS\d+:href/gi, 'xlink:href');
@@ -994,10 +1003,10 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     fabric.Image.fromURL(
       base64svg,
       (img) => {
-        img.width = width;
-        img.height = height;
-        this.width = Math.ceil(width * exScale) * 2;
-        this.height = Math.ceil(height * exScale) * 2;
+        this.width = Math.ceil(width);
+        this.height = Math.ceil(height);
+        img.width = this.width;
+        img.height = this.height;
 
         this.setCoords(false, false);
         this.image = img;

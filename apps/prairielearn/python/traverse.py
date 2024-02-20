@@ -28,6 +28,8 @@ VOID_ELEMENTS = frozenset(
     }
 )
 
+UNESCAPED_ELEMENTS = frozenset({"script", "style"})
+
 
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
@@ -108,7 +110,11 @@ def traverse_and_replace(
 
             if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
-            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
+                # NOTE ignore comment needed because the HtmlProcessingInstruction class
+                # is missing from the upstream type stubs package. Can be removed once the
+                # following issue gets resolved upstream.
+                # https://github.com/abelcheung/types-lxml/issues/28
+            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):  # type: ignore
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
                 # that produce SVG documents.
                 #
@@ -127,9 +133,11 @@ def traverse_and_replace(
             else:
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))
-
                 if new_elements.text is not None:
-                    result.append(html_escape(new_elements.text))
+                    if new_elements.tag in UNESCAPED_ELEMENTS:
+                        result.append(new_elements.text)
+                    else:
+                        result.append(html_escape(new_elements.text))
 
                 # Add all children to the work stack
                 children = list(new_elements)

@@ -83,7 +83,7 @@
                     <td>
                       Shows all issues that were reported by a user ID like <code>USER</code>.
                       <br>
-                      <strong>Example:</strong> <code>user:nwalter2@illinois.edu</code> shows all issues that were reported by <code>nwalter2@illinois.edu</code>.</td>
+                      <strong>Example:</strong> <code>user:student@example.com</code> shows all issues that were reported by <code>student@example.com</code>.</td>
                   </tr>
                 </tbody>
               </table>
@@ -104,12 +104,6 @@
           </div>
         </div>
       </div>
-
-      <% if (authz_data.has_course_permission_edit) {
-          // NOTE: this is currently disabled (see pages/partials/issueActionButtons.ejs)
-      %>
-      <%- include('../partials/issueResponseModal'); %>
-      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

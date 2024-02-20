@@ -1,6 +1,6 @@
 import os
 from html import escape, unescape
-from typing import Any, Generator, Iterable, Optional, Type
+from typing import Any, Generator, Iterable, Iterator, Optional
 
 import chevron
 import lxml.html
@@ -12,7 +12,7 @@ import pygments.lexers
 import pygments.util
 from code_utils import parse_highlight_lines
 from pygments.styles import STYLE_MAP, get_style_by_name
-from pygments.token import Token
+from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
@@ -57,8 +57,10 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get("compress", "")
 
-    def get_tokens_unprocessed(self, text: str) -> list[tuple[int, Type, str]]:
-        return [(0, Token.Text, text)]
+    def get_tokens_unprocessed(
+        self, text: str
+    ) -> Iterator[tuple[int, _TokenType, str]]:
+        return iter([(0, Token.Text, text)])
 
 
 class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):

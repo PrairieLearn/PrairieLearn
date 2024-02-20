@@ -11,7 +11,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
-from lxml import etree
+from lxml.etree import Comment
 from typing_extensions import NotRequired, assert_never
 
 
@@ -27,6 +27,11 @@ class SourceBlocksOrderType(Enum):
     RANDOM = "random"
     ALPHABETIZED = "alphabetized"
     ORDERED = "ordered"
+
+
+class SolutionPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
 
 
 class FeedbackType(Enum):
@@ -67,6 +72,9 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset(
     [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
 )
+LCS_GRADABLE_TYPES = frozenset(
+    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
+)
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -74,11 +82,11 @@ PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
+INLINE_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
-SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
@@ -172,13 +180,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
 
-    if (
-        grading_method is not GradingMethodType.DAG
-        and grading_method is not GradingMethodType.RANKING
-        and pl.has_attrib(element, "partial-credit")
+    if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
+        element, "partial-credit"
     ):
         raise Exception(
-            "You may only specify partial credit options in the DAG and ranking grading modes."
+            "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
         )
 
     if (
@@ -306,7 +312,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is etree.Comment:
+        if html_tags.tag is Comment:
             continue
         elif html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
@@ -323,7 +329,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
-                if html_tags.tag is etree.Comment:
+                if html_tags.tag is Comment:
                     continue
                 else:
                     prepare_tag(
@@ -437,7 +443,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-
+    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
+    dropzone_layout = pl.get_enum_attrib(
+        element,
+        "solution-placement",
+        SolutionPlacementType,
+        SolutionPlacementType.RIGHT,
+    )
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
     )
@@ -465,21 +477,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
+
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
-        dropzone_layout = pl.get_string_attrib(
-            element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
-        )
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
         help_text = (
-            "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
+            "Drag answer tiles into the answer area to the "
+            + dropzone_layout.value
+            + ". "
         )
+
+        if inline and check_indentation:
+            raise Exception(
+                "The indentation attribute may not be used when inline is true."
+            )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
@@ -499,15 +516,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "solution-header": solution_header,
             "options": source_blocks,
             "submission_dict": student_previous_submission,
-            "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout == "bottom"
-            else "pl-order-blocks-right",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
+            ),
+            "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
             "max_indent": max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
@@ -543,6 +564,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
+            ),
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
             ),
         }
 
@@ -615,6 +642,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "dropzone_layout": (
+                "pl-order-blocks-bottom"
+                if dropzone_layout is SolutionPlacementType.BOTTOM
+                else "pl-order-blocks-right"
+            ),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -650,7 +683,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
-    if grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    if grading_method in LCS_GRADABLE_TYPES:
         for answer in student_answer:
             matching_block = next(
                 (
@@ -687,7 +720,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             indent = int(answer["indent"] or 0)
             answer_code += (
                 ("    " * indent)
-                + lxml.html.fromstring(answer["inner_html"]).text_content()  # type: ignore
+                + lxml.html.fromstring(answer["inner_html"]).text_content()
                 + "\n"
             )
 
@@ -748,8 +781,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     true_answer_list = data["correct_answers"][answer_name]
@@ -779,17 +816,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method is GradingMethodType.ORDERED:
-        student_answer = [ans["inner_html"] for ans in student_answer]
-        true_answer = [ans["inner_html"] for ans in true_answer_list]
-        final_score = 1 if student_answer == true_answer else 0
-
-    elif grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method is GradingMethodType.RANKING:
+        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
+            if grading_method is GradingMethodType.ORDERED:
+                for index, answer in enumerate(true_answer_list):
+                    answer["ranking"] = index
+
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
@@ -839,6 +875,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
+
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -876,6 +913,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
 
+def get_default_partial_credit_type(
+    grading_method: GradingMethodType,
+) -> PartialCreditType:
+    # For backward compatibility, we need to override the default partial credit type
+    # when grading_method = ORDERED
+    return (
+        PartialCreditType.NONE
+        if grading_method is GradingMethodType.ORDERED
+        else PartialCreditType.LCS
+    )
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     grading_method = pl.get_enum_attrib(
@@ -888,8 +937,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     # Right now invalid input must mean an empty response. Because user input is only
@@ -918,7 +971,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             (
-                grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]
+                grading_method in LCS_GRADABLE_TYPES
                 and partial_credit_type is PartialCreditType.LCS
             )
         ):

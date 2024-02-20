@@ -1,9 +1,13 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
+import * as path from 'node:path';
+import { contains } from '@prairielearn/path-utils';
 
-const chunks = require('../lib/chunks');
-const filePaths = require('../lib/file-paths');
-const { withCodeCaller } = require('../lib/code-caller');
+import { config } from '../lib/config';
+import * as chunks from '../lib/chunks';
+import * as filePaths from '../lib/file-paths';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths';
+import { withCodeCaller } from '../lib/code-caller';
 
 /** @typedef {import('../lib/chunks').Chunk} Chunk */
 
@@ -11,45 +15,70 @@ async function prepareChunksIfNeeded(question, course) {
   const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
 
   /** @type {Chunk[]} */
-  const templateQuestionChunks = questionIds.map((id) => ({
-    type: 'question',
-    questionId: id,
-  }));
+  const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
 
   /** @type {Chunk[]} */
   const chunksToLoad = [
-    {
-      type: 'question',
-      questionId: question.id,
-    },
-    {
-      type: 'clientFilesCourse',
-    },
-    {
-      type: 'serverFilesCourse',
-    },
+    { type: 'question', questionId: question.id },
+    { type: 'clientFilesCourse' },
+    { type: 'serverFilesCourse' },
     ...templateQuestionChunks,
   ];
 
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
+function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
+  const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
+
+  if (questionServerType === 'course') {
+    const questionServerPathWithinCourse = path.relative(courseHostPath, questionServerPath);
+    return path.join(courseRuntimePath, questionServerPathWithinCourse);
+  }
+
+  if (config.workersExecutionMode === 'native') {
+    return questionServerPath;
+  } else {
+    const questionServerPathWithinRepo = path.relative(REPOSITORY_ROOT_PATH, questionServerPath);
+
+    // This is hardcoded to use the `/PrairieLearn` directory in our container
+    // image, which is where the repository files will be located.
+    return path.join('/PrairieLearn', questionServerPathWithinRepo);
+  }
+}
+
 async function callFunction(func, question_course, question, inputData) {
   await prepareChunksIfNeeded(question, question_course);
-  const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+
+  const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
+  const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
+
   const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
     'server.js',
     question.directory,
-    coursePath,
+    courseHostPath,
     question,
   );
+
+  // `questionServerPath` may be one of two things:
+  //
+  // - A path to a file within the course directory
+  // - A path to a file in PrairieLearn's `v2-question-servers` directory
+  //
+  // We need to handle these differently.
+  const questionServerRuntimePath = getQuestionRuntimePath(
+    questionServerPath,
+    courseHostPath,
+    courseRuntimePath,
+  );
+
   try {
-    return withCodeCaller(coursePath, async (codeCaller) => {
-      const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
+    return await withCodeCaller(courseHostPath, async (codeCaller) => {
+      const res = await codeCaller.call('v2-question', null, questionServerRuntimePath, null, [
         {
-          questionServerPath,
+          questionServerPath: questionServerRuntimePath,
           func: func,
-          coursePath,
+          coursePath: courseRuntimePath,
           question,
           ...inputData,
         },
@@ -66,72 +95,53 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
-module.exports.generate = (question, course, variant_seed, callback) => {
-  callFunction('generate', course, question, { variant_seed }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => callback(err),
-  );
-};
+export async function generate(question, course, variant_seed) {
+  return await callFunction('generate', course, question, { variant_seed });
+}
 
-module.exports.grade = (submission, variant, question, question_course, callback) => {
-  callFunction('grade', question_course, question, { submission, variant }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => console.log(err),
-  );
-};
-
-module.exports.getFile = (filename, variant, question, course, callback) => {
-  callFunction('getFile', course, question, { filename, variant }).then(
-    ({ data, courseIssues }) => {
-      // We need to "unwrap" buffers if needed
-      const isBuffer = data.type === 'buffer';
-      const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
-      callback(null, courseIssues, unwrappedData);
-    },
-    (err) => callback(err),
-  );
-};
+export async function grade(submission, variant, question, question_course) {
+  return await callFunction('grade', question_course, question, { submission, variant });
+}
 
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-module.exports.render = function (
-  renderSelection,
-  variant,
-  question,
-  submission,
+export async function render(
+  _renderSelection,
+  _variant,
+  _question,
+  _submission,
   submissions,
-  course,
-  course_instance,
-  locals,
-  callback,
+  _course,
+  _locals,
 ) {
-  const htmls = {
+  const data = {
     extraHeadersHtml: '',
     questionHtml: '',
     submissionHtmls: _.map(submissions, () => ''),
     answerHtml: '',
   };
-  callback(null, [], htmls);
-};
+  return { courseIssues: [], data };
+}
 
-module.exports.prepare = function (question, course, variant, callback) {
+export async function prepare(_question, _course, variant) {
   const data = {
     params: variant.params,
     true_answer: variant.true_answer,
     options: variant.options,
   };
-  callback(null, [], data);
-};
+  return { courseIssues: [], data };
+}
 
-module.exports.parse = function (submission, variant, question, course, callback) {
+export async function parse(submission, variant, _question, _course) {
   const data = {
-    params: variant.params,
-    true_answer: variant.true_answer,
-    submitted_answer: submission.submitted_answer,
-    raw_submitted_answer: submission.raw_submitted_answer,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
+    submitted_answer: submission.submitted_answer ?? {},
+    raw_submitted_answer: submission.raw_submitted_answer ?? {},
+    feedback: {},
     format_errors: {},
     gradable: true,
   };
-  callback(null, [], data);
-};
+  return { courseIssues: [], data };
+}
