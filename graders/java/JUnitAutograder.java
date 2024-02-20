@@ -173,6 +173,8 @@ public class JUnitAutograder implements TestExecutionListener {
             return;
 
         for (Map.Entry<String, String> pair : entry.getKeyValuePairs().entrySet()) {
+            // "value" is the key used by TestReporter if only a value is provided (without a key)
+            // https://junit.org/junit5/docs/5.9.1/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html#publishEntry(java.lang.String)
             if (pair.getKey().equals("value"))
                 autograderTest.output += pair.getValue() + "\n";
             else
