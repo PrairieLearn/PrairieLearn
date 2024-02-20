@@ -23,19 +23,21 @@ import { IdSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const SelectedAssessmentsSchema = z.array(
-  z.object({
-    title: z.string(),
-    course_instance_id: IdSchema,
-    assessments: z.array(
-      z.object({
-        assessment_id: IdSchema,
-        color: z.string(),
-        label: z.string(),
-      }),
-    ),
-  }),
-);
+const SelectedAssessmentsSchema = z
+  .array(
+    z.object({
+      title: z.string(),
+      course_instance_id: IdSchema,
+      assessments: z.array(
+        z.object({
+          assessment_id: IdSchema,
+          color: z.string(),
+          label: z.string(),
+        }),
+      ),
+    }),
+  )
+  .nullable();
 
 router.post(
   '/test',
@@ -171,6 +173,9 @@ router.post(
             unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
           });
         })
+        .then(() => {
+          res.redirect(req.originalUrl);
+        })
         .catch((err) => next(err));
     } else if (req.body.__action === 'share_publicly') {
       features
@@ -186,6 +191,9 @@ router.post(
             course_id: res.locals.course.id,
             question_id: res.locals.question.id,
           });
+        })
+        .then(() => {
+          res.redirect(req.originalUrl);
         })
         .catch((err) => next(err));
     } else {
