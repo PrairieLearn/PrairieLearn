@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 
+import enum
 import json
 import os
 import pathlib
@@ -47,6 +48,12 @@ INVALID_SYMBOLS = frozenset(
 INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
+
+
+class OutputMatchingOption(enum.Enum):
+    all = "all"
+    partial = "partial"
+    any = "any"
 
 
 TIMEOUT_MESSAGE = """
@@ -370,7 +377,7 @@ class CGrader:
         command,
         input=None,
         exp_output=None,
-        must_match_all_outputs=False,  # True, False or 'partial'
+        must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output=None,
         field=None,
         ignore_case=True,
@@ -450,7 +457,11 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else " all of" if must_match_all_outputs else " one of"
+                else (
+                    " all of"
+                    if must_match_all_outputs in (True, "all", "partial")
+                    else " one of"
+                )
             )
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
             msg = f"Expected{comment}:{join_str}" + join_str.join(
@@ -490,7 +501,7 @@ class CGrader:
                 * sum(1 if r.search(outcmp) is not None else 0 for _, r in exp_output)
                 / len(exp_output)
             )
-        elif not (all if must_match_all_outputs else any)(
+        elif not (all if must_match_all_outputs in ("all", True) else any)(
             r.search(outcmp) is not None for _, r in exp_output
         ):
             points = 0

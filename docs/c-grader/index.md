@@ -208,8 +208,8 @@ self.test_run("./square", exp_output="SUCCESS")
 
 The `exp_output` argument can also be used to check for multiple output patterns by passing in a list of strings. The test will then look for all the patterns in the program output, and the result of the test will depend on the `must_match_all_outputs` flag. This flag may be set to:
 
-- `must_match_all_outputs=False`: if any of the patterns is found in the program output, the test passes and full points are assigned (this is the default);
-- `must_match_all_outputs=True`: all patterns must be found in the program output to pass the test; or
+- `must_match_all_outputs="any"`: if any of the patterns is found in the program output, the test passes and full points are assigned (this is the default). The value `False` is also accepted for backwards compatibility.
+- `must_match_all_outputs="all"`: all patterns must be found in the program output to pass the test. The value `True` is also accepted for backwards compatibility.
 - `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.25 points).
 
 ```python
@@ -230,10 +230,10 @@ To use command-line arguments for a command, the arguments can be included eithe
 
 ```python
 self.test_run("./square 3 5", exp_output=["9", "25"],
-              must_match_all_outputs=True)
+              must_match_all_outputs="all")
 self.test_run("./square", args="3", exp_output="9")
 self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
-              must_match_all_outputs=True)
+              must_match_all_outputs="all")
 ```
 
 Some times a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
@@ -248,7 +248,7 @@ If you would like to highlight, in the test message or output, the expected and 
 self.test_run("./square",
               exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
               reject_output=["ERROR", "FAIL"],
-              must_match_all_outputs=True,
+              must_match_all_outputs="all",
               highlight_matches=True)
 ```
 
