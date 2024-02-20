@@ -35,6 +35,7 @@ export function InstitutionAdminCourses({
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Effective yearly enrollment limit</th>
                 </tr>
               </thead>
               <tbody>
@@ -45,6 +46,9 @@ export function InstitutionAdminCourses({
                         <a href="/pl/institution/${institution.id}/admin/course/${course.id}">
                           ${course.short_name ?? '—'}: ${course.title ?? '—'}
                         </a>
+                      </td>
+                      <td>
+                        ${course.yearly_enrollment_limit ?? institution.yearly_enrollment_limit}
                       </td>
                     </tr>
                   `;

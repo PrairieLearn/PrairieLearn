@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
+import { z } from 'zod';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
 import { InstitutionAdminCourse } from './institutionAdminCourse.html';
@@ -41,6 +42,12 @@ router.get(
   }),
 );
 
+const UpdateEnrollmentLimitsBodySchema = z.object({
+  __action: z.literal('update_enrollment_limits'),
+  yearly_enrollment_limit: z.union([z.literal(''), z.coerce.number().int()]),
+  course_instance_enrollment_limit: z.union([z.literal(''), z.coerce.number().int()]),
+});
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -54,10 +61,11 @@ router.post(
     );
 
     if (req.body.__action === 'update_enrollment_limits') {
+      const body = UpdateEnrollmentLimitsBodySchema.parse(req.body);
       await queryAsync(sql.update_enrollment_limits, {
         course_id: course.id,
-        yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
-        course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
+        yearly_enrollment_limit: body.yearly_enrollment_limit || null,
+        course_instance_enrollment_limit: body.course_instance_enrollment_limit || null,
       });
       res.redirect(req.originalUrl);
     } else {
