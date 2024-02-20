@@ -172,8 +172,6 @@ public class JUnitAutograder implements TestExecutionListener {
         if (autograderTest == null)
             return;
 
-        if (!autograderTest.output.isEmpty())
-            autograderTest.output += "\n";
         for (Map.Entry<String, String> pair : entry.getKeyValuePairs().entrySet()) {
             if (pair.getKey().equals("value"))
                 autograderTest.output += pair.getValue() + "\n";

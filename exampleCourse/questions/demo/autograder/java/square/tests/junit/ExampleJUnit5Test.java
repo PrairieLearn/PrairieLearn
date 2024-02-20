@@ -14,7 +14,8 @@ public class ExampleJUnit5Test {
     @Tag("points=2")
     public void testWithInputOne(int i, TestReporter reporter) {
 
-        reporter.publishEntry("Testing with input " + i);
+        reporter.publishEntry("Testing with input " + i + "...");
         assertEquals(i * i, Example.square(i));
+        reporter.publishEntry("PASSED");
     }
 }
