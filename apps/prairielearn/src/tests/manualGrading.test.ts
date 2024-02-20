@@ -380,13 +380,13 @@ describe('Manual Grading', function () {
   before('add staff users', async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const courseStaffPermissions = await insertCoursePermissionsByUserUid({
+        const { user_id } = await insertCoursePermissionsByUserUid({
           course_id: '1',
           uid: staff.authUid,
           course_role: 'None',
           authn_user_id: '1',
         });
-        staff.user_id = courseStaffPermissions.user_id;
+        staff.user_id = user_id;
         await insertCourseInstancePermissions({
           course_id: '1',
           user_id: staff.user_id,
