@@ -80,9 +80,10 @@ WITH
   ),
   workspace_log AS (
     INSERT INTO
-      workspace_logs (workspace_id, state, message)
+      workspace_logs (workspace_id, version, state, message)
     SELECT
       uw.id,
+      uw.version,
       uw.state,
       'Assigned to host ' || uwh.id
     FROM

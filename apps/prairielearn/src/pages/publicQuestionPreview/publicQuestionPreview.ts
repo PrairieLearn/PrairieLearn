@@ -7,7 +7,7 @@ import asyncHandler = require('express-async-handler');
 
 import { selectQuestionById } from '../../models/question';
 import { selectCourseById } from '../../models/course';
-import { processSubmission } from '../../lib/questionPreview';
+import { processSubmission } from '../../lib/question-submission';
 import { IdSchema, UserSchema } from '../../lib/db-types';
 import LogPageView = require('../../middlewares/logPageView');
 import {
