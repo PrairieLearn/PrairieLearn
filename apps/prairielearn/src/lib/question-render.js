@@ -375,13 +375,11 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
     const instance_question_id = locals.instance_question?.id;
     const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
     const options = { variant_seed };
-    const assessmentGroupWork = locals.assessment?.group_work ?? false;
     locals.variant = await ensureVariant(
       locals.question.id,
       instance_question_id,
       locals.user.user_id,
       locals.authn_user.user_id,
-      assessmentGroupWork,
       course_instance_id,
       locals.course,
       locals.question_course,
