@@ -18,18 +18,19 @@ export function InstructorCourseAdminSettings({
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", { ...resLocals })}
-        <main id="content" class="container mb-5 px-0">
+        <main id="content" class="container mb-4">
           ${renderEjs(__filename, "<%- include('../partials/courseSyncErrorsAndWarnings'); %>", {
             ...resLocals,
           })}
           <div class="card">
             <div class="card-header bg-primary text-white d-flex">Course Settings</div>
-            ${!courseInfoExists || !coursePathExists
-              ? html`<div class="card-body pb-0">
-                  ${CourseDirectoryMissingAlert({ resLocals, coursePathExists, courseInfoExists })}
-                </div>`
-              : ''}
-            <form class="card-body">
+            <div class="card-body">
+            ${
+              !courseInfoExists || !coursePathExists
+                ? CourseDirectoryMissingAlert({ resLocals, coursePathExists, courseInfoExists })
+                : ''
+            }
+            <form>
               <div class="form-group">
                 <label for="short_name">Short Name</label>
                 <input
@@ -117,29 +118,31 @@ export function InstructorCourseAdminSettings({
                 </small>
               </div>
               <p class="mb-0">
-                ${coursePathExists && courseInfoExists
-                  ? resLocals.authz_data.has_course_permission_view
-                    ? resLocals.authz_data.has_course_permission_edit &&
-                      !resLocals.course.example_course
-                      ? html`
-                          <a
-                            data-testid="edit-course-configuration-link"
-                            href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
-                          >
-                            Edit course configuration
-                          </a>
-                          in <code>infoCourse.json</code>
-                        `
-                      : html`
-                          <a
-                            href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
-                          >
-                            View course configuration
-                          </a>
-                          in <code>infoCourse.json</code>
-                        `
+                ${
+                  coursePathExists && courseInfoExists
+                    ? resLocals.authz_data.has_course_permission_view
+                      ? resLocals.authz_data.has_course_permission_edit &&
+                        !resLocals.course.example_course
+                        ? html`
+                            <a
+                              data-testid="edit-course-configuration-link"
+                              href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
+                            >
+                              Edit course configuration
+                            </a>
+                            in <code>infoCourse.json</code>
+                          `
+                        : html`
+                            <a
+                              href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
+                            >
+                              View course configuration
+                            </a>
+                            in <code>infoCourse.json</code>
+                          `
+                      : ''
                     : ''
-                  : ''}
+                }
               </p>
             </form>
           </div>
@@ -158,32 +161,31 @@ function CourseDirectoryMissingAlert({
   coursePathExists: boolean;
   courseInfoExists: boolean;
 }) {
-  if (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course) {
-    if (!coursePathExists) {
-      return html`
-        <div class="alert alert-danger">
-          Course directory not found. You must
-          <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
-          .
-        </div>
-      `;
-    } else if (!courseInfoExists) {
-      return html`
-        <form name="add-configuration-form" method="POST" class="alert alert-danger">
-          <code>infoCourse.json</code> is missing. You must
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <button
-            name="__action"
-            value="add_configuration"
-            class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
-          >
-            create this file
-          </button>
-          to edit your course settings.
-        </form>
-      `;
-    } else {
-      return;
-    }
+  if (!resLocals.authz_data.has_course_permission_edit || resLocals.course.example_course) {
+    return;
+  }
+  if (!coursePathExists) {
+    return html`
+      <div class="alert alert-danger">
+        Course directory not found. You must
+        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
+        .
+      </div>
+    `;
+  } else if (!courseInfoExists) {
+    return html`
+      <form name="add-configuration-form" method="POST" class="alert alert-danger">
+        <code>infoCourse.json</code> is missing. You must
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          name="__action"
+          value="add_configuration"
+          class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+        >
+          create this file
+        </button>
+        to edit your course settings.
+      </form>
+    `;
   }
 }
