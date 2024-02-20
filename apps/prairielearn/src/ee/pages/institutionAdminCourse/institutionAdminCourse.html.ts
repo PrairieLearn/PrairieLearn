@@ -1,6 +1,14 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Course, type CourseInstance } from '../../../lib/db-types';
+import { z } from 'zod';
+
+import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types';
+
+export const CourseInstanceRowSchema = z.object({
+  course_instance: CourseInstanceSchema,
+  enrollment_count: z.number(),
+});
+type CourseInstanceRow = z.infer<typeof CourseInstanceRowSchema>;
 
 export function InstitutionAdminCourse({
   institution,
@@ -10,7 +18,7 @@ export function InstitutionAdminCourse({
 }: {
   institution: Institution;
   course: Course;
-  course_instances: CourseInstance[];
+  course_instances: CourseInstanceRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -125,22 +133,25 @@ export function InstitutionAdminCourse({
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Enrollments</th>
                   <th>Effective enrollment limit</th>
                 </tr>
               </thead>
               <tbody>
-                ${course_instances.map((course_instance) => {
+                ${course_instances.map((row) => {
                   return html`
                     <tr>
                       <td>
                         <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${course_instance.id}"
+                          href="/pl/institution/${institution.id}/admin/course_instance/${row
+                            .course_instance.id}"
                         >
-                          ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
+                          ${row.course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
                         </a>
                       </td>
+                      <td>${row.enrollment_count}</td>
                       <td>
-                        ${course_instance.enrollment_limit ??
+                        ${row.course_instance.enrollment_limit ??
                         course.course_instance_enrollment_limit ??
                         institution.course_instance_enrollment_limit}
                       </td>

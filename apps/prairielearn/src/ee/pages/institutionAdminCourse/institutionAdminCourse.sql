@@ -10,15 +10,19 @@ WHERE
 
 -- BLOCK select_course_instances
 SELECT
-  ci.*
+  to_jsonb(ci.*) AS course_instance,
+  COALESCE(COUNT(e.id), 0)::integer AS enrollment_count
 FROM
   course_instances AS ci
   JOIN pl_courses AS c ON (ci.course_id = c.id)
+  LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
   AND c.institution_id = $institution_id
-  AND c.deleted_at IS NULL;
+  AND c.deleted_at IS NULL
+GROUP BY
+  ci.id;
 
 -- BLOCK update_enrollment_limits
 UPDATE pl_courses AS c

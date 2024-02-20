@@ -4,8 +4,8 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import error = require('@prairielearn/error');
 import { z } from 'zod';
 
-import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { InstitutionAdminCourse } from './institutionAdminCourse.html';
+import { CourseSchema } from '../../../lib/db-types';
+import { CourseInstanceRowSchema, InstitutionAdminCourse } from './institutionAdminCourse.html';
 import { getInstitution } from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
@@ -29,7 +29,7 @@ router.get(
         institution_id: req.params.institution_id,
         course_id: req.params.course_id,
       },
-      CourseInstanceSchema,
+      CourseInstanceRowSchema,
     );
     res.send(
       InstitutionAdminCourse({
