@@ -1,12 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 import { z } from 'zod';
 
