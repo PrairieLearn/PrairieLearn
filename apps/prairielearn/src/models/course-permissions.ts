@@ -5,6 +5,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 import {
   type User,
@@ -57,7 +58,7 @@ export async function updateCoursePermissionsRole({
     CoursePermissionSchema,
   );
   if (!result) {
-    throw new Error('No course permissions to update');
+    throw error.make(404, 'No course permissions to update');
   }
 }
 
@@ -131,7 +132,10 @@ export async function insertCourseInstancePermissions({
     CoursePermissionSchema,
   );
   if (!coursePermission) {
-    throw new Error('Cannot add permissions for a course instance without course permissions');
+    throw error.make(
+      404,
+      'Cannot add permissions for a course instance without course permissions',
+    );
   }
 }
 
@@ -154,7 +158,7 @@ export async function updateCourseInstancePermissionsRole({
     CourseInstancePermissionSchema,
   );
   if (!result) {
-    throw new Error('No course instance permissions to update');
+    throw error.make(404, 'No course instance permissions to update');
   }
 }
 
