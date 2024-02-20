@@ -212,7 +212,6 @@ async function testVariant(
  * Test a question. Issues will be inserted into the issues table.
  *
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work.
  * @param variant_course - The course for the variant.
  * @param authn_user_id - The currently authenticated user.
  * @param test_type - The type of test to run.
@@ -220,7 +219,6 @@ async function testVariant(
  */
 async function testQuestion(
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   variant_course: Course,
   test_type: TestType,
@@ -247,7 +245,6 @@ async function testQuestion(
       instance_question_id,
       authn_user_id,
       authn_user_id,
-      group_work,
       course_instance_id,
       variant_course,
       question_course,
@@ -301,7 +298,6 @@ async function testQuestion(
  * @param logger - The server job to run within.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
  * @param authn_user_id - The currently authenticated user.
@@ -310,7 +306,6 @@ async function runTest(
   logger: ServerJob,
   showDetails: boolean,
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   course: Course,
   test_type: TestType,
@@ -319,7 +314,6 @@ async function runTest(
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
     question,
-    group_work,
     course_instance,
     course,
     test_type,
@@ -377,7 +371,6 @@ async function runTest(
  * @param count - The number of times to test, will run each possible test ('correct, 'incorrect,' invalid') this many times.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work
  * @param course_instance - The course instance for the variant; may be null for instructor questions
  * @param course - The course for the variant.
  * @param authn_user_id - The currently authenticated user.
@@ -387,7 +380,6 @@ export async function startTestQuestion(
   count: number,
   showDetails: boolean,
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   course: Course,
   authn_user_id: string,
@@ -413,7 +405,6 @@ export async function startTestQuestion(
         job,
         showDetails,
         question,
-        group_work,
         course_instance,
         course,
         type,

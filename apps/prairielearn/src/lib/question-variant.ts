@@ -168,7 +168,6 @@ async function selectQuestion(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param group_work - If the assessment will support group work.
  * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
@@ -181,7 +180,6 @@ async function makeAndInsertVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  group_work: boolean,
   course_instance_id: string | null,
   variant_course: Course,
   question_course: Course,
@@ -303,7 +301,6 @@ async function makeAndInsertVariant(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param group_work - If the assessment will support group work.
  * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
@@ -316,7 +313,6 @@ export async function ensureVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  group_work: boolean,
   course_instance_id: string | null,
   variant_course: Course,
   question_course: Course,
@@ -341,7 +337,6 @@ export async function ensureVariant(
     instance_question_id,
     user_id,
     authn_user_id,
-    group_work,
     course_instance_id,
     variant_course,
     question_course,
