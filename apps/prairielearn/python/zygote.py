@@ -26,7 +26,7 @@ import time
 import types
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Sequence
+from typing import Any, Iterable, Sequence
 
 import question_phases
 import zygote_utils as zu
@@ -94,17 +94,20 @@ prairielearn.get_unit_registry()
 # will make it clear to the user that they're not allowed to use `rpy2`. If they
 # try to bypass the block, it's up to them to deal with the consequences.
 class ForbidModuleMetaPathFinder(MetaPathFinder):
-    def __init__(self):
+    def __init__(self) -> None:
         self.forbidden_modules: set[str] = set()
 
-    def forbid_module(self, forbidden_module: str):
-        self.forbidden_modules.add(forbidden_module)
+    def forbid_modules(self, forbidden_module: Iterable[str]) -> None:
+        self.forbidden_modules.update(forbidden_module)
 
-    def reset_forbidden_modules(self):
+    def reset_forbidden_modules(self) -> None:
         self.forbidden_modules.clear()
 
     def find_spec(
-        self, fullname: str, path: Sequence[str] | None, target: types.ModuleType = None
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
     ):
         if any(
             fullname == module or fullname.startswith(module + ".")
@@ -119,7 +122,7 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
@@ -128,7 +131,7 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
         raise
 
 
-def worker_loop():
+def worker_loop() -> None:
     # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
@@ -157,8 +160,7 @@ def worker_loop():
             # Wire up the custom importer to forbid modules as needed.
             path_finder.reset_forbidden_modules()
             if forbidden_modules is not None and isinstance(forbidden_modules, list):
-                for module in forbidden_modules:
-                    path_finder.forbid_module(module)
+                path_finder.forbid_modules(forbidden_modules)
 
             # "ping" is a special fake function name that the parent process
             # will use to check if the worker is active and able to respond to
@@ -368,7 +370,7 @@ def worker_loop():
 worker_pid = 0
 
 
-def terminate_worker(signum, stack):
+def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)
