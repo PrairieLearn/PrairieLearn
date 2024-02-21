@@ -1,6 +1,3 @@
-CREATE SEQUENCE IF NOT EXISTS assessment_access_policies_id_seq;
-
--- Create assessment_access_policies table
 CREATE TABLE IF NOT EXISTS assessment_access_policies (
   id BIGSERIAL PRIMARY KEY,
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE CASCADE,
