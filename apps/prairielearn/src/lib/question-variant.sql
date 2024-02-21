@@ -77,12 +77,12 @@ RETURNING
 
 -- BLOCK select_and_lock_assessment_instance_for_instance_question
 SELECT
-  ai.id INTO assessment_instance_id
+  ai.id
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
-  iq.id = instance_question_id
+  iq.id = $instance_question_id
 FOR NO KEY UPDATE OF
   ai;
 
