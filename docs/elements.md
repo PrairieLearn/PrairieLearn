@@ -1000,7 +1000,7 @@ def generate(data):
 | `placeholder`             | text                | None     | Hint displayed inside the input box describing the expected type of input.                                                                                                |
 | `size`                    | integer             | 35       | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
-| `multiline`               | boolean             | false    | Whether or not to use a multiline input for this element.                                                                                                                 |
+| `multiline`               | boolean             | false    | Whether or not to to allow the input to include line breaks.                                                                                                              |
 
 #### Example implementations
 
