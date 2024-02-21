@@ -167,9 +167,9 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_and_lock_assessment_instance_max_points
+-- BLOCK select_and_lock_assessment_instance
 SELECT
-  ai.max_points
+  ai.*
 FROM
   assessment_instances AS ai
 WHERE
