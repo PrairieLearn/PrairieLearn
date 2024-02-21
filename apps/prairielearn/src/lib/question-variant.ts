@@ -264,7 +264,7 @@ async function makeAndInsertVariant(
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
     }
 
-    const variant_id = await sqldb.queryRow(
+    return await sqldb.queryRow(
       sql.insert_variant,
       {
         ...variantData,
@@ -279,11 +279,6 @@ async function makeAndInsertVariant(
         course_id: variant_course.id,
         client_fingerprint_id,
       },
-      IdSchema,
-    );
-    return await sqldb.callRow(
-      'variants_select',
-      [variant_id, question_id, instance_question_id],
       VariantWithFormattedDateSchema,
     );
   });

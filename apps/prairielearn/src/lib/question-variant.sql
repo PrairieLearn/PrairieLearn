@@ -31,46 +31,59 @@ RETURNING
   id;
 
 -- BLOCK insert_variant
-INSERT INTO
-  variants (
-    instance_question_id,
-    question_id,
-    course_instance_id,
-    user_id,
-    group_id,
-    number,
-    variant_seed,
-    params,
-    true_answer,
-    options,
-    broken,
-    broken_at,
-    authn_user_id,
-    workspace_id,
-    course_id,
-    client_fingerprint_id
+WITH
+  new_variant AS (
+    INSERT INTO
+      variants (
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id,
+        group_id,
+        number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        broken_at,
+        authn_user_id,
+        workspace_id,
+        course_id,
+        client_fingerprint_id
+      )
+    VALUES
+      (
+        $instance_question_id,
+        $question_id,
+        $course_instance_id,
+        $user_id,
+        $group_id,
+        $number,
+        $variant_seed,
+        $params,
+        $true_answer,
+        $options,
+        $broken,
+        CASE
+          WHEN $broken THEN NOW()
+          ELSE NULL
+        END,
+        $authn_user_id,
+        $workspace_id,
+        $course_id,
+        $client_fingerprint_id
+      )
+    RETURNING
+      *
   )
-VALUES
-  (
-    $instance_question_id,
-    $question_id,
-    $course_instance_id,
-    $user_id,
-    $group_id,
-    $number,
-    $variant_seed,
-    $params,
-    $true_answer,
-    $options,
-    $broken,
-    CASE
-      WHEN $broken THEN NOW()
-      ELSE NULL
-    END,
-    $authn_user_id,
-    $workspace_id,
-    $course_id,
-    $client_fingerprint_id
-  )
-RETURNING
-  id;
+SELECT
+  v.*,
+  format_date_full_compact (
+    v.date,
+    COALESCE(ci.display_timezone, c.display_timezone)
+  ) AS formatted_date
+FROM
+  new_variant AS v
+  JOIN pl_courses AS c ON (c.id = v.course_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
