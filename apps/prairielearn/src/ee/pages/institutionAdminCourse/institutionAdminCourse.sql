@@ -16,13 +16,18 @@ FROM
   course_instances AS ci
   JOIN pl_courses AS c ON (ci.course_id = c.id)
   LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
+  LEFT JOIN course_instance_access_rules AS ar ON (ci.id = ar.course_instance_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
   AND c.institution_id = $institution_id
   AND c.deleted_at IS NULL
 GROUP BY
-  ci.id;
+  ci.id
+ORDER BY
+  MIN(ar.start_date) DESC NULLS LAST,
+  MAX(ar.end_date) DESC NULLS LAST,
+  ci.id DESC;
 
 -- BLOCK update_enrollment_limits
 UPDATE pl_courses AS c
