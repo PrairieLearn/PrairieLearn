@@ -2467,7 +2467,7 @@ if (require.main === module && config.startServer) {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
-            opentelemetry.shutdown();
+            await opentelemetry.shutdown();
           } catch (err) {
             logger.error('Error shutting down OpenTelemetry', err);
             Sentry.captureException(err);
