@@ -14,6 +14,7 @@ import {
   addUserToGroup,
   createGroup,
   deleteAllGroups,
+  deleteGroup,
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
@@ -166,11 +167,7 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_group') {
-      await sqldb.callAsync('assessment_groups_delete_group', [
-        res.locals.assessment.id,
-        req.body.group_id,
-        res.locals.authn_user.user_id,
-      ]);
+      await deleteGroup(res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);

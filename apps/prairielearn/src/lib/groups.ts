@@ -600,6 +600,17 @@ export async function updateGroupRoles(
   });
 }
 
+export async function deleteGroup(assessment_id: string, group_id: string, authn_user_id: string) {
+  const deleted_group_id = await sqldb.queryOptionalRow(
+    sql.delete_group,
+    { assessment_id, group_id, authn_user_id },
+    IdSchema,
+  );
+  if (deleted_group_id == null) {
+    throw new Error('Group does not exist.');
+  }
+}
+
 /**
  * Delete all groups for the given assessment.
  */
