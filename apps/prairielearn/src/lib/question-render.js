@@ -41,8 +41,7 @@ const VariantSelectResultSchema = VariantSchema.extend({
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
-  assessment_instance_date: DateFromISOString.nullable(),
-  formatted_date: z.string().nullable(),
+  formatted_date: z.string(),
 });
 
 const detailedSubmissionColumns = /** @type {const} */ ({
@@ -365,11 +364,18 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
 
   if (variant_id != null) {
-    locals.variant = await sqldb.callRow(
-      'variants_select',
-      [variant_id, locals.question.id, locals.instance_question?.id],
+    locals.variant = await sqldb.queryOptionalRow(
+      sql.select_variant_for_render,
+      {
+        variant_id,
+        question_id: locals.question.id,
+        instance_question_id: locals.instance_question?.id,
+      },
       VariantSelectResultSchema,
     );
+    if (locals.variant == null) {
+      throw error.make(404, 'Variant not found');
+    }
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
     const instance_question_id = locals.instance_question?.id;
