@@ -136,13 +136,13 @@ const findEditUrlData = [
   },
   {
     name: 'course admin via course instance',
-    selector: 'a:contains("infoCourse.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-configuration-link"]',
     url: courseInstanceCourseAdminSettingsUrl,
     expectedEditUrl: courseInstanceCourseAdminEditUrl,
   },
   {
     name: 'course admin',
-    selector: 'a:contains("infoCourse.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
   },
