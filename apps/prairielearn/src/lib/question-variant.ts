@@ -160,12 +160,26 @@ async function selectQuestion(
   }
 }
 
+async function lockAssessmentInstanceForInstanceQuestion(
+  instance_question_id: string,
+): Promise<void> {
+  const assessment_instance_id = await sqldb.queryOptionalRow(
+    sql.select_and_lock_assessment_instance_for_instance_question,
+    { instance_question_id },
+    IdSchema,
+  );
+  if (assessment_instance_id == null) {
+    throw error.make(404, 'Instance question not found');
+  }
+}
+
 async function selectVariantForInstanceQuestion(
   instance_question_id: string,
   require_open: boolean,
+  lockAcquired = false,
 ): Promise<VariantWithFormattedDate | null> {
   return await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('instance_questions_lock', [instance_question_id]);
+    if (!lockAcquired) await lockAssessmentInstanceForInstanceQuestion(instance_question_id);
     return await sqldb.queryOptionalRow(
       sql.select_variant_for_instance_question,
       { instance_question_id, require_open },
@@ -214,7 +228,7 @@ async function makeAndInsertVariant(
     let new_number: number | null = 1;
 
     if (instance_question_id != null) {
-      await sqldb.callAsync('instance_questions_lock', [instance_question_id]);
+      await lockAssessmentInstanceForInstanceQuestion(instance_question_id);
       const instance_question = await sqldb.queryOptionalRow(
         sql.select_instance_question_data,
         { instance_question_id },
@@ -228,9 +242,13 @@ async function makeAndInsertVariant(
       // generating two variants for the same instance question. If we're the
       // second one to try and insert a variant, just pull the existing variant
       // back out of the database and use that instead.
-      const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
-      if (variant != null) {
-        return variant;
+      const existing_variant = await selectVariantForInstanceQuestion(
+        instance_question_id,
+        require_open,
+        true, // lock acquired
+      );
+      if (existing_variant != null) {
+        return existing_variant;
       }
 
       if (!instance_question.instance_question_open) {
