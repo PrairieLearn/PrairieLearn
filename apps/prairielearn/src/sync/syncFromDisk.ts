@@ -39,29 +39,27 @@ export async function syncDiskToSqlWithLock(
   logger.info('Loading info.json files from course repository');
   perf.start('sync');
 
-  const courseData = await perf.timedAsync('loadCourseData', () =>
+  const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
   logger.info('Syncing info to database');
-  await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
-  const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
+  await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
+  const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
     syncCourseInstances.sync(courseId, courseData),
   );
-  await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
-  const questionIds = await perf.timedAsync('syncQuestions', () =>
+  await perf.timed('syncTopics', () => syncTopics.sync(courseId, courseData));
+  const questionIds = await perf.timed('syncQuestions', () =>
     syncQuestions.sync(courseId, courseData),
   );
 
-  await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
-  await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
-  await perf.timedAsync('syncAssessmentModules', () =>
-    syncAssessmentModules.sync(courseId, courseData),
-  );
+  await perf.timed('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
+  await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+  await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
   perf.start('syncAssessments');
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
       const courseInstanceId = courseInstanceIds[ciid];
-      await perf.timedAsync(`syncAssessments${ciid}`, () =>
+      await perf.timed(`syncAssessments${ciid}`, () =>
         syncAssessments.sync(
           courseId,
           courseInstanceId,
