@@ -119,7 +119,6 @@ export async function init() {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'assessment_groups_delete_member.sql',
       'assessment_groups_delete_group.sql',
       'group_info.sql',
       'groups_uid_list.sql',

@@ -471,14 +471,17 @@ export async function leaveGroup(
   assessmentId: string,
   userId: string,
   authnUserId: string,
+  checkGroupId: string | null = null,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
-      throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs",
-      );
+      throw error.make(404, 'User is not part of a group in this assessment');
     }
+    if (checkGroupId != null && !idsEqual(groupId, checkGroupId)) {
+      throw error.make(403, 'Group ID does not match the user ID and assessment ID provided');
+    }
+
     const groupConfig = await getGroupConfig(assessmentId);
 
     if (groupConfig.has_roles) {
