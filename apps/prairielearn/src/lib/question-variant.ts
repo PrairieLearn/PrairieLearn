@@ -349,7 +349,10 @@ export async function ensureVariant(
   client_fingerprint_id: string | null,
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
-    // see if we have a useable existing variant, otherwise make a new one
+    // See if we have a useable existing variant, otherwise make a new one. This
+    // test is also performed in makeAndInsertVariant inside a transaction to
+    // avoid race conditions, but we do it here too to avoid the
+    // generate/prepare overhead in the most common cases.
     const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
     if (variant != null) {
       return variant;
