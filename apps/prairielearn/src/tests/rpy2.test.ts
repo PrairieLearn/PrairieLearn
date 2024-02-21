@@ -33,7 +33,7 @@ describe('rpy2 blocking', () => {
     );
     assert.equal(res.status, 200);
 
-    const issueText = res.$('.card pre:contains("ImportError: module \'rpy2\' is not allowed")');
+    const issueText = res.$('.card pre:contains("ImportError: module "rpy2" is not allowed")');
     assert(issueText.length > 0);
   });
 
