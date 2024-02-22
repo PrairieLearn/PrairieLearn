@@ -455,3 +455,23 @@ export async function updateAssessmentQuestionStatsForAssessment(
     await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
+
+export async function deleteAssessmentInstance(
+  assessment_instance_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.queryAsync(sql.delete_assessment_instance, {
+    assessment_instance_id,
+    authn_user_id,
+  });
+}
+
+export async function deleteAllAssessmentInstancesForAssessment(
+  assessment_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+    assessment_id,
+    authn_user_id,
+  });
+}

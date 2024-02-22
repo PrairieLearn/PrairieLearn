@@ -9,6 +9,8 @@ import {
   checkBelongsAsync,
   gradeAssessmentInstanceAsync,
   gradeAllAssessmentInstances,
+  deleteAllAssessmentInstancesForAssessment,
+  deleteAssessmentInstance,
 } from '../../lib/assessment';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types';
@@ -113,10 +115,7 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
       await checkBelongsAsync(assessment_instance_id, assessment_id);
-      await sqldb.callAsync('assessment_instances_delete', [
-        assessment_instance_id,
-        res.locals.authn_user.user_id,
-      ]);
+      await deleteAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
@@ -131,10 +130,10 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
-      await sqldb.callAsync('assessment_instances_delete_all', [
+      await deleteAllAssessmentInstancesForAssessment(
         res.locals.assessment.id,
         res.locals.authn_user.user_id,
-      ]);
+      );
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'regrade') {
       const assessment_id = res.locals.assessment.id;

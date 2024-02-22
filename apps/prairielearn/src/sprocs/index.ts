@@ -67,8 +67,6 @@ export async function init() {
       'courses_update_column.sql',
       'courses_delete.sql',
       'course_instances_select_graders.sql',
-      'assessment_instances_delete.sql',
-      'assessment_instances_delete_all.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
       'assessment_instances_select_for_auto_finish.sql',
