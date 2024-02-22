@@ -19,7 +19,6 @@ router.get(
       course_id: res.locals.course ? res.locals.course.id : null
     });
     res.locals.policies = result.rows;
-    // console.log(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -50,7 +49,6 @@ router.post(
         // Get the group_id from the result
         if (group_result.rows.length > 0) {
           params.group_id = group_result.rows[0].id;
-          console.log('GROUP ID: ' + params.group_id);
         } else {
           params.group_id = null;
         }
