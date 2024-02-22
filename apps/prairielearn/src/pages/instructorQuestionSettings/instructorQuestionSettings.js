@@ -23,21 +23,17 @@ import { IdSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const SelectedAssessmentsSchema = z
-  .array(
+const SelectedAssessmentsSchema = z.object({
+  title: z.string(),
+  course_instance_id: IdSchema,
+  assessments: z.array(
     z.object({
-      title: z.string(),
-      course_instance_id: IdSchema,
-      assessments: z.array(
-        z.object({
-          assessment_id: IdSchema,
-          color: z.string(),
-          label: z.string(),
-        }),
-      ),
+      assessment_id: IdSchema,
+      color: z.string(),
+      label: z.string(),
     }),
-  )
-  .nullable();
+  ),
+});
 
 router.post(
   '/test',
@@ -97,14 +93,15 @@ router.post(
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw error.make(403, 'Access denied');
     }
     if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw new Error(`Invalid QID (was falsy): ${req.body.id}`);
+      if (!req.body.id) throw error.make(400, `Invalid QID (was falsy): ${req.body.id}`);
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw new Error(
+        throw error.make(
+          400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
@@ -112,7 +109,7 @@ router.post(
       try {
         qid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw new Error(`Invalid QID (could not be normalized): ${req.body.id}`);
+        throw error.make(400, `Invalid QID (could not be normalized): ${req.body.id}`);
       }
       if (res.locals.question.qid === qid_new) {
         res.redirect(req.originalUrl);
@@ -122,8 +119,13 @@ router.post(
           qid_new: qid_new,
         });
         editor.assertCanEdit();
-        await editor.doEditAsync();
-        res.redirect(req.originalUrl);
+        const serverJob = await editor.setupEditAsync();
+        try {
+          await editor.doEditAsync(serverJob);
+          res.redirect(req.originalUrl);
+        } catch (err) {
+          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        }
       }
     } else if (req.body.__action === 'copy_question') {
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
@@ -132,7 +134,12 @@ router.post(
           locals: res.locals,
         });
         editor.assertCanEdit();
-        await editor.doEditAsync();
+        const serverJob = await editor.setupEditAsync();
+        try {
+          await editor.doEditAsync(serverJob);
+        } catch (err) {
+          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        }
         const questionId = await sqldb.queryRow(
           sql.select_question_id_from_uuid,
           { uuid: editor.uuid, course_id: res.locals.course.id },
@@ -144,7 +151,7 @@ router.post(
         );
         res.redirect(res.locals.urlPrefix + '/question/' + questionId + '/settings');
       } else {
-        copyQuestionBetweenCourses(res, {
+        await copyQuestionBetweenCourses(res, {
           fromCourse: res.locals.course,
           toCourseId: req.body.to_course_id,
           question: res.locals.question,
@@ -155,47 +162,46 @@ router.post(
         locals: res.locals,
       });
       editor.assertCanEdit();
-      await editor.doEditAsync();
-      res.redirect(res.locals.urlPrefix + '/course_admin/questions');
+      const serverJob = await editor.setupEditAsync();
+      try {
+        await editor.doEditAsync(serverJob);
+        res.redirect(res.locals.urlPrefix + '/course_admin/questions');
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
     } else if (req.body.__action === 'sharing_set_add') {
-      features
-        .enabledFromLocals('question-sharing', res.locals)
-        .then((questionSharingEnabled) => {
-          if (!questionSharingEnabled) {
-            throw error.make(403, 'Access denied (feature not available)');
-          }
-          if (!res.locals.authz_data.has_course_permission_own) {
-            throw error.make(403, 'Access denied (must be a course Owner)');
-          }
-          sqldb.queryAsync(sql.sharing_set_add, {
-            course_id: res.locals.course.id,
-            question_id: res.locals.question.id,
-            unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
-          });
-        })
-        .then(() => {
-          res.redirect(req.originalUrl);
-        })
-        .catch((err) => next(err));
+      const questionSharingEnabled = await features.enabledFromLocals(
+        'question-sharing',
+        res.locals,
+      );
+      if (!questionSharingEnabled) {
+        throw error.make(403, 'Access denied (feature not available)');
+      }
+      if (!res.locals.authz_data.has_course_permission_own) {
+        throw error.make(403, 'Access denied (must be a course Owner)');
+      }
+      await sqldb.queryAsync(sql.sharing_set_add, {
+        course_id: res.locals.course.id,
+        question_id: res.locals.question.id,
+        unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+      });
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'share_publicly') {
-      features
-        .enabledFromLocals('question-sharing', res.locals)
-        .then((questionSharingEnabled) => {
-          if (!questionSharingEnabled) {
-            throw error.make(403, 'Access denied (feature not available)');
-          }
-          if (!res.locals.authz_data.has_course_permission_own) {
-            throw error.make(403, 'Access denied (must be a course Owner)');
-          }
-          sqldb.queryAsync(sql.update_question_shared_publicly, {
-            course_id: res.locals.course.id,
-            question_id: res.locals.question.id,
-          });
-        })
-        .then(() => {
-          res.redirect(req.originalUrl);
-        })
-        .catch((err) => next(err));
+      const questionSharingEnabled = await features.enabledFromLocals(
+        'question-sharing',
+        res.locals,
+      );
+      if (!questionSharingEnabled) {
+        throw error.make(403, 'Access denied (feature not available)');
+      }
+      if (!res.locals.authz_data.has_course_permission_own) {
+        throw error.make(403, 'Access denied (must be a course Owner)');
+      }
+      await sqldb.queryAsync(sql.update_question_shared_publicly, {
+        course_id: res.locals.course.id,
+        question_id: res.locals.question.id,
+      });
+      res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
@@ -232,27 +238,31 @@ router.get(
 
     res.locals.questionGHLink = null;
     if (res.locals.course.repository) {
-      const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
-      if (GHfound) {
+      const githubRepoMatch = res.locals.course.repository.match(
+        /^git@github.com:\/?(.+?)(\.git)?\/?$/,
+      );
+      if (githubRepoMatch) {
         res.locals.questionGHLink =
-          'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
+          'https://github.com/' +
+          githubRepoMatch[1] +
+          `/tree/${res.locals.course.branch}/questions/` +
+          res.locals.question.qid;
       }
     } else if (res.locals.course.example_course) {
       res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     }
 
-    res.locals.qids = await sqldb.queryRow(
+    res.locals.qids = await sqldb.queryRows(
       sql.qids,
       { course_id: res.locals.course.id },
-      z.array(z.string().nullable()),
+      z.string().nullable(),
     );
 
-    res.locals.a_with_q_for_all_ci = await sqldb.queryRow(
+    res.locals.a_with_q_for_all_ci = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
-
     res.locals.sharing_enabled = await features.enabledFromLocals('question-sharing', res.locals);
 
     if (res.locals.sharing_enabled) {

@@ -83,14 +83,11 @@ export class Editor {
   }
 
   canEdit(callback) {
-    // Do not allow users to edit without permission
-    if (!this.authz_data.has_course_permission_edit) {
-      return callback(error.make(403, 'Access denied (must be course editor)'));
-    }
-
-    // Do not allow users to edit the exampleCourse
-    if (this.course.example_course) {
-      return callback(new Error(`Access denied (cannot edit the example course)`));
+    try {
+      this.assertCanEdit();
+    } catch (err) {
+      callback(err);
+      return;
     }
 
     callback(null);
@@ -108,8 +105,7 @@ export class Editor {
     }
   }
 
-  async doEditAsync() {
-    let jobSequenceId = null;
+  async setupEditAsync() {
     const serverJob = await createServerJob({
       courseId: this.course.id,
       userId: this.user.user_id,
@@ -117,7 +113,11 @@ export class Editor {
       type: 'sync',
       description: this.description,
     });
-    jobSequenceId = serverJob.jobSequenceId;
+    return serverJob;
+  }
+
+  async doEditAsync(serverJob) {
+    let jobSequenceId = serverJob.jobSequenceId;
 
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
@@ -213,7 +213,11 @@ export class Editor {
     return jobSequenceId;
   }
 
-  doEdit = callbackify(this.doEditAsync);
+  doEdit = callbackify(async () => {
+    const serverJob = await this.setupEditAsync();
+    const jobSequenceId = await this.doEditAsync(serverJob);
+    return jobSequenceId;
+  });
 
   /**
    * Remove empty preceding subfolders for a question, assessment, etc. based on its ID.
