@@ -34,16 +34,16 @@ ORDER BY
 
 -- BLOCK select_group_in_assessment
 SELECT
-  groups.id,
-  groups.name,
-  groups.group_config_id
+  g.id,
+  g.name,
+  g.group_config_id
 FROM
-  groups
-  JOIN group_configs ON groups.group_config_id = group_configs.id
+  groups g
+  JOIN group_configs gc ON g.group_config_id = gc.id
 WHERE
-  groups.course_instance_id = $course_instance_id
-  AND groups.name = $group_name
-  AND group_configs.assessment_id = $assessment_id;
+  g.course_instance_id = $course_instance_id
+  AND g.name = $group_name
+  AND gc.assessment_id = $assessment_id;
 
 -- BLOCK insert_assessment_access_policy
 INSERT INTO
