@@ -8,7 +8,7 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "mocha --parallel src/**/*.test.{js,ts}",
+    "test": "mocha --parallel src/**/*.test.ts",
     "test:dist": "mocha --parallel dist/**/*.test.js"
   },
   "dependencies": {
