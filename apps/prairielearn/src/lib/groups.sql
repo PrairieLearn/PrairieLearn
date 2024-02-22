@@ -404,7 +404,7 @@ WITH
       deleted_group
   )
 SELECT
-  *
+  id
 FROM
   deleted_group;
 
