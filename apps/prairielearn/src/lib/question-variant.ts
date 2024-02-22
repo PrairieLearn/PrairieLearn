@@ -176,16 +176,12 @@ async function lockAssessmentInstanceForInstanceQuestion(
 async function selectVariantForInstanceQuestion(
   instance_question_id: string,
   require_open: boolean,
-  lockAcquired = false,
 ): Promise<VariantWithFormattedDate | null> {
-  return await sqldb.runInTransactionAsync(async () => {
-    if (!lockAcquired) await lockAssessmentInstanceForInstanceQuestion(instance_question_id);
-    return await sqldb.queryOptionalRow(
-      sql.select_variant_for_instance_question,
-      { instance_question_id, require_open },
-      VariantWithFormattedDateSchema,
-    );
-  });
+  return await sqldb.queryOptionalRow(
+    sql.select_variant_for_instance_question,
+    { instance_question_id, require_open },
+    VariantWithFormattedDateSchema,
+  );
 }
 
 /**
@@ -245,7 +241,6 @@ async function makeAndInsertVariant(
       const existing_variant = await selectVariantForInstanceQuestion(
         instance_question_id,
         require_open,
-        true, // lock acquired
       );
       if (existing_variant != null) {
         return existing_variant;
