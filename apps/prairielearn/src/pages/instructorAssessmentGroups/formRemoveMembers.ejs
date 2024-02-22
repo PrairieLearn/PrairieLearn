@@ -1,12 +1,11 @@
 <form name="delete-member-form" method="POST">
   <div class="form-group">
-    <label>UID:
-      <select class="form-control" name="user_id">
-        <% row.users.forEach((user) => { %>
-          <option value="<%= user.user_id %>"><%= user.uid %></option>
-        <% }); %>
-      </select>
-    </label>
+    <label for="delete-member-form-<%= iRow %>">UID:</label>
+    <select class="form-control" name="user_id" id="delete-member-form-<%= iRow %>">
+      <% row.users.forEach((user) => { %>
+        <option value="<%= user.user_id %>"><%= user.uid %></option>
+      <% }); %>
+    </select>
   </div>
   <input type="hidden" name="__action" value="delete_member">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
