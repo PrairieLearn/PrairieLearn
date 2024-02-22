@@ -2,15 +2,27 @@
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 const async = require('async');
+import * as path from 'path';
 
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import {
+  deleteAllCourseInstancePermissionsForCourse,
+  deleteCourseInstancePermissions,
+  deleteCoursePermissions,
+  deleteCoursePermissionsForNonOwners,
+  deleteCoursePermissionsForUsersWithoutAccess,
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+  updateCourseInstancePermissionsRole,
+  updateCoursePermissionsRole,
+} from '../../models/course-permissions';
 
-import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -104,15 +116,15 @@ router.post(
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
          */
         async (memo, uid) => {
-          let result;
+          /** @type {import('../../lib/db-types').User} */
+          let user;
           try {
-            const c_params = [
-              res.locals.course.id,
+            user = await insertCoursePermissionsByUserUid({
+              course_id: res.locals.course.id,
               uid,
-              req.body.course_role,
-              res.locals.authz_data.authn_user.user_id,
-            ];
-            result = await sqldb.callAsync('course_permissions_insert_by_user_uid', c_params);
+              course_role: req.body.course_role,
+              authn_user_id: res.locals.authz_data.authn_user.user_id,
+            });
           } catch (err) {
             logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
             memo.not_given_cp.push(uid);
@@ -125,14 +137,13 @@ router.post(
           if (!course_instance) return memo;
 
           try {
-            const ci_params = [
-              res.locals.course.id,
-              result.rows[0].user_id,
-              course_instance.id,
-              req.body.course_instance_role,
-              res.locals.authz_data.authn_user.user_id,
-            ];
-            await sqldb.callAsync('course_instance_permissions_insert', ci_params);
+            await insertCourseInstancePermissions({
+              course_id: res.locals.course.id,
+              user_id: user.user_id,
+              course_instance_id: course_instance.id,
+              course_instance_role: req.body.course_instance_role,
+              authn_user_id: res.locals.authz_data.authn_user.user_id,
+            });
           } catch (err) {
             logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
             memo.not_given_cip.push(uid);
@@ -246,23 +257,22 @@ ${given_cp_and_cip.join(',\n')}
       }
 
       // Before proceeding, we *could* make some effort to verify that the user
-      // is still a member of the course staff. The reason we might want to do so
-      // is that sql.update_course_permissions will throw an "incorrect row count"
-      // error if the user has been removed from the course staff, and we might
-      // want to throw a more informative error beforehand.
+      // is still a member of the course staff. The reason we might want to do
+      // so is that updateCoursePermissionsRole will throw an error if the user
+      // has been removed from the course staff, and we might want to throw a
+      // more informative error beforehand.
       //
       // We are making the design choice *not* to do this verification, because
-      // it is unlikely that a course will have many owners all making changes to
-      // permissions simultaneously, and so we are choosing to prioritize speed
-      // in responding to the POST request.
+      // it is unlikely that a course will have many owners all making changes
+      // to permissions simultaneously, and so we are choosing to prioritize
+      // speed in responding to the POST request.
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        req.body.course_role,
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_permissions_update_role', params);
+      await updateCoursePermissionsRole({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        course_role: req.body.course_role,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_delete') {
       if (
@@ -282,12 +292,11 @@ ${given_cp_and_cip.join(',\n')}
         );
       }
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_permissions_delete', params);
+      await deleteCoursePermissions({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_instance_permissions_update_role_or_delete') {
       // Again, we could make some effort to verify that the user is still a
@@ -313,24 +322,22 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_role) {
         // In this case, we update the role associated with the course instance permission
-        const params = [
-          res.locals.course.id,
-          req.body.user_id,
-          req.body.course_instance_id,
-          req.body.course_instance_role,
-          res.locals.authz_data.authn_user.user_id,
-        ];
-        await sqldb.callAsync('course_instance_permissions_update_role', params);
+        await updateCourseInstancePermissionsRole({
+          course_id: res.locals.course.id,
+          user_id: req.body.user_id,
+          course_instance_id: req.body.course_instance_id,
+          course_instance_role: req.body.course_instance_role,
+          authn_user_id: res.locals.authz_data.authn_user.user_id,
+        });
         res.redirect(req.originalUrl);
       } else {
         // In this case, we delete the course instance permission
-        const params = [
-          res.locals.course.id,
-          req.body.user_id,
-          req.body.course_instance_id,
-          res.locals.authz_data.authn_user.user_id,
-        ];
-        await sqldb.callAsync('course_instance_permissions_delete', params);
+        await deleteCourseInstancePermissions({
+          course_id: res.locals.course.id,
+          user_id: req.body.user_id,
+          course_instance_id: req.body.course_instance_id,
+          authn_user_id: res.locals.authz_data.authn_user.user_id,
+        });
         res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'course_instance_permissions_insert') {
@@ -354,35 +361,37 @@ ${given_cp_and_cip.join(',\n')}
         throw error.make(400, `Undefined course instance id`);
       }
 
-      const params = [
-        res.locals.course.id,
-        req.body.user_id,
-        req.body.course_instance_id,
-        'Student Data Viewer',
-        res.locals.authz_data.authn_user.user_id,
-      ];
-      await sqldb.callAsync('course_instance_permissions_insert', params);
+      await insertCourseInstancePermissions({
+        course_id: res.locals.course.id,
+        user_id: req.body.user_id,
+        course_instance_id: req.body.course_instance_id,
+        course_instance_role: 'Student Data Viewer',
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_non_owners') {
       debug('Delete non-owners');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_permissions_delete_non_owners', params);
+      await deleteCoursePermissionsForNonOwners({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_no_access') {
       debug('Delete users with no access');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_permissions_delete_users_without_access', params);
+      await deleteCoursePermissionsForUsersWithoutAccess({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_all_student_data_access') {
       debug('Remove all student data access');
-      const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
-      await sqldb.callAsync('course_instance_permissions_delete_all', params);
+      await deleteAllCourseInstancePermissionsForCourse({
+        course_id: res.locals.course.id,
+        authn_user_id: res.locals.authz_data.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

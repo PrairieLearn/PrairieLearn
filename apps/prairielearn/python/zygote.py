@@ -23,7 +23,10 @@ import signal
 import subprocess
 import sys
 import time
+import types
+from importlib.abc import MetaPathFinder
 from inspect import signature
+from typing import Any, Iterable, Sequence
 
 import question_phases
 import zygote_utils as zu
@@ -84,12 +87,42 @@ matplotlib.use("PDF")
 prairielearn.get_unit_registry()
 
 
+# We want to conditionally allow/block importing specific modules, namely `rpy2`.
+# This custom importer will allow us to do so, and throw a custom error message.
+#
+# While this won't prevent anything more complex than an `import` statement, it
+# will make it clear to the user that they're not allowed to use `rpy2`. If they
+# try to bypass the block, it's up to them to deal with the consequences.
+class ForbidModuleMetaPathFinder(MetaPathFinder):
+    def __init__(self) -> None:
+        self.forbidden_modules: set[str] = set()
+
+    def forbid_modules(self, forbidden_module: Iterable[str]) -> None:
+        self.forbidden_modules.update(forbidden_module)
+
+    def reset_forbidden_modules(self) -> None:
+        self.forbidden_modules.clear()
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
+    ):
+        if any(
+            fullname == module or fullname.startswith(module + ".")
+            for module in self.forbidden_modules
+        ):
+            raise ImportError(f'module "{fullname}" is not allowed.')
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
@@ -98,9 +131,12 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
         raise
 
 
-def worker_loop():
-    # whether the PRNGs have already been seeded in this worker_loop() call
+def worker_loop() -> None:
+    # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
+
+    path_finder = ForbidModuleMetaPathFinder()
+    sys.meta_path.insert(0, path_finder)
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -119,6 +155,12 @@ def worker_loop():
             args = inp.get("args", None)
             cwd = inp.get("cwd", None)
             paths = inp.get("paths", None)
+            forbidden_modules = inp.get("forbidden_modules", None)
+
+            # Wire up the custom importer to forbid modules as needed.
+            path_finder.reset_forbidden_modules()
+            if forbidden_modules is not None and isinstance(forbidden_modules, list):
+                path_finder.forbid_modules(forbidden_modules)
 
             # "ping" is a special fake function name that the parent process
             # will use to check if the worker is active and able to respond to
@@ -328,7 +370,7 @@ def worker_loop():
 worker_pid = 0
 
 
-def terminate_worker(signum, stack):
+def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)

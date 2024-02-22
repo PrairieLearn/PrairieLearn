@@ -849,3 +849,41 @@ export const IssueSchema = z.object({
   variant_id: IdSchema.nullable(),
 });
 export type Issue = z.infer<typeof IssueSchema>;
+
+export const AssessmentSetSchema = z.object({
+  abbreviation: z.string().nullable(),
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  heading: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
+
+export const CoursePermissionSchema = z.object({
+  course_id: IdSchema,
+  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type CoursePermission = z.infer<typeof CoursePermissionSchema>;
+
+export const CourseInstancePermissionSchema = z.object({
+  course_instance_id: IdSchema,
+  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
+  course_permission_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstancePermission = z.infer<typeof CourseInstancePermissionSchema>;
+
+// Result of grading_job_status sproc
+export const GradingJobStatusSchema = z.enum([
+  'none',
+  'canceled',
+  'queued',
+  'grading',
+  'graded',
+  'requested',
+]);
+export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;

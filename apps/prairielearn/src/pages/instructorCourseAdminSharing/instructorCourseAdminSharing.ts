@@ -94,10 +94,7 @@ router.post(
         course_id: res.locals.course.id,
       });
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
     res.redirect(req.originalUrl);
   }),
