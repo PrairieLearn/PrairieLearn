@@ -78,6 +78,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
+        assessment_id: res.locals.assessment.id,
         unsafe_assessment_access_policies_id: req.body.policy_id,
       });
       res.redirect(req.originalUrl);

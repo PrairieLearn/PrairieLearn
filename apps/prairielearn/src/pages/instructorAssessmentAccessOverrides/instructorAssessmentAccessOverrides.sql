@@ -104,4 +104,5 @@ WHERE
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
 WHERE
-  id = $unsafe_assessment_access_policies_id
+  assessment_id = $assessment_id
+  AND id = $unsafe_assessment_access_policies_id
