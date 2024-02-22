@@ -114,8 +114,11 @@ router.post(
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      await checkBelongsAsync(assessment_instance_id, assessment_id);
-      await deleteAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id);
+      await deleteAssessmentInstance(
+        assessment_id,
+        assessment_instance_id,
+        res.locals.authn_user.user_id,
+      );
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
