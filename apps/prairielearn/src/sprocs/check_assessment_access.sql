@@ -8,6 +8,7 @@ CREATE FUNCTION
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN display_timezone text,
+        IN group_id bigint,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT exam_access_end timestamp with time zone, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
@@ -40,7 +41,7 @@ BEGIN
     FROM assessment_access_policies as aap
     WHERE aap.assessment_id = check_assessment_access.assessment_id
         AND ((aap.user_id= check_assessment_access.user_id) 
-        OR (aap.group_id = group_id))
+        OR (aap.group_id = check_assessment_access.group_id))
     ORDER BY end_date DESC
     LIMIT 1;
 

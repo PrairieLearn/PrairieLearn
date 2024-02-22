@@ -16,14 +16,23 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is visible but not active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB,       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
-        OUT group_id INT
+        OUT access_rules JSONB      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
 DECLARE
     user_result record;
     group_id bigint;
 BEGIN
+    SELECT g.id  
+    INTO group_id
+    FROM groups as g JOIN group_configs AS gc 
+                ON g.group_config_id = gc.id 
+        JOIN group_users AS gu 
+                ON gu.group_id = g.id 
+    WHERE gc.assessment_id = authz_assessment.assessment_id 
+        AND gu.user_id = (authz_data->'user'->>'user_id')::bigint 
+        AND g.deleted_at IS NULL;
+        
     -- authorization for the effective user
     SELECT *
     INTO user_result
@@ -36,18 +45,10 @@ BEGIN
             (authz_data->'user'->>'user_id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
-            display_timezone
+            display_timezone,
+            group_id
         );
-
-    SELECT g.id  
-    INTO group_id
-    FROM groups as g JOIN group_configs AS gc 
-                ON g.group_config_id = gc.id 
-        JOIN group_users AS gu 
-                ON gu.group_id = g.id 
-    WHERE gc.assessment_id = authz_assessment.assessment_id 
-        AND gu.user_id = (authz_data->'user'->>'user_id')::bigint 
-        AND g.deleted_at IS NULL;
+    
     
     -- Assessment access is granted based only on effective user permissions.
     --
