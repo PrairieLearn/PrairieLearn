@@ -607,7 +607,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
     IdSchema,
   );
   if (deleted_group_id == null) {
-    throw new Error('Group does not exist.');
+    throw error.make(404, 'Group does not exist.');
   }
 }
 
