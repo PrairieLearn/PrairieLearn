@@ -68,7 +68,14 @@ VALUES
     $group_id,
     $note,
     $start_date,
-    $user_id
+    (
+      SELECT
+        user_id
+      FROM
+        users
+      WHERE
+        uid = $student_uid
+    )
   );
 
 -- BLOCK update_assessment_access_policy

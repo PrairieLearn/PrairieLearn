@@ -9,6 +9,17 @@ import { selectUserByUid } from '../../models/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
+async function userIsEnrolledInCourseInstance({ uid, course_instance_id }) {
+  const user = await selectUserByUid(uid);
+  if (!user) return false;
+
+  const enrollment = await getEnrollmentForUserInCourseInstance({
+    user_id: user.user_id,
+    course_instance_id: course_instance_id,
+  });
+  return !!enrollment;
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -58,19 +69,15 @@ router.post(
           throw error.make(400, 'Group not found in this assessment.');
         }
       } else if (params.user_id) {
-        const user = await selectUserByUid(params.user_id);
-        if (!user) {
-          throw error.make(400, 'Student UID does not exist.');
-        }
-        params.user_id = user.user_id;
-
-        const enrollment = await getEnrollmentForUserInCourseInstance({
-          user_id: params.user_id,
+        
+        const isEnrolled = await userIsEnrolledInCourseInstance({
+          uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
         });
-        if (!enrollment) {
-          throw error.make(400, 'Student is not enrolled in the current course instance.');
+        if (!isEnrolled) {
+          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
         }
+        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
@@ -88,24 +95,12 @@ router.post(
         group_name: req.body.group_name || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
-        user_id: req.body.student_uid,
         group_id: null,
         student_uid: req.body.student_uid || null,
       };
-      const user = await selectUserByUid(edit_params.user_id);
-      if (!user) {
-        throw error.make(400, 'Student UID does not exist.');
-      }
-      const enrollment = await getEnrollmentForUserInCourseInstance({
-        user_id: user.user_id,
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      if (!enrollment) {
-        throw error.make(400, 'Student is not enrolled in the current course instance.');
-      }
-      edit_params.user_id = user.user_id;
-      // Validate if group belongs to the assessment
+      
+      
+      // Validate if group belongs to the assessment, otherwise check if student is enrolled in assessment
       if (edit_params.group_name) {
         const group_result = await sqldb.queryAsync(sql.select_group_in_assessment, {
           group_name: edit_params.group_name,
@@ -122,6 +117,14 @@ router.post(
         // If group does not belong to assessments and indirectly course instances, return error
         if (!edit_params.group_id) {
           throw error.make(400, 'Group does not belong to the current course instance.');
+        }
+      } else if (edit_params.student_uid) {
+        const isEnrolled = await userIsEnrolledInCourseInstance({
+          uid: req.body.student_uid,
+          course_instance_id: res.locals.course_instance.id,
+        });
+        if (!isEnrolled) {
+          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
         }
       }
       await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
