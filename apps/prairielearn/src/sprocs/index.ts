@@ -108,8 +108,6 @@ export async function init() {
       'server_usage_current.sql',
       'instance_questions_calculate_stats.sql',
       'issues_select_with_filter.sql',
-      'access_tokens_insert.sql',
-      'access_tokens_delete.sql',
       'assessment_instances_points.sql',
       'sync_course_instances.sql',
       'sync_topics.sql',
