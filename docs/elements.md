@@ -1004,8 +1004,7 @@ def generate(data):
 
 #### Details
 
-The student answer will use a single `\n` as a newline character, even if `multiline` is not enabled. To avoid issues
-with newlines, they can be ignored by enabling `remove-spaces`.
+The student answer will use a single `\n` as a newline character, even if `multiline` is not enabled. To avoid issues with newlines, they can be ignored by enabling `remove-spaces`. Keep in mind that longer strings may not display cleanly on the submitted or correct answer panels, so it may be best to hide these panels if students are submitting longer strings.
 
 #### Example implementations
 

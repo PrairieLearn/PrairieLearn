@@ -184,6 +184,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
+        a_tru = pl.escape_unicode_string(a_tru)
+
         html_params = {
             "answer": True,
             "label": label,
