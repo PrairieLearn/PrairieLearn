@@ -19,12 +19,12 @@
     "zones": [
         {
             "questions": [
-                {"id": "template/numberInput/mathNumberInput","points": [3,1]}
+                {"id": "template/number-input/random-prompt","points": [3,1]}
             ]
         },
         {
             "questions": [
-              {"id": "template/matrixComponentInput/graphAdjacencyMatrix","points": [3,1]}
+              {"id": "template/matrix-component-input/random-graph","points": [3,1]}
             ]
         },
         {
@@ -40,8 +40,8 @@
                   "points": [4,2,1],
                   "alternatives": [
                       {"id": "demo/annotated/mathOuterProduct"},
-                      {"id": "template/matrixInput/mathMatrixMult"},
-                      {"id": "template/matrixInput/mathMatrixMultT"}
+                      {"id": "demo/annotated/mathMatrixMult"},
+                      {"id": "demo/annotated/mathMatrixMultT"}
                   ]
               }
             ]

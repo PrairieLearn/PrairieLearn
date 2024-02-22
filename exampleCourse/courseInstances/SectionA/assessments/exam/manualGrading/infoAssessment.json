@@ -32,15 +32,15 @@
                   "numberChoose": 1,
                   "points": 5,
                   "alternatives": [
-                      {"id": "template/checkbox/mathNumbersConcept-all"},
-                      {"id": "template/multipleChoice/multipleChoiceMultipleCorrect"}
+                      {"id": "template/checkbox/random-prompt"},
+                      {"id": "template/multiple-choice/random"}
                   ]
               },
               {
                   "numberChoose": 1,
                   "points": [5,1],
                   "alternatives": [
-                      {"id": "template/multipleChoice/multipleChoiceWithFigure"},
+                      {"id": "template/multiple-choice/images"},
                       {"id": "demo/multipleChoiceSingleCorrect"}
                   ]
               },
@@ -48,8 +48,8 @@
                   "numberChoose": 1,
                   "points": 5,
                   "alternatives": [
-                      {"id": "template/multipleChoice/multipleChoiceTrueFalseFromList"},
-                      {"id": "template/multipleChoice/multipleChoiceFromList"}
+                      {"id": "template/multiple-choice/random-prompt-true-false"},
+                      {"id": "template/multiple-choice/random-prompt"}
                   ]
               },
               {
@@ -57,7 +57,7 @@
                   "points": [5,2],
                   "alternatives": [
                       {"id": "demo/fixedCheckbox"},
-                      {"id": "template/symbolicInput/mathFunctionDerivative"}
+                      {"id": "template/symbolic-input/random"}
                   ]
               }
           ]

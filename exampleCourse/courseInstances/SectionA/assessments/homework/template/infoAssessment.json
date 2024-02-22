@@ -32,9 +32,9 @@
         {
             "title": "Zone 1: Unlimited question variants with one single attempt",
             "questions": [
-                {"id": "template/checkbox/mathNumbersConcept-all", "points": 1,"maxPoints": 6},
-                {"id": "template/stringInput/engBinary", "points": 1, "maxPoints": 3},
-                {"id": "template/symbolicInput/mathFunctionDerivative", "points": 1,"maxPoints": 6}
+                {"id": "template/checkbox/random-prompt", "points": 1,"maxPoints": 6},
+                {"id": "template/string-input/random", "points": 1, "maxPoints": 3},
+                {"id": "template/symbolic-input/random", "points": 1,"maxPoints": 6}
             ]
         },
         {

@@ -91,7 +91,7 @@
                     "points": [5, 4, 3, 2, 1],
                     "alternatives": [
                         {"id": "demo/randomDataFrame"},
-                        {"id": "template/symbolicInput/mathFunctionDerivative"}
+                        {"id": "template/symbolic-input/random"}
                     ]
                 },
                 {
