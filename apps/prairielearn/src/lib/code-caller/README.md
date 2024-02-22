@@ -9,7 +9,9 @@ You can obtain and use a code caller with the `withCodeCaller()` function
 ```js
 const { withCodeCaller } = require('./index.js');
 
-await withCodeCaller('/path/to/course', async (codeCaller) => {
+const course = await selectCourse();
+
+await withCodeCaller(course, async (codeCaller) => {
   await codeCaller.call(...);
 });
 ```

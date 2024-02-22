@@ -21,14 +21,18 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { detectResources, processDetector, envDetector, Resource } from '@opentelemetry/resources';
+import {
+  detectResourcesSync,
+  processDetector,
+  envDetector,
+  Resource,
+} from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 
 // Instrumentations go here.
@@ -172,13 +176,8 @@ function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
       });
       break;
     case 'jaeger':
-      return new JaegerExporter({
-        // By default, the UDP sender will be used, but that causes issues
-        // with packet sizes when Jaeger is running in Docker. We'll instead
-        // configure it to use the HTTP sender, which shouldn't face those
-        // same issues. We'll still allow the endpoint to be overridden via
-        // environment variable if needed.
-        endpoint: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
+      return new OTLPTraceExporter({
+        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'grpc://localhost:4317/',
       });
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
@@ -275,7 +274,7 @@ export async function init(config: OpenTelemetryConfig) {
   // then can we actually start requiring all of our code that loads our config
   // and ultimately tells us how to configure OpenTelemetry.
 
-  let resource = await detectResources({
+  let resource = detectResourcesSync({
     detectors: [awsEc2Detector, processDetector, envDetector],
   });
 
@@ -299,13 +298,16 @@ export async function init(config: OpenTelemetryConfig) {
 
   // Set up metrics instrumentation if it's enabled.
   if (metricExporter) {
-    const meterProvider = new MeterProvider({ resource });
-    metrics.setGlobalMeterProvider(meterProvider);
-    const metricReader = new PeriodicExportingMetricReader({
-      exporter: metricExporter,
-      exportIntervalMillis: config.openTelemetryMetricExportIntervalMillis ?? 30_000,
+    const meterProvider = new MeterProvider({
+      resource,
+      readers: [
+        new PeriodicExportingMetricReader({
+          exporter: metricExporter,
+          exportIntervalMillis: config.openTelemetryMetricExportIntervalMillis ?? 30_000,
+        }),
+      ],
     });
-    meterProvider.addMetricReader(metricReader);
+    metrics.setGlobalMeterProvider(meterProvider);
   }
 }
 
