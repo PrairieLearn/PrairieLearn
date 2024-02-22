@@ -27,9 +27,7 @@ c = "{{params.c}}"
       When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
       still be evaluated as correct. We also set <code>show-score="false"</code> to hide the
       score badge. </p>
-<pl-code language="python">
-"{{params.d}}"
-</pl-code>
+    <pl-code language="python">"{{params.d}}"</pl-code>
   </pl-question-panel>
   <pl-string-input answers-name="ans3" remove-leading-trailing="true" show-score="false">
   </pl-string-input>
@@ -43,9 +41,7 @@ c = "{{params.c}}"
       <code>placeholder="string"</code>,
       to add a placeholder indicating the expected input is of type "string".
     </p>
-<pl-code language="python">
-"{{params.d}}"
-</pl-code>
+    <pl-code language="python">"{{params.d}}"</pl-code>
   </pl-question-panel>
   <pl-string-input answers-name="ans4" remove-spaces="true" placeholder="string">
   </pl-string-input>
@@ -68,9 +64,7 @@ c = "{{params.c}}"
       This will autoconvert both the student answer and the correct answer to lower case. Entering the string below with
       any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
 
-    <pl-code language="python">
-      "{{params.e}}"
-    </pl-code>
+  <pl-code language="python">"{{params.e}}"</pl-code>
   </pl-question-panel>
 
   <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
@@ -84,10 +78,7 @@ c = "{{params.c}}"
       <code>show-help-text="false"</code> removes the button for the help popup. This box below has <code>size=5</code>
       instead of the default <code>size=35</code>.
     </p>
-
-<pl-code language="python">
-"{{params.f}}"
-</pl-code>
+    <pl-code language="python">"{{params.f}}"</pl-code>
   </pl-question-panel>
 
   <pl-string-input answers-name="ans7" label="Small box = " show-help-text="false" size="5"></pl-string-input>
@@ -118,13 +109,13 @@ c = "{{params.c}}"
     <p>
       The input box can also allow for multiline input, done by setting <code>multiline="true"</code>. For example,
       this is useful for cases where students are asked for the output of a program. Note that the multiline input
-      processes newlines by treating each one as the escape characters <code>\r\n</code>, so keep this in mind when
-      setting the correct answer.
+      converts each newline character to a single <code>\n</code>, so keep this in mind when setting the correct answer.
+      To avoid issues with newlines, they can be ignored completely by setting <code>remove-spaces="true"</code>.
     </p>
     <p>
       Run the Python code below and submit the output into the answer box.
     </p>
-    <pl-code copy-code-button="true">print("Hello\nWorld!")</pl-code>
+    <pl-code copy-code-button="true" language="python">print("Hello\nWorld!")</pl-code>
   </pl-question-panel>
   <pl-string-input answers-name="ans9" label="Program output " multiline="true"></pl-string-input>
 </pl-card>

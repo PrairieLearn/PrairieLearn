@@ -1,4 +1,5 @@
 import random
+import re
 from enum import Enum
 from typing import Any
 
@@ -206,7 +207,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
-
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
@@ -229,6 +229,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Remove the blank spaces between characters
     if remove_spaces:
         a_sub = "".join(a_sub.split())
+
+    # Always simplify multiline characters (if they still exist)
+    a_sub = re.sub("\r*\n", "\n", a_sub)
 
     if not a_sub and not allow_blank:
         data["format_errors"][

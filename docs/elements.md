@@ -1002,6 +1002,11 @@ def generate(data):
 | `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
 | `multiline`               | boolean             | false    | Whether or not to to allow the input to include line breaks.                                                                                                              |
 
+#### Details
+
+The student answer will use a single `\n` as a newline character, even if `multiline` is not enabled. To avoid issues
+with newlines, they can be ignored by enabling `remove-spaces`.
+
 #### Example implementations
 
 - [element/stringInput]
