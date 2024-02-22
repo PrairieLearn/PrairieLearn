@@ -74,3 +74,38 @@ VALUES
   )
 RETURNING
   id;
+
+-- BLOCK select_and_lock_assessment_instance_for_instance_question
+SELECT
+  ai.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  iq.id = $instance_question_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK select_variant_for_instance_question
+SELECT
+  jsonb_set(
+    to_jsonb(v.*),
+    '{formatted_date}',
+    to_jsonb(
+      format_date_full_compact (v.date, ci.display_timezone)
+    )
+  )
+FROM
+  variants AS v
+  JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
+WHERE
+  v.instance_question_id = $instance_question_id
+  AND (
+    NOT $require_open
+    OR v.open
+  )
+  AND v.broken_at IS NULL
+ORDER BY
+  v.date DESC
+LIMIT
+  1;

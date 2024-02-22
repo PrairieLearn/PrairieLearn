@@ -65,8 +65,6 @@ export async function init() {
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',
       'instance_questions_grade.sql',
-      'instance_questions_lock.sql',
-      'instance_questions_select_variant.sql',
       'instance_questions_next_allowed_grade.sql',
       'submissions_lock.sql',
       'assessment_instances_update.sql',
