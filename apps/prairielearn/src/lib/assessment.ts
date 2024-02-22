@@ -461,11 +461,11 @@ export async function deleteAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  const deleted_id = await sqldb.queryOptionalRow(sql.delete_assessment_instance, {
-    assessment_id,
-    assessment_instance_id,
-    authn_user_id,
-  }, IdSchema);
+  const deleted_id = await sqldb.queryOptionalRow(
+    sql.delete_assessment_instance,
+    { assessment_id, assessment_instance_id, authn_user_id },
+    IdSchema,
+  );
   if (deleted_id == null) {
     throw error.make(403, 'This assessment instance does not exist in this assessment.');
   }
