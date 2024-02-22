@@ -287,7 +287,9 @@
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
 
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
+                    <a class="dropdown-item<%= row.users.length === 0 ? ' disabled' : '' %>"
+                       <% if (row.users.length > 0) { %>onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')"<% } %>
+                       href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
 
