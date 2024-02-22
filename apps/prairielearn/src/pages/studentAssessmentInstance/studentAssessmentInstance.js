@@ -4,7 +4,7 @@ import * as express from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, callAsync } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment';
 import {
@@ -23,6 +23,7 @@ import {
 } from '../../lib/db-types';
 import { uploadFile, deleteFile } from '../../lib/file-store';
 import { idsEqual } from '../../lib/id';
+import { getCourseLastSync } from '../../models/course';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -196,6 +197,19 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_instance') {
+      if (
+        res.locals.instance_role === 'Staff' &&
+        res.locals.authz_data.has_course_instance_permission_edit
+      ) {
+        await callAsync('assessment_instances_delete', [
+          res.locals.assessment_instance.id,
+          res.locals.authn_user.user_id,
+        ]);
+        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/`);
+      } else {
+        throw error.make(403, `permission denied: delete_instance`);
+      }
     } else {
       next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
@@ -276,6 +290,19 @@ router.get(
         }
       }
     }
+
+    if (
+      res.locals.instance_role === 'Staff' &&
+      res.locals.authz_data.has_course_instance_permission_edit
+    ) {
+      const course_last_sync = await getCourseLastSync(res.locals.course.id);
+      const instance_date = new Date(res.locals.assessment_instance.date);
+      if (course_last_sync > instance_date) {
+        res.locals.warn_newer_than_sync = `Assessment instance is older than
+        latest content sync.`;
+      }
+    }
+
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
