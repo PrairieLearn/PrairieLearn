@@ -9,11 +9,11 @@ SELECT
   (
     SELECT
       name
-    from
+    FROM
       groups
-    where
+    WHERE
       id = aap.group_id
-  ) as group_name,
+  ) AS group_name,
   (
     SELECT
       uid
@@ -21,8 +21,8 @@ SELECT
       users
     WHERE
       user_id = aap.user_id
-  ) as student_uid,
-  aap.id as id
+  ) AS student_uid,
+  aap.id AS id
 FROM
   assessment_access_policies AS aap
   LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)
