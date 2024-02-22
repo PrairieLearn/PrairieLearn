@@ -68,14 +68,7 @@ VALUES
     $group_id,
     $note,
     $start_date,
-    (
-      SELECT
-        user_id
-      FROM
-        users
-      WHERE
-        uid = $student_uid
-    )
+    $user_id
   );
 
 -- BLOCK update_assessment_access_policy
@@ -87,26 +80,10 @@ SET
   group_id = $group_id,
   note = $note,
   start_date = $start_date,
-  user_id = (
-    SELECT
-      user_id
-    FROM
-      users
-    WHERE
-      uid = $student_uid
-  )
+  user_id = $user_id
 WHERE
   assessment_id = $assessment_id
-  AND (
-    user_id = (
-      SELECT
-        user_id
-      FROM
-        users
-      WHERE
-        uid = $student_uid
-    )
-  );
+  AND user_id = $user_id;
 
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies

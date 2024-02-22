@@ -37,6 +37,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const user = await selectUserByUid(req.body.student_uid);
     if (req.body.__action === 'add_new_override') {
       const params = {
         assessment_id: res.locals.assessment.id,
@@ -46,9 +47,9 @@ router.post(
         group_name: req.body.group_name || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
-        user_id: req.body.student_uid,
-        student_uid: req.body.student_uid,
+        // student_uid: req.body.student_uid,
         group_id: null,
+        user_id: user?.user_id || null,
       };
       // First, validate if group belongs to the assessment
       if (res.locals.assessment.group_work) {
@@ -73,8 +74,10 @@ router.post(
         }
       } else {
         if (!params.user_id || params.group_name) {
-          throw error.make(400, 'Student UID is required for individual work assessments.');
+          throw error.make(400, 'Student User ID is required for individual work assessments.');
         }
+        
+       
         const isEnrolled = await userIsEnrolledInCourseInstance({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
@@ -92,6 +95,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
+      const user = await selectUserByUid(req.body.student_uid);
       const edit_params = {
         assessment_id: res.locals.assessment.id,
         credit: req.body.credit,
@@ -100,7 +104,8 @@ router.post(
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
         group_id: null,
-        student_uid: req.body.student_uid || null,
+        // student_uid: req.body.student_uid || null,
+        user_id: user?.user_id || null,
       };
       
       
@@ -129,6 +134,7 @@ router.post(
         if (!edit_params.user_id || edit_params.group_name) {
           throw error.make(400, 'Student UID is required for individual work assessments.');
         }
+        
         const isEnrolled = await userIsEnrolledInCourseInstance({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
