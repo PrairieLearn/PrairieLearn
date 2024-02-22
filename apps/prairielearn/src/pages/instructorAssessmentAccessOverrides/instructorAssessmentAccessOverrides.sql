@@ -1,11 +1,11 @@
 -- BLOCK select_assessment_access_policies
 SELECT
-  format_date_full_compact (aap.created_at, 'America/Chicago') AS created_at,
+  format_date_full_compact (aap.created_at, coalesce(ci.display_timezone, c.display_timezone)) AS created_at,
   aap.created_by::text AS created_by,
   aap.credit::text AS credit,
-  format_date_full_compact (aap.end_date, 'America/Chicago') AS end_date,
+  format_date_full_compact (aap.end_date, coalesce(ci.display_timezone, c.display_timezone)) AS end_date,
   aap.note AS note,
-  format_date_full_compact (aap.start_date, 'America/Chicago') AS start_date,
+  format_date_full_compact (aap.start_date, coalesce(ci.display_timezone, c.display_timezone)) AS start_date,
   (
     SELECT
       name
@@ -25,6 +25,8 @@ SELECT
   aap.id as id
 FROM
   assessment_access_policies AS aap
+  LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)
+  LEFT JOIN pl_courses AS c ON (c.id = $course_id)
 WHERE
   assessment_id = $assessment_id
 ORDER BY

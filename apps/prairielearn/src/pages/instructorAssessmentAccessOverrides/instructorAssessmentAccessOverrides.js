@@ -15,6 +15,8 @@ router.get(
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
       student_uid: req.body.student_uid,
+      course_instance_id: res.locals.course ? res.locals.course_instance.id : null,
+      course_id: res.locals.course ? res.locals.course.id : null
     });
     res.locals.policies = result.rows;
     // console.log(res.locals);
