@@ -83,7 +83,7 @@ WITH
   deleted_course_permissions AS (
     DELETE FROM course_permissions AS cp
     WHERE
-      cp.user_id = $user_id
+      cp.user_id = ANY ($user_ids::bigint[])
       AND cp.course_id = $course_id
     RETURNING
       cp.*
@@ -121,7 +121,7 @@ WITH
     DELETE FROM enrollments AS e USING course_instances AS ci
     WHERE
       ci.id = e.course_instance_id
-      AND e.user_id = $user_id
+      AND e.user_id = ANY ($user_ids::bigint[])
       AND ci.course_id = $course_id
     RETURNING
       e.*
