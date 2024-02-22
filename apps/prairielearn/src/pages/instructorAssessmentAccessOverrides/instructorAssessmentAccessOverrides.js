@@ -51,7 +51,10 @@ router.post(
         group_id: null,
       };
       // First, validate if group belongs to the assessment
-      if (params.group_name) {
+      if (res.locals.assessment.group_work) {
+        if (!params.group_name || params.user_id) {
+          throw error.make(400, 'Group name is required for group work assessments.');
+        }
         const group_result = await sqldb.queryZeroOrOneRowAsync(sql.select_group_in_assessment, {
           group_name: params.group_name,
           course_instance_id: res.locals.course_instance.id,
@@ -68,8 +71,10 @@ router.post(
         if (!params.group_id) {
           throw error.make(400, 'Group not found in this assessment.');
         }
-      } else if (params.user_id) {
-        
+      } else {
+        if (!params.user_id || params.group_name) {
+          throw error.make(400, 'Student UID is required for individual work assessments.');
+        }
         const isEnrolled = await userIsEnrolledInCourseInstance({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
@@ -77,7 +82,6 @@ router.post(
         if (!isEnrolled) {
           throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
         }
-        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
@@ -101,7 +105,10 @@ router.post(
       
       
       // Validate if group belongs to the assessment, otherwise check if student is enrolled in assessment
-      if (edit_params.group_name) {
+      if (res.locals.assessment.group_work) {
+        if (!edit_params.group_name || edit_params.user_id) {
+          throw error.make(400, 'Group name is required for group work assessments.');
+        }
         const group_result = await sqldb.queryAsync(sql.select_group_in_assessment, {
           group_name: edit_params.group_name,
           course_instance_id: res.locals.course_instance.id,
@@ -118,7 +125,10 @@ router.post(
         if (!edit_params.group_id) {
           throw error.make(400, 'Group does not belong to the current course instance.');
         }
-      } else if (edit_params.student_uid) {
+      } else {
+        if (!edit_params.user_id || edit_params.group_name) {
+          throw error.make(400, 'Student UID is required for individual work assessments.');
+        }
         const isEnrolled = await userIsEnrolledInCourseInstance({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
