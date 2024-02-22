@@ -1,0 +1,1 @@
+This question asks students to compute value of a mathematical expression given two numbers that are generated at random. The question expects a numerical answer and check for correctness using the default grading method (check relative and absolute tolerances).

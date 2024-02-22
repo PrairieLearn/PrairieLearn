@@ -1,1 +1,0 @@
-This multiple-choice question does not include a server.py. Students are asked to select the colors that can be found in a rainbow. The question randomly selects one of the 7 colors of the rainbow as the correct answer, and 3 other distractors.

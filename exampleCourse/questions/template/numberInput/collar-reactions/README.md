@@ -1,1 +1,0 @@
-The question describes a two rod system, illustrated by a provided image, with geometry and load parameters randomly generated. Students are asked to compute the magnitude of reaction forces and moments at two different locations.

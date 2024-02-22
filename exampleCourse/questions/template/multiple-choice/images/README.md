@@ -1,0 +1,1 @@
+This question demonstrates using `<pl-figure>` to present images as multiple-choice options. One correct answer and three distractors are randomly selected from a list of seven images. The images are served from `clientFilesQuestion` in the question directory.

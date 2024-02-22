@@ -1,1 +1,0 @@
-This question describes a circular shaft made of aluminum sleeve and steel core. The outer and inner diameters are generated at random. The shaft experiences a torque, with randomly generated magnitude. Students need to compute the magnitude of the maximum shear stress in either the steel core or the aluminum sleeve, and this option is also randomly selected.

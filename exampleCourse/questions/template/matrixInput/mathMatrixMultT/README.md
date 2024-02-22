@@ -1,1 +1,0 @@
-This question provides one matrix using latex format. The size of the matrix, and its entries, are randomly generated. Students are asked to compute the multiplication of the matrix with its transpose, and provide their answer using either matlab or python format.

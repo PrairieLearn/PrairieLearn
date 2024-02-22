@@ -1,0 +1,1 @@
+This question given a randomly generated integer and asks students to convert the number to its binary representation. The answer should be submitted as a string. `remove-spaces="true"` is used to remove any whitespace from the submitted answer.

@@ -1,1 +1,0 @@
-This question describes two masses on an inclined plane. Parameters such as mass, charge and angle are randomly generated. Students are asked to compute two numerical answers: the distance between particles and particle acceleration under a given distance. The answers are checked for correctness using the default relative and absolute tolerances.

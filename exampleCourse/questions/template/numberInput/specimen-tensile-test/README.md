@@ -1,1 +1,0 @@
-This question describes a circular rod that experiences an elongation. All question variables, such as material properties, load and geometry are randomly generated. Students are asked to determine the elastic modulus, poisson's ratio and change in diameter.
