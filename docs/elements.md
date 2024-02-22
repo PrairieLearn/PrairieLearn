@@ -1192,8 +1192,12 @@ line callouts.
 
 ![](elements/pl-code.png)
 
+<!-- prettier-ignore -->
 ```html
-<pl-code language="python"> def square(x): return x * x </pl-code>
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
 ```
 
 #### Customizations
