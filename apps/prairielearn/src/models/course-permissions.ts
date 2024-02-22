@@ -68,10 +68,14 @@ export async function deleteCoursePermissions({
   authn_user_id,
 }: {
   course_id: string;
-  user_id: string;
+  user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await queryAsync(sql.delete_course_permissions, { course_id, user_id, authn_user_id });
+  await queryAsync(sql.delete_course_permissions, {
+    course_id,
+    user_ids: Array.isArray(user_id) ? user_id : [user_id],
+    authn_user_id,
+  });
   // Do not throw an exception if no course permissions to delete
 }
 
@@ -88,9 +92,11 @@ export async function deleteCoursePermissionsForNonOwners({
       { course_id },
       CoursePermissionSchema,
     );
-    for (const nonOwner of nonOwners) {
-      await deleteCoursePermissions({ course_id, user_id: nonOwner.user_id, authn_user_id });
-    }
+    await deleteCoursePermissions({
+      course_id,
+      user_id: nonOwners.map((user) => user.user_id),
+      authn_user_id,
+    });
   });
 }
 
@@ -107,9 +113,11 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
       { course_id },
       CoursePermissionSchema,
     );
-    for (const user of usersWithoutAccess) {
-      await deleteCoursePermissions({ course_id, user_id: user.user_id, authn_user_id });
-    }
+    await deleteCoursePermissions({
+      course_id,
+      user_id: usersWithoutAccess.map((user) => user.user_id),
+      authn_user_id,
+    });
   });
 }
 

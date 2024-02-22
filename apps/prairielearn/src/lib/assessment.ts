@@ -455,3 +455,28 @@ export async function updateAssessmentQuestionStatsForAssessment(
     await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
+
+export async function deleteAssessmentInstance(
+  assessment_id: string,
+  assessment_instance_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  const deleted_id = await sqldb.queryOptionalRow(
+    sql.delete_assessment_instance,
+    { assessment_id, assessment_instance_id, authn_user_id },
+    IdSchema,
+  );
+  if (deleted_id == null) {
+    throw error.make(403, 'This assessment instance does not exist in this assessment.');
+  }
+}
+
+export async function deleteAllAssessmentInstancesForAssessment(
+  assessment_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+    assessment_id,
+    authn_user_id,
+  });
+}

@@ -136,7 +136,7 @@ export interface OpenTelemetryConfigEnabled {
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
-  openTelemetrySpanProcessor?: 'batch' | 'simple';
+  openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
   honeycombApiKey?: string;
   honeycombDataset?: string;
   serviceName?: string;
@@ -213,6 +213,26 @@ function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExport
   }
 }
 
+function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor {
+  if (typeof config.openTelemetrySpanProcessor === 'object') {
+    return config.openTelemetrySpanProcessor;
+  }
+
+  const traceExporter = getTraceExporter(config);
+
+  switch (config.openTelemetrySpanProcessor ?? 'batch') {
+    case 'batch': {
+      return new FilterBatchSpanProcessor(traceExporter, filter);
+    }
+    case 'simple': {
+      return new SimpleSpanProcessor(traceExporter);
+    }
+    default: {
+      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
+    }
+  }
+}
+
 /**
  * Should be called once we've loaded our config; this will allow us to set up
  * the correct metadata for the Honeycomb exporter. We don't actually have that
@@ -230,8 +250,8 @@ export async function init(config: OpenTelemetryConfig) {
     return;
   }
 
-  const traceExporter = getTraceExporter(config);
   const metricExporter = getMetricExporter(config);
+  const spanProcessor = getSpanProcessor(config);
 
   let sampler: Sampler;
   switch (config.openTelemetrySamplerType ?? 'always-on') {
@@ -251,21 +271,6 @@ export async function init(config: OpenTelemetryConfig) {
     }
     default:
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
-  }
-
-  let spanProcessor: SpanProcessor;
-  switch (config.openTelemetrySpanProcessor ?? 'batch') {
-    case 'batch': {
-      spanProcessor = new FilterBatchSpanProcessor(traceExporter, filter);
-      break;
-    }
-    case 'simple': {
-      spanProcessor = new SimpleSpanProcessor(traceExporter);
-      break;
-    }
-    default: {
-      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
-    }
   }
 
   // Much of this functionality is copied from `@opentelemetry/sdk-node`, but
