@@ -5,7 +5,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
-      <div class="modal-dialog modal-xl border-info" role="document">
+      <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
         <form
           name="rubric-settings"
           method="POST"
@@ -229,7 +229,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                               <span class="sr-only">Delete</span>
                             </button>
                           </td>
-                          <td style="max-width: 5rem">
+                          <td style="max-width: 5rem; min-width: 4rem">
                             <input
                               type="number"
                               class="form-control js-rubric-item-points"
@@ -278,7 +278,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                             </label>
                           </td>
                           <td>
-                            <div class="form-check">
+                            <div class="form-check form-check-inline">
                               <label class="form-check-label">
                                 <input
                                   type="radio"
@@ -289,6 +289,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                                   ${item.always_show_to_students ? 'checked' : ''}
                                 />Always
                               </label>
+                            </div>
+                            <div class="form-check form-check-inline">
                               <label class="form-check-label">
                                 <input
                                   type="radio"
@@ -316,7 +318,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         ? 'd-none'
                         : ''}"
                     >
-                      <td colspan="6">
+                      <td colspan="7">
                         <em>
                           This question does not have any rubric items. Click "Add item" below to
                           add
