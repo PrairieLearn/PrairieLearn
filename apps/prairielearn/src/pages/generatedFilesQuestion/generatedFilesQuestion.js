@@ -13,7 +13,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 module.exports = function (options = { publicEndpoint: false }) {
   const router = express.Router({ mergeParams: true });
   router.get(
-    '/variant/:variant_id/*',
+    '/variant/:variant_id(\\d+)/*',
     asyncHandler(async function (req, res) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);

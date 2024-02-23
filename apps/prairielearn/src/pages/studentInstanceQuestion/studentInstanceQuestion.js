@@ -231,7 +231,7 @@ router.post(
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     const { submissionPanel } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
