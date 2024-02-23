@@ -128,17 +128,17 @@ OFFSET
 -- BLOCK close_issues
 WITH
   updated_issues AS (
-    UPDATE issues AS e
+    UPDATE issues AS i
     SET
       open = FALSE
     WHERE
-      e.course_id = $course_id
-      AND e.course_caused
-      AND e.open IS TRUE
-      AND e.id = ANY ($issue_ids::BIGINT[])
+      i.course_id = $course_id
+      AND i.course_caused
+      AND i.open IS TRUE
+      AND i.id = ANY ($issue_ids::BIGINT[])
     RETURNING
-      e.id,
-      e.open
+      i.id,
+      i.open
   ),
   inserted_audit_logs AS (
     INSERT INTO
