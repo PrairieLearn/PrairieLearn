@@ -14,12 +14,12 @@ const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
+import { cache } from '@prairielearn/cache';
 
 import * as schemas from '../schemas';
 import { config } from '../lib/config';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
 import * as jsonLoad from '../lib/json-load';
-import * as cache from '../lib/cache';
 import { getOrUpdateCourseCommitHash } from '../models/course';
 import * as markdown from '../lib/markdown';
 import * as chunks from '../lib/chunks';
@@ -1043,7 +1043,7 @@ export async function generate(question, course, variant_seed) {
     };
     _.extend(data.options, getContextOptions(context));
 
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'generate',
         codeCaller,
@@ -1075,7 +1075,7 @@ export async function prepare(question, course, variant) {
     };
     _.extend(data.options, getContextOptions(context));
 
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'prepare',
         codeCaller,
@@ -1105,10 +1105,10 @@ export async function prepare(question, course, variant) {
 /**
  * @param {'question' | 'answer' | 'submission'} panel
  * @param {import('../lib/code-caller').CodeCaller} codeCaller
- * @param {any} variant
- * @param {any} submission
- * @param {any} course
- * @param {any} locals
+ * @param {import('../lib/db-types').Variant} variant
+ * @param {import('../lib/db-types').Submission?} submission
+ * @param {import('../lib/db-types').Course} course
+ * @param {Record<string, any>} locals
  * @param {QuestionProcessingContext} context
  * @returns {Promise<RenderPanelResult>}
  */
@@ -1144,8 +1144,8 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed, 36),
-    options: _.get(variant, 'options', {}),
+    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    options: _.get(variant, 'options') ?? {},
     raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
@@ -1231,7 +1231,6 @@ export async function render(
   submission,
   submissions,
   course,
-  course_instance,
   locals,
 ) {
   return instrumented('freeform.render', async () => {
@@ -1255,7 +1254,7 @@ export async function render(
     // for where this is actually used.
     locals.question_renderer = context.renderer;
 
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       if (renderSelection.question) {
         const {
           courseIssues: newCourseIssues,
@@ -1631,7 +1630,7 @@ export async function file(filename, variant, question, course) {
       context,
       async () => {
         // function to compute the file data and return the cachedData
-        return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
             'file',
             codeCaller,
@@ -1670,7 +1669,7 @@ export async function parse(submission, variant, question, course) {
       gradable: _.get(submission, 'gradable', true),
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
         codeCaller,
@@ -1715,7 +1714,7 @@ export async function grade(submission, variant, question, question_course) {
       gradable: submission.gradable,
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
         codeCaller,
@@ -1761,7 +1760,7 @@ export async function test(variant, question, course, test_type) {
       test_type: test_type,
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',
         codeCaller,

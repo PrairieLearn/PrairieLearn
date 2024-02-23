@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import { gradeVariantAsync } from './grading';
+import { gradeVariant } from './grading';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
@@ -16,6 +16,7 @@ import {
   QuestionSchema,
   VariantSchema,
   ClientFingerprintSchema,
+  AssessmentInstanceSchema,
 } from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
@@ -136,7 +137,6 @@ export async function update(
 ): Promise<boolean> {
   debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
     const updateResult = await sqldb.callOneRowAsync('assessment_instances_update', [
       assessment_instance_id,
       authn_user_id,
@@ -188,8 +188,17 @@ export async function gradeAssessmentInstanceAsync(
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
-      await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
-      await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+      const assessmentInstance = await sqldb.queryOptionalRow(
+        sql.select_and_lock_assessment_instance,
+        { assessment_instance_id },
+        AssessmentInstanceSchema,
+      );
+      if (assessmentInstance == null) {
+        throw error.make(404, 'Assessment instance not found');
+      }
+      if (!assessmentInstance.open) {
+        throw error.make(403, 'Assessment instance is not open');
+      }
 
       if (close) {
         // If we're supposed to close the assessment, do it *before* we
@@ -213,7 +222,7 @@ export async function gradeAssessmentInstanceAsync(
   await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
-    await gradeVariantAsync(
+    await gradeVariant(
       row.variant,
       check_submission_id,
       row.question,
@@ -360,12 +369,12 @@ export async function updateAssessmentInstanceScore(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const max_points = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance_max_points,
+    const { max_points } = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      z.number(),
+      AssessmentInstanceSchema,
     );
-    const points = (score_perc * max_points) / 100;
+    const points = (score_perc * (max_points ?? 0)) / 100;
     await sqldb.queryAsync(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
@@ -381,12 +390,12 @@ export async function updateAssessmentInstancePoints(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const max_points = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance_max_points,
+    const { max_points } = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      z.number(),
+      AssessmentInstanceSchema,
     );
-    const score_perc = (points / (max_points > 0 ? max_points : 1)) * 100;
+    const score_perc = (points / (max_points != null && max_points > 0 ? max_points : 1)) * 100;
     await sqldb.queryAsync(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
@@ -436,4 +445,47 @@ export async function selectAssessmentInstanceLogCursor(
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
+}
+
+export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
+  await sqldb.queryAsync(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+}
+
+export async function updateAssessmentQuestionStatsForAssessment(
+  assessment_id: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const assessment_questions = await sqldb.queryRows(
+      sql.select_assessment_questions,
+      { assessment_id },
+      IdSchema,
+    );
+    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
+  });
+}
+
+export async function deleteAssessmentInstance(
+  assessment_id: string,
+  assessment_instance_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  const deleted_id = await sqldb.queryOptionalRow(
+    sql.delete_assessment_instance,
+    { assessment_id, assessment_instance_id, authn_user_id },
+    IdSchema,
+  );
+  if (deleted_id == null) {
+    throw error.make(403, 'This assessment instance does not exist in this assessment.');
+  }
+}
+
+export async function deleteAllAssessmentInstancesForAssessment(
+  assessment_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+    assessment_id,
+    authn_user_id,
+  });
 }

@@ -3,6 +3,7 @@
 dnf -y update
 
 dnf install -y \
+    util-linux \
     sudo \
     gcc \
     make \

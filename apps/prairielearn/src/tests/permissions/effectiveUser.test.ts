@@ -7,6 +7,12 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+  updateCourseInstancePermissionsRole,
+  updateCoursePermissionsRole,
+} from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -42,18 +48,18 @@ describe('effective user', function () {
       '000000001',
       'dev',
     ]);
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'staff03@illinois.edu',
-      'Editor',
-      2,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@illinois.edu',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'staff03@illinois.edu',
+      course_role: 'Editor',
+      authn_user_id: '2',
+    });
     await ensureEnrollment({
       user_id: '4',
       course_instance_id: '1',
@@ -137,13 +143,13 @@ describe('effective user', function () {
   });
 
   step('instructor (student data viewer) cannot emulate student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
     };
@@ -154,13 +160,13 @@ describe('effective user', function () {
   });
 
   step('instructor (student data editor) can emulate student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-      1,
-      2,
-      1,
-      'Student Data Editor',
-      2,
-    ]);
+    await updateCourseInstancePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
     };
@@ -281,7 +287,12 @@ describe('effective user', function () {
   });
 
   step('cannot request uid of course editor as course viewer', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
@@ -291,14 +302,19 @@ describe('effective user', function () {
   });
 
   step('can request uid of student data viewer as student data editor', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Owner', 1]);
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      3,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '3',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
@@ -308,20 +324,20 @@ describe('effective user', function () {
   });
 
   step('cannot request uid of student data editor as student data viewer', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
-    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-      1,
-      3,
-      1,
-      'Student Data Editor',
-      2,
-    ]);
+    await updateCourseInstancePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
+    await updateCourseInstancePermissionsRole({
+      course_id: '1',
+      user_id: '3',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
@@ -331,7 +347,12 @@ describe('effective user', function () {
   });
 
   step('instructor can request lower course role', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await updateCoursePermissionsRole({
+      course_id: '1',
+      user_id: '2',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Previewer',
@@ -350,13 +371,13 @@ describe('effective user', function () {
   });
 
   step('instructor can request lower course instance role', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-      1,
-      2,
-      1,
-      'Student Data Editor',
-      2,
-    ]);
+    await updateCourseInstancePermissionsRole({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: '2',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Viewer',
@@ -366,13 +387,13 @@ describe('effective user', function () {
   });
 
   step('instructor cannot request higher course instance role', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    updateCourseInstancePermissionsRole({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: '2',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Editor',

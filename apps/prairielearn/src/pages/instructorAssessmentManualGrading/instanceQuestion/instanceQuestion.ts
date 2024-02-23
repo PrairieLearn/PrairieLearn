@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler = require('express-async-handler');
-import * as util from 'util';
 import * as qs from 'qs';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
@@ -77,17 +76,17 @@ router.get(
 router.get(
   '/variant/:variant_id/submission/:submission_id',
   asyncHandler(async (req, res) => {
-    const results = await util.promisify(renderPanelsForSubmission)(
-      req.params.submission_id,
-      res.locals.question.id,
-      res.locals.instance_question.id,
-      req.params.variant_id,
-      res.locals.urlPrefix,
-      null, // questionContext
-      null, // csrfToken
-      null, // authorizedEdit
-      false, // renderScorePanels
-    );
+    const results = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: res.locals.instance_question.id,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
     res.send({ submissionPanel: results.submissionPanel });
   }),
 );
@@ -111,9 +110,11 @@ const PostBodySchema = z.union([
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
     modified_at: z.string(),
-    rubric_item_selected_manual: IdSchema.or(IdSchema.array())
+    rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
-      .transform((val) => (val == null ? [] : Array.isArray(val) ? val : [val])),
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
     score_manual_adjust_points: z.coerce.number().nullish(),
     use_score_perc: z.literal('on').optional(),
     score_manual_points: z.coerce.number().nullish(),
@@ -139,18 +140,20 @@ const PostBodySchema = z.union([
       .literal('true')
       .optional()
       .transform((val) => val === 'true'),
-    rubric_item: z.record(
-      z.string(),
-      z.object({
-        id: z.string().optional(),
-        order: z.coerce.number(),
-        points: z.coerce.number(),
-        description: z.string(),
-        explanation: z.string().optional(),
-        grader_note: z.string().optional(),
-        always_show_to_students: z.string().transform((val) => val === 'true'),
-      }),
-    ),
+    rubric_item: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string().optional(),
+          order: z.coerce.number(),
+          points: z.coerce.number(),
+          description: z.string(),
+          explanation: z.string().optional(),
+          grader_note: z.string().optional(),
+          always_show_to_students: z.string().transform((val) => val === 'true'),
+        }),
+      )
+      .default({}),
   }),
   z.object({
     __action: z.custom<`reassign_${string}`>(
@@ -168,7 +171,12 @@ router.post(
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      qs.parse(qs.stringify(req.body)),
+      // Array parsing is disabled, as it has special cases for 22+ items that
+      // we don't want to double-handle, so we always receive an object and
+      // convert it to an array if necessary
+      // (https://github.com/ljharb/qs#parsing-arrays).
+      // The order of the items in arrays is never important, so using Object.values is fine.
+      qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
@@ -219,7 +227,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item || {}), // rubric items
+          Object.values(body.rubric_item), // rubric items
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
@@ -247,10 +255,7 @@ router.post(
         ),
       );
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
