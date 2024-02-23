@@ -160,6 +160,30 @@ async function selectQuestion(
   }
 }
 
+async function lockAssessmentInstanceForInstanceQuestion(
+  instance_question_id: string,
+): Promise<void> {
+  const assessment_instance_id = await sqldb.queryOptionalRow(
+    sql.select_and_lock_assessment_instance_for_instance_question,
+    { instance_question_id },
+    IdSchema,
+  );
+  if (assessment_instance_id == null) {
+    throw error.make(404, 'Instance question not found');
+  }
+}
+
+async function selectVariantForInstanceQuestion(
+  instance_question_id: string,
+  require_open: boolean,
+): Promise<VariantWithFormattedDate | null> {
+  return await sqldb.queryOptionalRow(
+    sql.select_variant_for_instance_question,
+    { instance_question_id, require_open },
+    VariantWithFormattedDateSchema,
+  );
+}
+
 /**
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
  * @protected
@@ -200,7 +224,7 @@ async function makeAndInsertVariant(
     let new_number: number | null = 1;
 
     if (instance_question_id != null) {
-      await sqldb.callAsync('instance_questions_lock', [instance_question_id]);
+      await lockAssessmentInstanceForInstanceQuestion(instance_question_id);
       const instance_question = await sqldb.queryOptionalRow(
         sql.select_instance_question_data,
         { instance_question_id },
@@ -214,10 +238,9 @@ async function makeAndInsertVariant(
       // generating two variants for the same instance question. If we're the
       // second one to try and insert a variant, just pull the existing variant
       // back out of the database and use that instead.
-      const existing_variant = await sqldb.callOptionalRow(
-        'instance_questions_select_variant',
-        [instance_question_id, require_open],
-        VariantWithFormattedDateSchema.nullable(),
+      const existing_variant = await selectVariantForInstanceQuestion(
+        instance_question_id,
+        require_open,
       );
       if (existing_variant != null) {
         return existing_variant;
@@ -316,12 +339,11 @@ export async function ensureVariant(
   client_fingerprint_id: string | null,
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
-    // see if we have a useable existing variant, otherwise make a new one
-    const variant = await sqldb.callOptionalRow(
-      'instance_questions_select_variant',
-      [instance_question_id, require_open],
-      VariantWithFormattedDateSchema.nullable(),
-    );
+    // See if we have a useable existing variant, otherwise make a new one. This
+    // test is also performed in makeAndInsertVariant inside a transaction to
+    // avoid race conditions, but we do it here too to avoid the
+    // generate/prepare overhead in the most common cases.
+    const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
     if (variant != null) {
       return variant;
     }
