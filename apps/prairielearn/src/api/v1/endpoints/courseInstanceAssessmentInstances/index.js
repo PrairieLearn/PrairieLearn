@@ -52,7 +52,7 @@ router.get(
 );
 
 router.get(
-  '/:unsafe_assessment_instance_id(\\d+)(\\d+)/log',
+  '/:unsafe_assessment_instance_id(\\d+)/log',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_assessment_instance, {
       course_instance_id: res.locals.course_instance.id,
