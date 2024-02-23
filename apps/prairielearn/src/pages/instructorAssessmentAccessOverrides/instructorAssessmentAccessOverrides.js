@@ -37,8 +37,16 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const user = await selectUserByUid(req.body.student_uid);
+    
     if (req.body.__action === 'add_new_override') {
+      const isEnrolled = await userIsEnrolledInCourseInstance({
+        uid: req.body.student_uid,
+        course_instance_id: res.locals.course_instance.id,
+      });
+      if (!isEnrolled) {
+        throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
+      }
+      const user = await selectUserByUid(req.body.student_uid);
       const params = {
         assessment_id: res.locals.assessment.id,
         created_by: res.locals.authn_user.user_id,
@@ -95,6 +103,13 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
+      const isEnrolled = await userIsEnrolledInCourseInstance({
+        uid: req.body.student_uid,
+        course_instance_id: res.locals.course_instance.id,
+      });
+      if (!isEnrolled) {
+        throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
+      }
       const user = await selectUserByUid(req.body.student_uid);
       const edit_params = {
         assessment_id: res.locals.assessment.id,

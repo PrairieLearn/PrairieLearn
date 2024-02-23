@@ -21,18 +21,9 @@ CREATE FUNCTION
 AS $$
 DECLARE
     user_result record;
-    group_id bigint;
+    
 BEGIN
-    SELECT g.id  
-    INTO group_id
-    FROM groups as g JOIN group_configs AS gc 
-                ON g.group_config_id = gc.id 
-        JOIN group_users AS gu 
-                ON gu.group_id = g.id 
-    WHERE gc.assessment_id = authz_assessment.assessment_id 
-        AND gu.user_id = (authz_data->'user'->>'user_id')::bigint 
-        AND g.deleted_at IS NULL;
-        
+    
     -- authorization for the effective user
     SELECT *
     INTO user_result
@@ -45,8 +36,7 @@ BEGIN
             (authz_data->'user'->>'user_id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
-            display_timezone,
-            group_id
+            display_timezone
         );
     
     
@@ -108,6 +98,6 @@ BEGIN
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
     next_active_time := user_result.next_active_time;
-    group_id:=group_id;
+    
 END;
 $$ LANGUAGE plpgsql VOLATILE;
