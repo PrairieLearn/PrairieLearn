@@ -5,7 +5,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
-      <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
+      <div class="modal-dialog modal-draggable border-info" style="max-width: 98vw" role="document">
         <form
           name="rubric-settings"
           method="POST"
@@ -18,7 +18,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="use_rubric" value="true" />
 
           <div class="modal-content">
-            <div class="modal-header bg-info text-light">
+            <div class="modal-header bg-info text-light" style="cursor: move">
               <h5 class="modal-title">Rubric settings</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>

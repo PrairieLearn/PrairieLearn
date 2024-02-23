@@ -34,6 +34,7 @@ $(() => {
 
 function resetInstructorGradingPanel() {
   $('[data-toggle="tooltip"]').tooltip();
+  $('.modal-draggable').draggable({ cursor: 'move', handle: '.modal-header' });
 
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
     let clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {

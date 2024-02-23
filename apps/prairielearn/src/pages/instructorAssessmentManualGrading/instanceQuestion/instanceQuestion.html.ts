@@ -37,6 +37,7 @@ export function InstanceQuestion({
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        <script src="${nodeModulesAssetPath('jquery-ui-dist/jquery-ui.min.js')}"></script>
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
         </script>
