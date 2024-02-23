@@ -55,7 +55,6 @@ router.post(
         group_name: req.body.group_name || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
-        // student_uid: req.body.student_uid,
         group_id: null,
         user_id: user?.user_id || null,
       };
@@ -119,7 +118,6 @@ router.post(
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
         group_id: null,
-        // student_uid: req.body.student_uid || null,
         user_id: user?.user_id || null,
       };
       
