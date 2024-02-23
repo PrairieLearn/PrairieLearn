@@ -1,6 +1,6 @@
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { z } from 'zod';
-import { CourseInstanceSchema } from '../lib/db-types';
+import { type CourseInstance, CourseInstanceSchema } from '../lib/db-types';
 import { idsEqual } from '../lib/id';
 
 const sql = loadSqlEquiv(__filename);
@@ -11,6 +11,16 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
   has_course_instance_permission_view: z.boolean(),
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
+
+export async function selectCourseInstanceById(
+  course_instance_id: string,
+): Promise<CourseInstance | null> {
+  return queryOptionalRow(
+    sql.select_course_instance_by_id,
+    { course_instance_id },
+    CourseInstanceSchema,
+  );
+}
 
 /**
  * Returns all course instances to which the given user has staff access.

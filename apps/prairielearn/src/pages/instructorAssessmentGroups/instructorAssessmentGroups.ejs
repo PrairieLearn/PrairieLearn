@@ -235,8 +235,8 @@
             <tr data-test-group-id="<%= row.group_id %>">
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
-              <td class="text-center" style="word-break:break-all;">
-                <small><%= row.uid_list.length > 0 ? row.uid_list : '(empty)' %></small>
+              <td class="text-center">
+                <small><%= row.users.length > 0 ? row.users.map((user) => user.uid).join(', ') : '(empty)' %></small>
               </td>
               <% if (authz_data.has_course_instance_permission_edit) { %>
               <td class="text-center">
@@ -287,7 +287,9 @@
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
 
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
+                    <a class="dropdown-item<%= row.users.length === 0 ? ' disabled' : '' %>"
+                       <% if (row.users.length > 0) { %>onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')"<% } %>
+                       href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
 

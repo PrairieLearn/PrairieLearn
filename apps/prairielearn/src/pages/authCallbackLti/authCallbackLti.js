@@ -4,13 +4,13 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
+const { cache } = require('@prairielearn/cache');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const error = require('@prairielearn/error');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
-const cache = require('../../lib/cache');
 const { shouldSecureCookie } = require('../../lib/cookie');
 
 const TIME_TOLERANCE_SEC = 3000;

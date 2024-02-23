@@ -9,6 +9,8 @@ const { setTimeout: sleep } = require('node:timers/promises');
 
 const { logger } = require('@prairielearn/logger');
 const { config } = require('../config');
+const chunks = require('../chunks');
+const { features } = require('../features');
 const load = require('../load');
 const { CodeCallerContainer, init: initCodeCallerDocker } = require('./code-caller-container');
 const { CodeCallerNative } = require('./code-caller-native');
@@ -170,11 +172,11 @@ module.exports = {
    * disposes of it once it has been used.
    *
    * @template T
-   * @param {string} coursePath
+   * @param {import('../db-types').Course} course
    * @param {(codeCaller: CodeCaller) => Promise<T>} fn
    * @returns {Promise<T>}
    */
-  async withCodeCaller(coursePath, fn) {
+  async withCodeCaller(course, fn) {
     if (config.workersExecutionMode === 'disabled') {
       throw new Error('Code execution is disabled');
     }
@@ -192,13 +194,23 @@ module.exports = {
       });
     }
 
+    // Determine if this course is allowed to use `rpy2`.
+    const allowRpy2 = await features.enabled('allow-rpy2', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
+
     const jobUuid = uuidv4();
     load.startJob('python_callback_waiting', jobUuid);
 
     const codeCaller = await getHealthyCodeCaller();
 
     try {
-      await codeCaller.prepareForCourse(coursePath);
+      const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+      });
     } catch (err) {
       // If we fail to prepare for a course, assume that the code caller is
       // broken and dispose of it.

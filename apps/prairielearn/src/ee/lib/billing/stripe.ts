@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import * as cache from '../../../lib/cache';
+import { cache } from '@prairielearn/cache';
 import { config } from '../../../lib/config';
 import { selectAndLockUserById, selectUserById } from '../../../models/user';
 import { PlanName } from './plans-types';
