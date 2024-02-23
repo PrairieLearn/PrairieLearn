@@ -12,13 +12,13 @@
   <script>
     $(function () {
       $('[data-toggle="popover"]').popover({ sanitize: false });
-      // Prevent the dropdown menu from closing when the popover is opened.
+
+      // Prevent the dropdown menu from closing when the popover is opened. This
+      // will still cause the dropdown menu to close when the user clicks inside
+      // of the popover, but that does not have an easy solution, so will be
+      // ignored for now.
       $('.js-group-action[data-toggle="popover"]').on("click", (e) => {
         e.stopPropagation();
-      });
-      // Hide all popovers when the dropdown menu is closed.
-      $('.js-group-action-dropdown').on('hide.bs.dropdown', () => {
-        $('.js-group-action[data-toggle="popover"]').popover("hide");
       });
     });
 
@@ -264,7 +264,7 @@
                       data-container="body"
                       data-html="true"
                       data-placement="auto"
-                      title="Add Members"
+                      title="Add members"
                       data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>"
                     >
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
@@ -279,7 +279,7 @@
                       data-container="body"
                       data-html="true"
                       data-placement="auto"
-                      title="Remove Members"
+                      title="Remove members"
                       data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>"
                       <% } %>
                     >
@@ -292,7 +292,7 @@
                       data-container="body"
                       data-html="true"
                       data-placement="auto"
-                      title="Confirm delete this group"
+                      title="Delete group"
                       data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>"
                     >
                       <i class="fa fa-times" aria-hidden="true"></i> Delete group
