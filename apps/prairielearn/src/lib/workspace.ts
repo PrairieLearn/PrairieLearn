@@ -454,6 +454,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
                 msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
                 data: file,
               });
+              return null;
             }
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
