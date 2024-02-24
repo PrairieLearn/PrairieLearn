@@ -83,7 +83,7 @@ SET
   user_id = $user_id
 WHERE
   assessment_id = $assessment_id
-  AND user_id = $user_id;
+  AND id = $policy_id;
 
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies

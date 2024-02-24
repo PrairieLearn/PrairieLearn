@@ -27,7 +27,6 @@
 				event.preventDefault();
 				var button = $(this);
 				var editOverrideForm = $('#edit-override-form');
-				
 				editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
 				editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
 				editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
@@ -41,9 +40,9 @@
 				editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
 				editOverrideForm.find('#edit-note').val(button.data('note'));
 				editOverrideForm.find('#edit-type').val(button.data('type'));
-
-				// Show the modal form
-				$('#editPolicyModal').modal('show');
+				var policyId = $(this).data('policy-id');
+				$('#edit-override-form input[name="policy_id"]').val(policyId);		
+				$('#editPolicyModal').modal('show'); // Show the modal form
 			});
 				// Event listener for delete button
 				$('.delete-button').on('click', function () {
@@ -148,7 +147,9 @@
 							<form id="edit-override-form" method="POST">
 								<input type="hidden" name="__action" value="edit_override">
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-								<% if (!assessment.group_work) { %>
+								<input type="hidden" name="policy_id" id="policy_id">
+								
+								<% if (!assessment.group_work) {  %>
 								<div class="form-group">
 									<label for="student_uid">Student UID</label>
 									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
@@ -205,7 +206,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<% policies.forEach(function (policy) { %>
+						<% policies.forEach(function (policy) {  %>
 							<tr>
 								<% if (assessment.group_work) { %>
 									<td><%= policy.group_name %></td>
@@ -219,6 +220,12 @@
 								<td><%= policy.credit %></td>
 								<td><%= policy.note ? policy.note : '-' %></td>
 								<td>
+									<form>
+										<input type="hidden" name="policy_id" value="<%= policy.id %>">
+										
+									</form>
+								</td>
+								<td>
 									<div class="dropdown">
 										<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 											Action
@@ -226,14 +233,17 @@
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
 											<form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-												<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
+												<input type="hidden" name="__action" value="edit_override">
+													
+
+													<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">
+														
 													<i class="fas fa-edit"></i> Edit
-												</button>												
+												</button>
 											</form>
 											<form name="delete-override-form" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 												<input type="hidden" name="__action" value="delete_override">
-												<input type="hidden" name="policy_id" value="<%= policy.id %>">
 													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
 													<i class="fas fa-remove"></i> Delete
 												</button>
@@ -242,6 +252,7 @@
 										</div>
 									</div>
 								</td>
+								
 							</tr>
 						<% }); %>
 					</tbody>
