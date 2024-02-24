@@ -1,17 +1,30 @@
 <pl-question-panel>
   <p>
-    Questions below were designed to showcase the different features of 
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>. 
-    The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
-    is to allow users to enter only <b>integer values</b>. That is, users are only able to enter whole numbers like -10, 0, 3, 44, and so on. The correct value of $c$ in all questions below is <samp>{{correct_answers.c_1}}</samp>.
+    Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      ><code>pl-integer-input</code></a
+    >. The goal of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      ><code>pl-integer-input</code></a
+    >
+    is to allow users to enter only <b>integer values</b>. That is, users are only able to enter
+    whole numbers like -10, 0, 3, 44, and so on. The correct value of $c$ in all questions below is
+    <samp>{{correct_answers.c_1}}</samp>.
   </p>
 </pl-question-panel>
 
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>Within this question, you can observe the default behavior of the <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a> element. In particular, the default input field has help text of "integer" as a placeholder as well as a question button.</p>
-      <p> Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$ </p>
+      <p>
+        Within this question, you can observe the default behavior of the
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+          ><code>pl-integer-input</code></a
+        >
+        element. In particular, the default input field has help text of "integer" as a placeholder
+        as well as a question button.
+      </p>
+      <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
     </pl-question-panel>
     <pl-integer-input answers-name="c_1"></pl-integer-input>
   </div>
@@ -20,8 +33,15 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>Under this variant, we opt to provide a label for <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>  In addition, we've opted to add a suffix or a unit classification to the input via <code>suffix="units"</code>. </p>
-    <p> Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$ </p>
+      <p>
+        Under this variant, we opt to provide a label for
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+          ><code>pl-integer-input</code></a
+        >
+        In addition, we've opted to add a suffix or a unit classification to the input via
+        <code>suffix="units"</code>.
+      </p>
+      <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
     </pl-question-panel>
     <pl-integer-input answers-name="c_2" label="$c = $" suffix="units"></pl-integer-input>
   </div>
@@ -30,18 +50,17 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p> Within this variant, the different display options for <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>  on the page are displayed. Specifically, this question uses the block option (<code>display="block"</code>) to display the input field on its own line instead of being inline with the question. Moreover, the weight for answering this question is higher than its predecessors.</p>
-      <p> Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$ </p>
-    </pl-question-panel>
-    <pl-integer-input answers-name="c_3" display="block" weight="4"></pl-integer-input>
-  </div>
-</div>
-
-<div class="card my-2">
-  <div class="card-body">
-    <pl-question-panel>
-      <p> Within this variant, the different display options for <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>  on the page are displayed. Specifically, this question uses the block option (<code>display="block"</code>) to display the input field on its own line instead of being inline with the question. Moreover, the weight for answering this question is higher than its predecessors.</p>
-      <p> Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$ </p>
+      <p>
+        Within this variant, the different display options for
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+          ><code>pl-integer-input</code></a
+        >
+        on the page are displayed. Specifically, this question uses the block option
+        (<code>display="block"</code>) to display the input field on its own line instead of being
+        inline with the question. Moreover, the weight for answering this question is higher than
+        its predecessors.
+      </p>
+      <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
     </pl-question-panel>
     <pl-integer-input answers-name="c_4" display="block" weight="4"></pl-integer-input>
   </div>
@@ -49,9 +68,13 @@
 
 <div class="card my-2">
   <div class="card-body">
-      <pl-question-panel>
-          <p> The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text="false"</code> removes the button for the help popup.  This box below has <code>size=5</code> instead of the default <code>size=35</code>. </p>
-      <p> Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$ </p>
+    <pl-question-panel>
+      <p>
+        The size of the input box can be set with the attribute <code>size</code>, and the attribute
+        <code>show-help-text="false"</code> removes the button for the help popup. This box below
+        has <code>size=5</code> instead of the default <code>size=35</code>.
+      </p>
+      <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
     </pl-question-panel>
     <pl-integer-input answers-name="c_5" size="5" show-help-text="false"></pl-integer-input>
   </div>
@@ -60,10 +83,21 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>This question uses the <code>blank-answer</code> to specify a value to be used if the user leaves it blank.</p>
-      <p>Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (leave the question blank if the value is zero). </p>
+      <p>
+        This question uses the <code>blank-answer</code> to specify a value to be used if the user
+        leaves it blank.
+      </p>
+      <p>
+        Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (leave the question blank if the
+        value is zero).
+      </p>
     </pl-question-panel>
-    <pl-integer-input answers-name="c_6" allow-blank="true" blank-value="0" correct-answer="0"></pl-integer-input>
+    <pl-integer-input
+      answers-name="c_6"
+      allow-blank="true"
+      blank-value="0"
+      correct-answer="0"
+    ></pl-integer-input>
   </div>
 </div>
 
@@ -71,8 +105,39 @@
   <div class="card-body">
     <pl-question-panel>
       <p>The integer can also be expected to be provided in a different base.</p>
-      <p> Solve for the value of $c$ given $c = {{params.a16}}_{16} + {{params.b16}}_{16}$ (provide your answer in base $16$). </p>
+      <p>
+        Solve for the value of $c$ given $c = {{params.a16}}_{16} + {{params.b16}}_{16}$ (provide
+        your answer in base $16$ and base $2$).
+      </p>
     </pl-question-panel>
-    <pl-integer-input answers-name="c_7" base="16"></pl-integer-input>
+    <pl-integer-input answers-name="c_7_b16" base="16"></pl-integer-input>
+    <pl-integer-input answers-name="c_7_b2" base="2"></pl-integer-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        The submitted integer can also be very large. This question changes the placeholder text by
+        setting the <code>placeholder</code> attribute.
+      </p>
+      <p>Submit <code>{{correct_answers.c_large}}</code>.</p>
+    </pl-question-panel>
+    <pl-integer-input answers-name="c_large" placeholder="very large integer"></pl-integer-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        The correct answer can also be specified using certain JSON serialized integer types. The
+        correct answer here is specified using a numpy <code>int64</code>. We also set
+        <code>show-score="False"</code> to hide the score badge.
+      </p>
+      <p>Submit <code>{{params.d}}</code>.</p>
+    </pl-question-panel>
+    <pl-integer-input answers-name="c_np" show-score="False"></pl-integer-input>
   </div>
 </div>

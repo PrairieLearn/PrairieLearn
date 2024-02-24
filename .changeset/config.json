@@ -5,5 +5,10 @@
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "minor",
+  "ignore": [
+    "@prairielearn/grader-host",
+    "@prairielearn/prairielearn",
+    "@prairielearn/workspace-host"
+  ],
   "privatePackages": false
 }

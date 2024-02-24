@@ -7,10 +7,11 @@ module.exports = {
     'eslint:recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/stylistic',
+    'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha'],
+  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -56,10 +57,20 @@ module.exports = {
       },
     ],
 
+    // This gives false positives for `fs-extra`, which re-exports everything
+    // from `fs`. We'll disable it for now.
+    //
+    // TODO: file an issue upstream with `eslint-plugin-import`.
+    'import/namespace': 'off',
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
+
+    // These rules are implemented in `packages/eslint-plugin-prairielearn`.
+    '@prairielearn/aws-client-mandatory-config': 'error',
+    '@prairielearn/aws-client-shared-config': 'error',
 
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [
@@ -75,6 +86,10 @@ module.exports = {
 
     // Look, sometimes we just want to use `any`.
     '@typescript-eslint/no-explicit-any': 'off',
+
+    // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+    // TODO: fix the violations so we can enable this rule.
+    '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
     {
@@ -84,13 +99,31 @@ module.exports = {
       },
     },
     {
+      files: ['*.ts'],
+      rules: {
+        // TypeScript performs similar checks, so we disable these for TS files.
+        // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
+        'import/named': 'off',
+        'import/namespace': 'off',
+        'import/default': 'off',
+        'import/no-named-as-default-member': 'off',
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector: 'MemberExpression[object.name="module"][property.name="exports"]',
+            message: 'module.exports should not be used in TypeScript files',
+          },
+        ],
+      },
+    },
+    {
       files: ['*.test.{js,ts,mjs}'],
       env: {
         mocha: true,
       },
     },
     {
-      files: ['assets/scripts/*.js'],
+      files: ['apps/prairielearn/assets/scripts/**/*'],
       env: {
         browser: true,
         jquery: true,

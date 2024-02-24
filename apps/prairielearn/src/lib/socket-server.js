@@ -1,35 +1,78 @@
-const { Server } = require('socket.io');
-const redis = require('redis');
-const redisAdapter = require('socket.io-redis');
-const path = require('path');
+// @ts-check
+import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
+import { logger } from '@prairielearn/logger';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { config } = require('./config');
-const { promisify } = require('util');
+import { config } from './config';
 
-module.exports.init = function (server) {
+/**
+ * @param {Redis} client
+ * @param {string} type
+ */
+function attachEventListeners(client, type) {
+  client.on('error', (err) => {
+    logger.error(`redis client event for ${type}: error`, err);
+  });
+  client.on('connect', () => {
+    logger.verbose(`redis client event for ${type}: connect`);
+  });
+  client.on('ready', () => {
+    logger.verbose(`redis client event for ${type}: ready`);
+  });
+  client.on('reconnecting', (reconnectTimeMilliseconds) => {
+    logger.verbose(
+      `redis client event for ${type}: reconnecting in ${reconnectTimeMilliseconds} milliseconds`,
+    );
+  });
+  client.on('close', () => {
+    logger.verbose(`redis client event for ${type}: close`);
+  });
+  client.on('end', () => {
+    logger.verbose(`redis client event for ${type}: end`);
+  });
+  client.on('wait', () => {
+    logger.verbose(`redis client event for ${type}: wait`);
+  });
+  client.on('select', () => {
+    logger.verbose(`redis client event for ${type}: select`);
+  });
+}
+
+/** @type {Server} */
+export let io;
+
+/** @type {Redis} */
+let pub;
+
+/** @type {Redis} */
+let sub;
+
+/**
+ * @param {import('http').Server} server
+ */
+export async function init(server) {
   debug('init(): creating socket server');
-  module.exports.io = new Server(server);
+  io = new Server(server);
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers
     debug('init(): initializing redis pub/sub clients');
-    module.exports.pub = redis.createClient(config.redisUrl);
-    module.exports.sub = redis.createClient(config.redisUrl);
-    debug('init(): initializing redis socket adapter');
-    module.exports.io.adapter(
-      redisAdapter({
-        pubClient: module.exports.pub,
-        subClient: module.exports.sub,
-      })
-    );
-  }
-};
+    pub = new Redis(config.redisUrl);
+    sub = new Redis(config.redisUrl);
 
-module.exports.close = async function () {
-  if (config.redisUrl) {
-    await promisify(module.exports.pub.quit.bind(module.exports.pub))();
-    await promisify(module.exports.sub.quit.bind(module.exports.sub))();
+    attachEventListeners(pub, 'pub');
+    attachEventListeners(sub, 'sub');
+
+    debug('init(): initializing redis socket adapter');
+    io.adapter(createAdapter(pub, sub));
   }
+}
+
+export async function close() {
+  await pub?.quit();
+  await sub?.quit();
 
   // Note that we don't use `io.close()` here, as that actually tries to close
   // the underlying HTTP server. In our desired shutdown sequence, we first
@@ -39,5 +82,5 @@ module.exports.close = async function () {
   //
   // Note the use of `io.local`, which prevents the server from attempting to
   // broadcast the disconnect to other servers via Redis.
-  module.exports.io.local.disconnectSockets(true);
-};
+  io.local.disconnectSockets(true);
+}

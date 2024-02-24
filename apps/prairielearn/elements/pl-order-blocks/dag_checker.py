@@ -1,11 +1,14 @@
 import itertools
 from collections import Counter
 from copy import deepcopy
+from typing import Iterable, Mapping, Optional
 
 import networkx as nx
 
 
-def validate_grouping(graph, group_belonging):
+def validate_grouping(
+    graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]
+) -> bool:
     for node in graph:
         group_tag = group_belonging.get(node)
         if group_tag is None:
@@ -26,7 +29,9 @@ def validate_grouping(graph, group_belonging):
     return True
 
 
-def solve_dag(depends_graph, group_belonging):
+def solve_dag(
+    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[str]]
+) -> list[str]:
     """Solve the given problem
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
@@ -50,7 +55,7 @@ def solve_dag(depends_graph, group_belonging):
     return sort
 
 
-def check_topological_sorting(submission, graph):
+def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
@@ -58,13 +63,17 @@ def check_topological_sorting(submission, graph):
     """
     seen = set()
     for i, node in enumerate(submission):
-        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
+        if node is None or not all(
+            u in seen for (u, _) in graph.in_edges(node)  # type: ignore
+        ):
             return i
         seen.add(node)
     return len(submission)
 
 
-def check_grouping(submission, group_belonging):
+def check_grouping(
+    submission: list[str], group_belonging: Mapping[str, Optional[str]]
+) -> int:
     """
     :param submission: candidate solution
     :param group_belonging: group that each block belongs to
@@ -92,7 +101,9 @@ def check_grouping(submission, group_belonging):
     return len(submission)
 
 
-def dag_to_nx(depends_graph, group_belonging):
+def dag_to_nx(
+    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[str]]
+) -> nx.DiGraph:
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
@@ -111,7 +122,9 @@ def dag_to_nx(depends_graph, group_belonging):
     return graph
 
 
-def add_edges_for_groups(graph, group_belonging):
+def add_edges_for_groups(
+    graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]
+) -> None:
     groups = {
         group: [tag for tag in group_belonging if group_belonging[tag] == group]
         for group in set(group_belonging.values())
@@ -124,7 +137,7 @@ def add_edges_for_groups(graph, group_belonging):
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
-        for dependency, _ in graph.in_edges(group_tag):
+        for dependency, _ in graph.in_edges(group_tag):  # type: ignore
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
@@ -138,7 +151,11 @@ def add_edges_for_groups(graph, group_belonging):
         graph.remove_node(group_tag)
 
 
-def grade_dag(submission, depends_graph, group_belonging):
+def grade_dag(
+    submission: list[str],
+    depends_graph: Mapping[str, list[str]],
+    group_belonging: Mapping[str, Optional[str]],
+) -> tuple[int, int]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -156,15 +173,19 @@ def grade_dag(submission, depends_graph, group_belonging):
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
-def is_vertex_cover(G, vertex_cover):
+def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
-    https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
+    https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(submission, depends_graph, group_belonging):
+def lcs_partial_credit(
+    submission: list[str],
+    depends_graph: Mapping[str, list[str]],
+    group_belonging: Mapping[str, Optional[str]],
+) -> int:
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -185,7 +206,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    trans_clos = nx.algorithms.dag.transitive_closure(graph)
+    trans_clos = nx.transitive_closure(graph)
     submission_no_distractors = [node for node in submission if node in depends_graph]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before

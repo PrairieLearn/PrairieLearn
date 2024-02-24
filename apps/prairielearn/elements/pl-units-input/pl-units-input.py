@@ -1,5 +1,4 @@
 from enum import Enum
-from html import escape
 from random import choice
 from typing import Any, Optional
 
@@ -7,7 +6,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import errors
+from pint import UnitRegistry, errors
 from typing_extensions import assert_never
 
 
@@ -37,8 +36,25 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
+CUSTOM_FORMAT_DEFAULT = None
+SHOW_SCORE_DEFAULT = True
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
+
+
+def get_with_units_atol(
+    element: lxml.html.HtmlElement, data: pl.QuestionData, ureg: UnitRegistry
+) -> str:
+    """Returns the atol string for use in the "with-units" grading mode."""
+
+    if pl.has_attrib(element, "atol"):
+        return pl.get_string_attrib(element, "atol")
+
+    name = pl.get_string_attrib(element, "answers-name")
+    correct_answer = data["correct_answers"].get(name)
+    correct_answer_units = str(ureg.Quantity(correct_answer).units)
+
+    return f"{ATOL_DEFAULT} {correct_answer_units}"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -63,6 +79,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "placeholder",
         "magnitude-partial-credit",
         "allow-feedback",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -73,6 +90,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     correct_answer_html = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
@@ -90,31 +109,25 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"Number of digits specified must be at least 1, not {digits}."
         )
 
-    atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
     ureg = pl.get_unit_registry()
-    parsed_atol = ureg.Quantity(atol)
 
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
-    # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
+    # In with-units mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.WITH_UNITS:
-        if not pl.has_attrib(element, "atol"):
-            raise ValueError("atol is a required parameter for units agnostic grading.")
-
+        parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
+            atol = pl.get_string_attrib(element, "atol")
             raise ValueError(
-                f'atol parameter "{atol}" must have units in unit agnostic grading.'
+                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
             )
 
         if pl.has_attrib(element, "comparison"):
             raise ValueError(
-                'Cannot set parameter "comparison" in unit agnostic grading.'
+                'Cannot set attribute "comparison" in "with-units" grading.'
             )
-
-        if pl.has_attrib(element, "rtol"):
-            raise ValueError('Cannot set parameter "rtol" in unit agnostic grading.')
 
         partial_credit = pl.get_float_attrib(
             element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
@@ -135,9 +148,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
             )
     else:
+        atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
+        parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
             raise ValueError(
-                f'atol parameter "{atol}" may only have units in units agnostic grading.'
+                f'"atol" attribute "{atol}" may only have units in with-units grading.'
             )
 
 
@@ -157,31 +172,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
     digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
-    custom_format = pl.get_string_attrib(element, "custom-format", None)
+    custom_format = pl.get_string_attrib(
+        element, "custom-format", CUSTOM_FORMAT_DEFAULT
+    )
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
-    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
     partial_scores = data["partial_scores"].get(name, {})
     score = partial_scores.get("score")
 
+    parse_error = data["format_errors"].get(name)
     ureg = pl.get_unit_registry()
+
+    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
 
     if data["panel"] == "question":
         editable = data["editable"]
 
         # Get info strings
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(
-                f,
-                {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
-            ).strip()
+        info = chevron.render(
+            template,
+            {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
+        ).strip()
 
         if pl.has_attrib(element, "placeholder"):
             placeholder_text = pl.get_string_attrib(element, "placeholder")
         elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
         elif grading_mode is GradingMode.WITH_UNITS:
-            atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
-            placeholder_text = f"Number (atol={atol}) + Unit"
+            rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
+            atol = get_with_units_atol(element, data, ureg)
+            placeholder_text = f"Number (rtol={rtol}, atol={atol}) + Unit"
 
         elif grading_mode is GradingMode.EXACT_UNITS:
             if comparison is uu.ComparisonType.RELABS:
@@ -213,21 +235,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "placeholder": placeholder_text,
             "uuid": pl.get_uuid(),
             display.value: True,
-            "display_append_span": show_info or suffix,
+            "parse_error": parse_error,
+            "raw_submitted_answer": raw_submitted_answer,
         }
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
             "label": label,
@@ -252,13 +270,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["parse_error"] = None
 
         else:
-            submitted_answer = data["raw_submitted_answers"].get(name, None)
-            if submitted_answer is not None:
+            if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    submitted_answer
+                    raw_submitted_answer
                 )
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -272,8 +289,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
@@ -289,8 +306,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
             "suffix": suffix,
         }
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -406,7 +423,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         grading_fn = uu.get_with_units_grading_fn(
             ureg=ureg,
             correct_ans=a_tru,
-            atol=pl.get_string_attrib(element, "atol"),  # No default in this case.
+            rtol=pl.get_float_attrib(element, "rtol", RTOL_DEFAULT),
+            atol=get_with_units_atol(element, data, ureg),
         )
     else:
         assert_never(grading_mode)

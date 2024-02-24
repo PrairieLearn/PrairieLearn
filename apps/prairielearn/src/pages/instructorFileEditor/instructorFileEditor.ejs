@@ -5,14 +5,13 @@
     <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
     <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
     <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
-    <script src="./file_edit?serve=client"></script>
-    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script src="<%= compiled_script_path('instructorFileEditorClient.js') %>"></script>
 </head>
 
 <body>
     <%- include('../partials/navbar'); %>
 
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
 
         <% if (fileEdit.sync_errors) { %>
         <div class="alert alert-danger" role="alert">
@@ -241,6 +240,6 @@
                 </div>
             </div>
         </form>
-    </div>
+    </main>
 </body>
 </html>

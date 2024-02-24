@@ -1,7 +1,11 @@
 // @ts-check
-const { config } = require('../lib/config');
-const { generateSignedToken } = require('@prairielearn/signed-token');
-const sqldb = require('@prairielearn/postgres');
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import { config } from './config';
+import { shouldSecureCookie } from '../lib/cookie';
+import { InstitutionSchema, UserSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -17,6 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
@@ -24,25 +29,52 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {LoadUserAuth} authnParams
  * @param {LoadUserOptions} [optionsParams]
  */
-module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
+export async function loadUser(req, res, authnParams, optionsParams = {}) {
   let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
 
   let user_id;
   if ('user_id' in authnParams) {
     user_id = authnParams.user_id;
   } else {
-    let params = [authnParams.uid, authnParams.name, authnParams.uin, authnParams.provider];
+    let params = [
+      authnParams.uid,
+      authnParams.name,
+      authnParams.uin,
+      authnParams.provider,
+      authnParams.institution_id,
+    ];
 
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
+    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    if (result === 'invalid_authn_provider') {
+      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`);
+      return;
+    }
   }
 
-  let selectUserRes = await sqldb.queryAsync(sql.select_user, { user_id });
+  const selectedUser = await sqldb.queryOptionalRow(
+    sql.select_user,
+    { user_id },
+    z.object({
+      user: UserSchema,
+      institution: InstitutionSchema,
+      is_administrator: z.boolean(),
+      is_instructor: z.boolean(),
+      news_item_notification_count: z.number(),
+    }),
+  );
 
-  if (selectUserRes.rowCount === 0) {
+  if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
   }
+
+  // The session store will pick this up and store it in the `user_sessions.user_id` column.
+  req.session.user_id = user_id;
+
+  // Our authentication middleware will read this value.
+  req.session.authn_provider_name = authnParams.provider;
 
   if (options.pl_authn_cookie) {
     var tokenData = {
@@ -53,8 +85,12 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
-      secure: true,
+      secure: shouldSecureCookie(req),
     });
+
+    // After explicitly authenticating, clear the cookie that disables
+    // automatic authentication.
+    res.clearCookie('pl_disable_auto_authn');
   }
 
   if (options.redirect) {
@@ -69,11 +105,11 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
 
   // If we fall-through here, set the res.locals.authn_user variables (middleware)
 
-  res.locals.authn_user = selectUserRes.rows[0].user;
-  res.locals.authn_institution = selectUserRes.rows[0].institution;
+  res.locals.authn_user = selectedUser.user;
+  res.locals.authn_institution = selectedUser.institution;
   res.locals.authn_provider_name = authnParams.provider;
-  res.locals.authn_is_administrator = selectUserRes.rows[0].is_administrator;
-  res.locals.authn_is_instructor = selectUserRes.rows[0].is_instructor;
+  res.locals.authn_is_administrator = selectedUser.is_administrator;
+  res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
   const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
@@ -81,5 +117,5 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
-  res.locals.news_item_notification_count = selectUserRes.rows[0].news_item_notification_count;
-};
+  res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
+}

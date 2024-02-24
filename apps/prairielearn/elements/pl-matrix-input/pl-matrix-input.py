@@ -30,6 +30,8 @@ def prepare(element_html, data):
         "show-help-text",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
 
 
 def render(element_html, data):

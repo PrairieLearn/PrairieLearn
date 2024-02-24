@@ -1,13 +1,12 @@
-import AWS from 'aws-sdk';
+import {
+  type ECRClient,
+  type AuthorizationData,
+  GetAuthorizationTokenCommand,
+} from '@aws-sdk/client-ecr';
 import { subHours, isFuture } from 'date-fns';
-import util from 'util';
 import { logger } from '@prairielearn/logger';
 
-// @ts-expect-error -- Types don't reflect that this path exists.
-import mmm from 'aws-sdk/lib/maintenance_mode_message';
-mmm.suppress = true;
-
-interface DockerAuth {
+export interface DockerAuth {
   username: string;
   password: string;
 }
@@ -15,7 +14,7 @@ interface DockerAuth {
 let dockerAuthData: DockerAuth | null = null;
 let dockerAuthDataExpiresAt: Date | null | undefined = null;
 
-function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
+function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   const token = data.authorizationToken;
   if (!token) {
     throw new Error('No authorization token in ECR authorization data');
@@ -30,11 +29,7 @@ function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
   };
 }
 
-export async function setupDockerAuthAsync(
-  imageRegistry: string | null | undefined
-): Promise<DockerAuth | null> {
-  if (!imageRegistry) return null;
-
+export async function setupDockerAuth(ecr: ECRClient): Promise<DockerAuth> {
   // If we have cached data that's not within an hour of expiring, use it.
   if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
@@ -42,8 +37,7 @@ export async function setupDockerAuthAsync(
   }
 
   logger.info('Getting ECR authorization token');
-  const ecr = new AWS.ECR();
-  const data = await ecr.getAuthorizationToken({}).promise();
+  const data = await ecr.send(new GetAuthorizationTokenCommand({}));
   const authorizationData = data.authorizationData;
   if (!authorizationData) {
     throw new Error('No authorization data in ECR response');
@@ -54,8 +48,6 @@ export async function setupDockerAuthAsync(
 
   return dockerAuthData;
 }
-
-export const setupDockerAuth = util.callbackify(setupDockerAuthAsync);
 
 /**
  * Borrowed from https://github.com/apocas/dockerode/blob/master/lib/util.js

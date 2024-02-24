@@ -1,50 +1,48 @@
 --BLOCK config_info
 SELECT
-  id,
-  course_instance_id,
-  name,
-  minimum,
-  maximum,
-  student_authz_join,
-  student_authz_create,
-  student_authz_leave
+  *
 FROM
   group_configs
 WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK assessment_list
-SELECT
-  id,
-  tid,
-  title
-FROM
-  assessments
-WHERE
-  group_work
-  AND id != $assessment_id
-  AND course_instance_id = $course_instance_id
-ORDER BY
-  tid;
-
 -- BLOCK select_group_users
+WITH
+  assessment_groups AS (
+    SELECT
+      g.id,
+      g.name
+    FROM
+      groups AS g
+    WHERE
+      g.deleted_at IS NULL
+      AND g.group_config_id = $group_config_id
+  ),
+  assessment_group_users AS (
+    SELECT
+      g.id AS group_id,
+      COUNT(u.uid)::integer AS size,
+      jsonb_agg(
+        jsonb_build_object('uid', u.uid, 'user_id', u.user_id)
+      ) AS users
+    FROM
+      assessment_groups AS g
+      JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = gu.user_id)
+    GROUP BY
+      g.id
+  )
 SELECT
-  g.id AS group_id,
-  g.name AS name,
-  COUNT(u.uid) AS size,
-  array_agg(u.uid) AS uid_list
+  ag.id AS group_id,
+  ag.name,
+  COALESCE(agu.size, 0) AS size,
+  COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
-  groups AS g
-  LEFT JOIN group_users AS gu ON gu.group_id = g.id
-  LEFT JOIN users AS u ON u.user_id = gu.user_id
-WHERE
-  g.deleted_at IS NULL
-  AND g.group_config_id = $group_config_id
-GROUP BY
-  g.id
+  assessment_groups AS ag
+  LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)
 ORDER BY
-  g.id;
+  ag.id;
 
 -- BLOCK select_not_in_group
 SELECT
@@ -59,6 +57,6 @@ FROM
 WHERE
   g.id IS NULL
   AND e.course_instance_id = $course_instance_id
-  AND NOT users_is_instructor_in_course (e.user_id, e.course_instance_id)
+  AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
 ORDER BY
   u.uid;

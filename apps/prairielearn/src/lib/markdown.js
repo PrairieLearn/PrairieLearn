@@ -1,3 +1,4 @@
+//@ts-check
 const unified = require('unified');
 const markdown = require('remark-parse');
 const raw = require('rehype-raw');
@@ -8,12 +9,16 @@ const stringify = require('rehype-stringify');
 const sanitize = require('rehype-sanitize');
 const visit = require('unist-util-visit');
 
-const regex = /<markdown>(.+?)<\/markdown>/gms;
+// The ? symbol is used to make the match non-greedy (i.e., match the shortest
+// possible string that fulfills the regex). See
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Quantifiers#types
+const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
 const visitCodeBlock = (ast, _vFile) => {
   return visit(ast, 'code', (node, index, parent) => {
+    // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.lang & node.value do not exist on type Node<Data>.
     let { lang, value } = node;
     const attrs = [];
 
@@ -35,10 +40,26 @@ const visitCodeBlock = (ast, _vFile) => {
       type: 'html',
       value: `<pl-code ${attrs.join(' ')}>${value}</pl-code>`,
     };
+    parent?.children.splice(index, 1, html);
 
-    parent.children.splice(index, 1, html);
+    return;
+  });
+};
 
-    return node;
+/**
+ * This visitor is used for inline markdown processing, particularly for cases where the result is
+ * expected to be shown in a single line without a block. In essence, if the result of the
+ * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
+ * with the content of the paragraph.
+ */
+const visitCheckSingleParagraph = (ast, _vFile) => {
+  return visit(ast, 'root', (node, _index, _parent) => {
+    // @ts-expect-error - TODO: resolve after converting file to TypeScript
+    if (node.children.length === 1 && node.children[0].tagName === 'p') {
+      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.children does not exist on type Node<Data>.
+      node.children = node.children[0].children;
+    }
+    return;
   });
 };
 
@@ -55,10 +76,11 @@ const visitMathBlock = (ast, _vFile) => {
     const endFence = node.type === 'math' ? '\n$$' : '$';
     const text = {
       type: 'text',
+      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.value does not exist on type Node<Data>.
       value: startFence + node.value + endFence,
     };
-    parent.children.splice(index, 1, text);
-    return node;
+    parent?.children.splice(index, 1, text);
+    return;
   });
 };
 
@@ -86,6 +108,17 @@ const defaultProcessor = unified()
   .use(sanitize)
   .use(stringify);
 
+const inlineProcessor = unified()
+  .use(markdown)
+  .use(math)
+  .use(handleMath)
+  .use(gfm)
+  .use(remark2rehype, { allowDangerousHtml: true })
+  .use(raw)
+  .use(sanitize)
+  .use(makeHandler(visitCheckSingleParagraph))
+  .use(stringify);
+
 // The question processor also includes the use of pl-code instead of pre,
 // and does not sanitize scripts
 const questionProcessor = unified()
@@ -98,7 +131,7 @@ const questionProcessor = unified()
   .use(raw)
   .use(stringify);
 
-module.exports.processQuestion = function (html) {
+export function processQuestion(html) {
   return html.replace(regex, (_match, originalContents) => {
     // We'll handle escapes before we pass off the string to our Markdown pipeline
     const decodedContents = originalContents.replace(escapeRegex, (match, prefix, hashes) => {
@@ -107,12 +140,20 @@ module.exports.processQuestion = function (html) {
     const res = questionProcessor.processSync(decodedContents);
     return res.contents;
   });
-};
+}
 
-module.exports.processQuestionMd = async function (original) {
+export async function processQuestionMd(original) {
   return (await questionProcessor.process(original)).contents;
-};
+}
 
-module.exports.processContent = async function (original) {
+export async function processContent(original) {
   return (await defaultProcessor.process(original)).contents;
-};
+}
+
+/**
+ * This function is similar to `processContent`, except that if the content fits a single line
+ * (paragraph) it will return the content without a `p` tag.
+ */
+export async function processContentInline(original) {
+  return (await inlineProcessor.process(original)).contents;
+}

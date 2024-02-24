@@ -694,6 +694,41 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-coil` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-coil x1="50" y1="40" draw-pin="true"></pl-coil>
+    <pl-coil x1="20" y1="100" angle="20" width="120" height="80"></pl-coil>
+    <pl-coil x1="20" y1="180" width="40" height="20" stroke-color="purple3"></pl-coil>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-coil.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                         |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 20      | `x` position for the start point for the coil, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
+| `y1`           | float   | 20      | `y` position for the start point for the coil, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
+| `width`        | float   | 80      | Length of the coil.                                                                                                                                                                                                                                 |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the coil. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `height`       | float   | 30      | Height of the coil.                                                                                                                                                                                                                                 |
+| `x2`           | float   | -       | `x` position for the end point for the coil, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the coil, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                  |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
+| `draw-pin`     | boolean | false   | Draw points at the coil ends.                                                                                                                                                                                                                       |
+
+#### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ### `pl-pulley` element
 
 #### Sample element
@@ -1270,6 +1305,247 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-capacitor` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-capacitor x1="20" y1="40" x2="140" y2="40" label="20\\mu C"></pl-capacitor>
+    <pl-capacitor
+      x1="40"
+      y1="180"
+      x2="180"
+      y2="100"
+      stroke-color="blue"
+      label="4\\mu C"
+    ></pl-capacitor>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-capacitor.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                              |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the capacitor, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float   | 40      | `y` position for the first end of the capacitor, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the capacitor. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float   | 60      | Length of the capacitor                                                                                                                                                                                                                                  |
+| `x2`           | float   | -       | `x` position for the end point for the capacitor, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the capacitor, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float   | 15      | Length of the capacitor plates.                                                                                                                                                                                                                          |
+| `interval`     | float   | 10      | Distance between capacitor plates.                                                                                                                                                                                                                       |
+| `polarized`    | boolean | false   | Set if the capacitor is polarized or not, by adding the "+" symbol.                                                                                                                                                                                      |
+| `label`        | string  | -       | Text to label the capacitor.                                                                                                                                                                                                                             |
+| `font-size`    | float   | 16      | Label font size.                                                                                                                                                                                                                                         |
+| `offsetx`      | float   | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                       |
+| `offsety`      | float   | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                         |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                                                                                                         |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                             |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a capacitor
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-resistor` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-resistor x1="20" y1="40" x2="140" y2="40" label="2\\Omega"></pl-resistor>
+    <pl-resistor
+      x1="40"
+      y1="80"
+      x2="180"
+      y2="120"
+      stroke-color="red"
+      label="14\\Omega"
+    ></pl-resistor>
+    <pl-resistor
+      x1="80"
+      y1="160"
+      height="30"
+      stroke-color="purple"
+      label="30\\Omega"
+      offsety="25"
+    ></pl-resistor>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-resistor.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                             |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 40      | `x` position for the first end of the resistor, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float  | 40      | `y` position for the first end of the resistor, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float  | 0       | Angle of rotation around the start point of the resistor. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float  | 60      | Length of the resistor                                                                                                                                                                                                                                  |
+| `x2`           | float  | -       | `x` position for the end point for the resistor, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float  | -       | `y` position for the end point for the resistor, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float  | 10      | Height of the spring-like region of the resistor.                                                                                                                                                                                                       |
+| `interval`     | float  | 30      | Length of the spring-like region of the resistor.                                                                                                                                                                                                       |
+| `label`        | string | -       | Text to label the resistor.                                                                                                                                                                                                                             |
+| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                        |
+| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                      |
+| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                        |
+| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                        |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                            |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a resistor
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-battery` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-battery x1="20" y1="40" x2="140" y2="40" label="10 V"></pl-battery>
+    <pl-battery x1="40" y1="120" angle="30" width="80" stroke-color="red" label="20 V"></pl-battery>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-battery.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                            |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`           | float  | 40      | `x` position for the first end of the battery, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float  | 40      | `y` position for the first end of the battery, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float  | 0       | Angle of rotation around the start point of the battery. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float  | 60      | Length of the battery                                                                                                                                                                                                                                  |
+| `x2`           | float  | -       | `x` position for the end point for the battery, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float  | -       | `y` position for the end point for the battery, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float  | 20      | Half the length of the longest battery plate.                                                                                                                                                                                                          |
+| `interval`     | float  | 5       | Distance between battery plates.                                                                                                                                                                                                                       |
+| `label`        | string | -       | Text to label the battery.                                                                                                                                                                                                                             |
+| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                       |
+| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                     |
+| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                       |
+| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                       |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                           |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a battery
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-switch` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-switch x1="20" y1="20" x2="140" y2="20" label="A"></pl-switch>
+    <pl-switch x1="180" y1="60" angle="90" width="120" label="B" stroke-color="blue"></pl-switch>
+    <pl-switch
+      x1="20"
+      y1="120"
+      angle="20"
+      width="120"
+      switch-angle="45"
+      label="S_1"
+      draw-pin="false"
+    ></pl-switch>
+    <pl-switch x1="20" y1="100" angle="0" width="120" switch-angle="0"></pl-switch>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-switch.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                           |
+| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the switch, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float   | 40      | `y` position for the first end of the switch, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the switch. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float   | 60      | Length of the switch                                                                                                                                                                                                                                  |
+| `x2`           | float   | -       | `x` position for the end point for the switch, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the switch, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `switch-angle` | float   | 30      | Angle of switch opening.                                                                                                                                                                                                                              |
+| `interval`     | float   | 40      | Distance of the switch opening.                                                                                                                                                                                                                       |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the switch.                                                                                                                                                                                                     |
+| `label`        | string  | -       | Text to label the switch.                                                                                                                                                                                                                             |
+| `font-size`    | float   | 16      | Label font size.                                                                                                                                                                                                                                      |
+| `offsetx`      | float   | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                    |
+| `offsety`      | float   | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                      |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                                                                                                      |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a switch
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-inductor` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-inductor></pl-inductor>
+    <pl-inductor x1="40" y1="80" x2="180" y2="120" stroke-color="red" label="4 H"></pl-inductor>
+    <pl-inductor
+      x1="30"
+      y1="160"
+      width="140"
+      interval="60"
+      height="30"
+      stroke-color="purple"
+      label="2 H"
+    ></pl-inductor>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-inductor.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                             |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 40      | `x` position for the first end of the inductor, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float  | 40      | `y` position for the first end of the inductor, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float  | 0       | Angle of rotation around the start point of the inductor. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float  | 60      | Length of the inductor                                                                                                                                                                                                                                  |
+| `x2`           | float  | -       | `x` position for the end point for the inductor, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float  | -       | `y` position for the end point for the inductor, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float  | 20      | Height of the spring-like region of the inductor.                                                                                                                                                                                                       |
+| `interval`     | float  | 40      | Length of the spring-like region of the inductor.                                                                                                                                                                                                       |
+| `label`        | string | -       | Text to label the inductor.                                                                                                                                                                                                                             |
+| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                        |
+| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                      |
+| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                        |
+| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                        |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                            |
+
+#### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ## Creating group of elements
 
 ### `pl-drawing-group` element
@@ -1627,7 +1903,7 @@ elements["pl-point"] = Point
 
 ### JavaScript
 
-The clientside JavaScript portion of `pl-drawing` is built on [Fabric.js](http://fabricjs.com/docs/), any elements should therefore be built on top of Fabric's shapes and those that are defined in the included [`mechanicsObjects.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-drawing/mechanicsObjects.js) file.
+The clientside JavaScript portion of `pl-drawing` is built on [Fabric.js](http://fabricjs.com/docs/), any elements should therefore be built on top of Fabric's shapes and those that are defined in the included [`mechanicsObjects.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-drawing/mechanicsObjects.js) file.
 
 Similarly to the Python code, each element inherits from a base JavaScript class:
 

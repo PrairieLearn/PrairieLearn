@@ -1,4 +1,5 @@
-const { config } = require('./config');
+// @ts-check
+import { config } from './config';
 
 /**
  * This function may only return `true` if the user has obtained a contract,
@@ -9,6 +10,6 @@ const { config } = require('./config');
  *
  * @returns Whether or not the server has access to Enterprise Edition features.
  */
-module.exports.isEnterprise = function isEnterprise() {
+export function isEnterprise() {
   return config.isEnterprise ?? false;
-};
+}

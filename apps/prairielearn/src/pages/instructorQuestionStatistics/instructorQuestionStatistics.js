@@ -1,11 +1,12 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { pipeline } = require('node:stream/promises');
-const { stringifyStream } = require('@prairielearn/csv');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as express from 'express';
+import { pipeline } from 'node:stream/promises';
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const sanitizeName = require('../../lib/sanitize-name');
+import * as sanitizeName from '../../lib/sanitize-name';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -17,7 +18,12 @@ const setFilenames = function (locals) {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req, res, next) => {
+    // TODO: Support question statistics for shared questions. For now, forbid
+    // access to question statistics if question is shared from another course.
+    if (res.locals.question.course_id !== res.locals.course.id) {
+      return next(error.make(403, 'Access denied'));
+    }
     setFilenames(res.locals);
     const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
       question_id: res.locals.question.id,
@@ -25,12 +31,17 @@ router.get(
     res.locals.assessment_stats = statsResult.rows;
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req, res, next) => {
+    // TODO: Support question statistics for shared questions. For now, forbid
+    // access to question statistics if question is shared from another course.
+    if (res.locals.question.course_id !== res.locals.course.id) {
+      return next(error.make(403, 'Access denied'));
+    }
     setFilenames(res.locals);
 
     if (req.params.filename === res.locals.questionStatsCsvFilename) {
@@ -91,7 +102,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

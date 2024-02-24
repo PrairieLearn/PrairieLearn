@@ -21,14 +21,18 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { detectResources, processDetector, envDetector, Resource } from '@opentelemetry/resources';
+import {
+  detectResourcesSync,
+  processDetector,
+  envDetector,
+  Resource,
+} from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 
 // Instrumentations go here.
@@ -125,20 +129,26 @@ instrumentations.forEach((i) => {
 
 let tracerProvider: NodeTracerProvider | null;
 
-export interface OpenTelemetryConfig {
-  openTelemetryEnabled: boolean;
+export interface OpenTelemetryConfigEnabled {
+  openTelemetryEnabled: true;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
-  openTelemetrySpanProcessor?: 'batch' | 'simple';
+  openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
   honeycombApiKey?: string;
   honeycombDataset?: string;
   serviceName?: string;
 }
 
-function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
+export type OpenTelemetryConfig =
+  | OpenTelemetryConfigEnabled
+  | {
+      openTelemetryEnabled: false;
+    };
+
+function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
@@ -150,7 +160,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
+function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
@@ -166,20 +176,15 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
       });
       break;
     case 'jaeger':
-      return new JaegerExporter({
-        // By default, the UDP sender will be used, but that causes issues
-        // with packet sizes when Jaeger is running in Docker. We'll instead
-        // configure it to use the HTTP sender, which shouldn't face those
-        // same issues. We'll still allow the endpoint to be overridden via
-        // environment variable if needed.
-        endpoint: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
+      return new OTLPTraceExporter({
+        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'grpc://localhost:4317/',
       });
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
 }
 
-function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
+function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExporter | null {
   if (!config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
@@ -203,8 +208,28 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
       });
     default:
       throw new Error(
-        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
+        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`,
       );
+  }
+}
+
+function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor {
+  if (typeof config.openTelemetrySpanProcessor === 'object') {
+    return config.openTelemetrySpanProcessor;
+  }
+
+  const traceExporter = getTraceExporter(config);
+
+  switch (config.openTelemetrySpanProcessor ?? 'batch') {
+    case 'batch': {
+      return new FilterBatchSpanProcessor(traceExporter, filter);
+    }
+    case 'simple': {
+      return new SimpleSpanProcessor(traceExporter);
+    }
+    default: {
+      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
+    }
   }
 }
 
@@ -225,8 +250,8 @@ export async function init(config: OpenTelemetryConfig) {
     return;
   }
 
-  const traceExporter = getTraceExporter(config);
   const metricExporter = getMetricExporter(config);
+  const spanProcessor = getSpanProcessor(config);
 
   let sampler: Sampler;
   switch (config.openTelemetrySamplerType ?? 'always-on') {
@@ -248,34 +273,19 @@ export async function init(config: OpenTelemetryConfig) {
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
   }
 
-  let spanProcessor: SpanProcessor;
-  switch (config.openTelemetrySpanProcessor ?? 'batch') {
-    case 'batch': {
-      spanProcessor = new FilterBatchSpanProcessor(traceExporter, filter);
-      break;
-    }
-    case 'simple': {
-      spanProcessor = new SimpleSpanProcessor(traceExporter);
-      break;
-    }
-    default: {
-      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
-    }
-  }
-
   // Much of this functionality is copied from `@opentelemetry/sdk-node`, but
   // we can't use the SDK directly because of the fact that we load our config
   // asynchronously. We need to initialize our instrumentations first; only
   // then can we actually start requiring all of our code that loads our config
   // and ultimately tells us how to configure OpenTelemetry.
 
-  let resource = await detectResources({
+  let resource = detectResourcesSync({
     detectors: [awsEc2Detector, processDetector, envDetector],
   });
 
   if (config.serviceName) {
     resource = resource.merge(
-      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName })
+      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName }),
     );
   }
 
@@ -293,13 +303,16 @@ export async function init(config: OpenTelemetryConfig) {
 
   // Set up metrics instrumentation if it's enabled.
   if (metricExporter) {
-    const meterProvider = new MeterProvider({ resource });
-    metrics.setGlobalMeterProvider(meterProvider);
-    const metricReader = new PeriodicExportingMetricReader({
-      exporter: metricExporter,
-      exportIntervalMillis: config.openTelemetryMetricExportIntervalMillis ?? 30_000,
+    const meterProvider = new MeterProvider({
+      resource,
+      readers: [
+        new PeriodicExportingMetricReader({
+          exporter: metricExporter,
+          exportIntervalMillis: config.openTelemetryMetricExportIntervalMillis ?? 30_000,
+        }),
+      ],
     });
-    meterProvider.addMetricReader(metricReader);
+    metrics.setGlobalMeterProvider(meterProvider);
   }
 }
 
@@ -312,4 +325,12 @@ export async function shutdown(): Promise<void> {
     await tracerProvider.shutdown();
     tracerProvider = null;
   }
+}
+
+/**
+ * Disables all OpenTelemetry instrumentations. This is useful for tests that
+ * need to access the unwrapped modules.
+ */
+export function disableInstrumentations() {
+  instrumentations.forEach((i) => i.disable());
 }

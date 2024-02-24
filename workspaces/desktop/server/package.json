@@ -9,13 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@novnc/novnc": "^1.2.0",
-    "command-line-args": "^5.2.0",
-    "command-line-usage": "^6.1.1",
-    "express": "^4.17.1",
+    "@novnc/novnc": "^1.4.0",
+    "command-line-args": "^5.2.1",
+    "command-line-usage": "^7.0.1",
+    "express": "^4.18.2",
     "express-ws": "^5.0.2",
     "http-proxy": "^1.18.1",
-    "node-http-proxy": "^0.2.4",
     "spin.js": "^4.1.1"
   }
 }

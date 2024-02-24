@@ -1,16 +1,13 @@
 // @ts-check
-const fs = require('fs-extra');
-const path = require('path');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { APP_ROOT_PATH } from './paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-const QUESTION_DEFAULTS_PATH = path.resolve(
-  __dirname,
-  '..',
-  'question-servers',
-  'default-calculation'
-);
+const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
 
 /**
  * @typedef {Object} QuestionFilePathInfo
@@ -38,12 +35,12 @@ const QUESTION_DEFAULTS_PATH = path.resolve(
  * @param {number} nTemplates
  * @returns {Promise<QuestionFilePathInfo>}
  */
-module.exports.questionFilePathAsync = async function (
+export async function questionFilePathAsync(
   filename,
   questionDirectory,
   coursePath,
   question,
-  nTemplates = 0
+  nTemplates = 0,
 ) {
   const rootPath = path.join(coursePath, 'questions', questionDirectory);
   const fullPath = path.join(rootPath, filename);
@@ -72,17 +69,16 @@ module.exports.questionFilePathAsync = async function (
       throw error.make(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
-        { sql: sql.select_question, params: params }
       );
     }
 
     const templateQuestion = result.rows[0];
-    return module.exports.questionFilePathAsync(
+    return questionFilePathAsync(
       filename,
       templateQuestion.directory,
       coursePath,
       templateQuestion,
-      nTemplates + 1
+      nTemplates + 1,
     );
   } else {
     // No template, try default files
@@ -121,21 +117,14 @@ module.exports.questionFilePathAsync = async function (
       }
     }
   }
-};
+}
 
-module.exports.questionFilePath = function (
-  filename,
-  questionDirectory,
-  coursePath,
-  question,
-  callback
-) {
-  module.exports
-    .questionFilePathAsync(filename, questionDirectory, coursePath, question)
+export function questionFilePath(filename, questionDirectory, coursePath, question, callback) {
+  questionFilePathAsync(filename, questionDirectory, coursePath, question)
     .then(({ fullPath, effectiveFilename, rootPath }) => {
       callback(null, fullPath, effectiveFilename, rootPath);
     })
     .catch((err) => {
       callback(err);
     });
-};
+}

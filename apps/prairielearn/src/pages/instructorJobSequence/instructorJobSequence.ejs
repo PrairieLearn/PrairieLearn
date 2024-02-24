@@ -6,7 +6,7 @@
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <div class="row"><div class="col-12">
         <a class="btn btn-primary mb-4" href="javascript:history.back();" role="button">
           <i class="fa fa-arrow-left" aria-hidden="true"></i>
@@ -14,6 +14,6 @@
         </a>
       </div></div>
       <%- include('../partials/jobSequenceResults', {job_sequence_enable_live_update: true}) %>
-    </div>
+    </main>
   </body>
 </html>

@@ -6,6 +6,7 @@ SELECT
   q.qid,
   q.id AS question_id,
   admin_assessment_question_number (aq.id) as number,
+  ai.client_fingerprint_id_change_count,
   iq.some_submission,
   iq.some_perfect_submission,
   iq.some_nonzero_submission,
@@ -23,20 +24,10 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessments AS a ON (ai.assessment_id = a.id)
   JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN group_users AS gu ON (g.id = gu.group_id)
-  JOIN enrollments AS e ON (
-    (
-      (ai.user_id = e.user_id)
-      OR (e.user_id = gu.user_id)
-    )
-    AND ci.id = e.course_instance_id
-  )
 WHERE
   ai.id = $assessment_instance_id
   AND aq.deleted_at IS NULL
   AND q.deleted_at IS NULL
-  AND g.deleted_at IS NULL
 GROUP BY
   q.id,
   iq.id,
@@ -72,6 +63,7 @@ SELECT
   aq.max_points,
   aq.max_manual_points,
   aq.max_auto_points,
+  aq.manual_rubric_id,
   qo.row_order,
   qo.question_number,
   admin_assessment_question_number (aq.id) as instructor_question_number,

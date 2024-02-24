@@ -11,11 +11,7 @@ const router = express.Router();
  */
 function authzHasCourseInstanceView(req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(
-      error.make(403, 'Requires student data view access', {
-        locals: res.locals,
-      })
-    );
+    return next(error.make(403, 'Requires student data view access'));
   }
   next();
 }
@@ -37,26 +33,26 @@ router.use('/course_instances/:course_instance_id', [
 // ROUTES
 router.use(
   '/course_instances/:course_instance_id/assessments',
-  require('./endpoints/courseInstanceAssessments')
+  require('./endpoints/courseInstanceAssessments'),
 );
 router.use(
   '/course_instances/:course_instance_id/assessment_instances',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceAssessmentInstances')
+  require('./endpoints/courseInstanceAssessmentInstances'),
 );
 router.use(
   '/course_instances/:course_instance_id/submissions',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceSubmissions')
+  require('./endpoints/courseInstanceSubmissions'),
 );
 router.use(
   '/course_instances/:course_instance_id/gradebook',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceGradebook')
+  require('./endpoints/courseInstanceGradebook'),
 );
 router.use(
   '/course_instances/:course_instance_id/course_instance_access_rules',
-  require('./endpoints/courseInstanceAccessRules')
+  require('./endpoints/courseInstanceAccessRules'),
 );
 
 // If no earlier routes matched, 404 the route

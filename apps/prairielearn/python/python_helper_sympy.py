@@ -1,11 +1,26 @@
 import ast
+import copy
+import html
+from collections import deque
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
+from tokenize import TokenError
+from typing import Any, Callable, Literal, Type, TypedDict, cast
 
+import prairielearn as pl
 import sympy
+from sympy.parsing.sympy_parser import (
+    eval_expr,
+    implicit_multiplication_application,
+    standard_transformations,
+    stringify_expr,
+)
+from typing_extensions import NotRequired
 
-SympyMapT = dict[str, Union[Callable, sympy.Basic]]
-ASTWhitelistT = tuple[Type[ast.AST], ...]
+STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
+
+SympyMapT = dict[str, Callable | sympy.Basic]
+ASTWhiteListT = tuple[Type[ast.AST], ...]
+AssumptionsDictT = dict[str, dict[str, Any]]
 
 
 class SympyJson(TypedDict):
@@ -14,6 +29,8 @@ class SympyJson(TypedDict):
     _type: Literal["sympy"]
     _value: str
     _variables: list[str]
+    _assumptions: NotRequired[AssumptionsDictT]
+    _custom_functions: NotRequired[list[str]]
 
 
 class LocalsForEval(TypedDict):
@@ -40,10 +57,7 @@ class _Constants:
             "_Integer": sympy.Integer,
         }
 
-        self.variables = {
-            "pi": sympy.pi,
-            "e": sympy.E,
-        }
+        self.variables = {"pi": sympy.pi, "e": sympy.E, "infty": sympy.oo}
 
         self.hidden_variables = {
             "_Exp1": sympy.E,
@@ -64,6 +78,15 @@ class _Constants:
             "ln": sympy.log,
             "sqrt": sympy.sqrt,
             "factorial": sympy.factorial,
+            "abs": sympy.Abs,
+            "sgn": sympy.sign,
+            "max": sympy.Max,
+            "min": sympy.Min,
+            # Extra aliases to make parsing work correctly
+            "sign": sympy.sign,
+            "Abs": sympy.Abs,
+            "Max": sympy.Max,
+            "Min": sympy.Min,
         }
 
         self.trig_functions = {
@@ -138,16 +161,25 @@ class BaseSympyError(Exception):
     pass
 
 
+class HasConflictingVariable(BaseSympyError):
+    pass
+
+
+class HasConflictingFunction(BaseSympyError):
+    pass
+
+
+class HasInvalidAssumption(BaseSympyError):
+    pass
+
+
 @dataclass
 class HasFloatError(BaseSympyError):
-    offset: int
     n: float
 
 
-@dataclass
 class HasComplexError(BaseSympyError):
-    offset: int
-    n: complex
+    pass
 
 
 @dataclass
@@ -168,6 +200,12 @@ class HasInvalidVariableError(BaseSympyError):
 
 
 @dataclass
+class FunctionNameUsedWithoutArguments(BaseSympyError):
+    offset: int
+    text: str
+
+
+@dataclass
 class HasParseError(BaseSympyError):
     offset: int
 
@@ -182,26 +220,13 @@ class HasCommentError(BaseSympyError):
     offset: int
 
 
-class CheckNumbers(ast.NodeTransformer):
-    def visit_Constant(self, node: ast.Constant) -> ast.Constant:
-        if isinstance(node.n, int):
-            return cast(
-                ast.Constant,
-                ast.Call(
-                    func=ast.Name(id="_Integer", ctx=ast.Load()),
-                    args=[node],
-                    keywords=[],
-                ),
-            )
-        elif isinstance(node.n, float):
-            raise HasFloatError(node.col_offset, node.n)
-        elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, node.n)
-        return node
+@dataclass
+class HasInvalidSymbolError(BaseSympyError):
+    symbol: str
 
 
 class CheckWhiteList(ast.NodeVisitor):
-    def __init__(self, whitelist: ASTWhitelistT) -> None:
+    def __init__(self, whitelist: ASTWhiteListT) -> None:
         self.whitelist = whitelist
 
     def visit(self, node: ast.AST) -> None:
@@ -216,23 +241,29 @@ class CheckFunctions(ast.NodeVisitor):
         self.functions = functions
 
     def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Name):
-            if node.func.id not in self.functions:
-                err_node = get_parent_with_location(node)
-                raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+            err_node = get_parent_with_location(node)
+            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
 
 class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables: SympyMapT) -> None:
+    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
+        # functions is only used for error type, if someone writes "exp + 2"
         self.variables = variables
+        self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
-        if isinstance(node.ctx, ast.Load):
-            if not is_name_of_function(node):
-                if node.id not in self.variables:
-                    err_node = get_parent_with_location(node)
-                    raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+        if (
+            isinstance(node.ctx, ast.Load)
+            and not is_name_of_function(node)
+            and node.id not in self.variables
+        ):
+            err_node = get_parent_with_location(node)
+            if node.id in self.functions:
+                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+            else:
+                raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
 
@@ -251,7 +282,7 @@ def get_parent_with_location(node: ast.AST) -> Any:
     return get_parent_with_location(node.parent)  # type: ignore
 
 
-def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
+def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -278,7 +309,9 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     CheckFunctions(locals_for_eval["functions"]).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"]).visit(root)
+    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
+        root
+    )
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -288,9 +321,10 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    whitelist: ASTWhitelistT = (
-        ast.Module,
-        ast.Expr,
+    # Note some whitelist items were removed in this PR:
+    # https://github.com/PrairieLearn/PrairieLearn/pull/7020
+    # If there are compatibility issues, try adding those items back.
+    whitelist: ASTWhiteListT = (
         ast.Load,
         ast.Expression,
         ast.Call,
@@ -310,32 +344,126 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
     CheckWhiteList(whitelist).visit(root)
 
-    # Disallow float and complex, and replace int with sympy equivalent
-    root = CheckNumbers().visit(root)
 
-    # Clean up lineno and col_offset attributes
-    ast.fix_missing_locations(root)
+def sympy_check(
+    expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool
+) -> None:
+    valid_symbols = set().union(
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
+    )
 
-    # Convert AST to code and evaluate it with no global expressions and with
-    # a whitelist of local expressions. Flattens out the inner dictionaries
-    # that appear in locals_for_eval for the final call to eval.
-    locals = {
-        name: expr
-        for local_expressions in locals_for_eval.values()
-        for name, expr in cast(SympyMapT, local_expressions).items()
+    work_stack: deque[sympy.Basic] = deque([expr])
+
+    while work_stack:
+        item = work_stack.pop()
+        str_item = str(item)
+
+        if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
+            raise HasInvalidSymbolError(str_item)
+        elif isinstance(item, sympy.Float):
+            raise HasFloatError(float(str_item))
+        elif not allow_complex and item == sympy.I:
+            raise HasComplexError()
+
+        work_stack.extend(item.args)
+
+
+def evaluate(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+) -> sympy.Expr:
+    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
+
+
+def evaluate_with_source(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+) -> tuple[sympy.Expr, str]:
+    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
+    # for exponentiation. In Python, only the latter can be used.
+    expr = pl.full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+
+    local_dict = {
+        k: v
+        for inner_dict in locals_for_eval.values()
+        for k, v in cast(SympyMapT, inner_dict).items()
     }
 
-    return eval(compile(root, "<ast>", "eval"), {"__builtins__": None}, locals)
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+
+    # Global dict is set up to be very permissive for parsing purposes
+    # (makes it cleaner to call this function with a custom locals dict).
+    # This line shouldn't be dangerous, as it's just loading the global dict.
+    global_dict = {}
+    exec("from sympy import *", global_dict)
+
+    transformations = standard_transformations + (implicit_multiplication_application,)
+
+    try:
+        code = stringify_expr(expr, local_dict, global_dict, transformations)
+    except TokenError:
+        raise HasParseError(-1)
+
+    # First do AST check, mainly for security
+    parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+
+    # Add locals that appear after sympy stringification
+    # This check is only for safety, so won't change what gets parsed
+    parsed_locals_to_eval["functions"].update(
+        Integer=sympy.Integer,
+        Symbol=sympy.Symbol,
+        Float=sympy.Float,
+    )
+
+    parsed_locals_to_eval["variables"].update(
+        I=sympy.I,
+        oo=sympy.oo,
+    )
+
+    ast_check(code, parsed_locals_to_eval)
+
+    # Now that it's safe, get sympy expression
+    try:
+        res = eval_expr(code, local_dict, global_dict)
+    except Exception:
+        raise BaseSympyError()
+
+    # Finally, check for invalid symbols
+    sympy_check(res, locals_for_eval, allow_complex=allow_complex)
+
+    return res, code
 
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
+    return convert_string_to_sympy_with_source(
+        expr,
+        variables=variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
+    )[0]
+
+
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: None | list[str] = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
+) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -345,6 +473,7 @@ def convert_string_to_sympy(
         "variables": const.variables,
         "helpers": const.helpers,
     }
+
     if allow_hidden:
         locals_for_eval["variables"].update(const.hidden_variables)
     if allow_complex:
@@ -355,21 +484,61 @@ def convert_string_to_sympy(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    # If there is a list of variables, add each one to the whitelist
-    if variables is not None:
-        locals_for_eval["variables"].update(
-            (variable, sympy.Symbol(variable)) for variable in variables
+    used_names = set().union(
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
+    )
+
+    # Check assumptions are all made about valid variables only
+    if assumptions is not None:
+        unbound_variables = assumptions.keys() - set(
+            variables if variables is not None else []
         )
+        if unbound_variables:
+            raise HasInvalidAssumption(
+                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+            )
+
+    # If there is a list of variables, add each one to the whitelist with assumptions
+    if variables is not None:
+        variable_dict = locals_for_eval["variables"]
+
+        for variable in variables:
+            variable = greek_unicode_transform(variable)
+            # Check for naming conflicts
+            if variable in used_names:
+                raise HasConflictingVariable(f"Conflicting variable name: {variable}")
+            else:
+                used_names.add(variable)
+
+            # If no conflict, add to locals dict with assumptions
+            if assumptions is None:
+                variable_dict[variable] = sympy.Symbol(variable)
+            else:
+                variable_dict[variable] = sympy.Symbol(
+                    variable, **assumptions.get(variable, {})
+                )
+
+    # If there is a list of custom functions, add each one to the whitelist
+    if custom_functions is not None:
+        function_dict = locals_for_eval["functions"]
+        for function in custom_functions:
+            function = greek_unicode_transform(function)
+            if function in used_names:
+                raise HasConflictingFunction(f"Conflicting variable name: {function}")
+
+            used_names.add(function)
+
+            function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate(expr, locals_for_eval)
+    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -381,7 +550,7 @@ def sympy_to_json(
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
 
-    # Check that variables do not conflict with reserved names
+    # Get reserved variables for custom function parsing
     reserved = (
         const.helpers.keys()
         | const.variables.keys()
@@ -395,14 +564,6 @@ def sympy_to_json(
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
 
-    # Check if reserved variables conflict, raise an error if they do
-    conflicting_reserved_variables = reserved & set(variables)
-
-    if conflicting_reserved_variables:
-        raise ValueError(
-            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
-        )
-
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
@@ -410,39 +571,59 @@ def sympy_to_json(
             [(val, key) for key, val in const.hidden_complex_variables.items()]
         )
 
-    return {"_type": "sympy", "_value": str(a_sub), "_variables": variables}
+    assumptions_dict = {
+        str(variable): variable.assumptions0 for variable in a.free_symbols
+    }
+
+    # Don't check for conflicts here, that happens in parsing.
+    functions_set = {str(func_obj.func) for func_obj in a.atoms(sympy.Function)}
+    custom_functions = list(functions_set - reserved)
+
+    return {
+        "_type": "sympy",
+        "_value": str(a_sub),
+        "_variables": variables,
+        "_assumptions": assumptions_dict,
+        "_custom_functions": custom_functions,
+    }
 
 
 def json_to_sympy(
-    a: SympyJson, *, allow_complex: bool = True, allow_trig_functions: bool = True
+    sympy_expr_dict: SympyJson,
+    *,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
 ) -> sympy.Expr:
-    if "_type" not in a:
+    if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
-    if a["_type"] != "sympy":
+    if sympy_expr_dict["_type"] != "sympy":
         raise ValueError('json must have _type == "sympy" for conversion to sympy')
-    if "_value" not in a:
+    if "_value" not in sympy_expr_dict:
         raise ValueError("json must have key _value for conversion to sympy")
-    if "_variables" not in a:
-        a["_variables"] = None
+    if "_variables" not in sympy_expr_dict:
+        sympy_expr_dict["_variables"] = None
 
     return convert_string_to_sympy(
-        a["_value"],
-        a["_variables"],
+        sympy_expr_dict["_value"],
+        sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        custom_functions=sympy_expr_dict.get("_custom_functions"),
+        assumptions=sympy_expr_dict.get("_assumptions"),
     )
 
 
 def validate_string_as_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: None | list[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    imaginary_unit: Optional[str] = None,
-) -> Optional[str]:
+    custom_functions: None | list[str] = None,
+    imaginary_unit: None | str = None,
+) -> None | str:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
@@ -452,17 +633,16 @@ def validate_string_as_sympy(
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig_functions,
+            custom_functions=custom_functions,
         )
     except HasFloatError as err:
         return (
             f"Your answer contains the floating-point number {err.n}. "
-            f"All numbers must be expressed as integers (or ratios of integers)"
-            f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
+            f"All numbers must be expressed as integers (or ratios of integers)."
         )
-    except HasComplexError as err:
+    except HasComplexError:
         err_string = [
-            f"Your answer contains the complex number {err.n}. "
+            "Your answer contains a complex number. "
             "All numbers must be expressed as integers (or ratios of integers). "
         ]
 
@@ -472,8 +652,6 @@ def validate_string_as_sympy(
                 "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
             )
 
-        err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
-        err_string.append("Note that the location of the syntax error is approximate.")
         return "".join(err_string)
     except HasInvalidExpressionError as err:
         return (
@@ -491,6 +669,19 @@ def validate_string_as_sympy(
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except FunctionNameUsedWithoutArguments as err:
+        return (
+            f'Your answer mentions the function "{err.text}" without '
+            "applying it to anything. "
+            f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except HasInvalidSymbolError as err:
+        return (
+            f'Your answer refers to an invalid symbol "{err.symbol}". '
+            f"<br><br><pre>{point_to_error(expr, -1)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as err:
@@ -529,20 +720,68 @@ def validate_string_as_sympy(
     return None
 
 
-def get_variables_list(variables_string: Optional[str]) -> list[str]:
-    if variables_string is None:
+def get_items_list(items_string: None | str) -> list[str]:
+    if items_string is None:
         return []
 
-    return list(map(str.strip, variables_string.split(",")))
+    return list(map(str.strip, items_string.split(",")))
 
 
-def process_student_input(student_input: str) -> str:
-    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In Python, only the latter can be used.
-    a_sub = student_input.replace("^", "**")
+def greek_unicode_transform(input_str: str) -> str:
+    """
+    Return input_str where all unicode greek letters are replaced
+    by their spelled-out english names.
+    """
+    # From https://gist.github.com/beniwohli/765262
+    greek_alphabet = {
+        "\u0391": "Alpha",
+        "\u0392": "Beta",
+        "\u0393": "Gamma",
+        "\u0394": "Delta",
+        "\u0395": "Epsilon",
+        "\u0396": "Zeta",
+        "\u0397": "Eta",
+        "\u0398": "Theta",
+        "\u0399": "Iota",
+        "\u039A": "Kappa",
+        "\u039B": "Lamda",
+        "\u039C": "Mu",
+        "\u039D": "Nu",
+        "\u039E": "Xi",
+        "\u039F": "Omicron",
+        "\u03A0": "Pi",
+        "\u03A1": "Rho",
+        "\u03A3": "Sigma",
+        "\u03A4": "Tau",
+        "\u03A5": "Upsilon",
+        "\u03A6": "Phi",
+        "\u03A7": "Chi",
+        "\u03A8": "Psi",
+        "\u03A9": "Omega",
+        "\u03B1": "alpha",
+        "\u03B2": "beta",
+        "\u03B3": "gamma",
+        "\u03B4": "delta",
+        "\u03B5": "epsilon",
+        "\u03B6": "zeta",
+        "\u03B7": "eta",
+        "\u03B8": "theta",
+        "\u03B9": "iota",
+        "\u03BA": "kappa",
+        "\u03BB": "lamda",
+        "\u03BC": "mu",
+        "\u03BD": "nu",
+        "\u03BE": "xi",
+        "\u03BF": "omicron",
+        "\u03C0": "pi",
+        "\u03C1": "rho",
+        "\u03C3": "sigma",
+        "\u03C4": "tau",
+        "\u03C5": "upsilon",
+        "\u03C6": "phi",
+        "\u03C7": "chi",
+        "\u03C8": "psi",
+        "\u03C9": "omega",
+    }
 
-    # Replace Unicode minus with hyphen minus wherever it occurs
-    a_sub = a_sub.replace("\u2212", "-")
-
-    # Strip whitespace
-    return a_sub.strip()
+    return "".join(greek_alphabet.get(c, c) for c in input_str)

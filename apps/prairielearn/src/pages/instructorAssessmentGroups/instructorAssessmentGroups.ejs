@@ -21,7 +21,7 @@
     });
   </script>
   <%- include('../partials/navbar'); %>
-  <div id="content" class="container-fluid">
+  <main id="content" class="container-fluid">
     <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
     <% if (typeof errormsg !== 'undefined' && errormsg.length > 0) { %>
@@ -42,7 +42,7 @@
 
     <% } else { %>
     <% if (authz_data.has_course_instance_permission_edit) { %>
-    <div id="content" class="container-fluid">
+    <div class="container-fluid">
       <div class="modal fade" id="uploadAssessmentGroupsModal" tabindex="-1" role="dialog"
         aria-labelledby="uploadAssessmentGroupsModalLabel">
         <div class="modal-dialog" role="document">
@@ -89,7 +89,7 @@
           </div>
         </div>
       </div>
-      <div id="content" class="container-fluid">
+      <div class="container-fluid">
         <div class="modal fade" id="autoAssessmentGroupsModal" tabindex="-1" role="dialog"
           aria-labelledby="autoAssessmentGroupsModalLabel">
           <div class="modal-dialog" role="document">
@@ -107,19 +107,6 @@
                     <label for="formMax">Max number of members in a group</label>
                     <input type="text" value=<%= config_info.defaultMax %> class="form-control" id="formMax" name="max_group_size">
                   </div>
-                  <div class="radio">
-                    <label><input type="radio" name="optradio" value=1 checked> Grouping entire class (Please delete all
-                      groups before executing)</label>
-                  </div>
-                  <div class="radio">
-                    <label><input type="radio" name="optradio" value=2 disabled> [WIP] Grouping not-assigned students (fill
-                      existing groups first)</label>
-                  </div>
-                  <div class="radio">
-                    <label><input type="radio" name="optradio" value=3 disabled> [WIP] Grouping not-assigned students (will
-                      not
-                      change existing groups; create new groups only)</label>
-                  </div>
                   <div class="d-flex justify-content-end">
                     <div class="form-group mb-0">
                       <input type="hidden" name="__action" value="auto_assessment_groups">
@@ -130,36 +117,6 @@
                   </div>
                 </form>
               </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal fade" id="copyAssessmentGroupsModal" tabindex="-1" role="dialog"
-          aria-labelledby="copyAssessmentGroupsModalLabel">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="h4 modal-title" id="copyAssessmentGroupsModalLabel">Copy group setting</h1>
-              </div>
-              <div class="modal-body">
-                <form name="copy-assessment-group-form" method="POST" enctype="multipart/form-data">
-                  <div class="input-group mb-3">
-                    <select class="custom-select" name="copy_assessment_id">
-                      <option selected>Choose Assessment...</option>
-                      <% assessment_list_rows.forEach(function(row, iRow) {%>
-                      <option value=<%= row.id %>><%= row.tid %>: <%= row.title %></option>
-                      <% }); %>
-                    </select>
-                  </div>
-                  <div class="d-flex justify-content-end">
-                    <div class="form-group mb-0">
-                      <input type="hidden" name="__action" value="copy_assessment_groups">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                      <button type="submit" class="btn btn-primary">Copy</button>
-                    </div>
-                  </div>
-              </div>
-              </form>
             </div>
           </div>
         </div>
@@ -180,7 +137,7 @@
                     <label for="formUids">UIDs</label>
                     <input type="text" class="form-control" id="formUids" name="uids"
                       placeholder="one@example.com, two@example.com, three@example.com">
-                    <small id="uidHelp" class="form-text text-muted">Seperate with ","
+                    <small id="uidHelp" class="form-text text-muted">Separate with ","
                       <br>Please make sure they are not in any other groups</small>
                   </div>
                 </div>
@@ -258,15 +215,6 @@
               Automatically assign students to groups.
             </div>
           </div>
-          <div class="col-sm bg-light py-4 border" align="center">
-            <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal"
-              data-target="#copyAssessmentGroupsModal">
-              <i class="fas fa-copy" aria-hidden="true"></i> Copy
-            </button>
-            <div class="mt-2">
-              Copy the group assignments from another assessment.
-            </div>
-          </div>
         </div>
       </div>
       <% } %>
@@ -284,10 +232,12 @@
           </thead>
           <tbody>
             <% groups.forEach(function(row, iRow) { %>
-            <tr>
+            <tr data-test-group-id="<%= row.group_id %>">
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
-              <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
+              <td class="text-center">
+                <small><%= row.users.length > 0 ? row.users.map((user) => user.uid).join(', ') : '(empty)' %></small>
+              </td>
               <% if (authz_data.has_course_instance_permission_edit) { %>
               <td class="text-center">
                 <div class="dropdown">
@@ -337,7 +287,9 @@
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
 
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
+                    <a class="dropdown-item<%= row.users.length === 0 ? ' disabled' : '' %>"
+                       <% if (row.users.length > 0) { %>onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')"<% } %>
+                       href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
 
@@ -370,8 +322,8 @@
               not yet assigned:
             </strong>
             <ul class="mb-0">
-              <% notAssigned.forEach(function(row, iRow) {%>
-              <li><%= row.uid %></li>
+              <% notAssigned.forEach(function(uid) {%>
+              <li><%= uid %></li>
               <% }); %>
             </ul>
             <% } %>
@@ -394,7 +346,7 @@
     </div>
     <% } %>
 
-  </div>
+  </main>
 </body>
 
 </html>

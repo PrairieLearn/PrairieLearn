@@ -14,4 +14,5 @@ FROM
 WHERE
   a.id = $assessment_id
   AND a.course_instance_id = $course_instance_id
+  AND a.deleted_at IS NULL
   AND aa.authorized;

@@ -15,20 +15,13 @@ WITH
       qo.question_number,
       qo.sequence_locked
     FROM
-      assessment_instances AS ai
+      instance_questions AS this_iq
+      JOIN assessment_instances AS ai ON (ai.id = this_iq.assessment_instance_id)
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
-      ai.id IN (
-        SELECT
-          assessment_instance_id
-        FROM
-          instance_questions
-        WHERE
-          id = $instance_question_id
-      )
+      this_iq.id = $instance_question_id
     WINDOW
       w AS (
         ORDER BY
@@ -56,19 +49,14 @@ SELECT
     to_jsonb(ai),
     '{formatted_date}',
     to_jsonb(
-      format_date_full_compact (
-        ai.date,
-        COALESCE(ci.display_timezone, c.display_timezone)
-      )
+      format_date_full_compact (ai.date, ci.display_timezone)
     )
   ) AS assessment_instance,
   CASE
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
       ) * 1000
     )
   END AS assessment_instance_remaining_ms,
@@ -76,9 +64,7 @@ SELECT
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - ai.date
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - ai.date
       ) * 1000
     )
   END AS assessment_instance_time_limit_ms,
@@ -96,10 +82,7 @@ SELECT
     'last_grader_name',
     COALESCE(ulg.name, ulg.uid),
     'modified_at_formatted',
-    format_date_short (
-      iq.modified_at,
-      COALESCE(ci.display_timezone, c.display_timezone)
-    )
+    format_date_short (iq.modified_at, ci.display_timezone)
   ) AS instance_question,
   jsonb_build_object(
     'id',
@@ -113,7 +96,9 @@ SELECT
     'advance_score_perc',
     aq.effective_advance_score_perc,
     'sequence_locked',
-    iqi.sequence_locked
+    iqi.sequence_locked,
+    'instructor_question_number',
+    admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(q) AS question,
@@ -130,7 +115,6 @@ FROM
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN groups AS g ON (
     g.id = ai.group_id
@@ -155,5 +139,7 @@ WHERE
     $assessment_id::BIGINT IS NULL
     OR a.id = $assessment_id
   )
+  AND q.deleted_at IS NULL
+  AND a.deleted_at IS NULL
   AND aai.authorized
   AND NOT iqi.sequence_locked;

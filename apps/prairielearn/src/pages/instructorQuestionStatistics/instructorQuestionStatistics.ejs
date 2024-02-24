@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageNote: question.qid}); %>
-    <%- include('../partials/mathjax'); %>
     <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
@@ -21,7 +20,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -29,7 +28,7 @@
         </div>
 
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
+          <table class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="text-center">Course Instance</th>
@@ -218,6 +217,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

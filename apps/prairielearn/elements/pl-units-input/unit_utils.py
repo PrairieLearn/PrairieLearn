@@ -115,7 +115,7 @@ def get_exact_units_grading_fn(
 
 
 def get_with_units_grading_fn(
-    *, ureg: UnitRegistry, correct_ans: str, atol: str
+    *, ureg: UnitRegistry, correct_ans: str, rtol: float, atol: str
 ) -> Callable[[str], Tuple[bool, Optional[str]]]:
     # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
@@ -134,7 +134,7 @@ def get_with_units_grading_fn(
         magnitudes_match = pl.is_correct_scalar_ra(
             a_sub=np.float64(parsed_sub_base_unit.magnitude),
             a_tru=np.float64(correct_ans_base_unit.magnitude),
-            rtol=0.0,
+            rtol=rtol,
             atol=parsed_atol.magnitude,
         )
 

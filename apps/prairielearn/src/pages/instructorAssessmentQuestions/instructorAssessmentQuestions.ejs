@@ -5,22 +5,53 @@
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
+    <%- compiled_script_tag('instructorAssessmentQuestionsClient.ts') %>
   </head>
   <script>
-    $(() => {
-        $('[data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            html: true,
-            trigger: 'hover',
-        }).on("show.bs.popover", function() {
-            $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
-        });;
-    });
   </script>
   <body>
+    <script>
+      $(() => {
+        $('[data-toggle="popover"]').popover({ sanitize: false });
+
+        $('.js-sync-popover[data-toggle="popover"]')
+          .popover({
+            sanitize: false,
+          })
+          .on('show.bs.popover', function () {
+            $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+          });
+      });
+    </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
+      <div class="modal fade" id="resetQuestionVariantsModal" tabindex="-1" role="dialog" aria-labelledby="resetQuestionVariantsModalLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="resetQuestionVariantsModalLabel">Confirm reset question variants</h4>
+            </div>
+            <div class="modal-body">
+              <p>
+                Are your sure you want to reset all current variants of this question? <strong>All ungraded attempts will be lost.</strong>
+              </p>
+              <p>
+                Students will receive a new variant the next time they view this question.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <form name="reset-question-variants-form" method="POST">
+                <input type="hidden" name="__action" value="reset_question_variants">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="unsafe_assessment_question_id" class="js-assessment-question-id" value="">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Reset question variants</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
@@ -29,9 +60,9 @@
         </div>
 
         <div class="table-responsive">
-          <% 
-          var nTableCols = 9;
-          
+          <%
+          var nTableCols = 11;
+
           // If at least one question has a nonzero unlock score, display the Advance Score column
           const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
           if (showAdvanceScorePercCol) nTableCols++;
@@ -39,7 +70,7 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th></th>
+                <th><span class="sr-only">Name</span></th>
                 <th>QID</th>
                 <th>Topic</th>
                 <th>Tags</th>
@@ -52,10 +83,11 @@
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+                <th class="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <% questions.forEach(function(question, i) { %>
+              <% questions.forEach(function(question, iRow) { %>
               <% if (question.start_new_zone) { %>
               <tr>
                 <th colspan="<%= nTableCols %>">
@@ -105,17 +137,31 @@
                 </td>
                 <td>
                   <% if (question.sync_errors) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_errors_ansified %></pre>">
-                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Errors"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= question.sync_errors_ansified %></pre>"
+                    >
+                      <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                    </button>
                   <% } else if (question.sync_warnings) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_warnings_ansified %></pre>">
-                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Warnings"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= question.sync_warnings_ansified %></pre>"
+                    >
+                      <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                    </button>
                   <% } %>
-                  <%= question.qid %>
+                  <%= question.display_name %>
                 </td>
                 <td><%- include('../partials/topic', {topic: question.topic}); %></td>
                 <td><%- include('../partials/tags', {tags: question.tags}); %></td>
@@ -143,7 +189,7 @@
                 </td>
                 <td class="text-center">
                   <% if (question.number_submissions_hist) { %>
-                    <div id="attemptsHist<%= i %>" class="miniHist">
+                    <div id="attemptsHist<%= iRow %>" class="miniHist">
 
                     </div>
                   <% } %>
@@ -155,7 +201,7 @@
                       width: 60,
                       height: 20,
                     };
-                    histmini("#attemptsHist<%= i %>", data, options);
+                    histmini("#attemptsHist<%= iRow %>", data, options);
                   });
                 </script>
                 <td>
@@ -165,6 +211,26 @@
                   <% }); %>
                   <% } %>
                 </td>
+                <td class="text-right">
+                  <div class="dropdown js-question-actions">
+                    <button type="button" class="btn btn-secondary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
+
+                    <div class="dropdown-menu">
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
+                        <button
+                          class="dropdown-item"
+                          data-toggle="modal"
+                          data-target="#resetQuestionVariantsModal"
+                          data-assessment-question-id="<%= question.id %>"
+                        >
+                          Reset question variants
+                        </button>
+                      <% } %>
+                    </div>
+                  </div>
+                </td>
               </tr>
               <% }); %>
             </tbody>
@@ -172,6 +238,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

@@ -4,17 +4,21 @@ const fs = require('fs-extra');
 const async = require('async');
 const tmp = require('tmp');
 const Docker = require('dockerode');
-const AWS = require('aws-sdk');
+const { S3 } = require('@aws-sdk/client-s3');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { ECRClient } = require('@aws-sdk/client-ecr');
+const { Upload } = require('@aws-sdk/lib-storage');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
+const { pipeline } = require('node:stream/promises');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
-const jobLogger = require('./lib/jobLogger');
+const { makeJobLogger } = require('./lib/jobLogger');
 const { config, loadConfig } = require('./lib/config');
 const healthCheck = require('./lib/healthCheck');
 const lifecycle = require('./lib/lifecycle');
@@ -22,6 +26,9 @@ const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
 const load = require('./lib/load');
+const { makeAwsClientConfig, makeS3ClientConfig } = require('./lib/aws');
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
@@ -36,15 +43,11 @@ process.on('SIGTERM', () => {
 
 async.series(
   [
-    (callback) => {
-      loadConfig((err) => {
-        if (ERR(err, callback)) return;
-        globalLogger.info('Config loaded:');
-        globalLogger.info(JSON.stringify(config, null, 2));
-        callback(null);
-      });
-    },
     async () => {
+      await loadConfig();
+      globalLogger.info('Config loaded:');
+      globalLogger.info(JSON.stringify(config, null, 2));
+
       if (config.sentryDsn) {
         await Sentry.init({
           dsn: config.sentryDsn,
@@ -53,9 +56,8 @@ async.series(
       }
       await lifecycle.init();
     },
-    (callback) => {
-      if (!config.useDatabase) return callback(null);
-      var pgConfig = {
+    async () => {
+      const pgConfig = {
         host: config.postgresqlHost,
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
@@ -63,22 +65,29 @@ async.series(
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
-      globalLogger.info(
-        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
-      );
-      var idleErrorHandler = function (err) {
+      function idleErrorHandler(err) {
         globalLogger.error('idle client error', err);
-      };
-      sqldb.init(pgConfig, idleErrorHandler, function (err) {
-        if (ERR(err, callback)) return;
-        globalLogger.info('Successfully connected to database');
-        callback(null);
-      });
+        Sentry.captureException(err, {
+          level: 'fatal',
+          tags: {
+            // This may have been set by `sql-db.js`. We include this in the
+            // Sentry tags to more easily debug idle client errors.
+            last_query: err?.data?.lastQuery ?? undefined,
+          },
+        });
+        Sentry.close().finally(() => process.exit(1));
+      }
+
+      globalLogger.info(
+        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database,
+      );
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
+      globalLogger.info('Successfully connected to database');
     },
-    (callback) => {
-      if (!config.useDatabase || !config.reportLoad) return callback(null);
-      load.init(config.maxConcurrentJobs);
-      callback(null);
+    async () => {
+      if (config.reportLoad) {
+        load.init(config.maxConcurrentJobs);
+      }
     },
     (callback) => {
       if (!config.useHealthCheck) return callback(null);
@@ -88,7 +97,7 @@ async.series(
       });
     },
     (callback) => {
-      if (!config.useDatabase || !config.useImagePreloading) return callback(null);
+      if (!config.useImagePreloading) return callback(null);
       pullImages((err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -99,27 +108,39 @@ async.series(
     },
     () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
-      const sqs = new AWS.SQS();
+      const sqs = new SQSClient(makeAwsClientConfig());
       for (let i = 0; i < config.maxConcurrentJobs; i++) {
         async.forever((next) => {
           if (!healthCheck.isHealthy() || processTerminating) return;
           receiveFromQueue(
             sqs,
             config.jobsQueueUrl,
-            (job, fail, success) => {
+            (job, done) => {
               globalLogger.info(`received ${job.jobId} from queue`);
-              handleJob(job, (err) => {
-                globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
-                if (ERR(err, fail)) return;
-                globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                success();
+
+              // Ensure that this job wasn't canceled in the time since job submission.
+              isJobCanceled(job, (err, canceled) => {
+                if (ERR(err, done)) return;
+
+                if (canceled) {
+                  globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
+                  done();
+                  return;
+                }
+
+                handleJob(job, (err) => {
+                  globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+                  if (ERR(err, done)) return;
+                  globalLogger.info(`handleJob(${job.jobId}) succeeded`);
+                  done();
+                });
               });
             },
             (err) => {
               if (ERR(err, (err) => globalLogger.error('receive error:', err)));
               globalLogger.info('Completed full request cycle');
               next();
-            }
+            },
           );
         });
       }
@@ -137,23 +158,31 @@ async.series(
         process.exit(1);
       }, 1000);
     });
-  }
+  },
 );
+
+function isJobCanceled(job, callback) {
+  sqldb.queryOneRow(
+    sql.check_job_cancellation,
+    {
+      grading_job_id: job.jobId,
+    },
+    (err, result) => {
+      if (ERR(err, callback)) return;
+      callback(null, result.rows[0].canceled);
+    },
+  );
+}
 
 function handleJob(job, done) {
   load.startJob();
 
-  const loggerOptions = {
-    bucket: job.s3Bucket,
-    rootKey: job.s3RootKey,
-  };
-
-  const logger = jobLogger(loggerOptions);
+  const logger = makeJobLogger();
   globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
   const info = {
     docker: new Docker(),
-    s3: new AWS.S3(),
+    s3: new S3(makeS3ClientConfig({ maxAttempts: 3 })),
     logger,
     job,
   };
@@ -163,7 +192,7 @@ function handleJob(job, done) {
 
   async.auto(
     {
-      context: (callback) => context(info, callback),
+      context: async () => await context(info),
       reportReceived: ['context', reportReceived],
       initDocker: ['context', initDocker],
       initFiles: ['context', initFiles],
@@ -188,32 +217,28 @@ function handleJob(job, done) {
       if (ERR(err, done)) return;
       logger.info('Successfully completed handleJob()');
       done(null);
-    }
+    },
   );
 }
 
-function context(info, callback) {
+async function context(info) {
   const {
     job: { jobId },
   } = info;
 
-  timeReporter.reportReceivedTime(jobId, (err, time) => {
-    if (ERR(err, callback)) return;
-    const context = {
-      ...info,
-      receivedTime: time,
-    };
-    callback(null, context);
-  });
+  const receivedTime = await timeReporter.reportReceivedTime(jobId);
+  return {
+    ...info,
+    receivedTime,
+  };
 }
 
-function reportReceived(info, callback) {
+async function reportReceived(info) {
   const {
     context: { job, receivedTime, logger },
   } = info;
   logger.info('Sending job acknowledgement to PrairieLearn');
 
-  const sqs = new AWS.SQS();
   const messageBody = {
     jobId: job.jobId,
     event: 'job_received',
@@ -221,15 +246,19 @@ function reportReceived(info, callback) {
       receivedTime: receivedTime,
     },
   };
-  const params = {
-    QueueUrl: config.resultsQueueUrl,
-    MessageBody: JSON.stringify(messageBody),
-  };
-  sqs.sendMessage(params, (err) => {
+  const sqs = new SQSClient(makeAwsClientConfig());
+  try {
+    await sqs.send(
+      new SendMessageCommand({
+        QueueUrl: config.resultsQueueUrl,
+        MessageBody: JSON.stringify(messageBody),
+      }),
+    );
+  } catch (err) {
     // We don't want to fail the job if this notification fails
-    if (ERR(err, (err) => logger.error('sendMessage error:', err)));
-    callback(null);
-  });
+    logger.error('sendMessage error:', err);
+    Sentry.captureException(err);
+  }
 }
 
 function initDocker(info, callback) {
@@ -251,16 +280,11 @@ function initDocker(info, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-            if (ERR(err, callback)) return;
-            dockerAuth = auth;
-            callback(null);
-          });
-        } else {
-          callback(null);
+          const ecr = new ECRClient(makeAwsClientConfig());
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       async () => {
@@ -291,7 +315,7 @@ function initDocker(info, callback) {
             },
             (output) => {
               logger.info('docker output:', output);
-            }
+            },
           );
         });
       },
@@ -299,7 +323,7 @@ function initDocker(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -338,24 +362,17 @@ function initFiles(info, callback) {
             files.tempDir = dir;
             files.tempDirCleanup = cleanup;
             callback(null);
-          }
+          },
         );
       },
-      (callback) => {
+      async () => {
         logger.info('Loading job files');
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/job.tar.gz`,
         };
-        s3.getObject(params)
-          .createReadStream()
-          .on('error', (err) => {
-            return ERR(err, callback);
-          })
-          .on('end', () => {
-            callback(null);
-          })
-          .pipe(fs.createWriteStream(jobArchiveFile));
+        const object = await s3.getObject(params);
+        await pipeline(object.Body, fs.createWriteStream(jobArchiveFile));
       },
       (callback) => {
         logger.info('Unzipping files');
@@ -378,7 +395,7 @@ function initFiles(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, files);
-    }
+    },
   );
 }
 
@@ -434,21 +451,29 @@ function runJob(info, callback) {
             NetworkDisabled: !jobEnableNetworking,
             HostConfig: {
               Binds: [`${tempDir}:/grade`],
-              Memory: 1 << 30, // 1 GiB
-              MemorySwap: 1 << 30, // same as Memory, so no access to swap
-              KernelMemory: 1 << 29, // 512 MiB
-              DiskQuota: 1 << 30, // 1 GiB
+              Memory: config.graderDockerMemory,
+              MemorySwap: config.graderDockerMemorySwap,
+              KernelMemory: config.graderDockerKernelMemory,
+              DiskQuota: config.graderDockerDiskQuota,
               IpcMode: 'private',
-              CpuPeriod: 100000, // microseconds
-              CpuQuota: 90000, // portion of the CpuPeriod for this container
-              PidsLimit: 1024,
+              CpuPeriod: config.graderDockerCpuPeriod,
+              CpuQuota: config.graderDockerCpuQuota,
+              PidsLimit: config.graderDockerPidsLimit,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Entrypoint: entrypoint.split(' '),
           },
           (err, container) => {
             if (ERR(err, callback)) return;
             callback(null, container);
-          }
+          },
         );
       },
       (container, callback) => {
@@ -465,7 +490,7 @@ function runJob(info, callback) {
               logger.info(`container> ${line.toString('utf8')}`);
             });
             callback(null, container);
-          }
+          },
         );
       },
       (container, callback) => {
@@ -475,12 +500,9 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      (container, callback) => {
-        timeReporter.reportStartTime(jobId, (err, time) => {
-          if (ERR(err, callback)) return;
-          results.start_time = time;
-          callback(null, container);
-        });
+      async (container) => {
+        results.start_time = await timeReporter.reportStartTime(jobId);
+        return container;
       },
       async (container) => {
         const timeoutId = setTimeout(() => {
@@ -499,12 +521,9 @@ function runJob(info, callback) {
 
         return container;
       },
-      (container, callback) => {
-        timeReporter.reportEndTime(jobId, (err, time) => {
-          if (ERR(err, callback)) return;
-          results.end_time = time;
-          callback(null, container);
-        });
+      async (container) => {
+        results.end_time = await timeReporter.reportEndTime(jobId);
+        return container;
       },
       (container, callback) => {
         container.inspect((err, data) => {
@@ -527,7 +546,7 @@ function runJob(info, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -602,7 +621,7 @@ function runJob(info, callback) {
       } else {
         return callback(null, results);
       }
-    }
+    },
   );
 }
 
@@ -618,24 +637,22 @@ function uploadResults(info, callback) {
 
   async.series(
     [
-      (callback) => {
+      async () => {
         // Now we can send the results back to S3
         logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
-        const params = {
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, 2)),
-        };
-        s3.putObject(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/results.json`,
+            Body: Buffer.from(JSON.stringify(results, null, 2)),
+          },
+        }).done();
       },
-      (callback) => {
+      async () => {
         // Let's send the results back to PrairieLearn now; the archive will
         // be uploaded later
         logger.info('Sending results to PrairieLearn with results');
-        const sqs = new AWS.SQS();
         const messageBody = {
           jobId,
           event: 'grading_result',
@@ -648,20 +665,19 @@ function uploadResults(info, callback) {
           messageBody.data = results;
         }
 
-        const params = {
-          QueueUrl: config.resultsQueueUrl,
-          MessageBody: JSON.stringify(messageBody),
-        };
-        sqs.sendMessage(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        const sqs = new SQSClient(makeAwsClientConfig());
+        await sqs.send(
+          new SendMessageCommand({
+            QueueUrl: config.resultsQueueUrl,
+            MessageBody: JSON.stringify(messageBody),
+          }),
+        );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -695,23 +711,33 @@ function uploadArchive(results, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);
-        const params = {
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/archive.tar.gz`,
-          Body: fs.createReadStream(tempArchive),
-        };
-        s3.upload(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/archive.tar.gz`,
+            Body: fs.createReadStream(tempArchive),
+          },
+        }).done();
+      },
+      async () => {
+        // Upload all logs to S3.
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/output.log`,
+            Body: logger.getBuffer(),
+          },
+        }).done();
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       tempArchiveCleanup && tempArchiveCleanup();
       callback(null);
-    }
+    },
   );
 }

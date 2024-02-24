@@ -39,6 +39,8 @@ def prepare(element_html, data):
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     if name not in data["correct_answers"]:
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:

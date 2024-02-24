@@ -128,6 +128,8 @@ def prepare(element_html, data):
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     options, statements = categorize_matches(element, data)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
@@ -366,9 +368,11 @@ def render(element_html, data):
                 else:
                     counter = f"{get_counter(student_answer + 1, counter_type)}. "
                 statement_html = {
-                    "option": "[blank]"
-                    if student_answer == -1
-                    else display_options[student_answer]["html"],
+                    "option": (
+                        "[blank]"
+                        if student_answer == -1
+                        else display_options[student_answer]["html"]
+                    ),
                     "counter": counter,
                     "disabled": "disabled",
                     "display_score_badge": display_score_badge,

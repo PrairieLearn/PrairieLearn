@@ -22,7 +22,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-- [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+- [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoAssessment.json)
 
 ## Assessment naming
 
@@ -224,44 +224,180 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
-## Forcing students to complete questions in-order
+### Enabling custom group roles
 
-**WARNING:** We **strongly** discourage the use of this option during exams, as it can be very detrimental to student success. See below for more details.
+By default, students working in a collaborative group assessments can view and submit every question. However, instructors can define **custom group roles**, which can be assigned different permissions to facilitate role-based teamwork. Assessments can be configured to allow or restrict some operations to students with specific roles, such as:
 
-Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
+- Submitting specific questions
+- Viewing specific questions
+- Assigning group roles for other students
 
-To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
+Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join groups after assessments have started.
+
+To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
 ```json
 {
-  "advanceScorePerc": 100,
+  "groupRoles": [
+    {
+      "name": "Manager",
+      "minimum": 1,
+      "maximum": 1,
+      "canAssignRoles": true
+    },
+    {
+      "name": "Recorder",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Reflector",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Contributor"
+    }
+  ]
+}
+```
+
+| Attribute        | Type    | Default | Description                                                                  |
+| ---------------- | ------- | ------- | ---------------------------------------------------------------------------- |
+| `name`           | string  | -       | The name of the role.                                                        |
+| `minimum`        | integer | 0       | The minimum required number of students holding this role in the assessment. |
+| `maximum`        | integer | -       | The maximum required number of students holding this role in the assessment. |
+| `canAssignRoles` | boolean | false   | Allow students with this role to assign roles to other students.             |
+
+Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a group's role configuration does not meet the instructor's specification.
+
+#### Adding permissions for an assessment
+
+Permissions can be configured at the _assessment_, _zone_, or _question_ level.
+
+The schema for permissions is defined as follows:
+
+```json
+{
+  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+  "canSubmit": ["Recorder"]
+}
+```
+
+| Attribute   | Type            | Default | Description                                                     |
+| ----------- | --------------- | ------- | --------------------------------------------------------------- |
+| `canView`   | Array of string | -       | The names of roles that can view this part of the assessment.   |
+| `canSubmit` | Array of string | -       | The names of roles that can submit this part of the assessment. |
+
+Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no role** can view or submit that part of the assessment, respectively. If either attribute is not set, it means that **every role** has the permission associated to the attribute, i.e., any student with any role can view or submit that part of the assessment.
+
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
+
+```json
+{
+  "canView": ["Manager", "Reflector", "Recorder"],
   "zones": [
     {
-      "advanceScorePerc": 80,
+      "canSubmit": ["Recorder"],
       "questions": [
-        {
-          "id": "page1",
-          "advanceScorePerc": 50
-        },
-        {
-          "id": "page2"
-        },
-        {
-          "id": "page3"
-        }
+        { "id": "question1", "points": 1 },
+        { "id": "question2", "points": 1, "canView": ["Recorder"] },
+        { "id": "question3", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
+        { "id": "question4", "points": 1, "canView": null }
       ]
     }
   ]
 }
 ```
 
-In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80% in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+In the example above, question 1 can be viewed by students in Manager, Reflector or Recorder roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector. Question 4 overrides the default settings by using the `null` special value, and allows students in any role to view the question, though only students with the Recorder role can submit an answer.
 
-If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+#### Assigning roles to students
 
-### Note about exam-type assessments and in-order questions
+When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. Students can click "View role info" to see more information about the assessment's group roles.
 
-The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
+![Joining a group assessment with custom group roles](grouproles_join.png)
+
+When expanded, group assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
+
+![Group info from student perspective](grouproles_groupinfo.png)
+
+Any student with an assigner role can view additional controls to change the roles of other users in the group. Students with assigner roles can re-assign group roles both before and during an assessment.
+
+![Group role assignment controls](grouproles_assign_roles.png)
+
+#### Restrictions based on role permissions
+
+When an instructor restricts the viewing of a question to certain roles, users without those roles will be unable to view that question.
+
+![Question cannot be viewed due to group role](grouproles_view_question.png)
+
+Additionally, when an instructor restricts the submitting of a question to certain roles, users without those roles will be unable to submit that question.
+
+![Question cannot be submitted due to group role](grouproles_submit_question.png)
+
+When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
+
+![Group configuration errors](grouproles_invalid_config_errors.png)
+
+## Forcing students to complete questions in-order
+
+**WARNING:** We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
+
+Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
+
+To enable these features, set `advanceScorePerc` for any question to a number between 0 and 100. An example of what this looks like is below, with boilerplate attributes omitted:
+
+```json
+{
+  "zones": [
+    {
+      "questions": [
+        { "id": "q1", "advanceScorePerc": 50 },
+        { "id": "q2", "advanceScorePerc": 100 },
+        { "id": "q3", "advanceScorePerc": 0 },
+        { "id": "q4", "advanceScorePerc": 80 },
+        { "id": "q5", "advanceScorePerc": 100 }
+      ]
+    }
+  ]
+}
+```
+
+Each question blocks all later questions until its `advanceScorePerc` is met. In the above example, `q1` blocks all later questions until the student has scored at least 50% on it. Then `q2` blocks all later questions until the student has a perfect score on it. Once a student gets past `q2`, both `q3` and `q4` are immediately available because `q3` does not do any blocking. Finally, `q4` blocks the remaining `q5` until the student has an 80% score on it. The `advanceScorePerc` attribute on `q5` is irrelevant because there are no questions after it.
+
+The relevant score for comparing to `advanceScorePerc` is the student's _highest submission score_ for the question, not their percentage score on the question overall. For example, suppose `q1` above has `"points": [10, 4, 2, 1]`. Then a student who makes a 50%-correct submission on their second attempt will unblock the question, even though they only score 2 points out of 10 on the question (50% of the 4-point second-chance value). The submission score used for `advanceScorePerc` is the one based on autograding components of the question and [manual grading](manualGrading.md) scores are not considered. For this reason a question that is purely manually graded should not have an `advanceScorePerc` set on it.
+
+An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which will act as a default for all questions in that zone or assessment. For example, the following configuration is equivalent to the above:
+
+```json
+{
+  "zones": [
+    {
+      "advanceScorePerc": 100,
+      "questions": [
+        { "id": "q1", "advanceScorePerc": 50 },
+        { "id": "q2" },
+        { "id": "q3", "advanceScorePerc": 0 },
+        { "id": "q4", "advanceScorePerc": 80 },
+        { "id": "q5" }
+      ]
+    }
+  ]
+}
+```
+
+In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 because the zone-level attribute is used as a default.
+
+Note that an `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
+
+For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#changing-question-order-randomization).
+
+If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+
+### Warning about in-order questions and high-stakes exams
+
+The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
 ## Auto-closing Exam assessments
 
@@ -354,17 +490,17 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "singleAttemptQ", "points": 10},
-            {"id": "tryOncePerVar", "points": 10},
-            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-        ]
-    }
-],
-```
+  ```json
+  "zones": [
+      {
+          "questions": [
+              {"id": "singleAttemptQ", "points": 10},
+              {"id": "tryOncePerVar", "points": 10},
+              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
+          ]
+      }
+  ],
+  ```
 
 ## Limiting the rate at which answers can be graded
 
@@ -396,10 +532,18 @@ By default, `Exam` assessments require students to certify their identity and pl
 
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
-The text of the honor code was based on the University of Maryland's [Honor Pledge](https://www.studentconduct.umd.edu/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
 
 ## Linking to assessments
 
 Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
 
 The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.
+
+## Client Fingerprint Tracking and Changes
+
+While a student is working on an assessment, PrairieLearn tracks the user's IP address, session ID, and user agent (this includes the operating system, browser application, and version). These attributes together make up a client fingerprint. The fingerprints are then recorded during events while accessing the assessment instance. For example, when a student views a question, a record of the client fingerprint is saved along with the view event.
+
+Each time the client fingerprint is recorded, PrairieLearn checks it against the previous client fingerprint used to access that assessment. PrairieLearn will track and display how many times the fingerprint has changed during the course of the assessment. You can see the number of times a fingerprint changed on the Students tab of an assessment. You can also see more detailed information about the client fingerprint by accessing the student's assessment instance and reviewing the Fingerprint column of the event log.
+
+Some fingerprint changes may occur naturally during the course of an assessment, such as a computer connecting to a different Wi-Fi access point or a student changing locations while working on homework. However, a high number of changes in an exam-like environment could be a possible indication of collusion between students. In particular, many fingerprint changes could be an indication that multiple users were accessing the exam simultaneously, such as one student in the exam room and a second student outside. In such a case, the exact pattern of fingerprints in the assessment instance log will be helpful in determining whether there is indeed an academic integrity issue.

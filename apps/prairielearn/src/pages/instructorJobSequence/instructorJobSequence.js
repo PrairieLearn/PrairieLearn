@@ -1,8 +1,11 @@
+//@ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
+import * as express from 'express';
+import * as error from '@prairielearn/error';
+
+import * as serverJobs from '../../lib/server-jobs-legacy';
+
 const router = express.Router();
-const serverJobs = require('../../lib/server-jobs');
-const error = require('@prairielearn/error');
 
 router.get('/:job_sequence_id', function (req, res, next) {
   const job_sequence_id = req.params.job_sequence_id;
@@ -34,13 +37,13 @@ router.get('/:job_sequence_id', function (req, res, next) {
           // a course instance through a course page route. Redirect to the course
           // instance page route so we get authz_data for the course instance.
           res.redirect(
-            `${res.locals.plainUrlPrefix}/course_instance/${job_sequence.course_instance_id}/instructor/jobSequence/${job_sequence.id}`
+            `${res.locals.plainUrlPrefix}/course_instance/${job_sequence.course_instance_id}/instructor/jobSequence/${job_sequence.id}`,
           );
         }
 
         if (!res.locals.authz_data.has_course_instance_permission_view) {
           return next(
-            error.make(403, 'Access denied (must be a Student Data Viewer in the course instance)')
+            error.make(403, 'Access denied (must be a Student Data Viewer in the course instance)'),
           );
         }
       }
@@ -51,4 +54,4 @@ router.get('/:job_sequence_id', function (req, res, next) {
   });
 });
 
-module.exports = router;
+export default router;

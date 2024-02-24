@@ -1,7 +1,21 @@
-export { trace, metrics, context, SpanStatusCode, ValueType } from '@opentelemetry/api';
+export {
+  trace,
+  metrics,
+  context,
+  SpanStatusCode,
+  ValueType,
+  TraceFlags,
+  Meter,
+  Counter,
+  Histogram,
+  UpDownCounter,
+  ObservableCounter,
+  ObservableUpDownCounter,
+  ObservableGauge,
+} from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
 
-export { init, shutdown } from './init';
+export { init, shutdown, disableInstrumentations } from './init';
 export { instrumented } from './tracing';
 export {
   instrumentedWithMetrics,

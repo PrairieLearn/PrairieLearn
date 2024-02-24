@@ -5,11 +5,12 @@ const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
 const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielearn/opentelemetry');
+const Sentry = require('@prairielearn/sentry');
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const { config } = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
 const { logger } = require('@prairielearn/logger');
-const { sleep } = require('../lib/sleep');
 const namedLocks = require('@prairielearn/named-locks');
 
 const sqldb = require('@prairielearn/postgres');
@@ -133,6 +134,12 @@ module.exports = {
       throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
     }
 
+    module.exports.jobs.forEach((job) => {
+      if (typeof job.module.run !== 'function') {
+        throw new Error(`Cron job ${job.name} does not have a run() function`);
+      }
+    });
+
     module.exports.jobs = module.exports.jobs.filter((job) => {
       if (enabledJobs) {
         return enabledJobs.includes(job.name);
@@ -145,7 +152,7 @@ module.exports = {
 
     logger.verbose(
       'initializing cron',
-      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec']))
+      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec'])),
     );
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
@@ -266,6 +273,13 @@ module.exports = {
                     cronUuid,
                   });
 
+                  Sentry.captureException(err, {
+                    tags: {
+                      'cron.name': job.name,
+                      'cron.uuid': cronUuid,
+                    },
+                  });
+
                   span.recordException(err);
                   span.setStatus({
                     code: SpanStatusCode.ERROR,
@@ -288,7 +302,7 @@ module.exports = {
         debug(`runJobs(): done`);
         logger.verbose('cron: jobs finished', { cronUuid });
         callback(null);
-      }
+      },
     );
   },
 
@@ -341,7 +355,7 @@ module.exports = {
     };
     sqldb.query(sql.select_recent_cron_job, params, (err, result) => {
       if (ERR(err, callback)) return;
-      if (result.rowCount > 0) {
+      if (result.rowCount != null && result.rowCount > 0) {
         debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
         logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
         callback(null);

@@ -3,18 +3,30 @@ import fs from 'fs-extra';
 import path from 'node:path';
 import chalk from 'chalk';
 import _ from 'lodash';
-import { diffLines } from 'diff';
+import { structuredPatch } from 'diff';
 
 import { describeDatabase, formatDatabaseDescription } from './describe';
 
-type DatabaseInfo = { type: 'database'; name: string };
-type DirectoryInfo = { type: 'directory'; path: string };
+interface DatabaseInfo {
+  type: 'database';
+  name: string;
+}
+
+interface DirectoryInfo {
+  type: 'directory';
+  path: string;
+}
+
 type DiffTarget = DatabaseInfo | DirectoryInfo;
-type DiffOptions = { coloredOutput?: boolean };
-type Description = {
+
+interface DiffOptions {
+  coloredOutput?: boolean;
+}
+
+interface Description {
   tables: Record<string, string>;
   enums: Record<string, string>;
-};
+}
 
 async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Promise<string> {
   function formatText(text: string, formatter?: ((s: string) => string) | null): string {
@@ -40,7 +52,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     result += formatText(`Tables added to ${db2NameBold} (${db2.type})\n`, chalk.underline);
     result += formatText(
       tablesMissingFrom1.map((table) => `+ ${table}`).join('\n') + '\n\n',
-      chalk.green
+      chalk.green,
     );
   }
 
@@ -48,7 +60,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     result += formatText(`Tables missing from ${db2NameBold} (${db2.type})\n`, chalk.underline);
     result += formatText(
       tablesMissingFrom2.map((table) => `- ${table}`).join('\n') + '\n\n',
-      chalk.red
+      chalk.red,
     );
   }
 
@@ -60,7 +72,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     result += formatText(`Enums added to ${db2NameBold} (${db1.type})\n`, chalk.underline);
     result += formatText(
       enumsMissingFrom1.map((enumName) => `+ ${enumName}`).join('\n') + '\n\n',
-      chalk.green
+      chalk.green,
     );
   }
 
@@ -68,45 +80,36 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     result += formatText(`Enums missing from ${db2NameBold} (${db2.type})\n`, chalk.underline);
     result += formatText(
       enumsMissingFrom2.map((enumName) => `- ${enumName}`).join('\n') + '\n\n',
-      chalk.red
+      chalk.red,
     );
   }
 
   // Determine if the columns of any table differ
   const intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
   _.forEach(intersection, (table) => {
-    // We normalize each blob to end with a newline to make diffs print cleaner
-    const diff = diffLines(
-      description1.tables[table].trim() + '\n',
-      description2.tables[table].trim() + '\n'
+    const patch = structuredPatch(
+      `tables/${table}`,
+      `tables/${table}`,
+      description1.tables[table],
+      description2.tables[table],
     );
-    if (diff.length === 1) return;
+
+    if (patch.hunks.length === 0) return;
 
     const boldTable = formatText(table, chalk.bold);
     result += formatText(`Differences in ${boldTable} table\n`, chalk.underline);
 
-    // Shift around the newlines so that we can cleanly show +/- symbols
-    for (let i = 1; i < diff.length; i++) {
-      const prev = diff[i - 1].value;
-      if (prev[prev.length - 1] === '\n') {
-        diff[i - 1].value = prev.slice(0, -1);
-        diff[i].value = '\n' + diff[i].value;
+    patch.hunks.forEach((hunk, index) => {
+      if (index !== 0) {
+        result += formatText('...\n', chalk.gray);
       }
-    }
-
-    _.forEach(diff, (part, index) => {
-      if (index === 0) {
-        part.value = '\n' + part.value;
-      }
-      const mark = part.added ? '+ ' : part.removed ? '- ' : '  ';
-      let change = part.value.split('\n').join(`\n${mark}`);
-      if (index === 0) {
-        change = change.slice(1, change.length);
-      }
-      if (part.added || part.removed) {
-        result += formatText(change, part.added ? chalk.green : part.removed ? chalk.red : null);
-      }
+      hunk.lines.forEach((line) => {
+        const color = line[0] === '+' ? chalk.green : line[0] === '-' ? chalk.red : null;
+        result += formatText(line, color);
+        result += '\n';
+      });
     });
+
     result += '\n\n';
   });
 
@@ -173,14 +176,14 @@ export async function diffDatabases(database1: string, database2: string, option
       type: 'database',
       name: database2,
     },
-    options
+    options,
   );
 }
 
 export async function diffDatabaseAndDirectory(
   database: string,
   directory: string,
-  options: DiffOptions
+  options: DiffOptions,
 ) {
   return diff(
     {
@@ -191,14 +194,14 @@ export async function diffDatabaseAndDirectory(
       type: 'directory',
       path: directory,
     },
-    options
+    options,
   );
 }
 
 export async function diffDirectoryAndDatabase(
   directory: string,
   database: string,
-  options: DiffOptions
+  options: DiffOptions,
 ) {
   return diff(
     {
@@ -209,14 +212,14 @@ export async function diffDirectoryAndDatabase(
       type: 'database',
       name: database,
     },
-    options
+    options,
   );
 }
 
 export async function diffDirectories(
   directory1: string,
   directory2: string,
-  options: DiffOptions
+  options: DiffOptions,
 ) {
   return diff(
     {
@@ -227,6 +230,6 @@ export async function diffDirectories(
       type: 'directory',
       path: directory2,
     },
-    options
+    options,
   );
 }

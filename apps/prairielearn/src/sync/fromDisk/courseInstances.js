@@ -1,16 +1,17 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const infofile = require('../infofile');
-const perf = require('../performance')('question');
+import * as infofile from '../infofile';
+import { makePerformance } from '../performance';
+
+const perf = makePerformance('courseInstances');
 
 /**
  *
  * @param {import('../course-db').CourseInstance | null | undefined} courseInstance
- * @param {string | null} courseTimezone
  */
-function getParamsForCourseInstance(courseInstance, courseTimezone) {
+function getParamsForCourseInstance(courseInstance) {
   if (!courseInstance) return null;
 
   // It used to be the case that instance access rules could be associated with a
@@ -31,7 +32,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
     long_name: courseInstance.longName,
     number: courseInstance.number,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
+    display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
   };
@@ -42,8 +43,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
  * @param {import('../course-db').CourseData} courseData
  * @returns {Promise<{ [ciid: string]: any }>}
  */
-module.exports.sync = async function (courseId, courseData) {
-  const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
+export async function sync(courseId, courseData) {
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseIntanceData]) => {
       const { courseInstance } = courseIntanceData;
@@ -52,9 +52,9 @@ module.exports.sync = async function (courseId, courseData) {
         courseInstance.uuid,
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
-        getParamsForCourseInstance(courseInstance.data, courseTimezone),
+        getParamsForCourseInstance(courseInstance.data),
       ]);
-    }
+    },
   );
 
   const params = [courseInstanceParams, courseId];
@@ -66,4 +66,4 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type {[string, any][]} */
   const nameToIdMap = result.rows[0].name_to_id_map;
   return nameToIdMap;
-};
+}

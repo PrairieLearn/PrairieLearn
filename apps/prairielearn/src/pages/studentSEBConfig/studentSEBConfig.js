@@ -19,12 +19,10 @@ var sql = sqldb.loadSqlEquiv(__filename);
 var load_default_config = function (res, _req) {
   var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
 
-  //var fullUrlPrefix = req.protocol + '://' + req.get('host');
   var fullUrlPrefix = config.SEBServerUrl;
 
-  defobj[
-    'startURL'
-  ] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
+  defobj['startURL'] =
+    `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
   var hashdata = {
     assessment_id: res.locals.assessment.id,
@@ -91,7 +89,7 @@ router.get('/', function (req, res, next) {
   var data = getCheckedSignedTokenData(encodedData, config.secretKey);
 
   if (data === null) {
-    return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
+    return next(error.make(403, 'Unrecognized config request, please try again'));
   }
 
   var params = {
@@ -106,7 +104,7 @@ router.get('/', function (req, res, next) {
   sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
     if (ERR(err, next)) return;
     if (result.rowCount === 0) {
-      return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
+      return next(error.make(403, 'Unrecognized config request, please try again'));
     }
 
     _.assign(res.locals, result.rows[0]);

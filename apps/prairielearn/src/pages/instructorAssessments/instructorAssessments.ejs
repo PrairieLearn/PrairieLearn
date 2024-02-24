@@ -9,11 +9,8 @@
   </head>
   <script>
     $(() => {
-        $('[data-toggle="popover"]').popover({
+        $('.js-sync-popover[data-toggle="popover"]').popover({
             sanitize: false,
-            container: 'body',
-            html: true,
-            trigger: 'hover',
         }).on("show.bs.popover", function() {
             $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
         });
@@ -58,7 +55,7 @@
   </script>
   <body>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary">
@@ -82,8 +79,8 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th style="width: 1%"></th>
-                <th></th>
+                <th style="width: 1%"><span class="sr-only">Label</span></th>
+                <th><span class="sr-only">Title</span></th>
                 <th>AID</th>
                 <th class="text-center">Students</th>
                 <th class="text-center">Scores</th>
@@ -105,19 +102,33 @@
                 </td>
                 <td class="align-middle">
                   <% if (row.sync_errors) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_errors_ansified %></pre>">
-                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Errors"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= row.sync_errors_ansified %></pre>"
+                    >
+                      <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                    </button>
                   <% } else if (row.sync_warnings) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_warnings_ansified %></pre>">
-                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Warnings"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= row.sync_warnings_ansified %></pre>"
+                    >
+                      <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                    </button>
                   <% } %>
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %>
                   <% if (row.group_work) { %>
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-users" aria-hidden="true"></i>
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
@@ -140,6 +151,6 @@
         </div>
 
       </div>
-    </div>
+    </main>
   </body>
 </html>

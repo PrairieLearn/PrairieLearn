@@ -25,20 +25,20 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - in `longName`, add your course instance name. For example:
 
-```json
-"longName": "Fall 2020, Section M"
-```
+  ```json
+  "longName": "Fall 2020, Section M"
+  ```
 
 - in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
 
-```json
-"allowAccess": [
-    {
-        "startDate": "2020-08-17T00:00:01",
-        "endDate": "2020-12-18T23:59:59"
-    }
-]
-```
+  ```json
+  "allowAccess": [
+      {
+          "startDate": "2020-08-17T00:00:01",
+          "endDate": "2020-12-18T23:59:59"
+      }
+  ]
+  ```
 
 - click `Save and sync`.
 
@@ -62,26 +62,26 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - change the question `title`. For example:
 
-```json
-"title": "Find the area"
-```
+  ```json
+  "title": "Find the area"
+  ```
 
 - change the question `topic`. This will be very helpful when using the filter to find questions under a specific topic. For example:
 
-```json
-"topic": "Geometric properties"
-```
+  ```json
+  "topic": "Geometric properties"
+  ```
 
 - change the question `tags`. Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. For our example, we use:
 
-```json
-"tags": [
-    "mfsilva",
-    "fa20",
-    "MC",
-    "calculate"
-],
-```
+  ```json
+  "tags": [
+      "mfsilva",
+      "fa20",
+      "MC",
+      "calculate"
+  ],
+  ```
 
 - you should not change the `"type": "v3"` field, which is the most current version of PrairieLearn questions.
 
@@ -97,19 +97,19 @@ To provide a simple example, here we first create a question without any randomi
 
 - Modify the content of the file. You may want to start by copying this simple example:
 
-```html
-<pl-question-panel>
-  <p>What is the area of a rectangle that has sides 4 and 5?</p>
-</pl-question-panel>
+  ```html
+  <pl-question-panel>
+    <p>What is the area of a rectangle that has sides 4 and 5?</p>
+  </pl-question-panel>
 
-<pl-multiple-choice answers-name="area">
-  <pl-answer correct="true">20</pl-answer>
-  <pl-answer correct="false">10</pl-answer>
-  <pl-answer correct="false">9</pl-answer>
-  <pl-answer correct="false">18</pl-answer>
-  <pl-answer correct="false">40</pl-answer>
-</pl-multiple-choice>
-```
+  <pl-multiple-choice answers-name="area">
+    <pl-answer correct="true">20</pl-answer>
+    <pl-answer correct="false">10</pl-answer>
+    <pl-answer correct="false">9</pl-answer>
+    <pl-answer correct="false">18</pl-answer>
+    <pl-answer correct="false">40</pl-answer>
+  </pl-multiple-choice>
+  ```
 
 - click `Save and sync`
 
@@ -147,23 +147,23 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - click the `Edit` button next to `server.py`. Here is where you can define the question variables, and add randomization. We will talk about some other examples in later sections. Here is a how we can modify the original area example:
 
-```python
-import random
-def generate(data):
-    # define the sides of the rectangle as random integers
-    a = random.randint(2,5)
-    b = random.randint(11,19)
-    # store the sides in the dictionary "params"
-    data["params"]["a"] = a
-    data["params"]["b"] = b
-    # define some typical distractors
-    data["params"]["distractor1"] = (a*b)/2
-    data["params"]["distractor2"] = 2*(a*b)
-    data["params"]["distractor3"] = 2*(a+b)
-    data["params"]["distractor4"] = (a+b)
-    # define the correct answer
-    data["params"]["truearea"] = a*b
-```
+  ```python
+  import random
+  def generate(data):
+      # define the sides of the rectangle as random integers
+      a = random.randint(2,5)
+      b = random.randint(11,19)
+      # store the sides in the dictionary "params"
+      data["params"]["a"] = a
+      data["params"]["b"] = b
+      # define some typical distractors
+      data["params"]["distractor1"] = (a*b)/2
+      data["params"]["distractor2"] = 2*(a*b)
+      data["params"]["distractor3"] = 2*(a+b)
+      data["params"]["distractor4"] = (a+b)
+      # define the correct answer
+      data["params"]["truearea"] = a*b
+  ```
 
 - click `Save and sync`.
 
@@ -171,19 +171,19 @@ def generate(data):
 
 - click the `Edit` button next to `question.html`.
 
-```html
-<pl-question-panel>
-  <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
-</pl-question-panel>
+  ```html
+  <pl-question-panel>
+    <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
+  </pl-question-panel>
 
-<pl-multiple-choice answers-name="area">
-  <pl-answer correct="true">{{params.truearea}}</pl-answer>
-  <pl-answer correct="false">{{params.distractor1}}</pl-answer>
-  <pl-answer correct="false">{{params.distractor2}}</pl-answer>
-  <pl-answer correct="false">{{params.distractor3}}</pl-answer>
-  <pl-answer correct="false">{{params.distractor4}}</pl-answer>
-</pl-multiple-choice>
-```
+  <pl-multiple-choice answers-name="area">
+    <pl-answer correct="true">{{params.truearea}}</pl-answer>
+    <pl-answer correct="false">{{params.distractor1}}</pl-answer>
+    <pl-answer correct="false">{{params.distractor2}}</pl-answer>
+    <pl-answer correct="false">{{params.distractor3}}</pl-answer>
+    <pl-answer correct="false">{{params.distractor4}}</pl-answer>
+  </pl-multiple-choice>
+  ```
 
 - click `Save and sync`.
 
@@ -221,9 +221,9 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - change the `title`. For example:
 
-```json
-"title": "Geometric properties and applications",
-```
+  ```json
+  "title": "Geometric properties and applications",
+  ```
 
 - you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).
 
@@ -231,28 +231,28 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, we will use:
 
-```json
-"allowAccess": [
-    {
-        "startDate": "2020-09-01T20:00:00",
-        "endDate": "2020-09-06T20:00:00",
-        "credit": 100
-    }
-]
-```
+  ```json
+  "allowAccess": [
+      {
+          "startDate": "2020-09-01T20:00:00",
+          "endDate": "2020-09-06T20:00:00",
+          "credit": 100
+      }
+  ]
+  ```
 
 - in `zones` you should enter the questions to be included in that assessment. We will add the two questions that we just created:
 
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "find_rectangle_area_rand", "points": 1, "maxPoints": 5},
-            {"id": "integerInput", "points": 1, "maxPoints": 5}
-        ]
-    }
-]
-```
+  ```json
+  "zones": [
+      {
+          "questions": [
+              {"id": "find_rectangle_area_rand", "points": 1, "maxPoints": 5},
+              {"id": "integerInput", "points": 1, "maxPoints": 5}
+          ]
+      }
+  ]
+  ```
 
 - click `Save and sync`.
 

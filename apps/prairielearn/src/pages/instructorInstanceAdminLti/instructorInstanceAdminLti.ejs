@@ -17,7 +17,7 @@
       }
       </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
 
       <% if (!authz_data.has_course_permission_edit) { %>
@@ -202,6 +202,6 @@
         </div>
         <% } %>
       <% } %>
-    </div>
+      </main>
   </body>
 </html>

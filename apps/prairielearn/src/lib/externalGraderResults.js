@@ -1,25 +1,33 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
-const AWS = require('aws-sdk');
+import { S3 } from '@aws-sdk/client-s3';
+import {
+  SQSClient,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+} from '@aws-sdk/client-sqs';
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
-const { config } = require('./config');
+import { makeS3ClientConfig, makeAwsClientConfig } from './aws';
+import { config } from './config';
+import { gradingJobStatusUpdated } from './externalGradingSocket';
+import { processGradingResult } from './externalGrader';
+import * as externalGraderCommon from './externalGraderCommon';
+import { deferredPromise } from './deferred';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const externalGradingSocket = require('./externalGradingSocket');
-const assessment = require('./assessment');
-const externalGraderCommon = require('./externalGraderCommon');
-const { logger } = require('@prairielearn/logger');
-const { deferredPromise } = require('./deferred');
-const Sentry = require('@prairielearn/sentry');
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
 
-module.exports.init = async function () {
+export async function init() {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
-  const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await loadQueueUrl(sqs);
 
   // Start work in an IIFE so we can keep going asynchronously
@@ -39,13 +47,13 @@ module.exports.init = async function () {
         }
 
         try {
-          const data = await sqs
-            .receiveMessage({
+          const data = await sqs.send(
+            new ReceiveMessageCommand({
               MaxNumberOfMessages: 10,
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
-            })
-            .promise();
+            }),
+          );
           messages = data.Messages;
         } catch (err) {
           logger.error('Error receiving messages from SQS', err);
@@ -66,25 +74,25 @@ module.exports.init = async function () {
 
             await processMessage(parsedMessage);
 
-            await sqs
-              .deleteMessage({
+            await sqs.send(
+              new DeleteMessageCommand({
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
-              })
-              .promise();
+              }),
+            );
           } catch (err) {
             logger.error('Error processing external grader results', err);
             Sentry.captureException(err);
           }
-        })
+        }),
       );
     }
   })().then(() => {
     // Do nothing
   });
-};
+}
 
-module.exports.stop = async function () {
+export async function stop() {
   if (!config.externalGradingUseAws) return;
 
   if (abortController.signal.aborted) {
@@ -96,26 +104,25 @@ module.exports.stop = async function () {
   // The main work loop will resolve this deferred promise when it's finished
   // with any current processing.
   await processingFinished.promise;
-};
+}
 
 /**
- *
- * @param {import('aws-sdk').SQS} sqs
+ * @param {SQSClient} sqs
  * @returns {Promise<string>} The URL of the results queue.
  */
 async function loadQueueUrl(sqs) {
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`
+    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
   );
-  const data = await sqs
-    .getQueueUrl({ QueueName: config.externalGradingResultsQueueName })
-    .promise();
+  const data = await sqs.send(
+    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName }),
+  );
   const queueUrl = data.QueueUrl;
   if (!queueUrl) {
     throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
   }
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`
+    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`,
   );
   return queueUrl;
 }
@@ -135,7 +142,7 @@ async function processMessage(data) {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });
-    externalGradingSocket.gradingJobStatusUpdated(jobId);
+    gradingJobStatusUpdated(jobId);
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
@@ -155,15 +162,14 @@ async function processMessage(data) {
       return;
     } else {
       // We should fetch it from S3, and then process it
-      const s3Client = new AWS.S3(config.awsServiceGlobalOptions);
-      const data = await s3Client
-        .getObject({
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          ResponseContentType: 'application/json',
-        })
-        .promise();
-      await processResults(jobId, data.Body);
+      const s3Client = new S3(makeS3ClientConfig());
+      const data = await s3Client.getObject({
+        Bucket: s3Bucket,
+        Key: `${s3RootKey}/results.json`,
+        ResponseContentType: 'application/json',
+      });
+      if (!data.Body) throw new Error('No body in S3 response');
+      await processResults(jobId, await data.Body.transformToString());
       return;
     }
   } else {
@@ -172,5 +178,5 @@ async function processMessage(data) {
 }
 
 async function processResults(jobId, data) {
-  await assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
+  await processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }

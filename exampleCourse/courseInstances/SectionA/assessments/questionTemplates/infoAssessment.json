@@ -33,9 +33,11 @@
               {"id": "demo/overlayDropdown",                 "points": 1, "maxPoints": 5},
               {"id": "demo/proofBlocks",                     "points": 1, "maxPoints": 5},
               {"id": "demo/markdownEditorLivePreview",       "points": 2},
+              {"id": "demo/graphvizEditorPreview",           "points": 2},
               {"id": "demo/addHTMLtable",                    "points": 2, "maxPoints": 4},
               {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4},
-              {"id": "element/markdown",                 "points": 2, "maxPoints": 10}
+              {"id": "element/markdown",                 "points": 2, "maxPoints": 10},
+              {"id": "demo/survey",                  "points": 1, "maxPoints": 1}
           ]
       },
         {

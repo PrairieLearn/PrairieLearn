@@ -22,21 +22,42 @@ import os
 import signal
 import subprocess
 import sys
+import time
+import types
+from importlib.abc import MetaPathFinder
 from inspect import signature
+from typing import Any, Iterable, Sequence
+
+import question_phases
+import zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
 drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 
-# If we're configured to drop privileges, matplotlib won't be able to write to
-# its default config/cache dir. To keep it fast, we'll create a cache dir for
-# it and provide it with config via the `MPLCONFIGDIR` environment variable.
+# If we're configured to drop privileges (that is, if we're running in a
+# Docker container), various tools like matplotlib and fontconfig will be
+# unable to write to their default config/cache directories. This is because
+# the `$HOME` environment variable still points to `/root`, which is not
+# writable by the `executor` user.
+#
+# To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
+# directories created in `/tmp` that are world-writable. matplotlib and
+# fontconfig should respect these environment variables; other tools should as
+# well. If they don't, special cases can be added below.
 if drop_privileges:
-    config_dir_path = "/tmp/matplotlib"
+    config_home_path = "/tmp/xdg_config"
+    cache_home_path = "/tmp/xdg_cache"
+
     oldmask = os.umask(000)
-    os.makedirs(config_dir_path, mode=0o777, exist_ok=True)
+
+    os.makedirs(config_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+
     os.umask(oldmask)
-    os.environ["MPLCONFIGDIR"] = config_dir_path
+
+    os.environ["XDG_CONFIG_HOME"] = config_home_path
+    os.environ["XDG_CACHE_HOME"] = cache_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -66,22 +87,56 @@ matplotlib.use("PDF")
 prairielearn.get_unit_registry()
 
 
+# We want to conditionally allow/block importing specific modules, namely `rpy2`.
+# This custom importer will allow us to do so, and throw a custom error message.
+#
+# While this won't prevent anything more complex than an `import` statement, it
+# will make it clear to the user that they're not allowed to use `rpy2`. If they
+# try to bypass the block, it's up to them to deal with the consequences.
+class ForbidModuleMetaPathFinder(MetaPathFinder):
+    def __init__(self) -> None:
+        self.forbidden_modules: set[str] = set()
+
+    def forbid_modules(self, forbidden_module: Iterable[str]) -> None:
+        self.forbidden_modules.update(forbidden_module)
+
+    def reset_forbidden_modules(self) -> None:
+        self.forbidden_modules.clear()
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
+    ):
+        if any(
+            fullname == module or fullname.startswith(module + ".")
+            for module in self.forbidden_modules
+        ):
+            raise ImportError(f'module "{fullname}" is not allowed.')
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
     try:
+        zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")
         raise
 
 
-def worker_loop():
-    # whether the PRNGs have already been seeded in this worker_loop() call
+def worker_loop() -> None:
+    # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
+
+    path_finder = ForbidModuleMetaPathFinder()
+    sys.meta_path.insert(0, path_finder)
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -92,7 +147,7 @@ def worker_loop():
             # wait for a single line of input
             json_inp = sys.stdin.readline()
             # unpack the input line as JSON
-            inp = json.loads(json_inp)
+            inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
 
             # get the contents of the JSON input
             file = inp.get("file", None)
@@ -100,6 +155,12 @@ def worker_loop():
             args = inp.get("args", None)
             cwd = inp.get("cwd", None)
             paths = inp.get("paths", None)
+            forbidden_modules = inp.get("forbidden_modules", None)
+
+            # Wire up the custom importer to forbid modules as needed.
+            path_finder.reset_forbidden_modules()
+            if forbidden_modules is not None and isinstance(forbidden_modules, list):
+                path_finder.forbid_modules(forbidden_modules)
 
             # "ping" is a special fake function name that the parent process
             # will use to check if the worker is active and able to respond to
@@ -184,6 +245,34 @@ def worker_loop():
 
             # change to the desired working directory
             os.chdir(cwd)
+
+            if file == "question.html":
+                # This is an experimental implementation of question processing
+                # that does all HTML parsing and rendering in Python. This should
+                # be much faster than the current implementation that does an IPC
+                # call for each element.
+
+                data = args[0]
+                context = args[1]
+
+                result, processed_elements = question_phases.process(fcn, data, context)
+                val = {
+                    "html": result if fcn == "render" else None,
+                    "file": result if fcn == "file" else None,
+                    "data": data,
+                    "processed_elements": list(processed_elements),
+                }
+
+                # make sure all output streams are flushed
+                sys.stderr.flush()
+                sys.stdout.flush()
+
+                # write the return value (JSON on a single line)
+                outf.write(try_dumps({"present": True, "val": val}))
+                outf.write("\n")
+                outf.flush()
+
+                continue
 
             mod = {}
             file_path = os.path.join(cwd, file + ".py")
@@ -281,7 +370,7 @@ def worker_loop():
 worker_pid = 0
 
 
-def terminate_worker(signum, stack):
+def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)

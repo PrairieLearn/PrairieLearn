@@ -1,3 +1,4 @@
+//@ts-check
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
@@ -8,6 +9,7 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
+  res.locals.navPage = 'home';
   res.locals.isAuthenticated = !!res.locals.authn_user;
   if (res.locals.isAuthenticated) {
     const params = {
@@ -37,7 +39,7 @@ router.get('/', function (req, res, next) {
         config.devMode
       ) {
         res.locals.instructor_courses = res.locals.instructor_courses.concat(
-          result.rows[0].example_courses
+          result.rows[0].example_courses,
         );
       }
 

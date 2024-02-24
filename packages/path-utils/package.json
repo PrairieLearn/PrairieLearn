@@ -11,16 +11,16 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
+    "test": "mocha --no-config --require tsx src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.5",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^18.16.3",
-    "chai": "^4.3.7",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.11",
+    "chai": "^4.4.1",
     "mocha": "^10.2.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
