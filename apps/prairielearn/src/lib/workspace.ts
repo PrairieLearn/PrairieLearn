@@ -454,7 +454,6 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
                 msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
                 data: file,
               });
-              return null;
             }
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
@@ -462,15 +461,6 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
               name: file.name,
               localPath,
             };
-          }
-
-          if (!('contents' in file)) {
-            fileGenerationErrors.push({
-              file: file.name,
-              msg: `Dynamic workspace file has neither "contents" nor "questionFile". File ignored.`,
-              data: file,
-            });
-            return null;
           }
 
           // Discard encodings outside of explicit list of allowed encodings
@@ -482,6 +472,15 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
             });
             return null;
           }
+
+          if (!('contents' in file)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.`,
+              data: file,
+            });
+          }
+
           return {
             name: file.name,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
