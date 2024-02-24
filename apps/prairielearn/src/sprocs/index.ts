@@ -87,7 +87,6 @@ export async function init() {
       'issues_insert_for_variant.sql',
       'issues_update_open.sql',
       'variants_lock.sql',
-      'variants_select.sql',
       'variants_update_after_grading.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
