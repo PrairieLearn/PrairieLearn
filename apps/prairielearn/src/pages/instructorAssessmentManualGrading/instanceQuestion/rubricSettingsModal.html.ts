@@ -394,7 +394,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       </label>
                     </td>
                     <td>
-                      <div class="form-check">
+                      <div class="form-check form-check-inline">
                         <label class="form-check-label">
                           <input
                             type="radio"
@@ -404,6 +404,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                             checked
                           />Always
                         </label>
+                      </div>
+                      <div class="form-check form-check-inline">
                         <label class="form-check-label">
                           <input
                             type="radio"
