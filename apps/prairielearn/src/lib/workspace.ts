@@ -464,6 +464,15 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
             };
           }
 
+          if (!('contents' in file)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has neither "contents" nor "questionFile". File ignored.`,
+              data: file,
+            });
+            return null;
+          }
+
           // Discard encodings outside of explicit list of allowed encodings
           if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
             fileGenerationErrors.push({
