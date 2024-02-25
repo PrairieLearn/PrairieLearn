@@ -16,14 +16,12 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is visible but not active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
 DECLARE
     user_result record;
-    
 BEGIN
-    
     -- authorization for the effective user
     SELECT *
     INTO user_result
@@ -38,8 +36,7 @@ BEGIN
             req_date,
             display_timezone
         );
-    
-    
+
     -- Assessment access is granted based only on effective user permissions.
     --
     -- You might wonder if it is necessary to check authn user permissions as well.
@@ -85,6 +82,7 @@ BEGIN
     -- "has_course_instance_permission_edit" - permissions that, as we've said, the
     -- authn user is already known to have.
     authorized := user_result.authorized;
+
     -- all other variables are from the effective user authorization
     exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;
@@ -98,6 +96,5 @@ BEGIN
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
     next_active_time := user_result.next_active_time;
-    
 END;
 $$ LANGUAGE plpgsql VOLATILE;
