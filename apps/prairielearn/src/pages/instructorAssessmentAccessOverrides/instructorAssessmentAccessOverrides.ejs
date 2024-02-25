@@ -47,14 +47,11 @@
 				// Event listener for delete button
 				$('.delete-button').on('click', function () {
 					var button = $(this);
-					var student_uid = button.data('student-uid');
-					var assessment_id = button.data('assessment-id');
-					var groupId = button.data('group-id');
+					var policyId = $(this).data('policy-id');
 
 					// Set the values of the form's hidden input fields
-					$('#deleteModal input[name="student_uid"]').val(student_uid);
-					$('#deleteModal input[name="assessment_id"]').val(assessment_id);
-					$('#deleteModal input[name="group_id"]').val(groupId);
+					$('#deleteModal input[name="policy_id"]').val(policyId);
+					
 
 					// Show the modal confirmation dialog
 					$('#deleteModal').modal('show');
@@ -238,6 +235,7 @@
 											<form name="delete-override-form" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 												<input type="hidden" name="__action" value="delete_override">
+												<input type="hidden" name="policy_id" value="<%= policy.id %>">
 													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
 													<i class="fas fa-remove"></i> Delete
 												</button>

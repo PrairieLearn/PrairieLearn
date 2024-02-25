@@ -25,8 +25,9 @@ SELECT
   aap.id AS id
 FROM
   assessment_access_policies AS aap
-  LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)
-  LEFT JOIN pl_courses AS c ON (c.id = $course_id)
+  JOIN assessments AS a ON (a.id = aap.assessment_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN pl_courses AS c ON (c.id = $course_id)
 WHERE
   assessment_id = $assessment_id
 ORDER BY
@@ -83,7 +84,7 @@ SET
   user_id = $user_id
 WHERE
   assessment_id = $assessment_id
-  AND id = $policy_id;
+  AND id = $policy_id
 
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
