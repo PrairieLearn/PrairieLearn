@@ -9,16 +9,24 @@ import { selectUserByUid } from '../../models/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function userIsEnrolledInCourseInstance({ uid, course_instance_id }) {
+
+async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
   const user = await selectUserByUid(uid);
-  if (!user) return false;
+  if (!user) {
+    throw error.make(400, `User ${uid} does not exist.`);
+  }
 
   const enrollment = await getEnrollmentForUserInCourseInstance({
     user_id: user.user_id,
     course_instance_id: course_instance_id,
   });
-  return !!enrollment;
+  if (!enrollment) {
+    throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
+  }
+
+  return user.user_id;
 }
+
 
 router.get(
   '/',
@@ -39,19 +47,14 @@ router.post(
   asyncHandler(async (req, res) => {
     
     if (req.body.__action === 'add_new_override') {
-      let user = null;
+      let user_id = null;
       if (req.body.student_uid) {
-        const isEnrolled = await userIsEnrolledInCourseInstance({
+        user_id = await getUserIdAndCheckEnrollment({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
         });
-        if (!isEnrolled) {
-          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
-        }
-        user = await selectUserByUid(req.body.student_uid);
+      
       }
-      
-      
       const params = {
         assessment_id: res.locals.assessment.id,
         created_by: res.locals.authn_user.user_id,
@@ -61,7 +64,7 @@ router.post(
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
         group_id: null,
-        user_id: user?.user_id || null,
+        user_id: user_id || null,
       };
       // First, validate if group belongs to the assessment
       if (res.locals.assessment.group_work) {
@@ -90,13 +93,7 @@ router.post(
         }
         
        
-        const isEnrolled = await userIsEnrolledInCourseInstance({
-          uid: req.body.student_uid,
-          course_instance_id: res.locals.course_instance.id,
-        });
-        if (!isEnrolled) {
-          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
-        }
+        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
@@ -107,16 +104,12 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
-      let user = null;
+      let user_id = null;
       if (req.body.student_uid) {
-        const isEnrolled = await userIsEnrolledInCourseInstance({
+        user_id = await getUserIdAndCheckEnrollment({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
         });
-        if (!isEnrolled) {
-          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
-        }
-        user = await selectUserByUid(req.body.student_uid);
       }
       
       const edit_params = {
@@ -127,7 +120,7 @@ router.post(
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
         group_id: null,
-        user_id: user?.user_id || null,
+        user_id: user_id || null,
         policy_id: req.body.policy_id,
       };
       
@@ -158,13 +151,8 @@ router.post(
           throw error.make(400, 'Student UID is required for individual work assessments.');
         }
         
-        const isEnrolled = await userIsEnrolledInCourseInstance({
-          uid: req.body.student_uid,
-          course_instance_id: res.locals.course_instance.id,
-        });
-        if (!isEnrolled) {
-          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
-        }
+        
+        
       }
       await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
       res.redirect(req.originalUrl);
