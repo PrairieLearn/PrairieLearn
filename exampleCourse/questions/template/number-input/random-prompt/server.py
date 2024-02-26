@@ -21,8 +21,8 @@ def generate(data):
     ]
 
     # Select a random equation and its solution.
-    choice = random.choice(equation_options)
+    selected_equation, selected_solution = random.choice(equation_options)
 
     # Store the equation and the correct answer.
-    data["params"]["equation"] = choice[0]
-    data["correct_answers"]["ans"] = choice[1]
+    data["params"]["equation"] = selected_equation
+    data["correct_answers"]["ans"] = selected_solution
