@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 const debugfn = require('debug');
 
 import * as sqldb from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 
 import { config } from './config';
 import { uploadToS3Async, getFromS3Async } from '../lib/aws';
