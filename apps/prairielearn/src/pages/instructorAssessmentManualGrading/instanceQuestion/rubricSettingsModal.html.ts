@@ -28,7 +28,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
               ${resLocals.assessment_question.max_auto_points
                 ? html`
                     <div class="form-row">
-                      <div class="col-6">
+                      <div class="col-12 col-lg-6">
                         <div class="form-check">
                           <label class="form-check-label">
                             <input
@@ -57,7 +57,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                           </button>
                         </div>
                       </div>
-                      <div class="col-6">
+                      <div class="col-12 col-lg-6">
                         <div class="form-check">
                           <label class="form-check-label">
                             <input
@@ -92,7 +92,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   `
                 : ''}
               <div class="form-row">
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                   <div class="form-check js-rubric-max-points-positive">
                     <label class="form-check-label">
                       <input
@@ -130,7 +130,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     </button>
                   </div>
                 </div>
-                <div class="form-group col-3">
+                <div class="form-group col-6 col-lg-3">
                   <label>
                     Minimum rubric score
                     <button
@@ -151,7 +151,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     />
                   </label>
                 </div>
-                <div class="form-group col-3">
+                <div class="form-group col-6 col-lg-3">
                   <label>
                     Maximum extra credit
                     <button
@@ -174,38 +174,40 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 </div>
               </div>
               <div>
-                <table class="table table-sm table-striped js-rubric-items-table mt-2">
-                  <thead>
-                    <tr>
-                      <th style="width: 1px"><!-- Order --></th>
-                      <th>Points</th>
-                      <th>Description</th>
-                      <th>Detailed explanation (optional)</th>
-                      <th>Grader note (optional, not visible to students)</th>
-                      <th>Show to students</th>
-                      <th>In use</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
-                    <tr
-                      class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
-                        ? 'd-none'
-                        : ''}"
-                    >
-                      <td colspan="7">
-                        <em>
-                          This question does not have any rubric items. Click "Add item" below to
-                          add
-                          some${rubric_data
-                            ? html`, or select <strong>Disable rubric</strong> below to switch back
-                                to manual grade input`
-                            : ''}.
-                        </em>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped js-rubric-items-table mt-2">
+                    <thead>
+                      <tr class="text-nowrap">
+                        <th style="width: 1px"><!-- Order --></th>
+                        <th>Points</th>
+                        <th>Description</th>
+                        <th>Detailed explanation (optional)</th>
+                        <th>Grader note (optional, not visible to students)</th>
+                        <th>Show to students</th>
+                        <th>In use</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
+                      <tr
+                        class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
+                          ? 'd-none'
+                          : ''}"
+                      >
+                        <td colspan="7">
+                          <em>
+                            This question does not have any rubric items. Click "Add item" below to
+                            add
+                            some${rubric_data
+                              ? html`, or select <strong>Disable rubric</strong> below to switch
+                                  back to manual grade input`
+                              : ''}.
+                          </em>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <div class="js-settings-points-warning-placeholder"></div>
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
@@ -289,10 +291,11 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           <span class="sr-only">Delete</span>
         </button>
       </td>
-      <td style="max-width: 5rem; min-width: 4rem">
+      <td>
         <input
           type="number"
           class="form-control js-rubric-item-points"
+          style="width: 4rem"
           step="any"
           required
           name="${namePrefix}[points]"
@@ -305,6 +308,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           class="form-control js-rubric-item-description"
           required
           maxlength="100"
+          style="min-width: 15rem"
           name="${namePrefix}[description]"
           value="${item?.description}"
         />
@@ -335,7 +339,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
       </td>
       <td>
         <div class="form-check form-check-inline">
-          <label class="form-check-label">
+          <label class="form-check-label text-nowrap">
             <input
               type="radio"
               class="form-check-input js-rubric-item-always-show"
@@ -347,7 +351,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           </label>
         </div>
         <div class="form-check form-check-inline">
-          <label class="form-check-label">
+          <label class="form-check-label text-nowrap">
             <input
               type="radio"
               class="form-check-input js-rubric-item-always-show"
@@ -359,7 +363,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           </label>
         </div>
       </td>
-      <td>
+      <td class="text-nowrap">
         ${!item
           ? 'New'
           : !item.num_submissions
