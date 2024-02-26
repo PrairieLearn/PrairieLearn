@@ -1,16 +1,17 @@
-//@ts-check
+// @ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
 const SearchString = require('search-string');
+const { z } = require('zod');
 
 import * as error from '@prairielearn/error';
 import * as paginate from '../../lib/paginate';
 import * as sqldb from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { closeAllIssuesForCourse } from '../../lib/issues';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -221,6 +222,10 @@ router.get(
     res.locals.filterQuery = req.query.q;
     res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
     res.locals.filters = filters;
+    res.locals.openFilteredIssuesCount = issues.rows.reduce(
+      (acc, row) => (row.open ? acc + 1 : acc),
+      0,
+    );
 
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
@@ -254,8 +259,18 @@ router.post(
       ];
       await sqldb.callAsync('issues_update_open', params);
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'close_all') {
-      await closeAllIssuesForCourse(res.locals.course.id, res.locals.authn_user.user_id);
+    } else if (req.body.__action === 'close_matching') {
+      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
+      const closedCount = await sqldb.queryRow(
+        sql.close_issues,
+        {
+          issue_ids: issueIds,
+          course_id: res.locals.course.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        },
+        z.number(),
+      );
+      flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
