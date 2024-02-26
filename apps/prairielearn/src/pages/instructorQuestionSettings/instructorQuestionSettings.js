@@ -118,10 +118,9 @@ router.post(
           locals: res.locals,
           qid_new: qid_new,
         });
-        editor.assertCanEdit();
-        const serverJob = await editor.setupEditAsync();
+        const serverJob = await editor.prepareServerJob();
         try {
-          await editor.doEditAsync(serverJob);
+          await editor.executeWithServerJob(serverJob);
           res.redirect(req.originalUrl);
         } catch (err) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
@@ -133,10 +132,9 @@ router.post(
         const editor = new QuestionCopyEditor({
           locals: res.locals,
         });
-        editor.assertCanEdit();
-        const serverJob = await editor.setupEditAsync();
+        const serverJob = await editor.prepareServerJob();
         try {
-          await editor.doEditAsync(serverJob);
+          await editor.executeWithServerJob(serverJob);
         } catch (err) {
           return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
@@ -161,10 +159,9 @@ router.post(
       const editor = new QuestionDeleteEditor({
         locals: res.locals,
       });
-      editor.assertCanEdit();
-      const serverJob = await editor.setupEditAsync();
+      const serverJob = await editor.prepareServerJob();
       try {
-        await editor.doEditAsync(serverJob);
+        await editor.executeWithServerJob(serverJob);
         res.redirect(res.locals.urlPrefix + '/course_admin/questions');
       } catch (err) {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);

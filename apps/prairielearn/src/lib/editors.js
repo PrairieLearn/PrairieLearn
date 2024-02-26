@@ -24,7 +24,6 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import * as sqldb from '@prairielearn/postgres';
-import { callbackify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -101,11 +100,12 @@ export class Editor {
 
     // Do not allow users to edit the exampleCourse
     if (this.course.example_course) {
-      throw new Error(`Access denied (cannot edit the example course)`);
+      throw error.make(403, `Access denied (cannot edit the example course)`);
     }
   }
 
-  async setupEditAsync() {
+  async prepareServerJob() {
+    this.assertCanEdit();
     const serverJob = await createServerJob({
       courseId: this.course.id,
       userId: this.user.user_id,
@@ -116,9 +116,7 @@ export class Editor {
     return serverJob;
   }
 
-  async doEditAsync(serverJob) {
-    let jobSequenceId = serverJob.jobSequenceId;
-
+  async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
@@ -210,14 +208,23 @@ export class Editor {
         job.data.syncSucceeded = true;
       });
     });
-    return jobSequenceId;
   }
 
-  doEdit = callbackify(async () => {
-    const serverJob = await this.setupEditAsync();
-    const jobSequenceId = await this.doEditAsync(serverJob);
-    return jobSequenceId;
-  });
+  doEdit(callback) {
+    this.prepareServerJob().then(
+      (serverJob) => {
+        this.executeWithServerJob(serverJob).then(
+          () => callback(null, serverJob.jobSequenceId),
+          (err) => {
+            callback(err.serverJob.jobSequenceId);
+          },
+        );
+      },
+      (err) => {
+        callback(err);
+      },
+    );
+  }
 
   /**
    * Remove empty preceding subfolders for a question, assessment, etc. based on its ID.
