@@ -82,7 +82,7 @@ function doTest(issuesUrl: string, label: string) {
       assert.equal(res.status, 200);
 
       const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 3, 'Expected one open issue');
+      assert.equal(result.rowCount, 3, 'Expected three open issues');
     });
 
     step('should close issues matching a query', async () => {
@@ -139,7 +139,7 @@ function doTest(issuesUrl: string, label: string) {
       assert.equal(res.status, 200);
 
       const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 0, 'Expected two open issues');
+      assert.equal(result.rowCount, 0, 'Expected zero open issues');
     });
   });
 }
