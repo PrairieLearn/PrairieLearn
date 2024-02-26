@@ -24,19 +24,16 @@ router.get(
       },
       CourseSchema,
     );
-    const courseInstances = await queryRows(
+    const rows = await queryRows(
       sql.select_course_instances,
-      {
-        institution_id: req.params.institution_id,
-        course_id: req.params.course_id,
-      },
+      { course_id: course.id },
       CourseInstanceRowSchema,
     );
     res.send(
       InstitutionAdminCourse({
         institution,
         course,
-        course_instances: courseInstances,
+        rows,
         resLocals: res.locals,
       }),
     );
@@ -45,8 +42,11 @@ router.get(
 
 const UpdateEnrollmentLimitsBodySchema = z.object({
   __action: z.literal('update_enrollment_limits'),
-  yearly_enrollment_limit: z.union([z.literal(''), z.coerce.number().int()]),
-  course_instance_enrollment_limit: z.union([z.literal(''), z.coerce.number().int()]),
+  yearly_enrollment_limit: z.union([z.literal('').transform(() => null), z.coerce.number().int()]),
+  course_instance_enrollment_limit: z.union([
+    z.literal('').transform(() => null),
+    z.coerce.number().int(),
+  ]),
 });
 
 router.post(
@@ -68,8 +68,8 @@ router.post(
           sql.update_enrollment_limits,
           {
             course_id: course.id,
-            yearly_enrollment_limit: body.yearly_enrollment_limit || null,
-            course_instance_enrollment_limit: body.course_instance_enrollment_limit || null,
+            yearly_enrollment_limit: body.yearly_enrollment_limit,
+            course_instance_enrollment_limit: body.course_instance_enrollment_limit,
           },
           CourseSchema,
         );

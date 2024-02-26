@@ -13,12 +13,12 @@ type CourseInstanceRow = z.infer<typeof CourseInstanceRowSchema>;
 export function InstitutionAdminCourse({
   institution,
   course,
-  course_instances,
+  rows,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
-  course_instances: CourseInstanceRow[];
+  rows: CourseInstanceRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -138,20 +138,19 @@ export function InstitutionAdminCourse({
                 </tr>
               </thead>
               <tbody>
-                ${course_instances.map((row) => {
+                ${rows.map(({ course_instance, enrollment_count }) => {
                   return html`
                     <tr>
                       <td>
                         <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${row
-                            .course_instance.id}"
+                          href="/pl/institution/${institution.id}/admin/course_instance/${course_instance.id}"
                         >
-                          ${row.course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
+                          ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
                         </a>
                       </td>
-                      <td>${row.enrollment_count}</td>
+                      <td>${enrollment_count}</td>
                       <td>
-                        ${row.course_instance.enrollment_limit ??
+                        ${course_instance.enrollment_limit ??
                         course.course_instance_enrollment_limit ??
                         institution.course_instance_enrollment_limit}
                       </td>

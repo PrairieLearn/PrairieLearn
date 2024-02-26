@@ -18,6 +18,12 @@ interface EnrollmentCounts {
   free: number;
 }
 
+/**
+ * Returns counts of free and paid enrollments for the given institution.
+ * Enrollments are counted during the time period spanning from the current
+ * time back to the given `created_since` time, which is a Postgres interval
+ * string like '1 year' or '6 months'.
+ */
 export async function getEnrollmentCountsForInstitution({
   institution_id,
   created_since,
@@ -37,6 +43,12 @@ export async function getEnrollmentCountsForInstitution({
   };
 }
 
+/**
+ * Returns counts of free and paid enrollments for the given course.
+ * Enrollments are counted during the time period spanning from the current
+ * time back to the given `created_since` time, which is a Postgres interval
+ * string like '1 year' or '6 months'.
+ */
 export async function getEnrollmentCountsForCourse({
   course_id,
   created_since,
@@ -59,6 +71,9 @@ export async function getEnrollmentCountsForCourse({
   };
 }
 
+/**
+ * Returns counts of free and paid enrollments for the given course instance.
+ */
 export async function getEnrollmentCountsForCourseInstance(
   course_instance_id: string,
 ): Promise<EnrollmentCounts> {
