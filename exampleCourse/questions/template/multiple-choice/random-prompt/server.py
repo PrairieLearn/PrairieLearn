@@ -2,50 +2,26 @@ import random
 
 
 def generate(data):
-    # Create a list of question prompts and the corresponding answers
+    # Create a list of question prompts and the corresponding answers.
     scenarios = [
-        {
-            "question": "closest to",
-            "answer": "Mercury",
-        },
-        {
-            "question": "2nd away from",
-            "answer": "Venus",
-        },
-        {
-            "question": "3rd away from",
-            "answer": "Earth",
-        },
-        {
-            "question": "4th away from",
-            "answer": "Mars",
-        },
-        {
-            "question": "5th away from",
-            "answer": "Jupiter",
-        },
-        {
-            "question": "6th away from",
-            "answer": "Saturn",
-        },
-        {
-            "question": "7th away from",
-            "answer": "Uranus",
-        },
-        {
-            "question": "farthest from",
-            "answer": "Neptune",
-        },
+        ("closest to", "Mercury"),
+        ("2nd away from", "Venus"),
+        ("3rd away from", "Earth"),
+        ("4th away from", "Mars"),
+        ("5th away from", "Jupiter"),
+        ("6th away from", "Saturn"),
+        ("7th away from", "Uranus"),
+        ("farthest from", "Neptune"),
     ]
 
-    # Randomize the order of the scenarios
-    random.shuffle(scenarios)
+    # Randomize the order of the scenarios.
+    selected_scenarios = random.sample(scenarios, 4)
 
-    # First shuffled scenario is the one we will take as correct
-    data["params"]["question_prompt"] = scenarios[0]["question"]
-    data["params"]["correct_answer"] = scenarios[0]["answer"]
+    # First shuffled scenario is the one we will take as correct.
+    data["params"]["question_prompt"] = selected_scenarios[0][0]
+    data["params"]["correct_answer"] = selected_scenarios[0][1]
 
-    # Next three shuffled scenarios are the distractors
-    data["params"]["wrong_answer1"] = scenarios[1]["answer"]
-    data["params"]["wrong_answer2"] = scenarios[2]["answer"]
-    data["params"]["wrong_answer3"] = scenarios[3]["answer"]
+    # Next three shuffled scenarios are the distractors.
+    data["params"]["wrong_answer1"] = selected_scenarios[1][1]
+    data["params"]["wrong_answer2"] = selected_scenarios[2][1]
+    data["params"]["wrong_answer3"] = selected_scenarios[3][1]
