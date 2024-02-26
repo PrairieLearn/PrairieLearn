@@ -416,15 +416,16 @@ async function createEdit(fileEdit) {
 }
 
 async function writeEdit(fileEdit) {
-  const fileID = await uploadFile(
-    fileEdit.fileName,
-    Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
-    'instructor_file_edit',
-    null,
-    null,
-    fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-    fileEdit.userID, //       although I don't think there's any need to do so
-  );
+  const fileID = await uploadFile({
+    display_filename: fileEdit.fileName,
+    contents: Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+    type: 'instructor_file_edit',
+    assessment_id: null,
+    assessment_instance_id: null,
+    instance_question_id: null,
+    user_id: fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
+    authn_user_id: fileEdit.userID, //       although I don't think there's any need to do so
+  });
   debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
   return fileID;
 }
