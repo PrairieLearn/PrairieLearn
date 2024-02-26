@@ -82,8 +82,6 @@ export async function init() {
       'users_get_displayed_role.sql',
       'users_randomly_generate.sql',
       'grading_jobs_stats_day.sql',
-      'files_insert.sql',
-      'files_delete.sql',
       'issues_insert_for_variant.sql',
       'issues_update_open.sql',
       'variants_lock.sql',
