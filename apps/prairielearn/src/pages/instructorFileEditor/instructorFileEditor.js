@@ -54,6 +54,7 @@ router.get('/*', (req, res, next) => {
   let fileEdit = {
     uuid: uuidv4(),
     userID: res.locals.user.user_id,
+    authnUserId: res.locals.authn_user.user_id,
     courseID: res.locals.course.id,
     coursePath: res.locals.course.path,
     dirName: path.dirname(workingPath),
@@ -193,6 +194,7 @@ router.post('/*', (req, res, next) => {
 
   let fileEdit = {
     userID: res.locals.user.user_id,
+    authnUserId: res.locals.authn_user.user_id,
     courseID: res.locals.course.id,
     dirName: req.body.file_edit_dir_name,
     fileName: req.body.file_edit_file_name,
@@ -423,8 +425,8 @@ async function writeEdit(fileEdit) {
     assessment_id: null,
     assessment_instance_id: null,
     instance_question_id: null,
-    user_id: fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-    authn_user_id: fileEdit.userID, //       although I don't think there's any need to do so
+    user_id: fileEdit.userID,
+    authn_user_id: fileEdit.authnUserId,
   });
   debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
   return fileID;
