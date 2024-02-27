@@ -1582,7 +1582,8 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'access_overrides';
         next();
       },
-      require('./pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides').default,
+      require('./pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides')
+        .default,
     ],
   );
   app.use('/pl/course/:course_id/question/:question_id', function (req, res, next) {

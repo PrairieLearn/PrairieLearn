@@ -5,7 +5,7 @@ columns
     credit: integer not null
     end_date: timestamp with time zone not null
     group_id: bigint
-    id: bigint not null default nextval('assessment_access_policies_id_seq1'::regclass)
+    id: bigint not null default nextval('assessment_access_policies_id_seq'::regclass)
     note: text
     start_date: timestamp with time zone not null
     user_id: bigint

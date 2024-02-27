@@ -9,7 +9,6 @@ import { selectUserByUid } from '../../models/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-
 async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
   const user = await selectUserByUid(uid);
   if (!user) {
@@ -27,7 +26,6 @@ async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
   return user.user_id;
 }
 
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -35,7 +33,7 @@ router.get(
       assessment_id: res.locals.assessment.id,
       student_uid: req.body.student_uid,
       course_instance_id: res.locals.course ? res.locals.course_instance.id : null,
-      course_id: res.locals.course ? res.locals.course.id : null
+      course_id: res.locals.course ? res.locals.course.id : null,
     });
     res.locals.policies = result.rows;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -45,7 +43,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    
     if (req.body.__action === 'add_new_override') {
       let user_id = null;
       if (req.body.student_uid) {
@@ -53,7 +50,6 @@ router.post(
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
         });
-      
       }
       const params = {
         assessment_id: res.locals.assessment.id,
@@ -91,9 +87,6 @@ router.post(
         if (!params.user_id || params.group_name) {
           throw error.make(400, 'Student User ID is required for individual work assessments.');
         }
-        
-       
-        
       }
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
@@ -111,7 +104,7 @@ router.post(
           course_instance_id: res.locals.course_instance.id,
         });
       }
-      
+
       const edit_params = {
         assessment_id: res.locals.assessment.id,
         credit: req.body.credit,
@@ -123,8 +116,7 @@ router.post(
         user_id: user_id || null,
         assessment_access_policies_id: req.body.policy_id,
       };
-      
-      
+
       // Validate if group belongs to the assessment, otherwise check if student is enrolled in assessment
       if (res.locals.assessment.group_work) {
         if (!edit_params.group_name || edit_params.user_id) {
@@ -150,9 +142,6 @@ router.post(
         if (!edit_params.user_id || edit_params.group_name) {
           throw error.make(400, 'Student UID is required for individual work assessments.');
         }
-        
-        
-        
       }
       await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
       res.redirect(req.originalUrl);

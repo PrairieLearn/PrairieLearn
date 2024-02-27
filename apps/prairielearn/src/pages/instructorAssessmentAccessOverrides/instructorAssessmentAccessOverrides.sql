@@ -1,11 +1,20 @@
 -- BLOCK select_assessment_access_policies
 SELECT
-  format_date_full_compact (aap.created_at, coalesce(ci.display_timezone, c.display_timezone)) AS created_at,
+  format_date_full_compact (
+    aap.created_at,
+    coalesce(ci.display_timezone, c.display_timezone)
+  ) AS created_at,
   aap.created_by::text AS created_by,
   aap.credit::text AS credit,
-  format_date_full_compact (aap.end_date, coalesce(ci.display_timezone, c.display_timezone)) AS end_date,
+  format_date_full_compact (
+    aap.end_date,
+    coalesce(ci.display_timezone, c.display_timezone)
+  ) AS end_date,
   aap.note AS note,
-  format_date_full_compact (aap.start_date, coalesce(ci.display_timezone, c.display_timezone)) AS start_date,
+  format_date_full_compact (
+    aap.start_date,
+    coalesce(ci.display_timezone, c.display_timezone)
+  ) AS start_date,
   (
     SELECT
       name
@@ -85,8 +94,7 @@ SET
 WHERE
   assessment_id = $assessment_id
   AND id = $assessment_access_policies_id
-
--- BLOCK delete_assessment_access_policy
+  -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
 WHERE
   assessment_id = $assessment_id
