@@ -1,25 +1,25 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import async = require('async');
-import child_process = require('child_process');
-import fs = require('fs-extra');
-import path = require('path');
+import * as async from 'async';
+import * as child_process from 'child_process';
+import * as fs from 'fs-extra';
+import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
-import tar = require('tar');
-import util = require('util');
+import * as tar from 'tar';
+import * as util from 'util';
 import { v4 as uuidv4 } from 'uuid';
 
-import namedLocks = require('@prairielearn/named-locks');
-import sqldb = require('@prairielearn/postgres');
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
 
-import aws = require('./aws');
+import * as aws from './aws';
 import { chalk, chalkDim } from './chalk';
 import { createServerJob, ServerJob } from './server-jobs';
-import courseDB = require('../sync/course-db');
+import * as courseDB from '../sync/course-db';
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
 import { contains } from '@prairielearn/path-utils';
-import { getLockNameForCoursePath } from './course';
+import { getLockNameForCoursePath } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -828,7 +828,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.info(chalkDim(`Acquired lock`));
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
-    const courseData = await courseDB.loadFullCourse(courseDir);
+    const courseData = await courseDB.loadFullCourse(course_id, courseDir);
     job.info(chalkDim(`Loaded course data`));
 
     job.info(chalk.bold(`Generating all chunks`));

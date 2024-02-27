@@ -38,7 +38,7 @@ ignore = ["E501"]
 
 # Black compatibility
 max-line-length = 88
-extend-ignore = ["E203", "W503"]
+extend-ignore = ["E203", "E704", "W503"]
 
 [tool.black]
 extend-exclude = '''
@@ -67,6 +67,7 @@ include = [
     "./apps/prairielearn/elements/pl-external-grader-variables",
     "./apps/prairielearn/elements/pl-figure",
     "./apps/prairielearn/elements/pl-file-download",
+    "./apps/prairielearn/elements/pl-file-editor",
     "./apps/prairielearn/elements/pl-file-preview",
     "./apps/prairielearn/elements/pl-file-upload",
     "./apps/prairielearn/elements/pl-graph",
@@ -101,8 +102,10 @@ include = [
     "./apps/prairielearn/python/question_phases.py",
     "./apps/prairielearn/python/traverse_test.py",
     "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
+reportUnnecessaryTypeIgnoreComment = "error"

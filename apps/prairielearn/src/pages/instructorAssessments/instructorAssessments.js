@@ -1,17 +1,21 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
+import * as express from 'express';
 const asyncHandler = require('express-async-handler');
-const { default: AnsiUp } = require('ansi_up');
-const error = require('@prairielearn/error');
+import AnsiUp from 'ansi_up';
+import * as error from '@prairielearn/error';
 const debug = require('debug')('prairielearn:instructorAssessments');
-const { logger } = require('@prairielearn/logger');
-const { stringifyStream } = require('@prairielearn/csv');
-const sqldb = require('@prairielearn/postgres');
-const { pipeline } = require('node:stream/promises');
+import { logger } from '@prairielearn/logger';
+import { stringifyStream } from '@prairielearn/csv';
+import * as sqldb from '@prairielearn/postgres';
+import { pipeline } from 'node:stream/promises';
 
-const sanitizeName = require('../../lib/sanitize-name');
-const { AssessmentAddEditor } = require('../../lib/editors');
-const assessment = require('../../lib/assessment');
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name';
+import { AssessmentAddEditor } from '../../lib/editors';
+import {
+  updateAssessmentStatistics,
+  updateAssessmentStatisticsForCourseInstance,
+} from '../../lib/assessment';
 
 const router = express.Router();
 const ansiUp = new AnsiUp();
@@ -19,8 +23,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
   return (
-    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
-    'assessment_stats.csv'
+    courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'assessment_stats.csv'
   );
 };
 
@@ -57,7 +60,7 @@ router.get(
     // Update statistics for this assessment. We do this before checking authz
     // on the assessment but this is ok because we won't send any data back if
     // we aren't authorized.
-    await assessment.updateAssessmentStatistics(req.params.assessment_id);
+    await updateAssessmentStatistics(req.params.assessment_id);
 
     // When fetching the assessment, we don't check whether it needs an update
     // again because we don't want to get get stuck in a loop perpetually
@@ -86,7 +89,7 @@ router.get(
       // data, because this file only has aggregate data.
 
       // update assessment statistics if needed
-      await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
+      await updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
       const cursor = await sqldb.queryCursor(sql.select_assessments, {
         course_instance_id: res.locals.course_instance.id,
@@ -191,13 +194,8 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;

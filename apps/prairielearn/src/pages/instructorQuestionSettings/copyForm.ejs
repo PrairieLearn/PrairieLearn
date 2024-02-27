@@ -7,7 +7,7 @@
       <% if (course.example_course) { %>
       <option hidden disabled selected value> -- select a course -- </option>
       <% } %>
-      <% authz_data.editable_courses.forEach((c) => { %>
+      <% editable_courses.forEach((c) => { %>
         <option value="<%= c.id %>" <% if (c.id == course.id) { %>selected<% } %>><%= c.short_name %></option>
       <% }); %>
     </select>

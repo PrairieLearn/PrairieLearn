@@ -16,31 +16,32 @@
     "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
+    "@changesets/cli": "^2.27.1",
     "@prairielearn/prettier-plugin-sql": "workspace:^",
-    "@typescript-eslint/eslint-plugin": "^6.9.1",
-    "@typescript-eslint/parser": "^6.9.1",
-    "eslint": "^8.52.0",
-    "eslint-config-prettier": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "dependency-cruiser": "^16.1.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
-    "eslint-plugin-import": "2.29.0",
+    "eslint-plugin-import": "2.29.1",
     "eslint-plugin-mocha": "^10.2.0",
     "eslint-plugin-no-floating-promise": "^1.0.2",
     "eslint-plugin-no-only-tests": "^3.1.0",
+    "globby": "^11.1.0",
     "htmlhint": "^1.1.4",
-    "jsdoc": "^4.0.2",
-    "prettier": "3.0.3",
-    "pyright": "^1.1.334",
+    "prettier": "3.2.4",
+    "pyright": "^1.1.349",
     "s3rver": "^3.7.1",
-    "turbo": "^1.10.16",
-    "typescript": "^5.2.2"
+    "turbo": "^1.12.2",
+    "typescript": "^5.3.3"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "packageManager": "yarn@3.5.0"
 }

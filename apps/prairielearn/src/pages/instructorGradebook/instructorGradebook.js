@@ -1,24 +1,23 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
-const express = require('express');
-const { stringifyStream } = require('@prairielearn/csv');
-const { pipeline } = require('node:stream/promises');
+import * as express from 'express';
+import { stringifyStream } from '@prairielearn/csv';
+import { pipeline } from 'node:stream/promises';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { callbackify } from 'node:util';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-
-const course = require('../../lib/course');
-const sanitizeName = require('../../lib/sanitize-name');
+import { getCourseOwners, checkBelongs } from '../../lib/course';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name';
+import { updateAssessmentInstanceScore } from '../../lib/assessment';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const csvFilename = function (locals) {
-  return (
-    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
-    'gradebook.csv'
-  );
+  return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 };
 
 router.get('/', function (req, res, next) {
@@ -30,8 +29,7 @@ router.get('/', function (req, res, next) {
     // see instructions for how to get student data viewer permissions. Otherwise,
     // users just wouldn't see the tab at all, and this caused a lot of questions
     // about why staff couldn't see the gradebook tab.
-    course
-      .getCourseOwners(res.locals.course.id)
+    getCourseOwners(res.locals.course.id)
       .then((owners) => {
         res.locals.course_owners = owners;
         res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -119,35 +117,30 @@ router.post('/', function (req, res, next) {
   if (req.body.__action === 'edit_total_score_perc') {
     const course_instance_id = res.locals.course_instance.id;
     const assessment_instance_id = req.body.assessment_instance_id;
-    course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
+    checkBelongs(assessment_instance_id, course_instance_id, (err) => {
       if (ERR(err, next)) return;
 
-      let params = [
+      callbackify(updateAssessmentInstanceScore)(
         req.body.assessment_instance_id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
-      ];
-      sqldb.call('assessment_instances_update_score_perc', params, function (err, _result) {
-        if (ERR(err, next)) return;
-
-        params = {
-          assessment_instance_id: req.body.assessment_instance_id,
-        };
-
-        sqldb.query(sql.assessment_instance_score, params, function (err, result) {
+        function (err) {
           if (ERR(err, next)) return;
-          res.send(JSON.stringify(result.rows));
-        });
-      });
+
+          let queryParams = {
+            assessment_instance_id: req.body.assessment_instance_id,
+          };
+
+          sqldb.query(sql.assessment_instance_score, queryParams, function (err, result) {
+            if (ERR(err, next)) return;
+            res.send(JSON.stringify(result.rows));
+          });
+        },
+      );
     });
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;

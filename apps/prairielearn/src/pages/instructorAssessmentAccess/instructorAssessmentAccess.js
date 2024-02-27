@@ -1,26 +1,42 @@
-const ERR = require('async-stacktrace');
-const express = require('express');
+// @ts-check
+import * as express from 'express';
+const asyncHandler = require('express-async-handler');
+import { z } from 'zod';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import { config } from '../../lib/config';
+
 const router = express.Router();
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const sql = loadSqlEquiv(__filename);
 
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
-
-const sql = sqldb.loadSqlEquiv(__filename);
-
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  var params = {
-    assessment_id: res.locals.assessment.id,
-    link_exam_id: config.syncExamIdAccessRules,
-  };
-  sqldb.query(sql.assessment_access_rules, params, function (err, result) {
-    if (ERR(err, next)) return;
-    res.locals.access_rules = result.rows;
-    debug('render page');
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
+const AssessmentAccessRulesSchema = z.object({
+  mode: z.string(),
+  uids: z.string(),
+  start_date: z.string(),
+  end_date: z.string(),
+  credit: z.string(),
+  time_limit: z.string(),
+  password: z.string(),
+  exam_uuid: z.string().nullable(),
+  ps_exam_id: z.string().nullable(),
+  pt_course_id: z.string().nullable(),
+  pt_course_name: z.string().nullable(),
+  pt_exam_id: z.string().nullable(),
+  pt_exam_name: z.string().nullable(),
+  active: z.string(),
 });
 
-module.exports = router;
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const result = await queryRows(
+      sql.assessment_access_rules,
+      { assessment_id: res.locals.assessment.id, link_exam_id: config.syncExamIdAccessRules },
+      AssessmentAccessRulesSchema,
+    );
+    res.locals.access_rules = result;
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
+
+export default router;

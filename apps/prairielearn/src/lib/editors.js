@@ -1,27 +1,31 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const { logger } = require('@prairielearn/logger');
-const { contains } = require('@prairielearn/path-utils');
-const { createServerJob } = require('./server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const syncFromDisk = require('../sync/syncFromDisk');
-const courseUtil = require('../lib/courseUtil');
-const { config } = require('../lib/config');
-const path = require('path');
+import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import { createServerJob } from './server-jobs';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as syncFromDisk from '../sync/syncFromDisk';
+import {
+  getLockNameForCoursePath,
+  getCourseCommitHash,
+  updateCourseCommitHash,
+  getOrUpdateCourseCommitHash,
+} from '../models/course';
+import { config } from './config';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const fs = require('fs-extra');
-const async = require('async');
-const { v4: uuidv4 } = require('uuid');
+import * as error from '@prairielearn/error';
+import * as fs from 'fs-extra';
+import * as async from 'async';
+import { v4 as uuidv4 } from 'uuid';
 const sha256 = require('crypto-js/sha256');
-const chunks = require('./chunks');
-const { EXAMPLE_COURSE_PATH } = require('./paths');
-const { escapeRegExp } = require('@prairielearn/sanitize');
-const sqldb = require('@prairielearn/postgres');
-const { getLockNameForCoursePath } = require('./course');
-const b64Util = require('../lib/base64-util');
-const { html } = require('@prairielearn/html');
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
+import { EXAMPLE_COURSE_PATH } from './paths';
+import { escapeRegExp } from '@prairielearn/sanitize';
+import * as sqldb from '@prairielearn/postgres';
+import * as b64Util from '../lib/base64-util';
+import { html } from '@prairielearn/html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -31,29 +35,29 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('./server-jobs').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await courseUtil.getCommitHashAsync(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
+  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
   if (config.chunksGenerator) {
-    const chunkChanges = await chunks.updateChunksForCourse({
+    const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
       courseData: result.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
-    chunks.logChunkChangesToJob(chunkChanges, job);
+    logChunkChangesToJob(chunkChanges, job);
   }
 
-  await courseUtil.updateCourseCommitHashAsync(course);
+  await updateCourseCommitHash(course);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
 }
 
-async function cleanAndResetRepository(course, env, job) {
+export async function cleanAndResetRepository(course, env, job) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
@@ -63,7 +67,7 @@ async function cleanAndResetRepository(course, env, job) {
   });
 }
 
-class Editor {
+export class Editor {
   constructor(params) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
@@ -121,7 +125,7 @@ class Editor {
 
             const lockName = getLockNameForCoursePath(this.course.path);
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
+              const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
               if (!config.fileEditorUseGit) {
                 // If we are not using git (e.g., if we are running locally), then we:
@@ -411,7 +415,7 @@ class Editor {
   }
 }
 
-class AssessmentCopyEditor extends Editor {
+export class AssessmentCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
@@ -466,7 +470,7 @@ class AssessmentCopyEditor extends Editor {
   }
 }
 
-class AssessmentDeleteEditor extends Editor {
+export class AssessmentDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
@@ -487,7 +491,7 @@ class AssessmentDeleteEditor extends Editor {
   }
 }
 
-class AssessmentRenameEditor extends Editor {
+export class AssessmentRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.tid_new = params.tid_new;
@@ -519,7 +523,7 @@ class AssessmentRenameEditor extends Editor {
   }
 }
 
-class AssessmentAddEditor extends Editor {
+export class AssessmentAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: add assessment`;
@@ -575,7 +579,7 @@ class AssessmentAddEditor extends Editor {
   }
 }
 
-class CourseInstanceCopyEditor extends Editor {
+export class CourseInstanceCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy course instance ${this.course_instance.short_name}`;
@@ -630,7 +634,7 @@ class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-class CourseInstanceDeleteEditor extends Editor {
+export class CourseInstanceDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete course instance ${this.course_instance.short_name}`;
@@ -646,7 +650,7 @@ class CourseInstanceDeleteEditor extends Editor {
   }
 }
 
-class CourseInstanceRenameEditor extends Editor {
+export class CourseInstanceRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.ciid_new = params.ciid_new;
@@ -676,7 +680,7 @@ class CourseInstanceRenameEditor extends Editor {
   }
 }
 
-class CourseInstanceAddEditor extends Editor {
+export class CourseInstanceAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add course instance`;
@@ -726,7 +730,7 @@ class CourseInstanceAddEditor extends Editor {
   }
 }
 
-class QuestionAddEditor extends Editor {
+export class QuestionAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add question`;
@@ -769,7 +773,7 @@ class QuestionAddEditor extends Editor {
   }
 }
 
-class QuestionDeleteEditor extends Editor {
+export class QuestionDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete question ${this.question.qid}`;
@@ -787,7 +791,7 @@ class QuestionDeleteEditor extends Editor {
   }
 }
 
-class QuestionRenameEditor extends Editor {
+export class QuestionRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.qid_new = params.qid_new;
@@ -862,7 +866,7 @@ class QuestionRenameEditor extends Editor {
   }
 }
 
-class QuestionCopyEditor extends Editor {
+export class QuestionCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy question ${this.question.qid}`;
@@ -910,7 +914,7 @@ class QuestionCopyEditor extends Editor {
   }
 }
 
-class QuestionTransferEditor extends Editor {
+export class QuestionTransferEditor extends Editor {
   constructor(params) {
     super(params);
     this.from_qid = params.from_qid;
@@ -965,7 +969,7 @@ class QuestionTransferEditor extends Editor {
   }
 }
 
-class FileDeleteEditor extends Editor {
+export class FileDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1032,7 +1036,7 @@ class FileDeleteEditor extends Editor {
   }
 }
 
-class FileRenameEditor extends Editor {
+export class FileRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1142,7 +1146,7 @@ class FileRenameEditor extends Editor {
   }
 }
 
-class FileUploadEditor extends Editor {
+export class FileUploadEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1245,7 +1249,7 @@ class FileUploadEditor extends Editor {
   }
 }
 
-class FileModifyEditor extends Editor {
+export class FileModifyEditor extends Editor {
   // Naming convention for contents and hashes in FileModifyEditor:
   //
   //    xyzContentsUTF - contents of xyz file as utf8
@@ -1357,7 +1361,7 @@ class FileModifyEditor extends Editor {
   }
 }
 
-class CourseInfoEditor extends Editor {
+export class CourseInfoEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Create infoCourse.json`;
@@ -1387,24 +1391,3 @@ class CourseInfoEditor extends Editor {
     this.commitMessage = `create infoCourse.json`;
   }
 }
-
-module.exports = {
-  AssessmentCopyEditor,
-  AssessmentDeleteEditor,
-  AssessmentRenameEditor,
-  AssessmentAddEditor,
-  CourseInstanceCopyEditor,
-  CourseInstanceDeleteEditor,
-  CourseInstanceRenameEditor,
-  CourseInstanceAddEditor,
-  QuestionCopyEditor,
-  QuestionDeleteEditor,
-  QuestionRenameEditor,
-  QuestionAddEditor,
-  QuestionTransferEditor,
-  FileDeleteEditor,
-  FileRenameEditor,
-  FileUploadEditor,
-  FileModifyEditor,
-  CourseInfoEditor,
-};

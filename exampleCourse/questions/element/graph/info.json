@@ -2,9 +2,6 @@
     "uuid": "3c4fc412-7bf2-45e2-bae4-f8e7a5faede5",
     "title": "Element pl-graph: Displaying graphs from data",
     "topic": "Element",
-    "tags": [
-        "nwalter2",
-        "nnytko2"
-    ],
+    "tags": ["nnytko2"],
     "type": "v3"
 }

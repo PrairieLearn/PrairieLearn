@@ -77,18 +77,22 @@
               </td>
               <td class="text-center align-middle">
                 <% if (row.multiple_instance_header) { %>
-                <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
-                <% } else { // multiple_instance_header %>
-                <% if (row.assessment_instance_id) { %>
-                <% if(row.show_closed_assessment_score) { %>
-                <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                  <% if (row.active) { %>
+                    <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
+                  <% } else { %>
+                    <button type="button" disabled class="btn btn-primary btn-sm">New instance</button>
+                  <% } %>
                 <% } else { %>
-                Score not shown
+                  <% if (row.assessment_instance_id) { %>
+                    <% if (row.show_closed_assessment_score) { %>
+                    <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                    <% } else { %>
+                    Score not shown
+                    <% } %>
+                  <% } else { %>
+                    Not started
+                  <% } %>
                 <% } %>
-                <% } else { %>
-                Not started
-                <% } %>
-                <% } // multiple_instance_header %>
               </td>
             </tr>
             <% }); %>

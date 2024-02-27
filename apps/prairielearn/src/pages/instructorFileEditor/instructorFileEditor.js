@@ -1,27 +1,28 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const async = require('async');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const fs = require('fs-extra');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const serverJobs = require('../../lib/server-jobs-legacy');
-const editorUtil = require('../../lib/editorUtil');
-const { default: AnsiUp } = require('ansi_up');
+import * as express from 'express';
+import * as async from 'async';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+const debug = require('debug')('prairielearn:instructorFileEditor');
+import * as serverJobs from '../../lib/server-jobs-legacy';
+import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
+import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
-const b64Util = require('../../lib/base64-util');
-const fileStore = require('../../lib/file-store');
-const { isBinaryFile } = require('isbinaryfile');
-const modelist = require('ace-code/src/ext/modelist');
-const { idsEqual } = require('../../lib/id');
-const { getCourseOwners } = require('../../lib/course');
-const { getPaths } = require('../../lib/instructorFiles');
-const { logger } = require('@prairielearn/logger');
-const { FileModifyEditor } = require('../../lib/editors');
+import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
+import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
+import { isBinaryFile } from 'isbinaryfile';
+import * as modelist from 'ace-code/src/ext/modelist';
+import { idsEqual } from '../../lib/id';
+import { getPaths } from '../../lib/instructorFiles';
+import { getCourseOwners } from '../../lib/course';
+import { logger } from '@prairielearn/logger';
+import { FileModifyEditor } from '../../lib/editors';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
@@ -63,6 +64,7 @@ router.get('/*', (req, res, next) => {
     let fileEdit = {
       uuid: uuidv4(),
       userID: res.locals.user.user_id,
+      authnUserId: res.locals.authn_user.user_id,
       courseID: res.locals.course.id,
       coursePath: paths.coursePath,
       dirName: path.dirname(relPath),
@@ -87,7 +89,7 @@ router.get('/*', (req, res, next) => {
 
           debug('Read from disk');
           const contents = await fs.readFile(fullPath);
-          fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
+          fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
           fileEdit.diskHash = getHash(fileEdit.diskContents);
 
           const binary = await isBinaryFile(contents);
@@ -107,10 +109,7 @@ router.get('/*', (req, res, next) => {
             );
           }
 
-          const data = await editorUtil.getErrorsAndWarningsForFilePath(
-            res.locals.course.id,
-            relPath,
-          );
+          const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
           const ansiUp = new AnsiUp();
           fileEdit.sync_errors = data.errors;
           fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
@@ -206,12 +205,20 @@ router.post('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
+
   getPaths(req, res, (err, paths) => {
     if (ERR(err, next)) return;
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
     };
+
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.example_course) {
+      return next(
+        error.make(400, `attempting to edit file inside example course: ${paths.workingPath}`),
+      );
+    }
 
     // NOTE: All actions are meant to do things to *files* and not to directories
     // (or anything else). However, nowhere do we check that it is actually being
@@ -273,7 +280,7 @@ router.post('/*', (req, res, next) => {
         });
       });
     } else {
-      return next(new Error('unknown __action: ' + req.body.__action));
+      return next(error.make(400, `Unknown action: ${req.body.__action}`));
     }
   });
 });
@@ -322,19 +329,19 @@ async function readDraftEdit(fileEdit) {
       debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
     } else {
       debug(`Remove file_id=${row.file_id} from file store`);
-      await fileStore.delete(row.file_id, fileEdit.userID);
+      await deleteFile(row.file_id, fileEdit.userID);
     }
   }
 
   if ('editID' in fileEdit) {
     debug('Read contents of file edit');
-    const result = await fileStore.get(fileEdit.fileID);
-    const contents = b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
+    const result = await getFile(fileEdit.fileID);
+    const contents = b64EncodeUnicode(result.contents.toString('utf8'));
     fileEdit.editContents = contents;
     fileEdit.editHash = getHash(fileEdit.editContents);
 
     debug(`Remove file_id=${fileEdit.fileID} from file store`);
-    await fileStore.delete(fileEdit.fileID, fileEdit.userID);
+    await deleteFile(fileEdit.fileID, fileEdit.userID);
   }
 }
 
@@ -356,19 +363,20 @@ async function writeDraftEdit(fileEdit) {
   debug(`Deleted ${deletedFileEdits.rowCount} previously saved drafts`);
   for (const row of deletedFileEdits.rows) {
     debug(`Remove file_id=${row.file_id} from file store`);
-    await fileStore.delete(row.file_id, fileEdit.userID);
+    await deleteFile(row.file_id, fileEdit.userID);
   }
 
   debug('Write contents to file store');
-  const fileID = await fileStore.upload(
-    fileEdit.fileName,
-    Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
-    'instructor_file_edit',
-    null,
-    null,
-    fileEdit.userID,
-    fileEdit.authnUserID,
-  );
+  const fileID = await uploadFile({
+    display_filename: fileEdit.fileName,
+    contents: Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+    type: 'instructor_file_edit',
+    assessment_id: null,
+    assessment_instance_id: null,
+    instance_question_id: null,
+    user_id: fileEdit.userID,
+    authn_user_id: fileEdit.authnUserID,
+  });
   debug(`Wrote file_id=${fileID} to file store`);
 
   const params = {
@@ -388,4 +396,4 @@ async function writeDraftEdit(fileEdit) {
   return editID;
 }
 
-module.exports = router;
+export default router;

@@ -5,6 +5,7 @@
       "label": "Previous question",
     },
     question: instance_question_info.prev_instance_question,
+    group_role_permissions: locals.prev_instance_question_role_permissions,
   }); %>
   <%- include("../partials/questionNavSideButton", {
     // NOTE: This must be kept in sync the the corresponding code in
@@ -14,6 +15,7 @@
       "label": "Next question",
     },
     question: instance_question_info.next_instance_question,
+    group_role_permissions: locals.next_instance_question_role_permissions,
     advance_score_perc: instance_question_info.advance_score_perc,
   }); %>
 </div>

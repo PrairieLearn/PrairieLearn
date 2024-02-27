@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 
 const { logger } = require('@prairielearn/logger');
@@ -6,6 +7,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (pageType) {
+  /** @type {(req: import('express').Request, res: import('express').Response, next: (err?: Error | null) => void) => void} */
   return function (req, res, next) {
     if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();
@@ -32,6 +34,7 @@ module.exports = function (pageType) {
       variant_id: res.locals.variant ? res.locals.variant.id : null,
       page_type: pageType,
       path: req.originalUrl,
+      client_fingerprint_id: res.locals.client_fingerprint_id ?? null,
     };
 
     sqldb.queryOneRow(sql.log_page_view, params, function (err, result) {

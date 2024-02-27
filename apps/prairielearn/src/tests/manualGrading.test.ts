@@ -9,6 +9,10 @@ import { features } from '../lib/features/index';
 import * as helperServer from './helperServer';
 import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -22,6 +26,7 @@ const defaultUser: User = {
 
 type MockUser = User & {
   user_id?: string;
+  authUid: string;
 };
 
 interface RubricItem {
@@ -107,6 +112,7 @@ async function submitGradeForm(
   const params = new URLSearchParams({
     __action: 'add_manual_grade',
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    submission_id: form.find('input[name=submission_id]').attr('value') || '',
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
     score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
     score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
@@ -374,19 +380,20 @@ describe('Manual Grading', function () {
   before('add staff users', async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const courseStaffParams = [1, staff.authUid, 'None', 1];
-        const courseStaffResult = await sqldb.callAsync(
-          'course_permissions_insert_by_user_uid',
-          courseStaffParams,
-        );
-        assert.equal(courseStaffResult.rowCount, 1);
-        staff.user_id = courseStaffResult.rows[0].user_id;
-        const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqldb.callAsync(
-          'course_instance_permissions_insert',
-          ciStaffParams,
-        );
-        assert.equal(ciStaffResult.rowCount, 1);
+        const { user_id } = await insertCoursePermissionsByUserUid({
+          course_id: '1',
+          uid: staff.authUid,
+          course_role: 'None',
+          authn_user_id: '1',
+        });
+        staff.user_id = user_id;
+        await insertCourseInstancePermissions({
+          course_id: '1',
+          user_id: staff.user_id,
+          course_instance_id: '1',
+          course_instance_role: 'Student Data Editor',
+          authn_user_id: '1',
+        });
       }),
     );
   });
@@ -742,6 +749,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -783,6 +791,48 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              use_rubric: 'true',
+              replace_auto_points: 'false',
+              starting_points: '0', // Positive grading
+              min_points: '-0.5',
+              max_extra_points: '0.5',
+              ...buildRubricItemFields(rubric_items),
+            }).toString(),
+          });
+
+          assert.equal(response.ok, true);
+        });
+
+        checkSettingsResults(0, -0.5, 0.5);
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+      });
+
+      describe('Grading without rubric items', () => {
+        step('submit a grade using a positive rubric', async () => {
+          setUser(mockStaff[0]);
+          selected_rubric_items = [];
+          score_points = 0;
+          score_percent = 0;
+          feedback_note = 'Test feedback note without any rubric items';
+          await submitGradeForm();
+        });
+
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+
+        step('update rubric items should succeed', async () => {
+          setUser(mockStaff[0]);
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
+
+          const response = await fetch(manualGradingIQUrl, {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -852,6 +902,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -929,6 +980,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',

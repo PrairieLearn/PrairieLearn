@@ -1,5 +1,4 @@
 import { FeatureManager } from './manager';
-import { featuresMiddleware } from './middleware';
 
 const featureNames = [
   'manual-grading-rubrics',
@@ -8,10 +7,13 @@ const featureNames = [
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',
+  'allow-rpy2',
+  // Can only be applied to institutions.
+  'lti13',
 ] as const;
 
 const features = new FeatureManager(featureNames);
 
 export type FeatureName = (typeof featureNames)[number];
 
-export { features, featuresMiddleware };
+export { features };

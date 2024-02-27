@@ -1,23 +1,22 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as express from 'express';
 const archiver = require('archiver');
-const { stringifyStream } = require('@prairielearn/csv');
-const { pipeline } = require('node:stream/promises');
+import { stringifyStream } from '@prairielearn/csv';
+import { pipeline } from 'node:stream/promises';
 
-const sanitizeName = require('../../lib/sanitize-name');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { getGroupConfig } from '../../lib/groups';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /** @typedef {[string, string][]} Columns */
 
 const setFilenames = function (locals) {
-  const prefix = sanitizeName.assessmentFilenamePrefix(
+  const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
@@ -51,14 +50,16 @@ const setFilenames = function (locals) {
   }
 };
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
-  setFilenames(res.locals);
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
+    setFilenames(res.locals);
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 /**
  * Local abstraction to adapt our internal notion of columns to the columns
@@ -308,7 +309,7 @@ router.get(
         '',
       );
       const prefix = `${dirname}/`;
-      archive.append(null, { name: prefix });
+      archive.append('', { name: prefix });
       archive.pipe(res);
 
       for await (const rows of cursor.iterate(100)) {
@@ -344,7 +345,7 @@ router.get(
         '',
       );
       const prefix = `${dirname}/`;
-      archive.append(null, { name: prefix });
+      archive.append('', { name: prefix });
       archive.pipe(res);
 
       for await (const rows of cursor.iterate(100)) {
@@ -355,6 +356,7 @@ router.get(
       }
       archive.finalize();
     } else if (req.params.filename === res.locals.groupsCsvFilename) {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {
         assessment_id: res.locals.assessment.id,
       });
@@ -364,6 +366,7 @@ router.get(
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
+      if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {
@@ -392,4 +395,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;
