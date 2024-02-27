@@ -121,7 +121,7 @@ router.post(
         start_date: new Date(req.body.start_date),
         group_id: null,
         user_id: user_id || null,
-        policy_id: req.body.policy_id,
+        assessment_access_policies_id: req.body.policy_id,
       };
       
       
