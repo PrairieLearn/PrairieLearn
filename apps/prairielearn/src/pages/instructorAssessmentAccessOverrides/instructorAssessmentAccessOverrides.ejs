@@ -41,7 +41,9 @@
 				editOverrideForm.find('#edit-note').val(button.data('note'));
 				editOverrideForm.find('#edit-type').val(button.data('type'));
 				var policyId = $(this).data('policy-id');
-				$('#edit-override-form input[name="policy_id"]').val(policyId);		
+				$('#edit-override-form input[name="policy_id"]').val(policyId);	
+				var groupName = $(this).data('group-name');
+    			$('#edit-group_name').val(groupName);	
 				$('#editPolicyModal').modal('show'); // Show the modal form
 			});
 				// Event listener for delete button
@@ -227,7 +229,7 @@
 												<input type="hidden" name="__action" value="edit_override">
 													
 
-													<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">
+													<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-group-name="<%= policy.group_name %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">
 														
 													<i class="fas fa-edit"></i> Edit
 												</button>
