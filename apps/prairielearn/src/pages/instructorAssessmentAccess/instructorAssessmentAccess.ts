@@ -19,7 +19,6 @@ router.get(
       { assessment_id: res.locals.assessment.id, link_exam_id: config.syncExamIdAccessRules },
       AssessmentAccessRulesSchema,
     );
-    console.log(accessRules);
     res.send(InstructorAssessmentAccess({ resLocals: res.locals, accessRules }));
   }),
 );
