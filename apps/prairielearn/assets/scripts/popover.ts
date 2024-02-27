@@ -1,3 +1,4 @@
+import { onDocumentReady } from '@prairielearn/browser-utils';
 import { Popover } from 'bootstrap';
 import { on } from 'delegated-events';
 
@@ -14,39 +15,44 @@ function closeOpenPopovers() {
   openPopover = null;
 }
 
-// Close open popover if the user hits the escape key.
-on('keydown', 'body', (e) => {
-  if (e.key === 'Escape') {
+onDocumentReady(() => {
+  // Close open popover if the user hits the escape key.
+  on('keydown', 'body', (e) => {
+    if (e.key === 'Escape') {
+      closeOpenPopovers();
+    }
+  });
+
+  on('click', '[data-toggle="popover"]', (e: Event) => {
+    // If this click occurred on an already-open popover trigger element, close the element.
+    let alreadyOpen = false;
+    const target = (e.target as HTMLElement).closest('[data-toggle="popover"]') as HTMLElement;
+    if (openPopover?.element?.id === target?.id) {
+      openPopover?.hide();
+      openPopover = null;
+      alreadyOpen = true;
+      return;
+    }
+    if (alreadyOpen) return;
+    // Create a new popover instance and open it.
+    const newPopover = new Popover(target, { sanitize: false });
+    newPopover.show();
+    openingPopover = newPopover;
+  });
+
+  on('click', '[data-function="cancel"]', () => {
     closeOpenPopovers();
-  }
-});
+  });
 
-on('click', '[data-toggle="popover"]', (e: Event) => {
-  // If this click occurred on an already-open popover trigger element, close the element.
-  let alreadyOpen = false;
-  const target = (e.target as HTMLElement).closest('[data-toggle="popover"]') as HTMLElement;
-  if (openPopover?.element?.id === target?.id) {
-    openPopover?.hide();
-    openPopover = null;
-    alreadyOpen = true;
-    return;
-  }
-  if (alreadyOpen) return;
-  // Create a new popover instance and open it.
-  const newPopover = new Popover(target);
-  newPopover.show();
-  console.log(newPopover);
-  openingPopover = newPopover;
-});
+  on('click', 'body', (e: any) => {
+    // If this click occurred inside a popover, do nothing.
+    if ((e.target as HTMLElement).closest('.popover')) {
+      return;
+    }
 
-on('click', 'body', (e: any) => {
-  // If this click occurred inside a popover, do nothing.
-  if ((e.target as HTMLElement).closest('.popover')) {
-    return;
-  }
-
-  // Close all open popovers.
-  closeOpenPopovers();
-  openPopover = openingPopover;
-  openingPopover = null;
+    // Close all open popovers.
+    closeOpenPopovers();
+    openPopover = openingPopover;
+    openingPopover = null;
+  });
 });
