@@ -359,37 +359,6 @@ function badGet(url, expected_status, should_parse) {
   });
 }
 
-function badPost(action, fileEditContents, url) {
-  describe(`POST to edit url with action ${action} and with bad path`, function () {
-    it('should not load successfully', function (callback) {
-      const form = {
-        __action: action,
-        __csrf_token: locals.__csrf_token,
-        file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
-        file_edit_user_id: locals.file_edit_user_id,
-        file_edit_course_id: locals.file_edit_course_id,
-        file_edit_dir_name: '../PrairieLearn/',
-        file_edit_file_name: 'config.json',
-        file_edit_orig_hash: locals.file_edit_orig_hash,
-      };
-      locals.preEndTime = Date.now();
-      request.post(
-        { url: url, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postEndTime = Date.now();
-          if (response.statusCode !== 400) {
-            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-          }
-          callback(null);
-        },
-      );
-    });
-  });
-}
-
 function createCourseFiles(callback) {
   async.series(
     [
@@ -521,8 +490,6 @@ function editPost(
         file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
         file_edit_user_id: locals.file_edit_user_id,
         file_edit_course_id: locals.file_edit_course_id,
-        file_edit_dir_name: locals.file_edit_dir_name,
-        file_edit_file_name: locals.file_edit_file_name,
         file_edit_orig_hash: locals.file_edit_orig_hash,
       };
       locals.preEndTime = Date.now();
@@ -614,20 +581,6 @@ function verifyEdit(
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_course_id = elemList[0].attribs.value;
     assert.isString(locals.file_edit_course_id);
-  });
-  it('should have a file_edit_dir_name', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_dir_name"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_dir_name = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_dir_name);
-  });
-  it('should have a file_edit_file_name', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_file_name"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_file_name = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_file_name);
   });
   it('should have a file_edit_orig_hash', function () {
     elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
@@ -752,9 +705,6 @@ function doEdits(data) {
     //
 
     editGet(data.url, false, false, data.contentsA, null);
-    // (A, A, A, A)
-
-    badPost('save_and_sync', data.contentsB, data.url);
     // (A, A, A, A)
 
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
