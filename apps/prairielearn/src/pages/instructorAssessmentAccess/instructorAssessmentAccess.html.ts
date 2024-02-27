@@ -10,6 +10,7 @@ export const AssessmentAccessRulesSchema = z.object({
   credit: z.string(),
   time_limit: z.string(),
   password: z.string(),
+  exam: z.string(),
   exam_uuid: z.string().nullable(),
   ps_exam_id: z.string().nullable(),
   pt_course_id: z.string().nullable(),
@@ -126,7 +127,6 @@ export function InstructorAssessmentAccess({
                                     </span>
                                   `
                               : html`&mdash;`}
-                          ${access_rule.pt_exam}
                         </td>
                       </tr>
                     `;
