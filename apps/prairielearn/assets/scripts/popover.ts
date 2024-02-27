@@ -6,8 +6,8 @@ import { on } from 'delegated-events';
  * script changes that behavior so that popovers only close when the user clicks outside the
  * popover or presses the escape key.
  */
-let openingPopover: (Popover & { element?: HTMLElement }) | null,
-  openPopover: (Popover & { element?: HTMLElement }) | null;
+let openingPopover: (Popover & { element?: HTMLElement }) | null;
+let openPopover: (Popover & { element?: HTMLElement }) | null;
 
 function closeOpenPopovers() {
   openPopover?.hide();
@@ -24,7 +24,8 @@ on('keydown', 'body', (e) => {
 on('click', '[data-toggle="popover"]', (e: Event) => {
   // If this click occurred on an already-open popover trigger element, close the element.
   let alreadyOpen = false;
-  if (openPopover?.element?.id === (e.target as Element).id) {
+  const target = (e.target as HTMLElement).closest('[data-toggle="popover"]') as HTMLElement;
+  if (openPopover?.element?.id === target?.id) {
     openPopover?.hide();
     openPopover = null;
     alreadyOpen = true;
@@ -32,18 +33,15 @@ on('click', '[data-toggle="popover"]', (e: Event) => {
   }
   if (alreadyOpen) return;
   // Create a new popover instance and open it.
-  const newPopover = new Popover(e.target as HTMLElement);
+  const newPopover = new Popover(target);
   newPopover.show();
+  console.log(newPopover);
   openingPopover = newPopover;
 });
 
 on('click', 'body', (e: any) => {
   // If this click occurred inside a popover, do nothing.
-  if (
-    e.target.className === 'popover-header' ||
-    e.target.className === 'popover-body' ||
-    e.target.parentElement?.className === 'popover-body'
-  ) {
+  if ((e.target as HTMLElement).closest('.popover')) {
     return;
   }
 

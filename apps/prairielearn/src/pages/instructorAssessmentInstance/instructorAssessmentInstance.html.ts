@@ -158,7 +158,7 @@ export function InstructorAssessmentInstance({
                             role="button"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
-                            data-trigger="focus"
+                            data-trigger="manual"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
@@ -189,16 +189,15 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
-                            data-container="body"
                             data-html="true"
                             data-placement="auto"
                             title="Change total points"
-                            data-content="${`${EditTotalPointsForm({
+                            data-content="
+                            ${`${html`${EditTotalPointsForm({
                               resLocals,
                               id: 'editTotalPointsButton',
-                            })}`}"
+                            })}`}`}"
                             data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -740,7 +739,7 @@ function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+        <button type="button" class="btn btn-secondary" onclick='$"#${id}").popover("hide")'>
           Cancel
         </button>
         <button type="submit" class="btn btn-primary">Change</button>
