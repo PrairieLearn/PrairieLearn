@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -97,6 +98,26 @@ function parseRawQuery(str) {
   }
 
   return filters;
+}
+
+/**
+ * @param {string} issue_id
+ * @param {boolean} new_open
+ * @param {string} course_id
+ * @param {string} authn_user_id
+ */
+function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
+  const result = sqldb.queryOptionalRow(
+    sql.update_issue_open,
+    { issue_id, new_open, course_id, authn_user_id },
+    IdSchema,
+  );
+  if (!result) {
+    throw error.make(
+      403,
+      `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
+    );
+  }
 }
 
 router.get(
@@ -242,22 +263,20 @@ router.post(
     }
 
     if (req.body.__action === 'open') {
-      let params = [
+      await updateIssueOpen(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open', params);
+      );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
-      let params = [
+      await updateIssueOpen(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open', params);
+      );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');

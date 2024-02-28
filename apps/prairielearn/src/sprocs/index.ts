@@ -83,7 +83,6 @@ export async function init() {
       'users_randomly_generate.sql',
       'grading_jobs_stats_day.sql',
       'issues_insert_for_variant.sql',
-      'issues_update_open.sql',
       'variants_lock.sql',
       'variants_update_after_grading.sql',
       'grader_loads_current.sql',
