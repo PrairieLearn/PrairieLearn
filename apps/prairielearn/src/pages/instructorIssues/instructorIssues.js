@@ -102,14 +102,14 @@ function parseRawQuery(str) {
 
 /**
  * @param {string} issue_id
- * @param {string} course_id
  * @param {boolean} new_open
+ * @param {string} course_id
  * @param {string} authn_user_id
  */
-function updateIssueOpen(issue_id, course_id, new_open, authn_user_id) {
+function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
   const result = sqldb.queryOptionalRow(
     sql.update_issue_open,
-    { issue_id, course_id, new_open, authn_user_id },
+    { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
   );
   if (!result) {
@@ -265,16 +265,16 @@ router.post(
     if (req.body.__action === 'open') {
       await updateIssueOpen(
         req.body.issue_id,
-        res.locals.course.id,
         true,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
       await updateIssueOpen(
         req.body.issue_id,
-        res.locals.course.id,
         false,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
