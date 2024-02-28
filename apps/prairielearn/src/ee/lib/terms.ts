@@ -1,4 +1,4 @@
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
 import { type User } from '../../lib/db-types';
 
 export function hasUserAcceptedTerms(user: User): boolean {
@@ -9,6 +9,7 @@ export function hasUserAcceptedTerms(user: User): boolean {
   return user.terms_accepted_at !== null;
 }
 
-export function redirectToTermsPage(res: Response): void {
+export function redirectToTermsPage(req: Request, res: Response): void {
+  res.cookie('preTermsUrl', req.originalUrl, { maxAge: 1000 * 60 * 60 });
   res.redirect('/pl/terms');
 }

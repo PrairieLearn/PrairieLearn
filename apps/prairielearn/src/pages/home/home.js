@@ -22,7 +22,7 @@ router.get(
     }
 
     if (isEnterprise() && !hasUserAcceptedTerms(res.locals.authn_user)) {
-      redirectToTermsPage(res);
+      redirectToTermsPage(req, res);
       return;
     }
 
