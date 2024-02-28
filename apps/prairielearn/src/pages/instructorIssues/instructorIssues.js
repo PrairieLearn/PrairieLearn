@@ -265,7 +265,7 @@ router.post(
     if (req.body.__action === 'open') {
       await updateIssueOpen(
         req.body.issue_id,
-        true,
+        true, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
       );
@@ -273,7 +273,7 @@ router.post(
     } else if (req.body.__action === 'close') {
       await updateIssueOpen(
         req.body.issue_id,
-        false,
+        false, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
       );
