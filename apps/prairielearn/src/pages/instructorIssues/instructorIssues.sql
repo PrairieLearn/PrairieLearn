@@ -168,3 +168,55 @@ SELECT
   COUNT(*)::integer
 FROM
   updated_issues;
+
+-- BLOCK update_issue_open
+WITH
+  previous_issue_data AS (
+    SELECT
+      i.*
+    FROM
+      issues AS i
+    WHERE
+      i.id = $issue_id
+      AND i.course_caused
+      AND i.course_id = $course_id
+  ),
+  updated_issue AS (
+    UPDATE issues AS i
+    SET
+      open = $new_open
+    FROM
+      previous_issue_data AS pi
+    WHERE
+      i.id = pi.id
+  ),
+  inserted_audit_logs AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        table_name,
+        column_name,
+        row_id,
+        action,
+        parameters,
+        old_state,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      pi.course_id,
+      'issues',
+      'open',
+      pi.id,
+      'update',
+      jsonb_build_object('open', $new_open),
+      jsonb_build_object('open', pi.open),
+      jsonb_build_object('open', $new_open)
+    FROM
+      previous_issue_data AS pi
+  )
+SELECT
+  id
+FROM
+  updated_issue;
