@@ -616,8 +616,6 @@ export function InstructorAssessmentInstance({
                                             User Agent: ${row.client_fingerprint?.user_agent}
                                         </div>
                                         "
-                                    aria-describedby="fingerprintPopover${row.client_fingerprint
-                                      ?.id}-${index}"
                                   >
                                     ${row.client_fingerprint_number}
                                   </a>

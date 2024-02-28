@@ -24,7 +24,7 @@ onDocumentReady(() => {
     }
   });
 
-  $('[data-toggle="popover"]').on('shown.bs.popover', function (e) {
+  $('[data-toggle="popover"]').on('shown.bs.popover', (e) => {
     openPopoverTrigger = e.currentTarget as HTMLElement;
   });
 
