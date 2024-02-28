@@ -336,7 +336,7 @@ function badGet(url, expected_status, should_parse) {
   describe(`GET to edit url with bad path`, function () {
     it(`should load with status ${expected_status}`, function (callback) {
       locals.preStartTime = Date.now();
-      request(url, function (error, response) {
+      request(url, function (error, response, body) {
         if (error) {
           return callback(error);
         }
@@ -344,6 +344,7 @@ function badGet(url, expected_status, should_parse) {
         if (response.statusCode !== expected_status) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
+        page = body;
         callback(null);
       });
     });
@@ -511,7 +512,7 @@ function editPost(
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    if (action === 'save_and_sync' || action === 'pull_and_save_and_sync') {
+    if (action === 'save_and_sync') {
       verifyEdit(
         expectedToFindResults,
         expectedToFindChoice,
@@ -708,9 +709,9 @@ function doEdits(data) {
     // (A, A, A, A)
 
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
     // (B, B, A, B)
 
-    waitForJobSequence(locals, 'Success');
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
@@ -718,28 +719,28 @@ function doEdits(data) {
     // (B, B, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsA);
-    // (B, A, B, B)
+    // (A, A, B, B)
 
     editGet(data.url, false, false, data.contentsA, null);
     // (A, A, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsB);
-    // (A, B, B, B)
+    // (B, B, B, B)
 
     editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
-    // (A, B, B, B)
-
     waitForJobSequence(locals, 'Error');
+    // (B, B, B, B)
+
     pullAndVerifyFileInDev(data.path, data.contentsB);
-    // (A, B, B, B)
+    // (B, B, B, B)
 
     editGet(data.url, false, false, data.contentsB, null);
     // (B, B, B, B)
 
     editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
     // (A, A, B, A)
 
-    waitForJobSequence(locals, 'Success');
     pullAndVerifyFileInDev(data.path, data.contentsA);
     // (A, A, A, A)
 
@@ -750,17 +751,8 @@ function doEdits(data) {
     // (A, A, A*, A*)
 
     editPost('save_and_sync', data.contentsC, data.url, true, false, null);
-    // (A, A, A*, A*)
-
-    waitForJobSequence(locals, 'Error');
-    pullInLive();
-    // (A, A, A, A)
-
-    editGet(data.url, false, false, data.contentsA, null);
-    // (A, A, A, A)
-
-    editPost('save_and_sync', data.contentsC, data.url, true, false, null);
-    // (C, C, A, C)
+    waitForJobSequence(locals, 'Success');
+    // (C, C, A*, C)
 
     pullAndVerifyFileInDev(data.path, data.contentsC);
     // (C, C, C, C)
@@ -772,36 +764,29 @@ function doEdits(data) {
     // (C, C, C*, C*)
 
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
-    // (C, C, C*, C*)
-
-    waitForJobSequence(locals, 'Error');
-    editPost('pull_and_save_and_sync', data.contentsB, data.url, true, false, null);
-    // (B, B, C, B)
-
     waitForJobSequence(locals, 'Success');
-    writeAndCommitFileInLive(data.path, data.contentsA);
-    // (B, A, C, B)
+    // (B, B, C*, B)
 
     editPost('save_and_sync', data.contentsA, data.url, true, false, null);
-    // (A, A, C, B)
-
-    waitForJobSequence(locals, 'Error');
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
-    // (B, B, C, B)
-
     waitForJobSequence(locals, 'Success');
+    // (A, A, C*, B)
+
+    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (B, B, C*, B)
+
     if (data.isJson) {
       editPost('save_and_sync', data.contentsX, data.url, true, false, null);
-      // (X, X, C, X) <- successful push but failed sync because of bad json
-
       waitForJobSequence(locals, 'Error');
+      // (X, X, C*, X) <- successful push but failed sync because of bad json
+
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
 
       editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+      waitForJobSequence(locals, 'Success');
       // (A, A, X, A)
 
-      waitForJobSequence(locals, 'Success');
       pullAndVerifyFileInDev(data.path, data.contentsA);
       // (A, A, A, A)
     }
