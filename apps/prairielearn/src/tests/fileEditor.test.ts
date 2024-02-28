@@ -908,21 +908,6 @@ function writeAndPushFileInDev(fileName, fileContents) {
   });
 }
 
-function pullInLive() {
-  describe('pull to live', function () {
-    it('should pull', function (callback) {
-      const execOptions = {
-        cwd: courseLiveDir,
-        env: process.env,
-      };
-      exec('git pull', execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    });
-  });
-}
-
 function waitForJobSequence(locals, expectedResult) {
   describe('The job sequence', function () {
     it('should have an id', function (callback) {
