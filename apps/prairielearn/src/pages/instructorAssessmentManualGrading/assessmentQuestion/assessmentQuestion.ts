@@ -29,7 +29,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(__filename.replace(/\.ts$/, '.ejs'), res.locals);
+    res.render(__filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
 
