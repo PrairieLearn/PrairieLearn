@@ -120,7 +120,7 @@ router.get('/*', (req, res, next) => {
       ],
       (err) => {
         if (ERR(err, next)) return;
-        if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
+        if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).
@@ -133,7 +133,7 @@ router.get('/*', (req, res, next) => {
         fileEdit.didSave = false;
         fileEdit.didSync = false;
 
-        if ('jobSequence' in fileEdit) {
+        if (fileEdit.jobSequence) {
           // No draft is older than 24 hours, so it is safe to assume that no
           // job sequence is legacy... but, just in case, we will check and log
           // a warning if we find one. We will treat the corresponding draft as
@@ -178,7 +178,7 @@ router.get('/*', (req, res, next) => {
           }
         }
 
-        if ('editID' in fileEdit) {
+        if (fileEdit.editID) {
           // There is a recently saved draft ...
           fileEdit.alertResults = true;
           if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
@@ -334,7 +334,7 @@ async function readDraftEdit(fileEdit) {
     }
   }
 
-  if ('editID' in fileEdit) {
+  if (fileEdit.editID) {
     debug('Read contents of file edit');
     const result = await getFile(fileEdit.fileID);
     const contents = b64EncodeUnicode(result.contents.toString('utf8'));
