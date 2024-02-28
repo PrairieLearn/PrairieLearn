@@ -78,7 +78,7 @@
       <% } %>
 
 
-      <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
+      <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (typeof navPage !== "undefined" && navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= displayedName %>
 

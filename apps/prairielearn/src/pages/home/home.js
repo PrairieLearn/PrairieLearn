@@ -1,13 +1,11 @@
-import { hasUserAcceptedTerms, redirectToTermsPage } from '../../ee/lib/terms';
-import { isEnterprise } from '../../lib/license';
-
 // @ts-check
-const ERR = require('async-stacktrace');
-const express = require('express');
+import * as express from 'express';
 const asyncHandler = require('express-async-handler');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../../lib/config');
+import { config } from '../../lib/config';
+import { isEnterprise } from '../../lib/license';
+import { hasUserAcceptedTerms, redirectToTermsPage } from '../../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();

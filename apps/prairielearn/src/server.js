@@ -595,6 +595,10 @@ module.exports.initExpress = function () {
     require('./pages/instructorRequestCourse/instructorRequestCourse').default,
   );
 
+  if (isEnterprise()) {
+    app.use('/pl/terms', require('./ee/pages/terms/terms').default);
+  }
+
   // We deliberately omit the `authzCourseOrInstance` middleware here. The
   // route handler will only ever display courses for which the user has staff
   // access; the course ID in the URL is only used to determine which course
