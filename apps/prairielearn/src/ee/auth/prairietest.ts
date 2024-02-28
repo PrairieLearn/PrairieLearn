@@ -5,12 +5,21 @@ import * as crypto from 'node:crypto';
 
 import { config } from '../../lib/config';
 import { AuthPrairieTest } from './prairietest.html';
+import { isEnterprise } from '../../lib/license';
+import { hasUserAcceptedTerms, redirectToTermsPage } from '../lib/terms';
 
 const router = Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    // If the user hasn't yet accepted the terms, prompt them to do so before
+    // proceeding to PrairieTest.
+    if (isEnterprise() && !hasUserAcceptedTerms(res.locals.authn_user)) {
+      redirectToTermsPage(res, req.originalUrl);
+      return;
+    }
+
     const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a

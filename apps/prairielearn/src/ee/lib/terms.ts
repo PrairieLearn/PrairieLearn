@@ -1,4 +1,4 @@
-import { type Request, type Response } from 'express';
+import { type Response } from 'express';
 import { type User } from '../../lib/db-types';
 
 export function hasUserAcceptedTerms(user: User): boolean {
@@ -9,7 +9,15 @@ export function hasUserAcceptedTerms(user: User): boolean {
   return user.terms_accepted_at !== null;
 }
 
-export function redirectToTermsPage(req: Request, res: Response): void {
-  res.cookie('preTermsUrl', req.originalUrl, { maxAge: 1000 * 60 * 60 });
+/**
+ * Redirects the response to the terms acceptance page. If a `redirectUrl` is
+ * provided, the original URL will be stored in a cookie and the user will be
+ * redirected to the terms page. After accepting the terms, the user will be
+ * redirected back to the original URL.
+ */
+export function redirectToTermsPage(res: Response, redirectUrl?: string): void {
+  if (redirectUrl) {
+    res.cookie('preTermsUrl', redirectUrl, { maxAge: 1000 * 60 * 60 });
+  }
   res.redirect('/pl/terms');
 }
