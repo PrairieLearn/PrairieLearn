@@ -71,6 +71,7 @@ router.get('/*', (req, res, next) => {
       fileName: path.basename(relPath),
       fileNameForDisplay: path.normalize(relPath),
       aceMode: modelist.getModeForPath(relPath).mode,
+      jobSequence: /** @type {any} */ (null),
     };
 
     debug(
