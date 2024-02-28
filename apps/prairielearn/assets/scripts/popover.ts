@@ -1,5 +1,4 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { Popover } from 'bootstrap';
 import { on } from 'delegated-events';
 
 /**
@@ -7,12 +6,14 @@ import { on } from 'delegated-events';
  * script changes that behavior so that popovers only close when the user clicks outside the
  * popover or presses the escape key.
  */
-let openingPopover: (Popover & { element?: HTMLElement }) | null;
-let openPopover: (Popover & { element?: HTMLElement }) | null;
+
+let openPopoverTrigger: HTMLElement | null;
 
 function closeOpenPopovers() {
-  openPopover?.hide();
-  openPopover = null;
+  if (openPopoverTrigger) {
+    $(openPopoverTrigger).popover('hide');
+    openPopoverTrigger = null;
+  }
 }
 
 onDocumentReady(() => {
@@ -23,25 +24,8 @@ onDocumentReady(() => {
     }
   });
 
-  on('click', '[data-toggle="popover"]', (e: Event) => {
-    // If this click occurred on an already-open popover trigger element, close the element.
-    let alreadyOpen = false;
-    const target = (e.target as HTMLElement).closest('[data-toggle="popover"]') as HTMLElement;
-    if (openPopover?.element?.id === target?.id) {
-      openPopover?.hide();
-      openPopover = null;
-      alreadyOpen = true;
-      return;
-    }
-    if (alreadyOpen) return;
-    // Create a new popover instance and open it.
-    const newPopover = new Popover(target, { sanitize: false });
-    newPopover.show();
-    openingPopover = newPopover;
-  });
-
-  on('click', '[data-function="cancel"]', () => {
-    closeOpenPopovers();
+  $('[data-toggle="popover"]').on('shown.bs.popover', function (e) {
+    openPopoverTrigger = e.currentTarget as HTMLElement;
   });
 
   on('click', 'body', (e: any) => {
@@ -50,9 +34,6 @@ onDocumentReady(() => {
       return;
     }
 
-    // Close all open popovers.
     closeOpenPopovers();
-    openPopover = openingPopover;
-    openingPopover = null;
   });
 });

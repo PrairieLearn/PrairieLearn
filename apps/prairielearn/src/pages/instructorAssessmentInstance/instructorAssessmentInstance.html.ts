@@ -1,4 +1,4 @@
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
@@ -158,7 +158,6 @@ export function InstructorAssessmentInstance({
                             role="button"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
-                            data-trigger="manual"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
@@ -193,11 +192,12 @@ export function InstructorAssessmentInstance({
                             data-placement="auto"
                             data-container="body"
                             title="Change total points"
-                            data-trigger="manual"
-                            data-content="${`${EditTotalPointsForm({
-                              resLocals,
-                              id: 'editTotalPointsButton',
-                            })}`}"
+                            data-content="${escapeHtml(
+                              EditTotalPointsForm({
+                                resLocals,
+                                id: 'editTotalPointsButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -224,11 +224,12 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
-                            data-content="${`${EditTotalScorePercForm({
-                              resLocals,
-                              id: 'editTotalScorePercButton',
-                            })}`}"
-                            data-trigger="manual"
+                            data-content="${escapeHtml(
+                              EditTotalScorePercForm({
+                                resLocals,
+                                id: 'editTotalScorePercButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -247,7 +248,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="manual"
                             data-container="body"
                             data-html="true"
                             title="Included in statistics"
@@ -262,7 +262,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
                             data-html="true"
                             title="Not included in statistics"
@@ -367,7 +366,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -405,7 +403,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -438,7 +435,6 @@ export function InstructorAssessmentInstance({
                                     instance_question: instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -471,7 +467,6 @@ export function InstructorAssessmentInstance({
                                     instance_question: instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -621,7 +616,6 @@ export function InstructorAssessmentInstance({
                                             User Agent: ${row.client_fingerprint?.user_agent}
                                         </div>
                                         "
-                                    data-trigger="manual"
                                     aria-describedby="fingerprintPopover${row.client_fingerprint
                                       ?.id}-${index}"
                                   >
@@ -707,7 +701,7 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -734,14 +728,16 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any>; id
         </small>
       </p>
       <div class="text-right">
-        <button type="button" data-function="cancel" class="btn btn-secondary">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
@@ -768,7 +764,9 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any>;
         </small>
       </p>
       <div class="text-right">
-        <button type="button" data-function="cancel" class="btn btn-secondary">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
