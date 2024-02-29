@@ -1,11 +1,41 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record<string, any> }) {
-  let identity = 'student';
-  if (resLocals.assessment.group_work) {
-    identity = 'group';
-  }
+export interface Filenames {
+  scoresCsvFilename: string;
+  scoresAllCsvFilename: string;
+  pointsCsvFilename: string;
+  pointsAllCsvFilename: string;
+  scoresByUsernameCsvFilename: string;
+  scoresByUsernameAllCsvFilename: string;
+  pointsByUsernameCsvFilename: string;
+  pointsByUsernameAllCsvFilename: string;
+  instancesCsvFilename: string;
+  instancesAllCsvFilename: string;
+  instanceQuestionsCsvFilename: string;
+  submissionsForManualGradingCsvFilename: string;
+  finalSubmissionsCsvFilename: string;
+  bestSubmissionsCsvFilename: string;
+  allSubmissionsCsvFilename: string;
+  filesForManualGradingZipFilename: string;
+  finalFilesZipFilename: string;
+  bestFilesZipFilename: string;
+  allFilesZipFilename: string;
+  groupsCsvFilename?: string;
+  scoresGroupCsvFilename?: string;
+  scoresGroupAllCsvFilename?: string;
+  pointsGroupCsvFilename?: string;
+  pointsGroupAllCsvFilename?: string;
+}
+
+export function InstructorAssessmentDownloads({
+  resLocals,
+  filenames,
+}: {
+  resLocals: Record<string, any>;
+  filenames: Filenames;
+}) {
+  const identity = resLocals.assessment.group_work ? 'group' : 'student';
   return html`
     <!doctype html>
     <html lang="en">
@@ -56,8 +86,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.scoresCsvFilename}"
-                        >${resLocals.scoresCsvFilename}</a
+                          .id}/downloads/${filenames.scoresCsvFilename}"
+                        >${filenames.scoresCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -71,8 +101,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/i${resLocals.scoresAllCsvFilename}"
-                              >${resLocals.scoresAllCsvFilename}</a
+                                .id}/downloads/i${filenames.scoresAllCsvFilename}"
+                              >${filenames.scoresAllCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -86,8 +116,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.pointsCsvFilename}"
-                        >${resLocals.pointsCsvFilename}</a
+                          .id}/downloads/${filenames.pointsCsvFilename}"
+                        >${filenames.pointsCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -101,8 +131,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.pointsAllCsvFilename}"
-                              >${resLocals.pointsAllCsvFilename}</a
+                                .id}/downloads/${filenames.pointsAllCsvFilename}"
+                              >${filenames.pointsAllCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -118,8 +148,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.groupsCsvFilename}"
-                              >${resLocals.groupsCsvFilename}</a
+                                .id}/downloads/${filenames.groupsCsvFilename}"
+                              >${filenames.groupsCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -131,8 +161,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.scoresGroupCsvFilename}"
-                              >${resLocals.scoresGroupCsvFilename}</a
+                                .id}/downloads/${filenames.scoresGroupCsvFilename}"
+                              >${filenames.scoresGroupCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -146,8 +176,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                                 <td>
                                   <a
                                     href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                      .id}/downloads/${resLocals.scoresGroupAllCsvFilename}"
-                                    >${resLocals.scoresGroupAllCsvFilename}</a
+                                      .id}/downloads/${filenames.scoresGroupAllCsvFilename}"
+                                    >${filenames.scoresGroupAllCsvFilename}</a
                                   >
                                 </td>
                                 <td>
@@ -161,8 +191,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.pointsGroupCsvFilename}"
-                              >${resLocals.pointsGroupCsvFilename}</a
+                                .id}/downloads/${filenames.pointsGroupCsvFilename}"
+                              >${filenames.pointsGroupCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -176,8 +206,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                                 <td>
                                   <a
                                     href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                      .id}/downloads/${resLocals.pointsGroupAllCsvFilename}"
-                                    >${resLocals.pointsGroupAllCsvFilename}</a
+                                      .id}/downloads/${filenames.pointsGroupAllCsvFilename}"
+                                    >${filenames.pointsGroupAllCsvFilename}</a
                                   >
                                 </td>
                                 <td>
@@ -193,8 +223,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.scoresByUsernameCsvFilename}"
-                        >${resLocals.scoresByUsernameCsvFilename}</a
+                          .id}/downloads/${filenames.scoresByUsernameCsvFilename}"
+                        >${filenames.scoresByUsernameCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -209,8 +239,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.scoresByUsernameAllCsvFilename}"
-                              >${resLocals.scoresByUsernameAllCsvFilename}</a
+                                .id}/downloads/${filenames.scoresByUsernameAllCsvFilename}"
+                              >${filenames.scoresByUsernameAllCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -225,8 +255,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.pointsByUsernameCsvFilename}"
-                        >${resLocals.pointsByUsernameCsvFilename}</a
+                          .id}/downloads/${filenames.pointsByUsernameCsvFilename}"
+                        >${filenames.pointsByUsernameCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -240,8 +270,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.pointsByUsernameAllCsvFilename}"
-                              >${resLocals.pointsByUsernameAllCsvFilename}</a
+                                .id}/downloads/${filenames.pointsByUsernameAllCsvFilename}"
+                              >${filenames.pointsByUsernameAllCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -256,8 +286,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.instancesCsvFilename}"
-                        >${resLocals.instancesCsvFilename}</a
+                          .id}/downloads/${filenames.instancesCsvFilename}"
+                        >${filenames.instancesCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -271,8 +301,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/${resLocals.instancesAllCsvFilename}"
-                              >${resLocals.instancesAllCsvFilename}</a
+                                .id}/downloads/${filenames.instancesAllCsvFilename}"
+                              >${filenames.instancesAllCsvFilename}</a
                             >
                           </td>
                           <td>
@@ -286,8 +316,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.instanceQuestionsCsvFilename}"
-                        >${resLocals.instanceQuestionsCsvFilename}</a
+                          .id}/downloads/${filenames.instanceQuestionsCsvFilename}"
+                        >${filenames.instanceQuestionsCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -300,8 +330,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.submissionsForManualGradingCsvFilename}"
-                        >${resLocals.submissionsForManualGradingCsvFilename}</a
+                          .id}/downloads/${filenames.submissionsForManualGradingCsvFilename}"
+                        >${filenames.submissionsForManualGradingCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -310,21 +340,21 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                       ${identity} and each question, only the most recent submission from the most
                       recent assessment instance is included. Files are stripped from the submitted
                       answer in the CSV and are available as
-                      <code>${resLocals.filesForManualGradingZipFilename}</code>.
+                      <code>${filenames.filesForManualGradingZipFilename}</code>.
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.filesForManualGradingZipFilename}"
-                        >${resLocals.filesForManualGradingZipFilename}</a
+                          .id}/downloads/${filenames.filesForManualGradingZipFilename}"
+                        >${filenames.filesForManualGradingZipFilename}</a
                       >
                     </td>
                     <td>
                       Submitted files for all ${identity}s and all questions, named for easy use
                       with offline manual grading. These files match the submissions in
-                      <code>${resLocals.submissionsForManualGradingCsvFilename}</code>. For each
+                      <code>${filenames.submissionsForManualGradingCsvFilename}</code>. For each
                       ${identity} and each question, only the most recent submitted file from the
                       most recent assessment instance is included. The filename format is
                       <code
@@ -336,8 +366,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.allSubmissionsCsvFilename}"
-                        >${resLocals.allSubmissionsCsvFilename}</a
+                          .id}/downloads/${filenames.allSubmissionsCsvFilename}"
+                        >${filenames.allSubmissionsCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -350,8 +380,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.finalSubmissionsCsvFilename}"
-                        >${resLocals.finalSubmissionsCsvFilename}</a
+                          .id}/downloads/${filenames.finalSubmissionsCsvFilename}"
+                        >${filenames.finalSubmissionsCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -363,8 +393,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.bestSubmissionsCsvFilename}"
-                        >${resLocals.bestSubmissionsCsvFilename}</a
+                          .id}/downloads/${filenames.bestSubmissionsCsvFilename}"
+                        >${filenames.bestSubmissionsCsvFilename}</a
                       >
                     </td>
                     <td>
@@ -377,8 +407,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.allFilesZipFilename}"
-                        >${resLocals.allFilesZipFilename}</a
+                          .id}/downloads/${filenames.allFilesZipFilename}"
+                        >${filenames.allFilesZipFilename}</a
                       >
                     </td>
                     <td>
@@ -395,8 +425,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.finalFilesZipFilename}"
-                        >${resLocals.finalFilesZipFilename}</a
+                          .id}/downloads/${filenames.finalFilesZipFilename}"
+                        >${filenames.finalFilesZipFilename}</a
                       >
                     </td>
                     <td>
@@ -409,8 +439,8 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                     <td>
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                          .id}/downloads/${resLocals.bestFilesZipFilename}"
-                        >${resLocals.bestFilesZipFilename}</a
+                          .id}/downloads/${filenames.bestFilesZipFilename}"
+                        >${filenames.bestFilesZipFilename}</a
                       >
                     </td>
                     <td>
