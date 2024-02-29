@@ -6,6 +6,11 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+  updateCourseInstancePermissionsRole,
+} from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -42,12 +47,12 @@ describe('student data access', function () {
       '000000001',
       'dev',
     ]);
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@illinois.edu',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     await ensureEnrollment({
       user_id: '3',
       course_instance_id: '1',
@@ -162,13 +167,13 @@ describe('student data access', function () {
   });
 
   step('instructor (student data viewer) can view HW1 instance of student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,
@@ -309,13 +314,13 @@ describe('student data access', function () {
   step(
     'instructor (student data editor) cannot attach file to HW1 instance of student',
     async () => {
-      await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-        1,
-        2,
-        1,
-        'Student Data Editor',
-        2,
-      ]);
+      await updateCourseInstancePermissionsRole({
+        course_id: '1',
+        course_instance_id: '1',
+        user_id: '2',
+        course_instance_role: 'Student Data Editor',
+        authn_user_id: '2',
+      });
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,

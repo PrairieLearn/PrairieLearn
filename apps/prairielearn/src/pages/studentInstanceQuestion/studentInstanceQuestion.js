@@ -54,15 +54,16 @@ async function processFileUpload(req, res) {
   if (!req.file) {
     throw error.make(400, 'No file uploaded');
   }
-  await uploadFile(
-    req.file.originalname,
-    req.file.buffer,
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  await uploadFile({
+    display_filename: req.file.originalname,
+    contents: req.file.buffer,
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
@@ -71,15 +72,16 @@ async function processTextUpload(req, res) {
   if (!res.locals.authz_result.active) {
     throw error.make(403, `This assessment is not accepting submissions at this time.`);
   }
-  await uploadFile(
-    req.body.filename,
-    Buffer.from(req.body.contents),
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  await uploadFile({
+    display_filename: req.body.filename,
+    contents: Buffer.from(req.body.contents),
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
