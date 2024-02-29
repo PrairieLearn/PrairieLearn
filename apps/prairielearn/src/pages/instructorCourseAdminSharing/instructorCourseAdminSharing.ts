@@ -4,6 +4,8 @@ import * as error from '@prairielearn/error';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
+import { getCanonicalHost } from '../../lib/url';
+import QR = require('qrcode-svg');
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -35,11 +37,25 @@ router.get(
         shared_with: z.string().array(),
       }),
     );
+
+    const host = getCanonicalHost(req);
+    const publicSharingLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
+      host,
+    ).href;
+    const publicSharingLinkQRCode = new QR({
+      content: publicSharingLink,
+      width: 512,
+      height: 512,
+    }).svg();
+
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
         sharingSets: sharingSets,
+        publicSharingLink: publicSharingLink,
+        publicSharingLinkQRCode: publicSharingLinkQRCode,
         resLocals: res.locals,
       }),
     );

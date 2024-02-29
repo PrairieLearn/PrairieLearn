@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { nodeModulesAssetPath } from '../../lib/assets';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -118,11 +119,15 @@ export const InstructorSharing = ({
   sharingName,
   sharingToken,
   sharingSets,
+  publicSharingLink,
+  publicSharingLinkQRCode,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
   sharingSets: { name: string; id: string; shared_with: string[] }[];
+  publicSharingLink: string;
+  publicSharingLinkQRCode: string;
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
@@ -131,6 +136,29 @@ export const InstructorSharing = ({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
+        <script>
+          $(() => {
+            let clipboard = new ClipboardJS('.btn-copy');
+            clipboard.on('success', (e) => {
+              $(e.trigger)
+                .popover({
+                  content: 'Copied!',
+                  placement: 'bottom',
+                })
+                .popover('show');
+              window.setTimeout(function () {
+                $(e.trigger).popover('hide');
+              }, 1000);
+            });
+            $('.js-public-sharing-link-qrcode-button').popover({
+              content: $('#js-public-sharing-link-qrcode'),
+              html: true,
+              trigger: 'click',
+              container: 'body',
+            });
+          });
+        </script>
       </head>
       <body>
         <script>
@@ -188,6 +216,37 @@ export const InstructorSharing = ({
                         <span>Regenerate</span>
                       </button>
                     </form>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Public Questions Page</th>
+                  <td class="form-inline align-middle">
+                    <span class="input-group">
+                      <span readonly class="form-control form-control-sm"
+                        >${publicSharingLink}</span
+                      >
+                      <div class="input-group-append">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary btn-copy"
+                          data-clipboard-text="${publicSharingLink}"
+                          aria-label="Copy public sharing link"
+                        >
+                          <i class="far fa-clipboard"></i>
+                        </button>
+                        <button
+                          type="button"
+                          title="Public Questions Link QR Code"
+                          aria-label="Public Questions QR Code"
+                          class="btn btn-sm btn-outline-secondary js-public-sharing-link-qrcode-button"
+                        >
+                          <i class="fas fa-qrcode"></i>
+                        </button>
+                        <div class="d-none">
+                          <div id="js-public-sharing-link-qrcode">${publicSharingLinkQRCode}</div>
+                        </div>
+                      </div>
+                    </span>
                   </td>
                 </tr>
               </tbody>
