@@ -1,8 +1,5 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -19,6 +16,7 @@ import {
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
+import { InstructorAssessmentGroups } from './instructorAssessmentGroups.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -33,7 +31,6 @@ const GroupUsersRowSchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    debug('GET /');
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
@@ -74,7 +71,8 @@ router.get(
       z.string(),
     );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentGroups({ resLocals: res.locals }));
   }),
 );
 
