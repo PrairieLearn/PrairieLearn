@@ -376,8 +376,7 @@ export function InstructorAssessmentDownloads({ resLocals }: { resLocals: Record
                   <tr>
                     <td>
                       <a
-                        href="${resLocals.urlPrefix}
-                        /assessment/${resLocals.assessment
+                        href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                           .id}/downloads/${resLocals.allFilesZipFilename}"
                         >${resLocals.allFilesZipFilename}</a
                       >
