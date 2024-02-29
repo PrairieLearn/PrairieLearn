@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 codercom/code-server:4.20.1-bookworm
+FROM codercom/code-server:4.20.1-bookworm
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.

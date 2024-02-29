@@ -180,6 +180,7 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
+          
       ######################################################################################################
       # workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
