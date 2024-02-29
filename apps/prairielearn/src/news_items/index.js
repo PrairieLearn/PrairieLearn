@@ -17,23 +17,20 @@ async function loadNewsItems() {
   const news_items = [];
   const dirs = await fs.readdir(__dirname);
   for (const dir of dirs) {
-    const stat = await fs.lstat(path.join(__dirname, dir));
-    if (!stat.isDirectory()) continue;
+    // Skip anything that doesn't match the expected directory name format.
+    const match = DIRECTORY_REGEX.exec(dir);
+    if (!match) continue;
 
     const info = await jsonLoad.readInfoJSON(
       path.join(__dirname, dir, 'info.json'),
       schemas.infoNewsItem,
     );
 
-    // Ensure the directory name has the expected format.
-    const match = DIRECTORY_REGEX.exec(dir);
-    if (!match) {
-      throw new Error(`Invalid news item directory name: ${dir}`);
-    }
-
-    info.directory = dir;
-    info.index = match[1];
-    news_items.push(info);
+    news_items.push({
+      ...info,
+      directory: dir,
+      index: match[1],
+    });
   }
 
   // Check for duplicate UUIDs
