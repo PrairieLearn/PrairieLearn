@@ -1,10 +1,9 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as async from 'async';
 import * as _ from 'lodash';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 import { setTimeout as sleep } from 'node:timers/promises';
+import * as util from 'node:util';
 import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
@@ -206,17 +205,22 @@ function queueJobs(jobsList, intervalSec) {
   function queueRun() {
     debug(`queueJobs(): ${intervalSec}: starting run`);
     jobTimeouts[intervalSec] = 0;
-    runJobs(jobsList, () => {
-      debug(`queueJobs(): ${intervalSec}: completed run`);
-      if (jobTimeouts[intervalSec] === -1) {
-        // someone requested a stop
-        debug(`queueJobs(): ${intervalSec}: stop requested`);
-        delete jobTimeouts[intervalSec];
-        return;
-      }
-      debug(`queueJobs(): ${intervalSec}: waiting for next run time`);
-      jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
-    });
+    runJobs(jobsList)
+      .catch((err) => {
+        logger.error('Error running cron jobs', err);
+        Sentry.captureException(err);
+      })
+      .finally(() => {
+        debug(`queueJobs(): ${intervalSec}: completed run`);
+        if (jobTimeouts[intervalSec] === -1) {
+          // someone requested a stop
+          debug(`queueJobs(): ${intervalSec}: stop requested`);
+          delete jobTimeouts[intervalSec];
+          return;
+        }
+        debug(`queueJobs(): ${intervalSec}: waiting for next run time`);
+        jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
+      });
   }
   jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
 }
@@ -246,115 +250,110 @@ function queueDailyJobs(jobsList) {
   function queueRun() {
     debug(`queueDailyJobs(): starting run`);
     jobTimeouts['daily'] = 0;
-    runJobs(jobsList, () => {
-      debug(`queueDailyJobs(): completed run`);
-      if (jobTimeouts['daily'] === -1) {
-        // someone requested a stop
-        debug(`queueDailyJobs(): stop requested`);
-        delete jobTimeouts['daily'];
-        return;
-      }
-      debug(`queueDailyJobs(): waiting for next run time`);
-      jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
-    });
+    runJobs(jobsList)
+      .catch((err) => {
+        logger.error('Error running cron jobs', err);
+        Sentry.captureException(err);
+      })
+      .finally(() => {
+        debug(`queueDailyJobs(): completed run`);
+        if (jobTimeouts['daily'] === -1) {
+          // someone requested a stop
+          debug(`queueDailyJobs(): stop requested`);
+          delete jobTimeouts['daily'];
+          return;
+        }
+        debug(`queueDailyJobs(): waiting for next run time`);
+        jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
+      });
   }
   jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
 }
 
 // run a list of jobs
-function runJobs(jobsList, callback) {
+async function runJobs(jobsList) {
   debug(`runJobs()`);
   const cronUuid = uuidv4();
   logger.verbose('cron: jobs starting', { cronUuid });
-  async.eachSeries(
-    jobsList,
-    async (job) => {
-      debug(`runJobs(): running ${job.name}`);
-      const tracer = trace.getTracer('cron');
-      return tracer.startActiveSpan(`cron:${job.name}`, async (span) => {
-        // Don't actually trace anything that runs during the job;
-        // that would create too many events for us. The only thing
-        // we're interested in for now is the duration and the
-        // success/failure state.
-        await context.with(suppressTracing(context.active()), async () => {
-          await new Promise((resolve) => {
-            tryJobWithLock(job, cronUuid, (err) => {
-              if (ERR(err, () => {})) {
-                debug(`runJobs(): error running ${job.name}: ${err}`);
-                logger.error('cron: ' + job.name + ' failure: ' + String(err), {
-                  message: err.message,
-                  stack: err.stack,
-                  data: JSON.stringify(err.data),
-                  cronUuid,
-                });
 
-                Sentry.captureException(err, {
-                  tags: {
-                    'cron.name': job.name,
-                    'cron.uuid': cronUuid,
-                  },
-                });
-
-                span.recordException(err);
-                span.setStatus({
-                  code: SpanStatusCode.ERROR,
-                  message: err.message,
-                });
-              } else {
-                span.setStatus({ code: SpanStatusCode.OK });
-              }
-
-              // resolve no matter what so that we run all jobs even if one fails
-              resolve(null);
-            });
-            debug(`runJobs(): completed ${job.name}`);
+  for (const job of jobsList) {
+    debug(`runJobs(): running ${job.name}`);
+    const tracer = trace.getTracer('cron');
+    await tracer.startActiveSpan(`cron:${job.name}`, async (span) => {
+      // Don't actually trace anything that runs during the job;
+      // that would create too many events for us. The only thing
+      // we're interested in for now is the duration and the
+      // success/failure state.
+      await context.with(suppressTracing(context.active()), async () => {
+        try {
+          await tryJobWithLock(job, cronUuid);
+          span.setStatus({ code: SpanStatusCode.OK });
+        } catch (err) {
+          debug(`runJobs(): error running ${job.name}: ${err}`);
+          logger.error(`cron: ${job.name} failure: ` + String(err), {
+            message: err.message,
+            stack: err.stack,
+            data: JSON.stringify(err.data),
+            cronUuid,
           });
-        });
-        span.end();
+
+          Sentry.captureException(err, {
+            tags: {
+              'cron.name': job.name,
+              'cron.uuid': cronUuid,
+            },
+          });
+
+          span.recordException(err);
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: err.message,
+          });
+        }
+
+        debug(`runJobs(): completed ${job.name}`);
       });
-    },
-    () => {
-      debug(`runJobs(): done`);
-      logger.verbose('cron: jobs finished', { cronUuid });
-      callback(null);
-    },
-  );
+
+      span.end();
+    });
+  }
+
+  debug(`runJobs(): done`);
+  logger.verbose('cron: jobs finished', { cronUuid });
 }
 
 // try and get the job lock, and run the job if we get it
-function tryJobWithLock(job, cronUuid, callback) {
+async function tryJobWithLock(job, cronUuid) {
   debug(`tryJobWithLock(): ${job.name}`);
   const lockName = 'cron:' + job.name;
-  namedLocks.tryLock(lockName, (err, lock) => {
-    if (ERR(err, callback)) return;
-    if (lock == null) {
-      debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
-      logger.verbose('cron: ' + job.name + ' did not acquire lock', {
-        cronUuid,
-      });
-      callback(null);
-    } else {
+  const didLock = await namedLocks.doWithLock(
+    lockName,
+    { onNotAcquired: () => false },
+    async () => {
       debug(`tryJobWithLock(): ${job.name}: acquired lock`);
       logger.verbose('cron: ' + job.name + ' acquired lock', { cronUuid });
-      tryJobWithTime(job, cronUuid, (err) => {
-        namedLocks.releaseLock(lock, (lockErr) => {
-          if (ERR(lockErr, callback)) return;
-          if (ERR(err, callback)) return;
-          debug(`tryJobWithLock(): ${job.name}: released lock`);
-          logger.verbose('cron: ' + job.name + ' released lock', {
-            cronUuid,
-          });
-          callback(null);
-        });
-      });
-    }
-  });
+      await tryJobWithTime(job, cronUuid);
+      return true;
+    },
+  );
+
+  if (didLock) {
+    debug(`tryJobWithLock(): ${job.name}: released lock`);
+    logger.verbose('cron: ' + job.name + ' released lock', {
+      cronUuid,
+    });
+  } else {
+    debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
+    logger.verbose('cron: ' + job.name + ' did not acquire lock', {
+      cronUuid,
+    });
+  }
 }
 
 // See how long it is since we last ran the job and only run it if
 // enough time has elapsed. We are protected by a lock here so we
 // have exclusive access.
-function tryJobWithTime(job, cronUuid, callback) {
+async function tryJobWithTime(job, cronUuid) {
   debug(`tryJobWithTime(): ${job.name}`);
   var interval_secs;
   if (Number.isInteger(job.intervalSec)) {
@@ -362,57 +361,44 @@ function tryJobWithTime(job, cronUuid, callback) {
   } else if (job.intervalSec === 'daily') {
     interval_secs = 12 * 60 * 60;
   } else {
-    return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));
+    throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
   }
-  const params = {
+  const result = await sqldb.queryAsync(sql.select_recent_cron_job, {
     name: job.name,
     interval_secs,
-  };
-  sqldb.query(sql.select_recent_cron_job, params, (err, result) => {
-    if (ERR(err, callback)) return;
-    if (result.rowCount != null && result.rowCount > 0) {
-      debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
-      logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
-      callback(null);
-    } else {
-      debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
-      logger.verbose('cron: ' + job.name + ' job was not recently run', {
-        cronUuid,
-      });
-      const params = { name: job.name };
-      sqldb.query(sql.update_cron_job_time, params, (err, _result) => {
-        if (ERR(err, callback)) return;
-        debug(`tryJobWithTime(): ${job.name}: updated run time`);
-        logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
-        runJob(job, cronUuid, (err) => {
-          if (ERR(err, callback)) return;
-          debug(`tryJobWithTime(): ${job.name}: done`);
-          const params = { name: job.name };
-          sqldb.query(sql.update_succeeded_at, params, (err, _result) => {
-            if (ERR(err, callback)) return;
-            debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
-            callback(null);
-          });
-        });
-      });
-    }
   });
+
+  if (result.rowCount != null && result.rowCount > 0) {
+    debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
+    logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
+    return null;
+  }
+
+  debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
+  logger.verbose('cron: ' + job.name + ' job was not recently run', {
+    cronUuid,
+  });
+  const params = { name: job.name };
+  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  debug(`tryJobWithTime(): ${job.name}: updated run time`);
+  logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
+  await runJob(job, cronUuid);
+  debug(`tryJobWithTime(): ${job.name}: done`);
+  await sqldb.queryAsync(sql.update_succeeded_at, { name: job.name });
+  debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
 }
 
 // actually run the job
-function runJob(job, cronUuid, callback) {
+async function runJob(job, cronUuid) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
-  var startTime = Date.now();
-  job.module.run((err) => {
-    if (ERR(err, callback)) return;
-    var endTime = Date.now();
-    var elapsedTimeMS = endTime - startTime;
-    debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
-    logger.verbose('cron: ' + job.name + ' success', {
-      cronUuid,
-      elapsedTimeMS,
-    });
-    callback(null);
+  const startTime = Date.now();
+  await util.promisify(job.module.run)();
+  const endTime = Date.now();
+  const elapsedTimeMS = endTime - startTime;
+  debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
+  logger.verbose('cron: ' + job.name + ' success', {
+    cronUuid,
+    elapsedTimeMS,
   });
 }
