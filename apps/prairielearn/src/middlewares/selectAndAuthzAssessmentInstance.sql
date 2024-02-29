@@ -64,10 +64,7 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
-    AND g.deleted_at IS NULL
-  )
+  LEFT JOIN groups AS g ON (g.id = ai.group_id) -- Ignore deleted_at, as we want to show the group even if it's deleted
   LEFT JOIN users AS u ON (u.user_id = ai.user_id) -- Only used for non-group instances
   JOIN LATERAL authz_assessment_instance (
     ai.id,

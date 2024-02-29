@@ -103,6 +103,7 @@ include = [
     "./apps/prairielearn/python/question_phases.py",
     "./apps/prairielearn/python/traverse_test.py",
     "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
 ]

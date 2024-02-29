@@ -74,7 +74,7 @@
 {{/error}}
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output">{{a_sub}}</code>
+<code class="user-output" style="white-space: break-spaces;">{{a_sub}}</code>
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -100,7 +100,7 @@
             <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
                 <p>
                     {{#label}}<span>{{{label}}}</span>{{/label}}
-                    <code class="user-output" id="matlab-data-{{uuid}}">{{matlab_data}}</code>
+                    <code class="user-output" style="white-space: break-spaces;" id="matlab-data-{{uuid}}">{{matlab_data}}</code>
                 </p>
                 <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
                     copy this answer
@@ -109,7 +109,7 @@
             <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
                 <p>
                     {{#label}}<span>{{{label}}}</span>{{/label}}
-                    <code class="user-output" id="python-data-{{uuid}}">{{python_data}}</code>
+                    <code class="user-output" style="white-space: break-spaces;" id="python-data-{{uuid}}">{{python_data}}</code>
                 </p>
                 <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
                     copy this answer

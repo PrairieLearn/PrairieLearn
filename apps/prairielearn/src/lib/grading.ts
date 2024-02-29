@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+
 import * as externalGrader from './externalGrader';
 import * as ltiOutcomes from './ltiOutcomes';
 import { writeCourseIssues } from './issues';
@@ -14,11 +16,15 @@ import {
   DateFromISOString,
   GradingJobSchema,
   IdSchema,
+  IntervalSchema,
   Question,
+  QuestionSchema,
   Submission,
   SubmissionSchema,
   Variant,
+  VariantSchema,
 } from './db-types';
+import { idsEqual } from './id';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -28,10 +34,119 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_interval: z.string(),
 });
 
+const VariantDataSchema = z.object({
+  instance_question_id: z.string().nullable(),
+  grading_method: QuestionSchema.shape.grading_method,
+  max_auto_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+});
+
+const VariantForSubmissionSchema = VariantSchema.extend({
+  assessment_instance_id: z.string().nullable(),
+  max_manual_points: z.number().nullable(),
+  instance_question_open: z.boolean().nullable(),
+  assessment_instance_open: z.boolean().nullable(),
+});
+
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
   };
+
+export async function insertSubmission({
+  submitted_answer,
+  raw_submitted_answer,
+  format_errors,
+  gradable,
+  broken,
+  true_answer,
+  feedback,
+  credit,
+  mode,
+  variant_id,
+  auth_user_id,
+  client_fingerprint_id,
+}: {
+  submitted_answer: Record<string, any> | null;
+  raw_submitted_answer: Record<string, any> | null;
+  format_errors: Record<string, any> | null;
+  gradable: boolean | null;
+  broken: boolean | null;
+  true_answer: Record<string, any> | null;
+  feedback: Record<string, any> | null;
+  credit?: number | null;
+  mode?: Submission['mode'];
+  variant_id: string;
+  auth_user_id: string | null;
+  client_fingerprint_id?: string | null;
+}): Promise<string> {
+  return await sqldb.runInTransactionAsync(async () => {
+    await sqldb.callAsync('variants_lock', [variant_id]);
+
+    // Select the variant, while updating the variant's `correct_answer`, which
+    // is permitted to change during the `parse` phase (which occurs before this
+    // submission is inserted).
+    const variant = await sqldb.queryRow(
+      sql.update_variant_true_answer,
+      { variant_id, true_answer },
+      VariantForSubmissionSchema,
+    );
+
+    if (variant.broken_at != null) {
+      throw error.make(400, 'Variant is broken', { variant_id });
+    }
+
+    if (!variant.open) {
+      throw error.make(403, 'Variant is not open', { variant_id });
+    }
+    if (variant.instance_question_id != null && !variant.instance_question_open) {
+      throw error.make(403, 'Instance question is not open', { variant_id });
+    }
+    if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
+      throw error.make(403, 'Assessment instance is not open', { variant_id });
+    }
+
+    const delta = await sqldb.queryOptionalRow(
+      sql.select_and_update_last_access,
+      { user_id: variant.user_id, group_id: variant.group_id },
+      IntervalSchema.nullable(),
+    );
+
+    const submission_id = await sqldb.queryRow(
+      sql.insert_submission,
+      {
+        variant_id,
+        auth_user_id,
+        raw_submitted_answer,
+        submitted_answer,
+        format_errors,
+        credit,
+        mode,
+        delta,
+        params: variant.params,
+        true_answer,
+        feedback,
+        gradable,
+        broken,
+        client_fingerprint_id,
+      },
+      IdSchema,
+    );
+
+    if (variant.assessment_instance_id != null) {
+      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+        instance_question_id: variant.instance_question_id,
+        assessment_instance_id: variant.assessment_instance_id,
+        delta,
+        status: gradable ? 'saved' : 'invalid',
+        requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+      });
+      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+    }
+
+    return submission_id;
+  });
+}
 
 /**
  * Save a new submission to a variant into the database.
@@ -111,25 +226,67 @@ export async function saveSubmission(
 
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-  const submission_id = await sqldb.callRow(
-    'submissions_insert',
-    [
-      data.submitted_answer,
-      data.raw_submitted_answer,
-      data.format_errors,
-      data.gradable && !hasFatalIssue,
-      hasFatalIssue,
-      data.true_answer,
-      data.feedback,
-      submission.credit,
-      submission.mode,
-      submission.variant_id,
-      submission.auth_user_id,
-      submission.client_fingerprint_id,
-    ],
-    IdSchema,
-  );
-  return submission_id;
+  return await insertSubmission({
+    ...submission,
+    ...data,
+    gradable: data.gradable && !hasFatalIssue,
+    broken: hasFatalIssue,
+  });
+}
+
+async function selectSubmissionForGrading(
+  variant_id: string,
+  check_submission_id: string | null,
+): Promise<Submission | null> {
+  return sqldb.runInTransactionAsync(async () => {
+    await sqldb.callAsync('variants_lock', [variant_id]);
+
+    const variantData = await sqldb.queryOptionalRow(
+      sql.select_variant_data,
+      { variant_id },
+      VariantDataSchema,
+    );
+    if (variantData == null) return null;
+
+    // We only select variants that will be auto-graded, so ignore this variant
+    // if this is manual grading only. Typically we would not reach this point
+    // for these cases, since the grade button is not shown to students, so this
+    // is an extra precaution.
+    if (variantData.instance_question_id == null) {
+      if (variantData.grading_method === 'Manual') return null;
+    } else {
+      if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
+        return null;
+      }
+    }
+
+    // Select the most recent submission
+    const submission = await sqldb.queryOptionalRow(
+      sql.select_last_submission_of_variant,
+      { variant_id },
+      SubmissionSchema,
+    );
+    if (submission == null) return null;
+
+    if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
+      throw error.make(400, 'Submission ID mismatch', {
+        submission_id: submission.id,
+        check_submission_id,
+      });
+    }
+
+    // Check if the submission needs grading
+    if (
+      submission.score != null || // already graded
+      submission.grading_requested_at != null || // grading is in progress
+      submission.broken || // submission is broken
+      !submission.gradable // submission did not pass parsing
+    ) {
+      return null;
+    }
+
+    return submission;
+  });
 }
 
 /**
@@ -152,11 +309,7 @@ export async function gradeVariant(
 ): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await sqldb.callOptionalRow(
-    'variants_select_submission_for_grading',
-    [variant.id, check_submission_id],
-    SubmissionSchema,
-  );
+  const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
   if (submission == null) return;
 
   if (!overrideGradeRateCheck) {
