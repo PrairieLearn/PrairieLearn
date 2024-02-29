@@ -59,7 +59,7 @@
 {{/radio}}
 {{^radio}}
 <!-- Weirdly enough putting this in a div causes it to display without the inline -->
-<span class="py-1 d-inline-flex align-items-center">
+<span class="py-1 d-inline align-items-center">
     <script>
         $(() => {
             $('#pl-multiple-choice-select-{{uuid}}').selectpicker({})
@@ -76,11 +76,13 @@
         data-style="btn-light border border-secondary"
         id="pl-multiple-choice-select-{{uuid}}"
         title="Nothing selected"
+        class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
     >
         {{#answers}}
             <option
                 value="{{key}}"
+                style="white-space:normal;"
                 data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"
                 {{#selected}}selected{{/selected}}
             ></option>
@@ -88,9 +90,9 @@
     </select>
 
     {{#feedback}}
-    <div class="pl-multiple-choice-feedback">
+    <span class="d-inline pl-multiple-choice-feedback">
         {{{feedback}}}
-    </div>
+    </span>
     {{/feedback}}
 
     {{#display_score_badge}}
@@ -138,15 +140,15 @@
 {{/parse_error}}
 {{^parse_error}}
 
-{{#inline}}<span class="py-1 d-inline-flex align-items-center">{{/inline}}
+{{#inline}}<span class="py-1 d-inline align-items-center">{{/inline}}
 {{^inline}}<div class="py-1 d-inline-flex align-items-center">{{/inline}}
 
     <span>{{^hide_letter_keys}}({{submitted_key}}){{/hide_letter_keys}} {{{submitted_answer.html}}}</span>
 
     {{#display_feedback}}
-        <div class="pl-multiple-choice-feedback">
+        <span class="d-inline pl-multiple-choice-feedback">
             {{{feedback}}}
-        </div>
+        </span>
     {{/display_feedback}}
 
     {{#display_score_badge}}
