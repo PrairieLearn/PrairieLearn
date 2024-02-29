@@ -176,29 +176,6 @@ export async function doWithLock<T, U = never>(
 }
 
 /**
- * Tries to acquire the given lock, executes the provided function with the lock held,
- * and releases the lock once the function has executed.
- *
- * If the lock cannot be acquired, the function is not executed. If an `onNotAcquired`
- * function was provided, this function is called and its return value is returned.
- * Otherwise, `null` is returned.
- */
-export async function tryWithLock<T, U = null>(
-  name: string,
-  options: WithLockOptions<U>,
-  func: () => Promise<T>,
-): Promise<T | U> {
-  return await doWithLock<T, U>(
-    name,
-    {
-      onNotAcquired: () => null as U,
-      ...options,
-    },
-    func,
-  );
-}
-
-/**
  * Internal helper function to get a lock with optional
  * waiting. Do not call directly, but use tryLock() or waitLock()
  * instead.
