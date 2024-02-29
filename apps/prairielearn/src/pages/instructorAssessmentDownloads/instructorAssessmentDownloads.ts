@@ -52,7 +52,7 @@ function getFilenames(locals) {
     filenames.pointsGroupAllCsvFilename = prefix + 'points_by_group_all.csv';
   }
   return filenames;
-};
+}
 
 router.get(
   '/',
