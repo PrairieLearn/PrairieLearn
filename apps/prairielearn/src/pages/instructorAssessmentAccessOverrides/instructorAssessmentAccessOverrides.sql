@@ -40,7 +40,7 @@ FROM
 WHERE
   assessment_id = $assessment_id
 ORDER BY
-  aap.created_at;
+  aap.created_at DESC;
 
 -- BLOCK select_group_in_assessment
 SELECT
@@ -93,9 +93,10 @@ SET
   user_id = $user_id
 WHERE
   assessment_id = $assessment_id
-  AND id = $assessment_access_policies_id
-  -- BLOCK delete_assessment_access_policy
+  AND id = $assessment_access_policies_id;
+
+-- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
 WHERE
   assessment_id = $assessment_id
-  AND id = $unsafe_assessment_access_policies_id
+  AND id = $unsafe_assessment_access_policies_id;
