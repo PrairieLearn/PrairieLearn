@@ -25,8 +25,6 @@ describe('Cron', function () {
     config.cronOverrideAllIntervalsSec = 3;
 
     await helperServer.before().call(this);
-
-    console.log('cron.job', cron.jobs);
   });
   after('shut down testing server', helperServer.after);
 
@@ -36,12 +34,9 @@ describe('Cron', function () {
     });
 
     it('should all have started', async () => {
-      console.log('cron.job', cron.jobs);
       const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
       const runJobs = _.map(result.rows, (row) => row.name);
       const cronJobs = _.map(cron.jobs, (row) => row.name);
-      console.log('runJobs', runJobs);
-      console.log('cronJobs', cronJobs);
       assert.lengthOf(_.difference(runJobs, cronJobs), 0);
       assert.lengthOf(_.difference(cronJobs, runJobs), 0);
     });

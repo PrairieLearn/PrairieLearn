@@ -279,7 +279,7 @@ async function runJobs(jobsList) {
   for (const job of jobsList) {
     debug(`runJobs(): running ${job.name}`);
     const tracer = trace.getTracer('cron');
-    return tracer.startActiveSpan(`cron:${job.name}`, async (span) => {
+    await tracer.startActiveSpan(`cron:${job.name}`, async (span) => {
       // Don't actually trace anything that runs during the job;
       // that would create too many events for us. The only thing
       // we're interested in for now is the duration and the
