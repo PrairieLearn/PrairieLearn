@@ -1,4 +1,3 @@
-import util from 'util';
 import { PostgresPool, PoolClient } from '@prairielearn/postgres';
 import { PoolConfig } from 'pg';
 
@@ -105,47 +104,6 @@ export async function close() {
 }
 
 /**
- * Try to acquire a lock and either succeed if it's available or
- * return immediately if not. If a lock is acquired then it must
- * must later be released by releaseLock(). If a lock is not acquired
- * (it is null) then releaseLock() should not be called.
- *
- * @param name The name of the lock to acquire.
- */
-export async function tryLockAsync(name: string, options: LockOptions = {}): Promise<Lock | null> {
-  return getLock(name, { timeout: 0, ...options });
-}
-
-export const tryLock = util.callbackify(tryLockAsync);
-
-/**
- * Wait until a lock can be successfully acquired.
- *
- * @param name The name of the lock to acquire.
- * @param options
- */
-export async function waitLockAsync(name: string, options: LockOptions): Promise<Lock> {
-  const lock = await getLock(name, options);
-  if (lock == null) throw new Error(`failed to acquire lock: ${name}`);
-  return lock;
-}
-
-export const waitLock = util.callbackify(waitLockAsync);
-
-/**
- * Release a lock.
- *
- * @param lock A previously-acquired lock.
- */
-export async function releaseLockAsync(lock: Lock) {
-  if (lock == null) throw new Error('lock is null');
-  clearInterval(lock.intervalId ?? undefined);
-  await pool.endTransactionAsync(lock.client, null);
-}
-
-export const releaseLock = util.callbackify(releaseLockAsync);
-
-/**
  * Acquires the given lock, executes the provided function with the lock held,
  * and releases the lock once the function has executed.
  *
@@ -158,7 +116,7 @@ export async function doWithLock<T, U = never>(
   options: WithLockOptions<U>,
   func: () => Promise<T>,
 ): Promise<T | U> {
-  const lock = await tryLockAsync(name, options);
+  const lock = await getLock(name, { timeout: 0, ...options });
 
   if (!lock) {
     if (options.onNotAcquired) {
@@ -171,14 +129,13 @@ export async function doWithLock<T, U = never>(
   try {
     return await func();
   } finally {
-    await releaseLockAsync(lock);
+    await releaseLock(lock);
   }
 }
 
 /**
- * Internal helper function to get a lock with optional
- * waiting. Do not call directly, but use tryLock() or waitLock()
- * instead.
+ * Internal helper function to get a lock with optional waiting.
+ * Do not call directly; use `doWithLock()` instead.
  *
  * @param name The name of the lock to acquire.
  * @param options Optional parameters.
@@ -241,4 +198,15 @@ async function getLock(name: string, options: LockOptions) {
   // help open. The caller will be responsible for releasing the lock and
   // ending the transaction.
   return { client, intervalId };
+}
+
+/**
+ * Release a lock.
+ *
+ * @param lock A previously-acquired lock.
+ */
+async function releaseLock(lock: Lock) {
+  if (lock == null) throw new Error('lock is null');
+  clearInterval(lock.intervalId ?? undefined);
+  await pool.endTransactionAsync(lock.client, null);
 }
