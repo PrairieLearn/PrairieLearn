@@ -9,17 +9,23 @@
       {{#files}}
       <li class="list-group-item" data-file="{{name}}">
         <div class="d-flex flex-row collapsed file-status-container" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
-          <div class="flex-grow-1">
-            <i class="file-status-icon fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
+          <div class="flex-grow-1 mr-2">
+            <i class="fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
             {{name}}
             <p class="file-status">uploaded</p>
           </div>
           <div class="align-self-center">
-            <button class="btn btn-outline-secondary btn-sm file-preview-download-file">
+            <button class="btn btn-outline-secondary btn-sm file-preview-download">
               Download
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
+            <button type="button" class="btn btn-outline-secondary btn-sm">
+              <span class="mr-2 js-toggle-show-preview-text">Show preview</span>
               <i class="file-preview-icon fa fa-angle-down"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-expand">
+              <span class="mr-2 js-toggle-expand-preview-text">Expand</span>
+              <i class="fa-solid fa-expand"></i>
+              <i class="fa-solid fa-compress d-none"></i>
             </button>
           </div>
         </div>

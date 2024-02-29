@@ -3,7 +3,6 @@
 }
 
 [id^='file-preview'] .file-status-icon {
-  margin-right: 10px;
   transition: all 400ms;
 }
 
@@ -13,16 +12,7 @@
   color: #999;
 }
 
-[id^='file-preview'] .file-preview-button::before {
-  content: 'Show preview';
-}
-
-[id^='file-preview'] .file-status-container:not(.collapsed) .file-preview-button::before {
-  content: 'Hide preview';
-}
-
 [id^='file-preview'] .file-preview-icon {
-  margin-left: 10px;
   transition: transform 400ms;
 }
 

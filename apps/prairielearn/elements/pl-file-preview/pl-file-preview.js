@@ -46,9 +46,17 @@
           errorMessage.classList.add('d-none');
         }
 
-        const downloadButton = li.querySelector('.file-preview-download-file');
+        const toggleShowPreviewText = li.querySelector('.js-toggle-show-preview-text');
+        const toggleExpandPreviewText = li.querySelector('.js-toggle-expand-preview-text');
+
+        const preview = li.querySelector('.file-preview');
+        const pre = preview.querySelector('pre');
+
+        const downloadButton = li.querySelector('.file-preview-download');
         downloadButton.addEventListener('click', (event) => {
+          // Prevent this click from toggling the collapse state.
           event.stopPropagation();
+
           downloadFile(path, file)
             .then(() => {
               hideErrorMessage();
@@ -59,11 +67,51 @@
             });
         });
 
+        const expandButton = li.querySelector('.file-preview-expand');
+
+        function updateExpandButton(expanded) {
+          toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
+          if (expanded) {
+            expandButton.querySelector('.fa-expand').classList.add('d-none');
+            expandButton.querySelector('.fa-compress').classList.remove('d-none');
+          } else {
+            expandButton.querySelector('.fa-expand').classList.remove('d-none');
+            expandButton.querySelector('.fa-compress').classList.add('d-none');
+          }
+        }
+
+        expandButton.addEventListener('click', (event) => {
+          // Prevent this click from toggling the collapse state.
+          event.stopPropagation();
+
+          // If the preview is not already open, open it in the expanded view.
+          if (!preview.classList.contains('show')) {
+            $(preview).collapse('show');
+            pre.style.maxHeight = 'none';
+            updateExpandButton(true);
+            return;
+          }
+
+          // If the preview is already open, toggle the expanded state.
+          if (pre.style.maxHeight) {
+            pre.style.removeProperty('max-height');
+            updateExpandButton(false);
+          } else {
+            pre.style.maxHeight = 'none';
+            updateExpandButton(true);
+          }
+        });
+
         let wasOpened = false;
-        const preview = li.querySelector('.file-preview');
+
         $(preview).on('show.bs.collapse', () => {
+          toggleShowPreviewText.textContent = 'Hide preview';
+
+          const isPreviewExpanded = !!pre.style.maxHeight;
+          updateExpandButton(isPreviewExpanded);
+
           if (wasOpened) return;
-          const pre = preview.querySelector('pre');
+
           const code = preview.querySelector('code');
           const img = preview.querySelector('img');
 
@@ -99,6 +147,11 @@
               console.error(err);
               showErrorMessage('An error occurred while downloading the file.');
             });
+        });
+
+        $(preview).on('hide.bs.collapse', () => {
+          toggleShowPreviewText.textContent = 'Show preview';
+          updateExpandButton(false);
         });
       });
     }
