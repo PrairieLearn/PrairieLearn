@@ -15,7 +15,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 type Columns = [string, string][];
 
-const getFilenames = function (locals) {
+function getFilenames(locals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
