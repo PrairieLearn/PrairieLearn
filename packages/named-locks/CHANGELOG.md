@@ -1,5 +1,11 @@
 # @prairielearn/named-locks
 
+## 2.0.0
+
+### Major Changes
+
+- 79c74ca: Remove `tryWithLock`, `tryLockAsync`, `tryLock`, `waitLockAsync`, `waitLock`, `releaseLockAsync`, and `releaseLock`. Use `doWithLock` instead.
+
 ## 1.5.11
 
 ### Patch Changes
