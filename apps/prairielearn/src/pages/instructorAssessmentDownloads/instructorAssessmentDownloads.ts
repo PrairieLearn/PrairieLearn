@@ -1,7 +1,6 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-const archiver = require('archiver');
+import archiver = require('archiver');
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 
@@ -9,11 +8,12 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { getGroupConfig } from '../../lib/groups';
+import { InstructorAssessmentDownloads } from './instructorAssessmentDownloads.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/** @typedef {[string, string][]} Columns */
+type Columns = [string, string][];
 
 const setFilenames = function (locals) {
   const prefix = assessmentFilenamePrefix(
@@ -57,18 +57,11 @@ router.get(
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     setFilenames(res.locals);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentDownloads({ resLocals: res.locals }));
   }),
 );
 
-/**
- * Local abstraction to adapt our internal notion of columns to the columns
- * format that the CSV `stringify()` function expects.
- *
- * @param {[string, string][]} columns
- * @param {(record: any) => any} [transform]
- */
-function stringifyWithColumns(columns, transform = undefined) {
+function stringifyWithColumns(columns: Columns, transform?: (record: any) => any) {
   return stringifyStream({
     header: true,
     columns: columns.map(([header, key]) => ({ header, key: key ?? header })),
@@ -101,25 +94,19 @@ router.get(
 
     setFilenames(res.locals);
 
-    var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
-    /** @type {Columns} */
-    const studentColumn = [
+    const assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+    const studentColumn: Columns = [
       ['UID', 'uid'],
       ['UIN', 'uin'],
     ];
-    /** @type {Columns} */
-    const usernameColumn = [['Username', 'username']];
-    /** @type {Columns} */
-    const groupNameColumn = [
+    const usernameColumn: Columns = [['Username', 'username']];
+    const groupNameColumn: Columns = [
       ['Group name', 'group_name'],
       ['Usernames', 'uid_list'],
     ];
-    /** @type {Columns} */
-    const scoreColumn = [[assessmentName, 'score_perc']];
-    /** @type {Columns} */
-    const pointColumn = [[assessmentName, 'points']];
-    /** @type {Columns} */
-    const instanceColumn = [
+    const scoreColumn: Columns = [[assessmentName, 'score_perc']];
+    const pointColumn: Columns = [[assessmentName, 'points']];
+    const instanceColumn: Columns = [
       ['Assessment', 'assessment_label'],
       ['Instance', 'number'],
       ['Started', 'date_formatted'],
@@ -130,12 +117,12 @@ router.get(
       ['Duration (min)', 'duration_mins'],
       ['Highest score', 'highest_score'],
     ];
-    let scoresColumns = studentColumn.concat(scoreColumn);
-    let pointsColumns = studentColumn.concat(pointColumn);
-    let scoresGroupColumns = groupNameColumn.concat(scoreColumn);
-    let pointsGroupColumns = groupNameColumn.concat(pointColumn);
-    let scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
-    let pointsByUsernameColumns = usernameColumn.concat(pointColumn);
+    const scoresColumns = studentColumn.concat(scoreColumn);
+    const pointsColumns = studentColumn.concat(pointColumn);
+    const scoresGroupColumns = groupNameColumn.concat(scoreColumn);
+    const pointsGroupColumns = groupNameColumn.concat(pointColumn);
+    const scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
+    const pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
       usernameColumn.concat([
         ['Name', 'name'],
@@ -145,7 +132,7 @@ router.get(
     if (res.locals.assessment.group_work) {
       identityColumn = groupNameColumn;
     }
-    let instancesColumns = identityColumn.concat(instanceColumn);
+    const instancesColumns = identityColumn.concat(instanceColumn);
 
     if (req.params.filename === res.locals.scoresCsvFilename) {
       await sendInstancesCsv(res, req, scoresColumns, { only_highest: true });
@@ -244,9 +231,9 @@ router.get(
       req.params.filename === res.locals.finalSubmissionsCsvFilename ||
       req.params.filename === res.locals.bestSubmissionsCsvFilename
     ) {
-      let include_all = req.params.filename === res.locals.allSubmissionsCsvFilename;
-      let include_final = req.params.filename === res.locals.finalSubmissionsCsvFilename;
-      let include_best = req.params.filename === res.locals.bestSubmissionsCsvFilename;
+      const include_all = req.params.filename === res.locals.allSubmissionsCsvFilename;
+      const include_final = req.params.filename === res.locals.finalSubmissionsCsvFilename;
+      const include_best = req.params.filename === res.locals.bestSubmissionsCsvFilename;
 
       const cursor = await sqldb.queryCursor(sql.assessment_instance_submissions, {
         assessment_id: res.locals.assessment.id,
@@ -361,8 +348,7 @@ router.get(
         assessment_id: res.locals.assessment.id,
       });
 
-      /** @type {Columns} */
-      const columns = [
+      const columns: Columns = [
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
