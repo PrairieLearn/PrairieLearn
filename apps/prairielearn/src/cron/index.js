@@ -207,7 +207,7 @@ function queueJobs(jobsList, intervalSec) {
     jobTimeouts[intervalSec] = 0;
     runJobs(jobsList)
       .catch((err) => {
-        logger.error('Error running jobs', err);
+        logger.error('Error running cron jobs', err);
         Sentry.captureException(err);
       })
       .finally(() => {
@@ -252,7 +252,7 @@ function queueDailyJobs(jobsList) {
     jobTimeouts['daily'] = 0;
     runJobs(jobsList)
       .catch((err) => {
-        logger.error('Error running jobs', err);
+        logger.error('Error running cron jobs', err);
         Sentry.captureException(err);
       })
       .finally(() => {
