@@ -3,7 +3,7 @@ bokeh==3.3.4
 colormath==3.0.0
 defusedxml==0.7.1
 Faker==22.6.0
-folium==0.15.1
+folium==0.16.0
 ipython==8.21.0
 jupyter-collaboration==2.0.1
 matplotlib==3.8.2
