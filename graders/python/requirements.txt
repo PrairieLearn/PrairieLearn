@@ -2,7 +2,7 @@ beautifulsoup4==4.12.3
 bokeh==3.3.4
 colormath==3.0.0
 defusedxml==0.7.1
-Faker==22.6.0
+Faker==23.3.0
 folium==0.15.1
 ipython==8.21.0
 matplotlib==3.8.2
