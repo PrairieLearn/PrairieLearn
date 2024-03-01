@@ -34,7 +34,7 @@
     "@types/uid-safe": "^2.1.5",
     "chai": "^4.4.1",
     "express": "^4.18.2",
-    "fetch-cookie": "^2.2.0",
+    "fetch-cookie": "^3.0.1",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
     "set-cookie-parser": "^2.6.0",
