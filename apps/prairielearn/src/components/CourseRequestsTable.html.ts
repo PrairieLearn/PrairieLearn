@@ -175,7 +175,7 @@ export function CourseRequestsTable({
                                       <td>
                                         ${renderEjs(
                                           __filename,
-                                          "<%- include('../partials/jobStatus') %>",
+                                          "<%- include('../pages/partials/jobStatus') %>",
                                           { status: job.status },
                                         )}
                                       </td>

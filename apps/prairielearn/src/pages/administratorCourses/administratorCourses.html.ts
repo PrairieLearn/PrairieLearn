@@ -141,7 +141,7 @@ export function AdministratorCourses({
                         <td class="align-middle">
                           <button
                             type="button"
-                            class="btn btn-sm btn-danger"
+                            class="btn btn-sm btn-danger text-nowrap"
                             id="courseDeleteButton${course.id}"
                             data-toggle="popover"
                             data-container="body"
