@@ -202,7 +202,7 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
 
 Note that the `showClosedAssessment` and `showClosedAssessmentScore` statements are listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
 
-The `showClosedAssessmentScore` access rule restriction is often used in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`. It may also be used in assessments with [manual grading](manualGrading/), to hide the assessment grade until all students have been graded.
+The `showClosedAssessmentScore` access rule restriction is often used in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`. It may also be used in assessments with [manual grading](manualGrading/index.md), to hide the assessment grade until all students have been graded.
 
 ## Active assessments
 
