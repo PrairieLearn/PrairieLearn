@@ -1,5 +1,5 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 
@@ -10,6 +10,7 @@ import {
   updateCourseRequest,
 } from '../../lib/course-request';
 import { selectAllInstitutions } from '../../models/institution';
+import { AdministratorCourseRequests } from './administratorCourseRequests.html';
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get(
     res.locals.coursesRoot = config.coursesRoot;
     res.locals.course_requests = await selectAllCourseRequests();
     res.locals.institutions = await selectAllInstitutions();
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(AdministratorCourseRequests({ resLocals: res.locals }));
   }),
 );
 
