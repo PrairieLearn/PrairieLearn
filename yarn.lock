@@ -6991,10 +6991,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:11.1.0, commander@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "commander@npm:11.1.0"
-  checksum: fd1a8557c6b5b622c89ecdfde703242ab7db3b628ea5d1755784c79b8e7cb0d74d65b4a262289b533359cd58e1bfc0bf50245dfbcd2954682a6f367c828b79ef
+"commander@npm:12.0.0":
+  version: 12.0.0
+  resolution: "commander@npm:12.0.0"
+  checksum: bce9e243dc008baba6b8d923f95b251ad115e6e7551a15838d7568abebcca0fc832da1800cf37caf37852f35ce4b7fb794ba7a4824b88c5adb1395f9268642df
   languageName: node
   linkType: hard
 
@@ -7009,6 +7009,13 @@ __metadata:
   version: 10.0.1
   resolution: "commander@npm:10.0.1"
   checksum: 436901d64a818295803c1996cd856621a74f30b9f9e28a588e726b2b1670665bccd7c1a77007ebf328729f0139838a88a19265858a0fa7a8728c4656796db948
+  languageName: node
+  linkType: hard
+
+"commander@npm:^11.1.0":
+  version: 11.1.0
+  resolution: "commander@npm:11.1.0"
+  checksum: fd1a8557c6b5b622c89ecdfde703242ab7db3b628ea5d1755784c79b8e7cb0d74d65b4a262289b533359cd58e1bfc0bf50245dfbcd2954682a6f367c828b79ef
   languageName: node
   linkType: hard
 
@@ -7977,9 +7984,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dependency-cruiser@npm:^16.1.0":
-  version: 16.1.0
-  resolution: "dependency-cruiser@npm:16.1.0"
+"dependency-cruiser@npm:^16.2.2":
+  version: 16.2.2
+  resolution: "dependency-cruiser@npm:16.2.2"
   dependencies:
     acorn: 8.11.3
     acorn-jsx: 5.3.2
@@ -7988,24 +7995,24 @@ __metadata:
     acorn-walk: 8.3.2
     ajv: 8.12.0
     chalk: 5.3.0
-    commander: 11.1.0
-    enhanced-resolve: 5.15.0
+    commander: 12.0.0
+    enhanced-resolve: 5.15.1
     figures: 6.0.1
-    ignore: 5.3.0
+    ignore: 5.3.1
     indent-string: 5.0.0
     interpret: ^3.1.1
     is-installed-globally: 1.0.0
     json5: 2.2.3
     lodash: 4.17.21
-    picomatch: 3.0.1
+    picomatch: 4.0.1
     prompts: 2.4.2
     rechoir: ^0.8.0
     safe-regex: 2.1.1
-    semver: ^7.5.4
+    semver: ^7.6.0
     semver-try-require: 6.2.3
     teamcity-service-messages: 0.1.14
     tsconfig-paths-webpack-plugin: 4.1.0
-    watskeburt: 2.0.5
+    watskeburt: 4.0.0
     wrap-ansi: 9.0.0
   bin:
     depcruise: bin/dependency-cruise.mjs
@@ -8014,7 +8021,7 @@ __metadata:
     depcruise-wrap-stream-in-html: bin/wrap-stream-in-html.mjs
     dependency-cruise: bin/dependency-cruise.mjs
     dependency-cruiser: bin/dependency-cruise.mjs
-  checksum: 739706379e39521e0107bfd4f785a4dec7ab43b355a57344eb6427f4712cf9c6bda0f0dedd3621fdb9a33bb5fbac4abadd86a707a9264919c242f4ad9e345e4e
+  checksum: f634fac7d5cd4809856b1cf0a107f97eb6110e7718679bced4bfac288256e9a0e30f5a1232fb3f01041f547440926e0e0cfc924d1e6ab04650e8a243c198564b
   languageName: node
   linkType: hard
 
@@ -8348,7 +8355,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"enhanced-resolve@npm:5.15.0, enhanced-resolve@npm:^5.12.0, enhanced-resolve@npm:^5.7.0":
+"enhanced-resolve@npm:5.15.1":
+  version: 5.15.1
+  resolution: "enhanced-resolve@npm:5.15.1"
+  dependencies:
+    graceful-fs: ^4.2.4
+    tapable: ^2.2.0
+  checksum: 360f646c794323f2984b1ac751a878dd02ef30b565e106640b3d881a13ad16ce9c66e7c593cc34133f251ba3708cf6ae461e071b0f53ee65ff6650a779ed25a1
+  languageName: node
+  linkType: hard
+
+"enhanced-resolve@npm:^5.12.0, enhanced-resolve@npm:^5.7.0":
   version: 5.15.0
   resolution: "enhanced-resolve@npm:5.15.0"
   dependencies:
@@ -10390,7 +10407,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ignore@npm:5.3.0, ignore@npm:^5.2.0, ignore@npm:^5.2.4":
+"ignore@npm:5.3.1":
+  version: 5.3.1
+  resolution: "ignore@npm:5.3.1"
+  checksum: 71d7bb4c1dbe020f915fd881108cbe85a0db3d636a0ea3ba911393c53946711d13a9b1143c7e70db06d571a5822c0a324a6bcde5c9904e7ca5047f01f1bf8cd3
+  languageName: node
+  linkType: hard
+
+"ignore@npm:^5.2.0, ignore@npm:^5.2.4":
   version: 5.3.0
   resolution: "ignore@npm:5.3.0"
   checksum: 2736da6621f14ced652785cb05d86301a66d70248597537176612bd0c8630893564bd5f6421f8806b09e8472e75c591ef01672ab8059c07c6eb2c09cefe04bf9
@@ -13560,10 +13584,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picomatch@npm:3.0.1":
-  version: 3.0.1
-  resolution: "picomatch@npm:3.0.1"
-  checksum: b7fe18174bcc05bbf0ea09cc85623ae395676b3e6bc25636d4c20db79a948586237e429905453bf1ba385bc7a7aa5b56f1b351680e650d2b5c305ceb98dfc914
+"picomatch@npm:4.0.1":
+  version: 4.0.1
+  resolution: "picomatch@npm:4.0.1"
+  checksum: f135d38bb7d190186907714cf2f3abe043de9c66b1c5e5687ae7ae63fd9693a51634aa3662ac1dcd79e1209e02edcaa0740c4f3edda2ffed03f1a0bee38d8f67
   languageName: node
   linkType: hard
 
@@ -13722,7 +13746,7 @@ __metadata:
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@typescript-eslint/eslint-plugin": ^6.20.0
     "@typescript-eslint/parser": ^6.20.0
-    dependency-cruiser: ^16.1.0
+    dependency-cruiser: ^16.2.2
     eslint: ^8.56.0
     eslint-config-prettier: ^9.1.0
     eslint-import-resolver-typescript: ^3.6.1
@@ -14808,6 +14832,17 @@ __metadata:
   bin:
     semver: bin/semver.js
   checksum: 12d8ad952fa353b0995bf180cdac205a4068b759a140e5d3c608317098b3575ac2f1e09182206bf2eb26120e1c0ed8fb92c48c592f6099680de56bb071423ca3
+  languageName: node
+  linkType: hard
+
+"semver@npm:^7.6.0":
+  version: 7.6.0
+  resolution: "semver@npm:7.6.0"
+  dependencies:
+    lru-cache: ^6.0.0
+  bin:
+    semver: bin/semver.js
+  checksum: 7427f05b70786c696640edc29fdd4bc33b2acf3bbe1740b955029044f80575fc664e1a512e4113c3af21e767154a94b4aa214bf6cd6e42a1f6dba5914e0b208c
   languageName: node
   linkType: hard
 
@@ -16777,12 +16812,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"watskeburt@npm:2.0.5":
-  version: 2.0.5
-  resolution: "watskeburt@npm:2.0.5"
+"watskeburt@npm:4.0.0":
+  version: 4.0.0
+  resolution: "watskeburt@npm:4.0.0"
   bin:
     watskeburt: dist/run-cli.js
-  checksum: 8ec388d4bef887dfdba57ab9b4d4f4b6da0fd4d9f8f6ab12d09e86ce27427dbd731b3457fe0a3a7a880f8e1fd2069cf8915e4c2fcb613e46f0ebcfc34d572272
+  checksum: c30512e90ffc4d5f626fd37b20b17549f48fa36103418877b54ebc773c6dacb341100e7cc7da8ac06f3d772c2f91869ff153dd9369287f589b8c46eaffbe1c6f
   languageName: node
   linkType: hard
 
