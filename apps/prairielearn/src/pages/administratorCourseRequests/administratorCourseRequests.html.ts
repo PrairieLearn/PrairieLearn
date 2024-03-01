@@ -1,5 +1,6 @@
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { Institution } from '../../lib/db-types';
 
 export function AdministratorCourseRequests({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
@@ -126,17 +127,13 @@ function CourseRequestsTable({
                               data-placement="auto"
                               title="Approve course request"
                               data-content="${escapeHtml(
-                                renderEjs(
-                                  __filename,
-                                  "<%- include('courseRequestApproveForm') %>",
-                                  {
-                                    request: req,
-                                    id: 'approve-request-button-' + req.id,
-                                    __csrf_token: resLocals.__csrf_token,
-                                    institutions: resLocals.institutions,
-                                    coursesRoot: resLocals.coursesRoot,
-                                  },
-                                ),
+                                CourseRequestApproveForm({
+                                  id: 'approve-request-button-' + req.id,
+                                  request: req,
+                                  institutions: resLocals.institutions,
+                                  coursesRoot: resLocals.coursesRoot,
+                                  csrfToken: resLocals.__csrf_token,
+                                }),
                               )}"
                               data-trigger="manual"
                               onclick="$(this).popover('show')"
@@ -196,14 +193,14 @@ function CourseRequestsTable({
                                           "<%- include('../partials/jobStatus') %>",
                                           { status: job.status },
                                         )}
-                                        %>
                                       </td>
                                       <td>
                                         <a
                                           href="${resLocals.urlPrefix}/administrator/jobSequence/${job.id}"
                                           class="btn btn-xs btn-info float-right"
-                                          >Details</a
                                         >
+                                          Details
+                                        </a>
                                       </td>
                                     </tr>
                                   `;
@@ -226,6 +223,113 @@ function CourseRequestsTable({
         </small>
       </div>
     </div>
+  `;
+}
+
+function CourseRequestApproveForm({
+  id,
+  request,
+  institutions,
+  coursesRoot,
+  csrfToken,
+}: {
+  id: string;
+  request: any;
+  institutions: Institution[];
+  coursesRoot: string;
+  csrfToken: string;
+}) {
+  const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase();
+  return html`
+    <form name="create-course-from-request-form-${request.id}" method="POST">
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="create_course_from_request" />
+      <input type="hidden" name="request_id" value="${request.id}" />
+
+      <div class="form-group">
+        <label>Institution:</label>
+        <select
+          name="institution_id"
+          class="form-control"
+          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+        >
+          ${institutions.map((i) => {
+            return html`
+              <option value="${i.id}" data-timezone="${i.display_timezone}">${i.short_name}</option>
+            `;
+          })}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputShortName">Short name:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputShortName"
+          name="short_name"
+          placeholder="XC 101"
+          value="${request.short_name}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputTitle">Title:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputTitle"
+          name="title"
+          placeholder="Template course title"
+          value="${request.title}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputTimezone">Timezone:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputTimezone"
+          name="display_timezone"
+          value="${institutions[0]?.display_timezone}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputPath">Path:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputPath"
+          name="path"
+          value="${coursesRoot + '/' + repo_name}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputRepositoryName">Repository Name:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputRepository"
+          name="repository_short_name"
+          value="${repo_name}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseRequestAddInputGithubUser">GitHub Username:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseRequestAddInputGithubUser"
+          name="github_user"
+          value="${request.github_user}"
+        />
+      </div>
+
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Create course</button>
+      </div>
+    </form>
   `;
 }
 
