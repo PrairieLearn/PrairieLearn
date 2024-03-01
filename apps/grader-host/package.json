@@ -30,7 +30,7 @@
     "dockerode": "^3.3.5",
     "fs-extra": "^11.2.0",
     "logform": "^2.6.0",
-    "tmp": "^0.2.1",
+    "tmp": "^0.2.3",
     "winston": "^3.11.0",
     "winston-transport": "^4.6.0",
     "zod": "^3.22.4"
