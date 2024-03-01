@@ -559,7 +559,7 @@ export const InstanceQuestionSchema = z.object({
     .nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
-  variants_points_list: z.array(z.number()),
+  variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 
