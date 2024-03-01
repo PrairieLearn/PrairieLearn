@@ -3,7 +3,7 @@ import { callRow } from '@prairielearn/postgres';
 
 import { ModeSchema, type User } from '../../lib/db-types';
 
-export function hasUserAcceptedTerms(user: User): boolean {
+function hasUserAcceptedTerms(user: User): boolean {
   // At the moment, we only have one revision of our terms and conditions, so
   // all we care about is whether the user has accepted the terms at any point.
   // In the future, if we add revisions, we could change this to check for
@@ -24,7 +24,7 @@ export function hasUserAcceptedTerms(user: User): boolean {
  * @returns Whether the user should be redirected to the terms acceptance page
  */
 export async function shouldRedirectToTermsPage(user: User, ip: string) {
-  if (user.terms_accepted_at !== null) return false;
+  if (hasUserAcceptedTerms(user)) return false;
 
   const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], ModeSchema);
   return mode === 'Public';
