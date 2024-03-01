@@ -193,7 +193,7 @@
     "@types/dockerode": "^3.3.23",
     "@types/express": "^4.17.21",
     "@types/express-list-endpoints": "^6.0.3",
-    "@types/express-session": "^1.17.10",
+    "@types/express-session": "^1.18.0",
     "@types/folder-hash": "^4.0.4",
     "@types/fs-extra": "^11.0.4",
     "@types/jju": "^1.4.5",
