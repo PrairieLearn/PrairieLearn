@@ -109,3 +109,9 @@ include = [
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python",
+]
