@@ -37,7 +37,8 @@ export function AdministratorCourseRequests({
             institutions,
             coursesRoot,
             showAll: true,
-            resLocals,
+            csrfToken: resLocals.__csrf_token,
+            urlPrefix: resLocals.urlPrefix,
           })}
         </main>
       </body>
@@ -45,18 +46,21 @@ export function AdministratorCourseRequests({
   `.toString();
 }
 
-function CourseRequestsTable({
+// TODO: move to separate file
+export function CourseRequestsTable({
   rows,
   institutions,
   coursesRoot,
   showAll,
-  resLocals,
+  csrfToken,
+  urlPrefix,
 }: {
   rows: CourseRequestRow[];
   institutions: Institution[];
   coursesRoot: string;
   showAll: boolean;
-  resLocals: Record<string, any>;
+  csrfToken: string;
+  urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
   return html`
@@ -68,7 +72,7 @@ function CourseRequestsTable({
           : html`
               <a
                 class="btn btn-sm btn-light ml-auto"
-                href="${resLocals.urlPrefix}/administrator/courseRequests"
+                href="${urlPrefix}/administrator/courseRequests"
               >
                 <i class="fa fa-search" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">View All</span>
@@ -123,11 +127,7 @@ function CourseRequestsTable({
                             method="POST"
                             class="d-flex align-items-start"
                           >
-                            <input
-                              type="hidden"
-                              name="__csrf_token"
-                              value="${resLocals.__csrf_token}"
-                            />
+                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                             <input
                               type="hidden"
                               name="__action"
@@ -161,7 +161,7 @@ function CourseRequestsTable({
                                   request: req,
                                   institutions,
                                   coursesRoot,
-                                  csrfToken: resLocals.__csrf_token,
+                                  csrfToken,
                                 }),
                               )}"
                               data-trigger="manual"
@@ -177,8 +177,7 @@ function CourseRequestsTable({
                     ${req.jobs.length > 0
                       ? html`
                           <a
-                            href="${resLocals.urlPrefix}/administrator/jobSequence/${req.jobs[0]
-                              .id}"
+                            href="${urlPrefix}/administrator/jobSequence/${req.jobs[0].id}"
                             class="show-hide-btn expand-icon-container btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
                             data-toggle="collapse"
                             data-target="#course-requests-job-list-${req.id}"
@@ -225,7 +224,7 @@ function CourseRequestsTable({
                                       </td>
                                       <td>
                                         <a
-                                          href="${resLocals.urlPrefix}/administrator/jobSequence/${job.id}"
+                                          href="${urlPrefix}/administrator/jobSequence/${job.id}"
                                           class="btn btn-xs btn-info float-right"
                                         >
                                           Details
