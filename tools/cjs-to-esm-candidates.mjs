@@ -22,7 +22,6 @@ const CJS_ONLY_MODULES = new Set([
   'express',
   'express-async-handler',
   'express-list-endpoints',
-  'fetch-cookie',
   'form-data',
   'json-stable-stringify',
   'json-stringify-safe',

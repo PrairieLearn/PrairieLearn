@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import fetchCookie = require('fetch-cookie');
+import fetchCookie from 'fetch-cookie';
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
 
