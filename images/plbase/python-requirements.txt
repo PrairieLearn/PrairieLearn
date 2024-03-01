@@ -9,7 +9,7 @@ Flake8-pyproject==1.2.3
 flake8==7.0.0
 isort==5.13.2
 lxml==5.1.0
-matplotlib==3.8.2
+matplotlib==3.8.3
 networkx==3.2.1
 nltk==3.8.1
 numpy==1.26.3
