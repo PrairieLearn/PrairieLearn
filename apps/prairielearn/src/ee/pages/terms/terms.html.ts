@@ -16,6 +16,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
+          navPage: 'plain',
           navbarType: 'plain',
         })}
         <main class="container">
