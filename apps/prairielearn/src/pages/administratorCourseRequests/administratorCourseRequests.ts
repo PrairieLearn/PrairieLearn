@@ -33,8 +33,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.is_administrator) throw error.make(403, 'Insufficient permissions');
-
     if (req.body.__action === 'approve_deny_course_request') {
       await updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {

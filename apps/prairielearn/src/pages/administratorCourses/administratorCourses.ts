@@ -38,8 +38,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.is_administrator) throw error.make(403, 'Insufficient permissions');
-
     if (req.body.__action === 'courses_insert') {
       await sqldb.callAsync('courses_insert', [
         req.body.institution_id,
