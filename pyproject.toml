@@ -77,6 +77,7 @@ include = [
     "./apps/prairielearn/elements/pl-integer-input",
     "./apps/prairielearn/elements/pl-manual-grading-only",
     "./apps/prairielearn/elements/pl-matrix-latex",
+    "./apps/prairielearn/elements/pl-multiple-choice",
     "./apps/prairielearn/elements/pl-number-input",
     "./apps/prairielearn/elements/pl-overlay",
     "./apps/prairielearn/elements/pl-order-blocks",
