@@ -93,7 +93,7 @@ export function AdministratorCourses({
                   </tr>
                 </thead>
                 <tbody>
-                  ${courses.map((course, i) => {
+                  ${courses.map((course) => {
                     return html`
                       <tr>
                         <td>
@@ -142,7 +142,7 @@ export function AdministratorCourses({
                           <button
                             type="button"
                             class="btn btn-sm btn-danger"
-                            id="courseDeleteButton${i}"
+                            id="courseDeleteButton${course.id}"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -150,7 +150,7 @@ export function AdministratorCourses({
                             title="Really delete ${course.short_name}?"
                             data-content="${escapeHtml(
                               CourseDeleteForm({
-                                id: `courseDeleteButton${i}`,
+                                id: `courseDeleteButton${course.id}`,
                                 course,
                                 csrfToken: resLocals.__csrf_token,
                               }),
