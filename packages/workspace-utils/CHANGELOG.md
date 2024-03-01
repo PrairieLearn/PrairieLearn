@@ -1,5 +1,12 @@
 # @prairielearn/workspace-utils
 
+## 1.0.18
+
+### Patch Changes
+
+- Updated dependencies [3395c25]
+  - @prairielearn/postgres@1.9.2
+
 ## 1.0.17
 
 ### Patch Changes
