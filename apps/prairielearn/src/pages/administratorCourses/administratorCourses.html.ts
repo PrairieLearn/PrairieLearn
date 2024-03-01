@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { CourseRequestsTable } from '../administratorCourseRequests/administratorCourseRequests.html';
 import { CourseRequestRow } from '../../lib/course-request';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types';
+import { config } from '../../lib/config';
 
 export const CourseWithInstitutionSchema = CourseSchema.extend({
   institution: InstitutionSchema,
@@ -63,11 +64,13 @@ export function AdministratorCourses({
                 data-html="true"
                 data-placement="auto"
                 title="Add new course"
-                data-content="${renderEjs(__filename, "<%= include('courseInsertForm') %>", {
-                  ...resLocals,
-                  institutions,
-                  id: 'courseInsertButton',
-                })}"
+                data-content="${escapeHtml(
+                  CourseInsertForm({
+                    id: 'courseInsertButton',
+                    institutions,
+                    csrfToken: resLocals.__csrf_token,
+                  }),
+                )}"
                 data-trigger="manual"
                 onclick="$(this).popover('show')"
               >
@@ -98,48 +101,48 @@ export function AdministratorCourses({
                             ${course.institution.short_name}
                           </a>
                         </td>
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'short_name',
                           label: 'short name',
-                          course: course,
-                          i: i,
                           href: `/pl/course/${course.id}`,
+                          csrfToken: resLocals.__csrf_token,
                         })}
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'title',
                           label: 'title',
-                          course: course,
-                          i: i,
+                          csrfToken: resLocals.__csrf_token,
                         })}
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'display_timezone',
                           label: 'timezone',
-                          course: course,
-                          i: i,
+                          csrfToken: resLocals.__csrf_token,
                         })}
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'path',
                           label: 'path',
-                          course: course,
-                          i: i,
+                          csrfToken: resLocals.__csrf_token,
                         })}
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'repository',
                           label: 'repository',
-                          course: course,
-                          i: i,
+                          csrfToken: resLocals.__csrf_token,
                         })}
-                        ${renderEjs(__filename, "<%- include('courseUpdateColumn') %>", {
-                          ...resLocals,
+                        ${CourseUpdateColumn({
+                          i,
+                          course,
                           column_name: 'branch',
                           label: 'branch',
-                          course: course,
-                          i: i,
+                          csrfToken: resLocals.__csrf_token,
                         })}
                         <td class="align-middle">
                           <button
@@ -152,11 +155,10 @@ export function AdministratorCourses({
                             data-placement="auto"
                             title="Really delete ${course.short_name}?"
                             data-content="${escapeHtml(
-                              renderEjs(__filename, "<%= include('courseDeleteForm') %>", {
-                                ...resLocals,
-                                id: 'courseDeleteButton' + i,
-                                course: course,
-                                i: i,
+                              CourseDeleteForm({
+                                id: `courseDeleteButton${i}`,
+                                course,
+                                csrfToken: resLocals.__csrf_token,
                               }),
                             )}"
                             data-trigger="manual"
@@ -185,4 +187,212 @@ export function AdministratorCourses({
       </body>
     </html>
   `.toString();
+}
+
+function CourseDeleteForm({
+  id,
+  course,
+  csrfToken,
+}: {
+  id: string;
+  course: CourseWithInstitution;
+  csrfToken: string;
+}) {
+  return html`
+    <form name="add-user-form" method="POST">
+      <input type="hidden" name="__action" value="courses_delete" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="course_id" value="${course.id}" />
+      <div class="form-group">
+        <label for="inputConfirm${id}">Type "${course.short_name}" to confirm:</label>
+        <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
+      </div>
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-danger">Delete course</button>
+      </div>
+    </form>
+  `;
+}
+
+function CourseInsertForm({
+  id,
+  institutions,
+  csrfToken,
+}: {
+  id: string;
+  institutions: Institution[];
+  csrfToken: string;
+}) {
+  return html`
+    <form name="add-course-form" method="POST">
+      <input type="hidden" name="__action" value="courses_insert" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <div class="form-group">
+        <label>Institution:</label>
+        <select
+          name="institution_id"
+          class="form-control"
+          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+        >
+          ${institutions.map((i) => {
+            return html`
+              <option value="${i.id}" data-timezone="${i.display_timezone}">${i.short_name}</option>
+            `;
+          })}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputShortName">Short name:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputShortName"
+          name="short_name"
+          placeholder="XC 101"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputTitle">Title:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputTitle"
+          name="title"
+          placeholder="Template course title"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputTimezone">Timezone:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputTimezone"
+          name="display_timezone"
+          value="${institutions[0]?.display_timezone}"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputPath">Path:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputPath"
+          name="path"
+          value="/data1/courses/pl-XXX"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputRepository">Repository:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputRepository"
+          name="repository"
+          value="git@github.com:PrairieLearn/pl-XXX.git"
+        />
+      </div>
+      <div class="form-group">
+        <label for="courseAddInputBranch">Branch:</label>
+        <input
+          type="text"
+          class="form-control"
+          id="courseAddInputBranch"
+          name="branch"
+          value="${config.courseRepoDefaultBranch}"
+        />
+      </div>
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Add course</button>
+      </div>
+    </form>
+  `;
+}
+
+function CourseUpdateColumn({
+  i,
+  course,
+  column_name,
+  label,
+  href,
+  csrfToken,
+}: {
+  i: number;
+  course: CourseWithInstitution;
+  column_name: keyof CourseWithInstitution;
+  label: string;
+  href?: string;
+  csrfToken: string;
+}) {
+  return html`
+    <td class="align-middle">
+      ${typeof href !== 'undefined'
+        ? html`<a href="${href}">${course[column_name]}</a>`
+        : course[column_name]}
+      <button
+        type="button"
+        class="btn btn-xs btn-secondary"
+        id="courseButton${column_name}${i}"
+        tabindex="0"
+        data-toggle="popover"
+        data-container="body"
+        data-html="true"
+        data-placement="auto"
+        title="Change ${label}"
+        data-content="${escapeHtml(
+          CourseUpdateColumnForm({
+            id: `courseButton${column_name}${i}`,
+            course,
+            column_name,
+            csrfToken,
+          }),
+        )}"
+        data-trigger="manual"
+        onclick="$(this).popover('show')"
+      >
+        <i class="fa fa-edit" aria-hidden="true"></i>
+      </button>
+    </td>
+  `;
+}
+
+function CourseUpdateColumnForm({
+  id,
+  course,
+  column_name,
+  csrfToken,
+}: {
+  id: string;
+  course: CourseWithInstitution;
+  column_name: keyof CourseWithInstitution;
+  csrfToken: string;
+}) {
+  return html`
+    <form name="edit-course-column-form" method="POST">
+      <input type="hidden" name="__action" value="courses_update_column" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="course_id" value="${course.id}" />
+      <input type="hidden" name="column_name" value="${column_name}" />
+      <div class="form-group">
+        <input
+          type="text"
+          class="form-control"
+          id="input${id}"
+          name="value"
+          value="${course[column_name]}"
+        />
+      </div>
+      <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Change</button>
+      </div>
+    </form>
+  `;
 }
