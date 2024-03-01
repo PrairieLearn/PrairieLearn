@@ -21,17 +21,17 @@ const JobsRowSchema = z.object({
 
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
   id: IdSchema,
   institution: z.string().nullable(),
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
-  short_name: z.string().nullable(),
-  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
-  title: z.string().nullable(),
-  user_uid: z.string().nullable(),
+  short_name: z.string(),
+  title: z.string(),
   user_name: z.string().nullable(),
+  user_uid: z.string(),
   work_email: z.string().nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;

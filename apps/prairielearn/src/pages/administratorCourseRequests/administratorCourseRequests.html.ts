@@ -263,7 +263,7 @@ function CourseRequestApproveForm({
   csrfToken,
 }: {
   id: string;
-  request: any;
+  request: CourseRequestRow;
   institutions: Institution[];
   coursesRoot: string;
   csrfToken: string;
@@ -362,8 +362,7 @@ function CourseRequestApproveForm({
   `;
 }
 
-function CourseRequestStatusIcon({ status }: { status: string }) {
-  console.log('status', status);
+function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approved_status'] }) {
   switch (status) {
     case 'pending':
       return html`<span class="badge badge-secondary"><i class="fa fa-clock"></i> Pending</span>`;
