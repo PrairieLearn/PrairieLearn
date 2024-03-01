@@ -121,8 +121,6 @@ export function CourseRequestsTable({
                                   csrfToken,
                                 }),
                               )}"
-                              data-trigger="manual"
-                              onclick="$(this).popover('show')"
                             >
                               <i class="fa fa-check" aria-hidden="true"></i> Approve
                             </button>

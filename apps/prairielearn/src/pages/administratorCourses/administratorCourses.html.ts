@@ -71,8 +71,6 @@ export function AdministratorCourses({
                     csrfToken: resLocals.__csrf_token,
                   }),
                 )}"
-                data-trigger="manual"
-                onclick="$(this).popover('show')"
               >
                 <i class="fa fa-plus" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add course</span>
@@ -155,8 +153,6 @@ export function AdministratorCourses({
                                 csrfToken: resLocals.__csrf_token,
                               }),
                             )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Delete course
                           </button>
@@ -344,8 +340,6 @@ function CourseUpdateColumn({
             csrfToken,
           }),
         )}"
-        data-trigger="manual"
-        onclick="$(this).popover('show')"
       >
         <i class="fa fa-edit" aria-hidden="true"></i>
       </button>
