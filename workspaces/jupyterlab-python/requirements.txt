@@ -13,7 +13,7 @@ networkx==3.2.1
 nltk==3.8.1
 numpy==1.26.3
 openpyxl==3.1.2
-pandas==2.2.0
+pandas==2.2.1
 Pillow==10.2.0
 PuLP==2.8.0
 Pygments==2.17.2
