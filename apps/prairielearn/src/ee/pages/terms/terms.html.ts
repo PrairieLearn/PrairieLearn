@@ -10,8 +10,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
-          pageTitle: 'SSO',
+          pageTitle: 'Terms and conditions',
         })}
       </head>
       <body>
