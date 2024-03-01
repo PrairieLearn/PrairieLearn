@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseRequestsTable } from '../administratorCourseRequests/administratorCourseRequests.html';
 import { CourseRequestRow } from '../../lib/course-request';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types';
 import { config } from '../../lib/config';
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.html';
 
 export const CourseWithInstitutionSchema = CourseSchema.extend({
   institution: InstitutionSchema,
@@ -102,7 +102,6 @@ export function AdministratorCourses({
                           </a>
                         </td>
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'short_name',
                           label: 'short name',
@@ -110,35 +109,30 @@ export function AdministratorCourses({
                           csrfToken: resLocals.__csrf_token,
                         })}
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'title',
                           label: 'title',
                           csrfToken: resLocals.__csrf_token,
                         })}
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'display_timezone',
                           label: 'timezone',
                           csrfToken: resLocals.__csrf_token,
                         })}
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'path',
                           label: 'path',
                           csrfToken: resLocals.__csrf_token,
                         })}
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'repository',
                           label: 'repository',
                           csrfToken: resLocals.__csrf_token,
                         })}
                         ${CourseUpdateColumn({
-                          i,
                           course,
                           column_name: 'branch',
                           label: 'branch',
@@ -315,14 +309,12 @@ function CourseInsertForm({
 }
 
 function CourseUpdateColumn({
-  i,
   course,
   column_name,
   label,
   href,
   csrfToken,
 }: {
-  i: number;
   course: CourseWithInstitution;
   column_name: keyof CourseWithInstitution;
   label: string;
@@ -337,7 +329,7 @@ function CourseUpdateColumn({
       <button
         type="button"
         class="btn btn-xs btn-secondary"
-        id="courseButton${column_name}${i}"
+        id="courseButton${course.id}-${column_name}"
         tabindex="0"
         data-toggle="popover"
         data-container="body"
@@ -346,7 +338,7 @@ function CourseUpdateColumn({
         title="Change ${label}"
         data-content="${escapeHtml(
           CourseUpdateColumnForm({
-            id: `courseButton${column_name}${i}`,
+            id: `courseButton${course.id}-${column_name}`,
             course,
             column_name,
             csrfToken,
