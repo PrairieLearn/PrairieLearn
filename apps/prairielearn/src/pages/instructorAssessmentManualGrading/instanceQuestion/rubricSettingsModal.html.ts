@@ -5,7 +5,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
-      <div class="modal-dialog modal-xl border-info" role="document">
+      <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
         <form
           name="rubric-settings"
           method="POST"
@@ -28,7 +28,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
               ${resLocals.assessment_question.max_auto_points
                 ? html`
                     <div class="form-row">
-                      <div class="col-6">
+                      <div class="col-12 col-lg-6">
                         <div class="form-check">
                           <label class="form-check-label">
                             <input
@@ -57,7 +57,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                           </button>
                         </div>
                       </div>
-                      <div class="col-6">
+                      <div class="col-12 col-lg-6">
                         <div class="form-check">
                           <label class="form-check-label">
                             <input
@@ -92,7 +92,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   `
                 : ''}
               <div class="form-row">
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                   <div class="form-check js-rubric-max-points-positive">
                     <label class="form-check-label">
                       <input
@@ -130,7 +130,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     </button>
                   </div>
                 </div>
-                <div class="form-group col-3">
+                <div class="form-group col-6 col-lg-3">
                   <label>
                     Minimum rubric score
                     <button
@@ -151,7 +151,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     />
                   </label>
                 </div>
-                <div class="form-group col-3">
+                <div class="form-group col-6 col-lg-3">
                   <label>
                     Maximum extra credit
                     <button
@@ -174,246 +174,46 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 </div>
               </div>
               <div>
-                <table class="table table-sm table-striped js-rubric-items-table mt-2">
-                  <thead>
-                    <tr>
-                      <th style="width: 1px"><!-- Order --></th>
-                      <th>Points</th>
-                      <th>Description</th>
-                      <th>Detailed explanation (optional)</th>
-                      <th>Grader note (optional, not visible to students)</th>
-                      <th>Show to students</th>
-                      <th>In use</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rubric_data?.rubric_items?.map(
-                      (item, index) => html`
-                        <tr>
-                          <td class="text-nowrap">
-                            <input
-                              type="hidden"
-                              name="rubric_item[cur${item.id}][id]"
-                              value="${item.id}"
-                            />
-                            <input
-                              type="hidden"
-                              class="js-rubric-item-row-order"
-                              name="rubric_item[cur${item.id}][order]"
-                              value="${index}"
-                            />
-                            <button
-                              type="button"
-                              class="btn btn-sm js-rubric-item-move-button"
-                              draggable="true"
-                            >
-                              <i class="fas fa-arrows-up-down"></i>
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-sm sr-only js-rubric-item-move-down-button"
-                            >
-                              Move down
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-sm sr-only js-rubric-item-move-up-button"
-                            >
-                              Move up
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-sm js-rubric-item-delete text-danger"
-                            >
-                              <i class="fas fa-trash"></i>
-                              <span class="sr-only">Delete</span>
-                            </button>
-                          </td>
-                          <td style="max-width: 5rem">
-                            <input
-                              type="number"
-                              class="form-control js-rubric-item-points"
-                              step="any"
-                              required
-                              name="rubric_item[cur${item.id}][points]"
-                              value="${item.points}"
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              class="form-control"
-                              required
-                              maxlength="100"
-                              name="rubric_item[cur${item.id}][description]"
-                              value="${item.description}"
-                            />
-                          </td>
-                          <td>
-                            <label
-                              data-input-name="rubric_item[cur${item.id}][explanation]"
-                              data-current-value="${item.explanation}"
-                            >
-                              ${item.explanation}
-                              <button
-                                type="button"
-                                class="btn btn-sm js-rubric-item-long-text-field"
-                              >
-                                <i class="fas fa-pencil"></i>
-                              </button>
-                            </label>
-                          </td>
-                          <td>
-                            <label
-                              data-input-name="rubric_item[cur${item.id}][grader_note]"
-                              data-current-value="${item.grader_note}"
-                            >
-                              ${item.grader_note}
-                              <button
-                                type="button"
-                                class="btn btn-sm js-rubric-item-long-text-field"
-                              >
-                                <i class="fas fa-pencil"></i>
-                              </button>
-                            </label>
-                          </td>
-                          <td>
-                            <div class="form-check">
-                              <label class="form-check-label">
-                                <input
-                                  type="radio"
-                                  class="form-check-input"
-                                  required
-                                  name="rubric_item[cur${item.id}][always_show_to_students]"
-                                  value="true"
-                                  ${item.always_show_to_students ? 'checked' : ''}
-                                />Always
-                              </label>
-                              <label class="form-check-label">
-                                <input
-                                  type="radio"
-                                  class="form-check-input"
-                                  required
-                                  name="rubric_item[cur${item.id}][always_show_to_students]"
-                                  value="false"
-                                  ${item.always_show_to_students ? '' : 'checked'}
-                                />If selected
-                              </label>
-                            </div>
-                          </td>
-                          <td>
-                            ${!item.num_submissions
-                              ? 'No'
-                              : item.num_submissions === 1
-                                ? '1 submission'
-                                : `${item.num_submissions} submissions`}
-                          </td>
-                        </tr>
-                      `,
-                    )}
-                    <tr
-                      class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
-                        ? 'd-none'
-                        : ''}"
-                    >
-                      <td colspan="6">
-                        <em>
-                          This question does not have any rubric items. Click "Add item" below to
-                          add
-                          some${rubric_data
-                            ? html`, or select <strong>Disable rubric</strong> below to switch back
-                                to manual grade input`
-                            : ''}.
-                        </em>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped js-rubric-items-table mt-2">
+                    <thead>
+                      <tr class="text-nowrap">
+                        <th style="width: 1px"><!-- Order --></th>
+                        <th>Points</th>
+                        <th>Description</th>
+                        <th>Detailed explanation (optional)</th>
+                        <th>Grader note (optional, not visible to students)</th>
+                        <th>Show to students</th>
+                        <th>In use</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
+                      <tr
+                        class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
+                          ? 'd-none'
+                          : ''}"
+                      >
+                        <td colspan="7">
+                          <em>
+                            This question does not have any rubric items. Click "Add item" below to
+                            add
+                            some${rubric_data
+                              ? html`, or select <strong>Disable rubric</strong> below to switch
+                                  back to manual grade input`
+                              : ''}.
+                          </em>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <div class="js-settings-points-warning-placeholder"></div>
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  <tr>
-                    <td class="text-nowrap">
-                      <input type="hidden" class="js-rubric-item-row-order" />
-                      <button
-                        type="button"
-                        class="btn btn-sm js-rubric-item-move-button"
-                        draggable="true"
-                      >
-                        <i class="fas fa-arrows-up-down"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-sm sr-only js-rubric-item-move-down-button"
-                      >
-                        Move down
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-sm sr-only js-rubric-item-move-up-button"
-                      >
-                        Move up
-                      </button>
-                      <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
-                        <i class="fas fa-trash"></i>
-                        <span class="sr-only">Delete</span>
-                      </button>
-                    </td>
-                    <td style="max-width: 5rem">
-                      <input
-                        type="number"
-                        class="form-control js-rubric-item-points"
-                        step="any"
-                        required
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        class="form-control js-rubric-item-description"
-                        required
-                        maxlength="100"
-                      />
-                    </td>
-                    <td>
-                      <label class="js-rubric-item-explanation">
-                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-                          <i class="fas fa-pencil"></i>
-                        </button>
-                      </label>
-                    </td>
-                    <td>
-                      <label class="js-rubric-item-grader-note">
-                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-                          <i class="fas fa-pencil"></i>
-                        </button>
-                      </label>
-                    </td>
-                    <td>
-                      <div class="form-check">
-                        <label class="form-check-label">
-                          <input
-                            type="radio"
-                            class="form-check-input js-rubric-item-always-show"
-                            required
-                            value="true"
-                            checked
-                          />Always
-                        </label>
-                        <label class="form-check-label">
-                          <input
-                            type="radio"
-                            class="form-check-input js-rubric-item-always-show"
-                            required
-                            value="false"
-                          />If selected
-                        </label>
-                      </div>
-                    </td>
-                    <td>New</td>
-                  </tr>
+                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0)}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -462,6 +262,117 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
         </form>
       </div>
     </div>
+  `;
+}
+
+function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
+  const namePrefix = item ? `rubric_item[cur${item.id}]` : `rubric_item[new]`;
+  return html`
+    <tr>
+      <td class="text-nowrap">
+        ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
+        <input
+          type="hidden"
+          class="js-rubric-item-row-order"
+          name="${namePrefix}[order]"
+          value="${index}"
+        />
+        <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
+          <i class="fas fa-arrows-up-down"></i>
+        </button>
+        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
+          Move down
+        </button>
+        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
+          Move up
+        </button>
+        <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
+          <i class="fas fa-trash"></i>
+          <span class="sr-only">Delete</span>
+        </button>
+      </td>
+      <td>
+        <input
+          type="number"
+          class="form-control js-rubric-item-points"
+          style="width: 4rem"
+          step="any"
+          required
+          name="${namePrefix}[points]"
+          value="${item?.points}"
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          class="form-control js-rubric-item-description"
+          required
+          maxlength="100"
+          style="min-width: 15rem"
+          name="${namePrefix}[description]"
+          value="${item?.description}"
+        />
+      </td>
+      <td>
+        <label
+          class="js-rubric-item-explanation"
+          data-input-name="${namePrefix}[explanation]"
+          data-current-value="${item?.explanation}"
+        >
+          ${item?.explanation}
+          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
+            <i class="fas fa-pencil"></i>
+          </button>
+        </label>
+      </td>
+      <td>
+        <label
+          class="js-rubric-item-grader-note"
+          data-input-name="${namePrefix}[grader_note]"
+          data-current-value="${item?.grader_note}"
+        >
+          ${item?.grader_note}
+          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
+            <i class="fas fa-pencil"></i>
+          </button>
+        </label>
+      </td>
+      <td>
+        <div class="form-check form-check-inline">
+          <label class="form-check-label text-nowrap">
+            <input
+              type="radio"
+              class="form-check-input js-rubric-item-always-show"
+              required
+              name="${namePrefix}[always_show_to_students]"
+              value="true"
+              ${!item || item.always_show_to_students ? 'checked' : ''}
+            />Always
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <label class="form-check-label text-nowrap">
+            <input
+              type="radio"
+              class="form-check-input js-rubric-item-always-show"
+              required
+              name="${namePrefix}[always_show_to_students]"
+              value="false"
+              ${!item || item.always_show_to_students ? '' : 'checked'}
+            />If selected
+          </label>
+        </div>
+      </td>
+      <td class="text-nowrap">
+        ${!item
+          ? 'New'
+          : !item.num_submissions
+            ? 'No'
+            : item.num_submissions === 1
+              ? '1 submission'
+              : `${item.num_submissions} submissions`}
+      </td>
+    </tr>
   `;
 }
 

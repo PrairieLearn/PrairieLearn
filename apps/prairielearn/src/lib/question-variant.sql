@@ -31,46 +31,94 @@ RETURNING
   id;
 
 -- BLOCK insert_variant
-INSERT INTO
-  variants (
-    instance_question_id,
-    question_id,
-    course_instance_id,
-    user_id,
-    group_id,
-    number,
-    variant_seed,
-    params,
-    true_answer,
-    options,
-    broken,
-    broken_at,
-    authn_user_id,
-    workspace_id,
-    course_id,
-    client_fingerprint_id
+WITH
+  new_variant AS (
+    INSERT INTO
+      variants (
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id,
+        group_id,
+        number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        broken_at,
+        authn_user_id,
+        workspace_id,
+        course_id,
+        client_fingerprint_id
+      )
+    VALUES
+      (
+        $instance_question_id,
+        $question_id,
+        $course_instance_id,
+        $user_id,
+        $group_id,
+        $number,
+        $variant_seed,
+        $params,
+        $true_answer,
+        $options,
+        $broken,
+        CASE
+          WHEN $broken THEN NOW()
+          ELSE NULL
+        END,
+        $authn_user_id,
+        $workspace_id,
+        $course_id,
+        $client_fingerprint_id
+      )
+    RETURNING
+      *
   )
-VALUES
-  (
-    $instance_question_id,
-    $question_id,
-    $course_instance_id,
-    $user_id,
-    $group_id,
-    $number,
-    $variant_seed,
-    $params,
-    $true_answer,
-    $options,
-    $broken,
-    CASE
-      WHEN $broken THEN NOW()
-      ELSE NULL
-    END,
-    $authn_user_id,
-    $workspace_id,
-    $course_id,
-    $client_fingerprint_id
+SELECT
+  v.*,
+  format_date_full_compact (
+    v.date,
+    COALESCE(ci.display_timezone, c.display_timezone)
+  ) AS formatted_date
+FROM
+  new_variant AS v
+  JOIN pl_courses AS c ON (c.id = v.course_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
+
+-- BLOCK select_and_lock_assessment_instance_for_instance_question
+SELECT
+  ai.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  iq.id = $instance_question_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK select_variant_for_instance_question
+SELECT
+  jsonb_set(
+    to_jsonb(v.*),
+    '{formatted_date}',
+    to_jsonb(
+      format_date_full_compact (v.date, ci.display_timezone)
+    )
   )
-RETURNING
-  id;
+FROM
+  variants AS v
+  JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
+WHERE
+  v.instance_question_id = $instance_question_id
+  AND (
+    NOT $require_open
+    OR v.open
+  )
+  AND v.broken_at IS NULL
+ORDER BY
+  v.date DESC
+LIMIT
+  1;

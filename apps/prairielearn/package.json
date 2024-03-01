@@ -8,7 +8,7 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "mocha --parallel src/**/*.test.{js,ts}",
+    "test": "mocha --parallel src/**/*.test.ts",
     "test:dist": "mocha --parallel dist/**/*.test.js"
   },
   "dependencies": {
@@ -81,6 +81,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "debug": "^4.3.4",
+    "delegated-events": "^1.1.2",
     "dockerode": "^3.3.5",
     "dompurify": "^3.0.8",
     "dropzone": "^5.9.3",

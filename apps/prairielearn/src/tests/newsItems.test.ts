@@ -33,8 +33,10 @@ describe('News items', function () {
       locals.$ = cheerio.load(await res.text());
     });
     it('should succeed with notifications turned on', async () => {
-      const notify_with_new_server = true;
-      await news_items.initAsync(notify_with_new_server);
+      await news_items.init({
+        notifyIfPreviouslyEmpty: true,
+        errorIfLockNotAcquired: true,
+      });
     });
     it('should create a notification for news item 1 for admin user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
