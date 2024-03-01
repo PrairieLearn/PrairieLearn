@@ -17,10 +17,16 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.coursesRoot = config.coursesRoot;
-    res.locals.course_requests = await selectAllCourseRequests();
-    res.locals.institutions = await selectAllInstitutions();
-    res.send(AdministratorCourseRequests({ resLocals: res.locals }));
+    const rows = await selectAllCourseRequests();
+    const institutions = await selectAllInstitutions();
+    res.send(
+      AdministratorCourseRequests({
+        rows,
+        institutions,
+        coursesRoot: config.coursesRoot,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 

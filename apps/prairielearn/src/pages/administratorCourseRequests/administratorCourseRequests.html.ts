@@ -1,8 +1,19 @@
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { Institution } from '../../lib/db-types';
+import { CourseRequestRow } from '../../lib/course-request';
 
-export function AdministratorCourseRequests({ resLocals }: { resLocals: Record<string, any> }) {
+export function AdministratorCourseRequests({
+  rows,
+  institutions,
+  coursesRoot,
+  resLocals,
+}: {
+  rows: CourseRequestRow[];
+  institutions: Institution[];
+  coursesRoot: string;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -21,7 +32,13 @@ export function AdministratorCourseRequests({ resLocals }: { resLocals: Record<s
           navSubPage: 'courses',
         })}
         <main id="content" class="container-fluid">
-          ${CourseRequestsTable({ showAll: true, resLocals })}
+          ${CourseRequestsTable({
+            rows,
+            institutions,
+            coursesRoot,
+            showAll: true,
+            resLocals,
+          })}
         </main>
       </body>
     </html>
@@ -29,9 +46,15 @@ export function AdministratorCourseRequests({ resLocals }: { resLocals: Record<s
 }
 
 function CourseRequestsTable({
+  rows,
+  institutions,
+  coursesRoot,
   showAll,
   resLocals,
 }: {
+  rows: CourseRequestRow[];
+  institutions: Institution[];
+  coursesRoot: string;
   showAll: boolean;
   resLocals: Record<string, any>;
 }) {
@@ -70,7 +93,7 @@ function CourseRequestsTable({
             </tr>
           </thead>
           <tbody>
-            ${resLocals.course_requests.map((req) => {
+            ${rows.map((req) => {
               return html`
                 <tr>
                   <td class="align-middle">${req.short_name}</td>
@@ -80,18 +103,26 @@ function CourseRequestsTable({
                   <td class="align-middle">${req.work_email}</td>
                   <td class="align-middle">${req.user_uid}</td>
                   <td class="align-middle">${req.github_user}</td>
-                  <td class="align-middle">${CourseRequestStatusIcon({ status: req.status })}</td>
+                  <td class="align-middle">
+                    ${CourseRequestStatusIcon({ status: req.approved_status })}
+                  </td>
                   ${showAll
                     ? html`
                         <td class="align-middle">
-                          ${req.approved_by_name ?? 'Automatically Approved'}
+                          ${req.approved_status !== 'pending'
+                            ? req.approved_by_name ?? 'Automatically Approved'
+                            : ''}
                         </td>
                       `
                     : ''}
                   <td class="align-middle">
-                    ${req.status !== 'approved'
+                    ${req.approved_status !== 'approved'
                       ? html`
-                          <form name="approve-request-form-${req.id}" method="POST">
+                          <form
+                            name="approve-request-form-${req.id}"
+                            method="POST"
+                            class="d-flex align-items-start"
+                          >
                             <input
                               type="hidden"
                               name="__csrf_token"
@@ -106,20 +137,18 @@ function CourseRequestsTable({
 
                             <button
                               type="submit"
-                              class="btn btn-sm btn-danger float-right"
+                              class="btn btn-sm btn-danger text-nowrap mr-2"
                               name="approve_deny_action"
                               value="deny"
-                              tabindex="0"
                             >
                               <i class="fa fa-times" aria-hidden="true"></i> Deny
                             </button>
                             <button
                               type="button"
-                              class="btn btn-sm btn-success float-right mr-2"
+                              class="btn btn-sm btn-success text-nowrap"
                               id="approve-request-button-${req.id}"
                               name="approve_deny_action"
                               value="approve"
-                              tabindex="0"
                               data-toggle="popover"
                               data-container="body"
                               data-boundary="window"
@@ -128,10 +157,10 @@ function CourseRequestsTable({
                               title="Approve course request"
                               data-content="${escapeHtml(
                                 CourseRequestApproveForm({
-                                  id: 'approve-request-button-' + req.id,
+                                  id: `approve-request-button-${req.id}`,
                                   request: req,
-                                  institutions: resLocals.institutions,
-                                  coursesRoot: resLocals.coursesRoot,
+                                  institutions,
+                                  coursesRoot,
                                   csrfToken: resLocals.__csrf_token,
                                 }),
                               )}"
@@ -150,7 +179,7 @@ function CourseRequestsTable({
                           <a
                             href="${resLocals.urlPrefix}/administrator/jobSequence/${req.jobs[0]
                               .id}"
-                            class="show-hide-btn expand-icon-container btn btn-secondary btn-sm collapsed btn-xs float-right"
+                            class="show-hide-btn expand-icon-container btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
                             data-toggle="collapse"
                             data-target="#course-requests-job-list-${req.id}"
                             aria-expanded="false"
@@ -184,8 +213,8 @@ function CourseRequestsTable({
                                   return html`
                                     <tr>
                                       <td>${job.number}</td>
-                                      <td>${job.start_date}</td>
-                                      <td>${job.finish_date}</td>
+                                      <td>${job.start_date.toISOString()}</td>
+                                      <td>${job.finish_date?.toISOString()}</td>
                                       <td>${job.authn_user_name}</td>
                                       <td>
                                         ${renderEjs(
@@ -334,18 +363,17 @@ function CourseRequestApproveForm({
 }
 
 function CourseRequestStatusIcon({ status }: { status: string }) {
+  console.log('status', status);
   switch (status) {
     case 'pending':
-      return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending </span>`;
+      return html`<span class="badge badge-secondary"><i class="fa fa-clock"></i> Pending</span>`;
     case 'creating':
-      return html`<span class="badge badge-info">
-        <i class="fa fa-sync"></i> Job in progress
-      </span>`;
+      return html`<span class="badge badge-info"><i class="fa fa-sync"></i> Job in progress</span>`;
     case 'failed':
-      return html`<span class="badge badge-danger"> <i class="fa fa-times"></i> Job failed </span>`;
+      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Job failed</span>`;
     case 'approved':
-      return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved </span>`;
+      return html`<span class="badge badge-success"><i class="fa fa-check"></i> Approved</span>`;
     case 'denied':
-      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied </span>`;
+      return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
 }

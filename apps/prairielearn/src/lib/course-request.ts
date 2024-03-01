@@ -34,6 +34,7 @@ const CourseRequestRowSchema = z.object({
   user_name: z.string().nullable(),
   work_email: z.string().nullable(),
 });
+export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
