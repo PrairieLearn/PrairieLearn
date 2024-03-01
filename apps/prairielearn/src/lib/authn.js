@@ -7,7 +7,7 @@ import { config } from './config';
 import { shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
 import { isEnterprise } from './license';
-import { hasUserAcceptedTerms, redirectToTermsPage } from '../ee/lib/terms';
+import { shouldRedirectToTermsPage, redirectToTermsPage } from '../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -102,9 +102,8 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       res.clearCookie('preAuthUrl');
     }
 
-    // If we're redirecting, we need to prompt the user to accept the terms and
-    // conditions if they haven't already.
-    if (isEnterprise() && !hasUserAcceptedTerms(selectedUser.user)) {
+    // Potentially prompt the user to accept the terms before redirecting them.
+    if (isEnterprise() && (await shouldRedirectToTermsPage(selectedUser.user, req.ip))) {
       redirectToTermsPage(res, redirUrl);
       return;
     }

@@ -6,16 +6,16 @@ import * as crypto from 'node:crypto';
 import { config } from '../../lib/config';
 import { AuthPrairieTest } from './prairietest.html';
 import { isEnterprise } from '../../lib/license';
-import { hasUserAcceptedTerms, redirectToTermsPage } from '../lib/terms';
+import { shouldRedirectToTermsPage, redirectToTermsPage } from '../lib/terms';
 
 const router = Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // If the user hasn't yet accepted the terms, prompt them to do so before
-    // proceeding to PrairieTest.
-    if (isEnterprise() && !hasUserAcceptedTerms(res.locals.authn_user)) {
+    // Potentially prompt the user to accept the terms before redirecting to
+    // PrairieTest.
+    if (isEnterprise() && (await shouldRedirectToTermsPage(res.locals.authn_user, req.ip))) {
       redirectToTermsPage(res, req.originalUrl);
       return;
     }
