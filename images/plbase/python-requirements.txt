@@ -1,7 +1,7 @@
 ansi2html==1.9.1
 black==24.1.1
 chevron==0.14.0
-coloraide==2.16
+coloraide==3.1
 Faker==22.6.0
 flake8-black==0.3.6
 flake8-isort==6.1.1
