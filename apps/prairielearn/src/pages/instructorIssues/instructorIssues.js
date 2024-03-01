@@ -106,8 +106,8 @@ function parseRawQuery(str) {
  * @param {string} course_id
  * @param {string} authn_user_id
  */
-function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
-  const result = sqldb.queryOptionalRow(
+async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
+  const result = await sqldb.queryOptionalRow(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,

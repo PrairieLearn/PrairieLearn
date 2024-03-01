@@ -1,5 +1,12 @@
 # @prairielearn/migrations
 
+## 2.0.15
+
+### Patch Changes
+
+- Updated dependencies [79c74ca]
+  - @prairielearn/named-locks@2.0.0
+
 ## 2.0.14
 
 ### Patch Changes

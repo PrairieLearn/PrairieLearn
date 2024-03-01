@@ -450,7 +450,7 @@ async function saveAndSync(fileEdit, locals) {
     }
 
     const lockName = getLockNameForCoursePath(locals.course.path);
-    await namedLocks.tryWithLock(
+    await namedLocks.doWithLock(
       lockName,
       {
         timeout: 5000,

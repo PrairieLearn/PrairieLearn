@@ -189,6 +189,8 @@ WITH
       previous_issue_data AS pi
     WHERE
       i.id = pi.id
+    RETURNING
+      i.id
   ),
   inserted_audit_logs AS (
     INSERT INTO
