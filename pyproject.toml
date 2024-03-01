@@ -111,6 +111,7 @@ pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
+addopts = "--cov=apps"
 testpaths = [
     "apps/prairielearn/elements",
     "apps/prairielearn/python",
