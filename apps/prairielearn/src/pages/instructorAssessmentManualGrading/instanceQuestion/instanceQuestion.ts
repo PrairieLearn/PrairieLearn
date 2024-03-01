@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render';
 import * as manualGrading from '../../../lib/manualGrading';
-import { features } from '../../../lib/features/index';
 import { IdSchema, UserSchema } from '../../../lib/db-types';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
 import { GradingPanel } from './gradingPanel.html';
@@ -34,11 +33,6 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
   resLocals.manualGradingInterface = true;
   await getAndRenderVariant(variant_with_submission_id, null, resLocals);
 
-  const rubric_settings_visible = await features.enabledFromLocals(
-    'manual-grading-rubrics',
-    resLocals,
-  );
-
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
     conflict_grading_job = await sqldb.queryOptionalRow(
@@ -59,7 +53,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     { course_instance_id: resLocals.course_instance.id },
     UserSchema.array().nullable(),
   );
-  return { resLocals, rubric_settings_visible, conflict_grading_job, graders };
+  return { resLocals, conflict_grading_job, graders };
 }
 
 router.get(

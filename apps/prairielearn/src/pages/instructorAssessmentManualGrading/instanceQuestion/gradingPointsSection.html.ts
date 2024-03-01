@@ -4,13 +4,11 @@ export function ManualPointsSection({
   context,
   disable,
   manual_points,
-  rubric_settings_visible,
   resLocals,
 }: {
   context: 'main' | 'existing' | 'conflicting';
   disable: boolean;
   manual_points: number;
-  rubric_settings_visible?: boolean;
   resLocals: Record<string, any>;
 }) {
   return GradingPointsSection({
@@ -25,7 +23,6 @@ export function ManualPointsSection({
     show_input_edit: false,
     show_rubric_button:
       context === 'main' &&
-      rubric_settings_visible &&
       !resLocals.rubric_data?.replace_auto_points &&
       resLocals.authz_data.has_course_instance_permission_edit,
   });
@@ -60,18 +57,15 @@ export function TotalPointsSection({
   context,
   disable,
   points,
-  rubric_settings_visible,
   resLocals,
 }: {
   context: 'main' | 'existing' | 'conflicting';
   disable: boolean;
   points: number;
-  rubric_settings_visible?: boolean;
   resLocals: Record<string, any>;
 }) {
   return html`
     ${context === 'main' &&
-    rubric_settings_visible &&
     resLocals.rubric_data?.replace_auto_points &&
     !disable
       ? html`
