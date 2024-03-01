@@ -58,19 +58,16 @@ export function AdministratorCourses({
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
                 id="courseInsertButton"
-                tabindex="0"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
                 data-placement="auto"
                 title="Add new course"
-                data-content="${escapeHtml(
-                  renderEjs(__filename, "<%= include('courseInsertForm') %>", {
-                    ...resLocals,
-                    institutions,
-                    id: 'courseInsertButton',
-                  }),
-                )}"
+                data-content="${renderEjs(__filename, "<%= include('courseInsertForm') %>", {
+                  ...resLocals,
+                  institutions,
+                  id: 'courseInsertButton',
+                })}"
                 data-trigger="manual"
                 onclick="$(this).popover('show')"
               >
@@ -147,9 +144,8 @@ export function AdministratorCourses({
                         <td class="align-middle">
                           <button
                             type="button"
-                            class="btn btn-sm btn-danger float-right"
+                            class="btn btn-sm btn-danger"
                             id="courseDeleteButton${i}"
-                            tabindex="0"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
