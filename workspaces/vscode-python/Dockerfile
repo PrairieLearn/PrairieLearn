@@ -99,11 +99,6 @@ WORKDIR "$EDITOR_FOCUS_DIR"
 
 RUN mkdir -p "/home/coder/.local/share/code-server/User" "/home/coder/project"
 COPY --chmod=0444 settings.json /home/coder/.local/share/code-server/User/settings.json
-COPY --chmod=0444 keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
 COPY --chmod=0444 coder.json /home/coder/.local/share/code-server/coder.json
-COPY --chmod=0444 settingsEmpty.json /home/coder/.local/share/code-server/Machine/settings.json
-# COPY --chmod=0555 workspaceTemplate/.scripts /home/coder/project/.scripts
-COPY --chmod=0444 workspaceTemplate/.vscode /home/coder/project/.vscode
-# COPY --chmod=0444 workspaceTemplate/.lib /home/coder/project/.lib
 
 ENTRYPOINT ["/usr/bin/env", "sh", "/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8080", "."]
