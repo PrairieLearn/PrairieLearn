@@ -2,11 +2,10 @@ import { assert } from 'chai';
 import * as util from './util';
 import * as helperDb from '../helperDb';
 import { config } from '../../lib/config';
-import { features } from '../../lib/features';
+import { features, type FeatureName } from '../../lib/features';
 import { selectOrInsertCourseByPath } from '../../models/course';
 
-const sampleFeature1 = features.allFeatures[0];
-const sampleFeature2 = features.allFeatures[1];
+const [sampleFeature1, sampleFeature2] = features.allFeatures() as FeatureName[];
 const invalidFeature = 'unknown-feature';
 
 describe('Course syncing', () => {
@@ -77,7 +76,7 @@ describe('Course syncing', () => {
       const syncedCourse = syncedCourses[0];
       assert.match(
         syncedCourse?.sync_warnings,
-        /Feature "course-instance-billing" is not enabled for this course./,
+        new RegExp(`Feature "${sampleFeature2}" is not enabled for this course.`),
       );
       assert.notMatch(syncedCourse?.sync_warnings, new RegExp(sampleFeature1));
       assert.isNotOk(syncedCourse?.sync_errors);
