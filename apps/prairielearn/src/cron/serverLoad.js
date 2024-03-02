@@ -1,13 +1,12 @@
 const async = require('async');
-const util = require('node:util');
 const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const sqldb = require('@prairielearn/postgres');
 
 const { makeAwsClientConfig } = require('../lib/aws');
 const { config } = require('../lib/config');
 
-module.exports.run = util.callbackify(async () => {
-  if (!config.runningInEc2) return null;
+module.exports.run = async () => {
+  if (!config.runningInEc2) return;
 
   const result = await sqldb.callAsync('server_loads_current', [
     config.groupName,
@@ -63,4 +62,4 @@ module.exports.run = util.callbackify(async () => {
       ],
     });
   });
-});
+};

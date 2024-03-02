@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const async = require('async');
 const {
   SQSClient,
@@ -16,40 +15,25 @@ const opsbot = require('../lib/opsbot');
 // After loading the queue url for the first time, we'll cache it here
 const QUEUE_URLS = {};
 
-module.exports.run = (callback) => {
-  if (!opsbot.canSendMessages()) return callback(null);
+module.exports.run = async () => {
+  if (!opsbot.canSendMessages()) return;
 
   const jobsDeadLetterQueueName = config.externalGradingJobsDeadLetterQueueName;
   const resultsDeadLetterQueueName = config.externalGradingResultsDeadLetterQueueName;
   if (!config.externalGradingUseAws || !jobsDeadLetterQueueName || !resultsDeadLetterQueueName) {
-    return callback(null);
+    return;
   }
 
   const sqs = new SQSClient(makeAwsClientConfig());
 
-  let msg;
-  async.series(
-    [
-      async () => {
-        await loadQueueUrl(sqs, jobsDeadLetterQueueName);
-        await loadQueueUrl(sqs, resultsDeadLetterQueueName);
-        const jobsMessages = await getDeadLetterMsg(sqs, jobsDeadLetterQueueName);
-        const resultsMessages = await getDeadLetterMsg(sqs, resultsDeadLetterQueueName);
-        msg = jobsMessages + resultsMessages;
-      },
-      async () => {
-        await opsbot
-          .sendMessage(msg)
-          .catch((err) =>
-            logger.error(`Error posting external grading dead letters to slack`, err.data),
-          );
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+  await loadQueueUrl(sqs, jobsDeadLetterQueueName);
+  await loadQueueUrl(sqs, resultsDeadLetterQueueName);
+  const jobsMessages = await getDeadLetterMsg(sqs, jobsDeadLetterQueueName);
+  const resultsMessages = await getDeadLetterMsg(sqs, resultsDeadLetterQueueName);
+  const msg = jobsMessages + resultsMessages;
+  await opsbot
+    .sendMessage(msg)
+    .catch((err) => logger.error(`Error posting external grading dead letters to slack`, err.data));
 };
 
 /**

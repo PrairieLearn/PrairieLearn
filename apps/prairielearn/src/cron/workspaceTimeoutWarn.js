@@ -1,5 +1,4 @@
-const util = require('util');
-
+// @ts-check
 const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const workspaceUtils = require('@prairielearn/workspace-utils');
@@ -7,9 +6,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = {};
-
-module.exports.runAsync = async () => {
+module.exports.run = async () => {
   const params = {
     launched_timeout_sec: config.workspaceLaunchedTimeoutSec,
     launched_timeout_warn_sec: config.workspaceLaunchedTimeoutWarnSec,
@@ -25,4 +22,3 @@ module.exports.runAsync = async () => {
     );
   }
 };
-module.exports.run = util.callbackify(module.exports.runAsync);

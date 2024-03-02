@@ -1,6 +1,5 @@
 // @ts-check
 const _ = require('lodash');
-const util = require('node:util');
 const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const { logger } = require('@prairielearn/logger');
@@ -9,13 +8,13 @@ const sqldb = require('@prairielearn/postgres');
 const { makeAwsClientConfig } = require('../lib/aws');
 const { config } = require('../lib/config');
 
-module.exports.run = util.callbackify(async () => {
+module.exports.run = async () => {
   if (!config.runningInEc2) return;
 
   const stats = await getLoadStats();
   await sendStatsToCloudWatch(stats);
   await setAutoScalingGroupCapacity(stats);
-});
+};
 
 async function getLoadStats() {
   const params = [
