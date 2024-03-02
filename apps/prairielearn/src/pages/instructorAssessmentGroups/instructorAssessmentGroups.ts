@@ -15,18 +15,10 @@ import {
   leaveGroup,
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
-import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
-import { InstructorAssessmentGroups } from './instructorAssessmentGroups.html';
+import { InstructorAssessmentGroups, GroupConfigInfoSchema, GroupUsersRowSchema } from './instructorAssessmentGroups.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const GroupUsersRowSchema = z.object({
-  group_id: IdSchema,
-  name: z.string(),
-  size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
-});
 
 router.get(
   '/',
@@ -40,39 +32,38 @@ router.get(
       res.locals.course_instance,
       res.locals.course,
     );
-    res.locals.groupsCsvFilename = prefix + 'groups.csv';
+    const groupsCsvFilename = prefix + 'groups.csv';
 
-    const groupConfig = await sqldb.queryOptionalRow(
+    const groupConfigInfo = await sqldb.queryOptionalRow(
       sql.config_info,
       { assessment_id: res.locals.assessment.id },
-      GroupConfigSchema,
+      GroupConfigInfoSchema,
     );
-    res.locals.isGroup = !!groupConfig;
-    if (!groupConfig) {
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.locals.isGroup = !!groupConfigInfo;
+    if (!groupConfigInfo) {
+      res.send(InstructorAssessmentGroups({ resLocals: res.locals }));
       return;
     }
-    res.locals.config_info = groupConfig;
-    res.locals.config_info.defaultMin = groupConfig.minimum || 2;
-    res.locals.config_info.defaultMax = groupConfig.maximum || 5;
 
-    res.locals.groups = await sqldb.queryRows(
+    groupConfigInfo.defaultMin = groupConfigInfo.minimum || 2;
+    groupConfigInfo.defaultMax = groupConfigInfo.maximum || 5;
+
+    const groups = await sqldb.queryRows(
       sql.select_group_users,
-      { group_config_id: res.locals.config_info.id },
+      { group_config_id: groupConfigInfo.id },
       GroupUsersRowSchema,
     );
 
-    res.locals.notAssigned = await sqldb.queryRows(
+    const notAssigned = await sqldb.queryRows(
       sql.select_not_in_group,
       {
-        group_config_id: res.locals.config_info.id,
-        course_instance_id: res.locals.config_info.course_instance_id,
+        group_config_id: groupConfigInfo.id,
+        course_instance_id: groupConfigInfo.course_instance_id,
       },
       z.string(),
     );
 
-    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    res.send(InstructorAssessmentGroups({ resLocals: res.locals }));
+    res.send(InstructorAssessmentGroups({ resLocals: res.locals, groupsCsvFilename, groupConfigInfo, groups, notAssigned }));
   }),
 );
 
