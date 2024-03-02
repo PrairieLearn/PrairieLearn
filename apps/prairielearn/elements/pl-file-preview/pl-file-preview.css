@@ -2,10 +2,6 @@
   cursor: pointer;
 }
 
-[id^='file-preview'] .file-status-icon {
-  transition: all 400ms;
-}
-
 [id^='file-preview'] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
@@ -22,4 +18,9 @@
 
 [id^='file-preview'] .file-preview pre {
   max-height: 200px;
+}
+
+[id^='file-preview'] .file-preview-expand {
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
 }

@@ -80,19 +80,7 @@
           }
         }
 
-        expandButton.addEventListener('click', (event) => {
-          // Prevent this click from toggling the collapse state.
-          event.stopPropagation();
-
-          // If the preview is not already open, open it in the expanded view.
-          if (!preview.classList.contains('show')) {
-            $(preview).collapse('show');
-            pre.style.maxHeight = 'none';
-            updateExpandButton(true);
-            return;
-          }
-
-          // If the preview is already open, toggle the expanded state.
+        expandButton.addEventListener('click', () => {
           if (pre.style.maxHeight) {
             pre.style.removeProperty('max-height');
             updateExpandButton(false);
@@ -106,9 +94,6 @@
 
         $(preview).on('show.bs.collapse', () => {
           toggleShowPreviewText.textContent = 'Hide preview';
-
-          const isPreviewExpanded = !!pre.style.maxHeight;
-          updateExpandButton(isPreviewExpanded);
 
           if (wasOpened) return;
 
@@ -129,6 +114,12 @@
                 code.textContent = text;
                 pre.classList.remove('d-none');
                 hideErrorMessage();
+
+                // Only show the expand/collapse button if the content is tall
+                // enough where scrolling is necessary.
+                if (pre.scrollHeight > pre.clientHeight) {
+                  expandButton.classList.remove('d-none');
+                }
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
                 img.src = url;
@@ -151,7 +142,6 @@
 
         $(preview).on('hide.bs.collapse', () => {
           toggleShowPreviewText.textContent = 'Show preview';
-          updateExpandButton(false);
         });
       });
     }
