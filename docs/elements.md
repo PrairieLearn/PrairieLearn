@@ -1,4 +1,4 @@
-# PrairieLearn Elements for use in `question.html`
+# PrairieLearn Elements for use in `question.html` or `question.md`
 
 When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
@@ -242,6 +242,103 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 ---
 
+<<<<<<< HEAD
+
+### `pl-number-input` element
+
+Fill in the blank field that allows for **numeric** value input within specific
+tolerances.
+
+#### Sample element
+
+![](elements/pl-number-input-rtol.png)
+
+**question.html** or **question.md**
+
+```html
+<pl-number-input answers-name="ans_rtol" label="$x =$"> </pl-number-input>
+```
+
+**server.py**
+
+```python
+import random
+
+def generate(data):
+
+    # Generate a random value
+    x = random.uniform(1, 2)
+
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_rtol"] = x
+```
+
+---
+
+![](elements/pl-number-input-sigfig.png)
+
+**question.html** or **question.md**
+
+```html
+<pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+
+```python
+import random
+
+def generate(data):
+
+    # Generate a random value
+    x = random.uniform(1, 2)
+
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_sig"] = round(x, 2)
+```
+
+#### Customizations
+
+| Attribute             | Type                            | Default  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------- | ------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`        | string                          | —        | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `weight`              | integer                         | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `correct-answer`      | float                           | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `label`               | text                            | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `suffix`              | text                            | —        | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `display`             | "block" or "inline"             | "inline" | How to display the input field.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `comparison`          | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.                                                                                                                                                                                                                                                                                                                                       |
+| `rtol`                | number                          | 1e-2     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `atol`                | number                          | 1e-8     | Absolute tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
+| `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
+| `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
+| `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `show-placeholder`    | boolean                         | true     | Show the placeholder text that shows the default comparison.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `size`                | integer                         | 35       | Size of the input box.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `show-correct-answer` | boolean                         | true     | Whether to show the correct answer in the submitted answers panel.                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `allow-fractions`     | boolean                         | true     | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `custom-format`       | string                          | special  | Custom format to use when formatting the submitted or correct answer. By default, submitted answers are shown with the format `.12g`, while the correct answer uses `.12g` if the comparison method is `relabs`, or a custom format based on the number of digits if the comparison method is `sigfig` or `decdig`. A full description of the format can be found [on the Python documentation page](https://docs.python.org/3/library/string.html#format-specification-mini-language). |
+
+#### Example implementations
+
+- [element/numberInput]
+- [demo/calculation]
+
+#### See also
+
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+
+---
+
+=======
+
+> > > > > > > master
+
 ### `pl-dropdown` element
 
 Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
@@ -250,7 +347,7 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 ![](elements/pl-dropdown.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <p>Select the correct word in the following quotes:</p>
@@ -312,7 +409,14 @@ and external grading system.
 
 #### Sample element
 
+<<<<<<< HEAD
+![](elements/pl-order-blocks.png)
+
+# **question.html** or **question.md**
+
 ![](elements/pl-file-editor.png)
+
+> > > > > > > master
 
 <!-- prettier-ignore -->
 ```html
@@ -409,7 +513,7 @@ Fill in the blank field that requires an **integer** input.
 
 ![](elements/pl-integer-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
@@ -475,6 +579,225 @@ Note that answers can include underscores which are ignored (i.e., `1_000` will 
 
 ---
 
+<<<<<<< HEAD
+
+### `pl-symbolic-input` element
+
+Fill in the blank field that allows for mathematical symbol input.
+
+#### Sample element
+
+![](elements/pl-symbolic-input.png)
+
+**question.html** or **question.md**
+
+```html
+<pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
+```
+
+**server.py**
+
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+
+    # Declare math symbols
+    x, y = sympy.symbols("x y")
+
+    # Describe the equation
+    z = x + y + 1
+
+    # Answer to fill in the blank input stored as JSON.
+    data["correct_answers"]["symbolic_math"] = pl.to_json(z)
+```
+
+#### Customizations
+
+| Attribute                    | Type                | Default               | Description                                                                                                                                                                                                       |
+| ---------------------------- | ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`               | string              | —                     | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
+| `weight`                     | integer             | 1                     | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
+| `correct-answer`             | float               | special               | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
+| `label`                      | text                | —                     | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
+| `display`                    | "block" or "inline" | "inline"              | How to display the input field.                                                                                                                                                                                   |
+| `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
+| `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
+| `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
+| `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
+| `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
+| `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
+| `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
+
+#### Details
+
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
+
+It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+
+#### Example implementations
+
+- [element/symbolicInput]
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+
+---
+
+### `pl-big-o-input` element
+
+Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
+Gives automated feedback in the case of improper asymptotic input.
+
+**question.html** or **question.md**
+
+```html
+<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+```
+
+#### Customizations
+
+| Attribute        | Type                                                  | Default                 | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —                       | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"                 | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1                       | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -                       | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline"                | How to display the input field.                                                      |
+| `variable`       | string                                                | —                       | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35                      | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters. |
+| `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.           |
+
+#### Details
+
+Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
+the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
+
+#### Example implementations
+
+- [element/bigOInput]
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+
+---
+
+### `pl-string-input` element
+
+Fill in the blank field that allows for **string** value input.
+
+#### Sample element
+
+![](elements/pl-string-input.png)
+
+**question.html** or **question.md**
+
+```html
+<pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
+```
+
+**server.py**
+
+```python
+def generate(data):
+
+    # Answer to fill in the blank input
+    data["correct_answers"]["string_value"] = "Learn"
+```
+
+#### Customizations
+
+| Attribute                 | Type                | Default  | Description                                                                                                                                                               |
+| ------------------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`            | string              | —        | Variable name to store data in.                                                                                                                                           |
+| `weight`                  | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                      |
+| `correct-answer`          | string              | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
+| `label`                   | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
+| `suffix`                  | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                         |
+| `display`                 | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                           |
+| `remove-leading-trailing` | boolean             | false    | Whether or not to remove leading and trailing blank spaces from the input string.                                                                                         |
+| `remove-spaces`           | boolean             | false    | Whether or not to remove blank spaces from the input string.                                                                                                              |
+| `allow-blank`             | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                          |
+| `ignore-case`             | boolean             | false    | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                     |
+| `normalize-to-ascii`      | boolean             | false    | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
+| `placeholder`             | text                | None     | Hint displayed inside the input box describing the expected type of input.                                                                                                |
+| `size`                    | integer             | 35       | Size of the input box.                                                                                                                                                    |
+| `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
+
+#### Example implementations
+
+- [element/stringInput]
+
+#### See also
+
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+
+---
+
+### `pl-units-input` element
+
+Fill in the blank field that allows for **numeric** input and accompanying **units**.
+
+#### Sample element
+
+**question.html** or **question.md**
+
+```html
+<pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
+```
+
+#### Customizations
+
+| Attribute                  | Type                                         | Default      | Description                                                                                                                                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`             | string                                       | -            | Variable name to store data in.                                                                                                                                                                                                                                                                                               |
+| `weight`                   | integer                                      | 1            | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                          |
+| `correct-answer`           | string                                       | special      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                              |
+| `label`                    | text                                         | -            | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                             |
+| `suffix`                   | text                                         | -            | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                       |
+| `display`                  | "block" or "inline"                          | "inline"     | How to display the input field.                                                                                                                                                                                                                                                                                               |
+| `grading-mode`             | "with-units", "exact-units", or "only-units" | "with-units" | How to grade student submission. "only-units" only checks for the units input by the student. "exact-units" asks for a quantity with a specified unit. "with-units" is similar to "exact-units", but will automatically convert the units used by the given answer if possible.                                               |
+| `comparison`               | "exact", "sigfig", "decdig" or "relabs"      | "sigfig"     | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=exact-units`                                         |
+| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode=exact-units`.                                                                                                                                                                                                                                                  |
+| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode=with-units`. Required and must include units when `grading-mode=with-units`.                                                                                                                                                                                   |
+| `digits`                   | integer                                      | 2            | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                     |
+| `allow-blank`              | boolean                                      | false        | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                              |
+| `blank-value`              | string                                       | ""           | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                                                         |
+| `size`                     | integer                                      | 35           | Size of the input box.                                                                                                                                                                                                                                                                                                        |
+| `show-help-text`           | boolean                                      | true         | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                          |
+| `placeholder`              | string                                       | -            | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                                                        |
+| `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set.                                       |
+| `allow-feedback`           | boolean                                      | true         | Whether to show detailed feedback from the autograder for incorrect answers (for example, stating whether a unit or magnitude specifically is incorrect). Feedback varies based on `grading-mode`.                                                                                                                            |
+| `custom-format`            | string                                       | -            | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
+
+#### Details
+
+This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
+
+#### Example implementations
+
+- [element/unitsInput]
+
+---
+
+=======
+
+> > > > > > > master
+
 ### `pl-matching` element
 
 Given a list of statements, select a matching option for each entry from a drop-down list.
@@ -483,7 +806,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 
 ![](elements/pl-matching.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matching answers-name="string_value">
@@ -551,7 +874,7 @@ the same shape of the variable stored in `answers-name`
 
 ![](elements/pl-matrix-component-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
@@ -615,7 +938,7 @@ format (either MATLAB or Python's numpy).
 
 ![](elements/pl-matrix-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
@@ -1238,7 +1561,7 @@ Displays a formatted display of Pandas DataFrames, with various options for disp
 
 #### Sample elements
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4"></pl-dataframe>
@@ -1524,7 +1847,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ![](elements/pl-graph1.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph> digraph G { A -> B } </pl-graph>
@@ -1534,7 +1857,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ![](elements/pl-graph2.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
@@ -1555,7 +1878,7 @@ def generate(data):
 
 ---
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph params-type="networkx" params-name="random-graph"></pl-graph>
@@ -1783,7 +2106,7 @@ Displays the value of a Python variable. Uses options similar to the [pprint](ht
 
 ![](elements/pl-python-variable.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-python-variable params-name="variable"></pl-python-variable>
@@ -2372,7 +2695,7 @@ new questions.
 
 #### Details
 
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html` or `question.md`).
 
 #### Example implementations
 

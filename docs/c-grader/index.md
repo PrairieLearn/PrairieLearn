@@ -30,7 +30,7 @@ A full `info.json` file should look something like:
 
 Note that the `entrypoint` setting includes a call to `python3` before the test file. This is recommended for cases where the `test.py` file is not properly set as executable in the Git repository.
 
-### `question.html`
+### `question.html` or `question.md`
 
 Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grader-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 

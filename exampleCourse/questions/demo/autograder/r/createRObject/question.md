@@ -1,19 +1,14 @@
 <pl-question-panel>
 
-<markdown>
 ### Compound R Object
 
-Please create a single R object named `x` containing the following:
+Please create a single R object named `x` containing the following
+
 - an integer `ii` with value 42
 - a numeric `nn` with value 3.1415
 - a text variable `cc` with text `hello, world!` including the comma and exclamation mark
 
-Press the button below to launch an RStudio workspace. The object above must be created in the `student.R` file inside the workspace.
-
-**Note:** RStudio does **not** auto-save. Be sure to save your work.  
-</markdown>
-
-<pl-workspace></pl-workspace>
+<pl-file-editor file-name="student.R" ace-mode="ace/mode/r" source-file-name="demo.R"></pl-file-editor>
 
 </pl-question-panel>
 

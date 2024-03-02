@@ -142,6 +142,10 @@ export function processQuestion(html) {
   });
 }
 
+export async function processQuestionMd(original) {
+  return (await questionProcessor.process(original)).contents;
+}
+
 export async function processContent(original) {
   return (await defaultProcessor.process(original)).contents;
 }

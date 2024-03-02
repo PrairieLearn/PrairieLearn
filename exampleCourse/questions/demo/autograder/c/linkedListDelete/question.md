@@ -1,5 +1,4 @@
 <pl-question-panel>
-<markdown>
 
 Assume that a linked list data structure has been defined in `list.h` as follows:
 
@@ -32,7 +31,6 @@ Note: you **don't** need to write the main function.
 <pl-file-editor source-file-name="source.c" file-name="deletefirst.c" ace-mode="ace/mode/c_cpp">
 </pl-file-editor>
 
-</markdown>
 </pl-question-panel>
 
 <pl-answer-panel>

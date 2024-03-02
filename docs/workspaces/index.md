@@ -122,13 +122,13 @@ For an externally graded workspace, a full `info.json` file should look somethin
 }
 ```
 
-### `question.html`
+### `question.html` or `question.md`
 
 The `Open workspace` button should be included in all workspace questions by using the workspace element `<pl-workspace>`.
 
-#### `question.html` for ungraded workspace
+#### Template for ungraded workspace
 
-For an ungraded workspace, a minimal `question.html` should look something like:
+For an ungraded workspace, a minimal `question.html` or `question.md` should look something like:
 
 ```html
 <pl-question-panel>
@@ -137,11 +137,11 @@ For an ungraded workspace, a minimal `question.html` should look something like:
 </pl-question-panel>
 ```
 
-#### `question.html` for externally graded workspace
+#### Template for externally graded workspace
 
 For an externally graded workspace, the workspace submission panel `<pl-submission-panel>` should include the file preview element `<pl-file-preview>`. This will enable students not only to preview submitted files but also to receive file submission error messages.
 
-A minimal `question.html` for an externally graded workspace should look something like:
+A minimal `question.html` or `question.md` for an externally graded workspace should look something like:
 
 ```html
 <pl-question-panel>
