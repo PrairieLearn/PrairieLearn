@@ -34,7 +34,6 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
-          ${compiledScriptTag('popover.ts')}
       </head>
 
       <body>
