@@ -81,6 +81,8 @@
         }
 
         expandButton.addEventListener('click', () => {
+          // The `<pre>` has a class with a `max-height` set which will only take
+          // effect if there is no `max-height` set via the `style` attribute.
           if (pre.style.maxHeight) {
             pre.style.removeProperty('max-height');
             updateExpandButton(false);
