@@ -16,15 +16,13 @@ RUN export OLD_UID=$(id -u coder) && \
 	
 # Install Python via miniconda
 USER coder
+COPY requirements.txt /
 RUN curl -sfLO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
  && /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /home/coder/miniconda \
  && PATH="/home/coder/miniconda/bin:$PATH" \
  && /home/coder/miniconda/condabin/conda init bash \
  && conda config --add channels conda-forge \
- && conda install ipython \
- && conda install pandas \ 
- && conda install seaborn \
- && conda install pillow
+ && conda run -n base pip install -r /requirements.txt
 
 # Cleaning up the cache in the same step when we install is important if you
 # want to minimize the image size.
@@ -70,7 +68,7 @@ RUN rm -f /run/fixuid.ran && \
 	'fi \n' \
 	'\n' \
 	'dumb-init /usr/bin/code-server --auth none "$@" \n' >> /usr/bin/entrypoint.sh
-
+RUN rm /requirements.txt
 
 EXPOSE 8080
 
