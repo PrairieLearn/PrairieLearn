@@ -1,12 +1,12 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetchCookie from 'fetch-cookie';
 import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import * as helperServer from './helperServer';
 import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient';
 import { IdSchema, type User, UserSchema } from '../lib/db-types';
 import { config } from '../lib/config';
-import fetchCookie = require('fetch-cookie');
 
 const sql = loadSqlEquiv(__filename);
 

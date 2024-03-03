@@ -72,7 +72,7 @@
           <td><%= groupRole.role_name %></td>
           <td><%= groupRole.minimum ?? 0 %></td>
           <td><%= groupRole.maximum ?? 'Unlimited' %></td>
-          <td><%= groupRole.can_assign_roles_at_start ? 'Yes' : 'No' %></td>
+          <td><%= groupRole.can_assign_roles ? 'Yes' : 'No' %></td>
           </tr>
         <% }) %>
       </tbody>

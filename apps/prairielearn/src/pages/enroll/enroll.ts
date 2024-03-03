@@ -102,10 +102,7 @@ router.post(
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown action: ' + res.locals.__action, {
-        __action: req.body.__action,
-        body: req.body,
-      });
+      throw error.make(400, 'unknown action: ' + res.locals.__action);
     }
   }),
 );

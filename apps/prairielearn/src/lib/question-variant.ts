@@ -4,17 +4,32 @@ import { z } from 'zod';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
-import { Course, Question, Variant, VariantSchema } from './db-types';
+import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types';
+import { idsEqual } from './id';
+import { selectCourseInstanceById } from '../models/course-instances';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),
 });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
+
+const InstanceQuestionDataSchema = z.object({
+  question_id: IdSchema,
+  user_id: IdSchema.nullable(),
+  group_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema,
+  course_instance_id: IdSchema,
+  instance_question_open: z.boolean().nullable(),
+  assessment_instance_open: z.boolean().nullable(),
+});
 
 interface VariantCreationData {
   variant_seed: string;
@@ -145,6 +160,30 @@ async function selectQuestion(
   }
 }
 
+async function lockAssessmentInstanceForInstanceQuestion(
+  instance_question_id: string,
+): Promise<void> {
+  const assessment_instance_id = await sqldb.queryOptionalRow(
+    sql.select_and_lock_assessment_instance_for_instance_question,
+    { instance_question_id },
+    IdSchema,
+  );
+  if (assessment_instance_id == null) {
+    throw error.make(404, 'Instance question not found');
+  }
+}
+
+async function selectVariantForInstanceQuestion(
+  instance_question_id: string,
+  require_open: boolean,
+): Promise<VariantWithFormattedDate | null> {
+  return await sqldb.queryOptionalRow(
+    sql.select_variant_for_instance_question,
+    { instance_question_id, require_open },
+    VariantWithFormattedDateSchema,
+  );
+}
+
 /**
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
  * @protected
@@ -153,7 +192,6 @@ async function selectQuestion(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param group_work - If the assessment will support group work.
  * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
@@ -166,7 +204,6 @@ async function makeAndInsertVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  group_work: boolean,
   course_instance_id: string | null,
   variant_course: Course,
   question_course: Course,
@@ -180,26 +217,94 @@ async function makeAndInsertVariant(
     question_course,
     options,
   );
-  const variant = await sqldb.callRow(
-    'variants_insert',
-    [
-      variantData.variant_seed,
-      variantData.params,
-      variantData.true_answer,
-      variantData.options,
-      variantData.broken,
-      instance_question_id,
-      question.id,
-      course_instance_id,
-      user_id,
-      authn_user_id,
-      group_work,
-      require_open,
-      variant_course.id,
-      client_fingerprint_id,
-    ],
-    VariantWithFormattedDateSchema,
-  );
+
+  const variant = await sqldb.runInTransactionAsync(async () => {
+    let real_user_id: string | null = user_id;
+    let real_group_id: string | null = null;
+    let new_number: number | null = 1;
+
+    if (instance_question_id != null) {
+      await lockAssessmentInstanceForInstanceQuestion(instance_question_id);
+      const instance_question = await sqldb.queryOptionalRow(
+        sql.select_instance_question_data,
+        { instance_question_id },
+        InstanceQuestionDataSchema,
+      );
+      if (instance_question == null) {
+        throw error.make(404, 'Instance question not found');
+      }
+
+      // This handles the race condition where we simultaneously start
+      // generating two variants for the same instance question. If we're the
+      // second one to try and insert a variant, just pull the existing variant
+      // back out of the database and use that instead.
+      const existing_variant = await selectVariantForInstanceQuestion(
+        instance_question_id,
+        require_open,
+      );
+      if (existing_variant != null) {
+        return existing_variant;
+      }
+
+      if (!instance_question.instance_question_open) {
+        throw error.make(403, 'Instance question is not open');
+      }
+      if (!instance_question.assessment_instance_open) {
+        throw error.make(403, 'Assessment instance is not open');
+      }
+
+      question_id = instance_question.question_id;
+      course_instance_id = instance_question.course_instance_id;
+      real_user_id = instance_question.user_id;
+      real_group_id = instance_question.group_id;
+
+      new_number = await sqldb.queryOptionalRow(
+        sql.next_variant_number,
+        { instance_question_id },
+        z.number().nullable(),
+      );
+    } else {
+      if (question_id == null) {
+        throw new Error(
+          'Attempt to create a variant without a question ID or instance question ID',
+        );
+      }
+      if (user_id == null) {
+        throw new Error('Attempt to create a variant without a user ID');
+      }
+
+      if (course_instance_id != null) {
+        const course_instance = await selectCourseInstanceById(course_instance_id);
+        if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
+          throw error.make(403, 'Course instance not found in course');
+        }
+      }
+    }
+
+    const question = await selectQuestionById(question_id);
+    let workspace_id: string | null = null;
+    if (question.workspace_image !== null) {
+      workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
+    }
+
+    return await sqldb.queryRow(
+      sql.insert_variant,
+      {
+        ...variantData,
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id: real_user_id,
+        group_id: real_group_id,
+        number: new_number ?? 1,
+        authn_user_id,
+        workspace_id,
+        course_id: variant_course.id,
+        client_fingerprint_id,
+      },
+      VariantWithFormattedDateSchema,
+    );
+  });
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };
@@ -214,7 +319,6 @@ async function makeAndInsertVariant(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param group_work - If the assessment will support group work.
  * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
@@ -227,7 +331,6 @@ export async function ensureVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  group_work: boolean,
   course_instance_id: string | null,
   variant_course: Course,
   question_course: Course,
@@ -236,12 +339,11 @@ export async function ensureVariant(
   client_fingerprint_id: string | null,
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
-    // see if we have a useable existing variant, otherwise make a new one
-    const variant = await sqldb.callOptionalRow(
-      'instance_questions_select_variant',
-      [instance_question_id, require_open],
-      VariantWithFormattedDateSchema.nullable(),
-    );
+    // See if we have a useable existing variant, otherwise make a new one. This
+    // test is also performed in makeAndInsertVariant inside a transaction to
+    // avoid race conditions, but we do it here too to avoid the
+    // generate/prepare overhead in the most common cases.
+    const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
     if (variant != null) {
       return variant;
     }
@@ -252,7 +354,6 @@ export async function ensureVariant(
     instance_question_id,
     user_id,
     authn_user_id,
-    group_work,
     course_instance_id,
     variant_course,
     question_course,

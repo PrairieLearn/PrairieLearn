@@ -1,0 +1,17 @@
+name: 'Report image sizes'
+description: 'Comment any changes in image sizes on the PR'
+inputs:
+  images:
+    description: 'Which images to check'
+    required: true
+  sha:
+    description: 'SHA of the commit'
+    required: true
+  title:
+    description: 'Title of the comment'
+    required: true
+  token:
+    description: 'GitHub token to use for commenting'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

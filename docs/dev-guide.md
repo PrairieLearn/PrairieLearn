@@ -808,12 +808,7 @@ WHERE
         res.redirect(req.originalUrl);
       });
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          body: req.body,
-          locals: res.locals,
-        }),
-      );
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   });
   ```

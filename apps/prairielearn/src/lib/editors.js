@@ -35,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 async function syncCourseFromDisk(course, startGitHash, job) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
+  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({

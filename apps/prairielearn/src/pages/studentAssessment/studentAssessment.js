@@ -13,10 +13,10 @@ import {
   getGroupConfig,
   getGroupId,
   getGroupInfo,
-  getAssessmentPermissions,
   updateGroupRoles,
   leaveGroup,
   GroupOperationError,
+  canUserAssignGroupRoles,
 } from '../../lib/groups';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint';
 
@@ -65,11 +65,10 @@ router.get(
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
           if (groupConfig.hasRoles) {
-            const result = await getAssessmentPermissions(
-              res.locals.assessment.id,
+            res.locals.userCanAssignRoles = canUserAssignGroupRoles(
+              groupInfo,
               res.locals.user.user_id,
             );
-            res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
           }
         }
       }
@@ -104,11 +103,10 @@ router.get(
             res.locals.rolesInfo = groupInfo.rolesInfo;
 
             if (groupConfig.has_roles) {
-              const result = await getAssessmentPermissions(
-                res.locals.assessment.id,
+              res.locals.userCanAssignRoles = canUserAssignGroupRoles(
+                groupInfo,
                 res.locals.user.user_id,
               );
-              res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
             }
           }
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -235,12 +233,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

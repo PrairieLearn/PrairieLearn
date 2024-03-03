@@ -452,6 +452,7 @@ function deleteRow(event) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
   updateRubricItemOrderField();
+  checkRubricItemTotals();
 }
 
 function rowDragStart(event) {

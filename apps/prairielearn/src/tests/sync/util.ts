@@ -1,4 +1,3 @@
-import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import * as path from 'path';
@@ -10,6 +9,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: string[];
 }
 
 interface Tag {
@@ -68,9 +68,7 @@ export interface GroupRole {
   name: string;
   minimum?: number;
   maximum?: number;
-  canAssignRolesAtStart?: boolean;
-  canAssignRolesDuringAssessment?: boolean;
-  canSubmitAssessment?: boolean;
+  canAssignRoles?: boolean;
 }
 
 interface SEBConfig {
@@ -453,7 +451,7 @@ export function getFakeLogger() {
  */
 export async function syncCourseData(courseDir: string) {
   const logger = getFakeLogger();
-  await promisify(syncFromDisk.syncOrCreateDiskToSql)(courseDir, logger);
+  await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
 }
 
 export async function createAndSyncCourseData() {

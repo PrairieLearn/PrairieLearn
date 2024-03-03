@@ -23,7 +23,9 @@ WITH
     SELECT
       g.id AS group_id,
       COUNT(u.uid)::integer AS size,
-      array_agg(u.uid) AS uid_list
+      jsonb_agg(
+        jsonb_build_object('uid', u.uid, 'user_id', u.user_id)
+      ) AS users
     FROM
       assessment_groups AS g
       JOIN group_users AS gu ON (gu.group_id = g.id)
@@ -35,7 +37,7 @@ SELECT
   ag.id AS group_id,
   ag.name,
   COALESCE(agu.size, 0) AS size,
-  COALESCE(agu.uid_list, ARRAY[]::TEXT []) AS uid_list
+  COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
   assessment_groups AS ag
   LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)

@@ -1128,13 +1128,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
   step('change group config to include a role with minimum of two', async function () {
     const groupRoles = [
-      {
-        name: 'Manager',
-        minimum: 1,
-        maximum: 1,
-        canAssignRolesAtStart: true,
-        canAssignRolesDuringAssessment: true,
-      },
+      { name: 'Manager', minimum: 1, maximum: 1, canAssignRoles: true },
       { name: 'Recorder', minimum: 2, maximum: 2 },
       { name: 'Reflector', minimum: 1, maximum: 1 },
       { name: 'Contributor' },

@@ -103,6 +103,10 @@ updates:
         patterns:
           - 'pandas'
           - 'pandas-stubs'
+      lxml:
+        patterns:
+          - 'lxml'
+          - 'types-lxml'
   - package-ecosystem: docker
     directory: '/workspaces/jupyterlab'
     schedule:

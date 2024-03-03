@@ -473,6 +473,15 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
             });
             return null;
           }
+
+          if (!('contents' in file)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.`,
+              data: file,
+            });
+          }
+
           return {
             name: file.name,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),

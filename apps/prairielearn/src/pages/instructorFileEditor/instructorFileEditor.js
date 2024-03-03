@@ -54,6 +54,7 @@ router.get('/*', (req, res, next) => {
   let fileEdit = {
     uuid: uuidv4(),
     userID: res.locals.user.user_id,
+    authnUserId: res.locals.authn_user.user_id,
     courseID: res.locals.course.id,
     coursePath: res.locals.course.path,
     dirName: path.dirname(workingPath),
@@ -64,12 +65,7 @@ router.get('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -80,10 +76,7 @@ router.get('/*', (req, res, next) => {
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
     );
   }
 
@@ -201,6 +194,7 @@ router.post('/*', (req, res, next) => {
 
   let fileEdit = {
     userID: res.locals.user.user_id,
+    authnUserId: res.locals.authn_user.user_id,
     courseID: res.locals.course.id,
     dirName: req.body.file_edit_dir_name,
     fileName: req.body.file_edit_file_name,
@@ -213,12 +207,7 @@ router.post('/*', (req, res, next) => {
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
   }
 
   // Do not allow users to edit files outside the course
@@ -229,10 +218,7 @@ router.post('/*', (req, res, next) => {
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
     );
   }
 
@@ -248,10 +234,6 @@ router.post('/*', (req, res, next) => {
         error.make(
           400,
           `attempting to save a file without having made any changes: ${workingPath}`,
-          {
-            locals: res.locals,
-            body: req.body,
-          },
         ),
       );
     }
@@ -312,12 +294,7 @@ router.post('/*', (req, res, next) => {
       },
     );
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
@@ -441,15 +418,16 @@ async function createEdit(fileEdit) {
 }
 
 async function writeEdit(fileEdit) {
-  const fileID = await uploadFile(
-    fileEdit.fileName,
-    Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
-    'instructor_file_edit',
-    null,
-    null,
-    fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-    fileEdit.userID, //       although I don't think there's any need to do so
-  );
+  const fileID = await uploadFile({
+    display_filename: fileEdit.fileName,
+    contents: Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+    type: 'instructor_file_edit',
+    assessment_id: null,
+    assessment_instance_id: null,
+    instance_question_id: null,
+    user_id: fileEdit.userID,
+    authn_user_id: fileEdit.authnUserId,
+  });
   debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
   return fileID;
 }
@@ -472,7 +450,7 @@ async function saveAndSync(fileEdit, locals) {
     }
 
     const lockName = getLockNameForCoursePath(locals.course.path);
-    await namedLocks.tryWithLock(
+    await namedLocks.doWithLock(
       lockName,
       {
         timeout: 5000,
@@ -569,8 +547,8 @@ async function saveAndSync(fileEdit, locals) {
           // If we're using chunks, then always sync on edit. We need the sync
           // data to force-generate new chunks.
           const result = await syncFromDisk.syncDiskToSqlWithLock(
-            locals.course.path,
             locals.course.id,
+            locals.course.path,
             job,
           );
 
