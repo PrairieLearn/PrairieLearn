@@ -15,7 +15,11 @@ import {
   leaveGroup,
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
-import { InstructorAssessmentGroups, GroupConfigInfoSchema, GroupUsersRowSchema } from './instructorAssessmentGroups.html';
+import {
+  InstructorAssessmentGroups,
+  GroupConfigInfoSchema,
+  GroupUsersRowSchema,
+} from './instructorAssessmentGroups.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -63,7 +67,15 @@ router.get(
       z.string(),
     );
 
-    res.send(InstructorAssessmentGroups({ resLocals: res.locals, groupsCsvFilename, groupConfigInfo, groups, notAssigned }));
+    res.send(
+      InstructorAssessmentGroups({
+        resLocals: res.locals,
+        groupsCsvFilename,
+        groupConfigInfo,
+        groups,
+        notAssigned,
+      }),
+    );
   }),
 );
 

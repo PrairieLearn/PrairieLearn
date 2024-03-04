@@ -4,9 +4,9 @@ import { nodeModulesAssetPath } from '../../lib/assets';
 import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
 import { z } from 'zod';
 
-export const GroupConfigInfoSchema = GroupConfigSchema.extend({ 
-  defaultMin: z.number().optional(), 
-  defaultMax: z.number().optional()
+export const GroupConfigInfoSchema = GroupConfigSchema.extend({
+  defaultMin: z.number().optional(),
+  defaultMax: z.number().optional(),
 });
 type GroupConfigInfo = z.infer<typeof GroupConfigInfoSchema>;
 
@@ -18,7 +18,19 @@ export const GroupUsersRowSchema = z.object({
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
-export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, groupConfigInfo, groups, notAssigned }: { resLocals: Record<string, any>, groupsCsvFilename?: string, groupConfigInfo?: GroupConfigInfo, groups?: GroupUsersRow[], notAssigned?: string[]}) {
+export function InstructorAssessmentGroups({
+  resLocals,
+  groupsCsvFilename,
+  groupConfigInfo,
+  groups,
+  notAssigned,
+}: {
+  resLocals: Record<string, any>;
+  groupsCsvFilename?: string;
+  groupConfigInfo?: GroupConfigInfo;
+  groups?: GroupUsersRow[];
+  notAssigned?: string[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -42,7 +54,7 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
             $('[data-toggle="popover"]').popover({ sanitize: false });
 
             // Prevent the dropdown menu from closing when the popover is opened.
-            $('.js-group-action[data-toggle="popover"]').on("click", (e) => {
+            $('.js-group-action[data-toggle="popover"]').on('click', (e) => {
               e.stopPropagation();
             });
 
@@ -55,7 +67,7 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
               }
 
               // Hide all popovers when the dropdown menu is closed.
-              $('.js-group-action[data-toggle="popover"]').popover("hide");
+              $('.js-group-action[data-toggle="popover"]').popover('hide');
             });
           });
 
@@ -419,8 +431,7 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                       </thead>
                       <tbody>
                         ${groups?.map(function (row, iRow) {
-                          return html` 
-                          <tr data-test-group-id="${row.group_id}">
+                          return html` <tr data-test-group-id="${row.group_id}">
                             <td>${row.name}</td>
                             <td class="text-center">${row.size}</td>
                             <td class="text-center">
@@ -452,11 +463,13 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                                           data-html="true"
                                           data-placement="auto"
                                           title="Add members"
-                                          data-content="${escapeHtml(formAddMembers({
-                                            row: row,
-                                            iRow: iRow,
-                                            resLocals
-                                          }))}"
+                                          data-content="${escapeHtml(
+                                            formAddMembers({
+                                              row: row,
+                                              iRow: iRow,
+                                              resLocals,
+                                            }),
+                                          )}"
                                         >
                                           <i class="fa fa-user-plus" aria-hidden="true"></i> Add
                                           members
@@ -467,15 +480,17 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                                           ${row.users.length === 0
                                             ? 'disabled'
                                             : html`
-                                              data-toggle="popover" data-container="body"
-                                              data-html="true" data-placement="auto" title="Remove
-                                              members"
-                                              data-content="${escapeHtml(formRemoveMembers({ 
-                                                row: row,
-                                                iRow: iRow,
-                                                resLocals: resLocals
-                                              }))}"
-                                          `}
+                                                data-toggle="popover" data-container="body"
+                                                data-html="true" data-placement="auto" title="Remove
+                                                members"
+                                                data-content="${escapeHtml(
+                                                  formRemoveMembers({
+                                                    row: row,
+                                                    iRow: iRow,
+                                                    resLocals: resLocals,
+                                                  }),
+                                                )}"
+                                              `}
                                         >
                                           <i class="fa fa-user-minus" aria-hidden="true"></i> Remove
                                           members
@@ -488,11 +503,13 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                                           data-html="true"
                                           data-placement="auto"
                                           title="Delete group"
-                                          data-content="${escapeHtml(formDeleteGroup({
-                                            row: row,
-                                            iRow: iRow,
-                                            resLocals
-                                          }))}"
+                                          data-content="${escapeHtml(
+                                            formDeleteGroup({
+                                              row: row,
+                                              iRow: iRow,
+                                              resLocals,
+                                            }),
+                                          )}"
                                         >
                                           <i class="fa fa-times" aria-hidden="true"></i> Delete
                                           group
@@ -510,7 +527,8 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                       <p>
                         Download
                         <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/downloads/${groupsCsvFilename}"
+                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                            .id}/downloads/${groupsCsvFilename}"
                           >${groupsCsvFilename}</a
                         >
                       </p>
@@ -518,19 +536,21 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
                         ${notAssigned?.length === 0
                           ? html` <strong> All students have been assigned groups. </strong> `
                           : html`
-                          <strong>
-                            ${notAssigned?.length
-                              ? html` 
+                              <strong>
+                                ${notAssigned?.length
+                                  ? html` 
                               ${notAssigned?.length}
                               student${notAssigned?.length > 1 ? html`s` : ''} not yet
                               assigned:
                             </strong>
-                            ` : ''}
-                              <ul class="mb-0">
-                                ${notAssigned?.map(function (uid) {
-                                  return html` <li>${uid}</li> `;
-                                })}
-                              </ul>
+                            `
+                                  : ''}
+                                <ul class="mb-0">
+                                  ${notAssigned?.map(function (uid) {
+                                    return html` <li>${uid}</li> `;
+                                  })}
+                                </ul>
+                              </strong>
                             `}
                       </small>
                     </div>
@@ -556,58 +576,99 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
   `.toString();
 }
 
-function formAddMembers({ row, iRow, resLocals }: { row: GroupUsersRow, iRow: number, resLocals: Record<string, any>}) {
+function formAddMembers({
+  row,
+  iRow,
+  resLocals,
+}: {
+  row: GroupUsersRow;
+  iRow: number;
+  resLocals: Record<string, any>;
+}) {
   return html`
-  <form name="add-member-form" method="POST">
-  UIDs:
-  <input type="text" class="form-control" placeholder="A@ex.com, B@ex.com" name="add_member_uids">
-  <br>
-  <input type="hidden" name="__action" value="add_member">
-  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-  <input type="hidden" name="group_id" value="${row.group_id}">
-  <button type="button" class="btn btn-secondary" onclick="$('#row${iRow}PopoverAdd').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Add</button>
-</form>
+    <form name="add-member-form" method="POST">
+      UIDs:
+      <input
+        type="text"
+        class="form-control"
+        placeholder="A@ex.com, B@ex.com"
+        name="add_member_uids"
+      />
+      <br />
+      <input type="hidden" name="__action" value="add_member" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <button
+        type="button"
+        class="btn btn-secondary"
+        onclick="$('#row${iRow}PopoverAdd').popover('hide')"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
   `;
 }
 
-function formDeleteGroup({ row, iRow, resLocals }: { row: GroupUsersRow, iRow: number, resLocals: Record<string, any> }) {
+function formDeleteGroup({
+  row,
+  iRow,
+  resLocals,
+}: {
+  row: GroupUsersRow;
+  iRow: number;
+  resLocals: Record<string, any>;
+}) {
   return html`
-  <form name="delete-group-form" method="POST">
-    <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
-    <input type="hidden" name="__action" value="delete_group">
-    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-    <input type="hidden" name="group_id" value="${row.group_id}">
-    <button type="button" class="btn btn-secondary" onclick="$('#row${iRow}Popoverdeletegroup').popover('hide')">
-      Cancel
-    </button>
-    <button type="submit" class="btn btn-danger">Delete</button>
-  </form>
+    <form name="delete-group-form" method="POST">
+      <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
+      <input type="hidden" name="__action" value="delete_group" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <button
+        type="button"
+        class="btn btn-secondary"
+        onclick="$('#row${iRow}Popoverdeletegroup').popover('hide')"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
   `;
 }
 
-function formRemoveMembers({ row, iRow, resLocals}:{ row: GroupUsersRow, iRow: number, resLocals: Record<string, any> }) {
+function formRemoveMembers({
+  row,
+  iRow,
+  resLocals,
+}: {
+  row: GroupUsersRow;
+  iRow: number;
+  resLocals: Record<string, any>;
+}) {
   return html`
-  <form name="delete-member-form" method="POST">
-    <div class="form-group">
-      <label for="delete-member-form-${iRow}">UID:</label>
-      <select class="form-control" name="user_id" id="delete-member-form-${iRow}">
-        ${row.users.map((user) => { 
-          return html`
-          <option value="${user.user_id}">${user.uid}</option>
-          `;
-        })}
-      </select>
-    </div>
-    <input type="hidden" name="__action" value="delete_member">
-    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-    <input type="hidden" name="group_id" value="${row.group_id}">
-    <button type="button" class="btn btn-secondary" onclick="$('#row${iRow}Popoverdeletemember').popover('hide')">
-      Cancel
-    </button>
-    <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'} >Delete</button>
-  </form>
-  `
+    <form name="delete-member-form" method="POST">
+      <div class="form-group">
+        <label for="delete-member-form-${iRow}">UID:</label>
+        <select class="form-control" name="user_id" id="delete-member-form-${iRow}">
+          ${row.users.map((user) => {
+            return html` <option value="${user.user_id}">${user.uid}</option> `;
+          })}
+        </select>
+      </div>
+      <input type="hidden" name="__action" value="delete_member" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <button
+        type="button"
+        class="btn btn-secondary"
+        onclick="$('#row${iRow}Popoverdeletemember').popover('hide')"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
+        Delete
+      </button>
+    </form>
+  `;
 }
