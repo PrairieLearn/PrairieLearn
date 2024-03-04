@@ -272,9 +272,9 @@ export function InstructorAssessmentGroups({
                         Download
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${groupsCsvFilename}"
-                          >${groupsCsvFilename}</a
-                        >
+                            .id}/downloads/${groupsCsvFilename}">
+                          ${groupsCsvFilename}
+                        </a>
                       </p>
                       <small>
                         ${notAssigned?.length === 0
