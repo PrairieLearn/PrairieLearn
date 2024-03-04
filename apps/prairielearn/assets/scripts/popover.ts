@@ -25,14 +25,12 @@ onDocumentReady(() => {
   });
 
   $('[data-toggle="popover"]').on('shown.bs.popover', (e) => {
-    console.log('popover')
     openPopoverTrigger = e.currentTarget as HTMLElement;
   });
 
   on('click', 'body', (e: any) => {
     // If this click occurred inside a popover, do nothing.
     if ((e.target as HTMLElement).closest('.popover')) {
-      console.log('click inside popover');
       return;
     }
 
