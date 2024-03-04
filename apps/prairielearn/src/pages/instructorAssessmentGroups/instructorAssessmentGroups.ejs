@@ -11,7 +11,24 @@
 <body>
   <script>
     $(function () {
-      $('[data-toggle="popover"]').popover({ sanitize: false })
+      $('[data-toggle="popover"]').popover({ sanitize: false });
+
+      // Prevent the dropdown menu from closing when the popover is opened.
+      $('.js-group-action[data-toggle="popover"]').on("click", (e) => {
+        e.stopPropagation();
+      });
+
+      $('.js-group-action-dropdown').on('hide.bs.dropdown', (e) => {
+        // If the click is inside a popover, don't hide the dropdown.
+        if (e.clickEvent.target.closest('.popover')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        // Hide all popovers when the dropdown menu is closed.
+        $('.js-group-action[data-toggle="popover"]').popover("hide");
+      });
     });
 
     // make the file inputs display the file name
@@ -240,7 +257,7 @@
               </td>
               <% if (authz_data.has_course_instance_permission_edit) { %>
               <td class="text-center">
-                <div class="dropdown">
+                <div class="dropdown js-group-action-dropdown">
                   <button type="button"
                           class="btn btn-xs dropdown-toggle"
                           data-toggle="dropdown"
@@ -248,56 +265,47 @@
                           aria-expanded="false">
                     Action <span class="caret"></span>
                   </button>
-                  <div id="row<%= iRow %>PopoverAdd"
-                        tabindex="0"
-                        data-toggle="popover"
-                        data-trigger="manual"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Add Members"
-                        data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>">
-                  </div>
-                  <div id="row<%= iRow %>Popoverdeletemember"
-                        tabindex="0"
-                        data-toggle="popover"
-                        data-trigger="manual"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Remove Members"
-                        data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>">
-                  </div>
-                  <div id="row<%= iRow %>Popoverdeletegroup"
-                        tabindex="0"
-                        data-toggle="popover"
-                        data-trigger="manual"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Confirm delete this group"
-                        data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
-                  </div>
-
-                  <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
-                  <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                    <% if (authz_data.has_course_instance_permission_edit) { %>
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
+                  <div class="dropdown-menu">
+                    <button
+                      id="row<%= iRow %>PopoverAdd"
+                      class="dropdown-item js-group-action"
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Add members"
+                      data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>"
+                    >
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
-                    </a>
-
-                    <a class="dropdown-item<%= row.users.length === 0 ? ' disabled' : '' %>"
-                       <% if (row.users.length > 0) { %>onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')"<% } %>
-                       href="#">
+                    </button>
+                    <button
+                      id="row<%= iRow %>Popoverdeletemember"
+                      class="dropdown-item js-group-action"
+                      <% if (row.users.length === 0) { %>
+                      disabled
+                      <% } else { %> 
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Remove members"
+                      data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>"
+                      <% } %>
+                    >
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
-                    </a>
-
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('show')" href="#">
-                      <i class="fa fa-times" aria-hidden="true"></i> Delete this group
-                    </a>
-                    <% } %>
-
+                    </button>
+                    <button
+                      id="row<%= iRow %>Popoverdeletegroup"
+                      class="dropdown-item js-group-action"
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Delete group"
+                      data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>"
+                    >
+                      <i class="fa fa-times" aria-hidden="true"></i> Delete group
+                    </button>
                   </div>
                 </div>
               </td>

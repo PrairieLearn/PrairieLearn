@@ -1,4 +1,5 @@
 <form name="delete-group-form" method="POST">
+  <p>Are you sure you want to delete the group <strong><%= row.name %></strong>?</p>
   <input type="hidden" name="__action" value="delete_group">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="group_id" value="<%= row.group_id %>">

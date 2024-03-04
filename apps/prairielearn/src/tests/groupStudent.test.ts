@@ -1,6 +1,6 @@
 import ERR = require('async-stacktrace');
 import fetch from 'node-fetch';
-import fetchCookie = require('fetch-cookie');
+import fetchCookie from 'fetch-cookie';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
