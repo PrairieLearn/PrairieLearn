@@ -1,16 +1,15 @@
-const { logger } = require('@prairielearn/logger');
-const opsbot = require('../lib/opsbot');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { logger } from '@prairielearn/logger';
+import * as opsbot from '../lib/opsbot';
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = {};
-
-module.exports.run = async () => {
+export async function run() {
   if (!opsbot.canSendMessages()) return;
 
   const result = await sqldb.queryAsync(sql.select_unfinished_cron_jobs, []);
-  if (result.rowCount <= 0) return;
+  if (!result.rowCount) return;
 
   let msg = `_Unfinished cron jobs:_\n`;
   for (const row of result.rows) {
@@ -21,4 +20,4 @@ module.exports.run = async () => {
   await opsbot
     .sendMessage(msg)
     .catch((err) => logger.error(`Error posting unfinished cron jobs to slack`, err.data));
-};
+}

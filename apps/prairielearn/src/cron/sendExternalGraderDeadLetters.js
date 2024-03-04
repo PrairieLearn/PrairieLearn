@@ -1,21 +1,21 @@
 // @ts-check
-const async = require('async');
-const {
+import * as async from 'async';
+import {
   SQSClient,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
-const { logger } = require('@prairielearn/logger');
+} from '@aws-sdk/client-sqs';
+import { logger } from '@prairielearn/logger';
 
-const { makeAwsClientConfig } = require('../lib/aws');
-const { config } = require('../lib/config');
-const opsbot = require('../lib/opsbot');
+import { makeAwsClientConfig } from '../lib/aws';
+import { config } from '../lib/config';
+import * as opsbot from '../lib/opsbot';
 
 // After loading the queue url for the first time, we'll cache it here
 const QUEUE_URLS = {};
 
-module.exports.run = async () => {
+export async function run() {
   if (!opsbot.canSendMessages()) return;
 
   const jobsDeadLetterQueueName = config.externalGradingJobsDeadLetterQueueName;
@@ -34,7 +34,7 @@ module.exports.run = async () => {
   await opsbot
     .sendMessage(msg)
     .catch((err) => logger.error(`Error posting external grading dead letters to slack`, err.data));
-};
+}
 
 /**
  * @param {SQSClient} sqs

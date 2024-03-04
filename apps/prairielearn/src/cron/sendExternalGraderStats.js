@@ -1,9 +1,10 @@
-const { config } = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
-const opsbot = require('../lib/opsbot');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { config } from '../lib/config';
+import { logger } from '@prairielearn/logger';
+import * as opsbot from '../lib/opsbot';
+import * as sqldb from '@prairielearn/postgres';
 
-module.exports.run = async () => {
+export async function run() {
   if (!opsbot.canSendMessages()) return;
 
   const result = await sqldb.callOneRowAsync('grading_jobs_stats_day', []);
@@ -47,4 +48,4 @@ module.exports.run = async () => {
   await opsbot
     .sendMessage(msg)
     .catch((err) => logger.error(`Error posting external grading stats to slack`, err.data));
-};
+}

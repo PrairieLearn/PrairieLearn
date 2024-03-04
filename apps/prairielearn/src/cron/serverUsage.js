@@ -1,10 +1,11 @@
-const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import * as sqldb from '@prairielearn/postgres';
 
-const { makeAwsClientConfig } = require('../lib/aws');
-const { config } = require('../lib/config');
+import { makeAwsClientConfig } from '../lib/aws';
+import { config } from '../lib/config';
 
-module.exports.run = async () => {
+export async function run() {
   if (!config.runningInEc2) return;
 
   const result = await sqldb.callOneRowAsync('server_usage_current', [
@@ -60,4 +61,4 @@ module.exports.run = async () => {
       },
     ],
   });
-};
+}
