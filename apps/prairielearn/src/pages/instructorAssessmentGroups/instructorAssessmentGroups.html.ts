@@ -212,11 +212,7 @@ export function InstructorAssessmentGroups({
                                           data-placement="auto"
                                           title="Add members"
                                           data-content="${escapeHtml(
-                                            formAddMembers({
-                                              row: row,
-                                              iRow: iRow,
-                                              resLocals,
-                                            }),
+                                            formAddMembers({ row, iRow, resLocals }),
                                           )}"
                                         >
                                           <i class="fa fa-user-plus" aria-hidden="true"></i> Add
