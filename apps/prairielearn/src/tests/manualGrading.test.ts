@@ -5,7 +5,6 @@ import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
-import { features } from '../lib/features/index';
 import * as helperServer from './helperServer';
 import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
@@ -365,10 +364,6 @@ describe('Manual Grading', function () {
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
-
-  before('ensure course has manual grading enabled', async () => {
-    await features.enable('manual-grading-rubrics');
-  });
 
   before('build assessment manual grading page URL', async () => {
     const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
