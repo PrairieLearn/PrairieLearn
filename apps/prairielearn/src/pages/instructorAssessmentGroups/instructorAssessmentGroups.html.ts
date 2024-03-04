@@ -1,14 +1,8 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { nodeModulesAssetPath } from '../../lib/assets';
-import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
+import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types';
 import { z } from 'zod';
-
-export const GroupConfigInfoSchema = GroupConfigSchema.extend({
-  defaultMin: z.number().optional(),
-  defaultMax: z.number().optional(),
-});
-type GroupConfigInfo = z.infer<typeof GroupConfigInfoSchema>;
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -27,7 +21,7 @@ export function InstructorAssessmentGroups({
 }: {
   resLocals: Record<string, any>;
   groupsCsvFilename?: string;
-  groupConfigInfo?: GroupConfigInfo;
+  groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
 }) {
@@ -84,10 +78,7 @@ export function InstructorAssessmentGroups({
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
-          ${typeof resLocals.errormsg !== 'undefined' && resLocals.errormsg.length > 0
-            ? html` <div class="alert alert-danger" role="alert">${resLocals.errormsg}</div> `
-            : ''}
-          ${!resLocals.isGroup
+          ${!groupConfigInfo
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -102,261 +93,18 @@ export function InstructorAssessmentGroups({
             : html`
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
-                      <div class="container-fluid">
-                        <div
-                          class="modal fade"
-                          id="uploadAssessmentGroupsModal"
-                          tabindex="-1"
-                          role="dialog"
-                          aria-labelledby="uploadAssessmentGroupsModalLabel"
-                        >
-                          <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">
-                                  Upload new group assignments
-                                </h1>
-                              </div>
-                              <div class="modal-body">
-                                <p>Upload a CSV file in the format of:</p>
-                              </div>
-                              <div class="modal-body">
-                                <code class="mb-0 text-dark">
-                                  groupName,UID<br />
-                                  groupA,one@example.com<br />
-                                  groupA,two@example.com<br />
-                                  groupB,three@example.com<br />
-                                  groupB,four@example.com</code
-                                >
-                                <!-- Closing code tag not on its own line to improve copy/paste formatting -->
-                              </div>
-                              <div class="modal-body">
-                                <p>
-                                  The <code>groupname</code> column should be a unique identifier
-                                  for each group. To change the grouping, link uids to the
-                                  groupname.
-                                </p>
-                                <form
-                                  name="upload-assessment-group-form"
-                                  method="POST"
-                                  enctype="multipart/form-data"
-                                >
-                                  <div class="form-group">
-                                    <div class="custom-file">
-                                      <input
-                                        type="file"
-                                        accept=".csv"
-                                        name="file"
-                                        class="custom-file-input"
-                                        id="uploadAssessmentGroupsFileInput"
-                                      />
-                                      <label
-                                        class="custom-file-label"
-                                        for="uploadAssessmentGroupsFileInput"
-                                        >Choose CSV file</label
-                                      >
-                                    </div>
-                                  </div>
-                                  <div class="d-flex justify-content-end">
-                                    <div class="form-group mb-0">
-                                      <input
-                                        type="hidden"
-                                        name="__action"
-                                        value="upload_assessment_groups"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="__csrf_token"
-                                        value="${resLocals.__csrf_token}"
-                                      />
-                                      <button
-                                        type="button"
-                                        class="btn btn-secondary"
-                                        data-dismiss="modal"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button type="submit" class="btn btn-primary">Upload</button>
-                                    </div>
-                                  </div>
-                                </form>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="container-fluid">
-                          <div
-                            class="modal fade"
-                            id="autoAssessmentGroupsModal"
-                            tabindex="-1"
-                            role="dialog"
-                            aria-labelledby="autoAssessmentGroupsModalLabel"
-                          >
-                            <div class="modal-dialog" role="document">
-                              <div class="modal-content">
-                                <div class="modal-header">
-                                  <h1 class="h4 modal-title" id="autoAssessmentGroupsModalLabel">
-                                    Auto new group setting
-                                  </h1>
-                                </div>
-                                <div class="modal-body">
-                                  <form
-                                    name="auto-assessment-group-form"
-                                    method="POST"
-                                    enctype="multipart/form-data"
-                                  >
-                                    <div class="form-group">
-                                      <label for="formMin">Min number of members in a group</label>
-                                      <input
-                                        type="text"
-                                        value="${groupConfigInfo?.defaultMin}"
-                                        class="form-control"
-                                        id="formMin"
-                                        name="min_group_size"
-                                      />
-                                    </div>
-                                    <div class="form-group">
-                                      <label for="formMax">Max number of members in a group</label>
-                                      <input
-                                        type="text"
-                                        value="${groupConfigInfo?.defaultMax}"
-                                        class="form-control"
-                                        id="formMax"
-                                        name="max_group_size"
-                                      />
-                                    </div>
-                                    <div class="d-flex justify-content-end">
-                                      <div class="form-group mb-0">
-                                        <input
-                                          type="hidden"
-                                          name="__action"
-                                          value="auto_assessment_groups"
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="__csrf_token"
-                                          value="${resLocals.__csrf_token}"
-                                        />
-                                        <button
-                                          type="button"
-                                          class="btn btn-secondary"
-                                          data-dismiss="modal"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button type="submit" class="btn btn-primary">Group</button>
-                                      </div>
-                                    </div>
-                                  </form>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            class="modal fade"
-                            id="addGroupModal"
-                            tabindex="-1"
-                            role="dialog"
-                            aria-labelledby="addGroupModalLabel"
-                          >
-                            <div class="modal-dialog" role="document">
-                              <div class="modal-content">
-                                <div class="modal-header">
-                                  <h1 class="h4 modal-title" id="addGroupModalLabel">
-                                    Add a group
-                                  </h1>
-                                </div>
-                                <form name="add-group-form" method="POST">
-                                  <div class="modal-body">
-                                    <div class="form-group">
-                                      <label for="formName">Group Name</label>
-                                      <input
-                                        type="text"
-                                        class="form-control"
-                                        id="formName"
-                                        name="group_name"
-                                      />
-                                    </div>
-                                    <br />
-                                    <div class="form-group">
-                                      <label for="formUids">UIDs</label>
-                                      <input
-                                        type="text"
-                                        class="form-control"
-                                        id="formUids"
-                                        name="uids"
-                                        placeholder="one@example.com, two@example.com, three@example.com"
-                                      />
-                                      <small id="uidHelp" class="form-text text-muted"
-                                        >Separate with "," <br />Please make sure they are not in
-                                        any other groups</small
-                                      >
-                                    </div>
-                                  </div>
-                                  <div class="modal-footer">
-                                    <input type="hidden" name="__action" value="add_group" />
-                                    <input
-                                      type="hidden"
-                                      name="__csrf_token"
-                                      value="${resLocals.__csrf_token}"
-                                    />
-                                    <button
-                                      type="button"
-                                      class="btn btn-secondary"
-                                      data-dismiss="modal"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button type="submit" class="btn btn-primary">Add</button>
-                                  </div>
-                                </form>
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            class="modal fade"
-                            id="deleteAllGroupsModal"
-                            tabindex="-1"
-                            role="dialog"
-                            aria-labelledby="deleteAllGroupsModalLabel"
-                          >
-                            <div class="modal-dialog" role="document">
-                              <div class="modal-content">
-                                <div class="modal-header">
-                                  <h1 class="h4 modal-title" id="deleteAllGroupsModalLabel">
-                                    Delete all existing groups
-                                  </h1>
-                                </div>
-                                <div class="modal-body">
-                                  Are you sure you want to delete all existing groups for
-                                  <strong
-                                    >${resLocals.assessment_set.name}
-                                    ${resLocals.assessment.number}</strong
-                                  >? This cannot be undone.
-                                </div>
-                                <div class="modal-footer">
-                                  <form name="delete-all-form" method="POST">
-                                    <input type="hidden" name="__action" value="delete_all" />
-                                    <input
-                                      type="hidden"
-                                      name="__csrf_token"
-                                      value="${resLocals.__csrf_token}"
-                                    />
-                                    <button
-                                      type="button"
-                                      class="btn btn-secondary"
-                                      data-dismiss="modal"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button type="submit" class="btn btn-danger">Delete all</button>
-                                  </form>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      ${uploadAssessmentGroupsModal(resLocals.__csrf_token)}
+                      ${autoAssessmentGroupsModal({
+                        groupMin: groupConfigInfo.minimum ? groupConfigInfo.minimum : 2,
+                        groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
+                      ${addGroupModal(resLocals.__csrf_token)}
+                      ${deleteGroupModal({
+                        assessmentSetName: resLocals.assessment_set.name,
+                        assessmentNumber: resLocals.assessment.number,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
                     `
                   : ''}
                 <div class="card mb-4">
@@ -670,5 +418,228 @@ function formRemoveMembers({
         Delete
       </button>
     </form>
+  `;
+}
+
+function uploadAssessmentGroupsModal(csrfToken: string) {
+  return html`
+    <div class="container-fluid">
+      <div
+        class="modal fade"
+        id="uploadAssessmentGroupsModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="uploadAssessmentGroupsModalLabel"
+      >
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">
+                Upload new group assignments
+              </h1>
+            </div>
+            <div class="modal-body">
+              <p>Upload a CSV file in the format of:</p>
+            </div>
+            <div class="modal-body">
+              <code class="mb-0 text-dark">
+                groupName,UID<br />
+                groupA,one@example.com<br />
+                groupA,two@example.com<br />
+                groupB,three@example.com<br />
+                groupB,four@example.com</code
+              >
+              <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+            </div>
+            <div class="modal-body">
+              <p>
+                The <code>groupname</code> column should be a unique identifier for each group. To
+                change the grouping, link uids to the groupname.
+              </p>
+              <form name="upload-assessment-group-form" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                  <div class="custom-file">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      name="file"
+                      class="custom-file-input"
+                      id="uploadAssessmentGroupsFileInput"
+                    />
+                    <label class="custom-file-label" for="uploadAssessmentGroupsFileInput"
+                      >Choose CSV file</label
+                    >
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                  <div class="form-group mb-0">
+                    <input type="hidden" name="__action" value="upload_assessment_groups" />
+                    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function autoAssessmentGroupsModal({
+  groupMin,
+  groupMax,
+  csrfToken,
+}: {
+  groupMin: number;
+  groupMax: number;
+  csrfToken: string;
+}) {
+  return html` <div class="container-fluid">
+    <div
+      class="modal fade"
+      id="autoAssessmentGroupsModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="autoAssessmentGroupsModalLabel"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="h4 modal-title" id="autoAssessmentGroupsModalLabel">
+              Auto new group setting
+            </h1>
+          </div>
+          <div class="modal-body">
+            <form name="auto-assessment-group-form" method="POST" enctype="multipart/form-data">
+              <div class="form-group">
+                <label for="formMin">Min number of members in a group</label>
+                <input
+                  type="text"
+                  value="${groupMin}"
+                  class="form-control"
+                  id="formMin"
+                  name="min_group_size"
+                />
+              </div>
+              <div class="form-group">
+                <label for="formMax">Max number of members in a group</label>
+                <input
+                  type="text"
+                  value="${groupMax}"
+                  class="form-control"
+                  id="formMax"
+                  name="max_group_size"
+                />
+              </div>
+              <div class="d-flex justify-content-end">
+                <div class="form-group mb-0">
+                  <input type="hidden" name="__action" value="auto_assessment_groups" />
+                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-primary">Group</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function addGroupModal(csrfToken: string) {
+  return html`
+    <div
+      class="modal fade"
+      id="addGroupModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="addGroupModalLabel"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="h4 modal-title" id="addGroupModalLabel">Add a group</h1>
+          </div>
+          <form name="add-group-form" method="POST">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="formName">Group Name</label>
+                <input type="text" class="form-control" id="formName" name="group_name" />
+              </div>
+              <br />
+              <div class="form-group">
+                <label for="formUids">UIDs</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="formUids"
+                  name="uids"
+                  placeholder="one@example.com, two@example.com, three@example.com"
+                />
+                <small id="uidHelp" class="form-text text-muted"
+                  >Separate with "," <br />Please make sure they are not in any other groups</small
+                >
+              </div>
+            </div>
+            <div class="modal-footer">
+              <input type="hidden" name="__action" value="add_group" />
+              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function deleteGroupModal({
+  csrfToken,
+  assessmentSetName,
+  assessmentNumber,
+}: {
+  csrfToken: string;
+  assessmentSetName: string;
+  assessmentNumber: number;
+}) {
+  return html`
+    <div
+      class="modal fade"
+      id="deleteAllGroupsModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="deleteAllGroupsModalLabel"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="h4 modal-title" id="deleteAllGroupsModalLabel">
+              Delete all existing groups
+            </h1>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete all existing groups for
+            <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
+          </div>
+          <div class="modal-footer">
+            <form name="delete-all-form" method="POST">
+              <input type="hidden" name="__action" value="delete_all" />
+              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Delete all</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }

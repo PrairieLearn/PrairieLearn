@@ -15,11 +15,8 @@ import {
   leaveGroup,
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
-import {
-  InstructorAssessmentGroups,
-  GroupConfigInfoSchema,
-  GroupUsersRowSchema,
-} from './instructorAssessmentGroups.html';
+import { GroupConfigSchema } from '../../lib/db-types';
+import { InstructorAssessmentGroups, GroupUsersRowSchema } from './instructorAssessmentGroups.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -41,16 +38,13 @@ router.get(
     const groupConfigInfo = await sqldb.queryOptionalRow(
       sql.config_info,
       { assessment_id: res.locals.assessment.id },
-      GroupConfigInfoSchema,
+      GroupConfigSchema,
     );
-    res.locals.isGroup = !!groupConfigInfo;
+
     if (!groupConfigInfo) {
       res.send(InstructorAssessmentGroups({ resLocals: res.locals }));
       return;
     }
-
-    groupConfigInfo.defaultMin = groupConfigInfo.minimum || 2;
-    groupConfigInfo.defaultMax = groupConfigInfo.maximum || 5;
 
     const groups = await sqldb.queryRows(
       sql.select_group_users,
