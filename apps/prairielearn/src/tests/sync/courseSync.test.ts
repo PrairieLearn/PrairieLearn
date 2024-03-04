@@ -2,10 +2,10 @@ import { assert } from 'chai';
 import * as util from './util';
 import * as helperDb from '../helperDb';
 import { config } from '../../lib/config';
-import { features, type FeatureName } from '../../lib/features';
+import { features } from '../../lib/features';
 import { selectOrInsertCourseByPath } from '../../models/course';
 
-const [sampleFeature1, sampleFeature2] = features.allFeatures() as FeatureName[];
+const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';
 
 describe('Course syncing', () => {
