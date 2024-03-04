@@ -1,6 +1,6 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
+import { nodeModulesAssetPath } from '../../lib/assets';
 import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
 import { z } from 'zod';
 
@@ -43,7 +43,6 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
 
             // Prevent the dropdown menu from closing when the popover is opened.
             $('.js-group-action[data-toggle="popover"]').on("click", (e) => {
-              console.log('click-popover')
               e.stopPropagation();
             });
 
@@ -62,8 +61,8 @@ export function InstructorAssessmentGroups({ resLocals, groupsCsvFilename, group
 
           // make the file inputs display the file name
           $(document).on('change', '.custom-file-input', function () {
-            let fileName = $(this).val().replace(/\\/g, '/').replace(/.*//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
+            this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
+            $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
           });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
