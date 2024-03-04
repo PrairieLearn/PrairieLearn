@@ -1,18 +1,17 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
-import { InstitutionSchema, CourseSchema } from '../../lib/db-types';
 import {
   createCourseFromRequest,
   selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request';
 import { selectAllInstitutions } from '../../models/institution';
+import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -20,24 +19,24 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.coursesRoot = config.coursesRoot;
-    res.locals.course_requests = await selectPendingCourseRequests();
-    res.locals.institutions = await selectAllInstitutions();
-    res.locals.courses = await sqldb.queryRows(
-      sql.select_courses,
-      CourseSchema.extend({
-        institution: InstitutionSchema,
+    const course_requests = await selectPendingCourseRequests();
+    const institutions = await selectAllInstitutions();
+    const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
+    res.send(
+      AdministratorCourses({
+        course_requests,
+        institutions,
+        courses,
+        coursesRoot: config.coursesRoot,
+        resLocals: res.locals,
       }),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.is_administrator) throw error.make(403, 'Insufficient permissions');
-
     if (req.body.__action === 'courses_insert') {
       await sqldb.callAsync('courses_insert', [
         req.body.institution_id,

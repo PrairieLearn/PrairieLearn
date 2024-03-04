@@ -46,8 +46,6 @@ export function AdministratorAdmins({
                     id: 'administratorInsertButton',
                   }),
                 )}"
-                data-trigger="manual"
-                onclick="$(this).popover('show')"
               >
                 <i class="fa fa-user-plus" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add administrator</span>
@@ -89,8 +87,6 @@ export function AdministratorAdmins({
                                 userId: admin.user_id,
                               }),
                             )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Remove
                           </button>
