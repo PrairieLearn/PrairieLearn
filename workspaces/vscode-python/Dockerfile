@@ -17,8 +17,9 @@ RUN export OLD_UID=$(id -u coder) && \
 # Install Python via miniconda
 USER coder
 COPY requirements.txt /
-RUN curl -sfLO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
- && /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /home/coder/miniconda \
+RUN export arch=`uname -m` \
+ && curl -sfLO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh \
+ && /bin/bash Miniconda3-latest-Linux-${arch}.sh -b -p /home/coder/miniconda \
  && PATH="/home/coder/miniconda/bin:$PATH" \
  && /home/coder/miniconda/condabin/conda init bash \
  && conda config --add channels conda-forge \
