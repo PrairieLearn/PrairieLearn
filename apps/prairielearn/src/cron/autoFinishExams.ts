@@ -34,7 +34,7 @@ export async function run() {
     // We don't have a client fingerprint ID, so pass null.
     const clientFingerprintId = null;
     try {
-      assessment.gradeAssessmentInstance(
+      await assessment.gradeAssessmentInstance(
         examItem.assessment_instance_id,
         authn_user_id,
         requireOpen,
