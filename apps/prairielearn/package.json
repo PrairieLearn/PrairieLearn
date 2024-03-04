@@ -92,7 +92,7 @@
     "express-session": "^1.18.0",
     "fabric": "^4.6.0",
     "fast-glob": "^3.3.2",
-    "fetch-cookie": "^2.2.0",
+    "fetch-cookie": "^3.0.1",
     "file-type": "^16.5.4",
     "filesize": "^10.1.0",
     "folder-hash": "^4.0.4",
