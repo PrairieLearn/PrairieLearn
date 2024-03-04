@@ -165,7 +165,7 @@ router.post(
         throw error.make(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
-      await assessment.gradeAssessmentInstanceAsync(
+      await assessment.gradeAssessmentInstance(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,
