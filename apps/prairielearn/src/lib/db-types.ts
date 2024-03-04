@@ -697,9 +697,9 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
-  short_name: z.string().nullable(),
-  title: z.string().nullable(),
-  user_id: IdSchema.nullable(),
+  short_name: z.string(),
+  title: z.string(),
+  user_id: IdSchema,
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;

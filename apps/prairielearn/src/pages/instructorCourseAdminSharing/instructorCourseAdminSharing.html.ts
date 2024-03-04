@@ -135,9 +135,7 @@ export const InstructorSharing = ({
       <body>
         <script>
           $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
+            $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -212,8 +210,6 @@ export const InstructorSharing = ({
                         data-placement="auto"
                         title="Create Sharing Set"
                         data-content="${addSharingSetPopover(resLocals)}"
-                        data-trigger="manual"
-                        onclick="$(this).popover('show')"
                       >
                         <i class="fas fa-plus" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Create Sharing Set</span>
@@ -252,8 +248,6 @@ export const InstructorSharing = ({
                                   resLocals,
                                   sharing_set,
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>
