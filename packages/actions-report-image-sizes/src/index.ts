@@ -91,6 +91,11 @@ async function getImageManifest(
     return null;
   }
 
+  if (!manifestResponse.ok) {
+    const status = `${manifestResponse.status} ${manifestResponse.statusText}`;
+    throw new Error(`Failed to fetch manifest for ${image}:${reference}: ${status}`);
+  }
+
   const rawManifest = await manifestResponse.json();
   const manifest = DockerApiImageManifestSchema.parse(rawManifest);
   const digest = manifestResponse.headers.get('Docker-Content-Digest');
