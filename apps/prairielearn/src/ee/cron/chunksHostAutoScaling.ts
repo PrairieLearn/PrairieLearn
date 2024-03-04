@@ -11,7 +11,7 @@ const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
 
-export const run = async () => {
+export async function run() {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
@@ -160,7 +160,7 @@ export const run = async () => {
   });
 
   await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, desiredInstances);
-};
+}
 
 /**
  * Sets the desired capacity of the given autoscaling group.

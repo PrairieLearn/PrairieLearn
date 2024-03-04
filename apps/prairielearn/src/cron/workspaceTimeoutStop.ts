@@ -76,8 +76,8 @@ async function stopInLaunchingTimeoutWorkspaces() {
   }
 }
 
-export const run = async () => {
+export async function run() {
   await stopLaunchedTimeoutWorkspaces();
   await stopHeartbeatTimeoutWorkspaces();
   await stopInLaunchingTimeoutWorkspaces();
-};
+}

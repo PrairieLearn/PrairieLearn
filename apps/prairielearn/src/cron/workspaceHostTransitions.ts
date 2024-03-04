@@ -12,13 +12,13 @@ import * as workspaceHostUtils from '../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 
-export const run = async () => {
+export async function run() {
   if (!config.runningInEc2) return;
 
   await checkDBConsistency();
   await terminateHosts();
   await checkHealth();
-};
+}
 
 function setDifference<T>(a: Set<T>, b: Set<T>): Set<T> {
   const diff = new Set<T>();

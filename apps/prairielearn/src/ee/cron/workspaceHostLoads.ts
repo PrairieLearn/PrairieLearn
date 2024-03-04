@@ -10,12 +10,12 @@ const sql = loadSqlEquiv(__filename);
 
 type WorkspaceLoadStats = Record<string, any>;
 
-export const run = async () => {
+export async function run() {
   if (!config.runningInEc2) return;
   const stats = await getLoadStats();
   await sendStatsToCloudwatch(stats);
   await handleWorkspaceAutoscaling(stats);
-};
+}
 
 async function getLoadStats(): Promise<WorkspaceLoadStats> {
   const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];
