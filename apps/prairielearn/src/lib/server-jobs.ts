@@ -95,7 +95,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
-    const start = Date.now();
+    const start = performance.now();
     let didOutput = false;
     const proc2 = execa(file, args, {
       ...options,
@@ -117,7 +117,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       }
 
       // Record timing information.
-      const duration = Date.now() - start;
+      const duration = (performance.now() - start).toFixed(2);
       this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
   }
