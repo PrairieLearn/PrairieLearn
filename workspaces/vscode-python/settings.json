@@ -1,7 +1,6 @@
 {
   "redhat.telemetry.enabled": false,
   "security.workspace.trust.enabled": false,
-  "workbench.startupEditor": "readme",
   "window.restoreWindows": "none",
   "window.openFoldersInNewWindow": "off",
   "update.mode": "none",
