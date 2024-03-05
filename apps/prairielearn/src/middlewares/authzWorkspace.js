@@ -27,8 +27,11 @@ module.exports = asyncHandler(async (req, res, next) => {
   if (result.rows.length === 0) {
     // We couldn't find the workspace. Someone could have put in a bad workspace ID,
     // or there could be a dangling workspace after a variant was deleted. Either way,
-    // translate this to a 404 to keep the error out of our monitoring.
-    throw error.make(404, 'Workspace not found');
+    // translate this to a 403 the error out of our monitoring.
+    //
+    // We use a 403 instead of a 404 to avoid leaking information about the existence
+    // of particular workspace IDs.
+    throw error.make(403, 'Access denied');
   }
 
   _.assign(res.locals, result.rows[0]);
