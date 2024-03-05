@@ -214,13 +214,6 @@ router.post('/*', (req, res, next) => {
       invalidRootPaths: paths.invalidRootPaths,
     };
 
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.example_course) {
-      return next(
-        error.make(400, `attempting to edit file inside example course: ${paths.workingPath}`),
-      );
-    }
-
     // NOTE: All actions are meant to do things to *files* and not to directories
     // (or anything else). However, nowhere do we check that it is actually being
     // applied to a file and not to a directory.
