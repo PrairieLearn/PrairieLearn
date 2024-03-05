@@ -303,7 +303,7 @@ export function AddFeatureGrantModalBody({
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
-                ${course.short_name}: ${course.title}
+                ${course.short_name}: ${course.title} (${course.repository ?? course.path})
               </option>
             `;
           })}
