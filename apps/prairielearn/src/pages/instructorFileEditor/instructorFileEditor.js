@@ -281,7 +281,7 @@ router.post('/*', (req, res, next) => {
         });
       });
     } else {
-      return next(error.make(400, `Unknown action: ${req.body.__action}`));
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   });
 });
