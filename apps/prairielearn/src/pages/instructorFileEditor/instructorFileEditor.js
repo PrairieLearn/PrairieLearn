@@ -17,7 +17,7 @@ import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
 import { isBinaryFile } from 'isbinaryfile';
 import * as modelist from 'ace-code/src/ext/modelist';
 import { idsEqual } from '../../lib/id';
-import { getPaths } from '../../lib/instructorFiles';
+import { getPathsCallback } from '../../lib/instructorFiles';
 import { getCourseOwners } from '../../lib/course';
 import { logger } from '@prairielearn/logger';
 import { FileModifyEditor } from '../../lib/editors';
@@ -47,7 +47,7 @@ router.get('/*', (req, res, next) => {
   // Do not allow users to edit files in bad locations (e.g., outside the
   // current course, outside the current course instance, etc.). Do this by
   // wrapping everything in getPaths, which throws an error on a bad path.
-  getPaths(req, res, (err, paths) => {
+  getPathsCallback(req, res, (err, paths) => {
     if (ERR(err, next)) return;
 
     // We could also check if the file exists, if the file actually is a
@@ -207,7 +207,7 @@ router.post('/*', (req, res, next) => {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
 
-  getPaths(req, res, (err, paths) => {
+  getPathsCallback(req, res, (err, paths) => {
     if (ERR(err, next)) return;
     const container = {
       rootPath: paths.rootPath,

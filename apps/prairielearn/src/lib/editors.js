@@ -161,6 +161,12 @@ export class Editor {
               // (removing changes made by this edit) and sync (because changes were made
               // by the pull) before we error and exit.
 
+              // Safety check: make sure the course has a defined branch and repository.
+              if (!this.course.branch || !this.course.repository) {
+                job.fail('Git repository or branch are not set for this course. Exiting...');
+                return;
+              }
+
               job.info('Update to latest remote origin address');
               await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
                 cwd: this.course.path,
