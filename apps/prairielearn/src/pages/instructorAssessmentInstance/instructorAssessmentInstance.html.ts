@@ -1,10 +1,10 @@
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
-import { nodeModulesAssetPath } from '../../lib/assets';
+import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -83,6 +83,7 @@ export function InstructorAssessmentInstance({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
+        ${compiledScriptTag('popover.ts')}
       </head>
       <body>
         <script>
@@ -155,10 +156,10 @@ export function InstructorAssessmentInstance({
                             tabindex="0"
                             class="btn btn-xs"
                             role="button"
+                            id="fingerprintDescriptionPopover"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
-                            data-html="true"
+                            data-html="false"
                             title="Client Fingerprint Changes"
                             data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
                             ><i class="fa fa-question-circle"></i
@@ -187,16 +188,16 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
-                            data-container="body"
                             data-html="true"
                             data-placement="auto"
+                            data-container="body"
                             title="Change total points"
-                            data-content="${`${EditTotalPointsForm({
-                              resLocals,
-                              id: 'editTotalPointsButton',
-                            })}`}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
+                            data-content="${escapeHtml(
+                              EditTotalPointsForm({
+                                resLocals,
+                                id: 'editTotalPointsButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -223,12 +224,12 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
-                            data-content="${`${EditTotalScorePercForm({
-                              resLocals,
-                              id: 'editTotalScorePercButton',
-                            })}`}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
+                            data-content="${escapeHtml(
+                              EditTotalScorePercForm({
+                                resLocals,
+                                id: 'editTotalScorePercButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -247,7 +248,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
                             data-html="true"
                             title="Included in statistics"
@@ -262,7 +262,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
                             data-html="true"
                             title="Not included in statistics"
@@ -367,8 +366,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -406,8 +403,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -440,8 +435,6 @@ export function InstructorAssessmentInstance({
                                     instance_question: instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -474,8 +467,6 @@ export function InstructorAssessmentInstance({
                                     instance_question: instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -591,7 +582,7 @@ export function InstructorAssessmentInstance({
                 </tr>
               </thead>
               <tbody>
-                ${assessmentInstanceLog.map((row) => {
+                ${assessmentInstanceLog.map((row, index) => {
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
@@ -606,7 +597,7 @@ export function InstructorAssessmentInstance({
                                       row.client_fingerprint_number % 6
                                     ]} color-hover"
                                     role="button"
-                                    id="fingerprintPopover${row.client_fingerprint?.id}"
+                                    id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
                                     data-toggle="popover"
                                     data-container="body"
                                     data-html="true"
@@ -614,7 +605,9 @@ export function InstructorAssessmentInstance({
                                     title="Fingerprint ${row.client_fingerprint_number}"
                                     data-content="
                                         <div>
-                                            IP Address: ${row.client_fingerprint?.ip_address}
+                                            IP Address: <a href=https://client.rdap.org/?type=ip&object=${row
+                                      .client_fingerprint?.ip_address} target=blank>${row
+                                      .client_fingerprint?.ip_address} </a>
                                         </div>
                                         <div>
                                             Session ID: ${row.client_fingerprint?.user_session_id}
@@ -623,7 +616,6 @@ export function InstructorAssessmentInstance({
                                             User Agent: ${row.client_fingerprint?.user_agent}
                                         </div>
                                         "
-                                    data-trigger="focus"
                                   >
                                     ${row.client_fingerprint_number}
                                   </a>

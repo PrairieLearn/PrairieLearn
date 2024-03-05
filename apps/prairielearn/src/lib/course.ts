@@ -97,7 +97,7 @@ export async function pullAndUpdateCourse({
     }
 
     const lockName = getLockNameForCoursePath(path);
-    await namedLocks.tryWithLock(
+    await namedLocks.doWithLock(
       lockName,
       {
         timeout: 5000,

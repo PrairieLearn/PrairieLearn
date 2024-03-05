@@ -559,7 +559,7 @@ export const InstanceQuestionSchema = z.object({
     .nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
-  variants_points_list: z.array(z.number()),
+  variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 
@@ -697,9 +697,9 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
-  short_name: z.string().nullable(),
-  title: z.string().nullable(),
-  user_id: IdSchema.nullable(),
+  short_name: z.string(),
+  title: z.string(),
+  user_id: IdSchema,
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
