@@ -30,7 +30,7 @@ import * as modelist from 'ace-code/src/ext/modelist';
 import { decodePath } from '../../lib/uri-util';
 import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks';
 import { idsEqual } from '../../lib/id';
-import { getPaths } from '../../lib/instructorFiles';
+import { getPathsCallback } from '../../lib/instructorFiles';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -165,7 +165,7 @@ router.get('/*', (req, res, next) => {
         fileEdit.origHash = fileEdit.diskHash;
       }
 
-      getPaths(req, res, (err, paths) => {
+      getPathsCallback(req, res, (err, paths) => {
         if (ERR(err, next)) return;
         res.locals.fileEdit = fileEdit;
         res.locals.fileEdit.paths = paths;
