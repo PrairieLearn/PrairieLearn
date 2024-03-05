@@ -1,3 +1,4 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import fg from 'fast-glob';
 
@@ -50,6 +51,7 @@ const qidsExampleCourse = [
   'element/variableOutput',
   'template/symbolic-input/random',
 ];
+let templateQuestionPaths: string[] = [];
 
 describe('Auto-test questions in exampleCourse', () => {
   before('add template questions', async () => {
@@ -59,8 +61,22 @@ describe('Auto-test questions in exampleCourse', () => {
       cwd: exampleCourseQuestionsPath,
       absolute: false,
     });
-    const templateQuestionPaths = templateQuestionJsonPaths.map((p) => path.dirname(p));
-    qidsExampleCourse.push(...templateQuestionPaths);
+    templateQuestionPaths = templateQuestionJsonPaths.map((p) => path.dirname(p));
+  });
+
+  it('has correct topic for all template questions', async () => {
+    const questionsWithIncorrectTopics: string[] = [];
+    for (const qid of templateQuestionPaths) {
+      const jsonPath = path.join(EXAMPLE_COURSE_PATH, 'questions', qid, 'info.json');
+      const json = JSON.parse(await fs.readFile(jsonPath, 'utf-8'));
+      if (json.topic !== 'Template') {
+        questionsWithIncorrectTopics.push(qid);
+      }
+    }
+    if (questionsWithIncorrectTopics.length) {
+      const qids = questionsWithIncorrectTopics.map((qid) => `"${qid}"`).join(', ');
+      throw new Error(`The following template questions have incorrect topics: ${qids}`);
+    }
   });
 
   describe('Auto-test questions in exampleCourse', function () {
@@ -69,7 +85,9 @@ describe('Auto-test questions in exampleCourse', () => {
     before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+    [...qidsExampleCourse, ...templateQuestionPaths].forEach((qid) =>
+      helperQuestion.autoTestQuestion(locals, qid),
+    );
   });
 
   describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
@@ -87,6 +105,8 @@ describe('Auto-test questions in exampleCourse', () => {
     });
 
     // Only test the first 10 questions so that this test doesn't take too long.
-    qidsExampleCourse.slice(0, 10).forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+    [...qidsExampleCourse, ...templateQuestionPaths]
+      .slice(0, 10)
+      .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
   });
 });
