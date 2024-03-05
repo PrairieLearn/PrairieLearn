@@ -184,5 +184,5 @@ export function getPathsCallback(req, res, callback) {
     callback(err);
     return;
   }
-  callback(paths);
+  callback(null, paths);
 }
