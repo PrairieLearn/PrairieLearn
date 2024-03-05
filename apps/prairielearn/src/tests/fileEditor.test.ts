@@ -688,7 +688,6 @@ function editGet(
 
 function doEdits(data) {
   describe(`edit ${data.path}`, function () {
-    //
     // "live" is a clone of origin (this is what's on the production server)
     // "dev" is a clone of origin (this is what's on someone's laptop)
     // "origin" is the bare git repo
@@ -702,8 +701,15 @@ function doEdits(data) {
     //
     // Remember that "origHash" has whatever was on disk at last GET.
     //
-    // (live at last post, live, dev, origin)
+    // The below tests are annotated with state of the file under test in
+    // several locations:
     //
+    // (live at last GET, live, dev, origin)
+    //
+    // Note that "live at last GET" refers to the fact that GET responses
+    // include the hash of the file on disk at the time of the GET, which
+    // is used to detect concurrent modifications. `editGet` and `editPost`
+    // store this hash in `locals` and include it in subsequent `POST` requests.
 
     editGet(data.url, false, false, data.contentsA, null);
     // (A, A, A, A)
@@ -719,13 +725,13 @@ function doEdits(data) {
     // (B, B, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsA);
-    // (A, A, B, B)
+    // (A, B, B, B)
 
     editGet(data.url, false, false, data.contentsA, null);
     // (A, A, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsB);
-    // (B, B, B, B)
+    // (A, B, B, B)
 
     editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
     waitForJobSequence(locals, 'Error');
