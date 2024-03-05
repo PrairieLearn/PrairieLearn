@@ -769,7 +769,7 @@ function doEdits(data) {
 
     editPost('save_and_sync', data.contentsA, data.url, true, false, null);
     waitForJobSequence(locals, 'Success');
-    // (A, A, C*, B)
+    // (A, A, C*, A)
 
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
     waitForJobSequence(locals, 'Success');
