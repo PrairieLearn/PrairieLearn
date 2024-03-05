@@ -40,15 +40,6 @@ router.get(
   }),
 );
 
-const UpdateEnrollmentLimitsBodySchema = z.object({
-  __action: z.literal('update_enrollment_limits'),
-  yearly_enrollment_limit: z.union([z.literal('').transform(() => null), z.coerce.number().int()]),
-  course_instance_enrollment_limit: z.union([
-    z.literal('').transform(() => null),
-    z.coerce.number().int(),
-  ]),
-});
-
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -62,7 +53,19 @@ router.post(
     );
 
     if (req.body.__action === 'update_enrollment_limits') {
-      const body = UpdateEnrollmentLimitsBodySchema.parse(req.body);
+      const body = z
+        .object({
+          __action: z.literal('update_enrollment_limits'),
+          yearly_enrollment_limit: z.union([
+            z.literal('').transform(() => null),
+            z.coerce.number().int(),
+          ]),
+          course_instance_enrollment_limit: z.union([
+            z.literal('').transform(() => null),
+            z.coerce.number().int(),
+          ]),
+        })
+        .parse(req.body);
       await runInTransactionAsync(async () => {
         const updatedCourse = await queryRow(
           sql.update_enrollment_limits,
