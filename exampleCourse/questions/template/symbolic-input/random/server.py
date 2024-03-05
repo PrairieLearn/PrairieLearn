@@ -12,7 +12,7 @@ def generate(data):
     # Randomize the coefficients.
     coeffs = np.random.randint(-9, 10, degree + 1)
     # Overwrite the leading coefficient to ensure it's non-zero.
-    coeffs[0] = np.random.randint(-9, 10)
+    coeffs[0] = np.random.randint(1, 10)
 
     # Create the polynomial.
     f = sympy.Poly(coeffs, x).as_expr()
