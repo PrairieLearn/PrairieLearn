@@ -1,3 +1,6 @@
+import * as path from 'node:path';
+import fg from 'fast-glob';
+
 import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
@@ -15,37 +18,22 @@ locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
 
 const qidsExampleCourse = [
-  // FIXME: 'demo/autograder/ansiOutput',
   'demo/calculation',
-  // FIXME: 'demo/autograder/codeEditor',
-  // FIXME: 'demo/autograder/codeUpload',
-  // FIXME: 'demo/manualGrade/codeUpload',
   'demo/custom/element',
   'demo/custom/gradeFunction',
   'demo/fixedCheckbox',
   'demo/matrixAlgebra',
   'demo/matrixComplexAlgebra',
+  'demo/proofBlocks',
   'demo/randomCheckbox',
   'demo/randomDataFrame',
   'demo/randomFakeData',
   'demo/randomMultipleChoice',
   'demo/randomPlot',
-  'demo/proofBlocks',
+  'element/bigOInput',
   'element/checkbox',
   'element/code',
-  // FIXME: 'demo/drawing/centroid',
-  // FIXME: 'demo/drawing/collarRod',
-  // FIXME: 'element/drawingGallery',
-  // FIXME: 'demo/drawing/gradeVector',
-  // FIXME: 'demo/drawing/graphs',
-  // FIXME: 'demo/drawing/inclinedPlane',
-  // FIXME: 'demo/drawing/liftingMechanism',
-  // FIXME: 'demo/drawing/pulley',
-  // FIXME: 'demo/drawing/simpleTutorial',
-  // FIXME: 'demo/drawing/vmDiagrams',
-  // FIXME: 'element/codeDocumentation',
   'element/fileDownload',
-  // FIXME: 'element/fileEditor',
   'element/graph',
   'element/integerInput',
   'element/markdown',
@@ -53,40 +41,52 @@ const qidsExampleCourse = [
   'element/matrixLatex',
   'element/multipleChoice',
   'element/numberInput',
+  'element/orderBlocks',
   'element/panels',
   'element/pythonVariable',
   'element/stringInput',
   'element/symbolicInput',
-  'element/bigOInput',
   'element/unitsInput',
   'element/variableOutput',
-  'element/orderBlocks',
   'template/symbolic-input/random',
 ];
 
-describe('Auto-test questions in exampleCourse', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
-
-  qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-});
-
-describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
-
-  const originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
-  before('enable process-questions-in-worker', () => {
-    config.features['process-questions-in-worker'] = true;
-  });
-  after('restore process-questions-in-worker', () => {
-    config.features['process-questions-in-worker'] = originalProcessQuestionsInWorker;
+describe('Auto-test questions in exampleCourse', () => {
+  before('add template questions', async () => {
+    // We hold all template questions to a high standard, so we will always test them all.
+    const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
+    const templateQuestionJsonPaths = await fg('template/**/info.json', {
+      cwd: exampleCourseQuestionsPath,
+      absolute: false,
+    });
+    const templateQuestionPaths = templateQuestionJsonPaths.map((p) => path.dirname(p));
+    qidsExampleCourse.push(...templateQuestionPaths);
   });
 
-  // Only test the first 10 questions so that this test doesn't take too long.
-  qidsExampleCourse.slice(0, 10).forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+  describe('Auto-test questions in exampleCourse', function () {
+    this.timeout(60000);
+
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    after('shut down testing server', helperServer.after);
+
+    qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+  });
+
+  describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
+    this.timeout(60000);
+
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    after('shut down testing server', helperServer.after);
+
+    const originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
+    before('enable process-questions-in-worker', () => {
+      config.features['process-questions-in-worker'] = true;
+    });
+    after('restore process-questions-in-worker', () => {
+      config.features['process-questions-in-worker'] = originalProcessQuestionsInWorker;
+    });
+
+    // Only test the first 10 questions so that this test doesn't take too long.
+    qidsExampleCourse.slice(0, 10).forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+  });
 });
