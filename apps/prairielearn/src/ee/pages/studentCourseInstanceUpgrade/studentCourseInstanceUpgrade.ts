@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import type Stripe from 'stripe';
 import { z } from 'zod';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
@@ -146,25 +146,29 @@ router.post(
       const customerId = await getOrCreateStripeCustomerId(user.user_id, {
         name: user.name,
       });
+      const metadata = {
+        prairielearn_institution_id: institution.id,
+        prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
+        prairielearn_course_id: course.id,
+        prairielearn_course_name: `${course.short_name}: ${course.title}`,
+        prairielearn_course_instance_id: course_instance.id,
+        prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
+        prairielearn_user_id: user.user_id,
+      };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         customer_update: {
           name: 'auto',
           address: 'auto',
         },
-        metadata: {
-          prairielearn_institution_id: institution.id,
-          prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
-          prairielearn_course_id: course.id,
-          prairielearn_course_name: `${course.short_name}: ${course.title}`,
-          prairielearn_course_instance_id: course_instance.id,
-          prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
-          prairielearn_user_id: user.user_id,
-        },
         line_items: lineItems,
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: urlBase,
+        metadata,
+        payment_intent_data: {
+          metadata,
+        },
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({

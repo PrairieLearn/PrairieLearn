@@ -16,21 +16,39 @@ export function shouldSecureCookie(req: Request, secure: CookieSecure): boolean 
   return secure;
 }
 
-export function getSessionIdFromCookie(
-  req: Request,
-  cookieName: string,
-  secrets: string[],
-): string | null {
+export function getSessionCookie(req: Request, cookieNames: string[]) {
   const cookies = cookie.parse(req.headers.cookie ?? '');
-  const sessionCookie = cookies[cookieName];
+
+  // Try each cookie name until we find one that's present.
+  let foundCookieName: string | null = null;
+  let sessionCookie: string | null = null;
+  for (const cookieName of cookieNames) {
+    if (cookies[cookieName]) {
+      foundCookieName = cookieName;
+      sessionCookie = cookies[cookieName];
+      break;
+    }
+  }
 
   if (!sessionCookie) return null;
 
+  return {
+    name: foundCookieName,
+    value: sessionCookie,
+  };
+}
+
+export function getSessionIdFromCookie(
+  sessionCookie: string | null | undefined,
+  secrets: string[],
+) {
   // Try each secret until we find one that works.
-  for (const secret of secrets) {
-    const value = signature.unsign(sessionCookie, secret);
-    if (value !== false) {
-      return value;
+  if (sessionCookie) {
+    for (const secret of secrets) {
+      const value = signature.unsign(sessionCookie, secret);
+      if (value !== false) {
+        return value;
+      }
     }
   }
 

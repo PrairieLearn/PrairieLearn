@@ -1,13 +1,14 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('@prairielearn/error');
-const regrading = require('../../lib/regrading');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import { regradeAllAssessmentInstances } from '../../lib/regrading';
+import * as sqldb from '@prairielearn/postgres';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
@@ -32,7 +33,7 @@ router.post('/', function (req, res, next) {
   }
 
   if (req.body.__action === 'regrade_all') {
-    regrading.regradeAllAssessmentInstances(
+    regradeAllAssessmentInstances(
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
@@ -42,12 +43,8 @@ router.post('/', function (req, res, next) {
       },
     );
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
-module.exports = router;
+
+export default router;

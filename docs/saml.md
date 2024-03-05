@@ -12,7 +12,7 @@ The full name of the user, e.g. "Joe Smith". This attribute is often named `disp
 
 ### UID
 
-An identifier with an institution-specific suffix, e.g. "jsmith@example.edu". This attribute is often named `eppn`, `eduPersonPrincipalName`, or `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`.
+An identifier with an institution-specific suffix, e.g. "jsmith@example.com". This attribute is often named `eppn`, `eduPersonPrincipalName`, or `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`.
 
 This attribute is allowed to change. For instance, at many institutions, someone who changes their name will receive an updated identifier. The next time they log in to PrairieLearn, their UID will be updated to reflect the latest value from the IdP.
 

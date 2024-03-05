@@ -3,7 +3,15 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 
 const { compiledScriptTag } = require('../../lib/assets');
 
-function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
+function Workspace({
+  navTitle,
+  navTitleHref,
+  showLogs,
+  heartbeatIntervalSec,
+  visibilityTimeoutSec,
+  socketToken,
+  resLocals,
+}) {
   return html`
     <!doctype html>
     <html lang="en" class="h-100">
@@ -15,6 +23,7 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
       <body
         class="d-flex flex-column h-100"
+        data-socket-token="${socketToken}"
         data-workspace-id="${resLocals.workspace_id}"
         data-heartbeat-interval-sec="${heartbeatIntervalSec}"
         data-visibility-timeout-sec="${visibilityTimeoutSec}"
@@ -114,8 +123,14 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
           class="navbar navbar-expand-md navbar-dark bg-info align-items-center"
           style="height:55px"
         >
-          <div class="navbar-brand">
-            PL Workspace<span class="d-none d-sm-inline-block small">: ${navTitle}</span>
+          <div class="d-flex flex-column mr-3 text-white">
+            <span>
+              <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+            </span>
+            <span class="small">
+              <i class="fa fa-laptop-code" aria-hidden="true"></i>
+              PrairieLearn Workspace
+            </span>
           </div>
 
           <div class="d-flex flex-row ml-auto align-items-center">

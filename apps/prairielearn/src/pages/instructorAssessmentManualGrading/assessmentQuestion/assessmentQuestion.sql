@@ -3,7 +3,7 @@ WITH
   issue_count AS (
     SELECT
       i.instance_question_id AS instance_question_id,
-      count(*) AS open_issue_count
+      count(*)::integer AS open_issue_count
     FROM
       issues AS i
     WHERE

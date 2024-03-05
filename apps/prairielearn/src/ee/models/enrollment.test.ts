@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 
-import helperDb = require('../../tests/helperDb');
-import helperCourse = require('../../tests/helperCourse');
+import * as helperDb from '../../tests/helperDb';
+import * as helperCourse from '../../tests/helperCourse';
 import { ensureEnrollment } from '../../models/enrollment';
 import {
   getEnrollmentCountsForCourseInstance,

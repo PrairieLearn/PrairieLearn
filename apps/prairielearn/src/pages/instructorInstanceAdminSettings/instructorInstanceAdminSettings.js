@@ -1,24 +1,25 @@
+//@ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
+import * as express from 'express';
 const QR = require('qrcode-svg');
-
-const sqldb = require('@prairielearn/postgres');
-
-const sql = sqldb.loadSqlEquiv(__filename);
-
-const async = require('async');
-const path = require('path');
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+import * as async from 'async';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const {
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import {
   CourseInstanceCopyEditor,
   CourseInstanceRenameEditor,
   CourseInstanceDeleteEditor,
-} = require('../../lib/editors');
-const { encodePath } = require('../../lib/uri-util');
-const { getCanonicalHost } = require('../../lib/url');
+} from '../../lib/editors';
+import { encodePath } from '../../lib/uri-util';
+import { getCanonicalHost } from '../../lib/url';
+
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');
@@ -78,6 +79,10 @@ router.post('/', function (req, res, next) {
             { uuid: editor.uuid, course_id: res.locals.course.id },
             (err, result) => {
               if (ERR(err, next)) return;
+              flash(
+                'success',
+                'Course instance copied successfully. You are new viewing your copy of the course instance.',
+              );
               res.redirect(
                 res.locals.plainUrlPrefix +
                   '/course_instance/' +
@@ -140,13 +145,8 @@ router.post('/', function (req, res, next) {
       });
     }
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;

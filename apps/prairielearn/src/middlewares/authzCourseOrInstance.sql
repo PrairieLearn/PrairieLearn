@@ -5,13 +5,7 @@ SELECT
   to_jsonb(i.*) AS institution,
   to_jsonb(ci.*) AS course_instance,
   permissions_course.*,
-  permissions_course_instance.*,
-  courses_with_staff_access ($user_id, $is_administrator) AS courses,
-  course_instances_with_staff_access (
-    $user_id,
-    $is_administrator,
-    coalesce($course_id, ci.course_id)
-  ) AS course_instances
+  permissions_course_instance.*
 FROM
   pl_courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)

@@ -1,14 +1,16 @@
-const path = require('path');
-const { contains } = require('@prairielearn/path-utils');
-const { html } = require('@prairielearn/html');
-const { encodePath, decodePath } = require('./uri-util');
+// @ts-check
+import * as path from 'path';
+import { contains } from '@prairielearn/path-utils';
+import { html } from '@prairielearn/html';
+import * as error from '@prairielearn/error';
+import { encodePath, decodePath } from './uri-util';
 
 /**
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
  * the navPage. Created for use in instructor file views.
  */
-function getPaths(req, res, callback) {
+export function getPaths(req, res, callback) {
   let paths = {
     coursePath: res.locals.course.path,
     courseId: res.locals.course.id,
@@ -103,36 +105,38 @@ function getPaths(req, res, callback) {
   }
 
   if (!contains(paths.rootPath, paths.workingPath)) {
-    let err = new Error('Invalid working directory');
-    err.info = html`
-      <p>The working directory</p>
-      <div class="container">
-        <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
-      </div>
-      <p>must be inside the root directory</p>
-      <div class="container">
-        <pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre>
-      </div>
-      <p>when looking at <code>${res.locals.navPage}</code> files.</p>
-    `.toString();
-    return callback(err);
+    throw error.makeWithInfo(
+      'Invalid working directory',
+      html`
+        <p>The working directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+        </div>
+        <p>must be inside the root directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre>
+        </div>
+        <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+      `.toString(),
+    );
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
     contains(invalidRootPath, paths.workingPath),
   );
   if (found) {
-    let err = new Error('Invalid working directory');
-    err.info = html`
-      <p>The working directory</p>
-      <div class="container">
-        <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
-      </div>
-      <p>must <em>not</em> be inside the directory</p>
-      <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-      <p>when looking at <code>${res.locals.navPage}</code> files.</p>
-    `.toString();
-    return callback(err);
+    throw error.makeWithInfo(
+      'Invalid working directory',
+      html`
+        <p>The working directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+        </div>
+        <p>must <em>not</em> be inside the directory</p>
+        <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+      `.toString(),
+    );
   }
 
   let curPath = res.locals.course.path;
@@ -161,7 +165,3 @@ function getPaths(req, res, callback) {
 
   callback(null, paths);
 }
-
-module.exports = {
-  getPaths,
-};

@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -94,10 +94,7 @@ router.post(
         course_id: res.locals.course.id,
       });
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
     res.redirect(req.originalUrl);
   }),

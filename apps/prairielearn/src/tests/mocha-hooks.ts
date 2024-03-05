@@ -1,3 +1,5 @@
+import { type RootHookObject } from 'mocha';
+
 import { createTemplate, dropTemplate } from './helperDb';
 
 export async function mochaGlobalSetup() {
@@ -12,12 +14,10 @@ export async function mochaGlobalTeardown() {
 }
 
 /**
- * @type {import('mocha').RootHookObject}
- *
  * These hooks run once per worker when Mocha is running in parallel mode.
  * We take advantage of this to create a separate database for each worker.
  */
-export const mochaHooks = {
+export const mochaHooks: RootHookObject = {
   beforeAll: async function () {
     const logger = await import('@prairielearn/logger');
 
@@ -28,7 +28,10 @@ export const mochaHooks = {
     if (!consoleTransport) throw new Error('Could not find console transport');
     consoleTransport.level = 'warn';
 
-    const { config } = await import('../lib/config.js');
+    // We can't use `import` here because this is a TS file and our tooling
+    // isn't yet set up to do dynamic imports of `.ts` files.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { config } = require('../lib/config');
     config.workersCount = 2; // explicitly use 2 workers to test parallelism
     config.fileEditorUseGit = true; // test use of git in file editor
 

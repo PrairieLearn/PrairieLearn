@@ -1,8 +1,8 @@
-import ERR from 'async-stacktrace';
+import ERR = require('async-stacktrace');
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import passport = require('passport');
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn';
 

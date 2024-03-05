@@ -119,7 +119,7 @@ window.PLDrawingApi = {
    */
   restoreAnswer: function (canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(id + 1, this._idCounter);
+      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
       let newObj = JSON.parse(JSON.stringify(obj));
       this.createElement(canvas, newObj, submittedAnswer);
     }

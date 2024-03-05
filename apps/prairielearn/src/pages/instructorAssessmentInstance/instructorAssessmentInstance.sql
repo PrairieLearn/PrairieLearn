@@ -6,6 +6,7 @@ SELECT
   q.qid,
   q.id AS question_id,
   admin_assessment_question_number (aq.id) as number,
+  ai.client_fingerprint_id_change_count,
   iq.some_submission,
   iq.some_perfect_submission,
   iq.some_nonzero_submission,

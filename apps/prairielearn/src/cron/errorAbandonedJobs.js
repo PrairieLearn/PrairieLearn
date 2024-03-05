@@ -1,7 +1,6 @@
-const util = require('util');
+// @ts-check
+import * as serverJobs from '../lib/server-jobs-legacy';
 
-const serverJobs = require('../lib/server-jobs-legacy');
-
-module.exports.run = function (callback) {
-  util.callbackify(serverJobs.errorAbandonedJobs)(callback);
-};
+export async function run() {
+  await serverJobs.errorAbandonedJobs();
+}

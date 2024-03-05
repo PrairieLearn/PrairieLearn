@@ -7,13 +7,14 @@ import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
 describe('instrumented', () => {
   let contextManager: AsyncHooksContextManager;
   const exporter = new tracing.InMemorySpanExporter();
+  const spanProcessor = new tracing.SimpleSpanProcessor(exporter);
 
   before(async () => {
     await init({
       openTelemetryEnabled: true,
       openTelemetryExporter: exporter,
       openTelemetrySamplerType: 'always-on',
-      openTelemetrySpanProcessor: 'simple',
+      openTelemetrySpanProcessor: spanProcessor,
     });
   });
 
@@ -23,6 +24,7 @@ describe('instrumented', () => {
   });
 
   afterEach(async () => {
+    await spanProcessor.forceFlush();
     exporter.reset();
     context.disable();
   });
@@ -35,6 +37,7 @@ describe('instrumented', () => {
   it('records a span on success', async () => {
     await instrumented('test-success', () => 'foo');
 
+    await spanProcessor.forceFlush();
     const spans = exporter.getFinishedSpans();
     assert.lengthOf(spans, 1);
     assert.equal(spans[0].name, 'test-success');
@@ -56,6 +59,7 @@ describe('instrumented', () => {
     assert.equal(maybeError?.message, 'foo');
 
     // Ensure the correct span was recorded.
+    await spanProcessor.forceFlush();
     const spans = exporter.getFinishedSpans();
     assert.lengthOf(spans, 1);
     assert.equal(spans[0].name, 'test-failure');

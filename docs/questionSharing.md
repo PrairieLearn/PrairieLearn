@@ -8,6 +8,10 @@ In order to avoid instructors needing to copy question files in between courses,
 
 In order for another course to use questions from your course into their assessments, you must have chosen a _sharing name_ for your course that they will use as a prefix to your question IDs when using them. This sharing name will be unique across all PrairieLearn instances and because it will be used in the JSON files for other courses, there will be no way to change the sharing name for your course once you have chosen it. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'. Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
 
+## Two ways to share: Publicly or through "Sharing sets"
+
+Questions can either be shared publicly, so that anyone can preview the questions (but not the source code) and use them in their course, or you can share questions only to specific other courses using sharing sets.
+
 ## Sharing Sets
 
 Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, and instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
@@ -43,7 +47,9 @@ If a sharing course attempts to share a question which accesses client or server
 
 See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
 
-## Steps to share a question for the first time
+Just as anyone with access to a question in your course can access any the `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion`. These means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions.
+
+## Steps to share a question to a course, using a sharing set
 
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
@@ -52,3 +58,10 @@ See the [the client and server files documentation](clientServerFiles.md) for ge
 5. Use the provided sharing token to add the other instructor's course as a consumer of the sharing set you created
 6. Visit the question settings page for the question you would like to share, and add it to the sharing set
 7. The course you have shared the question with may now use it by referencing it in their assessments
+
+## Steps to share a question publicly
+
+1. On your course admin page, visit the 'sharing' tab
+2. Choose a sharing name for your course
+3. Visit the question settings page for the question you would like to share, click the button to "Share publicly", and complete the confirmation dialog
+4. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments

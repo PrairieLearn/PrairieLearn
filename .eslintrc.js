@@ -57,6 +57,12 @@ module.exports = {
       },
     ],
 
+    // This gives false positives for `fs-extra`, which re-exports everything
+    // from `fs`. We'll disable it for now.
+    //
+    // TODO: file an issue upstream with `eslint-plugin-import`.
+    'import/namespace': 'off',
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',

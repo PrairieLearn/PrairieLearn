@@ -1,22 +1,21 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
-import { callbackify } from 'util';
 import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
-import workspaceHostUtils = require('../../lib/workspaceHost');
+import * as workspaceHostUtils from '../../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 
 type WorkspaceLoadStats = Record<string, any>;
 
-export const run = callbackify(async () => {
+export async function run() {
   if (!config.runningInEc2) return;
   const stats = await getLoadStats();
   await sendStatsToCloudwatch(stats);
   await handleWorkspaceAutoscaling(stats);
-});
+}
 
 async function getLoadStats(): Promise<WorkspaceLoadStats> {
   const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];

@@ -3,6 +3,8 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { Institution, CourseInstance } from '../../lib/db-types';
 import { checkPlanGrants } from '../lib/billing/plan-grants';
+import { getPlanGrantsForContext, getPlanNamesFromPlanGrants } from '../lib/billing/plans';
+import { planGrantsMatchPlanFeatures } from '../lib/billing/plans-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -84,6 +86,25 @@ export async function checkPotentialEnterpriseEnrollment({
 
   if (!hasPlanGrants) {
     return PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED;
+  }
+
+  // Check if the user is a paid user. If they are, we'll bypass any enrollment
+  // limits entirely.
+  //
+  // This helps avoid a specific edge case. Consider a course instance with an
+  // enrollment limit of 20 where 20 free users have enrolled. Next, we enable
+  // student billing. If we then have a user pay and try to enroll, we need to
+  // ensure that they can enroll even though the enrollment limit has been
+  // reached. In the past, without specifically checking if the user was a paid
+  // user, we would have blocked the enrollment.
+  const planGrants = await getPlanGrantsForContext({
+    institution_id: institution.id,
+    course_instance_id: course_instance.id,
+    user_id: authz_data.user.user_id,
+  });
+  const planNames = getPlanNamesFromPlanGrants(planGrants);
+  if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
+    return PotentialEnterpriseEnrollmentStatus.ALLOWED;
   }
 
   // Note that this check is susceptible to race conditions: if two users

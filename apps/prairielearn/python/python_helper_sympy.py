@@ -1,10 +1,12 @@
 import ast
 import copy
+import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
+from typing import Any, Callable, Literal, Type, TypedDict, cast
 
+import prairielearn as pl
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
@@ -16,7 +18,7 @@ from typing_extensions import NotRequired
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Union[Callable, sympy.Basic]]
+SympyMapT = dict[str, Callable | sympy.Basic]
 ASTWhiteListT = tuple[Type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
@@ -198,6 +200,12 @@ class HasInvalidVariableError(BaseSympyError):
 
 
 @dataclass
+class FunctionNameUsedWithoutArguments(BaseSympyError):
+    offset: int
+    text: str
+
+
+@dataclass
 class HasParseError(BaseSympyError):
     offset: int
 
@@ -233,23 +241,29 @@ class CheckFunctions(ast.NodeVisitor):
         self.functions = functions
 
     def visit_Call(self, node: ast.Call) -> None:
-        if isinstance(node.func, ast.Name):
-            if node.func.id not in self.functions:
-                err_node = get_parent_with_location(node)
-                raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
+        if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
+            err_node = get_parent_with_location(node)
+            raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
 
 class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables: SympyMapT) -> None:
+    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
+        # functions is only used for error type, if someone writes "exp + 2"
         self.variables = variables
+        self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
-        if isinstance(node.ctx, ast.Load):
-            if not is_name_of_function(node):
-                if node.id not in self.variables:
-                    err_node = get_parent_with_location(node)
-                    raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+        if (
+            isinstance(node.ctx, ast.Load)
+            and not is_name_of_function(node)
+            and node.id not in self.variables
+        ):
+            err_node = get_parent_with_location(node)
+            if node.id in self.functions:
+                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+            else:
+                raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
 
@@ -295,7 +309,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     CheckFunctions(locals_for_eval["functions"]).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"]).visit(root)
+    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
+        root
+    )
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -363,8 +379,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    # Also replace the unicode minus with the normal one.
-    expr = expr.replace("^", "**").replace("\u2212", "-")
+    expr = pl.full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
     local_dict = {
         k: v
@@ -420,13 +435,13 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
         expr,
@@ -441,13 +456,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -488,6 +503,7 @@ def convert_string_to_sympy_with_source(
         variable_dict = locals_for_eval["variables"]
 
         for variable in variables:
+            variable = greek_unicode_transform(variable)
             # Check for naming conflicts
             if variable in used_names:
                 raise HasConflictingVariable(f"Conflicting variable name: {variable}")
@@ -506,6 +522,7 @@ def convert_string_to_sympy_with_source(
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
         for function in custom_functions:
+            function = greek_unicode_transform(function)
             if function in used_names:
                 raise HasConflictingFunction(f"Conflicting variable name: {function}")
 
@@ -521,7 +538,7 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -599,14 +616,14 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: None | list[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    imaginary_unit: Optional[str] = None,
-) -> Optional[str]:
+    custom_functions: None | list[str] = None,
+    imaginary_unit: None | str = None,
+) -> None | str:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
@@ -654,6 +671,13 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
+    except FunctionNameUsedWithoutArguments as err:
+        return (
+            f'Your answer mentions the function "{err.text}" without '
+            "applying it to anything. "
+            f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
     except HasInvalidSymbolError as err:
         return (
             f'Your answer refers to an invalid symbol "{err.symbol}". '
@@ -696,8 +720,68 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: Optional[str]) -> list[str]:
+def get_items_list(items_string: None | str) -> list[str]:
     if items_string is None:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+def greek_unicode_transform(input_str: str) -> str:
+    """
+    Return input_str where all unicode greek letters are replaced
+    by their spelled-out english names.
+    """
+    # From https://gist.github.com/beniwohli/765262
+    greek_alphabet = {
+        "\u0391": "Alpha",
+        "\u0392": "Beta",
+        "\u0393": "Gamma",
+        "\u0394": "Delta",
+        "\u0395": "Epsilon",
+        "\u0396": "Zeta",
+        "\u0397": "Eta",
+        "\u0398": "Theta",
+        "\u0399": "Iota",
+        "\u039A": "Kappa",
+        "\u039B": "Lamda",
+        "\u039C": "Mu",
+        "\u039D": "Nu",
+        "\u039E": "Xi",
+        "\u039F": "Omicron",
+        "\u03A0": "Pi",
+        "\u03A1": "Rho",
+        "\u03A3": "Sigma",
+        "\u03A4": "Tau",
+        "\u03A5": "Upsilon",
+        "\u03A6": "Phi",
+        "\u03A7": "Chi",
+        "\u03A8": "Psi",
+        "\u03A9": "Omega",
+        "\u03B1": "alpha",
+        "\u03B2": "beta",
+        "\u03B3": "gamma",
+        "\u03B4": "delta",
+        "\u03B5": "epsilon",
+        "\u03B6": "zeta",
+        "\u03B7": "eta",
+        "\u03B8": "theta",
+        "\u03B9": "iota",
+        "\u03BA": "kappa",
+        "\u03BB": "lamda",
+        "\u03BC": "mu",
+        "\u03BD": "nu",
+        "\u03BE": "xi",
+        "\u03BF": "omicron",
+        "\u03C0": "pi",
+        "\u03C1": "rho",
+        "\u03C3": "sigma",
+        "\u03C4": "tau",
+        "\u03C5": "upsilon",
+        "\u03C6": "phi",
+        "\u03C7": "chi",
+        "\u03C8": "psi",
+        "\u03C9": "omega",
+    }
+
+    return "".join(greek_alphabet.get(c, c) for c in input_str)

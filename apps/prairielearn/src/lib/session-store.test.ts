@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import helperDb = require('../tests/helperDb');
+import * as helperDb from '../tests/helperDb';
 import { PostgresSessionStore } from './session-store';
 import { UserSchema, UserSessionSchema } from './db-types';
 
