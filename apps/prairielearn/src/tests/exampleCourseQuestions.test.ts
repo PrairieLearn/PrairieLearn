@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import fg from 'fast-glob';
+import * as fg from 'fast-glob';
 
 import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
@@ -57,7 +57,7 @@ describe('Auto-test questions in exampleCourse', () => {
   before('add template questions', async () => {
     // We hold all template questions to a high standard, so we will always test them all.
     const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-    const templateQuestionJsonPaths = await fg('template/**/info.json', {
+    const templateQuestionJsonPaths = await fg.glob('template/**/info.json', {
       cwd: exampleCourseQuestionsPath,
       absolute: false,
     });
