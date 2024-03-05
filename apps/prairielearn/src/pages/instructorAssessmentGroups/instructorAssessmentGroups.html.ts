@@ -272,7 +272,8 @@ export function InstructorAssessmentGroups({
                         Download
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${groupsCsvFilename}">
+                            .id}/downloads/${groupsCsvFilename}"
+                        >
                           ${groupsCsvFilename}
                         </a>
                       </p>
