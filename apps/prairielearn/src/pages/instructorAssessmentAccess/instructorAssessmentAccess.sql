@@ -28,13 +28,6 @@ SELECT
     WHEN aar.password IS NULL THEN '—'
     ELSE aar.password
   END AS password,
-  CASE
-    WHEN aar.exam_uuid IS NULL THEN '—'
-    WHEN pt_x.id IS NOT NULL THEN '—'
-    WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_uuid
-    WHEN NOT $link_exam_id THEN ps_c.rubric || ': ' || e.exam_string
-    ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/' || ps_c.course_id || '/exam/' || e.exam_id || '">' || ps_c.rubric || ': ' || e.exam_string || '</a>'
-  END AS exam,
   aar.exam_uuid,
   e.exam_id AS ps_exam_id,
   pt_c.id AS pt_course_id,
