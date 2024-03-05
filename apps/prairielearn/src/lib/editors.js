@@ -143,6 +143,42 @@ export class Editor {
                 return;
               }
 
+<<<<<<< Updated upstream
+=======
+              // If we are using git (e.g., if we are running in production), then we:
+              //
+              // - Pull from remote (then clean and reset)
+              // - Write changes to disk
+              // - Push to remote (then clean and reset)
+              // - Sync changes from disk
+              //
+              // If anything goes wrong in the pull, we error and exit.
+              //
+              // If anything goes wrong in the write or push, we make sure to clean/reset
+              // (removing changes made by this edit) and sync (because changes were made
+              // by the pull) before we error and exit.
+
+              // Safety check: make sure the course has a defined branch and repository.
+              if (!this.course.branch || !this.course.repository) {
+                job.fail('Git repository or branch are not set for this course. Exiting...');
+                return;
+              }
+
+              job.info('Update to latest remote origin address');
+              await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+
+              job.info('Fetch from remote git repository');
+              await job.exec('git', ['fetch'], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+
+              await cleanAndResetRepository(this.course, gitEnv, job);
+
+>>>>>>> Stashed changes
               try {
                 await job.exec('git', ['add', ...this.pathsToAdd], {
                   cwd: this.course.path,
