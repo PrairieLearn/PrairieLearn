@@ -229,7 +229,7 @@ export async function saveSubmission(
   return await insertSubmission({
     ...submission,
     ...data,
-    gradable: data.gradable && !hasFatalIssue,
+    gradable: !!data.gradable && !hasFatalIssue, // gradable
     broken: hasFatalIssue,
   });
 }
