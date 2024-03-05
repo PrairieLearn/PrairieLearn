@@ -1043,7 +1043,7 @@ export async function generate(question, course, variant_seed) {
     };
     _.extend(data.options, getContextOptions(context));
 
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'generate',
         codeCaller,
@@ -1075,7 +1075,7 @@ export async function prepare(question, course, variant) {
     };
     _.extend(data.options, getContextOptions(context));
 
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return await withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'prepare',
         codeCaller,
@@ -1254,7 +1254,7 @@ export async function render(
     // for where this is actually used.
     locals.question_renderer = context.renderer;
 
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       if (renderSelection.question) {
         const {
           courseIssues: newCourseIssues,
@@ -1630,7 +1630,7 @@ export async function file(filename, variant, question, course) {
       context,
       async () => {
         // function to compute the file data and return the cachedData
-        return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
             'file',
             codeCaller,
@@ -1669,7 +1669,7 @@ export async function parse(submission, variant, question, course) {
       gradable: _.get(submission, 'gradable', true),
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'parse',
         codeCaller,
@@ -1714,7 +1714,7 @@ export async function grade(submission, variant, question, question_course) {
       gradable: submission.gradable,
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(question_course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'grade',
         codeCaller,
@@ -1760,7 +1760,7 @@ export async function test(variant, question, course, test_type) {
       test_type: test_type,
     };
     _.extend(data.options, getContextOptions(context));
-    return withCodeCaller(context.course_dir_host, async (codeCaller) => {
+    return withCodeCaller(course, async (codeCaller) => {
       const { courseIssues, data: resultData } = await processQuestion(
         'test',
         codeCaller,

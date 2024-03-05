@@ -977,7 +977,8 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzAssessmentQuestion'),
-      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion')
+        .default,
     ],
   );
   app.use(
@@ -2363,12 +2364,14 @@ if (require.main === module && config.startServer) {
           process.exit(0);
         }
       },
-      function (callback) {
-        if (!config.initNewsItems) return callback(null);
-        const notify_with_new_server = false;
-        news_items.init(notify_with_new_server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+      async () => {
+        if (!config.initNewsItems) return;
+
+        // We initialize news items asynchronously so that servers can boot up
+        // in production as quickly as possible.
+        news_items.initInBackground({
+          // Always notify in production environments.
+          notifyIfPreviouslyEmpty: !config.devMode,
         });
       },
       // We need to initialize these first, as the code callers require these
@@ -2467,7 +2470,7 @@ if (require.main === module && config.startServer) {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
-            opentelemetry.shutdown();
+            await opentelemetry.shutdown();
           } catch (err) {
             logger.error('Error shutting down OpenTelemetry', err);
             Sentry.captureException(err);
