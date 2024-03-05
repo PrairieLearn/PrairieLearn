@@ -41,12 +41,10 @@ router.post(
       }
       const count = 1;
       const showDetails = true;
-      const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
       const jobSequenceId = await startTestQuestion(
         count,
         showDetails,
         res.locals.question,
-        assessmentGroupWork,
         res.locals.course_instance,
         res.locals.course,
         res.locals.authn_user.user_id,
@@ -59,14 +57,10 @@ router.post(
       if (res.locals.question.grading_method !== 'External') {
         const count = 100;
         const showDetails = false;
-        const assessmentGroupWork = res.locals.assessment
-          ? res.locals.assessment.group_work
-          : false;
         const jobSequenceId = await startTestQuestion(
           count,
           showDetails,
           res.locals.question,
-          assessmentGroupWork,
           res.locals.course_instance,
           res.locals.course,
           res.locals.authn_user.user_id,
@@ -76,10 +70,7 @@ router.post(
         throw new Error('Not supported for externally-graded questions');
       }
     } else {
-      throw error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -236,12 +227,7 @@ router.post('/', function (req, res, next) {
       })
       .catch((err) => next(err));
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

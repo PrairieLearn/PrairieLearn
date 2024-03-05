@@ -1,3 +1,11 @@
+-- BLOCK select_variant_by_id
+SELECT
+  v.*
+FROM
+  variants AS v
+WHERE
+  v.id = $variant_id;
+
 -- BLOCK reset_variants_for_assessment_question
 UPDATE variants AS v
 SET

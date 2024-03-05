@@ -17,7 +17,7 @@ const { encodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-const { getPaths } = require('../../lib/instructorFiles');
+const { getPathsCallback } = require('../../lib/instructorFiles');
 
 function isHidden(item) {
   return item[0] === '.';
@@ -217,7 +217,7 @@ router.get('/*', function (req, res, next) {
     [
       (callback) => {
         debug('get paths');
-        getPaths(req, res, (err, paths) => {
+        getPathsCallback(req, res, (err, paths) => {
           if (ERR(err, callback)) return;
           file_browser.paths = paths;
           callback(null);
@@ -271,7 +271,7 @@ router.post('/*', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
-  getPaths(req, res, (err, paths) => {
+  getPathsCallback(req, res, (err, paths) => {
     if (ERR(err, next)) return;
     const container = {
       rootPath: paths.rootPath,

@@ -35,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 async function syncCourseFromDisk(course, startGitHash, job) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
+  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
@@ -140,6 +140,12 @@ export class Editor {
 
               if (!config.fileEditorUseGit) {
                 await syncCourseFromDisk(this.course, startGitHash, job);
+                return;
+              }
+
+              // Safety check: make sure the course has a defined branch and repository.
+              if (!this.course.branch || !this.course.repository) {
+                job.fail('Git repository or branch are not set for this course. Exiting...');
                 return;
               }
 

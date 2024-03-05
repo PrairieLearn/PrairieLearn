@@ -17,43 +17,43 @@
           <tbody>
             <tr>
               <th>Submission time</th>
-              <td><%- submission.formatted_date %></td>
+              <td><%= submission.formatted_date %></td>
             </tr>
             <% if (question.grading_method == 'External') { %>
             <tr>
               <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
-              <td><%- submission.grading_job_stats.submitDuration %>s</td>
+              <td><%= submission.grading_job_stats.submitDuration %></td>
             </tr>
             <tr>
               <th><span class="text-warning mr-2">&bull;</span>Queue duration</th>
-              <td><%- submission.grading_job_stats.queueDuration %>s</td>
+              <td><%= submission.grading_job_stats.queueDuration %></td>
             </tr>
             <tr>
               <th><span class="text-primary mr-2">&bull;</span>Prepare duration</th>
-              <td><%- submission.grading_job_stats.prepareDuration %>s</td>
+              <td><%= submission.grading_job_stats.prepareDuration %></td>
             </tr>
             <tr>
               <th><span class="text-success mr-2">&bull;</span>Run duration</th>
-              <td><%- submission.grading_job_stats.runDuration %>s</td>
+              <td><%= submission.grading_job_stats.runDuration %></td>
             </tr>
             <tr>
               <th><span class="text-danger mr-2">&bull;</span>Report duration</th>
-              <td><%- submission.grading_job_stats.reportDuration %>s</td>
+              <td><%= submission.grading_job_stats.reportDuration %></td>
             </tr>
             <tr>
               <th>Total duration</th>
-              <td><%- submission.grading_job_stats.totalDuration %>s</td>
+              <td><%= submission.grading_job_stats.totalDuration %></td>
             </tr>
             <% } %>
           </tbody>
         </table>
         <% if (question.grading_method == 'External') { %>
         <div class="d-flex mt-2 mb-2">
-          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[0] %>%; height: 10px;" class="bg-dark m-0"></span>
-          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[1] %>%; height: 10px;" class="bg-warning m-0"></span>
-          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[2] %>%; height: 10px;" class="bg-primary m-0"></span>
-          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[3] %>%; height: 10px;" class="bg-success m-0"></span>
-          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[4] %>%; height: 10px;" class="bg-danger m-0"></span>
+          <span style="display: inline-block; width: <%= submission.grading_job_stats.phases[0] %>%; height: 10px;" class="bg-dark m-0"></span>
+          <span style="display: inline-block; width: <%= submission.grading_job_stats.phases[1] %>%; height: 10px;" class="bg-warning m-0"></span>
+          <span style="display: inline-block; width: <%= submission.grading_job_stats.phases[2] %>%; height: 10px;" class="bg-primary m-0"></span>
+          <span style="display: inline-block; width: <%= submission.grading_job_stats.phases[3] %>%; height: 10px;" class="bg-success m-0"></span>
+          <span style="display: inline-block; width: <%= submission.grading_job_stats.phases[4] %>%; height: 10px;" class="bg-danger m-0"></span>
         </div>
         <% if (typeof course_instance != 'undefined' && course_instance != null) { %>
         <a class="btn btn-primary mt-2" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>

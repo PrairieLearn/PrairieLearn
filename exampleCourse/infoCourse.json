@@ -48,10 +48,8 @@
         {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
         {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
         {"name": "eliving2", "color": "gray1", "description": "Question originally written by eliving2"},
-        {"name": "nwalter2", "color": "pink1", "description": "Question originally written by nwalter2"},
         {"name": "nnytko2", "color": "turquoise1", "description": "Question originally written by nnytko2"},
         {"name": "astec", "color": "orange2", "description": "Question originally written by andrewstec"},
-        {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"},
-        {"name": "rstats", "color": "blue2", "description": "Question requires the use of R"}
+        {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"}
     ]
 }

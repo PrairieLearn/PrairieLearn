@@ -4,8 +4,5 @@
     "rootDir": "./src",
     "outDir": "./dist"
   },
-  "include": ["src/**/*"],
-  "ts-node": {
-    "transpileOnly": true
-  }
+  "include": ["src/**/*"]
 }

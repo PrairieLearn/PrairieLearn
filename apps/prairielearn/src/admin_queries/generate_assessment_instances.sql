@@ -16,7 +16,6 @@ FROM
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
   JOIN users AS u ON (u.user_id = e.user_id)
   JOIN assessment_instances_insert (a.id, u.user_id, a.group_work, u.user_id, $mode) AS aii ON TRUE
-  LEFT JOIN assessment_instances_update (aii.assessment_instance_id, u.user_id) AS aiu ON (a.type = 'Homework')
 WHERE
   a.id = $assessment_id
 ORDER BY

@@ -1,4 +1,3 @@
-import ERR = require('async-stacktrace');
 import _ = require('lodash');
 import { assert } from 'chai';
 import request = require('request');
@@ -53,15 +52,12 @@ describe('Instructor questions', function () {
 
   describe('the database', function () {
     let questions;
-    it('should contain questions', function (callback) {
-      sqldb.query(sql.select_questions, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount === 0) {
-          return callback(new Error('no questions in DB'));
-        }
-        questions = result.rows;
-        callback(null);
-      });
+    it('should contain questions', async () => {
+      const result = await sqldb.queryAsync(sql.select_questions, []);
+      if (result.rowCount === 0) {
+        throw new Error('no questions in DB');
+      }
+      questions = result.rows;
     });
     it('should contain the addNumbers question', function () {
       const question = _.find(questions, { directory: addNumbers.qid });

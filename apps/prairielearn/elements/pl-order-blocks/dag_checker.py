@@ -39,7 +39,7 @@ def solve_dag(
     contiguously, making it a solution to the given problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    sort = list(nx.topological_sort(graph))  # type: ignore
+    sort = list(nx.topological_sort(graph))
 
     # We need to ensure that blocks from the same block group occur contiguously. Because we enforce the syntactic
     # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move

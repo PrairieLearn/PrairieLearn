@@ -416,9 +416,11 @@ class CGrader:
             return (
                 t.strip(),
                 re.compile(
-                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
-                    if ignore_consec_spaces
-                    else re.escape(t),
+                    (
+                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        if ignore_consec_spaces
+                        else re.escape(t)
+                    ),
                     re.I if ignore_case else 0,
                 ),
             )
@@ -448,15 +450,15 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else " all of"
-                if must_match_all_outputs
-                else " one of"
+                else " all of" if must_match_all_outputs else " one of"
             )
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
             msg = f"Expected{comment}:{join_str}" + join_str.join(
-                f"\033[32m{t}\033[0m"
-                if highlight_matches and r.search(outcmp) is not None
-                else t
+                (
+                    f"\033[32m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                )
                 for t, r in exp_output
             )
             if reject_output:
@@ -464,9 +466,11 @@ class CGrader:
                     "\n\n" if any("\n" in t for t, _ in reject_output) else "\n\t"
                 )
                 msg += f"\nBut not:{join_str}" + join_str.join(
-                    f"\033[31m{t}\033[0m"
-                    if highlight_matches and r.search(outcmp) is not None
-                    else t
+                    (
+                        f"\033[31m{t}\033[0m"
+                        if highlight_matches and r.search(outcmp) is not None
+                        else t
+                    )
                     for t, r in reject_output
                 )
         elif msg is None:

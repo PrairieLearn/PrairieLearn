@@ -54,10 +54,7 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

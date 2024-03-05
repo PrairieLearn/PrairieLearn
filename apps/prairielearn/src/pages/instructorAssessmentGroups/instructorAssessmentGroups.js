@@ -14,12 +14,21 @@ import {
   addUserToGroup,
   createGroup,
   deleteAllGroups,
+  deleteGroup,
+  leaveGroup,
 } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
-import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
+import { GroupConfigSchema, IdSchema, UserSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+
+const GroupUsersRowSchema = z.object({
+  group_id: IdSchema,
+  name: z.string(),
+  size: z.number(),
+  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+});
 
 router.get(
   '/',
@@ -52,15 +61,8 @@ router.get(
 
     res.locals.groups = await sqldb.queryRows(
       sql.select_group_users,
-      {
-        group_config_id: res.locals.config_info.id,
-      },
-      z.object({
-        group_id: IdSchema,
-        name: z.string(),
-        size: z.number(),
-        uid_list: z.array(z.string()),
-      }),
+      { group_config_id: res.locals.config_info.id },
+      GroupUsersRowSchema,
     );
 
     res.locals.notAssigned = await sqldb.queryRows(
@@ -146,37 +148,14 @@ router.post(
     } else if (req.body.__action === 'delete_member') {
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
-      const uids = req.body.delete_member_uids;
-      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      let failedUids = [];
-      for (const uid of uidlist) {
-        let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];
-        try {
-          await sqldb.callAsync('assessment_groups_delete_member', params);
-        } catch (err) {
-          failedUids.push(uid);
-        }
-      }
-      if (failedUids.length > 0) {
-        const uids = failedUids.join(', ');
-        flash(
-          'error',
-          `Failed to remove the following users: ${uids}. Please check if the users exist.`,
-        );
-      }
+      const user_id = req.body.user_id;
+      await leaveGroup(assessment_id, user_id, res.locals.authn_user.user_id, group_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_group') {
-      await sqldb.callAsync('assessment_groups_delete_group', [
-        res.locals.assessment.id,
-        req.body.group_id,
-        res.locals.authn_user.user_id,
-      ]);
+      await deleteGroup(res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

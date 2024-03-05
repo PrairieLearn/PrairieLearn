@@ -1,7 +1,7 @@
 // @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile.js';
+import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
 
 const perf = makePerformance('assessmentModules');

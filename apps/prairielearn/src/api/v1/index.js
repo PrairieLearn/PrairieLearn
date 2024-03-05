@@ -11,11 +11,7 @@ const router = express.Router();
  */
 function authzHasCourseInstanceView(req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(
-      error.make(403, 'Requires student data view access', {
-        locals: res.locals,
-      }),
-    );
+    return next(error.make(403, 'Requires student data view access'));
   }
   next();
 }

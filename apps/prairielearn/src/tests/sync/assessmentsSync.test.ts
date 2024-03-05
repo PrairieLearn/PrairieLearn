@@ -45,13 +45,7 @@ function makeAssessmentSet(): util.AssessmentSet {
 
 function getGroupRoles(): util.GroupRole[] {
   return [
-    {
-      name: 'Recorder',
-      minimum: 1,
-      maximum: 4,
-      canAssignRolesAtStart: true,
-      canAssignRolesDuringAssessment: true,
-    },
+    { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
   ];
 }
@@ -661,15 +655,13 @@ describe('Assessment syncing', () => {
     assert.isDefined(recorder);
     assert.equal(recorder?.minimum, 1);
     assert.equal(recorder?.maximum, 4);
-    assert.isTrue(recorder?.can_assign_roles_at_start);
-    assert.isTrue(recorder?.can_assign_roles_during_assessment);
+    assert.isTrue(recorder?.can_assign_roles);
 
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
     assert.isOk(contributor);
     assert.equal(contributor?.minimum, 0);
     assert.equal(contributor?.maximum, null);
-    assert.isFalse(contributor?.can_assign_roles_at_start);
-    assert.isFalse(contributor?.can_assign_roles_during_assessment);
+    assert.isFalse(contributor?.can_assign_roles);
   });
 
   it('syncs group roles and valid question-level permissions correctly', async () => {
@@ -1001,13 +993,7 @@ describe('Assessment syncing', () => {
 
     // Remove the "Contributor" group role and re-sync
     groupAssessment.groupRoles = [
-      {
-        name: 'Recorder',
-        minimum: 1,
-        maximum: 4,
-        canAssignRolesAtStart: true,
-        canAssignRolesDuringAssessment: true,
-      },
+      { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     ];
     const lastZone = groupAssessment?.zones?.[groupAssessment.zones.length - 1];
     if (!lastZone) throw new Error('could not find last zone');
@@ -1155,13 +1141,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [
-      {
-        name: 'Recorder',
-        canAssignRolesAtStart: false,
-        canAssignRolesDuringAssessment: false,
-      },
-    ];
+    groupAssessment.groupRoles = [{ name: 'Recorder', canAssignRoles: false }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
       groupAssessment;
 
@@ -1170,11 +1150,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment?.sync_errors,
-      /Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true"./,
-    );
-    assert.match(
-      syncedAssessment?.sync_errors,
-      /Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true"./,
+      /Could not find a role with minimum >= 1 and "canAssignRoles" set to "true"./,
     );
   });
 
@@ -1184,16 +1160,8 @@ describe('Assessment syncing', () => {
     groupAssessment.groupWork = true;
     groupAssessment.groupMaxSize = 4;
     groupAssessment.groupRoles = [
-      {
-        name: 'Manager',
-        canAssignRolesAtStart: true,
-        canAssignRolesDuringAssessment: true,
-        minimum: 10,
-      },
-      {
-        name: 'Reflector',
-        maximum: 10,
-      },
+      { name: 'Manager', canAssignRoles: true, minimum: 10 },
+      { name: 'Reflector', maximum: 10 },
     ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
       groupAssessment;
@@ -1216,13 +1184,7 @@ describe('Assessment syncing', () => {
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
     groupAssessment.groupRoles = [
-      {
-        name: 'Recorder',
-        minimum: 1,
-        maximum: 4,
-        canAssignRolesAtStart: true,
-        canAssignRolesDuringAssessment: true,
-      },
+      { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
       { name: 'Contributor' },
     ];
     groupAssessment.zones?.push({
