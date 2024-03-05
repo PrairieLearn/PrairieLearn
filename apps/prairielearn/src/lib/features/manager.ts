@@ -73,7 +73,7 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   allFeatures() {
-    return [...this.features];
+    return [...this.features] as FeatureName[];
   }
 
   /**
