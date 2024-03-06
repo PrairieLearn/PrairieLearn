@@ -118,11 +118,13 @@ export const InstructorSharing = ({
   sharingName,
   sharingToken,
   sharingSets,
+  publicSharingLink,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
   sharingSets: { name: string; id: string; shared_with: string[] }[];
+  publicSharingLink: string;
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
@@ -186,6 +188,19 @@ export const InstructorSharing = ({
                         <span>Regenerate</span>
                       </button>
                     </form>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Public Questions Page</th>
+                  <td class="align-middle">
+                    <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
+                    <button
+                      class="btn btn-xs btn-secondary mx-2"
+                      onclick="navigator.clipboard.writeText('${publicSharingLink}');"
+                    >
+                      <i class="fa fa-copy"></i>
+                      <span>Copy</span>
+                    </button>
                   </td>
                 </tr>
               </tbody>
