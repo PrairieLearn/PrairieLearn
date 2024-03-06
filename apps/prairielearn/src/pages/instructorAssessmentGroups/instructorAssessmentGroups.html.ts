@@ -400,6 +400,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'uploadAssessmentGroupsModal',
     title: 'Upload new group assignments',
+    formEncType: 'multipart/form-data',
     body: html`
       <p>Upload a CSV file in the format of:</p>
       <code class="mb-0 text-dark">
@@ -416,7 +417,6 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
           The <code>groupname</code> column should be a unique identifier for each group. To
           change the grouping, link uids to the groupname.
         </p>
-        <form name="upload-assessment-group-form" method="POST" enctype="multipart/form-data">
           <div class="form-group">
             <div class="custom-file">
               <input
@@ -441,7 +441,6 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
               <button type="submit" class="btn btn-primary">Upload</button>
             </div>
           </div>
-        </form>
       </div>
     `,
   });
@@ -459,37 +458,36 @@ function AutoAssessmentGroupsModal({
   return Modal({
     id: 'autoAssessmentGroupsModal',
     title: 'Auto new group setting',
+    formEncType: 'multipart/form-data',
     body: html`
-      <form name="auto-assessment-group-form" method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-          <label for="formMin">Min number of members in a group</label>
-          <input
-            type="text"
-            value="${groupMin}"
-            class="form-control"
-            id="formMin"
-            name="min_group_size"
-          />
-        </div>
-        <div class="form-group">
-          <label for="formMax">Max number of members in a group</label>
-          <input
-            type="text"
-            value="${groupMax}"
-            class="form-control"
-            id="formMax"
-            name="max_group_size"
-          />
-        </div>
-        <div class="d-flex justify-content-end">
-          <div class="form-group mb-0">
-            <input type="hidden" name="__action" value="auto_assessment_groups" />
-            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Group</button>
-          </div>
-        </div>
-      </form>
+      <div class="form-group">
+        <label for="formMin">Min number of members in a group</label>
+        <input
+          type="text"
+          value="${groupMin}"
+          class="form-control"
+          id="formMin"
+          name="min_group_size"
+        />
+      </div>
+      <div class="form-group">
+        <label for="formMax">Max number of members in a group</label>
+        <input
+          type="text"
+          value="${groupMax}"
+          class="form-control"
+          id="formMax"
+          name="max_group_size"
+        />
+      </div>
+    `,
+    footer: html`
+      <div class="form-group mb-0">
+        <input type="hidden" name="__action" value="auto_assessment_groups" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Group</button>
+      </div>
     `,
   });
 }
@@ -499,29 +497,27 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     id: 'addGroupModal',
     title: 'Add a group',
     body: html`
-      <form name="add-group-form" method="POST">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="formName">Group Name</label>
-            <input type="text" class="form-control" id="formName" name="group_name" />
-          </div>
-          <br />
-          <div class="form-group">
-            <label for="formUids">UIDs</label>
-            <input
-              type="text"
-              class="form-control"
-              id="formUids"
-              name="uids"
-              placeholder="one@example.com, two@example.com, three@example.com"
-            />
-            <small id="uidHelp" class="form-text text-muted">
-              Separate with "," <br />
-              Please make sure they are not in any other groups
-            </small>
-          </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="formName">Group Name</label>
+          <input type="text" class="form-control" id="formName" name="group_name" />
         </div>
-      </form>
+        <br />
+        <div class="form-group">
+          <label for="formUids">UIDs</label>
+          <input
+            type="text"
+            class="form-control"
+            id="formUids"
+            name="uids"
+            placeholder="one@example.com, two@example.com, three@example.com"
+          />
+          <small id="uidHelp" class="form-text text-muted">
+            Separate with "," <br />
+            Please make sure they are not in any other groups
+          </small>
+        </div>
+      </div>
     `,
     footer: html`
         <input type="hidden" name="__action" value="add_group" />
@@ -552,12 +548,10 @@ function DeleteGroupModal({
       </p>
     `,
     footer: html`
-      <form name="delete-all-form" method="POST">
-        <input type="hidden" name="__action" value="delete_all" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Delete all</button>
-      </form>
+      <input type="hidden" name="__action" value="delete_all" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete all</button>
     `,
   });
 }
