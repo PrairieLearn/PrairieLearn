@@ -23,4 +23,4 @@ def generate(data):
     # Store the parameters and correct answer.
     data["params"]["x"] = sympy.latex(x)
     data["params"]["f"] = sympy.latex(f)
-    data["correct_answers"]["df"] = str(df)
+    data["correct_answers"]["derivative"] = str(df)

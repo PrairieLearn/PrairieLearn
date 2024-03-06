@@ -25,4 +25,4 @@ def generate(data):
 
     # Store the equation and the correct answer.
     data["params"]["equation"] = selected_equation
-    data["correct_answers"]["ans"] = selected_solution
+    data["correct_answers"]["value"] = selected_solution
