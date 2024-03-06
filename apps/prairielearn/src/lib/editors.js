@@ -142,38 +142,40 @@ export class Editor {
           if (config.fileEditorUseGit) {
             await cleanAndResetRepository(this.course, gitEnv, job);
           }
+          throw err;
+        }
 
-              // Safety check: make sure the course has a defined branch and repository.
-              if (!this.course.branch || !this.course.repository) {
-                job.fail('Git repository or branch are not set for this course. Exiting...');
-                return;
-              }
+        // Safety check: make sure the course has a defined branch and repository.
+        if (!this.course.branch || !this.course.repository) {
+          job.fail('Git repository or branch are not set for this course. Exiting...');
+          return;
+        }
 
-              try {
-                await job.exec('git', ['add', ...this.pathsToAdd], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-                await job.exec(
-                  'git',
-                  [
-                    '-c',
-                    `user.name="${this.user.name}"`,
-                    '-c',
-                    `user.email="${this.user.uid}"`,
-                    'commit',
-                    '-m',
-                    this.commitMessage,
-                  ],
-                  {
-                    cwd: this.course.path,
-                    env: gitEnv,
-                  },
-                );
-              } catch (err) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-                throw err;
-              }
+        try {
+          await job.exec('git', ['add', ...this.pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.uid}"`,
+              'commit',
+              '-m',
+              this.commitMessage,
+            ],
+            {
+              cwd: this.course.path,
+              env: gitEnv,
+            },
+          );
+        } catch (err) {
+          await cleanAndResetRepository(this.course, gitEnv, job);
+          throw err;
+        }
 
         if (!config.fileEditorUseGit) {
           await syncCourseFromDisk(this.course, startGitHash, job);
