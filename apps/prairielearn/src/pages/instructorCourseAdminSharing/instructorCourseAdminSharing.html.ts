@@ -134,23 +134,6 @@ export const InstructorSharing = ({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
-        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
-        <script>
-          $(() => {
-            let clipboard = new ClipboardJS('.btn-copy');
-            clipboard.on('success', (e) => {
-              $(e.trigger)
-                .popover({
-                  content: 'Copied!',
-                  placement: 'bottom',
-                })
-                .popover('show');
-              window.setTimeout(function () {
-                $(e.trigger).popover('hide');
-              }, 1000);
-            });
-          });
-        </script>
       </head>
       <body>
         <script>
