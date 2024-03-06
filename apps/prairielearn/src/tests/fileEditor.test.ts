@@ -136,13 +136,13 @@ const findEditUrlData = [
   },
   {
     name: 'course admin via course instance',
-    selector: 'a:contains("infoCourse.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-configuration-link"]',
     url: courseInstanceCourseAdminSettingsUrl,
     expectedEditUrl: courseInstanceCourseAdminEditUrl,
   },
   {
     name: 'course admin',
-    selector: 'a:contains("infoCourse.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
   },
@@ -273,6 +273,13 @@ describe('test file editor', function () {
     });
 
     before('set up testing server', helperServer.before(courseDir));
+
+    before('update course repository in database', async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
 
     after('shut down testing server', helperServer.after);
 

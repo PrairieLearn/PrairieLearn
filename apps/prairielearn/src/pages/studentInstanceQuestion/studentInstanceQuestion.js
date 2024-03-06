@@ -7,44 +7,21 @@ const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 
 const LogPageView = require('../../middlewares/logPageView');
-import { saveAndGradeSubmission, saveSubmission } from '../../lib/grading';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render';
-import { gradeAssessmentInstanceAsync } from '../../lib/assessment';
+import { gradeAssessmentInstance } from '../../lib/assessment';
 import { setQuestionCopyTargets } from '../../lib/copy-question';
 import { getQuestionGroupPermissions } from '../../lib/groups';
 import { uploadFile, deleteFile } from '../../lib/file-store';
 import { idsEqual } from '../../lib/id';
 import { insertIssue } from '../../lib/issues';
-import { selectVariantById } from '../../models/variant';
+import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
 
 const logPageView = promisify(LogPageView('studentInstanceQuestion'));
 const router = express.Router();
-
-/**
- * Get a validated variant, or throw an exception.
- *
- * @param {string} unsafe_variant_id The unsafe variant ID to validate
- * @param {string} instance_question_id The validated instance_question_id to validate against
- * @returns {Promise<import('../../lib/db-types').Variant>} The validated variant
- */
-async function getValidVariant(unsafe_variant_id, instance_question_id) {
-  const variant = await selectVariantById(unsafe_variant_id);
-  if (
-    !variant ||
-    !variant.instance_question_id ||
-    !idsEqual(variant.instance_question_id, instance_question_id)
-  ) {
-    throw error.make(
-      400,
-      `Client-provided variant id "${unsafe_variant_id}" does not belong to the authorized instance question "${instance_question_id}"`,
-    );
-  }
-  return variant;
-}
 
 /**
  * Get a validated variant ID from a request, or throw an exception.
@@ -60,7 +37,13 @@ async function getValidVariant(unsafe_variant_id, instance_question_id) {
  * @returns {Promise<string>} The validated variant ID
  */
 async function getValidVariantId(req, res) {
-  return (await getValidVariant(req.body.__variant_id, res.locals.instance_question.id)).id;
+  return (
+    await validateVariantAgainstQuestion(
+      req.body.__variant_id,
+      res.locals.question.id,
+      res.locals.instance_question.id,
+    )
+  ).id;
 }
 
 async function processFileUpload(req, res) {
@@ -71,15 +54,16 @@ async function processFileUpload(req, res) {
   if (!req.file) {
     throw error.make(400, 'No file uploaded');
   }
-  await uploadFile(
-    req.file.originalname,
-    req.file.buffer,
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  await uploadFile({
+    display_filename: req.file.originalname,
+    contents: req.file.buffer,
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
@@ -88,15 +72,16 @@ async function processTextUpload(req, res) {
   if (!res.locals.authz_result.active) {
     throw error.make(403, `This assessment is not accepting submissions at this time.`);
   }
-  await uploadFile(
-    req.body.filename,
-    Buffer.from(req.body.contents),
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  await uploadFile({
+    display_filename: req.body.filename,
+    contents: Buffer.from(req.body.contents),
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
@@ -152,7 +137,7 @@ async function processIssue(req, res) {
   return variantId;
 }
 
-async function processSubmission(req, res) {
+async function validateAndProcessSubmission(req, res) {
   if (!res.locals.assessment_instance.open) {
     throw error.make(400, 'assessment_instance is closed');
   }
@@ -171,48 +156,7 @@ async function processSubmission(req, res) {
       'Your current group role does not give you permission to submit to this question.',
     );
   }
-  let variant_id, submitted_answer;
-  if (res.locals.question.type === 'Freeform') {
-    variant_id = req.body.__variant_id;
-    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
-  } else {
-    if (!req.body.postData) {
-      throw error.make(400, 'No postData');
-    }
-    let postData;
-    try {
-      postData = JSON.parse(req.body.postData);
-    } catch (e) {
-      throw error.make(400, 'JSON parse failed on body.postData');
-    }
-    variant_id = postData.variant ? postData.variant.id : null;
-    submitted_answer = postData.submittedAnswer;
-  }
-  const submission = {
-    variant_id: variant_id,
-    auth_user_id: res.locals.authn_user.user_id,
-    submitted_answer: submitted_answer,
-    credit: res.locals.authz_result.credit,
-    mode: res.locals.authz_data.mode,
-    client_fingerprint_id: res.locals.client_fingerprint_id,
-  };
-  const variant = await getValidVariant(submission.variant_id, res.locals.instance_question.id);
-  if (req.body.__action === 'grade') {
-    const overrideRateLimits = false;
-    await saveAndGradeSubmission(
-      submission,
-      variant,
-      res.locals.question,
-      res.locals.course,
-      overrideRateLimits,
-    );
-    return submission.variant_id;
-  } else if (req.body.__action === 'save') {
-    await saveSubmission(submission, variant, res.locals.question, res.locals.course);
-    return submission.variant_id;
-  } else {
-    throw error.make(400, `unknown __action: ${req.body.__action}`);
-  }
+  return await processSubmission(req, res, true);
 }
 
 router.post(
@@ -231,7 +175,7 @@ router.post(
           throw error.make(403, 'Real-time grading is not allowed for this assessment');
         }
       }
-      const variant_id = await processSubmission(req, res);
+      const variant_id = await validateAndProcessSubmission(req, res);
       if (res.locals.assessment.type === 'Exam') {
         res.redirect(req.originalUrl);
       } else {
@@ -251,7 +195,7 @@ router.post(
       const requireOpen = true;
       const closeExam = true;
       const overrideGradeRate = false;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,

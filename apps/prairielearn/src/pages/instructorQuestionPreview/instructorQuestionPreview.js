@@ -16,7 +16,7 @@ import {
 import * as issues from '../../lib/issues';
 const LogPageView = require('../../middlewares/logPageView');
 import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/questionPreview';
+import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
 import { IdSchema } from '../../lib/db-types';
 
 const router = express.Router();

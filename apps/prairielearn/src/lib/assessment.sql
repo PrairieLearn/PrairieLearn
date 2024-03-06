@@ -167,9 +167,9 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_and_lock_assessment_instance_max_points
+-- BLOCK select_and_lock_assessment_instance
 SELECT
-  ai.max_points
+  ai.*
 FROM
   assessment_instances AS ai
 WHERE
@@ -1086,3 +1086,82 @@ SET
   stats_last_updated = current_timestamp
 WHERE
   a.id = $assessment_id;
+
+-- BLOCK delete_assessment_instance
+WITH
+  deleted_assessment_instances AS (
+    DELETE FROM assessment_instances AS ai
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.id = $assessment_instance_id
+    RETURNING
+      ai.*
+  ),
+  new_log AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        course_instance_id,
+        user_id,
+        group_id,
+        table_name,
+        row_id,
+        action,
+        old_state
+      )
+    SELECT
+      $authn_user_id,
+      ci.course_id,
+      a.course_instance_id,
+      ai.user_id,
+      ai.group_id,
+      'assessment_instances',
+      ai.id,
+      'delete',
+      to_jsonb(ai.*)
+    FROM
+      deleted_assessment_instances AS ai
+      LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+      LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  )
+SELECT
+  ai.id
+FROM
+  deleted_assessment_instances AS ai;
+
+-- BLOCK delete_all_assessment_instances_for_assessment
+WITH
+  deleted_assessment_instances AS (
+    DELETE FROM assessment_instances AS ai
+    WHERE
+      ai.assessment_id = $assessment_id
+    RETURNING
+      ai.*
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    course_instance_id,
+    user_id,
+    group_id,
+    table_name,
+    row_id,
+    action,
+    old_state
+  )
+SELECT
+  $authn_user_id,
+  ci.course_id,
+  a.course_instance_id,
+  ai.user_id,
+  ai.group_id,
+  'assessment_instances',
+  ai.id,
+  'delete',
+  to_jsonb(ai.*)
+FROM
+  deleted_assessment_instances AS ai
+  LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);

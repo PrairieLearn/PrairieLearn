@@ -9,8 +9,11 @@ import { encodePath, decodePath } from './uri-util';
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
  * the navPage. Created for use in instructor file views.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
  */
-export function getPaths(req, res, callback) {
+export function getPaths(req, res) {
   let paths = {
     coursePath: res.locals.course.path,
     courseId: res.locals.course.id,
@@ -59,14 +62,14 @@ export function getPaths(req, res, callback) {
     paths.testsDir = path.join(paths.rootPath, 'tests');
     paths.urlPrefix = `${res.locals.urlPrefix}/question/${res.locals.question.id}`;
   } else {
-    return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
+    throw new Error(`Invalid navPage: ${res.locals.navPage}`);
   }
 
   if (req.params[0]) {
     try {
       paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
     } catch (err) {
-      return callback(new Error(`Invalid path: ${req.params[0]}`));
+      throw new Error(`Invalid path: ${req.params[0]}`);
     }
   } else {
     paths.workingPath = paths.rootPath;
@@ -163,5 +166,23 @@ export function getPaths(req, res, callback) {
       }
     });
 
+  return paths;
+}
+
+/**
+ * Wrapper around {@link getPaths} to support callback-based usage.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {(err: Error | null | undefined, paths?: any) => void} callback
+ */
+export function getPathsCallback(req, res, callback) {
+  let paths;
+  try {
+    paths = getPaths(req, res);
+  } catch (err) {
+    callback(err);
+    return;
+  }
   callback(null, paths);
 }

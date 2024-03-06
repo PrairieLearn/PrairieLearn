@@ -251,8 +251,10 @@ describe('accessibility', () => {
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
-    const notify_with_new_server = true;
-    await news_items.initAsync(notify_with_new_server);
+    await news_items.init({
+      notifyIfPreviouslyEmpty: true,
+      errorIfLockNotAcquired: true,
+    });
 
     const app = server.initExpress();
     endpoints = expressListEndpoints(app);

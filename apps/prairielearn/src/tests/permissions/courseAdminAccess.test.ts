@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -91,12 +92,12 @@ function runTest(context) {
         'Shibboleth',
       ]);
     }
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@illinois.edu',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     const result = await sqldb.queryAsync(sql.select_non_existent_user, {});
     if (result.rowCount) new_user = result.rows[0].uid;
   });
