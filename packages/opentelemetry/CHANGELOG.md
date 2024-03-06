@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.11.0
+
+### Minor Changes
+
+- bd4cff1: Allow trace exporting to be disabled; export more types
+
 ## 1.10.7
 
 ### Patch Changes
