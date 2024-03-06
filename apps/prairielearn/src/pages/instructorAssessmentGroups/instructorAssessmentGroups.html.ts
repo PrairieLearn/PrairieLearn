@@ -100,7 +100,7 @@ export function InstructorAssessmentGroups({
                         groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
                         csrfToken: resLocals.__csrf_token,
                       })}
-                      ${AddGroupModal(resLocals.__csrf_token)}
+                      ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
                       ${DeleteGroupModal({
                         assessmentSetName: resLocals.assessment_set.name,
                         assessmentNumber: resLocals.assessment.number,
@@ -324,6 +324,7 @@ export function InstructorAssessmentGroups({
 }
 
 function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
+  console.log('csrfToken', csrfToken);
   return html`
     <form name="add-member-form" method="POST">
       UIDs:
@@ -520,11 +521,10 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
       </div>
     `,
     footer: html`
-        <input type="hidden" name="__action" value="add_group" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Add</button>
-        </form>
+      <input type="hidden" name="__action" value="add_group" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Add</button>
     `,
   });
 }
