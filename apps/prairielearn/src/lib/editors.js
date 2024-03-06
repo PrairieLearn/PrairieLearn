@@ -146,14 +146,14 @@ export class Editor {
           throw err;
         }
 
-        // Safety check: make sure the course has a defined branch and repository.
-        if (!this.course.branch || !this.course.repository) {
-          job.fail('Git repository or branch are not set for this course. Exiting...');
+        if (!config.fileEditorUseGit) {
+          await syncCourseFromDisk(this.course, startGitHash, job);
           return;
         }
 
-        if (!config.fileEditorUseGit) {
-          await syncCourseFromDisk(this.course, startGitHash, job);
+        // Safety check: make sure the course has a defined branch and repository.
+        if (!this.course.branch || !this.course.repository) {
+          job.fail('Git repository or branch are not set for this course. Exiting...');
           return;
         }
 
