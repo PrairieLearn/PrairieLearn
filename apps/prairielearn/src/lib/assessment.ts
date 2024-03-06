@@ -175,7 +175,7 @@ export async function update(
  * @param close - Whether to close the assessment instance after grading.
  * @param overrideGradeRate - Whether to override grade rate limits.
  */
-export async function gradeAssessmentInstanceAsync(
+export async function gradeAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string | null,
   requireOpen: boolean,
@@ -249,7 +249,6 @@ export async function gradeAssessmentInstanceAsync(
   // that's acceptable.
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
-export const gradeAssessmentInstance = callbackify(gradeAssessmentInstanceAsync);
 
 const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
@@ -309,7 +308,7 @@ export async function gradeAllAssessmentInstances(
     await async.eachSeries(instances, async (row) => {
       job.info(`Grading assessment instance #${row.instance_number} for ${row.username}`);
       const requireOpen = true;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         row.assessment_instance_id,
         authn_user_id,
         requireOpen,

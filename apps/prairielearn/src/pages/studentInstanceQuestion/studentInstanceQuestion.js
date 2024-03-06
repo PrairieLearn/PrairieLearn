@@ -12,7 +12,7 @@ import {
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render';
-import { gradeAssessmentInstanceAsync } from '../../lib/assessment';
+import { gradeAssessmentInstance } from '../../lib/assessment';
 import { setQuestionCopyTargets } from '../../lib/copy-question';
 import { getQuestionGroupPermissions } from '../../lib/groups';
 import { uploadFile, deleteFile } from '../../lib/file-store';
@@ -195,7 +195,7 @@ router.post(
       const requireOpen = true;
       const closeExam = true;
       const overrideGradeRate = false;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,
