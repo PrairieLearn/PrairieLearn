@@ -76,7 +76,24 @@ async function getImageManifest(
   });
 
   if (manifestResponse.status === 404) {
+    console.log(`No manifest found for ${image}:${reference}`);
     return null;
+  }
+
+  if (manifestResponse.status === 401) {
+    // This can happen if the image does not yet exist in the registry. When we
+    // request an auth token with pull permissions for a repository that does
+    // not exist, Docker Hub returns a token that silently doesn't include any
+    // access permissions at all, and when we go to read the manifest, it fails
+    // with an authorization error instead of a 404. We'll treat authorization
+    // errors as if the image does not exist.
+    console.log(`Authorization error when reading manifest for ${image}:${reference}, skipping...`);
+    return null;
+  }
+
+  if (!manifestResponse.ok) {
+    const status = `${manifestResponse.status} ${manifestResponse.statusText}`;
+    throw new Error(`Failed to fetch manifest for ${image}:${reference}: ${status}`);
   }
 
   const rawManifest = await manifestResponse.json();
@@ -85,7 +102,6 @@ async function getImageManifest(
   if (!digest) {
     throw new Error(`Missing Docker-Content-Digest header for ${url}`);
   }
-  console.log(rawManifest);
   return { manifest, digest };
 }
 
@@ -262,8 +278,6 @@ async function main() {
     // report the size of the new images.
     const oldImages = await getAllImagesFromRegistry(image, 'latest');
 
-    console.log(newImages, oldImages);
-
     for (const newImage of newImages) {
       // Find the old image with the same platform. If there isn't a match
       // and the new image doesn't have a platform, try to find an old image for
@@ -274,10 +288,8 @@ async function main() {
       // TODO: Build `prairielearn/prairielearn` with buildx and remove this hack.
       let oldImage = oldImages?.find((image) => image.platform === newImage.platform);
       if (!oldImage && newImage.platform === null) {
-        console.log('finding old image');
         oldImage = oldImages?.find((image) => image.platform === 'linux/amd64');
       }
-      console.log(newImage, oldImage);
       changedImages.push({
         name: image,
         platform: newImage.platform ?? oldImage?.platform ?? null,

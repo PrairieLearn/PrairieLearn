@@ -1,6 +1,6 @@
 import { step } from 'mocha-steps';
 import { assert } from 'chai';
-import fetchCookie = require('fetch-cookie');
+import fetchCookie from 'fetch-cookie';
 import getPort = require('get-port');
 import nodeJose = require('node-jose');
 import jose = require('jose');

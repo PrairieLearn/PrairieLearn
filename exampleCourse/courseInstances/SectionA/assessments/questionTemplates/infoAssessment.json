@@ -8,26 +8,25 @@
       {
           "title": "Template: copy, paste and edit to start creating questions",
           "questions": [
-              {"id": "template/multipleChoiceSingleCorrect", "points": 1},
-              {"id": "template/multipleChoiceMultipleCorrect", "points": 1, "maxPoints": 2},
-              {"id": "template/multipleChoiceFromList", "points": 1, "maxPoints": 4},
-              {"id": "template/multipleChoiceNumeric", "points": 1, "maxPoints": 4},
-              {"id": "template/multipleChoiceTrueFalseFromList", "points": 1, "maxPoints": 2},
-              {"id": "template/multipleChoiceWithFigure", "points": 1, "maxPoints": 4},
-              {"id": "template/checkbox", "points": 1, "maxPoints": 2},
+              {"id": "demo/multipleChoiceSingleCorrect", "points": 1},
+              {"id": "template/multiple-choice/random", "points": 1, "maxPoints": 2},
+              {"id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4},
+              {"id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4},
+              {"id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2},
+              {"id": "template/multiple-choice/images", "points": 1, "maxPoints": 4},
               {"id": "demo/multiAnswerMC",                     "points": 2, "maxPoints": 10},
-              {"id": "template/integerInput", "points": 1, "maxPoints": 2},
-              {"id": "template/numberInput", "points": 1, "maxPoints": 2},
+              {"id": "template/integer-input/random", "points": 1, "maxPoints": 2},
+              {"id": "template/number-input/random", "points": 1, "maxPoints": 2},
               {"id": "demo/matrixAlgebra",                   "points": 2, "maxPoints": 10},
-              {"id": "demo/randomSymbolic",                  "points": 2, "maxPoints": 10},
-              {"id": "template/integerInputWithDynamicFigure", "points": 1, "maxPoints": 4}
+              {"id": "template/symbolic-input/random",                  "points": 2, "maxPoints": 10},
+              {"id": "template/figure/dynamic", "points": 1, "maxPoints": 4}
           ]
       },
       {
           "title": "More question examples and tips",
           "questions": [
-              {"id": "template/numberInputGradingMethod", "points": 1, "maxPoints": 2},
-              {"id": "template/numberInputTips", "points": 1, "maxPoints": 2},
+              {"id": "demo/numberInputGradingMethod", "points": 1, "maxPoints": 2},
+              {"id": "demo/numberInputTips", "points": 1, "maxPoints": 2},
               {"id": "demo/randomDataFrame",                 "points": 2, "maxPoints": 6},
               {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4},
               {"id": "demo/overlayDropdown",                 "points": 1, "maxPoints": 5},

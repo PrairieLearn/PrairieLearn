@@ -143,6 +143,12 @@ export class Editor {
                 return;
               }
 
+              // Safety check: make sure the course has a defined branch and repository.
+              if (!this.course.branch || !this.course.repository) {
+                job.fail('Git repository or branch are not set for this course. Exiting...');
+                return;
+              }
+
               try {
                 await job.exec('git', ['add', ...this.pathsToAdd], {
                   cwd: this.course.path,
