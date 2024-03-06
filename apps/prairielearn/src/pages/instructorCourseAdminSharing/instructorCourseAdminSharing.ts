@@ -5,7 +5,6 @@ import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { getCanonicalHost } from '../../lib/url';
-import QR = require('qrcode-svg');
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -43,11 +42,6 @@ router.get(
       `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
       host,
     ).href;
-    const publicSharingLinkQRCode = new QR({
-      content: publicSharingLink,
-      width: 512,
-      height: 512,
-    }).svg();
 
     res.send(
       InstructorSharing({
@@ -55,7 +49,6 @@ router.get(
         sharingToken: sharingInfo.sharing_token,
         sharingSets: sharingSets,
         publicSharingLink: publicSharingLink,
-        publicSharingLinkQRCode: publicSharingLinkQRCode,
         resLocals: res.locals,
       }),
     );
