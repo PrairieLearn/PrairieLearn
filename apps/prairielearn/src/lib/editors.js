@@ -86,162 +86,178 @@ export class Editor {
   }
 
   canEdit(callback) {
-    // Do not allow users to edit without permission
-    if (!this.authz_data.has_course_permission_edit) {
-      return callback(error.make(403, 'Access denied (must be course editor)'));
-    }
-
-    // Do not allow users to edit the exampleCourse
-    if (this.course.example_course) {
-      return callback(new Error(`Access denied (cannot edit the example course)`));
+    try {
+      this.assertCanEdit();
+    } catch (err) {
+      callback(err);
+      return;
     }
 
     callback(null);
   }
 
+  assertCanEdit() {
+    // Do not allow users to edit without permission
+    if (!this.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied (must be course editor)');
+    }
+
+    // Do not allow users to edit the exampleCourse
+    if (this.course.example_course) {
+      throw error.make(403, `Access denied (cannot edit the example course)`);
+    }
+  }
+
+  async prepareServerJob() {
+    this.assertCanEdit();
+    const serverJob = await createServerJob({
+      courseId: this.course.id,
+      userId: this.user.user_id,
+      authnUserId: this.authz_data.authn_user.user_id,
+      type: 'sync',
+      description: this.description,
+    });
+    return serverJob;
+  }
+
+  async executeWithServerJob(serverJob) {
+    // We deliberately use `executeUnsafe` here because we want to wait
+    // for the edit to complete during the request during which it was
+    // made. We use `executeUnsafe` instead of `execute` because we want
+    // errors to be thrown and handled by the caller.
+    await serverJob.executeUnsafe(async (job) => {
+      const gitEnv = process.env;
+      if (config.gitSshCommand != null) {
+        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+      }
+
+      const lockName = getLockNameForCoursePath(this.course.path);
+      await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+
+        if (!config.fileEditorUseGit) {
+          // If we are not using git (e.g., if we are running locally), then we:
+          //
+          // - Write changes to disk
+          // - Sync changes from disk
+          //
+          // Either the job ends with a thrown error or with the return statement.
+
+          job.info('Write changes to disk');
+          job.data.saveAttempted = true;
+          await this.write();
+          job.data.saveSucceeded = true;
+
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
+
+          return;
+        }
+
+        // If we are using git (e.g., if we are running in production), then we:
+        //
+        // - Pull from remote (then clean and reset)
+        // - Write changes to disk
+        // - Push to remote (then clean and reset)
+        // - Sync changes from disk
+        //
+        // If anything goes wrong in the pull, we error and exit.
+        //
+        // If anything goes wrong in the write or push, we make sure to clean/reset
+        // (removing changes made by this edit) and sync (because changes were made
+        // by the pull) before we error and exit.
+
+        // Safety check: make sure the course has a defined branch and repository.
+        if (!this.course.branch || !this.course.repository) {
+          job.fail('Git repository or branch are not set for this course. Exiting...');
+          return;
+        }
+
+        job.info('Update to latest remote origin address');
+        await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        job.info('Fetch from remote git repository');
+        await job.exec('git', ['fetch'], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        await cleanAndResetRepository(this.course, gitEnv, job);
+
+        try {
+          job.data.saveAttempted = true;
+          job.info('Write changes to disk');
+          await this.write();
+
+          job.info('Commit changes');
+          await job.exec('git', ['add', ...this.pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.uid}"`,
+              'commit',
+              '-m',
+              this.commitMessage,
+            ],
+            {
+              cwd: this.course.path,
+              env: gitEnv,
+            },
+          );
+
+          job.info('Push changes to remote git repository');
+          await job.exec('git', ['push'], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          job.data.saveSucceeded = true;
+        } finally {
+          // Whether or not we error, we'll do a clean and reset.
+          //
+          // If pushing succeeded, the clean will remove any empty directories
+          // that might have been left behind by operations like renames.
+          //
+          // If pushing (or anything before pushing) failed, the reset will get
+          // us back to a known good state.
+          await cleanAndResetRepository(this.course, gitEnv, job);
+
+          // Similarly, whether or not we error, we'll a course sync.
+          //
+          // If pushing succeeded, then we will be syncing the changes made
+          // by this edit.
+          //
+          // If pushing (or anything before pushing) failed, then we will be
+          // syncing the changes we pulled from the remote git repository.
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
+        }
+      });
+    });
+  }
+
   doEdit(callback) {
-    let jobSequenceId = null;
-    async.series(
-      [
-        async () => {
-          const serverJob = await createServerJob({
-            courseId: this.course.id,
-            userId: this.user.user_id,
-            authnUserId: this.authz_data.authn_user.user_id,
-            type: 'sync',
-            description: this.description,
-          });
-          jobSequenceId = serverJob.jobSequenceId;
-
-          // We deliberately use `executeUnsafe` here because we want to wait
-          // for the edit to complete during the request during which it was
-          // made. We use `executeUnsafe` instead of `execute` because we want
-          // errors to be thrown and handled by the caller.
-          await serverJob.executeUnsafe(async (job) => {
-            const gitEnv = process.env;
-            if (config.gitSshCommand != null) {
-              gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-            }
-
-            const lockName = getLockNameForCoursePath(this.course.path);
-            await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
-              if (!config.fileEditorUseGit) {
-                // If we are not using git (e.g., if we are running locally), then we:
-                //
-                // - Write changes to disk
-                // - Sync changes from disk
-                //
-                // Either the job ends with a thrown error or with the return statement.
-
-                job.info('Write changes to disk');
-                job.data.saveAttempted = true;
-                await this.write();
-                job.data.saveSucceeded = true;
-
-                job.info('Sync changes from disk');
-                job.data.syncAttempted = true;
-                await syncCourseFromDisk(this.course, startGitHash, job);
-                job.data.syncSucceeded = true;
-
-                return;
-              }
-
-              // If we are using git (e.g., if we are running in production), then we:
-              //
-              // - Pull from remote (then clean and reset)
-              // - Write changes to disk
-              // - Push to remote (then clean and reset)
-              // - Sync changes from disk
-              //
-              // If anything goes wrong in the pull, we error and exit.
-              //
-              // If anything goes wrong in the write or push, we make sure to clean/reset
-              // (removing changes made by this edit) and sync (because changes were made
-              // by the pull) before we error and exit.
-
-              // Safety check: make sure the course has a defined branch and repository.
-              if (!this.course.branch || !this.course.repository) {
-                job.fail('Git repository or branch are not set for this course. Exiting...');
-                return;
-              }
-
-              job.info('Update to latest remote origin address');
-              await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
-                cwd: this.course.path,
-                env: gitEnv,
-              });
-
-              job.info('Fetch from remote git repository');
-              await job.exec('git', ['fetch'], {
-                cwd: this.course.path,
-                env: gitEnv,
-              });
-
-              await cleanAndResetRepository(this.course, gitEnv, job);
-
-              try {
-                job.data.saveAttempted = true;
-                job.info('Write changes to disk');
-                await this.write();
-
-                job.info('Commit changes');
-                await job.exec('git', ['add', ...this.pathsToAdd], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-                await job.exec(
-                  'git',
-                  [
-                    '-c',
-                    `user.name="${this.user.name}"`,
-                    '-c',
-                    `user.email="${this.user.uid}"`,
-                    'commit',
-                    '-m',
-                    this.commitMessage,
-                  ],
-                  {
-                    cwd: this.course.path,
-                    env: gitEnv,
-                  },
-                );
-
-                job.info('Push changes to remote git repository');
-                await job.exec('git', ['push'], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-                job.data.saveSucceeded = true;
-              } finally {
-                // Whether or not we error, we'll do a clean and reset.
-                //
-                // If pushing succeeded, the clean will remove any empty directories
-                // that might have been left behind by operations like renames.
-                //
-                // If pushing (or anything before pushing) failed, the reset will get
-                // us back to a known good state.
-                await cleanAndResetRepository(this.course, gitEnv, job);
-
-                // Similarly, whether or not we error, we'll a course sync.
-                //
-                // If pushing succeeded, then we will be syncing the changes made
-                // by this edit.
-                //
-                // If pushing (or anything before pushing) failed, then we will be
-                // syncing the changes we pulled from the remote git repository.
-                job.info('Sync changes from disk');
-                job.data.syncAttempted = true;
-                await syncCourseFromDisk(this.course, startGitHash, job);
-                job.data.syncSucceeded = true;
-              }
-            });
-          });
-        },
-      ],
+    this.prepareServerJob().then(
+      (serverJob) => {
+        this.executeWithServerJob(serverJob).then(
+          () => callback(null, serverJob.jobSequenceId),
+          (err) => callback(err, serverJob.jobSequenceId),
+        );
+      },
       (err) => {
-        callback(err, jobSequenceId);
+        callback(err);
       },
     );
   }

@@ -281,7 +281,7 @@ export function AddFeatureGrantModalBody({
                 value="${institution.id}"
                 ${institution.id === institution_id ? 'selected' : ''}
               >
-                ${institution.long_name} (${institution.short_name})
+                ${institution.short_name}: ${institution.long_name} (${institution.id})
               </option>
             `;
           })}
@@ -303,7 +303,7 @@ export function AddFeatureGrantModalBody({
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
-                ${course.short_name}: ${course.title}
+                ${course.short_name}: ${course.title} (${course.id})
               </option>
             `;
           })}
@@ -328,7 +328,7 @@ export function AddFeatureGrantModalBody({
                 value="${course_instance.id}"
                 ${course_instance.id === course_instance_id ? 'selected' : ''}
               >
-                ${course_instance.long_name} (${course_instance.short_name})
+                ${course_instance.short_name}: ${course_instance.long_name} (${course_instance.id})
               </option>
             `;
           })}
