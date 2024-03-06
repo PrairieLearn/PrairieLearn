@@ -216,7 +216,7 @@ export class Editor {
         this.executeWithServerJob(serverJob).then(
           () => callback(null, serverJob.jobSequenceId),
           (err) => {
-            callback(err.serverJob.jobSequenceId);
+            callback(err, serverJob.jobSequenceId);
           },
         );
       },
