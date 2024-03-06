@@ -725,7 +725,7 @@ function doEdits(data) {
     // (B, B, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsA);
-    // (A, B, B, B)
+    // (B, A, B, B)
 
     editGet(data.url, false, false, data.contentsA, null);
     // (A, A, B, B)
