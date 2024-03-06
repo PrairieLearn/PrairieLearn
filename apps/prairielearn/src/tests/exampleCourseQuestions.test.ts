@@ -49,24 +49,19 @@ const qidsExampleCourse = [
   'element/symbolicInput',
   'element/unitsInput',
   'element/variableOutput',
-  'template/symbolic-input/random',
 ];
-let templateQuestionPaths: string[] = [];
+
+// We hold all template questions to a high standard, so we will always test them all.
+const templateQuestionQids: string[] = fg
+  .globSync('template/**/info.json', {
+    cwd: path.join(EXAMPLE_COURSE_PATH, 'questions'),
+  })
+  .map((p) => path.dirname(p));
 
 describe('Auto-test questions in exampleCourse', () => {
-  before('add template questions', async () => {
-    // We hold all template questions to a high standard, so we will always test them all.
-    const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-    const templateQuestionJsonPaths = await fg.glob('template/**/info.json', {
-      cwd: exampleCourseQuestionsPath,
-      absolute: false,
-    });
-    templateQuestionPaths = templateQuestionJsonPaths.map((p) => path.dirname(p));
-  });
-
   it('has correct topic for all template questions', async () => {
     const questionsWithIncorrectTopics: string[] = [];
-    for (const qid of templateQuestionPaths) {
+    for (const qid of templateQuestionQids) {
       const jsonPath = path.join(EXAMPLE_COURSE_PATH, 'questions', qid, 'info.json');
       const json = JSON.parse(await fs.readFile(jsonPath, 'utf-8'));
       if (json.topic !== 'Template') {
@@ -85,7 +80,7 @@ describe('Auto-test questions in exampleCourse', () => {
     before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    [...qidsExampleCourse, ...templateQuestionPaths].forEach((qid) =>
+    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
       helperQuestion.autoTestQuestion(locals, qid),
     );
   });
@@ -105,7 +100,7 @@ describe('Auto-test questions in exampleCourse', () => {
     });
 
     // Only test the first 10 questions so that this test doesn't take too long.
-    [...qidsExampleCourse, ...templateQuestionPaths]
+    [...qidsExampleCourse, ...templateQuestionQids]
       .slice(0, 10)
       .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
   });
