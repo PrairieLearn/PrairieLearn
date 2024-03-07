@@ -25,8 +25,7 @@ RUN export arch=`uname -m` \
  && conda config --add channels conda-forge \
  && conda run -n base pip install -r /requirements.txt
 
-# Cleaning up the cache in the same step when we install is important if you
-# want to minimize the image size.
+# Install VS Code extensions and clear the extension cache to reduce image size.
 USER coder
 RUN ( code-server --disable-telemetry --force \
 		# vscode support for python, including debugger 
