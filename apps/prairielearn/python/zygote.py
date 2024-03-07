@@ -163,7 +163,7 @@ def worker_loop(s: socket.socket):
         s.sendall(len(encoded_data).to_bytes(4, byteorder="big"))
         s.sendall(encoded_data)
 
-    def write_json_to_socket(data: any):
+    def write_json_to_socket(data: Any):
         write_str_to_socket(try_dumps(data, allow_nan=False))
 
     # Infinite loop where we wait for an input command, do it, and
@@ -390,7 +390,7 @@ def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker)  # Ctrl-C case
 
-port = int(os.environ.get("PORT"))
+port = int(os.environ["PORT"])
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect(("127.0.0.1", port))
