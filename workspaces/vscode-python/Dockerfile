@@ -97,11 +97,11 @@ EXPOSE 8080
 # prepared in the image. (However, if students try to customize their editor
 # settings, those will get reset in between sessions this way.)
 USER coder
-ENV EDITOR_FOCUS_DIR "/home/coder/project"
+ENV EDITOR_FOCUS_DIR "/home/coder/workspace"
 RUN mkdir -p "$EDITOR_FOCUS_DIR"
 WORKDIR "$EDITOR_FOCUS_DIR"
 
-RUN mkdir -p "/home/coder/.local/share/code-server/User" "/home/coder/project"
+RUN mkdir -p "/home/coder/.local/share/code-server/User" "/home/coder/workspace"
 COPY --chmod=0444 settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chmod=0444 coder.json /home/coder/.local/share/code-server/coder.json
 
