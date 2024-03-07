@@ -8,18 +8,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 const debug = require('debug')('prairielearn:instructorFileEditor');
-import { contains } from '@prairielearn/path-utils';
 import * as serverJobs from '../../lib/server-jobs-legacy';
-import { createServerJob } from '../../lib/server-jobs';
-import * as namedLocks from '@prairielearn/named-locks';
-import * as syncFromDisk from '../../sync/syncFromDisk';
-import {
-  getOrUpdateCourseCommitHash,
-  getCourseCommitHash,
-  updateCourseCommitHash,
-  getLockNameForCoursePath,
-} from '../../models/course';
-import { config } from '../../lib/config';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
@@ -27,282 +16,274 @@ import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
 import { isBinaryFile } from 'isbinaryfile';
 import * as modelist from 'ace-code/src/ext/modelist';
-import { decodePath } from '../../lib/uri-util';
-import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks';
 import { idsEqual } from '../../lib/id';
 import { getPathsCallback } from '../../lib/instructorFiles';
+import { getCourseOwners } from '../../lib/course';
+import { logger } from '@prairielearn/logger';
+import { FileModifyEditor } from '../../lib/editors';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    // Access denied, but instead of sending them to an error page, we'll show
+    // them an explanatory message and prompt them to get edit permissions.
+    getCourseOwners(res.locals.course.id)
+      .then((owners) => {
+        res.locals.course_owners = owners;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => next(err));
+    return;
   }
-
-  let workingPath;
-  if (req.params[0]) {
-    try {
-      workingPath = decodePath(req.params[0]);
-    } catch (err) {
-      return next(new Error(`Invalid path: ${req.params[0]}`));
-    }
-  } else {
-    return next(new Error(`No path`));
-  }
-
-  let fileEdit = {
-    uuid: uuidv4(),
-    userID: res.locals.user.user_id,
-    authnUserId: res.locals.authn_user.user_id,
-    courseID: res.locals.course.id,
-    coursePath: res.locals.course.path,
-    dirName: path.dirname(workingPath),
-    fileName: path.basename(workingPath),
-    fileNameForDisplay: path.normalize(workingPath),
-    aceMode: modelist.getModeForPath(workingPath).mode,
-  };
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
-    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    return;
   }
 
-  // Do not allow users to edit files outside the course
-  const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-  const relPath = path.relative(fileEdit.coursePath, fullPath);
-  debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
-  );
-  if (!contains(fileEdit.coursePath, fullPath)) {
-    return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
+  // Do not allow users to edit files in bad locations (e.g., outside the
+  // current course, outside the current course instance, etc.). Do this by
+  // wrapping everything in getPaths, which throws an error on a bad path.
+  getPathsCallback(req, res, (err, paths) => {
+    if (ERR(err, next)) return;
+
+    // We could also check if the file exists, if the file actually is a
+    // file and not a directory, if the file is non-binary, etc., and try
+    // to give a graceful error message on the edit page rather than send
+    // the user to an error page.
+    //
+    // We won't do that, on the assumption that most users get to an edit
+    // page through our UI, which already tries to prevent letting users
+    // go where they should not.
+
+    const fullPath = paths.workingPath;
+    const relPath = paths.workingPathRelativeToCourse;
+    let fileEdit = {
+      uuid: uuidv4(),
+      userID: res.locals.user.user_id,
+      authnUserId: res.locals.authn_user.user_id,
+      courseID: res.locals.course.id,
+      coursePath: paths.coursePath,
+      dirName: path.dirname(relPath),
+      fileName: path.basename(relPath),
+      fileNameForDisplay: path.normalize(relPath),
+      aceMode: modelist.getModeForPath(relPath).mode,
+      jobSequence: /** @type {any} */ (null),
+    };
+
+    debug(
+      `Edit file in browser\n` +
+        ` fileName: ${fileEdit.fileName}\n` +
+        ` coursePath: ${fileEdit.coursePath}\n` +
+        ` fullPath: ${fullPath}\n` +
+        ` relPath: ${relPath}`,
     );
-  }
 
-  async.waterfall(
-    [
-      async () => {
-        debug('Read from db');
-        await readEdit(fileEdit);
-
-        debug('Read from disk');
-        const contents = await fs.readFile(fullPath);
-        fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
-        fileEdit.diskHash = getHash(fileEdit.diskContents);
-
-        const binary = await isBinaryFile(contents);
-        debug(`isBinaryFile: ${binary}`);
-        if (binary) {
-          debug('found a binary file');
-          throw new Error('Cannot edit binary file');
-        } else {
-          debug('found a text file');
-        }
-
-        if (fileEdit.jobSequenceId != null) {
-          debug('Read job sequence');
-          fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
-            fileEdit.jobSequenceId,
-            res.locals.course.id,
-          );
-        }
-
-        const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
-        const ansiUp = new AnsiUp();
-        fileEdit.sync_errors = data.errors;
-        fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
-        fileEdit.sync_warnings = data.warnings;
-        fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
-      },
-    ],
-    (err) => {
-      if (ERR(err, next)) return;
-      if (fileEdit.jobSequence?.status === 'Running') {
-        debug('Job sequence is still running - redirect to status page');
-        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
-        return;
-      }
-
-      fileEdit.alertChoice = false;
-
-      if ('editID' in fileEdit) {
-        // There is a recently saved draft ...
-        fileEdit.alertResults = true;
-        if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
-          // ...that was not written to disk and that differs from what is on disk.
-          fileEdit.alertChoice = true;
-          fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
-        }
-      }
-
-      if (fileEdit.jobSequence) {
-        // New case: single job for the entire operation. We check the flag
-        // we would have set when the job executed to determine if the push
-        // succeeded or not.
-        if (!fileEdit.jobSequence.legacy) {
-          const job = fileEdit.jobSequence.jobs[0];
-
-          // We check for presence of the `pushed` key to determine if we
-          // attempted a push, and we check for the value to know if the push
-          // succeeded or not.
-          if (job.data.pushAttempted && !job.data.pushSucceeded) {
-            fileEdit.failedPush = true;
-          }
-        } else {
-          // TODO: remove legacy case here once this has been running in production
-          // for a while.
-          fileEdit.jobSequence.jobs.forEach((item) => {
-            if (item.type === 'git_push' && item.status === 'Error') {
-              fileEdit.failedPush = true;
-            }
-          });
-        }
-      }
-
-      if (!fileEdit.alertChoice) {
-        fileEdit.editContents = fileEdit.diskContents;
-        fileEdit.origHash = fileEdit.diskHash;
-      }
-
-      getPathsCallback(req, res, (err, paths) => {
-        if (ERR(err, next)) return;
-        res.locals.fileEdit = fileEdit;
-        res.locals.fileEdit.paths = paths;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      });
-    },
-  );
-});
-
-router.post('/*', (req, res, next) => {
-  debug(`Responding to post with action ${req.body.__action}`);
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
-  }
-
-  let workingPath;
-  if (req.params[0]) {
-    try {
-      workingPath = decodePath(req.params[0]);
-    } catch (err) {
-      return next(new Error(`Invalid path: ${req.params[0]}`));
-    }
-  } else {
-    return next(new Error(`No path`));
-  }
-
-  let fileEdit = {
-    userID: res.locals.user.user_id,
-    authnUserId: res.locals.authn_user.user_id,
-    courseID: res.locals.course.id,
-    dirName: req.body.file_edit_dir_name,
-    fileName: req.body.file_edit_file_name,
-    origHash: req.body.file_edit_orig_hash,
-    coursePath: res.locals.course.path,
-    uid: res.locals.user.uid,
-    user_name: res.locals.user.name,
-    editContents: req.body.file_edit_contents,
-  };
-
-  // Do not allow users to edit the exampleCourse
-  if (res.locals.course.example_course) {
-    return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`));
-  }
-
-  // Do not allow users to edit files outside the course
-  const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-  const relPath = path.relative(fileEdit.coursePath, fullPath);
-  debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
-  );
-  if (!contains(fileEdit.coursePath, fullPath)) {
-    return next(
-      error.make(400, `attempting to edit file outside course directory: ${workingPath}`),
-    );
-  }
-
-  if (req.body.__action === 'save_and_sync' || req.body.__action === 'pull_and_save_and_sync') {
-    debug('Save and sync');
-
-    // The "Save and Sync" button is enabled only when changes have been made
-    // to the file, so - in principle - it should never be the case that editHash
-    // and origHash are the same. We will treat this is a catastrophic error.
-    fileEdit.editHash = getHash(fileEdit.editContents);
-    if (fileEdit.editHash === fileEdit.origHash) {
-      return next(
-        error.make(
-          400,
-          `attempting to save a file without having made any changes: ${workingPath}`,
-        ),
-      );
-    }
-
-    // Whether or not to pull from remote git repo before proceeding to save and sync
-    fileEdit.doPull = req.body.__action === 'pull_and_save_and_sync';
-
-    if (res.locals.navPage === 'course_admin') {
-      const rootPath = res.locals.course.path;
-      fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
-    } else if (res.locals.navPage === 'instance_admin') {
-      const rootPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-      );
-      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
-        rootPath,
-        fullPath,
-      )}`;
-    } else if (res.locals.navPage === 'assessment') {
-      const rootPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid,
-      );
-      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
-        rootPath,
-        fullPath,
-      )}`;
-    } else if (res.locals.navPage === 'question') {
-      const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
-      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
-        rootPath,
-        fullPath,
-      )}`;
-    } else {
-      const rootPath = res.locals.course.path;
-      fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
-    }
-
-    async.series(
+    async.waterfall(
       [
         async () => {
-          debug('Write edit to db');
-          await createEdit(fileEdit);
+          debug('Read from db');
+          await readDraftEdit(fileEdit);
 
-          debug('Write edit to disk (also push and sync if necessary)');
-          fileEdit.needToSync = path.extname(fileEdit.fileName) === '.json';
-          await saveAndSync(fileEdit, res.locals);
+          debug('Read from disk');
+          const contents = await fs.readFile(fullPath);
+          fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
+          fileEdit.diskHash = getHash(fileEdit.diskContents);
+
+          const binary = await isBinaryFile(contents);
+          debug(`isBinaryFile: ${binary}`);
+          if (binary) {
+            debug('found a binary file');
+            throw new Error('Cannot edit binary file');
+          } else {
+            debug('found a text file');
+          }
+
+          if (fileEdit.jobSequenceId != null) {
+            debug('Read job sequence');
+            fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+              fileEdit.jobSequenceId,
+              res.locals.course.id,
+            );
+          }
+
+          const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
+          const ansiUp = new AnsiUp();
+          fileEdit.sync_errors = data.errors;
+          fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
+          fileEdit.sync_warnings = data.warnings;
+          fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
         },
       ],
       (err) => {
         if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
+        if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
+          // Because of the redirect, if the job sequence ends up failing to save,
+          // then the corresponding draft will be lost (all drafts are soft-deleted
+          // from the database on readDraftEdit).
+          debug('Job sequence is still running - redirect to status page');
+          res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
+          return;
+        }
+
+        fileEdit.alertChoice = false;
+        fileEdit.didSave = false;
+        fileEdit.didSync = false;
+
+        if (fileEdit.jobSequence) {
+          // No draft is older than 24 hours, so it is safe to assume that no
+          // job sequence is legacy... but, just in case, we will check and log
+          // a warning if we find one. We will treat the corresponding draft as
+          // if it was neither saved nor synced.
+          if (fileEdit.jobSequence.legacy) {
+            debug('Found a legacy job sequence');
+            logger.warn(
+              `Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
+                `in a file edit (id=${fileEdit.editID})`,
+            );
+          } else {
+            const job = fileEdit.jobSequence.jobs[0];
+
+            debug('Found a job sequence');
+            debug(` saveAttempted=${job.data.saveAttempted}`);
+            debug(` saveSucceeded=${job.data.saveSucceeded}`);
+            debug(` syncAttempted=${job.data.syncAttempted}`);
+            debug(` syncSucceeded=${job.data.syncSucceeded}`);
+
+            // We check for the presence of a `saveSucceeded` key to know if
+            // the edit was saved (i.e., written to disk in the case of no git,
+            // or written to disk and then pushed in the case of git). If this
+            // key exists, its value will be true.
+            if (job.data.saveSucceeded) {
+              fileEdit.didSave = true;
+
+              // We check for the presence of a `syncSucceeded` key to know
+              // if the sync was successful. If this key exists, its value will
+              // be true. Note that the cause of sync failure could be a file
+              // other than the one being edited.
+              //
+              // By "the sync" we mean "the sync after a successfully saved
+              // edit." Remember that, if using git, we pull before we push.
+              // So, if we error on save, then we still try to sync whatever
+              // was pulled from the remote repository, even though changes
+              // made by the edit will have been discarded. We ignore this
+              // in the UI for now.
+              if (job.data.syncSucceeded) {
+                fileEdit.didSync = true;
+              }
+            }
+          }
+        }
+
+        if (fileEdit.editID) {
+          // There is a recently saved draft ...
+          fileEdit.alertResults = true;
+          if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
+            // ...that was not written to disk and that differs from what is on disk.
+            fileEdit.alertChoice = true;
+            fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
+          }
+        }
+
+        if (!fileEdit.alertChoice) {
+          fileEdit.editContents = fileEdit.diskContents;
+          fileEdit.origHash = fileEdit.diskHash;
+        }
+
+        res.locals.fileEdit = fileEdit;
+        res.locals.fileEdit.paths = paths;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       },
     );
-  } else {
-    next(error.make(400, `unknown __action: ${req.body.__action}`));
+  });
+});
+
+router.post('/*', (req, res, next) => {
+  debug('POST /');
+  if (!res.locals.authz_data.has_course_permission_edit) {
+    return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
+
+  getPathsCallback(req, res, (err, paths) => {
+    if (ERR(err, next)) return;
+    const container = {
+      rootPath: paths.rootPath,
+      invalidRootPaths: paths.invalidRootPaths,
+    };
+
+    // NOTE: All actions are meant to do things to *files* and not to directories
+    // (or anything else). However, nowhere do we check that it is actually being
+    // applied to a file and not to a directory.
+
+    if (req.body.__action === 'save_and_sync') {
+      debug('Save and sync');
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container: container,
+        filePath: paths.workingPath,
+        editContents: req.body.file_edit_contents,
+        origHash: req.body.file_edit_orig_hash,
+      });
+      editor.shouldEdit((err, yes) => {
+        if (ERR(err, next)) return;
+        if (!yes) return res.redirect(req.originalUrl);
+        editor.canEdit((err) => {
+          if (ERR(err, next)) return;
+          let editID = null;
+          let jobSequenceID = null;
+          async.series(
+            [
+              async () => {
+                debug('Write draft file edit to db and to file store');
+                const fileEdit = {
+                  userID: res.locals.user.user_id,
+                  authnUserID: res.locals.authn_user.user_id,
+                  courseID: res.locals.course.id,
+                  dirName: paths.workingDirectory,
+                  fileName: paths.workingFilename,
+                  origHash: req.body.file_edit_orig_hash,
+                  coursePath: res.locals.course.path,
+                  uid: res.locals.user.uid,
+                  user_name: res.locals.user.name,
+                  editContents: req.body.file_edit_contents,
+                };
+                editID = await writeDraftEdit(fileEdit);
+              },
+              (callback) => {
+                editor.doEdit((err, job_sequence_id) => {
+                  // An error here should be logged but not passed on,
+                  // because the UI will look at the job_sequence_id.
+                  ERR(err, (e) => logger.error('Error in doEdit()', e));
+                  jobSequenceID = job_sequence_id;
+                  callback(null);
+                });
+              },
+              async () => {
+                await updateJobSequenceId(editID, jobSequenceID);
+              },
+            ],
+            (err) => {
+              if (ERR(err, next)) return;
+              res.redirect(req.originalUrl);
+            },
+          );
+        });
+      });
+    } else {
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
+    }
+  });
 });
 
 function getHash(contents) {
   return sha256(contents).toString();
 }
 
-async function readEdit(fileEdit) {
+async function readDraftEdit(fileEdit) {
   debug(`Looking for previously saved drafts`);
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
@@ -317,11 +298,8 @@ async function readEdit(fileEdit) {
     if (draftResult.rows[0].age < 24) {
       fileEdit.editID = draftResult.rows[0].id;
       fileEdit.origHash = draftResult.rows[0].orig_hash;
-      fileEdit.didSave = draftResult.rows[0].did_save;
-      fileEdit.didSync = draftResult.rows[0].did_sync;
       fileEdit.jobSequenceId = draftResult.rows[0].job_sequence_id;
       fileEdit.fileID = draftResult.rows[0].file_id;
-      debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
     } else {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
@@ -349,7 +327,7 @@ async function readEdit(fileEdit) {
     }
   }
 
-  if ('editID' in fileEdit) {
+  if (fileEdit.editID) {
     debug('Read contents of file edit');
     const result = await getFile(fileEdit.fileID);
     const contents = b64EncodeUnicode(result.contents.toString('utf8'));
@@ -361,29 +339,15 @@ async function readEdit(fileEdit) {
   }
 }
 
-async function updateJobSequenceId(fileEdit, job_sequence_id) {
+async function updateJobSequenceId(edit_id, job_sequence_id) {
   await sqldb.queryAsync(sql.update_job_sequence_id, {
-    id: fileEdit.editID,
+    id: edit_id,
     job_sequence_id: job_sequence_id,
   });
-  debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
+  debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
-async function updateDidSave(fileEdit) {
-  await sqldb.queryAsync(sql.update_did_save, {
-    id: fileEdit.editID,
-  });
-  debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
-}
-
-async function updateDidSync(fileEdit) {
-  await sqldb.queryAsync(sql.update_did_sync, {
-    id: fileEdit.editID,
-  });
-  debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
-}
-
-async function createEdit(fileEdit) {
+async function writeDraftEdit(fileEdit) {
   const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -396,28 +360,7 @@ async function createEdit(fileEdit) {
     await deleteFile(row.file_id, fileEdit.userID);
   }
 
-  debug('Write contents to file edit');
-  const fileID = await writeEdit(fileEdit);
-  fileEdit.fileID = fileID;
-  fileEdit.didWriteEdit = true;
-
-  const params = {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-    orig_hash: fileEdit.origHash,
-    file_id: fileEdit.fileID,
-  };
-  debug(
-    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
-  );
-  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
-  fileEdit.editID = result.rows[0].id;
-  debug(`Created file edit in database with id ${fileEdit.editID}`);
-}
-
-async function writeEdit(fileEdit) {
+  debug('Write contents to file store');
   const fileID = await uploadFile({
     display_filename: fileEdit.fileName,
     contents: Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
@@ -426,159 +369,25 @@ async function writeEdit(fileEdit) {
     assessment_instance_id: null,
     instance_question_id: null,
     user_id: fileEdit.userID,
-    authn_user_id: fileEdit.authnUserId,
+    authn_user_id: fileEdit.authnUserID,
   });
-  debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
-  return fileID;
-}
+  debug(`Wrote file_id=${fileID} to file store`);
 
-async function saveAndSync(fileEdit, locals) {
-  const serverJob = await createServerJob({
-    courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
-    type: 'sync',
-    description: 'Save and sync an in-browser edit to a file',
-  });
-
-  await serverJob.execute(async (job) => {
-    await updateJobSequenceId(fileEdit, serverJob.jobSequenceId);
-
-    const gitEnv = process.env;
-    if (config.gitSshCommand != null) {
-      gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-    }
-
-    const lockName = getLockNameForCoursePath(locals.course.path);
-    await namedLocks.doWithLock(
-      lockName,
-      {
-        timeout: 5000,
-        onNotAcquired: () => {
-          job.fail(`Another user is already syncing or modifying this course.`);
-        },
-      },
-      async () => {
-        const startGitHash = await getOrUpdateCourseCommitHash(locals.course);
-        if (fileEdit.doPull) {
-          await job.exec('git', ['fetch'], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-          await job.exec('git', ['clean', '-fdx'], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-          await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-        }
-
-        const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-        const contents = await fs.readFile(fullPath, 'utf8');
-        fileEdit.diskHash = getHash(b64EncodeUnicode(contents));
-        if (fileEdit.origHash !== fileEdit.diskHash) {
-          job.fail(`Another user made changes to the file you were editing.`);
-        }
-
-        await fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8');
-        job.verbose(`Wrote changed to ${fullPath}`);
-
-        if (config.fileEditorUseGit) {
-          try {
-            await job.exec('git', ['reset'], {
-              cwd: locals.course.path,
-              env: gitEnv,
-            });
-            await job.exec('git', ['add', path.join(fileEdit.dirName, fileEdit.fileName)], {
-              cwd: locals.course.path,
-              env: gitEnv,
-            });
-            await job.exec(
-              'git',
-              [
-                '-c',
-                `user.name="${fileEdit.user_name}"`,
-                '-c',
-                `user.email="${fileEdit.uid}"`,
-                'commit',
-                '-m',
-                fileEdit.commitMessage,
-              ],
-              {
-                cwd: locals.course.path,
-                env: gitEnv,
-              },
-            );
-          } catch (err) {
-            await job.exec('git', ['checkout', path.join(fileEdit.dirName, fileEdit.fileName)], {
-              cwd: locals.course.path,
-              env: gitEnv,
-            });
-            throw err;
-          }
-
-          try {
-            job.data.pushAttempted = true;
-
-            await job.exec('git', ['push'], {
-              cwd: locals.course.path,
-              env: gitEnv,
-            });
-
-            // Remember that we successfully pushed. When a user views the file
-            // editing page again, we'll check for this flag to know if we need
-            // to display instructions for a failed push.
-            job.data.pushSucceeded = true;
-          } catch (err) {
-            await job.exec('git', ['reset', '--hard', 'HEAD~1'], {
-              cwd: locals.course.path,
-              env: gitEnv,
-            });
-            throw err;
-          }
-        }
-
-        await updateDidSave(fileEdit);
-        job.verbose('Marked edit as saved');
-
-        if (fileEdit.needToSync || config.chunksGenerator) {
-          // If we're using chunks, then always sync on edit. We need the sync
-          // data to force-generate new chunks.
-          const result = await syncFromDisk.syncDiskToSqlWithLock(
-            locals.course.id,
-            locals.course.path,
-            job,
-          );
-
-          if (config.chunksGenerator) {
-            const endGitHash = await getCourseCommitHash(locals.course.path);
-            const chunkChanges = await updateChunksForCourse({
-              coursePath: locals.course.path,
-              courseId: locals.course.id,
-              courseData: result.courseData,
-              oldHash: startGitHash,
-              newHash: endGitHash,
-            });
-            logChunkChangesToJob(chunkChanges, job);
-          }
-
-          // Note that we deliberately don't actually write the updated commit hash
-          // to the database until after chunks have been updated. This ensures
-          // that if the chunks update fails, we'll try again next time.
-          await updateCourseCommitHash(locals.course);
-
-          if (result.hadJsonErrors) {
-            job.fail('One or more JSON files contained errors and were unable to be synced');
-          }
-        }
-
-        await updateDidSync(fileEdit);
-        job.verbose('Marked edit as synced');
-      },
-    );
-  });
+  const params = {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+    orig_hash: fileEdit.origHash,
+    file_id: fileID,
+  };
+  debug(
+    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
+  );
+  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
+  const editID = result.rows[0].id;
+  debug(`Created file edit in database with id ${editID}`);
+  return editID;
 }
 
 export default router;

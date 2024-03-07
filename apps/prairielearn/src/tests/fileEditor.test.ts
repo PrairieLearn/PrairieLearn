@@ -311,7 +311,7 @@ describe('test file editor', function () {
     });
 
     describe('disallow edits outside course directory', function () {
-      badGet(badPathUrl);
+      badGet(badPathUrl, 500, false);
     });
 
     describe('verify file handlers', function () {
@@ -327,57 +327,36 @@ describe('test file editor', function () {
     after('shut down testing server', helperServer.after);
 
     describe('disallow edits inside exampleCourse', function () {
-      badGet(badExampleCoursePathUrl);
+      badGet(badExampleCoursePathUrl, 403, true);
     });
   });
 });
 
-function badGet(url) {
+function badGet(url, expected_status, should_parse) {
   describe(`GET to edit url with bad path`, function () {
-    it('should not load successfully', function (callback) {
+    it(`should load with status ${expected_status}`, function (callback) {
       locals.preStartTime = Date.now();
-      request(url, function (error, response) {
+      request(url, function (error, response, body) {
         if (error) {
           return callback(error);
         }
         locals.postStartTime = Date.now();
-        if (response.statusCode !== 400) {
+        if (response.statusCode !== expected_status) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
+        page = body;
         callback(null);
       });
     });
-  });
-}
-
-function badPost(action, fileEditContents, url) {
-  describe(`POST to edit url with action ${action} and with bad path`, function () {
-    it('should not load successfully', function (callback) {
-      const form = {
-        __action: action,
-        __csrf_token: locals.__csrf_token,
-        file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
-        file_edit_user_id: locals.file_edit_user_id,
-        file_edit_course_id: locals.file_edit_course_id,
-        file_edit_dir_name: '../PrairieLearn/',
-        file_edit_file_name: 'config.json',
-        file_edit_orig_hash: locals.file_edit_orig_hash,
-      };
-      locals.preEndTime = Date.now();
-      request.post(
-        { url: url, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postEndTime = Date.now();
-          if (response.statusCode !== 400) {
-            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-          }
-          callback(null);
-        },
-      );
-    });
+    if (should_parse) {
+      it('should parse', function () {
+        locals.$ = cheerio.load(page);
+      });
+      it('should not have an editor-form', function () {
+        elemList = locals.$('form[name="editor-form"]');
+        assert.lengthOf(elemList, 0);
+      });
+    }
   });
 }
 
@@ -512,8 +491,6 @@ function editPost(
         file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
         file_edit_user_id: locals.file_edit_user_id,
         file_edit_course_id: locals.file_edit_course_id,
-        file_edit_dir_name: locals.file_edit_dir_name,
-        file_edit_file_name: locals.file_edit_file_name,
         file_edit_orig_hash: locals.file_edit_orig_hash,
       };
       locals.preEndTime = Date.now();
@@ -535,7 +512,7 @@ function editPost(
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    if (action === 'save_and_sync' || action === 'pull_and_save_and_sync') {
+    if (action === 'save_and_sync') {
       verifyEdit(
         expectedToFindResults,
         expectedToFindChoice,
@@ -605,20 +582,6 @@ function verifyEdit(
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_course_id = elemList[0].attribs.value;
     assert.isString(locals.file_edit_course_id);
-  });
-  it('should have a file_edit_dir_name', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_dir_name"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_dir_name = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_dir_name);
-  });
-  it('should have a file_edit_file_name', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_file_name"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_file_name = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_file_name);
   });
   it('should have a file_edit_orig_hash', function () {
     elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
@@ -725,7 +688,6 @@ function editGet(
 
 function doEdits(data) {
   describe(`edit ${data.path}`, function () {
-    //
     // "live" is a clone of origin (this is what's on the production server)
     // "dev" is a clone of origin (this is what's on someone's laptop)
     // "origin" is the bare git repo
@@ -739,19 +701,23 @@ function doEdits(data) {
     //
     // Remember that "origHash" has whatever was on disk at last GET.
     //
-    // (live at last post, live, dev, origin)
+    // The below tests are annotated with state of the file under test in
+    // several locations:
     //
+    // (live at last GET, live, dev, origin)
+    //
+    // Note that "live at last GET" refers to the fact that GET responses
+    // include the hash of the file on disk at the time of the GET, which
+    // is used to detect concurrent modifications. `editGet` and `editPost`
+    // store this hash in `locals` and include it in subsequent `POST` requests.
 
     editGet(data.url, false, false, data.contentsA, null);
     // (A, A, A, A)
 
-    badPost('save_and_sync', data.contentsB, data.url);
-    // (A, A, A, A)
-
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
     // (B, B, A, B)
 
-    waitForJobSequence(locals, 'Success');
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
@@ -768,19 +734,19 @@ function doEdits(data) {
     // (A, B, B, B)
 
     editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
-    // (A, B, B, B)
-
     waitForJobSequence(locals, 'Error');
+    // (B, B, B, B)
+
     pullAndVerifyFileInDev(data.path, data.contentsB);
-    // (A, B, B, B)
+    // (B, B, B, B)
 
     editGet(data.url, false, false, data.contentsB, null);
     // (B, B, B, B)
 
     editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
     // (A, A, B, A)
 
-    waitForJobSequence(locals, 'Success');
     pullAndVerifyFileInDev(data.path, data.contentsA);
     // (A, A, A, A)
 
@@ -791,17 +757,8 @@ function doEdits(data) {
     // (A, A, A*, A*)
 
     editPost('save_and_sync', data.contentsC, data.url, true, false, null);
-    // (A, A, A*, A*)
-
-    waitForJobSequence(locals, 'Error');
-    pullInLive();
-    // (A, A, A, A)
-
-    editGet(data.url, false, false, data.contentsA, null);
-    // (A, A, A, A)
-
-    editPost('save_and_sync', data.contentsC, data.url, true, false, null);
-    // (C, C, A, C)
+    waitForJobSequence(locals, 'Success');
+    // (C, C, A*, C)
 
     pullAndVerifyFileInDev(data.path, data.contentsC);
     // (C, C, C, C)
@@ -813,36 +770,29 @@ function doEdits(data) {
     // (C, C, C*, C*)
 
     editPost('save_and_sync', data.contentsB, data.url, true, false, null);
-    // (C, C, C*, C*)
-
-    waitForJobSequence(locals, 'Error');
-    editPost('pull_and_save_and_sync', data.contentsB, data.url, true, false, null);
-    // (B, B, C, B)
-
     waitForJobSequence(locals, 'Success');
-    writeAndCommitFileInLive(data.path, data.contentsA);
-    // (B, A, C, B)
+    // (B, B, C*, B)
 
     editPost('save_and_sync', data.contentsA, data.url, true, false, null);
-    // (A, A, C, B)
-
-    waitForJobSequence(locals, 'Error');
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
-    // (B, B, C, B)
-
     waitForJobSequence(locals, 'Success');
+    // (A, A, C*, A)
+
+    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (B, B, C*, B)
+
     if (data.isJson) {
       editPost('save_and_sync', data.contentsX, data.url, true, false, null);
-      // (X, X, C, X) <- successful push but failed sync because of bad json
-
       waitForJobSequence(locals, 'Error');
+      // (X, X, C*, X) <- successful push but failed sync because of bad json
+
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
 
       editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+      waitForJobSequence(locals, 'Success');
       // (A, A, X, A)
 
-      waitForJobSequence(locals, 'Success');
       pullAndVerifyFileInDev(data.path, data.contentsA);
       // (A, A, A, A)
     }
@@ -957,21 +907,6 @@ function writeAndPushFileInDev(fileName, fileContents) {
         env: process.env,
       };
       exec('git push', execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    });
-  });
-}
-
-function pullInLive() {
-  describe('pull to live', function () {
-    it('should pull', function (callback) {
-      const execOptions = {
-        cwd: courseLiveDir,
-        env: process.env,
-      };
-      exec('git pull', execOptions, (err) => {
         if (ERR(err, callback)) return;
         callback(null);
       });

@@ -75,6 +75,8 @@ export function getPaths(req, res) {
     paths.workingPath = paths.rootPath;
   }
   paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
+  paths.workingDirectory = path.dirname(paths.workingPathRelativeToCourse);
+  paths.workingFilename = path.basename(paths.workingPathRelativeToCourse);
 
   if (paths.workingPath === paths.rootPath) {
     paths.specialDirs = [];
