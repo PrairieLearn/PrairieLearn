@@ -144,7 +144,7 @@ router.post(
         path: path.join(config.coursesRoot, repo_short_name),
         repo_short_name: repo_short_name,
         github_user,
-        course_request_id: course_request_id,
+        course_request_id,
       };
       await github.createCourseRepoJob(repo_options, res.locals.authn_user);
 

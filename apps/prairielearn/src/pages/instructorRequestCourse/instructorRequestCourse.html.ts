@@ -219,11 +219,12 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label for="cr-referral-source">How did you hear about PrairieLearn?</label>
+            <label id="cr-referral-source-label">How did you hear about PrairieLearn?</label>
             <select
               class="custom-select"
               name="cr-referral-source"
               id="cr-referral-source"
+              aria-labelledby="cr-referral-source-label"
               required
             >
               <option value="" disabled selected></option>
@@ -239,6 +240,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               class="form-control mt-2 d-none"
               name="cr-referral-source-other"
               id="cr-referral-source-other"
+              aria-labelledby="cr-referral-source-label"
             />
             <small class="form-text text-muted">
               This information helps us understand how people find out about PrairieLearn. Thank you
