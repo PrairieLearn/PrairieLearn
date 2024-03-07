@@ -32,6 +32,7 @@ export function RequestCourse({
               $('.role-comment-' + role).show();
             });
 
+            // Only show the "other" referral source input when "other" is selected.
             $('#cr-referral-source').change(function () {
               if (this.value === 'other') {
                 $('#cr-referral-source-other')
