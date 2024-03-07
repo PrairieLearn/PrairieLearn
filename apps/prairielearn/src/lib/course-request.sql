@@ -40,6 +40,7 @@ SELECT
   r.last_name,
   r.work_email,
   r.institution,
+  r.referral_source,
   r.approved_status,
   ua.name AS approved_by_name,
   coalesce(j.jobs, '[]'::jsonb) AS jobs

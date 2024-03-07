@@ -51,6 +51,7 @@ INSERT INTO
     last_name,
     work_email,
     institution,
+    referral_source,
     approved_status
   )
 VALUES
@@ -63,6 +64,7 @@ VALUES
     $last_name,
     $work_email,
     $institution,
+    $referral_source,
     'pending'
   )
 RETURNING

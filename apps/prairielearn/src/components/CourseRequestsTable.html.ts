@@ -40,13 +40,12 @@ export function CourseRequestsTable({
         <table class="table table-sm">
           <thead>
             <tr>
-              <th>Short Name</th>
-              <th>Title</th>
-              <th>Requested By</th>
+              <th>Short Name / Title</th>
               <th>Institution</th>
-              <th>Official Email</th>
-              <th>User ID</th>
+              <th>Requested By</th>
+              <th>PrairieLearn User</th>
               <th>GitHub Username</th>
+              <th>Referral Source</th>
               <th>Status</th>
               ${showAll ? html`<th>Updated By</th>` : ''}
               <th>Actions</th>
@@ -57,13 +56,14 @@ export function CourseRequestsTable({
             ${rows.map((row) => {
               return html`
                 <tr>
-                  <td class="align-middle">${row.short_name}</td>
-                  <td class="align-middle">${row.title}</td>
-                  <td class="align-middle">${row.first_name} ${row.last_name}</td>
+                  <td class="align-middle">${row.short_name}: ${row.title}</td>
                   <td class="align-middle">${row.institution}</td>
-                  <td class="align-middle">${row.work_email}</td>
-                  <td class="align-middle">${row.user_uid}</td>
+                  <td class="align-middle">
+                    ${row.first_name} ${row.last_name} (${row.work_email})
+                  </td>
+                  <td class="align-middle">${row.user_name} (${row.user_uid})</td>
                   <td class="align-middle">${row.github_user}</td>
+                  <td class="align-middle">${row.referral_source}</td>
                   <td class="align-middle">
                     ${CourseRequestStatusIcon({ status: row.approved_status })}
                   </td>

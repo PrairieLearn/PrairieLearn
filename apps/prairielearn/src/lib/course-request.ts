@@ -28,6 +28,7 @@ const CourseRequestRowSchema = z.object({
   institution: z.string().nullable(),
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
+  referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
   user_name: z.string().nullable(),
