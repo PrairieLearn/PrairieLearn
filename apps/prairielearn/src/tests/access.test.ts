@@ -1,4 +1,3 @@
-import ERR = require('async-stacktrace');
 import { assert } from 'chai';
 import request = require('request');
 import * as cheerio from 'cheerio';

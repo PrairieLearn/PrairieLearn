@@ -10,7 +10,6 @@ function reservationTests(
   exam_id: string | number,
   second_assessment_id: string | number,
   expectWideOpen = false,
-  seeOtherExams = false,
 ) {
   let expectedWord = 'fail';
   let expectedBool = false;
@@ -48,13 +47,13 @@ describe('sproc check_assessment_access* tests', function () {
 
     describe('PL course not linked anywhere', () => {
       describe('Unlinked exam', () => {
-        reservationTests(10, 1, 13, true, true);
+        reservationTests(10, 1, 13, true);
       });
       describe('Linked exam', () => {
-        reservationTests(11, 1, 13, false, true);
+        reservationTests(11, 1, 13, false);
       });
       describe('Linked exam in different PS course', () => {
-        reservationTests(12, 5, 13, false, true);
+        reservationTests(12, 5, 13, false);
       });
     });
   });
