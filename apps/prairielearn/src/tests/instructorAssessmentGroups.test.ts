@@ -44,7 +44,7 @@ describe('Instructor group controls', () => {
 
   step('can create a new group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -69,7 +69,7 @@ describe('Instructor group controls', () => {
 
   step('cannot create a group with a user already in another group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCookie(fetchCheerio)(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -91,7 +91,7 @@ describe('Instructor group controls', () => {
 
   step('can create a second group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -116,7 +116,7 @@ describe('Instructor group controls', () => {
 
   step('can create a group with an instructor', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
