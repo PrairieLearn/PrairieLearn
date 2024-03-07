@@ -324,7 +324,6 @@ export function InstructorAssessmentGroups({
 }
 
 function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
-  console.log('csrfToken', csrfToken);
   return html`
     <form name="add-member-form" method="POST">
       UIDs:
@@ -404,7 +403,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
     formEncType: 'multipart/form-data',
     body: html`
       <p>Upload a CSV file in the format of:</p>
-      <code class="mb-0 text-dark">
+      <code class="text-dark">
         groupName,UID<br />
         groupA,one@example.com<br />
         groupA,two@example.com<br />
@@ -412,37 +411,30 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
         groupB,four@example.com</code
       >
       <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+      <p class="mt-3">
+        The <code>groupname</code> column should be a unique identifier for each group. To change
+        the grouping, link uids to the groupname.
+      </p>
+      <div class="form-group">
+        <div class="custom-file">
+          <input
+            type="file"
+            accept=".csv"
+            name="file"
+            class="custom-file-input"
+            id="uploadAssessmentGroupsFileInput"
+          />
+          <label class="custom-file-label" for="uploadAssessmentGroupsFileInput">
+            Choose CSV file
+          </label>
+        </div>
       </div>
-      <div class="modal-body">
-        <p>
-          The <code>groupname</code> column should be a unique identifier for each group. To
-          change the grouping, link uids to the groupname.
-        </p>
-          <div class="form-group">
-            <div class="custom-file">
-              <input
-                type="file"
-                accept=".csv"
-                name="file"
-                class="custom-file-input"
-                id="uploadAssessmentGroupsFileInput"
-              />
-              <label class="custom-file-label" for="uploadAssessmentGroupsFileInput">
-                Choose CSV file
-              </label>
-            </div>
-          </div>
-          <div class="d-flex justify-content-end">
-            <div class="form-group mb-0">
-              <input type="hidden" name="__action" value="upload_assessment_groups" />
-              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">Upload</button>
-            </div>
-          </div>
-      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="upload_assessment_groups" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
 }
@@ -459,7 +451,6 @@ function AutoAssessmentGroupsModal({
   return Modal({
     id: 'autoAssessmentGroupsModal',
     title: 'Auto new group setting',
-    formEncType: 'multipart/form-data',
     body: html`
       <div class="form-group">
         <label for="formMin">Min number of members in a group</label>
@@ -483,12 +474,10 @@ function AutoAssessmentGroupsModal({
       </div>
     `,
     footer: html`
-      <div class="form-group mb-0">
-        <input type="hidden" name="__action" value="auto_assessment_groups" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Group</button>
-      </div>
+      <input type="hidden" name="__action" value="auto_assessment_groups" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Group</button>
     `,
   });
 }
@@ -498,26 +487,24 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     id: 'addGroupModal',
     title: 'Add a group',
     body: html`
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="formName">Group Name</label>
-          <input type="text" class="form-control" id="formName" name="group_name" />
-        </div>
-        <br />
-        <div class="form-group">
-          <label for="formUids">UIDs</label>
-          <input
-            type="text"
-            class="form-control"
-            id="formUids"
-            name="uids"
-            placeholder="one@example.com, two@example.com, three@example.com"
-          />
-          <small id="uidHelp" class="form-text text-muted">
-            Separate with "," <br />
-            Please make sure they are not in any other groups
-          </small>
-        </div>
+      <div class="form-group">
+        <label for="formName">Group Name</label>
+        <input type="text" class="form-control" id="formName" name="group_name" />
+      </div>
+      <br />
+      <div class="form-group">
+        <label for="formUids">UIDs</label>
+        <input
+          type="text"
+          class="form-control"
+          id="formUids"
+          name="uids"
+          placeholder="one@example.com, two@example.com, three@example.com"
+        />
+        <small id="uidHelp" class="form-text text-muted">
+          Separate with "," <br />
+          Please make sure they are not in any other groups
+        </small>
       </div>
     `,
     footer: html`
