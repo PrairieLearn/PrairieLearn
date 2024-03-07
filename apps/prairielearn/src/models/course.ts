@@ -8,7 +8,7 @@ import { Course, CourseSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-const CourseWithPermissionsSchema = CourseSchema.extend({
+export const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({
     course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
     has_course_permission_own: z.boolean(),
