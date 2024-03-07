@@ -5,14 +5,14 @@ FROM codercom/code-server:4.20.1-bookworm
 # This speeds up container loading time drastically and avoids timeouts.
 USER root
 RUN export OLD_UID=$(id -u coder) && \
-	export OLD_GID=$(id -g coder) && \
-	export NEW_UID=1001 && \
-	export NEW_GID=1001 && \
-	groupmod -g 1001 coder && \
-	usermod -u 1001 -g 1001 coder && \
-	find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
-	find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
-	unset OLD_UID OLD_GID NEW_UID NEW_GID
+    export OLD_GID=$(id -g coder) && \
+    export NEW_UID=1001 && \
+    export NEW_GID=1001 && \
+    groupmod -g 1001 coder && \
+    usermod -u 1001 -g 1001 coder && \
+    find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
+    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
+    unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 # Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
 USER root
@@ -20,7 +20,7 @@ RUN mkdir -p /run /var/run && \
     touch /run/fixuid.ran /var/run/fixuid.ran
 
 EXPOSE 8080
-	
+
 # Install Python and required packages via miniconda
 USER coder
 COPY requirements.txt /
@@ -34,23 +34,22 @@ RUN export arch=`uname -m` \
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
 USER coder
-RUN ( code-server --disable-telemetry --force \
-		# vscode support for python, including debugger 
-		--install-extension ms-python.python \
-		# auto-generate templates for function docstrings 
-		--install-extension njpwerner.autodocstring \
-		# auto-fix indentation for multiline contexts 
-		--install-extension KevinRose.vsc-python-indent \
-		# visualize indentation with color 
-        --install-extension oderwat.indent-rainbow \
-		# visualize csv files in vscode window
-		--install-extension mechatroner.rainbow-csv \
-		# linting for markdown files
-		--install-extension DavidAnson.vscode-markdownlint \
-		# format tables in markdown files
-        --install-extension fcrespo82.markdown-table-formatter \
-	) && \
-	rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
+RUN code-server --disable-telemetry --force \
+    # vscode support for python, including debugger
+    --install-extension ms-python.python \
+    # auto-generate templates for function docstrings
+    --install-extension njpwerner.autodocstring \
+    # auto-fix indentation for multiline contexts
+    --install-extension KevinRose.vsc-python-indent \
+    # visualize indentation with color
+    --install-extension oderwat.indent-rainbow \
+    # visualize csv files in vscode window
+    --install-extension mechatroner.rainbow-csv \
+    # linting for markdown files
+    --install-extension DavidAnson.vscode-markdownlint \
+    # format tables in markdown files
+    --install-extension fcrespo82.markdown-table-formatter \
+    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
 
 # Please read the note here carefully to avoid wiping out what you installed
 # in ~/.local:
