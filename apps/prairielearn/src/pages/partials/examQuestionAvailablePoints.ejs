@@ -1,0 +1,32 @@
+<% include('pointsFormatter'); %>
+
+<% if (!open || (points_list.length == 0)) { %>
+    —
+<% } else if (points_list.length == 1) { %>
+    <%= getStringFromFloat(points_list[0]) %>
+<% } else { %>
+    <%= getStringFromFloat(points_list[0]) %>,
+    <small><span class="text-muted"><%= getStringFromFloat(points_list.slice(1)) %></span></small>
+<% } %>
+
+<% if (open) { %>
+    <!-- Compute the best submission score, 0 if no submissions -->
+    <% let best; %>
+    <% if (typeof highest_submission_score !== 'undefined') { %>
+        <% best = Math.floor(highest_submission_score*100); %>
+    <% } else { %>
+        <% best = 0; %>
+    <% } %>
+
+    <!-- Create popover with info about what will happen on next submission -->
+    <a tabindex="0" type="button" class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('examQuestionAvailablePointsInfo', {bestScore: best, pointsAvailable: points_list[0], currentWeight: currentWeight, triesRemaining: points_list.length}) %>" data-placement="auto" data-trigger="focus" data-container="body">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+
+    <!-- Enable popover -->
+    <script>
+        $(document).ready(function(){
+            $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
+        });
+    </script>
+<% } %>

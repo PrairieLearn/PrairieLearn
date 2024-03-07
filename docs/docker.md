@@ -37,39 +37,39 @@ Most of these should be run from the root of your course directory.
 
 - List running containers:
 
-```sh
-docker ps
-```
+  ```sh
+  docker ps
+  ```
 
 - Run a specific command in the container:
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
+  ```
 
-E.g.,
+  E.g.,
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
+  ```
 
 - Start an interactive shell session:
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
+  ```
 
 - Run a command in an existing container:
 
-```sh
-docker exec -it CONTAINER_NAME COMMAND
-```
+  ```sh
+  docker exec -it CONTAINER_NAME COMMAND
+  ```
 
-E.g., to start a shell in a container started with `--name pl`:
+  E.g., to start a shell in a container started with `--name pl`:
 
-```sh
-docker exec -it pl /bin/bash
-```
+  ```sh
+  docker exec -it pl /bin/bash
+  ```
 
 ## Docker-Compose
 
@@ -84,7 +84,8 @@ To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will
 - Build the PL docker image, and tag it as `prairielearn/prairielearn:local`
 - Mount `./testCourse` as a volume for a test course
 - Set up the container to run [external grading jobs](externalGrading.md)
-- Mount the current directory as `/PrairieLearn` and enable `nodemon`, so the container live reloads
+- Mount the current directory as `/PrairieLearn`
+- Configure the server to automatically restart when files are modified
 
 The server will be available on port `3000`.
 
@@ -99,7 +100,7 @@ docker run -it --rm \
   -v $PWD:/PrairieLearn \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-  -e NODEMON=true \
+  -e DEV=true \
   prairielearn/prairielearn
 ```
 

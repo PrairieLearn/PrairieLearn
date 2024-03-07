@@ -4,11 +4,11 @@ Portions copyright (c) 2013-present by contributors other than PrairieLearn, Inc
 
 Portions of this software are licensed as follows:
 
-* All content that resides under the "ee/" directory of this repository, if that directory exists, is part of the PrairieLearn Enterprise Edition (EE) and is licensed as described in "ee/LICENSE".
+* All content that resides under the "apps/prairielearn/src/ee/" directory of this repository, if that directory exists, is part of the PrairieLearn Enterprise Edition (EE) and is licensed as described in "apps/prairielearn/src/ee/LICENSE".
 * All client-side JavaScript (when served directly or after being compiled, arranged, augmented, or combined), is licensed under the "GNU Affero General Public License".
 * All third party components incorporated into the PrairieLearn Software are licensed under the original license provided by the owner of the applicable component.
 * All portions of the software copyright by the University of Illinois Board of Trustees and by contributors outside of PrairieLearn, Inc. are licensed under the "MIT License" as defined below.
-* The PrairieLearn Community Edition (CE) consists of all content outside of the above mentioned "ee/" directory and is licensed under the "GNU Affero General Public License" as defined below.
+* The PrairieLearn Community Edition (CE) consists of all content outside of the above mentioned "apps/prairielearn/src/ee/" directory and is licensed under the "GNU Affero General Public License" as defined below.
 
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007

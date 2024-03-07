@@ -1,22 +1,15 @@
 #!/bin/bash
 set -ex
 
-yum update -y
-
-amazon-linux-extras install -y \
-    vim \
-    docker \
-    postgresql14 \
-    redis4.0
+dnf update -y
 
 # Notes:
 # - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 # - `libjpeg-devel` is needed by the Pillow package
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-yum -y install \
-    dos2unix \
-    emacs-nox \
+dnf -y install \
+    bash-completion \
     gcc \
     gcc-c++ \
     git \
@@ -26,16 +19,17 @@ yum -y install \
     libjpeg-devel \
     lsof \
     make \
-    man \
     openssl \
-    postgresql-contrib \
-    postgresql-server \
+    postgresql15 \
+    postgresql15-server \
+    postgresql15-contrib \
     procps-ng \
+    redis6 \
     tar \
     texlive \
     texlive-dvipng \
+    texlive-type1cm \
     tmux
-
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -43,11 +37,7 @@ cd /nvm
 git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 16
-# PrairieLearn doesn't currently use `npm` itself, but we can't be sure that
-# someone else isn't using our base image and relying on `npm`, so we'll
-# continue to install it to avoid breaking things.
-npm install npm@latest -g
+nvm install 20
 npm install yarn@latest -g
 for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 
@@ -75,8 +65,28 @@ else
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
 
+# `pyarrow` and `rpy2` conflict in a horrible way:
+#
+# - `pyarrow` will load `/usr/lib64/libstdc++.so.6.0.29`
+# - `rpy2` will load `/usr/local/lib/libstdc++.so.6.0.32`
+#
+# `pyarrow` gets autoloaded by `pandas`, which we in turn load in the zygote.
+# If someone then tries to load `rpy2` in question code, it will fail to load
+# with the following error:
+#
+# cannot load library '/usr/local/lib/R/lib/libR.so': /lib64/libstdc++.so.6: version `GLIBCXX_3.4.30' not found
+#
+# This is because `rpy2` needs a version of `libstdc++` that supports libstd++ 3.4.30,
+# but `pyarrow` has already loaded a version of `libstdc++` that only supports up to 3.4.29.
+#
+# We work around that by setting up a symlink to the newer version of `libstdc++`.
+#
+# TODO: We can probably undo this change once we're removed R and `rpy2`.
+# TODO: We could also probably remove this when Amazon Linux picks up a newer version of the `gcc` suite.
+ln -sf /usr/local/lib/libstdc++.so.6 /usr/lib64/libstdc++.so.6
+
 # Clear various caches to minimize the final image size.
-yum clean all
+dnf clean all
 conda clean --all
 nvm cache clear
 rm Miniforge3-Linux-${arch}.sh

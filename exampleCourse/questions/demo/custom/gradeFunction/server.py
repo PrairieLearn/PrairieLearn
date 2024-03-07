@@ -8,25 +8,36 @@ def generate(data):
     data["correct_answers"]["c"] = c
 
 
-def grade(data):
+def parse(data):
     # use get() for submitted_answers in case no answer was submitted
-    if data["submitted_answers"].get("c", None) == data["correct_answers"]["c"]:
+    # get the submitted answer, defaulting to empty string if it's missing
+    sub = data["submitted_answers"].get("c", "")
+    if set(sub) - {"0", "1"}:
+        # format_errors tags the answer as invalid, which will keep the
+        # question from being graded.
+        data["format_errors"][
+            "c"
+        ] = "Your answer should not contain characters other than '0' and '1'"
+    if sub[:1] == "0":
+        # feedback does not affect the grading process and can be used for
+        # neutral comments that show up even if the student selects "Save Only"
+        # instead of "Save and Grade".
+        # We use the "c" key in case we have multiple feedbacks for different
+        # answers.
+        data["feedback"]["c"] = "Leading zeros are not necessary"
+
+
+def grade(data):
+    sub = data["submitted_answers"].get("c", "").lstrip("0")
+    if sub == data["correct_answers"]["c"]:
         data["score"] = 1
     else:
         data["score"] = 0
 
         # Store some feedback to display to the student.
-        # We use the "c" key in case we have multiple feedbacks for different answers.
         # This feedback is shown to students on every submission,
         # even if they have attempts remaining, so it shouldn't give away the answer.
-
-        # get the submitted answer, defaulting to empty string if it's missing
-        sub = data["submitted_answers"].get("c", "")
-        if len(sub.replace("0", "").replace("1", "")) > 0:
-            data["feedback"][
-                "c"
-            ] = "Your answer should not contain characters other than '0' and '1'"
-        elif len(sub) != len(data["correct_answers"]["c"]):
+        if len(sub) != len(data["correct_answers"]["c"]):
             data["feedback"]["c"] = "Your answer has the wrong length"
         else:
             data["feedback"][

@@ -160,7 +160,15 @@ public class JUnitAutograder implements TestExecutionListener {
     @Override
     public synchronized void executionFinished(TestIdentifier test, TestExecutionResult result) {
 
-        if (!test.isTest()) return;
+        if (!test.isTest()) {
+            if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
+                this.points = 0;
+                this.gradable = false;
+                this.message = "A test factory or value source failed to produce tests. Consult your instructor.";
+                result.getThrowable().ifPresent(t -> t.printStackTrace());
+            }
+            return;
+        }
         AutograderTest autograderTest = tests.get(test);
         if (autograderTest == null) {
             // This shouldn't happen

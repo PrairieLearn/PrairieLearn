@@ -1,0 +1,30 @@
+{
+  "name": "@prairielearn/config",
+  "version": "2.0.15",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "mocha --no-config --require tsx src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.525.0",
+    "@aws-sdk/client-secrets-manager": "^3.525.0",
+    "@prairielearn/aws-imds": "workspace:^",
+    "fs-extra": "^11.2.0",
+    "lodash": "^4.17.21",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/lodash": "^4.14.202",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.24",
+    "chai": "^4.4.1",
+    "mocha": "^10.3.0",
+    "tmp-promise": "^3.0.3",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

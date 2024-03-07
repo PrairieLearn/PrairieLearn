@@ -1,0 +1,49 @@
+.pl-matching-container {
+  display: flex;
+  margin-bottom: 1em;
+}
+
+.pl-matching-statement {
+  display: flex;
+  align-items: center;
+  margin-top: 1ex;
+}
+
+.pl-matching-statement-text,
+.pl-matching-statement-submission {
+  margin-right: 1ex;
+}
+
+.pl-matching-statement-select {
+  margin-right: 1ex;
+  min-width: 4em;
+}
+
+.pl-matching-options ol {
+  margin-top: 0.5em;
+  counter-reset: item;
+}
+
+.pl-matching-options ol > li {
+  margin-bottom: 1em;
+  padding: 0 0 0 2em;
+  text-indent: -1em;
+  list-style-type: none;
+  counter-increment: item;
+}
+
+.pl-matching-options ol > li:before {
+  display: inline-block;
+  width: 1em;
+  padding-right: 0.5em;
+  font-weight: bold;
+  text-align: right;
+}
+
+.pl-matching-answer {
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
+  padding: 0.4rem 0.4rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  margin-right: 0.5rem;
+}

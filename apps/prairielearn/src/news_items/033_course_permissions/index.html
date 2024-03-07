@@ -1,0 +1,280 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .code-block {
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+  .code-block div {
+    padding: 0.5rem;
+    display: block;
+    line-height: 125%;
+  }
+</style>
+
+<p>
+  <a href="https://github.com/tbretl">Tim Bretl</a> has completely restructured the way that course
+  staff permissions work in PrairieLearn. The new permissions are much simpler to use and provide
+  more fine-grained control over who can access student data. Student access control has not been
+  changed in any way.
+</p>
+
+<p>
+  To use the new permissions, click on your course number in the top menubar (e.g., "XC 101") and
+  then click on the "Staff" tab. Your existing permissions for Instructors have been automatically
+  migrated to the new system, so you will see something like this:
+</p>
+
+<img class="img-fluid" src="staff.png" width="1077px" />
+
+<h3 class="mt-5">ACTION REQUIRED: TA access updates</h3>
+
+<p>
+  TA permissions were not automatically migrated to the new system because there is not an exactly
+  equivalent set of new permissions. To restore access for TAs, the recommended approach is for the
+  course owner to do:
+</p>
+
+<img class="img-fluid" src="ta_access_control.png" width="1193px" />
+
+<h3 class="mt-5">Course content access</h3>
+
+<p>
+  The new permissions separate out access to course content (questions, assessments, etc) from
+  access to student data. The new <strong>course content access</strong> levels are:
+</p>
+
+<table class="table table-striped table-sm border mx-auto" style="max-width: 40em">
+  <tr>
+    <th></th>
+    <th class="text-center" scope="col" colspan="5">Course content access</th>
+  </tr>
+  <tr>
+    <th scope="col">Action</th>
+    <th class="text-center" scope="col">None</th>
+    <th class="text-center" scope="col">Previewer</th>
+    <th class="text-center" scope="col">Viewer</th>
+    <th class="text-center" scope="col">Editor</th>
+    <th class="text-center" scope="col">Owner</th>
+  </tr>
+  <tr>
+    <td>View questions and assessments</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>View issues</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>View aggregate statistics in all course instances</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>View question code and JSON files</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Close issues</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Edit question code and JSON files</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Sync from GitHub</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Edit course staff permissions</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+</table>
+
+<h3 class="mt-5">Student data access</h3>
+
+<p>
+  Student data access permissions apply for individual course instances, so instructors and TAs can
+  be given access to student data in Fall semester but not Spring semester, for example. These
+  permissions can be mixed and matched with the above course content permissions, so you can
+  separately control access to course content from access to student data. The new student data
+  permissions are:
+</p>
+
+<table class="table table-striped table-sm border mx-auto" style="max-width: 33em">
+  <tr>
+    <th></th>
+    <th class="text-center" scope="col" colspan="5">Student data access</th>
+  </tr>
+  <tr>
+    <th scope="col">Action</th>
+    <th class="text-center" scope="col">None</th>
+    <th class="text-center" scope="col">Viewer</th>
+    <th class="text-center" scope="col">Editor</th>
+  </tr>
+  <tr>
+    <td>View individual student scores</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Download gradebook data</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Manually grade student submissions</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Edit individual student scores</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+  <tr>
+    <td>Change time limits and close assessments</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&centerdot;</td>
+    <td class="text-center">&check;</td>
+  </tr>
+</table>
+
+<h3 class="mt-5">Recommended access levels</h3>
+
+<p>
+  While every course should use the different permissions in way that best suits the course needs,
+  some recommended guidelines are:
+</p>
+
+<table class="table table-striped table-sm border mx-auto" style="max-width: 45em">
+  <tr>
+    <th scope="col">Role</th>
+    <th class="text-center" scope="col">Course content access</th>
+    <th class="text-center" scope="col">Student data access</th>
+  </tr>
+  <tr>
+    <td>Instructor</td>
+    <td class="text-center">Course content owner</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>TAs developing course content</td>
+    <td class="text-center">Course content editor</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>Student content developers (not TAs)</td>
+    <td class="text-center">Course content editor</td>
+    <td class="text-center">None</td>
+  </tr>
+  <tr>
+    <td>TAs involved in grading</td>
+    <td class="text-center">None</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>Other TAs</td>
+    <td class="text-center">None</td>
+    <td class="text-center">Student data viewer</td>
+  </tr>
+  <tr>
+    <td>Instructors from other classes</td>
+    <td class="text-center">Course content viewer</td>
+    <td class="text-center">None</td>
+  </tr>
+</table>
+
+<h3 class="mt-5">Remove old Instructor/TA access rules</h3>
+
+<p>
+  The new course staff permissions are managed entirely on the "Staff" tab and any Instructor or TA
+  access rules in JSON files are ignored. You will receive warning messages about existing
+  Instructor/TA access rules, like this:
+</p>
+
+<img class="img-fluid" src="allow_access_ignored.png" width="1104px" />
+
+<p>
+  To fix these warnings you should delete any Instructor or TA access rules in
+  <code>infoAssessment.json</code> or <code>infoCourseInstance.json</code>:
+</p>
+
+<div class="rounded code-block">
+  <pre><code>    "allowAccess": [
+        ...
+        <span class="text-danger">{                      # should be deleted</span>
+        <span class="text-danger">    "role": "TA",      # should be deleted</span>
+        <span class="text-danger">},                     # should be deleted</span>
+        ...
+    ],
+</code></pre>
+</div>
+
+<p>
+  The <code>userRoles</code> property should also be deleted in
+  <code>infoCourseInstance.json</code>:
+</p>
+
+<div class="rounded code-block">
+  <pre><code>    <span class="text-danger">"userRoles": {                                 # should be deleted</span>
+    <span class="text-danger">    "mfsilva@illinois.edu": "Instructor",      # should be deleted</span>
+    <span class="text-danger">    "mwest@illinois.edu": "TA"                 # should be deleted</span>
+    <span class="text-danger">},                                             # should be deleted</span>
+</code></pre>
+</div>
+
+<p>
+  See
+  <a href="https://prairielearn.readthedocs.io/en/latest/course/#course-staff">the documentation</a>
+  for more information.
+</p>

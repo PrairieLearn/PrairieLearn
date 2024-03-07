@@ -1,0 +1,24 @@
+columns
+    attempts: integer not null default 0
+    batched_migration_id: bigint not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    data: jsonb
+    finished_at: timestamp with time zone
+    id: bigint not null default nextval('batched_migration_jobs_id_seq'::regclass)
+    max_value: bigint not null
+    min_value: bigint not null
+    started_at: timestamp with time zone
+    status: enum_batched_migration_job_status not null default 'pending'::enum_batched_migration_job_status
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+
+indexes
+    batched_migration_jobs_pkey: PRIMARY KEY (id) USING btree (id)
+    batched_migration_jobs_batched_migration_id_max_value_idx: USING btree (batched_migration_id, max_value)
+    batched_migration_jobs_batched_migration_id_status_idx: USING btree (batched_migration_id, status)
+
+check constraints
+    batched_migration_jobs_max_value_check: CHECK (max_value >= min_value)
+    batched_migration_jobs_min_value_check: CHECK (min_value > 0)
+
+foreign-key constraints
+    batched_migration_jobs_batched_migration_id_fkey: FOREIGN KEY (batched_migration_id) REFERENCES batched_migrations(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -21,7 +21,7 @@ describe('File paths', () => {
       assert.notOk(contains('/PrairieLearn', '/tmp'));
       assert.notOk(contains('/PrairieLearn/exampleCourse', '/PrairieLearn/tests'));
       assert.notOk(
-        contains('/PrairieLearn/exampleCourse/questions', '/PrairieLearn/exampleCourse')
+        contains('/PrairieLearn/exampleCourse/questions', '/PrairieLearn/exampleCourse'),
       );
     });
 

@@ -1,0 +1,21 @@
+<%
+getStringFromFloat = function(v) {
+  if (v == null) {
+    return '—';
+  }
+
+  var getStringFromSingleFloat = function(v) {
+    return (Math.floor(v*100)/100).toFixed(2).replace(/\.?0+$/, "");
+  }
+
+  if (!v.hasOwnProperty("length")) {
+    v = [v];
+  }
+
+  var s = [];
+  for (var i = 0; i < v.length; i++) {
+    s.push(getStringFromSingleFloat(v[i]));
+  }
+  return s.join(', ');
+}
+%>

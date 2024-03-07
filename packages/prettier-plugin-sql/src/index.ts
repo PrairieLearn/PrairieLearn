@@ -22,7 +22,7 @@ export const printers = {
   sql: {
     print(path: AstPath) {
       return (
-        format(path.getValue(), {
+        format(path.node, {
           language: 'postgresql',
           paramTypes: { named: ['$'] },
         }) + '\n'

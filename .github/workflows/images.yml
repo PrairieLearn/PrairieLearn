@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3 # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4 # https://github.com/marketplace/actions/checkout
         with:
           fetch-depth: 0
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Login to DockerHub
-        uses: docker/login-action@v2 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -29,20 +29,27 @@ jobs:
         run: tools/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: images/plbase
-          platforms: linux/amd64,linux/arm64
+          # We don't build `priarielearn/prairielearn` itself for ARM, so we'll skip
+          # building the base image for `linux/arm64` as well. This results in
+          # significantly faster overall builds.
+          platforms: linux/amd64
           push: true
           no-cache: true
-          tags: prairielearn/plbase:latest
+          tags: prairielearn/plbase:latest,prairielearn/plbase:${{ github.sha }}
 
       ######################################################################################################
       # prairielearn
       - name: Build and push prairielearn/prairielearn
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: .
+          # QEMU is *extremely* slow on GitHub Actions, taking over 2 hours to
+          # build the `priarielearn/prairielearn` image for the `linux/arm64`
+          # platform. We will avoid building an ARM image for now. If GitHub
+          # ever offers ARM hosted runners, we can consider building ARM images.
           platforms: linux/amd64
           push: true
           no-cache: true
@@ -54,13 +61,13 @@ jobs:
         run: tools/check_path_modified.sh graders/c graders_c_modified
       - name: Build and push prairielearn/grader-c
         if: ${{ env.graders_c_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/c
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-c:latest
+          tags: prairielearn/grader-c:latest,prairielearn/grader-c:${{ github.sha }}
 
       ######################################################################################################
       # grader-java
@@ -68,13 +75,13 @@ jobs:
         run: tools/check_path_modified.sh graders/java graders_java_modified
       - name: Build and push prairielearn/grader-java
         if: ${{ env.graders_java_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/java
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-java:latest
+          tags: prairielearn/grader-java:latest,prairielearn/grader-java:${{ github.sha }}
 
       ######################################################################################################
       # grader-python
@@ -82,13 +89,13 @@ jobs:
         run: tools/check_path_modified.sh graders/python graders_python_modified
       - name: Build and push prairielearn/grader-python
         if: ${{ env.graders_python_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/python
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-python:latest
+          tags: prairielearn/grader-python:latest,prairielearn/grader-python:${{ github.sha }}
 
       ######################################################################################################
       # grader-r
@@ -96,13 +103,13 @@ jobs:
         run: tools/check_path_modified.sh graders/r graders_r_modified
       - name: Build and push prairielearn/grader-r
         if: ${{ env.graders_r_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/r
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-r:latest
+          tags: prairielearn/grader-r:latest,prairielearn/grader-r:${{ github.sha }}
 
       ######################################################################################################
       # workspace-desktop
@@ -110,13 +117,13 @@ jobs:
         run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
       - name: Build and push prairielearn/workspace-desktop
         if: ${{ env.workspaces_desktop_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/desktop
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-desktop:latest
+          tags: prairielearn/workspace-desktop:latest,prairielearn/workspace-desktop:${{ github.sha }}
 
       ######################################################################################################
       # workspace-jupyterlab
@@ -124,13 +131,27 @@ jobs:
         run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
       - name: Build and push prairielearn/workspace-jupyterlab
         if: ${{ env.workspaces_jupyterlab_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-jupyterlab:latest
+          tags: prairielearn/workspace-jupyterlab:latest,prairielearn/workspace-jupyterlab:${{ github.sha }}
+
+      ######################################################################################################
+      # workspace-jupyterlab-python
+      - name: Check whether workspaces/jupyterlab-python was modified
+        run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
+      - name: Build and push prairielearn/workspace-jupyterlab-python
+        if: ${{ env.workspaces_jupyterlab_python_modified }}
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/jupyterlab-python
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/workspace-jupyterlab-python:latest,prairielearn/workspace-jupyterlab-python:${{ github.sha }}
 
       ######################################################################################################
       # workspace-rstudio
@@ -138,13 +159,13 @@ jobs:
         run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
       - name: Build and push prairielearn/workspace-rstudio
         if: ${{ env.workspaces_rstudio_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/rstudio
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-rstudio:latest
+          tags: prairielearn/workspace-rstudio:latest,prairielearn/workspace-rstudio:${{ github.sha }}
 
       ######################################################################################################
       # workspace-xtermjs
@@ -152,48 +173,10 @@ jobs:
         run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
       - name: Build and push prairielearn/workspace-xtermjs
         if: ${{ env.workspaces_xtermjs_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/xtermjs
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-xtermjs:latest
-
-
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      #
-      # ARM64
-      #
-      # We should be able to use `platforms: linux/amd64,linux/arm64`
-      # above to build all images on both platforms simultaneously,
-      # but the arm64 builds with postgres are currently not reliable
-      # on GitHub Actions. This seems to be because we are using qemu
-      # on x86 build hosts to build the arm64 images. A similar issue
-      # with postgis:
-      # https://github.com/postgis/docker-postgis/issues/216
-      #
-      # Note that we have also set `continue-on-error: true` for the
-      # separate arm64 builds. If these become reliable in the future
-      # then we should remove this.
-      #
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-
-
-      ######################################################################################################
-      # prairielearn
-      - name: Build and push prairielearn/prairielearn
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/prairielearn:arm
-        continue-on-error: true
+          tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}

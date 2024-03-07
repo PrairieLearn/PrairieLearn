@@ -1,9 +1,10 @@
 import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
-import esbuild from 'esbuild';
+import esbuild, { Metafile } from 'esbuild';
 import path from 'path';
 import globby from 'globby';
 import fs from 'fs-extra';
+import http from 'node:http';
 import { html, HtmlSafeString } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {
@@ -13,9 +14,11 @@ const DEFAULT_OPTIONS = {
   publicPath: '/build/',
 };
 
+type AssetsManifest = Record<string, string>;
+
 export interface CompiledAssetsOptions {
   /**
-   * Whether the app is running in dev mode. If dev modde is enabled, then
+   * Whether the app is running in dev mode. If dev mode is enabled, then
    * assets will be built on the fly as they're requested. Otherwise, assets
    * should have been pre-compiled to the `buildDirectory` directory.
    */
@@ -29,15 +32,51 @@ export interface CompiledAssetsOptions {
 }
 
 let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
+let esbuildContext: esbuild.BuildContext | null = null;
+let esbuildServer: esbuild.ServeResult | null = null;
 
-export function init(newOptions: Partial<CompiledAssetsOptions>): void {
+export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
   options = {
     ...DEFAULT_OPTIONS,
     ...newOptions,
   };
+
   if (!options.publicPath.endsWith('/')) {
     options.publicPath += '/';
   }
+
+  if (options.dev) {
+    // Use esbuild's asset server in development.
+    //
+    // Note that esbuild doesn't support globs, so the server will not pick up
+    // new entrypoints that are added while the server is running.
+    const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,css}');
+    const sourcePaths = await globby(sourceGlob);
+    esbuildContext = await esbuild.context({
+      entryPoints: sourcePaths,
+      target: 'es6',
+      format: 'iife',
+      sourcemap: 'inline',
+      bundle: true,
+      write: false,
+      loader: {
+        '.woff': 'file',
+        '.woff2': 'file',
+      },
+      outbase: options.sourceDirectory,
+      outdir: options.buildDirectory,
+      entryNames: '[dir]/[name]',
+    });
+
+    esbuildServer = await esbuildContext.serve();
+  }
+}
+
+/**
+ * Shuts down the development assets compiler if it is running.
+ */
+export async function close() {
+  esbuildContext?.dispose();
 }
 
 export function assertConfigured(): void {
@@ -64,94 +103,81 @@ export function handler(): RequestHandler {
     });
   }
 
+  if (!esbuildServer) {
+    throw new Error('esbuild server not initialized');
+  }
+
+  const { host, port } = esbuildServer;
+
   // We're running in dev mode, so we need to boot up ESBuild to start building
   // and watching our assets.
   return function (req, res) {
-    // Strip leading slash from `req.url`.
-    let assetPath = req.url;
-    if (assetPath.startsWith('/')) {
-      assetPath = assetPath.slice(1);
-    }
-
-    const resolvedSourceDirectory = path.resolve(options?.sourceDirectory);
-    const resolvedAssetPath = path.resolve(resolvedSourceDirectory, assetPath);
-
-    if (!resolvedAssetPath.startsWith(resolvedSourceDirectory)) {
-      // Probably path traversal.
-      res.status(404).send('Not found');
-      return;
-    }
-
-    // esbuild should be fast enough that we can just build everything on the
-    // fly as it's requested! This is probably just for prototyping though. We
-    // should use some kind of caching to ensure that local dev stays fast.
-    esbuild
-      .build({
-        entryPoints: [resolvedAssetPath],
-        target: 'es6',
-        format: 'iife',
-        sourcemap: 'inline',
-        bundle: true,
-        write: false,
-      })
-      .then(
-        (buildResult) => {
-          res
-            .setHeader('Content-Type', 'application/javascript; charset=UTF-8')
-            .status(200)
-            .send(buildResult.outputFiles[0].text);
-        },
-        (buildError: Error) => {
-          res.status(500).send(buildError.message);
-        }
-      );
+    const proxyReq = http.request(
+      {
+        hostname: host,
+        port,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
+        proxyRes.pipe(res, { end: true });
+      },
+    );
+    req.pipe(proxyReq, { end: true });
   };
 }
 
-let cachedScriptsManifest: Record<string, string> | null = null;
-function readScriptsManifest(): Record<string, string> {
+let cachedManifest: AssetsManifest | null = null;
+function readManifest(): AssetsManifest {
   assertConfigured();
 
-  if (!cachedScriptsManifest) {
-    const manifestPath = path.join(options.buildDirectory, 'scripts', 'manifest.json');
-    cachedScriptsManifest = fs.readJSONSync(manifestPath) as Record<string, string>;
+  if (!cachedManifest) {
+    const manifestPath = path.join(options.buildDirectory, 'manifest.json');
+    cachedManifest = fs.readJSONSync(manifestPath) as AssetsManifest;
   }
 
-  return cachedScriptsManifest;
+  return cachedManifest;
+}
+
+function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): string {
+  assertConfigured();
+  const sourceFilePath = `${type}/${sourceFile}`;
+
+  if (options.dev) {
+    return options.publicPath + sourceFilePath.replace(/\.(js|ts)x?$/, '.js');
+  }
+
+  const manifest = readManifest();
+  const assetPath = manifest[sourceFilePath];
+  if (!assetPath) {
+    throw new Error(`Unknown ${type} asset: ${sourceFile}`);
+  }
+
+  return `${options.publicPath}/${assetPath}`;
 }
 
 export function compiledScriptPath(sourceFile: string): string {
-  assertConfigured();
+  return compiledPath('scripts', sourceFile);
+}
 
-  if (options.dev) {
-    return options.publicPath + 'scripts/' + sourceFile;
-  }
-
-  const scriptsManifest = readScriptsManifest();
-  const scriptPath = scriptsManifest[sourceFile];
-  if (!scriptPath) {
-    throw new Error(`Unknown script: ${sourceFile}`);
-  }
-
-  return options.publicPath + 'scripts/' + scriptPath;
+export function compiledStylesheetPath(sourceFile: string): string {
+  return compiledPath('stylesheets', sourceFile);
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
-export async function build(
-  sourceDirectory: string,
-  buildDirectory: string
-): Promise<esbuild.Metafile> {
-  // Remove existing assets to ensure that no stale assets are left behind.
-  await fs.remove(buildDirectory);
+export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
+  return html`<link rel="stylesheet" href="${compiledStylesheetPath(sourceFile)}" />`;
+}
 
-  const scriptsSourceRoot = path.resolve(sourceDirectory, 'scripts');
-  const scriptsBuildRoot = path.resolve(buildDirectory, 'scripts');
-  await fs.ensureDir(scriptsBuildRoot);
+async function buildAssets(sourceDirectory: string, buildDirectory: string) {
+  await fs.ensureDir(buildDirectory);
 
-  const files = await globby(path.join(scriptsSourceRoot, '*.{js,jsx,ts,tsx}'));
+  const files = await globby(path.join(sourceDirectory, '*/*.{js,jsx,ts,tsx,css}'));
   const buildResult = await esbuild.build({
     entryPoints: files,
     target: 'es6',
@@ -159,25 +185,46 @@ export async function build(
     sourcemap: 'linked',
     bundle: true,
     minify: true,
-    entryNames: '[name]-[hash]',
-    outdir: scriptsBuildRoot,
+    loader: {
+      '.woff': 'file',
+      '.woff2': 'file',
+    },
+    entryNames: '[dir]/[name]-[hash]',
+    outbase: sourceDirectory,
+    outdir: buildDirectory,
     metafile: true,
   });
 
-  // Write asset manifest so that we can map from "input" names to built names
-  // at runtime.
-  const { metafile } = buildResult;
+  return buildResult.metafile;
+}
+
+function makeManifest(
+  metafile: Metafile,
+  sourceDirectory: string,
+  buildDirectory: string,
+): Record<string, string> {
   const manifest: Record<string, string> = {};
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
-    const entryPath = path.basename(meta.entryPoint);
-    const assetPath = path.basename(outputPath);
-
+    const entryPath = path.relative(sourceDirectory, meta.entryPoint);
+    const assetPath = path.relative(buildDirectory, outputPath);
     manifest[entryPath] = assetPath;
   });
-  const manifestPath = path.join(scriptsBuildRoot, 'manifest.json');
+  return manifest;
+}
+
+export async function build(
+  sourceDirectory: string,
+  buildDirectory: string,
+): Promise<AssetsManifest> {
+  // Remove existing assets to ensure that no stale assets are left behind.
+  await fs.remove(buildDirectory);
+
+  const metafile = await buildAssets(sourceDirectory, buildDirectory);
+  const manifest = makeManifest(metafile, sourceDirectory, buildDirectory);
+  const manifestPath = path.join(buildDirectory, 'manifest.json');
   await fs.writeJSON(manifestPath, manifest);
 
-  return metafile;
+  return manifest;
 }

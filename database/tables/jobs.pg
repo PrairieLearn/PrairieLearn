@@ -6,6 +6,7 @@ columns
     course_id: bigint
     course_instance_id: bigint
     course_request_id: bigint
+    data: jsonb not null default '{}'::jsonb
     description: text
     env: jsonb
     error_message: text
@@ -21,9 +22,6 @@ columns
     output: text
     start_date: timestamp with time zone default CURRENT_TIMESTAMP
     status: enum_job_status
-    stderr: text
-    stdin: text
-    stdout: text
     type: text
     user_id: bigint
     working_directory: text
@@ -32,6 +30,9 @@ indexes
     jobs_pkey: PRIMARY KEY (id) USING btree (id)
     jobs_job_sequence_id_number_in_sequence_key: UNIQUE (job_sequence_id, number_in_sequence) USING btree (job_sequence_id, number_in_sequence)
     jobs_status_idx: USING btree (status)
+
+check constraints
+    jobs_data_is_object: CHECK (jsonb_typeof(data) = 'object'::text)
 
 foreign-key constraints
     jobs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

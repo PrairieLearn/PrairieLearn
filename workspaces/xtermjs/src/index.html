@@ -1,49 +1,51 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <link rel="stylesheet" href="xterm/css/xterm.css" />
-        <script src="xterm/lib/xterm.js"></script>
-        <script src="xterm-fit/lib/xterm-addon-fit.js"></script>
-        <style>
-         div.terminal {
-             position: absolute;
-             left: 0;
-             right: 0;
-             top: 0;
-             bottom: 0;
-         }
-        </style>
-    </head>
-    <body>
-        <div id="terminal" class="terminal"></div>
-        <script>
-         const term = new Terminal({
-             'fontFamily': 'courier new, courier, monospace',
-         });
-         const fit = new FitAddon.FitAddon();
-         term.loadAddon(fit);
-         term.open(document.getElementById('terminal'));
-         fit.fit();
+  <head>
+    <link rel="stylesheet" href="xterm/css/xterm.css" />
+    <script src="xterm/lib/xterm.js"></script>
+    <script src="xterm-fit/lib/xterm-addon-fit.js"></script>
+    <style>
+      #terminal {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="terminal" class="terminal"></main>
+    <script>
+      const term = new Terminal({
+        fontFamily: 'courier new, courier, monospace',
+      });
+      const fit = new FitAddon.FitAddon();
+      term.loadAddon(fit);
+      term.open(document.getElementById('terminal'));
+      fit.fit();
 
-         const protocol = (location.protocol == 'https:' ? 'wss:' : 'ws:');
-         let socket = new WebSocket(`${protocol}//${window.location.host}${window.location.pathname}`);
-         socket.onopen = () => {
-           term.onData((ev) => {
-             socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
-           });
-           window.onresize = () => {
-             fit.fit();
-             socket.send(JSON.stringify({ 'event': 'resize', 'value': { 'rows': term.rows, 'cols': term.cols } }));
-           };
-           window.onresize();
-           setInterval(() => {
-             socket.send(JSON.stringify({ 'event': 'heartbeat' }));
-           }, 60 * 1000);
+      const protocol = location.protocol == 'https:' ? 'wss:' : 'ws:';
+      let socket = new WebSocket(`${protocol}//${window.location.host}${window.location.pathname}`);
+      socket.onopen = () => {
+        term.onData((ev) => {
+          socket.send(JSON.stringify({ event: 'data', value: ev }));
+        });
+        window.onresize = () => {
+          fit.fit();
+          socket.send(
+            JSON.stringify({ event: 'resize', value: { rows: term.rows, cols: term.cols } }),
+          );
+        };
+        window.onresize();
+        setInterval(() => {
+          socket.send(JSON.stringify({ event: 'heartbeat' }));
+        }, 60 * 1000);
 
-           socket.onmessage = (msg) => {
-             term.write(msg.data);
-           };
-         };
-        </script>
-    </body>
+        socket.onmessage = (msg) => {
+          term.write(msg.data);
+        };
+      };
+    </script>
+  </body>
 </html>

@@ -1,0 +1,6 @@
+{
+  "controller": "pl-big-o-input.py",
+  "dependencies": {
+    "elementStyles": ["pl-big-o-input.css"]
+  }
+}

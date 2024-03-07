@@ -1,0 +1,22 @@
+<pl-question-panel>
+  <p>
+    This is a question to demonstrate random generation capabilities in PrairieLearn. Specifically,
+    this question randomly generates some files from templates, then puts them into a zip file. This
+    zip file is then made available for download to the student.
+  </p>
+  <p>
+    Specifically, we generate a zip file <code>generated_files.zip</code>, containing two files,
+    <code>{{params.text_file_name}}</code>, whose contents are
+    <code>{{params.words_for_text}}</code>, and <code>{{params.python_file_name}}</code>, which
+    contains a function named <code>{{params.function_name}}</code> that prints
+    <code>Hello world!</code>.
+  </p>
+  <p>
+    Download the zipped file here:
+    <pl-file-download file-name="generated_files.zip" type="dynamic"></pl-file-download>
+  </p>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <p>This question is just an example and always gives full credit.</p>
+</pl-submission-panel>

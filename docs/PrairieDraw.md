@@ -53,7 +53,7 @@ The script provided by `script_name` may access the PrairieDraw figure via `this
 
 In general, drawing objects are opaque, so the order in which items are added affects the final appearance of the figure.
 
-Below is an incomplete list of operations available from PrairieDraw; the library source code can be found [here](https://github.com/PrairieLearn/PrairieLearn/blob/master/public/javascripts/PrairieDraw.js).
+Below is an incomplete list of operations available from PrairieDraw; the library source code can be found [here](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/public/javascripts/PrairieDraw.js).
 
 ## Constants provided by PrairieDraw
 

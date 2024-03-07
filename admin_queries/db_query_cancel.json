@@ -1,9 +1,0 @@
-{
-    "description": "Cancel a running query (graceful kill).",
-    "params": [
-        {
-            "name": "pid",
-            "description": "PID of the backend process to cancel."
-        }
-    ]
-}

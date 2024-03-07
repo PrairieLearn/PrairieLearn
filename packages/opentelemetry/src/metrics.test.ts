@@ -46,13 +46,14 @@ describe('instrumentedWithMetrics', () => {
     await waitForMetricsExport(exporter);
     const exportedMetrics = exporter.getMetrics();
     const { scope, metrics } = exportedMetrics[0].scopeMetrics[0];
-    const [counterMetric, histogramMetric] = metrics;
+
+    // We won't see an exported metric for the error counter because the
+    // Metrics SDK no longer exports metrics with no data points.
+    // https://github.com/open-telemetry/opentelemetry-js/pull/4135
+    assert.lengthOf(metrics, 1);
+    const [histogramMetric] = metrics;
 
     assert.equal(scope.name, 'test');
-
-    assert.ok(counterMetric);
-    assert.equal(counterMetric.descriptor.name, 'test.error');
-    assert.lengthOf(counterMetric.dataPoints, 0);
 
     assert.ok(histogramMetric);
     assert.equal(histogramMetric.descriptor.name, 'test.duration');
@@ -64,12 +65,16 @@ describe('instrumentedWithMetrics', () => {
       instrumentedWithMetrics(meter, 'test', async () => {
         throw new Error('error for test');
       }),
-      'error for test'
+      'error for test',
     );
 
     await waitForMetricsExport(exporter);
     const exportedMetrics = exporter.getMetrics();
     const { metrics, scope } = exportedMetrics[0].scopeMetrics[0];
+
+    // An error was reported above, so there will be both the error counter
+    // and histogram metrics.
+    assert.lengthOf(metrics, 2);
     const [counterMetric, histogramMetric] = metrics;
 
     assert.ok(scope);

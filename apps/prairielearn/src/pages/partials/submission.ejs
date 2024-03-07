@@ -1,0 +1,110 @@
+<div data-testid="submission-with-feedback" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
+
+<% if (submission.feedback?.manual || submission.rubric_grading) { %>
+<div class="card mb-4 grading-block border-info">
+  <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
+    <div class="mr-auto">
+      Feedback from the Course Staff
+      <% if (submissionCount > 1) { %>
+      (for submitted answer <%= submission.submission_number %>)
+      <% } %>
+    </div>
+    <button type="button" class="expand-icon-container btn btn-outline-light btn-sm">
+      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+    </button>
+  </div>
+  <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
+    <div class="card-body">
+      <% if (submission.rubric_grading) { %>
+      <% (locals.rubric_data?.rubric_items || [])
+           .filter((item) => item.always_show_to_students || submission.rubric_grading?.rubric_items?.[item.id]?.score)
+           .forEach((item) => { %>
+      <div>
+        <label class="w-100" data-testid="rubric-item-container-<%= item.id %>">
+          <input type="checkbox" disabled <%= submission.rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : '' %> >
+          <span class="text-<%= item.points >= 0 ? 'success' : 'danger' %>">
+            <strong data-testid="rubric-item-points">
+              [<%= (item.points >= 0 ? '+' : '') + item.points %>]
+            </strong>
+          </span>
+          <span class="d-inline-block" data-testid="rubric-item-description">
+            <%- item.description_rendered %>
+          </span>
+          <% if (item.explanation) { %>
+            <button type="button" class="btn btn-xs text-info" data-toggle="popover"
+                    data-content="<%= item.explanation_rendered %>"
+                    data-html="true" data-testid="rubric-item-explanation">
+              <i class="fas fa-circle-info"></i>
+              <span class="sr-only">Details</span>
+            </button>
+          <% } %>
+        </label>
+      </div>
+      <% }); // end of rubric items %>
+      <% if (submission.rubric_grading?.adjust_points) { %>
+      <div class="mb-2">
+        <span class="text-muted">
+          Manual grading adjustment:
+        </span>
+        <span class="text-<%= submission.rubric_grading?.adjust_points >= 0 ? 'success' : 'danger' %>">
+          <strong data-testid="rubric-adjust-points">
+            [<%= (submission.rubric_grading?.adjust_points >= 0 ? '+' : '') + submission.rubric_grading?.adjust_points %>]
+          </strong>
+        </span>
+      </div>
+      <% } // end of adjust points %>
+    <% } // end of rubric grading check %>
+    <% if (submission.feedback?.manual) { %>
+      <div data-testid="feedback-body">
+        <%- submission.feedback_manual_html %>
+      </div>
+      <% } // end of manual feedback %>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<div class="card mb-4" data-testid="submission-block">
+  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount && !locals.expanded) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
+    <div class="mr-2">
+      <div>
+        <span class="mr-2">
+          Submitted answer
+          <% if (submissionCount > 1) { %>
+          <%= submission.submission_number %>
+          <% } %>
+        </span>
+      </div>
+      <small>Submitted at <%- submission.formatted_date %></small>
+    </div>
+    <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
+      <i class="fa fa-info-circle fa-fw"></i>
+    </button>
+    <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
+      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+    </button>
+  </div>
+
+  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined && question.type === 'Freeform') { %>render-pending<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
+    <div class="card-body submission-body" >
+      <%- submissionHtml %>
+      <% if (submissionHtml === undefined) { %>
+      <div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>
+      <% } %>
+    </div>
+  </div>
+
+  <%- include('submissionInfoModal', {submission: submission}); %>
+</div>
+
+<script>
+$(function() {
+  $('button[data-submission-id="<%= submission.id %>"]').on('click', function(e) {
+    // Prevent this click from also expanding the submission
+    $('#submissionInfoModal-<%= submission.id %>').modal('show');
+    e.stopPropagation();
+  });
+});
+</script>
+</div>

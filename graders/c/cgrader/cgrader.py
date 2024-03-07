@@ -124,6 +124,7 @@ class CGrader:
         return_objects=False,
         enable_asan=False,
         reject_symbols=None,
+        objcopy_args=None,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
@@ -199,6 +200,10 @@ class CGrader:
                         + "\033[0m"
                     )
                     os.unlink(obj_file)
+                if objcopy_args:
+                    self.run_command(
+                        ["objcopy", obj_file] + objcopy_args, sandboxed=False
+                    )
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
@@ -311,14 +316,14 @@ class CGrader:
         ungradable_if_failed=True,
         enable_asan=False,
         reject_symbols=None,
+        objcopy_args=None,
     ):
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
             add_c_file = [add_c_file]
-        if (
-            main_file
-        ):  # Kept for compatibility reasons, but could be set as an added file
+        # Kept for compatibility reasons, but could be set as an added file
+        if main_file:
             add_c_file.append(main_file)
 
         out, objects = self.compile_file(
@@ -333,6 +338,7 @@ class CGrader:
             return_objects=True,
             enable_asan=enable_asan,
             reject_symbols=reject_symbols,
+            objcopy_args=objcopy_args,
         )
         success = (
             os.path.isfile(exec_file)
@@ -410,9 +416,11 @@ class CGrader:
             return (
                 t.strip(),
                 re.compile(
-                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
-                    if ignore_consec_spaces
-                    else re.escape(t),
+                    (
+                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        if ignore_consec_spaces
+                        else re.escape(t)
+                    ),
                     re.I if ignore_case else 0,
                 ),
             )
@@ -442,21 +450,27 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else " all of"
-                if must_match_all_outputs
-                else " one of"
+                else " all of" if must_match_all_outputs else " one of"
             )
-            msg = f"Expected{comment}:\n\t" + "\n\t".join(
-                f"\033[32m{t}\033[0m"
-                if highlight_matches and r.search(outcmp) is not None
-                else t
+            join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
+            msg = f"Expected{comment}:{join_str}" + join_str.join(
+                (
+                    f"\033[32m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                )
                 for t, r in exp_output
             )
             if reject_output:
-                msg += "\nBut not:\n\t" + "\n\t".join(
-                    f"\033[31m{t}\033[0m"
-                    if highlight_matches and r.search(outcmp) is not None
-                    else t
+                join_str = (
+                    "\n\n" if any("\n" in t for t, _ in reject_output) else "\n\t"
+                )
+                msg += f"\nBut not:{join_str}" + join_str.join(
+                    (
+                        f"\033[31m{t}\033[0m"
+                        if highlight_matches and r.search(outcmp) is not None
+                        else t
+                    )
                     for t, r in reject_output
                 )
         elif msg is None:

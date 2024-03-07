@@ -1,9 +1,0 @@
-{
-    "description": "Delete a key from the config table.",
-    "params": [
-        {
-            "name": "key",
-            "description": "Key to delete."
-        }
-    ]
-}

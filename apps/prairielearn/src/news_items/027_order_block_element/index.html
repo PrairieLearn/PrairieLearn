@@ -1,0 +1,97 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .code-block {
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+  .code-block div {
+    padding: 0.5rem;
+    display: block;
+    margin-bottom: -1em;
+    line-height: 125%;
+  }
+</style>
+
+<p>
+  PrairieLearn now has a new <code class="user-output">pl-order-blocks</code> element, thanks to the
+  collaborative efforts of <a href="https://github.com/frozemint">Jesse Wong</a> (University of
+  British Columbia) and <a href="https://github.com/xinhexu2">Zander Xu</a> (University of Illinois
+  at Urbana-Champaign), with input from <a href="https://github.com/nicknytko">Nicolas Nytko</a>,
+  <a href="https://github.com/SethPoulsen">Seth Poulsen</a>,
+  <a href="https://github.com/andrewstec">Andrew Stec</a>,
+  <a href="https://github.com/nathanielweinman">Nathaniel Weinman</a>, and
+  <a href="https://github.com/tdy">Tim Yang</a>.
+</p>
+
+<p>
+  This element can be used to select arrange blocks from a given list to construct a solution. It
+  has many applications, including Parsons Problems, where students arrange blocks of scrambled
+  code. Our source code was inspired by the the Parsons Problem implementation in
+  <a href="https://js-parsons.github.io">js-parsons</a>.
+</p>
+
+<img class="border rounded" src="pl-order-blocks.png" width="600px" />
+
+<p>
+  Each block is specified in the <code class="user-output">question.html</code> similarly to the
+  <code class="user-output">pl-multiple-choice</code> element. The code that generates the above
+  question is:
+</p>
+
+<div class="code-block rounded">
+  <pre>
+List all the even numbers in order:
+&lt;pl-order-blocks answers-name="order-numbers"&gt;
+    &lt;pl-answer correct="false"&gt;1&lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" &gt;2&lt;/pl-answer&gt;
+    &lt;pl-answer correct="false"&gt;3&lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" &gt;4&lt;/pl-answer&gt;
+&lt;/pl-order-blocks&gt;</pre
+  >
+</div>
+
+<p>
+  This element can be used in combination with the external grader when using the
+  <code class="user-output">grading-method="external" </code> attribute. In this case, the blocks
+  moved to the solution area will be saved in the file `user_code.py`, and the correctness of the
+  code will be checked using the external grader, as illustrated in this other example.
+</p>
+
+<img class="border rounded" src="pl-order-blocks-code.png" width="594px" />
+
+<div class="code-block rounded">
+  <pre>
+Write the function <code>my_dot_product</code>:
+&lt;pl-order-blocks answers-name="coding" grading-method="external" indentation="true"&gt;
+  &lt;pl-answer&gt;def my_dot_product(a,b): &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;return d                 &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;return                   &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;d = a*b                  &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;d = a@b                  &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;d = a.T@b                &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;d = np.inner(a,b)        &lt;/pl-answer&gt;
+  &lt;pl-answer&gt;d = np.outer(a,b)        &lt;/pl-answer&gt;
+&lt;/pl-order-blocks&gt;</pre
+  >
+</div>
+
+<p>
+  For more information, see the
+  <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-block-element"
+    >pl-order-block documentation</a
+  >.
+</p>
