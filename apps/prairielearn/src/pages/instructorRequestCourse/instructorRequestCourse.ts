@@ -40,8 +40,8 @@ router.post(
     const last_name = req.body['cr-lastname'] || '';
     const work_email = req.body['cr-email'] || '';
     const institution = req.body['cr-institution'] || '';
-    const referral_source_other = req.body['cr-referral-source-other'] || '';
     const referral_source_option = req.body['cr-referral-source'] || '';
+    const referral_source_other = req.body['cr-referral-source-other'] || '';
     const referral_source =
       referral_source_option === 'other' ? referral_source_other : referral_source_option;
 
