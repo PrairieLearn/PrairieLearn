@@ -6,6 +6,9 @@ import * as Sentry from '@prairielearn/sentry';
 
 import * as assessment from '../lib/assessment';
 import { config } from '../lib/config';
+import { AssessmentInstanceSchema } from '../lib/db-types';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * This cron job runs periodically to check for any exams that need to be
@@ -16,12 +19,14 @@ import { config } from '../lib/config';
  * @see assessment.gradeAssessmentInstance
  */
 export async function run() {
-  const params = [config.autoFinishAgeMins];
-  const result = await sqldb.callAsync('assessment_instances_select_for_auto_finish', params);
-  const examList = result.rows;
+  const examList = await sqldb.queryRows(
+    sql.select_assessments_to_auto_close,
+    { age_minutes: config.autoFinishAgeMins },
+    AssessmentInstanceSchema.pick({ id: true, open: true, assessment_id: true }),
+  );
 
   await async.eachSeries(examList, async (examItem) => {
-    logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
+    logger.verbose('autoFinishExams: finishing ' + examItem.id, examItem);
     // Grading was performed by the system.
     const authn_user_id = null;
     // Don't require the assessment to be open. This is important to
@@ -29,16 +34,18 @@ export async function run() {
     // dies in the middle of grading a question. In that case, the assessment
     // would have already been closed, but we still need to grade it.
     const requireOpen = false;
+    // Only mark this assessment as needing to be closed if it's still open.
+    const close = !!examItem.open;
     // Override any submission or grading rate limits.
     const overrideGradeRate = true;
     // We don't have a client fingerprint ID, so pass null.
     const clientFingerprintId = null;
     try {
       await assessment.gradeAssessmentInstance(
-        examItem.assessment_instance_id,
+        examItem.id,
         authn_user_id,
         requireOpen,
-        examItem.close_assessment,
+        close,
         overrideGradeRate,
         clientFingerprintId,
       );
