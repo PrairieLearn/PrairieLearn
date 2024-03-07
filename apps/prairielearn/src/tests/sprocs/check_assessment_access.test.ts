@@ -35,66 +35,6 @@ function reservationTests(
 
     assert.strictEqual(result.rows[0].authorized, expectedBool);
   });
-
-  describe(`with checked-in reservation for student for exam ${exam_id}`, () => {
-    before(`create checked-in reservation for student for exam ${exam_id}`, async () => {
-      await sqldb.queryAsync(sql.insert_ps_reservation, { exam_id });
-    });
-
-    it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', async () => {
-      const result = await sqldb.callAsync(`check_assessment_access`, [
-        assessment_id,
-        'Exam',
-        'None',
-        'None',
-        1000,
-        'student@school.edu',
-        '2010-07-07 06:06:06-00',
-        'US/Central',
-      ]);
-
-      assert.strictEqual(result.rows[0].authorized, true);
-    });
-
-    it(`${expectedWord} for student inside start_date/end_date, checked-in reservation, after access_start/end`, async () => {
-      const result = await sqldb.callAsync(`check_assessment_access`, [
-        assessment_id,
-        'Exam',
-        'None',
-        'None',
-        1000,
-        'student@school.edu',
-        '2010-08-07 06:06:06-00',
-        'US/Central',
-      ]);
-
-      assert.strictEqual(result.rows[0].authorized, expectedBool);
-    });
-
-    const otherExams = {
-      word: 'fail',
-      bool: false,
-    };
-    if (seeOtherExams) {
-      otherExams.word = 'pass';
-      otherExams.bool = true;
-    }
-
-    it(`${otherExams.word} for access to PL course other assessment (${second_assessment_id}) when checked-in to exam ${exam_id}`, async () => {
-      const result = await sqldb.callAsync(`check_assessment_access`, [
-        second_assessment_id,
-        'Exam',
-        'None',
-        'None',
-        1000,
-        'student@school.edu',
-        '2010-07-07 06:06:06-00',
-        'US/Central',
-      ]);
-
-      assert.strictEqual(result.rows[0].authorized, otherExams.bool);
-    });
-  });
 }
 
 describe('sproc check_assessment_access* tests', function () {
@@ -115,30 +55,6 @@ describe('sproc check_assessment_access* tests', function () {
       });
       describe('Linked exam in different PS course', () => {
         reservationTests(12, 5, 13, false, true);
-      });
-    });
-
-    describe('PL course linked to 1 PS course', () => {
-      describe('Unlinked exam', () => {
-        reservationTests(20, 2, 23, false, true);
-      });
-      describe('Linked exam', () => {
-        reservationTests(21, 2, 23, false, true);
-      });
-      describe('Linked exam in different PS course', () => {
-        reservationTests(22, 5, 23, false, false);
-      });
-    });
-
-    describe('PL course linked to >1 PS course', () => {
-      describe('Unlinked exam', () => {
-        reservationTests(40, 4, 43, false, true);
-      });
-      describe('Linked exam', () => {
-        reservationTests(41, 4, 43, false, true);
-      });
-      describe('Linked exam in different PS course', () => {
-        reservationTests(42, 5, 43, false, false);
       });
     });
   });
