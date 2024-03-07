@@ -49,7 +49,7 @@ export async function run() {
         clientFingerprintId,
       );
     } catch (err) {
-      logger.error('Error finishing exam', error.addData(err, { examItem: assessment_instance }));
+      logger.error('Error finishing exam', error.addData(err, { assessment_instance }));
       Sentry.captureException(err, {
         tags: {
           'assessment.id': assessment_instance.assessment_id,
