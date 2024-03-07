@@ -1,15 +1,14 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
-
-const path = require('path');
+//@ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const error = require('@prairielearn/error');
-var sqldb = require('@prairielearn/postgres');
-
-var sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const { parseISO, isValid } = require('date-fns');
 const { format, utcToZonedTime } = require('date-fns-tz');
@@ -89,31 +88,31 @@ router.post('/', function (req, res, next) {
     res.clearCookie('pl_requested_course_instance_role');
     res.clearCookie('pl_requested_mode');
     res.clearCookie('pl_requested_date');
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {
     res.cookie('pl_requested_uid', req.body.pl_requested_uid, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseRole') {
     res.cookie('pl_requested_course_role', req.body.pl_requested_course_role, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseInstanceRole') {
     res.cookie('pl_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeMode') {
     res.cookie('pl_requested_mode', req.body.pl_requested_mode, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
     debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
@@ -124,16 +123,11 @@ router.post('/', function (req, res, next) {
     res.cookie('pl_requested_date', date.toISOString(), {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed');
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else {
-    return next(
-      error.make(400, 'unknown action: ' + res.locals.__action, {
-        __action: req.body.__action,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, 'unknown action: ' + res.locals.__action));
   }
 });
 
-module.exports = router;
+export default router;

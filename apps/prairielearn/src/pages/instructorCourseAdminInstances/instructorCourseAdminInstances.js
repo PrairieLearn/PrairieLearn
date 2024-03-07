@@ -1,21 +1,22 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
-var sqldb = require('@prairielearn/postgres');
-
-var sql = sqldb.loadSqlEquiv(__filename);
-
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const { CourseInstanceAddEditor } = require('../../lib/editors');
-const { idsEqual } = require('../../lib/id');
-
-const fs = require('fs-extra');
-const async = require('async');
+const ERR = require('async-stacktrace');
+import * as express from 'express';
+import * as fs from 'fs-extra';
+import * as async from 'async';
 const _ = require('lodash');
+import * as path from 'path';
+import * as sqldb from '@prairielearn/postgres';
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import { CourseInstanceAddEditor } from '../../lib/editors';
+import { idsEqual } from '../../lib/id';
+
+var router = express.Router();
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   async.series(
@@ -32,22 +33,22 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
+      async () => {
+        res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
+          course_id: res.locals.course.id,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          is_administrator: res.locals.is_administrator,
+          authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+        });
+      },
       (callback) => {
-        if (!res.locals.authz_data || !res.locals.authz_data.course_instances) {
-          return callback(null);
-        }
         const params = {
           course_id: res.locals.course.id,
         };
-        // We use the list authz_data.course_instances rather than
-        // re-fetching the list of course instances, because we
-        // only want course instances which are accessible by both
-        // the authn user and the effective user, which is a bit
-        // complicated to compute. This is already computed in
-        // authz_data.course_instances.
         sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
           if (ERR(err, callback)) return;
-          res.locals.authz_data.course_instances.forEach((ci) => {
+          res.locals.course_instances.forEach((ci) => {
             var row = _.find(result.rows, (row) => idsEqual(row.course_instance_id, ci.id));
             ci.number = row?.number || 0;
           });
@@ -95,13 +96,8 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;

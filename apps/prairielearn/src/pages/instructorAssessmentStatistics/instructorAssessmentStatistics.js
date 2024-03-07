@@ -1,17 +1,18 @@
-const express = require('express');
+// @ts-check
+import * as express from 'express';
 const asyncHandler = require('express-async-handler');
+import { stringify } from '@prairielearn/csv';
+
+import * as error from '@prairielearn/error';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import * as sqldb from '@prairielearn/postgres';
+import { updateAssessmentStatistics } from '../../lib/assessment';
+
 const router = express.Router();
-const { stringify } = require('@prairielearn/csv');
-
-const error = require('@prairielearn/error');
-const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/postgres');
-const assessment = require('../../lib/assessment');
-
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
-  const prefix = sanitizeName.assessmentFilenamePrefix(
+  const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
@@ -27,7 +28,7 @@ router.get(
   asyncHandler(async (req, res) => {
     setFilenames(res.locals);
 
-    await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+    await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
     const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -65,7 +66,7 @@ router.get(
   asyncHandler(async (req, res) => {
     setFilenames(res.locals);
 
-    await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+    await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
     const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -207,4 +208,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

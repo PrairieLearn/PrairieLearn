@@ -1,13 +1,14 @@
-import ERR from 'async-stacktrace';
+import ERR = require('async-stacktrace');
 import { Router } from 'express';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 import { QuestionAddEditor } from '../../lib/editors';
-import fs = require('fs-extra');
+import * as fs from 'fs-extra';
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -15,15 +16,24 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course_id: res.locals.course.id,
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+    });
+
     const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
       res.locals.course.id,
-      res.locals.authz_data.course_instances,
+      courseInstances.map((ci) => ci.id),
     );
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions: questions,
+        course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
@@ -59,12 +69,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

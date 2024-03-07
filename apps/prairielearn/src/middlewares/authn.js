@@ -144,9 +144,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       next();
       return;
     } else {
-      // we aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page
-      // first set the preAuthUrl cookie for redirection after authn
-      res.cookie('preAuthUrl', req.originalUrl);
+      // We aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page.
 
       // If we're in the middle of a PrairieTest login flow, propagate that to
       // the login page so we can show a message to the user.
@@ -154,7 +152,32 @@ module.exports = asyncHandler(async (req, res, next) => {
       if (req.path === '/pl/prairietest/auth') {
         query = '?service=PrairieTest';
       }
-      res.redirect(`/pl/login${query}`);
+
+      const loginUrl = `/pl/login${query}`;
+
+      // If this request is being made by HTMX, use the special `HX-Redirect`
+      // header to redirect the page as a whole, not just the response.
+      if (req.get('HX-Request')) {
+        // Instead of redirecting to `req.originalUrl`, we redirect back to the
+        // page from which the HTMX request was made. This ensures that users
+        // don't end up redirected to a route that renders HTML that's meant to
+        // be embedded in another page.
+        res.cookie('preAuthUrl', req.get('HX-Current-URL'));
+        res.set('HX-Redirect', loginUrl);
+
+        // Note that Node doesn't allow us to set headers if the response is a
+        // redirect, so we send this as a 200 response. HTMX will perform the
+        // redirect on the client.
+        //
+        // https://stackoverflow.com/questions/39997413/how-to-pass-headers-while-doing-res-redirect-in-express-js
+        res.send();
+        return;
+      }
+
+      // first set the preAuthUrl cookie for redirection after authn
+      res.cookie('preAuthUrl', req.originalUrl);
+
+      res.redirect(loginUrl);
       return;
     }
   }

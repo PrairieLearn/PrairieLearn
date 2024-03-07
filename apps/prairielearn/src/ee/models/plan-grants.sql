@@ -39,7 +39,7 @@ WHERE
 -- BLOCK update_plan_grant
 UPDATE plan_grants
 SET
-type = $type
+  type = $type
 WHERE
   id = $id
 RETURNING

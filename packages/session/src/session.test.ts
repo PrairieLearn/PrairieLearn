@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 
 import { MemoryStore } from './memory-store';
-import { hashSession, loadSession, makeSession } from './session';
+import { loadSession, makeSession } from './session';
 
 const SESSION_MAX_AGE = 10000;
 const SESSION_EXPIRATION_DATE = new Date(Date.now() + SESSION_MAX_AGE);
@@ -108,15 +108,4 @@ describe('session', () => {
       assert.isNull(await store.get('123'));
     });
   });
-
-  describe('hashSession', () => {
-    it('ignores the cookie property', () => {
-      const hash1 = hashSession({ id: '123' } as any);
-      const hash2 = hashSession({ id: '123', cookie: { foo: 'bar' } } as any);
-
-      assert.equal(hash1, hash2);
-    });
-  });
-
-  it('has cookie property', () => {});
 });

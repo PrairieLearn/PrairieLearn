@@ -1,3 +1,4 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');

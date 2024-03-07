@@ -1,8 +1,6 @@
 columns
     assessment_id: bigint
-    can_assign_roles_at_start: boolean default false
-    can_assign_roles_during_assessment: boolean default false
-    can_submit_assessment: boolean default true
+    can_assign_roles: boolean not null default false
     id: bigint not null default nextval('group_roles_id_seq'::regclass)
     maximum: integer
     minimum: integer default 0
@@ -17,4 +15,4 @@ foreign-key constraints
 
 referenced by
     assessment_question_role_permissions: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_user_roles: FOREIGN KEY (group_role_id) REFERENCES group_roles(id)
+    group_user_roles: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE

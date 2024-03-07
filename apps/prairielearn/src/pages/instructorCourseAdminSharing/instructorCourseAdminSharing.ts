@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
+import { getCanonicalHost } from '../../lib/url';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -35,11 +36,19 @@ router.get(
         shared_with: z.string().array(),
       }),
     );
+
+    const host = getCanonicalHost(req);
+    const publicSharingLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
+      host,
+    ).href;
+
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
         sharingSets: sharingSets,
+        publicSharingLink: publicSharingLink,
         resLocals: res.locals,
       }),
     );
@@ -94,10 +103,7 @@ router.post(
         course_id: res.locals.course.id,
       });
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
     res.redirect(req.originalUrl);
   }),

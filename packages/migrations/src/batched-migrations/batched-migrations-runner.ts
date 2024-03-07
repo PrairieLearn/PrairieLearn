@@ -1,8 +1,8 @@
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
-import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { doWithLock } from '@prairielearn/named-locks';
 
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
@@ -204,23 +204,30 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
-    return tryWithLock(this.lockName, {}, async () => {
-      let migration = await queryValidatedZeroOrOneRow(
-        sql.select_running_migration,
-        { project: this.options.project },
-        BatchedMigrationRowSchema,
-      );
-
-      if (!migration) {
-        migration = await queryValidatedZeroOrOneRow(
-          sql.start_next_pending_migration,
+    return doWithLock(
+      this.lockName,
+      {
+        // Don't fail if the lock couldn't be acquired immediately.
+        onNotAcquired: () => null,
+      },
+      async () => {
+        let migration = await queryOptionalRow(
+          sql.select_running_migration,
           { project: this.options.project },
           BatchedMigrationRowSchema,
         );
-      }
 
-      return migration;
-    });
+        if (!migration) {
+          migration = await queryOptionalRow(
+            sql.start_next_pending_migration,
+            { project: this.options.project },
+            BatchedMigrationRowSchema,
+          );
+        }
+
+        return migration;
+      },
+    );
   }
 
   async maybePerformWork(durationMs: number): Promise<boolean> {
@@ -238,9 +245,13 @@ export class BatchedMigrationsRunner extends EventEmitter {
     }
 
     let didWork = false;
-    await tryWithLock(
+    await doWithLock(
       this.lockNameForTimestamp(migrationFile.timestamp),
-      { autoRenew: true },
+      {
+        autoRenew: true,
+        // Do nothing if the lock could not immediately be acquired.
+        onNotAcquired: () => null,
+      },
       async () => {
         didWork = true;
         const migrationImplementation = await this.loadMigrationImplementation(migrationFile);

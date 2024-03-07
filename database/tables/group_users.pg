@@ -1,4 +1,5 @@
 columns
+    group_config_id: bigint not null
     group_id: bigint not null
     user_id: bigint not null
 
@@ -8,5 +9,9 @@ indexes
     group_users_user_id_key: USING btree (user_id)
 
 foreign-key constraints
+    group_users_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_users_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    group_user_roles: FOREIGN KEY (group_id, user_id) REFERENCES group_users(group_id, user_id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -1,7 +1,6 @@
 import random
 from enum import Enum
-from html import escape
-from typing import Any, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -90,8 +89,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
-    a_tru = pl.from_json(data["correct_answers"].get(name, None))
-    if a_tru is not None:
+    correct_answer = pl.from_json(data["correct_answers"].get(name, None))
+    if correct_answer is not None:
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
         comparison = pl.get_enum_attrib(
@@ -99,19 +98,19 @@ def format_true_ans(
         )
 
         if custom_format is not None:
-            a_tru = ("{:" + custom_format + "}").format(a_tru)
+            correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:
             # FIXME: render correctly with respect to rtol and atol
-            a_tru = "{:.12g}".format(a_tru)
+            correct_answer = "{:.12g}".format(correct_answer)
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
+            correct_answer = pl.string_from_number_sigfig(correct_answer, digits=digits)
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            a_tru = "{:.{ndigits}f}".format(a_tru, ndigits=digits)
+            correct_answer = "{:.{ndigits}f}".format(correct_answer, ndigits=digits)
         else:
             assert_never(comparison)
-    return a_tru
+    return correct_answer
 
 
 def get_string_precision(number_string: str) -> float:
@@ -121,7 +120,22 @@ def get_string_precision(number_string: str) -> float:
     return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
-# TODO: add precision calculation function for other grading methods
+def get_string_significant_digits(number_string: str) -> int:
+    if "." in number_string:
+        number_string_partition = number_string.partition(".")
+        integer_part = len(number_string_partition[0].lstrip("0"))
+        decimal_part = len(number_string_partition[2].lstrip("0"))
+        return integer_part + decimal_part
+
+    return len(number_string.strip("0"))
+
+
+def get_string_decimal_digits(number_string: str) -> int:
+    if "." in number_string:
+        number_string_partition = number_string.partition(".")
+        decimal_part = len(number_string_partition[2].lstrip("0"))
+        return decimal_part
+    return 0  # no decimal seperator means there are no decimal digits
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -137,10 +151,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    show_correct_answer = pl.get_boolean_attrib(
+        element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+    )
+    show_help_text = pl.get_boolean_attrib(
+        element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
+    )
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    partial_score = data["partial_scores"].get(name, {"score": None})
+    score = partial_score.get("score", None)
+    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
         parse_error = data["format_errors"].get(name, None)
 
         html_params = {
@@ -154,10 +178,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_score": show_score,
             "parse_error": parse_error,
             display.value: True,
+            "raw_submitted_answer": raw_submitted_answer,
         }
 
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
@@ -217,55 +240,37 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        info_params["show_info"] = pl.get_boolean_attrib(
-            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-        )
+        info_params["show_info"] = show_help_text
         info_params["allow_fractions"] = allow_fractions
 
         # Find the true answer to be able to display it in the info popup
-        ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
-            ans_true = format_true_ans(element, data, name)
-        if ans_true is not None:
-            info_params["a_tru"] = ans_true
+        if show_correct_answer:
+            html_params["correct_answer"] = format_true_ans(element, data, name)
 
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        html_params["info"] = chevron.render(template, info_params).strip()
+
+        # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
+        # Here we opt to not generate the value, hence the placeholder is empty.
+        # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
+        if pl.has_attrib(element, "placeholder"):
+            # 'placeholder' attribute is set, override the placeholder text
+            html_params["placeholder"] = pl.get_string_attrib(element, "placeholder")
+        else:
             info_params.pop("format", None)
-            # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
-            # Here we opt to not generate the value, hence the placeholder is empty.
-            # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
-            if pl.has_attrib(element, "placeholder"):
-                # 'placeholder' attribute is set, override the placeholder text
-                html_params["placeholder"] = pl.get_string_attrib(
-                    element, "placeholder"
-                )
-            else:
-                # 'placeholder' attribute not set, use default shortformat as placeholder text
-                info_params["shortformat"] = pl.get_boolean_attrib(
-                    element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
-                )
-                html_params["placeholder"] = chevron.render(f, info_params).strip()
-
-        html_params["info"] = info
+            # 'placeholder' attribute not set, use default shortformat as placeholder text
+            info_params["shortformat"] = pl.get_boolean_attrib(
+                element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
+            )
+            html_params["placeholder"] = chevron.render(template, info_params).strip()
 
         # Determine the title of the popup based on what information is being shown
-        if pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT):
-            html_params["popup_title"] = "Number"
-        else:
-            html_params["popup_title"] = "Correct Answer"
+        html_params["popup_title"] = "Number" if show_help_text else "Correct Answer"
 
         # Enable or disable the popup
-        if pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT):
+        if show_help_text:
             html_params["show_info"] = True
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -278,33 +283,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if parse_error is None and name in data["submitted_answers"]:
-            a_sub = data["submitted_answers"].get(name)
+            submitted_answer = data["submitted_answers"].get(name)
             # If answer is in a format generated by pl.to_json, convert it
             # back to a standard type (otherwise, do nothing)
-            a_sub = pl.from_json(a_sub)
+            submitted_answer = pl.from_json(submitted_answer)
 
             html_params["suffix"] = suffix
-            html_params["a_sub"] = ("{:" + custom_format + "}").format(a_sub)
+            html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
+                submitted_answer
+            )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
                 )
         # Add true answer to be able to display it in the submitted answer panel
-        ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
-            ans_true = format_true_ans(element, data, name)
-        if ans_true is not None:
-            html_params["a_tru"] = ans_true
-
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
+        if show_correct_answer:
+            html_params["correct_answer"] = format_true_ans(element, data, name)
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -316,27 +314,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params["feedback"] = partial_score.get("feedback", None)
 
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
-        ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
-            ans_true = format_true_ans(element, data, name)
-
-        if ans_true is None:
-            return ""
-
-        html_params = {
-            "answer": True,
-            "label": label,
-            "a_tru": ans_true,
-            "suffix": suffix,
-        }
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        if show_correct_answer:
+            html_params = {
+                "answer": True,
+                "label": label,
+                "suffix": suffix,
+                "correct_answer": format_true_ans(element, data, name),
+            }
+            return chevron.render(template, html_params).strip()
+        return ""
 
     assert_never(data["panel"])
 
@@ -344,7 +333,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def get_format_string(
     is_complex: bool = False,
     allow_fractions: bool = False,
-    message: Optional[str] = None,
+    message: str | None = None,
 ) -> str:
     params = {
         "complex": is_complex,
@@ -368,10 +357,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
 
-    a_sub = data["submitted_answers"].get(name, None)
-    if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
-    value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex)
+    submitted_answer = data["submitted_answers"].get(name, None)
+    if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
+        submitted_answer = blank_value
+    value, newdata = pl.string_fraction_to_number(
+        submitted_answer, allow_fractions, allow_complex
+    )
 
     if value is not None:
         data["submitted_answers"][name] = newdata["submitted_answers"]
@@ -391,8 +382,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru: Any = pl.from_json(data["correct_answers"].get(name))
-    if a_tru is None:
+    correct_answer: Any = pl.from_json(data["correct_answers"].get(name))
+    if correct_answer is None:
         return
 
     # Get method of comparison, with relabs as default
@@ -400,11 +391,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "comparison", ComparisonType, COMPARISON_DEFAULT
     )
 
-    def grade_function(a_sub: str | dict[str, Any]) -> tuple[bool, Optional[str]]:
-        nonlocal a_tru
+    def grade_function(
+        submitted_answer: str | dict[str, Any]
+    ) -> tuple[bool, str | None]:
+        nonlocal correct_answer
         # If submitted answer is in a format generated by pl.to_json, convert it
         # back to a standard type (otherwise, do nothing)
-        a_sub_parsed: Any = pl.from_json(a_sub)
+        submitted_answer_parsed: Any = pl.from_json(submitted_answer)
         feedback = ""
         is_correct = None
 
@@ -426,42 +419,55 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         #   Casting as np.float64 avoids this error. This is reasonable in any case,
         #   because <pl-number-input> accepts double-precision floats, not ints.
         #
-        if np.iscomplexobj(a_sub_parsed) or np.iscomplexobj(a_tru):
-            a_sub_converted = np.complex128(a_sub_parsed)
-            a_tru_converted = np.complex128(a_tru)
+        if np.iscomplexobj(submitted_answer_parsed) or np.iscomplexobj(correct_answer):
+            submitted_answer_converted = np.complex128(submitted_answer_parsed)
+            correct_answer_converted = np.complex128(correct_answer)
         else:
-            a_sub_converted = np.float64(a_sub_parsed)
-            a_tru_converted = np.float64(a_tru)
+            submitted_answer_converted = np.float64(submitted_answer_parsed)
+            correct_answer_converted = np.float64(correct_answer)
 
         # Compare submitted answer with true answer
         if comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
 
-            a_sub_precision = get_string_precision(str(a_sub))
+            submitted_answer_precision = get_string_precision(str(submitted_answer))
             is_correct = pl.is_correct_scalar_ra(
-                a_sub_converted, a_tru_converted, rtol, atol
+                submitted_answer_converted, correct_answer_converted, rtol, atol
             )
-            if not is_correct and (a_sub_precision > rtol):
+            if not is_correct and (submitted_answer_precision > rtol):
                 feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
 
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            is_correct = pl.is_correct_scalar_sf(
-                a_sub_converted, a_tru_converted, digits
+
+            submitted_answer_precision = get_string_significant_digits(
+                str(submitted_answer)
             )
+            is_correct = pl.is_correct_scalar_sf(
+                submitted_answer_converted, correct_answer_converted, digits
+            )
+            if not is_correct and (submitted_answer_precision < digits):
+                feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            is_correct = pl.is_correct_scalar_dd(
-                a_sub_converted, a_tru_converted, digits
+            submitted_answer_precision = get_string_decimal_digits(
+                str(submitted_answer)
             )
+            is_correct = pl.is_correct_scalar_dd(
+                submitted_answer_converted, correct_answer_converted, digits
+            )
+            if not is_correct and (submitted_answer_precision < digits):
+                feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
         else:
             assert_never(comparison)
 
         if is_correct and pl.get_boolean_attrib(
             element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
         ):
-            feedback += f"The correct answer used for grading was {a_tru_converted}"
+            feedback += (
+                f"The correct answer used for grading was {correct_answer_converted}"
+            )
         return (is_correct, feedback)
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
@@ -473,20 +479,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get correct answer
-    a_tru = data["correct_answers"][name]
+    correct_answer = data["correct_answers"][name]
 
     # If correct answer is in a format generated by pl.to_json, convert it
     # back to a standard type (otherwise, do nothing)
-    a_tru = pl.from_json(a_tru)
-    a_tru_converted = np.float64(a_tru)
+    correct_answer = pl.from_json(correct_answer)
+    correct_answer_converted = np.float64(correct_answer)
 
     result = data["test_type"]
     if result == "correct":
-        data["raw_submitted_answers"][name] = str(a_tru)
+        data["raw_submitted_answers"][name] = str(correct_answer)
         data["partial_scores"][name] = {
             "score": 1,
             "weight": weight,
-            "feedback": f"The correct answer used for grading was {a_tru_converted}",
+            "feedback": f"The correct answer used for grading was {correct_answer_converted}",
         }
     elif result == "incorrect":
         data["partial_scores"][name] = {"score": 0, "weight": weight}
@@ -499,25 +505,25 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
-            eps = np.absolute(a_tru) * rtol + atol
+            eps = np.absolute(correct_answer) * rtol + atol
             eps += random.uniform(1, 10)
-            answer = a_tru + eps * random.choice([-1, 1])
+            answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             # Get max error according to pl.is_correct_scalar_sf()
-            if a_tru == 0:
+            if correct_answer == 0:
                 n = digits - 1
             else:
-                n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
+                n = -int(np.floor(np.log10(np.abs(correct_answer)))) + (digits - 1)
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
-            answer = a_tru + eps * random.choice([-1, 1])
+            answer = correct_answer + eps * random.choice([-1, 1])
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             # Get max error according to pl.is_correct_scalar_dd()
             eps = 0.51 * (10**-digits)
             eps += random.uniform(1, 10)
-            answer = a_tru + eps * random.choice([-1, 1])
+            answer = correct_answer + eps * random.choice([-1, 1])
         else:
             assert_never(comparison)
 

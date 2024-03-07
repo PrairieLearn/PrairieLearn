@@ -37,6 +37,7 @@ SELECT
   ) FILTER (
     WHERE
       cip.course_instance_role IS NULL
+      AND ci.id IS NOT NULL
   ) AS other_course_instances
 FROM
   course_permissions AS cp

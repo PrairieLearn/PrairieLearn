@@ -3,7 +3,7 @@ import { step } from 'mocha-steps';
 import { queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 import { enrollUser, unenrollUser } from './utils/enrollments';
 
 const siteUrl = 'http://localhost:' + config.serverPort;

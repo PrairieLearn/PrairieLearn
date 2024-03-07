@@ -41,6 +41,14 @@
           "description": "Feature flag to enable the new question renderer.",
           "type": "boolean",
           "default": false
+        },
+        "devModeFeatures": {
+          "description": "Feature flags to enable in development mode.",
+          "type": "array",
+          "items": {
+            "description": "A single feature flag.",
+            "type": "string"
+          }
         }
       }
     },

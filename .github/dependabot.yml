@@ -9,16 +9,23 @@ updates:
     open-pull-requests-limit: 99
     rebase-strategy: disabled
     groups:
-      aws:
-        patterns:
-          - '@aws-sdk/*'
-      opentelemetry:
-        patterns:
-          - '@opentelemetry/*'
       ace:
         patterns:
           - 'ace-code'
           - 'ace-builds'
+      aws:
+        patterns:
+          - '@aws-sdk/*'
+          - '@smithy/*'
+      opentelemetry:
+        patterns:
+          - '@opentelemetry/*'
+      sentry:
+        patterns:
+          - '@sentry/*'
+      typescript-eslint:
+        patterns:
+          - '@typescript-eslint/*'
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
@@ -96,6 +103,10 @@ updates:
         patterns:
           - 'pandas'
           - 'pandas-stubs'
+      lxml:
+        patterns:
+          - 'lxml'
+          - 'types-lxml'
   - package-ecosystem: docker
     directory: '/workspaces/jupyterlab'
     schedule:

@@ -1,9 +1,9 @@
 import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
-import { AdministratorWorkspaces, WorkspaceSchema } from './administratorWorkspaces.html';
+import { AdministratorWorkspaces, WorkspaceHostRowSchema } from './administratorWorkspaces.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -11,10 +11,10 @@ const sql = loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const workspaces = await queryValidatedRows(sql.select_workspaces, {}, WorkspaceSchema);
+    const workspaceHostRows = await queryRows(sql.select_workspace_hosts, WorkspaceHostRowSchema);
     res.send(
       AdministratorWorkspaces({
-        workspaces,
+        workspaceHostRows,
         workspaceLoadHostCapacity: config.workspaceLoadHostCapacity,
         resLocals: res.locals,
       }),
