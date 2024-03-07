@@ -10,6 +10,5 @@
   "extensions.autoUpdate": false,
   "telemetry.enableTelemetry": false,
   "telemetry.telemetryLevel": "off",
-  "terminal.integrated.cwd": "/home/coder/project",
   "editor.fontSize": 16
 }

@@ -75,7 +75,6 @@ WORKDIR "$EDITOR_FOCUS_DIR"
 
 RUN mkdir -p "/home/coder/.local/share/code-server/User" "/home/coder/workspace"
 COPY --chmod=0444 settings.json /home/coder/.local/share/code-server/User/settings.json
-COPY --chmod=0444 coder.json /home/coder/.local/share/code-server/coder.json
 
 ENTRYPOINT ["/usr/bin/entrypoint.sh", "--auth", "none", \
     "--disable-update-check", "--disable-telemetry", \
