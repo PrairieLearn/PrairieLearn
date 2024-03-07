@@ -79,9 +79,6 @@ RUN rm /requirements.txt
 
 EXPOSE 8080
 
-# TODO: Maybe customize the preferences to set the theme to auto-adjust to the
-# browser, turn off more telemetry, etc.
-
 # Please read the note here carefully to avoid wiping out what you installed
 # in ~/.local:
 
@@ -91,12 +88,14 @@ EXPOSE 8080
 # the persistent cloud storage, which will hide any contents your image
 # originally had at the same path. You might want to set both EDITOR_FOCUS_DIR
 # and "home" to a deeper directory than /home/coder if you want to keep the
-# default home contents from the workspace image (~/.local, etc.). For
-# example, using /home/coder/question will copy the question's workspace
-# folder contents into an empty mount at /home/coder/question and save it for
-# the student, while always reusing the initial contents of /home/coder that
-# you prepared in the image. (However, if students try to customize their
-# editor settings, those will get reset in between sessions this way.)
+# default home contents from the workspace image (~/.local, etc.).
+
+# For example, in the PL question configuration, setting workspaceOptions
+# home to /home/coder/workspace will copy the question's workspace folder
+# contents into an empty mount at /home/coder/workspace and save it for the
+# student, while always reusing the initial contents of /home/coder that you
+# prepared in the image. (However, if students try to customize their editor
+# settings, those will get reset in between sessions this way.)
 USER coder
 ENV EDITOR_FOCUS_DIR "/home/coder/project"
 RUN mkdir -p "$EDITOR_FOCUS_DIR"
