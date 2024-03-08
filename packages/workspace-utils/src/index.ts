@@ -1,10 +1,11 @@
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 import { contains } from '@prairielearn/path-utils';
 import type { Server as SocketIOServer } from 'socket.io';
 import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
-import path from 'path';
+import path from 'node:path';
+import execa from 'execa';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -113,6 +114,54 @@ export async function getWorkspaceGradedFiles(
   }
 
   return files;
+}
+
+/**
+ * Updates the disk usage of a workspace. This is computed as the sum of the
+ * sizes of all versions of the workspace. The result is stored in the `disk_usage`
+ * column of the `workspaces` table. The total size is returned.
+ *
+ * @param workspace_id The ID of the workspace to update.
+ * @param workspacesRoot The root directory of all workspace data.
+ */
+export async function updateWorkspaceDiskUsage(
+  workspace_id: string,
+  workspacesRoot: string,
+): Promise<number> {
+  const result = await queryOneRowAsync(sql.select_workspace, { workspace_id });
+  const workspace = result.rows[0];
+
+  // We'll compute the size for all versions of the workspace so that we don't need
+  // to separately store the size for each version.
+  const version = Number.parseInt(workspace.version, 10);
+
+  let totalSize = 0;
+  for (let i = 1; i <= version; i++) {
+    const workspaceVersionPath = path.join(
+      workspacesRoot,
+      `workspace-${workspace.id}-${workspace.version}`,
+    );
+    const size = await getDirectoryDiskUsage(workspaceVersionPath);
+    totalSize += size ?? 0;
+  }
+
+  await queryAsync(sql.update_workspace_disk_usage, { workspace_id, disk_usage: totalSize });
+
+  return totalSize;
+}
+
+async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
+  try {
+    // macOS `du` doesn't support the `-b` flag, so we use `-k` instead and
+    // multiply the result by 1024 to convert from kilobytes to bytes.
+    const res = await execa('du', ['-sk', dir]);
+    const [size] = res.stdout.split(/\s/);
+    return Number.parseInt(size, 10) * 1024;
+  } catch (err) {
+    console.error(err);
+    // If this fails for any reason, assume the directory doesn't exist.
+    return null;
+  }
 }
 
 /**

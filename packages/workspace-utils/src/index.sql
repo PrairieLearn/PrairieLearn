@@ -1,3 +1,18 @@
+-- BLOCK select_workspace
+SELECT
+  *
+FROM
+  workspaces
+WHERE
+  id = $workspace_id;
+
+-- BLOCK update_workspace_disk_usage
+UPDATE workspaces as w
+SET
+  disk_usage = $disk_usage
+WHERE
+  w.id = $workspace_id;
+
 -- BLOCK update_workspace_state
 WITH
   old_workspace AS (
