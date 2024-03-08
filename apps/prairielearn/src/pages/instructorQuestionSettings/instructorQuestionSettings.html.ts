@@ -217,8 +217,8 @@ export function InstructorQuestionSettings({
                         <th class="align-middle">Sharing</th>
                         <td data-testid="shared-with">
                           ${resLocals.question.shared_publicly
-                            ? html`<span class="badge color-green3">Public</span> This question is
-                                publicly shared. `
+                            ? html`<div class="badge color-green3">Public</div>
+                                This question is publicly shared.`
                             : html`
                                 ${sharingSetsIn.length === 0
                                   ? html`Not Shared`
@@ -543,7 +543,7 @@ function DeleteQuestionModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: 'deleteQuestionModal',
+    id: 'delete-question-form',
     title: 'Delete question',
     body: html`
       <p>
@@ -581,12 +581,10 @@ function DeleteQuestionModal({
         : ''}
     `,
     footer: html`
-      <div name="delete-question-form">
-        <input type="hidden" name="__action" value="delete_question" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Delete</button>
-      </div>
+      <input type="hidden" name="__action" value="delete_question" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
 }
