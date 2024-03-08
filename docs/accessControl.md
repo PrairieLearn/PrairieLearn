@@ -210,7 +210,7 @@ The `active` access rule restriction is useful for allowing students to see what
 
 By default, the `active` property in an access rule is `true`. This means students can start the assessment, create new assessment instances, and submit answers to questions.
 
-If `active` is set to `false`, students will still be able to see the assessment on the Assessments page, but they cannot start the assessment, create a new assessment instance, or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page.
+If `active` is set to `false` in an access rule, students will still be able to see the assessment on the Assessments page, but they cannot start the assessment, create a new assessment instance, or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page.
 
 If `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
 
