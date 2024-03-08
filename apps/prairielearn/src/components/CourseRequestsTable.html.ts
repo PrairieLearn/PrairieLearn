@@ -40,6 +40,7 @@ export function CourseRequestsTable({
         <table class="table table-sm">
           <thead>
             <tr>
+              <th>Created At</th>
               <th>Short Name / Title</th>
               <th>Institution</th>
               <th>Requested By</th>
@@ -56,6 +57,7 @@ export function CourseRequestsTable({
             ${rows.map((row) => {
               return html`
                 <tr>
+                  <td class="align-middle">${row.created_at.toISOString()}</td>
                   <td class="align-middle">${row.short_name}: ${row.title}</td>
                   <td class="align-middle">${row.institution}</td>
                   <td class="align-middle">

@@ -22,6 +22,7 @@ const JobsRowSchema = z.object({
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
   approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  created_at: DateFromISOString,
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
   id: IdSchema,
