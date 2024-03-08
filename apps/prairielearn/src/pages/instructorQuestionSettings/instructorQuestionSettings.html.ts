@@ -62,10 +62,6 @@ export function InstructorQuestionSettings({
           pageNote: resLocals.question.qid,
           ...resLocals,
         })}
-        <script>
-          // REVISIT THIS: What is this doing? Is it still needed?
-          document.urlPrefix = '${resLocals.urlPrefix}';
-        </script>
         <style>
           .popover {
             max-width: 50%;
@@ -74,7 +70,6 @@ export function InstructorQuestionSettings({
       </head>
       <body>
         <script>
-          // Can we replace this with the assets/scripts/popover.ts functionality?
           $(function () {
             $('[data-toggle="popover"]').popover({
               sanitize: false,
@@ -127,8 +122,7 @@ export function InstructorQuestionSettings({
                                 ...resLocals,
                               },
                             )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
+                            data-trigger="click"
                           >
                             <i class="fa fa-i-cursor"></i>
                             <span>Change QID</span>
