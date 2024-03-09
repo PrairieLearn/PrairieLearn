@@ -2,6 +2,7 @@
 # 20210831 Eric Huber - Initial version
 # 20240123 Eric Huber - Modify service file to provide server-user argument
 # 20240127 Eric Huber - Pin base image, fix issues with the Nginx reverse proxy
+# 20240309 Dirk Eddelbuettel - Roll to R 4.3.3, add a few more R packages
 
 # Maintainer notes:
 
@@ -44,8 +45,8 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-# Latest as of 20240126
-FROM rocker/rstudio:4.3.2
+# Latest as of 20240309
+FROM rocker/rstudio:4.3.3
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
@@ -108,6 +109,16 @@ RUN MATCH_REGEX='^\(exec /usr/lib/rstudio-server/bin/rserver --server-daemonize 
 # The proxy uses 3939 and the internal RStudio session uses 8787.
 # We only need to expose 3939 here.
 EXPOSE 3939
+
+# Install a (small) number of R packages common to questions. Per the configuration of the
+# underlying container, these come as binaries from the posit (nee RStudio) p3m.dev package repo
+# We also run update.packages() to reflect what may have change since the container was made.
+# As Rscript runs a distinct session with its own /tmp/RtmpXXXXXX/ all downloaded files are
+# automatically discarded
+RUN Rscript -e 'install.packages(c("bench", "data.table", "devtools", "doParallel", "flexdashboard", \
+  "foreach", "fs", "future.apply", "gapminder", "gh", "git2r", "memoise", "microbenchmark", \
+  "palmerpenguins", "png", "profmem", "RSQLite", "shiny", "stringdist", "testthat", "tidyverse", \
+  "tinytest", "xts")); update.packages()'
 
 # Please read the note here carefully to avoid wiping out what you installed
 # in ~/.local:
