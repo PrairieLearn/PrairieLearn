@@ -77,6 +77,7 @@ export function InstructorAssessmentInstance({
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
+        ${compiledScriptTag('instructorAssessmentInstance.ts')}
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
           )}"></script>
@@ -95,7 +96,54 @@ export function InstructorAssessmentInstance({
           ...resLocals,
           navPage: '',
         })}
+        ${(resLocals.assessmentInstanceOwner = resLocals.assessment.group_work
+          ? resLocals.instance_group.name
+          : resLocals.instance_user.name)}
         <main id="content" class="container-fluid">
+          <div
+            class="modal fade"
+            id="resetQuestionVariantsModal"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="resetQuestionVariantsModalLabel"
+          >
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="resetQuestionVariantsModalLabel">
+                    Confirm reset question variants
+                  </h4>
+                </div>
+                <div class="modal-body">
+                  <p>
+                    Are your sure you want to reset all current variants of this question for this
+                    ${resLocals.assessment.group_work ? 'group' : 'student'}?
+                    <strong>All ungraded attempts will be lost.</strong>
+                  </p>
+                  <p>
+                    This ${resLocals.assessment.group_work ? 'group' : 'student'} will receive a new
+                    variant the next time they view this question.
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <form name="reset-question-variants-form" method="POST">
+                    <input type="hidden" name="__action" value="reset_question_variants" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <input
+                      type="hidden"
+                      name="unsafe_instance_question_id"
+                      class="js-instance-question-id"
+                      value=""
+                    />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger">Reset question variants</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
           ${renderEjs(
             __filename,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -300,7 +348,8 @@ export function InstructorAssessmentInstance({
                   <th class="text-center">Manual grading points</th>
                   <th class="text-center">Awarded points</th>
                   <th class="text-center" colspan="2">Percentage score</th>
-                  <th></th>
+                  <th><!--Manual grading column --></th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -486,6 +535,33 @@ export function InstructorAssessmentInstance({
                             `
                           : ''}
                       </td>
+                      <td class="text-right">
+                        <div class="dropdown js-question-actions">
+                          <button
+                            type="button"
+                            class="btn btn-secondary btn-xs dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          >
+                            Action <span class="caret"></span>
+                          </button>
+                          <div class="dropdown-menu dropdown-menu-right">
+                            ${resLocals.authz_data.has_course_instance_permission_edit
+                              ? html`
+                                  <button
+                                    class="dropdown-item"
+                                    data-toggle="modal"
+                                    data-target="#resetQuestionVariantsModal"
+                                    data-instance-question-id="<%= instance_question.id %>"
+                                  >
+                                    Reset question variants
+                                  </button>
+                                `
+                              : ''}
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   `;
                 })}
@@ -586,7 +662,7 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid}</td>
+                      <td>${row.auth_user_uid ? row.auth_user_uid : html`$mdash;`}</td>
                       ${resLocals.instance_user
                         ? html`${row.client_fingerprint && row.client_fingerprint_number !== null
                             ? html`
