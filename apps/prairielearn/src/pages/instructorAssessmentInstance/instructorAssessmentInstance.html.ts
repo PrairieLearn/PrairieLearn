@@ -96,9 +96,6 @@ export function InstructorAssessmentInstance({
           ...resLocals,
           navPage: '',
         })}
-        ${(resLocals.assessmentInstanceOwner = resLocals.assessment.group_work
-          ? resLocals.instance_group.name
-          : resLocals.instance_user.name)}
         <main id="content" class="container-fluid">
           <div
             class="modal fade"
