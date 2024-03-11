@@ -829,12 +829,7 @@ function ResetQuestionVariantsModal({
     footer: html`
       <input type="hidden" name="__action" value="reset_question_variants" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input
-        type="hidden"
-        name="unsafe_instance_question_id"
-        class="js-instance-question-id"
-        value=""
-      />
+      <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
     `,
