@@ -29,7 +29,6 @@ async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log(res.locals.authz_data);
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
