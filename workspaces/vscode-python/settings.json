@@ -11,5 +11,6 @@
   "extensions.autoUpdate": false,
   "telemetry.enableTelemetry": false,
   "telemetry.telemetryLevel": "off",
-  "editor.fontSize": 16
+  "editor.fontSize": 16,
+  "workbench.colorTheme": "Default Dark Modern"
 }
