@@ -1,7 +1,7 @@
 import asyncHandler = require('express-async-handler');
 import express = require('express');
 import { z } from 'zod';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryOneRowAsync,
@@ -81,6 +81,7 @@ router.post(
 
       const didEnroll = await ensureCheckedEnrollment({
         institution,
+        course,
         course_instance,
         authz_data: res.locals.authz_data,
         redirect: res.redirect.bind(res),
@@ -102,10 +103,7 @@ router.post(
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown action: ' + res.locals.__action, {
-        __action: req.body.__action,
-        body: req.body,
-      });
+      throw error.make(400, 'unknown action: ' + res.locals.__action);
     }
   }),
 );

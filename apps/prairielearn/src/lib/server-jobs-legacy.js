@@ -4,8 +4,8 @@ const _ = require('lodash');
 import * as util from 'util';
 import * as async from 'async';
 import * as child_process from 'child_process';
-const { default: AnsiUp } = require('ansi_up');
-const { setTimeout: sleep } = require('node:timers/promises');
+import AnsiUp from 'ansi_up';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import { logger } from '@prairielearn/logger';
 import * as socketServer from './socket-server';
@@ -114,7 +114,7 @@ export class Job {
       if (ERR(err, function () {})) {
         logger.error(`error updating job_id ${this.id} on close`, err);
         this.options?.on_error?.(this.id, err);
-      } else if (result.rowCount > 0) {
+      } else if (result.rowCount != null && result.rowCount > 0) {
         const status = result.rows[0].status;
         if (status === 'Success') {
           this.options?.on_success?.(this.id);

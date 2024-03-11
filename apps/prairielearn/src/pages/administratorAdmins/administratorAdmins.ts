@@ -1,8 +1,8 @@
 import asyncHandler = require('express-async-handler');
 import express = require('express');
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { AdministratorAdmins } from './administratorAdmins.html';
 import { UserSchema } from '../../lib/db-types';
 
@@ -35,7 +35,7 @@ router.post(
       ]);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

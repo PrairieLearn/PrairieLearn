@@ -122,7 +122,7 @@ WITH
       a.assessment_set_number,
       s.score_perc,
       s.assessment_instance_id,
-      ARRAY (
+      ARRAY(
         SELECT
           ou.uid
         FROM

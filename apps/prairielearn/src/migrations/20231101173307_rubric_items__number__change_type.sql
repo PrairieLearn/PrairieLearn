@@ -1,3 +1,2 @@
 ALTER TABLE rubric_items
-ALTER COLUMN number
-TYPE integer;
+ALTER COLUMN number TYPE integer;

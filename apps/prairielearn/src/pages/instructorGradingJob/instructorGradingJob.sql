@@ -37,7 +37,6 @@ SELECT
     gj.graded_at,
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS formatted_graded_at,
-  ci.short_name AS course_instance_short_name,
   q.directory AS question_qid,
   u.uid AS user_uid
 FROM

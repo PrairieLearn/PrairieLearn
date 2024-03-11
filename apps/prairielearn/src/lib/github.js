@@ -7,12 +7,12 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { config } from './config';
 import { logger } from '@prairielearn/logger';
 import { updateCourseCommitHash } from '../models/course';
-import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { syncDiskToSql } from '../sync/syncFromDisk';
 import { sendCourseRequestMessage } from './opsbot';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
 import { createServerJob } from './server-jobs';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /*
@@ -58,7 +58,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
       await client.repos.getContent({
         owner: config.githubCourseOwner,
         repo: repo,
-        path: '',
+        path: 'infoCourse.json',
       });
       return;
     } catch (err) {
@@ -286,7 +286,7 @@ export async function createCourseRepoJob(options, authn_user) {
     });
 
     job.info('Sync git repository to database');
-    const sync_result = await syncDiskToSqlAsync(inserted_course.path, inserted_course.id, job);
+    const sync_result = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {

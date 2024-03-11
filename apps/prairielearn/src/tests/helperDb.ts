@@ -1,4 +1,3 @@
-// @ts-check
 import * as pg from 'pg';
 import * as path from 'path';
 

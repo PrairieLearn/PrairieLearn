@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
-import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
+import { Course, CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
 import { isEnterprise } from '../lib/license';
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -18,8 +18,8 @@ export async function ensureEnrollment({
 }: {
   course_instance_id: string;
   user_id: string;
-}): Promise<Enrollment> {
-  return await queryRow(sql.ensure_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
+}): Promise<void> {
+  await queryAsync(sql.ensure_enrollment, { course_instance_id, user_id });
 }
 
 /**
@@ -37,11 +37,13 @@ export async function ensureEnrollment({
  */
 export async function ensureCheckedEnrollment({
   institution,
+  course,
   course_instance,
   authz_data,
   redirect,
 }: {
   institution: Institution;
+  course: Course;
   course_instance: CourseInstance;
   authz_data: any;
   redirect: Response['redirect'];
@@ -56,6 +58,7 @@ export async function ensureCheckedEnrollment({
   if (isEnterprise()) {
     const status = await checkPotentialEnterpriseEnrollment({
       institution,
+      course,
       course_instance,
       authz_data,
     });

@@ -1,4 +1,5 @@
 node_modules
+.yarn
 
 # Test coverage
 coverage/
@@ -62,3 +63,7 @@ testCourse/**/*.html
 
 # JSON files in tests are formatted explicitly to check for loading behaviour, so should not be formatted automatically
 apps/prairielearn/src/tests/*/**/*.json
+
+# EJS files are treated as HTML by VSCode, which will try to format them as such.
+# This won't work, so exclude them.
+apps/prairielearn/src/**/*.ejs

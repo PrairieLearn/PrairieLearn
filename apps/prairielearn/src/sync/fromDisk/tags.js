@@ -1,15 +1,17 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const infofile = require('../infofile');
-const perf = require('../performance')('tags');
+import * as infofile from '../infofile';
+import { makePerformance } from '../performance';
+
+const perf = makePerformance('tags');
 
 /**
  * @param {any} courseId
  * @param {import('../course-db').CourseData} courseData
  * @param {{ [qid: string]: any }} questionIds
  */
-module.exports.sync = async function (courseId, courseData, questionIds) {
+export async function sync(courseId, courseData, questionIds) {
   // We can only safely remove unused tags if both `infoCourse.json` and all
   // question `info.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -68,4 +70,4 @@ module.exports.sync = async function (courseId, courseData, questionIds) {
   perf.start('sproc:sync_question_tags');
   await sqldb.callAsync('sync_question_tags', [questionTagsParam]);
   perf.end('sproc:sync_question_tags');
-};
+}

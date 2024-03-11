@@ -2,7 +2,13 @@
 <html lang="en">
 
 <head>
-    <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
+    <%
+    let pageTitle = 'Edit';
+    if (locals.fileEdit) {
+      pageTitle += ` ${fileEdit.fileName}`;
+    }
+    %>
+    <%- include('../partials/head', {pageTitle: pageTitle}); %>
     <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
     <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
     <script src="<%= compiled_script_path('instructorFileEditorClient.js') %>"></script>
@@ -12,7 +18,37 @@
     <%- include('../partials/navbar'); %>
 
     <main id="content" class="container-fluid">
-
+      <% if (!authz_data.has_course_permission_edit) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            File editor
+          </div>
+          <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
+            <% if (course_owners.length > 0) { %>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+              <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+              </li>
+              <% }); %>
+              </ul>
+            <% } %>
+          </div>
+        </div>
+      <% } else if (course.example_course) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            File editor
+          </div>
+          <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>No one is allowed to edit the example course.</p>
+          </div>
+      </div>
+      <% } else { %>
         <% if (fileEdit.sync_errors) { %>
         <div class="alert alert-danger" role="alert">
             <h2 class="h5 alert-heading">Sync error</h2>
@@ -47,17 +83,14 @@
                     diskHash: "<%- fileEdit.diskHash %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
                     saveElementId: "file-editor-<%= fileEdit.uuid %>-save-button",
-                    <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
+                    <% if (fileEdit.alertChoice) { %>
                     altElementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     buttonsContainerElementId: "buttons-<%= fileEdit.uuid %>",
                     choiceAlertElementId: "file-editor-<%= fileEdit.uuid %>-choicealert",
                     <% } %>
-                    <% if (fileEdit.failedPush) { %>
-                    readOnly: true,
-                    <% } %>
                 });
 
-                <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
+                <% if (fileEdit.alertChoice) { %>
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.diskContents %>",
                     <% if (fileEdit.aceMode) { %>
@@ -160,26 +193,10 @@
                                     <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button" id="results-<%= fileEdit.uuid %>-button">Show detail</a>
                                 </div>
                                 <% } %>
-                                <% if (!fileEdit.failedPush) { %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
-                                <% } %>
                             </div>
-                            <% if (fileEdit.failedPush) { %>
-                            <div class="row mt-4">
-                                <div class="col-auto">
-                                    In particular, it looks like there was a failure to push your changes to the remote GitHub repository. The most likely cause is that another user made changes to other course files while you were editing.
-                                    To retry, click <strong>Retry save and sync after pull from remote GitHub repository</strong>.
-                                    Doing so will pull from the remote GitHub repository and then will proceed to write your changes to disk, push them to the remote git repository, and sync them to the database.
-                                </div>
-                            </div>
-                            <div class="row my-4">
-                                <div class="col-auto">
-                                    <button name="__action" value="pull_and_save_and_sync" class="btn btn-primary">Retry save and sync after pull from remote GitHub repository</button>
-                                </div>
-                            </div>
-                            <% } %>
                             <% if (fileEdit.jobSequenceId != null) { %>
                             <div class="row collapse mt-4" id="results-<%= fileEdit.uuid %>">
                                 <div class="card card-body">
@@ -190,7 +207,7 @@
                         </div>
                         <% } %>
 
-                        <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
+                        <% if (fileEdit.alertChoice) { %>
                         <div id="file-editor-<%= fileEdit.uuid %>-choicealert" class="alert alert-danger alert-dismissible fade show m-2" role="alert">
                             <% if (fileEdit.hasSameHash) { %>
                             You were editing this file and made changes. You may choose either to continue editing or to discard your changes.
@@ -207,7 +224,7 @@
 
                     <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col">
                         <div class="card p-0">
-                            <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
+                            <% if (fileEdit.alertChoice) { %>
                             <div class="card-header text-center">
                                 <h4 class="mb-4">My version</h4>
                                 <button id="choose" class="btn btn-primary" type="button">Choose my version (continue editing)</button>
@@ -216,15 +233,13 @@
                             <div class="card-body p-0">
                                 <input type="hidden" name="file_edit_user_id" value="<%= fileEdit.userID %>">
                                 <input type="hidden" name="file_edit_course_id" value="<%= fileEdit.courseID %>">
-                                <input type="hidden" name="file_edit_dir_name" value="<%= fileEdit.dirName %>">
-                                <input type="hidden" name="file_edit_file_name" value="<%= fileEdit.fileName %>">
                                 <input type="hidden" name="file_edit_orig_hash" value="<%= fileEdit.origHash %>">
                                 <input type="hidden" name="file_edit_contents">
                                 <div class="editor"></div>
                             </div>
                         </div>
                     </div>
-                    <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
+                    <% if (fileEdit.alertChoice) { %>
                     <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col">
                         <div class="card p-0">
                             <div class="card-header text-center">
@@ -240,6 +255,7 @@
                 </div>
             </div>
         </form>
+      <% } %>
     </main>
 </body>
 </html>

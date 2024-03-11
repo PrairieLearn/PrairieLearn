@@ -5,6 +5,7 @@ import {
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
+import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
 
@@ -265,7 +266,9 @@ const ConfigSchema = z.object({
   syncExamIdAccessRules: z.boolean().default(false),
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
-  questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
+  cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
@@ -299,7 +302,6 @@ const ConfigSchema = z.object({
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
-  workspaceJobsParallelLimit: z.number().default(5),
   workspaceHeartbeatIntervalSec: z.number().default(60),
   workspaceHeartbeatTimeoutSec: z.number().default(10 * 60),
   workspaceVisibilityTimeoutSec: z.number().default(30 * 60),
@@ -381,7 +383,7 @@ const ConfigSchema = z.object({
    * Note that the `console` exporter should almost definitely NEVER be used in
    * production environments.
    */
-  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).default('console'),
+  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).nullable().default(null),
   openTelemetryMetricExporter: z.enum(['console', 'honeycomb']).nullable().default(null),
   openTelemetryMetricExportIntervalMillis: z.number().default(30_000),
   openTelemetrySamplerType: z
@@ -533,6 +535,12 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
+  if (config.questionRenderCacheType !== null) {
+    logger.warn(
+      'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
+    );
+    config.cacheType = config.questionRenderCacheType;
+  }
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

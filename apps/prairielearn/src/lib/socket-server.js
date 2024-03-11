@@ -6,7 +6,7 @@ import { logger } from '@prairielearn/logger';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { config } = require('./config');
+import { config } from './config';
 
 /**
  * @param {Redis} client

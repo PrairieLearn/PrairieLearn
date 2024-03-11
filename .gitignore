@@ -17,6 +17,7 @@ docker-compose.override.yml
 ### VSCode
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 
 ### tmux
 .tmux.conf

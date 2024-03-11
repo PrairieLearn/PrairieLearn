@@ -124,6 +124,9 @@ class CodeCallerNative {
     // for error logging
     this.lastCallData = null;
 
+    this.coursePath = null;
+    this.forbiddenModules = [];
+
     this._checkState();
 
     this.debug('exit constructor()');
@@ -139,9 +142,13 @@ class CodeCallerNative {
     debug(`[${this.uuid} ${paddedState}] ${message}`);
   }
 
-  async prepareForCourse(coursePath) {
+  /**
+   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   */
+  async prepareForCourse({ coursePath, forbiddenModules }) {
     this.debug('enter prepareForCourse()');
     this.coursePath = coursePath;
+    this.forbiddenModules = forbiddenModules;
     this.debug('exit prepareForCourse()');
   }
 
@@ -169,6 +176,7 @@ class CodeCallerNative {
     const paths = [path.join(APP_ROOT_PATH, 'python')];
     if (type === 'question') {
       if (!directory) throw new Error('Missing directory');
+      if (!this.coursePath) throw new Error('Missing course path');
       cwd = path.join(this.coursePath, 'questions', directory);
       paths.push(path.join(this.coursePath, 'serverFilesCourse'));
     } else if (type === 'v2-question') {
@@ -177,6 +185,7 @@ class CodeCallerNative {
       cwd = REPOSITORY_ROOT_PATH;
     } else if (type === 'course-element') {
       if (!directory) throw new Error('Missing directory');
+      if (!this.coursePath) throw new Error('Missing course path');
       cwd = path.join(this.coursePath, 'elements', directory);
       paths.push(path.join(this.coursePath, 'serverFilesCourse'));
     } else if (type === 'core-element') {
@@ -188,7 +197,7 @@ class CodeCallerNative {
       throw new Error(`Unknown function call type: ${type}`);
     }
 
-    const callData = { file, fcn, args, cwd, paths };
+    const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
     const deferred = deferredPromise();
@@ -241,6 +250,8 @@ class CodeCallerNative {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      this.coursePath = null;
+      this.forbiddenModules = [];
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);
       this.debug('exit restart()');
       this.state = RESTARTING;

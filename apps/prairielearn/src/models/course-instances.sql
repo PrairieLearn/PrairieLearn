@@ -1,3 +1,11 @@
+-- BLOCK select_course_instance_by_id
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.id = $course_instance_id;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,

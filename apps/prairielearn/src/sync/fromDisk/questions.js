@@ -1,8 +1,10 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const infofile = require('../infofile');
-const perf = require('../performance')('question');
+import * as infofile from '../infofile';
+import { makePerformance } from '../performance';
+
+const perf = makePerformance('questions');
 
 /**
  * @param {import('../course-db').Question | null | undefined} q
@@ -56,7 +58,7 @@ function getParamsForQuestion(q) {
  * @param {import('../course-db').CourseData} courseData
  * @returns {Promise<{ [qid: string]: any }>}
  */
-module.exports.sync = async function (courseId, courseData) {
+export async function sync(courseId, courseData) {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
@@ -76,4 +78,4 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type {[string, any][]} */
   const nameToIdMap = result.rows[0].name_to_id_map;
   return nameToIdMap;
-};
+}

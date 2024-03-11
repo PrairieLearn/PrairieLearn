@@ -1,9 +1,10 @@
 import { assert } from 'chai';
 
-import helperDb = require('../../tests/helperDb');
-import helperCourse = require('../../tests/helperCourse');
+import * as helperDb from '../../tests/helperDb';
+import * as helperCourse from '../../tests/helperCourse';
 import { ensureEnrollment } from '../../models/enrollment';
 import {
+  getEnrollmentCountsForCourse,
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
 } from './enrollment';
@@ -111,6 +112,88 @@ describe('getEnrollmentCountsForInstitution', () => {
 
     assert.equal(result.free, 1);
     assert.equal(result.paid, 2);
+  });
+});
+
+describe('getEnrollmentCountsForCourse', () => {
+  beforeEach(async function () {
+    await helperDb.before.call(this);
+    await helperCourse.syncCourse();
+  });
+
+  afterEach(async function () {
+    await helperDb.after.call(this);
+  });
+
+  it('returns zero enrollments by default', async () => {
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+
+    assert.equal(result.free, 0);
+    assert.equal(result.paid, 0);
+  });
+
+  it('returns a single free enrollment', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+    });
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+
+    assert.equal(result.free, 1);
+    assert.equal(result.paid, 0);
+  });
+
+  it('returns a single paid enrollment', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+    });
+
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await ensurePlanGrant({
+      plan_grant: {
+        institution_id: '1',
+        course_instance_id: '1',
+        user_id: user.user_id,
+        plan_name: 'basic',
+        type: 'stripe',
+      },
+      authn_user_id: '1',
+    });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+    assert.equal(result.free, 0);
+    assert.equal(result.paid, 1);
+  });
+
+  it('does not include non-basic plan grants', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+    });
+
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await ensurePlanGrant({
+      plan_grant: {
+        institution_id: '1',
+        course_instance_id: '1',
+        user_id: user.user_id,
+        plan_name: 'compute',
+        type: 'stripe',
+      },
+      authn_user_id: '1',
+    });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+    assert.equal(result.free, 1);
+    assert.equal(result.paid, 0);
   });
 });
 

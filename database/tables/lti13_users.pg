@@ -1,0 +1,14 @@
+columns
+    id: bigint not null default nextval('lti13_users_id_seq'::regclass)
+    lti13_instance_id: bigint not null
+    sub: text not null
+    user_id: bigint not null
+
+indexes
+    lti13_users_pkey: PRIMARY KEY (id) USING btree (id)
+    lti13_users_user_id_lti13_instance_id_key: UNIQUE (user_id, lti13_instance_id) USING btree (user_id, lti13_instance_id)
+    lti13_users_user_id_lti13_instance_id_idx: USING btree (user_id, lti13_instance_id)
+
+foreign-key constraints
+    lti13_users_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti13_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

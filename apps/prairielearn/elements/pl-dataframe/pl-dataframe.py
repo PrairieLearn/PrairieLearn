@@ -46,7 +46,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
         return "complex"
     elif pd.api.types.is_datetime64_any_dtype(s):
         return "POSIXct"
-    elif pd.api.types.is_timedelta64_dtype(s) or pd.api.types.is_period_dtype(s):
+    elif pd.api.types.is_timedelta64_dtype(s) or isinstance(s, pd.PeriodDtype):
         return "Not supported"
 
     return "Unknown"

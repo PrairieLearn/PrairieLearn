@@ -1,4 +1,4 @@
-import helperDb = require('../../tests/helperDb');
+import * as helperDb from '../../tests/helperDb';
 import { getOrCreateUser } from '../../tests/utils/auth';
 import { ensurePlanGrant } from './plan-grants';
 

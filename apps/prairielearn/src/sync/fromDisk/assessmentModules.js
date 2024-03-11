@@ -1,14 +1,16 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
-const infofile = require('../infofile');
+import * as sqldb from '@prairielearn/postgres';
 
-const perf = require('../performance')('assessmentModules');
+import * as infofile from '../infofile';
+import { makePerformance } from '../performance';
+
+const perf = makePerformance('assessmentModules');
 
 /**
  * @param {any} courseId
  * @param {import('../course-db').CourseData} courseData
  */
-module.exports.sync = async function (courseId, courseData) {
+export async function sync(courseId, courseData) {
   // We can only safely remove unused assessment modules if both `infoCourse.json`
   // and all `infoAssessment.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -47,4 +49,4 @@ module.exports.sync = async function (courseId, courseData) {
   perf.start('sproc:sync_assessment_modules');
   await sqldb.callOneRowAsync('sync_assessment_modules', params);
   perf.end('sproc:sync_assessment_modules');
-};
+}

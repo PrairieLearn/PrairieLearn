@@ -1,23 +1,19 @@
-// @ts-check
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
-
-const path = require('path');
+//@ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import { parseISO, isValid } from 'date-fns';
+import { format, utcToZonedTime } from 'date-fns-tz';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const error = require('@prairielearn/error');
-var sqldb = require('@prairielearn/postgres');
+import { config } from '../../lib/config';
+import { clearCookie } from '../../lib/cookie';
 
-const { clearCookie } = require('../../lib/cookie');
-
-var sql = sqldb.loadSqlEquiv(__filename);
-
-const { parseISO, isValid } = require('date-fns');
-const { format, utcToZonedTime } = require('date-fns-tz');
-
-const { config } = require('../../lib/config');
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (
@@ -153,13 +149,8 @@ router.post('/', function (req, res, next) {
     });
     res.redirect(req.originalUrl);
   } else {
-    return next(
-      error.make(400, 'unknown action: ' + res.locals.__action, {
-        __action: req.body.__action,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, 'unknown action: ' + res.locals.__action));
   }
 });
 
-module.exports = router;
+export default router;

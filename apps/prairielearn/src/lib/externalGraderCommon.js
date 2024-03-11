@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 import * as path from 'path';
 
 import { logger } from '@prairielearn/logger';

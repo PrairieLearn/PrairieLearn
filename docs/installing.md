@@ -30,7 +30,7 @@ If you are using Windows, you have two options to store your course repository(i
 
 - Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
 
-- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
+- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/mwest/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
 
 ## Running instructions
 
@@ -60,7 +60,23 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+### Running on ARM64 hardware
+
+If you're using an Apple Silicon Mac or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+To fix this, add `--platform linux/amd64` before the image in any `docker run` commands. For example:
+
+```sh
+docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
+```
+
+When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check "Use Rosetta for x86/amd64 emulation on Apple Silicon", and click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+
+_Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
 ### Support for external graders and workspaces
 

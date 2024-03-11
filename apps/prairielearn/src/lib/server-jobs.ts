@@ -3,11 +3,11 @@ import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from './chalk';
-import serverJobs = require('./server-jobs-legacy');
-import socketServer = require('./socket-server');
+import * as serverJobs from './server-jobs-legacy';
+import * as socketServer from './socket-server';
 import { Job, JobSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
@@ -95,22 +95,30 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
+    const start = performance.now();
+    let didOutput = false;
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
     proc2.all?.setEncoding('utf-8');
     proc2.all?.on('data', (data) => {
+      didOutput = true;
       this.addToOutput(data);
     });
 
     try {
       await proc2;
     } finally {
-      // Ensure there is an empty line after all command output.
-      if (!this.output.endsWith('\n\n')) {
+      // Ensure we start a new line after all command output, but only if there
+      // was in fact any output from the command.
+      if (didOutput && !this.output.endsWith('\n')) {
         this.addToOutput('\n');
       }
+
+      // Record timing information.
+      const duration = (performance.now() - start).toFixed(2);
+      this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
   }
 
@@ -225,7 +233,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
  * Creates a job sequence with a single job.
  */
 export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
-  const { job_sequence_id, job_id } = await queryValidatedOneRow(
+  const { job_sequence_id, job_id } = await queryRow(
     sql.insert_job_sequence,
     {
       course_id: options.courseId,

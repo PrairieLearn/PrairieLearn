@@ -134,11 +134,16 @@ const user = await queryRow(sql.select_user, { user_id: '1' }, User);
 
 // Get a user that may not exist. Returns `null` if the user cannot be found.
 const maybeUser = await queryOptionalRow(sql.select_user, { user_id: '1' }, User);
+
+// Call a stored procedure. Return value is equivalent to the functions above.
+const users = await callRows('select_users', User);
+const user = await callRow('select_user', ['1'], User);
+const maybeUser = await callOptionalRow('select_user', ['1'], User);
 ```
 
 These functions have some behaviors that can make them more convenient to work with:
 
-- Passing an object with parameters is optional.
+- Passing an object or array with parameters is optional.
 
 - If the query returns a single column, that column is validated and returned directly. For example, consider the following query:
 

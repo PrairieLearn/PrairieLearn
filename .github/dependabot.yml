@@ -16,12 +16,16 @@ updates:
       aws:
         patterns:
           - '@aws-sdk/*'
+          - '@smithy/*'
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
       sentry:
         patterns:
           - '@sentry/*'
+      typescript-eslint:
+        patterns:
+          - '@typescript-eslint/*'
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
@@ -99,6 +103,10 @@ updates:
         patterns:
           - 'pandas'
           - 'pandas-stubs'
+      lxml:
+        patterns:
+          - 'lxml'
+          - 'types-lxml'
   - package-ecosystem: docker
     directory: '/workspaces/jupyterlab'
     schedule:
