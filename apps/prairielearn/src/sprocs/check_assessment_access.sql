@@ -34,6 +34,8 @@ DECLARE
     start_date_from_override TIMESTAMP WITH TIME ZONE;
 
 BEGIN
+
+    
     SELECT g.id  
     INTO override_group_id
     FROM groups as g JOIN group_configs AS gc 

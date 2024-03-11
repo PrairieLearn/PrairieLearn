@@ -29,6 +29,10 @@ async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    console.log(res.locals.authz_data);
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data editor)');
+    }
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
     });
@@ -40,6 +44,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data editor)');
+    }
     if (req.body.__action === 'add_new_override') {
       let user_id = null;
       if (req.body.student_uid) {
