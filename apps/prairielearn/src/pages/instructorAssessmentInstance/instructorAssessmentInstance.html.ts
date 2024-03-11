@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
+import { Modal } from '../../components/Modal.html';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -77,7 +78,7 @@ export function InstructorAssessmentInstance({
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
-        ${compiledScriptTag('instructorAssessmentInstance.ts')}
+        ${compiledScriptTag('instructorAssessmentInstanceClient.ts')}
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
           )}"></script>
@@ -97,50 +98,10 @@ export function InstructorAssessmentInstance({
           navPage: '',
         })}
         <main id="content" class="container-fluid">
-          <div
-            class="modal fade"
-            id="resetQuestionVariantsModal"
-            tabindex="-1"
-            role="dialog"
-            aria-labelledby="resetQuestionVariantsModalLabel"
-          >
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h4 class="modal-title" id="resetQuestionVariantsModalLabel">
-                    Confirm reset question variants
-                  </h4>
-                </div>
-                <div class="modal-body">
-                  <p>
-                    Are your sure you want to reset all current variants of this question for this
-                    ${resLocals.assessment.group_work ? 'group' : 'student'}?
-                    <strong>All ungraded attempts will be lost.</strong>
-                  </p>
-                  <p>
-                    This ${resLocals.assessment.group_work ? 'group' : 'student'} will receive a new
-                    variant the next time they view this question.
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <form name="reset-question-variants-form" method="POST">
-                    <input type="hidden" name="__action" value="reset_question_variants" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input
-                      type="hidden"
-                      name="unsafe_instance_question_id"
-                      class="js-instance-question-id"
-                      value=""
-                    />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                      Cancel
-                    </button>
-                    <button type="submit" class="btn btn-danger">Reset question variants</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
+          ${ResetQuestionVariantsModal({
+            csrfToken: resLocals.__csrf_token,
+            groupWork: resLocals.assessment.group_work,
+          })}
           ${renderEjs(
             __filename,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -550,7 +511,7 @@ export function InstructorAssessmentInstance({
                                     class="dropdown-item"
                                     data-toggle="modal"
                                     data-target="#resetQuestionVariantsModal"
-                                    data-instance-question-id="<%= instance_question.id %>"
+                                    data-instance-question-id="${instance_question.id}"
                                   >
                                     Reset question variants
                                   </button>
@@ -842,4 +803,40 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
       </div>
     </form>
   `;
+}
+
+function ResetQuestionVariantsModal({
+  csrfToken,
+  groupWork,
+}: {
+  csrfToken: string;
+  groupWork: boolean;
+}) {
+  return Modal({
+    id: 'resetQuestionVariantsModal',
+    title: 'Confirm reset question variants',
+    body: html`
+      <p>
+        Are your sure you want to reset all current variants of this question for this
+        ${groupWork ? 'group' : 'student'}?
+        <strong>All ungraded attempts will be lost.</strong>
+      </p>
+      <p>
+        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
+        this question.
+      </p>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="reset_question_variants" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input
+        type="hidden"
+        name="unsafe_instance_question_id"
+        class="js-instance-question-id"
+        value=""
+      />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
 }
