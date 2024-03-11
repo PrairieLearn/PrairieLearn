@@ -12,7 +12,7 @@ export function shouldSecureCookie(req: Request): boolean {
 }
 
 /**
- * Helper function to clear a cookie regardless of if it was set with and
+ * Helper function to clear a cookie regardless of if it was set with an
  * explicit domain or not.
  */
 export function clearCookie(res: Response, name: string): void {
