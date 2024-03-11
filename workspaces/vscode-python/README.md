@@ -1,4 +1,3 @@
-
 # workspace-vscode-python
 
 This image is modified to use user 1001 by default instead of 1000, in
