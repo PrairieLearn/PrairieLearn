@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import { CourseInfoEditor } from '../../lib/editors';
 import * as error from '@prairielearn/error';
 import { v4 as uuidv4 } from 'uuid';
+import { flash } from '@prairielearn/flash';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
 import { getAvailableTimezones } from '../../lib/timezones';
@@ -56,6 +57,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
+        flash('success', 'Course configuration updated successfully');
         return res.redirect(req.originalUrl);
       } catch (err) {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
