@@ -14,9 +14,11 @@ RUN export OLD_UID=$(id -u coder) && \
     find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
-# Remove sudo permissions for default user
+# Remove sudo permissions for default user, then test
 USER root
 RUN find /etc/sudoers.d -type f -not -name README -delete
+USER coder
+RUN if sudo echo "Test failed: User can sudo" ; then false ; fi
 
 # Install some common utilities with apt
 USER root
