@@ -75,6 +75,7 @@ const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 const { makeCookieMigrationMiddleware } = require('./lib/cookie');
 const { validateLti13CourseInstance } = require('./ee/models/lti13Instance');
+const { SocketActivityMetrics } = require('./lib/telemetry/socket-activity-metrics');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -301,8 +302,15 @@ module.exports.initExpress = function () {
     proxyReq.setHeader('cookie', filteredItems.join(';'));
   }
 
+  // Collect metrics on workspace proxy sockets. Note that this only tracks
+  // outgoing sockets (those going to workspaces). Incoming sockets are tracked
+  // globally for the entire server.
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+  const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
+  workspaceProxySocketActivityMetrics.start();
+
   // proxy workspaces to remote machines
-  let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
+  const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -408,6 +416,10 @@ module.exports.initExpress = function () {
       next();
     },
     workspaceAuthRouter,
+    (req, res, next) => {
+      workspaceProxySocketActivityMetrics.addSocket(req.socket);
+      next();
+    },
     workspaceProxy,
   ]);
 
@@ -978,7 +990,8 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzAssessmentQuestion'),
-      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion')
+        .default,
     ],
   );
   app.use(
@@ -2005,6 +2018,10 @@ module.exports.startServer = async () => {
     },
   );
 
+  const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
+  server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
+  serverSocketActivity.start();
+
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.listen(config.serverPort);
@@ -2371,12 +2388,14 @@ if (require.main === module && config.startServer) {
           process.exit(0);
         }
       },
-      function (callback) {
-        if (!config.initNewsItems) return callback(null);
-        const notify_with_new_server = false;
-        news_items.init(notify_with_new_server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+      async () => {
+        if (!config.initNewsItems) return;
+
+        // We initialize news items asynchronously so that servers can boot up
+        // in production as quickly as possible.
+        news_items.initInBackground({
+          // Always notify in production environments.
+          notifyIfPreviouslyEmpty: !config.devMode,
         });
       },
       // We need to initialize these first, as the code callers require these

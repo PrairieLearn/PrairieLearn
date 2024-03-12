@@ -1,12 +1,12 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetchCookie from 'fetch-cookie';
 import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import * as helperServer from './helperServer';
 import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient';
 import { IdSchema, type User, UserSchema } from '../lib/db-types';
 import { config } from '../lib/config';
-import fetchCookie = require('fetch-cookie');
 
 const sql = loadSqlEquiv(__filename);
 
@@ -44,7 +44,7 @@ describe('Instructor group controls', () => {
 
   step('can create a new group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -69,7 +69,7 @@ describe('Instructor group controls', () => {
 
   step('cannot create a group with a user already in another group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCookie(fetchCheerio)(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -91,7 +91,7 @@ describe('Instructor group controls', () => {
 
   step('can create a second group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -116,7 +116,7 @@ describe('Instructor group controls', () => {
 
   step('can create a group with an instructor', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',

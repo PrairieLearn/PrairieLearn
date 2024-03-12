@@ -229,7 +229,7 @@ export async function saveSubmission(
   return await insertSubmission({
     ...submission,
     ...data,
-    gradable: data.gradable && !hasFatalIssue,
+    gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
   });
 }
@@ -366,7 +366,7 @@ export async function gradeVariant(
         null, // finish_time
         data.submitted_answer,
         data.format_errors,
-        data.gradable && !hasFatalIssue,
+        !!data.gradable && !hasFatalIssue, // gradable
         hasFatalIssue, // broken
         data.params,
         data.true_answer,

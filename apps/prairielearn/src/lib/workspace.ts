@@ -643,34 +643,26 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   }
 
   // Zip files from filesystem to zip file
-  await async.eachLimit(gradedFiles || [], config.workspaceJobsParallelLimit, async (file) => {
-    try {
-      const remotePath = path.join(remoteDir, file.path);
-      debug(`Zipping graded file ${remotePath} into ${zipPath}`);
-      archive.file(remotePath, { name: file.path });
-    } catch (err) {
-      debug(`Graded file ${file.path} does not exist`);
-    }
+  (gradedFiles ?? []).forEach((file) => {
+    const remotePath = path.join(remoteDir, file.path);
+    debug(`Zipping graded file ${remotePath} into ${zipPath}`);
+    archive.file(remotePath, { name: file.path });
   });
 
   // Write zip file to disk
   const stream = fs.createWriteStream(zipPath);
   await new Promise((resolve, reject) => {
+    archive.on('error', (err) => reject(err));
+
     stream
-      .on('open', () => {
-        archive.pipe(stream);
-        archive.on('error', (err) => {
-          throw err;
-        });
-        archive.finalize();
-      })
-      .on('error', (err) => {
-        reject(err);
-      })
+      .on('error', (err) => reject(err))
       .on('finish', () => {
         debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
         resolve(zipPath);
       });
+
+    archive.pipe(stream);
+    archive.finalize().catch((err) => reject(err));
   });
   return zipPath;
 }
