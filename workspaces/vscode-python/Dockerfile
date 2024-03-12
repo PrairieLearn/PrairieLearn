@@ -22,6 +22,7 @@ RUN if sudo echo "Test failed: User can sudo" ; then false ; fi
 
 # Install some common utilities with apt
 USER root
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     curl git htop less nano unzip vim wget zip && \
