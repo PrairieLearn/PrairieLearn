@@ -14,6 +14,15 @@ RUN export OLD_UID=$(id -u coder) && \
     find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
+# Install some common utilities with apt
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl git htop less nano unzip vim wget zip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    find /tmp -not -path /tmp -delete
+
 # Install Python and required packages via miniconda
 USER coder
 COPY requirements.txt /
