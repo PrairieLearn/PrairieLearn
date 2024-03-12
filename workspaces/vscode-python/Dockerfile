@@ -15,9 +15,8 @@ RUN OLD_UID=$(id -u coder) && \
 
 # Remove sudo permissions for default user, then test
 USER root
-RUN find /etc/sudoers.d -type f -not -name README -delete
-USER coder
-RUN if sudo echo "Test failed: User can sudo" ; then false ; fi
+RUN find /etc/sudoers.d -type f -not -name README -delete && \
+    sudo -u coder bash -c 'if sudo echo "Test failed: User can sudo" ; then false ; fi'
 
 # Install some common utilities with apt
 USER root
