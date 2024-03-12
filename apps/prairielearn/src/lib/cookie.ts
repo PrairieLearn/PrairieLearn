@@ -149,6 +149,7 @@ export function makeCookieMigrationMiddleware(
           res.cookie(cookieMigration.newName, req.cookies[cookieMigration.oldName], {
             ...(cookieMigration.options ?? {}),
             secure: shouldSecureCookie(req),
+            domain: config.cookieDomain,
           });
         }
       } else if (cookieMigration.oldRegexp) {
@@ -175,6 +176,7 @@ export function makeCookieMigrationMiddleware(
               res.cookie(newName, req.cookies[oldName], {
                 ...(cookieMigration.options ?? {}),
                 secure: shouldSecureCookie(req),
+                domain: config.cookieDomain,
               });
             }
           });
