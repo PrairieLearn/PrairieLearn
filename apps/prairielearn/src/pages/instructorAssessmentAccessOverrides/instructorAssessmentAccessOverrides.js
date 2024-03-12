@@ -9,21 +9,32 @@ import { selectUserByUid } from '../../models/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
+// async function getUserIdAndCheckEnrollment({ uid, course_instance_id }) {
+//   const user = await selectUserByUid(uid);
+//   if (!user) {
+//     throw error.make(400, `User ${uid} does not exist.`);
+//   }
+
+//   const enrollment = await getEnrollmentForUserInCourseInstance({
+//     user_id: user.user_id,
+//     course_instance_id: course_instance_id,
+//   });
+//   if (!enrollment) {
+//     throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
+//   }
+
+//   return user.user_id;
+// }
+
+async function userIsEnrolledInCourseInstance({ uid, course_instance_id }) {
   const user = await selectUserByUid(uid);
-  if (!user) {
-    throw error.make(400, `User ${uid} does not exist.`);
-  }
+  if (!user) return false;
 
   const enrollment = await getEnrollmentForUserInCourseInstance({
     user_id: user.user_id,
     course_instance_id: course_instance_id,
   });
-  if (!enrollment) {
-    throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
-  }
-
-  return user.user_id;
+  return !!enrollment;
 }
 
 router.get(
@@ -49,10 +60,18 @@ router.post(
     if (req.body.__action === 'add_new_override') {
       let user_id = null;
       if (req.body.student_uid) {
-        user_id = await getUserIdAndCheckEnrollment({
+        const checkEnrollment = await userIsEnrolledInCourseInstance({
           uid: req.body.student_uid,
           course_instance_id: res.locals.course_instance.id,
         });
+        if (!checkEnrollment) {
+          throw error.make(400, `User ${req.body.student_uid} is not enrolled in this course instance.`);
+        }
+        const user = await selectUserByUid(req.body.student_uid);
+        if (!user) {
+          throw error.make(400, `User ${req.body.student_uid} does not exist.`);
+        }
+        user_id = user.user_id;
       }
       const params = {
         assessment_id: res.locals.assessment.id,
