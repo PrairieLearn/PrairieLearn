@@ -6,12 +6,9 @@ onDocumentReady(() => {
   const saveButton = $('#save-button')[0];
   saveButton.setAttribute('disabled', 'true');
 
-  // Select all inputs so we can call them.
-  const inputs = $('input, select');
-
-  // Create a record to track if each value has changed. We are not storing initial values, but rather a boolean to track if the value has changed. This is important so we don't have to read all values for each input on every change event.
+  // Create a record to track if each value has changed. We are not storing initial values, but rather a boolean for each input to track if the value has changed. This is important so we don't have to read all values for each input on every change event when we check if there are differences.
   const valueHasChanged: Record<string, boolean> = {};
-  inputs.each(function () {
+  $('input, select').each(function () {
     valueHasChanged[this.id] = false;
   });
 
@@ -32,6 +29,7 @@ onDocumentReady(() => {
     checkDifferences();
   });
 
+  // Similar to the above, but for select elements. The difference here being that select elements do not store the default value so we must store those in selectDefaultValues{} and compare against those.
   on('change', 'select', (e) => {
     if (
       (e.target as HTMLInputElement).value === selectDefaultValues[(e.target as HTMLElement).id]
