@@ -14,6 +14,10 @@ RUN export OLD_UID=$(id -u coder) && \
     find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
+# Remove sudo permissions for default user
+USER root
+RUN find /etc/sudoers.d -type f -not -name README -delete
+
 # Install some common utilities with apt
 USER root
 RUN apt-get update && \
