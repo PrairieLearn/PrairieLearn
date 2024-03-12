@@ -35,8 +35,6 @@ RUN code-server --disable-telemetry --force \
     --install-extension njpwerner.autodocstring \
     # auto-fix indentation for multiline contexts
     --install-extension KevinRose.vsc-python-indent \
-    # visualize indentation with color
-    --install-extension oderwat.indent-rainbow \
     # visualize csv files in vscode window
     --install-extension mechatroner.rainbow-csv \
     # linting for markdown files
