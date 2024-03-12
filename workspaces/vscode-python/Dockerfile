@@ -4,15 +4,14 @@ FROM codercom/code-server:4.22.0-ubuntu
 # "coder" account's UID and GID here so that fixuid has no work to do later.
 # This speeds up container loading time drastically and avoids timeouts.
 USER root
-RUN export OLD_UID=$(id -u coder) && \
-    export OLD_GID=$(id -g coder) && \
-    export NEW_UID=1001 && \
-    export NEW_GID=1001 && \
-    groupmod -g 1001 coder && \
-    usermod -u 1001 -g 1001 coder && \
+RUN OLD_UID=$(id -u coder) && \
+    OLD_GID=$(id -g coder) && \
+    NEW_UID=1001 && \
+    NEW_GID=1001 && \
+    groupmod -g $NEW_GID coder && \
+    usermod -u $NEW_UID -g $NEW_GID coder && \
     find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
-    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
-    unset OLD_UID OLD_GID NEW_UID NEW_GID
+    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
 
 # Remove sudo permissions for default user, then test
 USER root
