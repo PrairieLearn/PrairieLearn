@@ -9,6 +9,16 @@ WHERE
   AND context_id = $context_id
   AND deleted_at IS NULL;
 
+-- BLOCK check_lti_ci
+SELECT
+  i.id
+FROM
+  lti13_instances
+  JOIN institutions AS i ON i.id = lti13_instances.institution_id
+  JOIN pl_courses AS plc ON plc.institution_id = i.id
+  JOIN course_instances AS ci ON plc.id = ci.course_id
+  AND ci.id = $course_instance_id;
+
 -- BLOCK insert_lci
 INSERT INTO
   lti13_course_instances (

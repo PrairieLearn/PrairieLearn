@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryOptionalRow, queryAsync, callRow } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryAsync,
+  queryOneRowAsync,
+} from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
-import { z } from 'zod';
-
 import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
 import { selectCoursesWithEditAccess } from '../../../models/course';
-import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
+import {
+  selectCourseInstanceById,
+  selectCourseInstancesWithStaffAccess,
+} from '../../../models/course-instances';
 import {
   Lti13CourseNavigationInstructor,
   //Lti13CourseNavigationNotReady,
@@ -93,7 +99,6 @@ router.get(
     }
 
     // Instructor so lookup their existing information in PL
-
     const courses = await selectCoursesWithEditAccess({
       user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.authn_is_administrator,
@@ -101,9 +106,12 @@ router.get(
 
     let course_instances: CourseInstance[] = [];
 
-    // This should match our policy for who can link courses (only instructors? TAs?)
-    // TODO: Course owner access
     for (const course of courses) {
+      // Only course owners can link
+      if (!course.permissions_course.has_course_permission_own) {
+        continue;
+      }
+
       const loopCI = await selectCourseInstancesWithStaffAccess({
         course_id: course.id,
         user_id: res.locals.authn_user.user_id,
@@ -140,15 +148,28 @@ router.post(
       throw error.make(403, 'Permission denied');
     }
 
-    // TODO: Mapping of lti13_instance to institution to course instance?
+    try {
+      // Map lti13_instance through institution to course instance or fail
+      await queryOneRowAsync(sql.check_lti_ci, {
+        course_instance_id: req.body.ci_id,
+        lti13_instance_id: req.params.lti13_instance_id,
+      });
+    } catch {
+      throw error.make(403, 'Permission denied');
+    }
 
-    const ci_role_instructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [res.locals.authn_user.user_id, unsafe_course_instance_id],
-      z.boolean(),
+    // Check that user is course Owner for this CI
+    const ci = await selectCourseInstanceById(req.body.ci_id);
+    const courses = await selectCoursesWithEditAccess({
+      user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.authn_is_administrator,
+    });
+
+    const ci_is_owner = courses.find(
+      (x) => x.id === ci?.course_id && x.permissions_course.has_course_permission_own,
     );
 
-    if (!LTI.isRoleInstructor() || !ci_role_instructor) {
+    if (!LTI.isRoleInstructor() || !ci_is_owner) {
       throw error.make(403, 'Permission denied');
     }
 
