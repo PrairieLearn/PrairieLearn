@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type Timezone } from '../../lib/timezones';
+import { compiledScriptTag } from '../../lib/assets';
 
 export function InstructorCourseAdminSettings({
   resLocals,
@@ -21,6 +22,7 @@ export function InstructorCourseAdminSettings({
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
           ...resLocals,
         })}
+        ${compiledScriptTag('saveButtonEnabling.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
