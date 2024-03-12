@@ -167,6 +167,14 @@ export function InstructorCourseAdminSettings({
                               >
                                 Save
                               </button>
+                              <button
+                                id="cancel-button"
+                                type="button"
+                                class="btn btn-secondary mb-2"
+                                onclick="window.location.reload()"
+                              >
+                                Cancel
+                              </button>
                               <p class="mb-0">
                                 <a
                                   data-testid="edit-course-configuration-link"
