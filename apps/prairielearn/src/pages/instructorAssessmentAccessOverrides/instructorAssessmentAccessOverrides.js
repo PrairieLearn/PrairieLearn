@@ -9,8 +9,8 @@ import { selectUserByUid } from '../../models/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function getUserOrGroupId({course_instance_id, assessment, uid, group_name}) {
-  if (assessment.group_work) { 
+async function getUserOrGroupId({ course_instance_id, assessment, uid, group_name }) {
+  if (assessment.group_work) {
     if (!group_name || uid) {
       throw error.make(400, 'Group name is required for group work assessments.');
     }
@@ -19,9 +19,9 @@ async function getUserOrGroupId({course_instance_id, assessment, uid, group_name
       course_instance_id: course_instance_id,
       assessment_id: assessment.id,
     });
-    
+
     if (group_result.rows.length > 0) {
-      return {user_id: null, group_id: group_result.rows[0].id};
+      return { user_id: null, group_id: group_result.rows[0].id };
     } else {
       throw error.make(400, 'Group not found in this assessment.');
     }
@@ -30,27 +30,21 @@ async function getUserOrGroupId({course_instance_id, assessment, uid, group_name
     if (group_name) {
       throw error.make(400, 'Student User ID is required for individual work assessments.');
     }
-    const checkEnrollment = await userIsEnrolledInCourseInstance({
+    const user = await selectUserEnrolledInCourseInstance({
       uid: uid,
       course_instance_id: course_instance_id,
     });
-    if (!checkEnrollment) {
-      throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
-    }
-    const user = await selectUserByUid(uid);
     if (!user) {
-      throw error.make(400, `User ${uid} does not exist.`);
+      throw error.make(400, `User ${uid} is not enrolled in this course instance or does not exist.`);
     }
-    return {user_id: user.user_id, group_id: null};
-  } 
-  else {
+   
+    return { user_id: user.user_id, group_id: null };
+  } else {
     throw error.make(400, 'Student User ID or Group Name is required.');
   }
-  
 }
 
-
-async function userIsEnrolledInCourseInstance({ uid, course_instance_id }) {
+async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
   const user = await selectUserByUid(uid);
   if (!user) return false;
 
@@ -58,7 +52,8 @@ async function userIsEnrolledInCourseInstance({ uid, course_instance_id }) {
     user_id: user.user_id,
     course_instance_id: course_instance_id,
   });
-  return !!enrollment;
+  if (!enrollment) return null;
+  return user;
 }
 
 router.get(
@@ -82,7 +77,7 @@ router.post(
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
     if (req.body.__action === 'add_new_override') {
-      const {user_id, group_id} = await getUserOrGroupId({
+      const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
         uid: req.body.student_uid,
@@ -99,7 +94,7 @@ router.post(
         group_id: group_id || null,
         user_id: user_id || null,
       };
-      
+
       await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
@@ -109,7 +104,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
-      const {user_id, group_id} = await getUserOrGroupId({
+      const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
         uid: req.body.student_uid,
@@ -125,9 +120,9 @@ router.post(
         start_date: new Date(req.body.start_date),
         group_id: group_id || null,
         user_id: user_id || null,
-        assessment_access_policies_id: req.body.policy_id
+        assessment_access_policies_id: req.body.policy_id,
       };
-      
+
       await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
       res.redirect(req.originalUrl);
     }
