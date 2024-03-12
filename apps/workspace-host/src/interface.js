@@ -1033,6 +1033,17 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const archive = archiver('zip');
   archive.pipe(res);
 
+  archive.on('error', (err) => {
+    logger.error('Error creating archive', err);
+    Sentry.captureException(err);
+
+    // Since we've probably already sent some data to the client, we can't do
+    // anything to gracefully let them know that we encountered an error.
+    // Instead, we'll just destroy the socket so that they pick up an error
+    // and handle that however they want.
+    res.socket?.destroy();
+  });
+
   for (const file of gradedFiles) {
     try {
       const filePath = path.join(workspaceDir, file.path);

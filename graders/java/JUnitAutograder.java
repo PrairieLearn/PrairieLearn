@@ -4,6 +4,7 @@ import org.json.simple.parser.JSONParser;
 import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestTag;
+import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.Launcher;
@@ -16,35 +17,33 @@ import org.junit.platform.launcher.core.LauncherFactory;
 
 import org.prairielearn.autograder.AutograderInfo;
 
-import javax.tools.JavaCompiler;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 public class JUnitAutograder implements TestExecutionListener {
 
     private final Launcher launcher;
-
-    private double points = 0;
-    private String output = "", message = "";
-    private boolean gradable = true;
     // Uses a LinkedHashMap with access-order. This ensures that the
     // order of the tests retrieved at the end is based on last access
     // (i.e., when the `executionFinished()` method is called), to
     // preserve test order where this is relevant.
-    private Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>(100, 0.75f, false);
-
+    private final Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>(100, 0.75f, false);
+    private final Map<TestIdentifier, Double> classTotals = new HashMap<>();
+    private double points = 0;
+    private String output = "";
+    private String message = "";
+    private boolean gradable = true;
     private TestPlan testPlan = null;
-    private Map<TestIdentifier, Double> classTotals = new HashMap<>();
-
     private String resultsFile;
     private String[] testClasses;
 
@@ -53,7 +52,7 @@ public class JUnitAutograder implements TestExecutionListener {
         launcher.registerTestExecutionListeners(this);
     }
 
-    public static void main(String args[]) {
+    public static void main(final String[] args) {
 
         File paramsFile = new File("/grade/params/params.json");
         JSONObject paramsObject = null;
@@ -63,6 +62,7 @@ public class JUnitAutograder implements TestExecutionListener {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            //noinspection ResultOfMethodCallIgnored
             paramsFile.delete();
         }
         if (paramsObject == null) {
@@ -78,8 +78,9 @@ public class JUnitAutograder implements TestExecutionListener {
         autograder.resultsFile = (String) paramsObject.get("results_file");
         autograder.testClasses = ((String) paramsObject.get("test_files")).split("\\s");
         String compilationWarnings = (String) paramsObject.get("compile_output");
-        if (compilationWarnings != null && !"".equals(compilationWarnings))
+        if (compilationWarnings != null && !"".equals(compilationWarnings)) {
             autograder.message = "Compilation warnings:\n\n" + compilationWarnings;
+        }
 
         try {
             autograder.runTests();
@@ -98,9 +99,9 @@ public class JUnitAutograder implements TestExecutionListener {
 
         for (String classSrcName : testClasses) {
             String className = classSrcName
-                .replaceFirst("^/grade/tests/junit/", "")
-                .replaceFirst("\\.java$", "")
-                .replaceAll("/", ".");
+                    .replaceFirst("^/grade/tests/junit/", "")
+                    .replaceFirst("\\.java$", "")
+                    .replaceAll("/", ".");
             System.out.println("Test class: " + className + " (from " + classSrcName + ")");
             try {
                 Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
@@ -112,18 +113,21 @@ public class JUnitAutograder implements TestExecutionListener {
             }
         }
 
-        /* The launch of the tests is done after all classes are
+        /*
+         * The launch of the tests is done after all classes are
          * selected, to ensure that a single TestPlan is created, and
          * if one of the tests causes the launcher to crash, the tests
-         * for all files are recorded. */
+         * for all files are recorded.
+         */
         LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
         LauncherDiscoveryRequest request = requestBuilder.selectors(selectorList).build();
         this.launcher.execute(request);
     }
 
-    private synchronized void addProvisionalTest(TestIdentifier test) {
-        if (test.getSource().map(s -> s instanceof ClassSource).orElse(false))
+    private synchronized void addProvisionalTest(final TestIdentifier test) {
+        if (test.getSource().map(s -> s instanceof ClassSource).orElse(false)) {
             this.classTotals.putIfAbsent(test, 0.0);
+        }
         if (test.isTest()) {
             AutograderTest autograderTest = new AutograderTest(test);
             tests.put(test, autograderTest);
@@ -136,13 +140,15 @@ public class JUnitAutograder implements TestExecutionListener {
     }
 
     @Override
-    public synchronized void testPlanExecutionStarted(TestPlan plan) {
-        /* Provisional autograder tests are created before the entire
+    public synchronized void testPlanExecutionStarted(final TestPlan plan) {
+        /*
+         * Provisional autograder tests are created before the entire
          * plan completes. This is done so that, if a major crash
          * (e.g., OutOfMemoryError) causes the tests to be unable to
          * call `executionFinished`, that the default tests still
          * exist and are saved to the JSON file as expected. This
-         * doesn't catch dynamic tests, though. */
+         * doesn't catch dynamic tests, though.
+         */
         this.testPlan = plan;
         for (TestIdentifier root : plan.getRoots()) {
             addProvisionalTest(root);
@@ -153,19 +159,44 @@ public class JUnitAutograder implements TestExecutionListener {
     }
 
     @Override
-    public synchronized void dynamicTestRegistered(TestIdentifier test) {
+    public synchronized void dynamicTestRegistered(final TestIdentifier test) {
         addProvisionalTest(test);
     }
 
     @Override
-    public synchronized void executionFinished(TestIdentifier test, TestExecutionResult result) {
+    public synchronized void reportingEntryPublished(final TestIdentifier test, final ReportEntry entry) {
+
+        if (!test.isTest()) {
+            return;
+        }
+
+        AutograderTest autograderTest = tests.get(test);
+        if (autograderTest == null) {
+            return;
+        }
+
+        StringBuilder newOutput = new StringBuilder(autograderTest.output);
+        for (Map.Entry<String, String> pair : entry.getKeyValuePairs().entrySet()) {
+            // "value" is the key used by TestReporter if only a value is provided (without a key)
+            // https://junit.org/junit5/docs/5.9.1/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html#publishEntry(java.lang.String)
+            if (pair.getKey().equals("value")) {
+                newOutput.append(pair.getValue()).append("\n");
+            } else {
+                newOutput.append(pair.getKey()).append(": ").append(pair.getValue()).append("\n");
+            }
+        }
+        autograderTest.output = newOutput.toString();
+    }
+
+    @Override
+    public synchronized void executionFinished(final TestIdentifier test, final TestExecutionResult result) {
 
         if (!test.isTest()) {
             if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
                 this.points = 0;
                 this.gradable = false;
                 this.message = "A test factory or value source failed to produce tests. Consult your instructor.";
-                result.getThrowable().ifPresent(t -> t.printStackTrace());
+                result.getThrowable().ifPresent(Throwable::printStackTrace);
             }
             return;
         }
@@ -176,6 +207,7 @@ public class JUnitAutograder implements TestExecutionListener {
             this.message = "Unable to parse the results. Test execution completed for a test that was not part of the test plan. Consult your instructor.";
             this.output = test.toString();
             this.gradable = false;
+            return;
         }
 
         autograderTest.points = autograderTest.maxPoints;
@@ -183,42 +215,46 @@ public class JUnitAutograder implements TestExecutionListener {
         if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
             autograderTest.points = 0;
             result.getThrowable().ifPresent(t -> autograderTest.message = t.toString());
-            if (autograderTest.message == null)
+            if (autograderTest.message == null) {
                 autograderTest.message = "";
+            }
         }
 
         this.points += autograderTest.points;
     }
 
-    private void saveResults(String signature) {
+    @SuppressWarnings("unchecked")
+    private void saveResults(final String signature) {
 
         double maxPoints = this.classTotals.entrySet().stream().mapToDouble(e -> {
-                if (e.getKey() != null) {
-                    for (TestTag tag : e.getKey().getTags()) {
-                        if (tag.getName().startsWith("maxpoints=")) {
-                            try {
-                                return Double.parseDouble(tag.getName().substring(10));
-                            } catch(NumberFormatException exception) {
-                                JUnitAutograder.this.output = "Could not parse maxpoints tag: " + tag.getName();
-                                JUnitAutograder.this.gradable = false;
-                            }
+            if (e.getKey() != null) {
+                for (TestTag tag : e.getKey().getTags()) {
+                    if (tag.getName().startsWith("maxpoints=")) {
+                        try {
+                            return Double.parseDouble(tag.getName().substring(10));
+                        } catch (NumberFormatException exception) {
+                            JUnitAutograder.this.output = "Could not parse maxpoints tag: " + tag.getName();
+                            JUnitAutograder.this.gradable = false;
                         }
                     }
                 }
-                return e.getValue();
-            }).sum();
+            }
+            return e.getValue();
+        }).sum();
         double testMaxPoints = this.tests.values().stream().mapToDouble(t -> t.maxPoints).sum();
 
         JSONArray resultsTests = new JSONArray();
-        for (AutograderTest test : this.tests.values())
+        for (AutograderTest test : this.tests.values()) {
             resultsTests.add(test.toJson());
+        }
 
         if (maxPoints - testMaxPoints > 0.01) {
             resultsTests.add(new AutograderTest("Incomplete tests", maxPoints - testMaxPoints,
-                                                "The number of points achieved by the autograder tests was not enough to reach \n" +
-                                                "the full amount of tests required for full marks. This is typically caused by \n" +
-                                                "failing early tests, or by an early autograder crash.")
-                             .toJson());
+                    """
+                            The number of points achieved by the autograder tests was not enough to reach\s
+                            the full amount of tests required for full marks. This is typically caused by\s
+                            failing early tests, or by an early autograder crash.""")
+                    .toJson());
         }
 
         JSONObject results = new JSONObject();
@@ -238,7 +274,10 @@ public class JUnitAutograder implements TestExecutionListener {
         }
     }
 
-    private class AutograderTest implements Comparable<AutograderTest> {
+    private static final class UngradableException extends Exception {
+    }
+
+    private final class AutograderTest implements Comparable<AutograderTest> {
 
         private String name;
         private String description = "";
@@ -248,20 +287,20 @@ public class JUnitAutograder implements TestExecutionListener {
         private double points = 0;
         private double maxPoints = 1;
 
-        private AutograderTest(String name, double maxPoints, String message) {
+        private AutograderTest(final String name, final double maxPoints, final String message) {
             this.name = name;
             this.maxPoints = maxPoints;
             this.message = message;
         }
-        
-        private AutograderTest(TestIdentifier test) {
+
+        private AutograderTest(final TestIdentifier test) {
             this.name = test.getDisplayName();
 
             for (TestTag tag : test.getTags()) {
                 if (tag.getName().startsWith("points=")) {
                     try {
                         this.maxPoints = Double.parseDouble(tag.getName().substring(7));
-                    } catch(NumberFormatException exception) {
+                    } catch (NumberFormatException exception) {
                         JUnitAutograder.this.output = "Could not parse points tag: " + tag.getName();
                         JUnitAutograder.this.gradable = false;
                     }
@@ -270,20 +309,24 @@ public class JUnitAutograder implements TestExecutionListener {
 
             // For compatibility with JUnit4 autograder
             test.getSource().ifPresent(source -> {
-                    if (source instanceof MethodSource) {
-                        AutograderInfo info = ((MethodSource) source).getJavaMethod().getAnnotation(AutograderInfo.class);
-                        if (info != null) {
-                            if (info.points() > 0)
-                                this.maxPoints = info.points();
-                            if (!"".equals(info.name()))
-                                this.name = info.name();
-                            if (!"".equals(info.description()))
-                                this.description = info.description();
+                if (source instanceof MethodSource) {
+                    AutograderInfo info = ((MethodSource) source).getJavaMethod().getAnnotation(AutograderInfo.class);
+                    if (info != null) {
+                        if (info.points() > 0) {
+                            this.maxPoints = info.points();
+                        }
+                        if (!"".equals(info.name())) {
+                            this.name = info.name();
+                        }
+                        if (!"".equals(info.description())) {
+                            this.description = info.description();
                         }
                     }
-                });
+                }
+            });
         }
 
+        @SuppressWarnings("unchecked")
         public JSONObject toJson() {
             JSONObject object = new JSONObject();
             object.put("name", this.name);
@@ -295,11 +338,8 @@ public class JUnitAutograder implements TestExecutionListener {
             return object;
         }
 
-        public int compareTo(AutograderTest other) {
+        public int compareTo(final AutograderTest other) {
             return this.name.compareTo(other.name);
         }
-    }
-
-    private class UngradableException extends Exception {
     }
 }

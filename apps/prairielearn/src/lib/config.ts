@@ -301,7 +301,6 @@ const ConfigSchema = z.object({
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
-  workspaceJobsParallelLimit: z.number().default(5),
   workspaceHeartbeatIntervalSec: z.number().default(60),
   workspaceHeartbeatTimeoutSec: z.number().default(10 * 60),
   workspaceVisibilityTimeoutSec: z.number().default(30 * 60),
@@ -383,7 +382,7 @@ const ConfigSchema = z.object({
    * Note that the `console` exporter should almost definitely NEVER be used in
    * production environments.
    */
-  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).default('console'),
+  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).nullable().default(null),
   openTelemetryMetricExporter: z.enum(['console', 'honeycomb']).nullable().default(null),
   openTelemetryMetricExportIntervalMillis: z.number().default(30_000),
   openTelemetrySamplerType: z

@@ -3,7 +3,6 @@ import * as _ from 'lodash';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 import { setTimeout as sleep } from 'node:timers/promises';
-import * as util from 'node:util';
 import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
@@ -28,7 +27,7 @@ const jobTimeouts = {};
 
 /**
  * @typedef {Object} CronJobModule
- * @property {(callback: (err: Error | null | undefined) => void) => void} run
+ * @property {() => Promise<void>} run
  */
 
 /**
@@ -393,7 +392,7 @@ async function runJob(job, cronUuid) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
   const startTime = Date.now();
-  await util.promisify(job.module.run)();
+  await job.module.run();
   const endTime = Date.now();
   const elapsedTimeMS = endTime - startTime;
   debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);

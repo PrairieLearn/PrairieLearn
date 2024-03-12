@@ -21,8 +21,8 @@
                     "numberChoose": 1,
                     "points": 25,
                     "alternatives": [
-                        {"id": "template/checkbox"},
-                        {"id": "template/multipleChoiceMultipleCorrect"}
+                        {"id": "template/checkbox/random-prompt"},
+                        {"id": "template/multiple-choice/random"}
                     ]
                 }
             ]
@@ -34,16 +34,16 @@
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "template/multipleChoiceWithFigure"},
-                        {"id": "template/multipleChoiceSingleCorrect"}
+                        {"id": "template/multiple-choice/images"},
+                        {"id": "demo/multipleChoiceSingleCorrect"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "template/multipleChoiceTrueFalseFromList"},
-                        {"id": "template/multipleChoiceFromList"}
+                        {"id": "template/multiple-choice/random-prompt-true-false"},
+                        {"id": "template/multiple-choice/random-prompt"}
                     ]
                 }
            ]
@@ -56,7 +56,7 @@
                     "points": 5,
                     "alternatives": [
                         {"id": "demo/fixedCheckbox"},
-                        {"id": "demo/randomSymbolic"}
+                        {"id": "template/symbolic-input/random"}
                     ]
                 },
                 {"id": "demo/randomMultipleChoice", "points": 5}

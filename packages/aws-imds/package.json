@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^20.11.11",
+    "@types/node": "^20.11.24",
     "typescript": "^5.3.3"
   },
   "dependencies": {
