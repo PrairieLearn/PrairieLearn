@@ -37,12 +37,14 @@ RUN apt-get update && \
 USER coder
 COPY requirements.txt /
 RUN export arch=`uname -m` \
- && curl -sfLO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh \
- && /bin/bash Miniconda3-latest-Linux-${arch}.sh -b -p /home/coder/miniconda \
+ && curl -sfLO "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh" \
+ && chmod +x "Miniconda3-latest-Linux-${arch}.sh" \
+ && ./"Miniconda3-latest-Linux-${arch}.sh" -b -p /home/coder/miniconda \
  && PATH="/home/coder/miniconda/bin:$PATH" \
  && /home/coder/miniconda/condabin/conda init bash \
  && conda config --add channels conda-forge \
  && conda run -n base pip install -r /requirements.txt \
+ && rm "Miniconda3-latest-Linux-${arch}.sh" \
  && conda clean --all
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
