@@ -35,7 +35,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       course_instance_id: course_instance_id,
     });
     if (!user) {
-      throw error.make(400, `User ${uid} is not enrolled in this course instance or does not exist.`);
+      throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
     }
    
     return { user_id: user.user_id, group_id: null };
