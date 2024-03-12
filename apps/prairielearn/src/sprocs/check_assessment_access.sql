@@ -54,6 +54,8 @@ BEGIN
     WHERE aap.assessment_id = check_assessment_access.assessment_id
         AND ((aap.user_id= check_assessment_access.user_id) 
         OR (aap.group_id = override_group_id))
+        AND aap.start_date <= check_assessment_access.date
+        AND aap.end_date >= check_assessment_access.date
     ORDER BY end_date DESC
     LIMIT 1;
 
@@ -64,15 +66,26 @@ BEGIN
             WHEN (credit_from_override > 0) THEN
                 credit_from_override::text || '%' || ' until ' || format_date_short(end_date_from_override, display_timezone)
                 ELSE '' END;
-        time_limit_min = (DATE_PART('epoch', end_date_from_override - now() - INTERVAL '31 seconds') / 60)::integer;
+        time_limit_min = NULL;
         password = NULL;
         mode = NULL;
         seb_config = NULL;
-        show_closed_assessment = FALSE;
+        show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;
         active_access_rule_id = 0;
-    ELSE
+        access_rules = jsonb_agg(
+            jsonb_build_object(
+                'credit', COALESCE(credit_from_override::text || '%', 'None'),
+                'time_limit_min', '—',
+                'start_date', format_date_full(start_date_from_override, display_timezone),
+                'end_date', format_date_full(end_date_from_override, display_timezone),
+                'mode', NULL,
+                'active', 1
+            )
+        );
+        RETURN;
+    END IF;
         -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
         SELECT
             caar.authorized,
@@ -190,7 +203,7 @@ BEGIN
 
             next_active_time = format_date_full_compact(next_active_start_date, display_timezone);
         END IF;
-    END IF;
+    
     
     -- Override if we are course staff
     IF (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') THEN
