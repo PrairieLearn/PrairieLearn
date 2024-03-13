@@ -17,7 +17,7 @@ export function shouldSecureCookie(req: Request): boolean {
  */
 export function clearCookie(res: Response, name: string): void {
   res.clearCookie(name);
-  res.clearCookie(name, { domain: config.cookieDomain });
+  res.clearCookie(name, { domain: config.cookieDomain ?? undefined });
 }
 
 type OldAndNewCookieNames = [string, string];
@@ -35,7 +35,7 @@ export function setCookie(
 ) {
   res.cookie(names[0], value, options);
   res.cookie(names[1], value, {
-    domain: config.cookieDomain,
+    domain: config.cookieDomain ?? undefined,
     ...options,
   });
 }

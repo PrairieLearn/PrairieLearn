@@ -163,7 +163,7 @@ module.exports.initExpress = function () {
         writeNames: ['prairielearn_session', 'pl2_session'],
         // Ensure that the legacy session cookie doesn't have a domain specified.
         // We can only safely set domains on the new session cookie.
-        writeOverrides: [{ domain: null }, { domain: config.cookieDomain }],
+        writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
         httpOnly: true,
         maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting
