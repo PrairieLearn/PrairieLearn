@@ -22,7 +22,7 @@ export function InstructorCourseAdminSettings({
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
           ...resLocals,
         })}
-        ${compiledScriptTag('saveButtonEnabling.ts')}
+        ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
@@ -44,7 +44,7 @@ export function InstructorCourseAdminSettings({
                     })
                   : ''
               }
-              <form method="POST">
+              <form name="edit-course-settings-form" method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <div class="form-group">
                   <label for="short_name">Short Name</label>
