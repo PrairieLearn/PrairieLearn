@@ -13,7 +13,7 @@ router.get('/', function (req, res) {
 });
 
 router.post('/', function (req, res) {
-  var redirectUrl = req.cookies.pl_pw_original_url ?? '/';
+  var redirectUrl = req.cookies.pl_pw_origUrl ?? '/';
   var maxAge = 1000 * 60 * 60 * 12; // 12 hours
 
   var pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);

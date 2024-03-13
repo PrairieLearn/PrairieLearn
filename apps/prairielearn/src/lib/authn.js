@@ -114,7 +114,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
+  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;

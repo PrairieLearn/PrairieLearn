@@ -166,7 +166,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         // be embedded in another page.
         //
         // Fall back to the home page if we're somehow missing this header.
-        setCookie(res, ['pl_pre_auth_url', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
+        setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
         res.set('HX-Redirect', loginUrl);
 
         // Note that Node doesn't allow us to set headers if the response is a
@@ -178,8 +178,8 @@ module.exports = asyncHandler(async (req, res, next) => {
         return;
       }
 
-      // first set the pl2_pre_auth_url cookie for redirection after authn
-      setCookie(res, ['pl_pre_auth_url', 'pl2_pre_auth_url'], req.originalUrl);
+      // first set the preAuthUrl cookie for redirection after authn
+      setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.originalUrl);
 
       res.redirect(loginUrl);
       return;

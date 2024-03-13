@@ -6,12 +6,7 @@ import cookie from 'cookie';
 
 import { SessionStore } from './store';
 import { beforeEnd } from './before-end';
-import {
-  type CookieSecure,
-  shouldSecureCookie,
-  getSessionCookie,
-  getSessionIdFromCookie,
-} from './cookie';
+import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie';
 import {
   type Session,
   generateSessionId,

@@ -9,6 +9,8 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
+    clearCookie(res, 'prairielearn_session');
+    clearCookie(res, 'pl2_session');
     clearCookie(res, 'pl_authn');
     clearCookie(res, 'pl2_authn');
     clearCookie(res, 'pl_assessmentpw');
@@ -23,11 +25,10 @@ router.get(
       setCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn'], '1');
     }
 
-    await req.session.destroy();
     // Hold-over from the old express-session implementation
     clearCookie(res, 'connect.sid');
-    clearCookie(res, 'prairielearn_session');
-    clearCookie(res, 'pl2_session');
+
+    await req.session.destroy();
 
     const redirect = req.query.redirect;
     if (redirect && typeof redirect === 'string') {
