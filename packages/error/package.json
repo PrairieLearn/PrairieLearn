@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -15,10 +15,10 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.11.11",
+    "@types/node": "^20.11.24",
     "chai": "^4.4.1",
-    "mocha": "^10.2.0",
-    "tsx": "^4.7.0",
+    "mocha": "^10.3.0",
+    "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {

@@ -301,7 +301,6 @@ const ConfigSchema = z.object({
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
-  workspaceJobsParallelLimit: z.number().default(5),
   workspaceHeartbeatIntervalSec: z.number().default(60),
   workspaceHeartbeatTimeoutSec: z.number().default(10 * 60),
   workspaceVisibilityTimeoutSec: z.number().default(30 * 60),
@@ -383,7 +382,7 @@ const ConfigSchema = z.object({
    * Note that the `console` exporter should almost definitely NEVER be used in
    * production environments.
    */
-  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).default('console'),
+  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).nullable().default(null),
   openTelemetryMetricExporter: z.enum(['console', 'honeycomb']).nullable().default(null),
   openTelemetryMetricExportIntervalMillis: z.number().default(30_000),
   openTelemetrySamplerType: z
@@ -504,18 +503,6 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
-  /**
-   * PrairieLearn is currently in the process of migrating to new cookie names.
-   * This is necessary so that we can re-scope them to a specific domain. We
-   * have middleware that will automatically rewrite the old cookie names to
-   * the new ones, which is currently disabled until we also deploy code that
-   * sets the new cookies with domains. When that code is in place, we can
-   * toggle this setting to `true`.
-   *
-   * Note that the middleware also provides forward compatibility so that old
-   * versions of PrairieLearn can still function with the new cookie names.
-   */
-  rewriteCookies: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

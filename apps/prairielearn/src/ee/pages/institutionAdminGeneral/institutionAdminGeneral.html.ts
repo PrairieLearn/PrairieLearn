@@ -155,12 +155,12 @@ export function InstitutionAdminGeneral({
                 id="course_instance_enrollment_limit"
                 name="course_instance_enrollment_limit"
                 value="${institution.course_instance_enrollment_limit}"
+                required
                 aria-describedby="course_instance_enrollment_limit_help"
               />
               <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
-                The maximum number of enrollments allowed for a single course instance. A blank
-                value allows for unlimited enrollments. This value can be overridden on individual
-                course instances.
+                The maximum number of enrollments allowed for a single course instance. This value
+                can be overridden on individual courses and course instances.
               </small>
             </div>
             <div class="form-group">
@@ -171,12 +171,13 @@ export function InstitutionAdminGeneral({
                 id="yearly_enrollment_limit"
                 name="yearly_enrollment_limit"
                 value="${institution.yearly_enrollment_limit}"
+                required
                 aria-describedby="yearly_enrollment_limit_help"
               />
               <small id="yearly_enrollment_limit_help" class="form-text text-muted">
-                The maximum number of enrollments allowed per year. A blank value allows for
-                unlimited enrollments. The limit is applied on a rolling basis; that is, it applies
-                to the previous 365 days from the instant a student attempts to enroll.
+                The maximum number of enrollments allowed per year. The limit is applied on a
+                rolling basis; that is, it applies to the previous 365 days from the instant a
+                student attempts to enroll.
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
