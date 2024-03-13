@@ -35,7 +35,6 @@ export async function validateLti13CourseInstance(
 ): Promise<boolean> {
   const feature_enabled = await features.enabledFromLocals('lti13', resLocals);
 
-  // Shortcut to save a SQL query if we don't need to run it
   if (!feature_enabled) {
     return false;
   }

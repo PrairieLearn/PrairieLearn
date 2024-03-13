@@ -2,9 +2,6 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types';
 
-//import { EncodedData } from '@prairielearn/browser-utils';
-//import { compiledScriptTag } from '../../../lib/assets';
-
 export function InstructorInstanceAdminLti13({
   resLocals,
   lti13Instance,
