@@ -68,7 +68,6 @@ BEGIN
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;
-        active_access_rule_id = 0;
         access_rules = jsonb_agg(
             jsonb_build_object(
                 'credit', COALESCE(credit_from_override::text || '%', 'None'),
