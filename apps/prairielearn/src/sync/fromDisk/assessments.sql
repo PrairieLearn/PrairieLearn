@@ -6,14 +6,6 @@ SELECT
       SELECT
         1
       FROM
-        exams
-      WHERE
-        exams.uuid = exam_uuids.value::uuid
-    )
-    OR EXISTS (
-      SELECT
-        1
-      FROM
         pt_exams
       WHERE
         pt_exams.uuid = exam_uuids.value::uuid

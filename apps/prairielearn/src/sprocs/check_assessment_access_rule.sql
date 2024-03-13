@@ -45,7 +45,7 @@ BEGIN
     END IF;
 
     -- ############################################################
-    -- check access with schedulers
+    -- check access with PrairieTest
 
     << schedule_access >>
     BEGIN
