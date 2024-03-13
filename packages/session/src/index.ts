@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import onHeaders from 'on-headers';
 import signature from 'cookie-signature';
 import asyncHandler from 'express-async-handler';
+import cookie from 'cookie';
 
 import { SessionStore } from './store';
 import { beforeEnd } from './before-end';
@@ -92,7 +93,8 @@ export function createSessionMiddleware(options: SessionOptions) {
     res: Response,
     next: NextFunction,
   ) {
-    const sessionCookie = getSessionCookie(req, cookieName);
+    const cookies = cookie.parse(req.headers.cookie ?? '');
+    const sessionCookie = cookies[cookieName];
     const cookieSessionId = getSessionIdFromCookie(sessionCookie, secrets);
     const sessionId = cookieSessionId ?? (await generateSessionId());
     req.session = await loadSession(sessionId, req, store, cookieMaxAge);
@@ -131,9 +133,7 @@ export function createSessionMiddleware(options: SessionOptions) {
       }
 
       // Ensure that all known session cookies are set to the same value.
-      const hasAllCookies = writeCookieNames.every((cookieName) =>
-        Boolean(req.cookies[cookieName]),
-      );
+      const hasAllCookies = writeCookieNames.every((cookieName) => !!cookies[cookieName]);
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();

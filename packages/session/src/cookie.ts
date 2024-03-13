@@ -1,4 +1,3 @@
-import cookie from 'cookie';
 import signature from 'cookie-signature';
 import type { Request } from 'express';
 
@@ -14,11 +13,6 @@ export function shouldSecureCookie(req: Request, secure: CookieSecure): boolean 
   }
 
   return secure;
-}
-
-export function getSessionCookie(req: Request, cookieName: string) {
-  const cookies = cookie.parse(req.headers.cookie ?? '');
-  return cookies[cookieName] ?? null;
 }
 
 export function getSessionIdFromCookie(
