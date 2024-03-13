@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction, CookieOptions } from 'express';
 
 import { config } from './config';
 
@@ -18,6 +18,21 @@ export function shouldSecureCookie(req: Request): boolean {
 export function clearCookie(res: Response, name: string): void {
   res.clearCookie(name);
   res.clearCookie(name, { domain: config.cookieDomain });
+}
+
+type OldAndNewCookieNames = [string, string];
+
+export function setCookie(
+  res: Response,
+  names: OldAndNewCookieNames,
+  value: string,
+  options: Omit<CookieOptions, 'domain'> = {},
+) {
+  res.cookie(names[0], value, options);
+  res.cookie(names[1], value, {
+    domain: config.cookieDomain,
+    ...options,
+  });
 }
 
 const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;

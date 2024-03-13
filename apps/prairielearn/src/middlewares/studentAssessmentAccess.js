@@ -5,6 +5,7 @@ const _ = require('lodash');
 const { logger } = require('@prairielearn/logger');
 const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 const { config } = require('../lib/config');
+const { setCookie } = require('../lib/cookie');
 const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours
@@ -80,13 +81,13 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
     return true;
   }
 
-  if (req.cookies.pl2_assessmentpw == null) {
+  if (req.cookies.pl_assessmentpw == null) {
     // The user has not entered a password yet.
     badPassword(res, req);
     return false;
   }
 
-  var pwData = getCheckedSignedTokenData(req.cookies.pl2_assessmentpw, config.secretKey, {
+  var pwData = getCheckedSignedTokenData(req.cookies.pl_assessmentpw, config.secretKey, {
     maxAge: timeout * 60 * 60 * 1000,
   });
   if (pwData == null || pwData.password !== res.locals.authz_result.password) {
@@ -101,9 +102,7 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
-  res.cookie('pl2_pw_original_url', req.originalUrl, {
-    domain: config.cookieDomain,
-  });
+  setCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url'], req.originalUrl);
   res.redirect('/pl/password');
 }
 

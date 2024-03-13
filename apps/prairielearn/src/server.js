@@ -160,12 +160,15 @@ module.exports.initExpress = function () {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: config.sessionCookieNames,
+        name: 'prairielearn_session',
+        writeNames: ['prairielearn_session', 'pl2_session'],
+        // Ensure that the legacy session cookie doesn't have a domain specified.
+        // We can only safely set domains on the new session cookie.
+        writeOverrides: [{ domain: null }, { domain: config.cookieDomain }],
         httpOnly: true,
         maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
-        domain: config.cookieDomain,
       },
     }),
   );

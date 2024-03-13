@@ -578,7 +578,8 @@ describe('session middleware', () => {
         store,
         secret: TEST_SECRET,
         cookie: {
-          name: ['session', 'legacy_session'],
+          name: 'legacy_session',
+          writeNames: ['legacy_session', 'session'],
         },
       }),
     );

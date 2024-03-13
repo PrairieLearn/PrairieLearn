@@ -28,22 +28,34 @@ declare global {
   }
 }
 
+interface CookieOptions {
+  secure?: CookieSecure;
+  httpOnly?: boolean;
+  domain?: string;
+  sameSite?: boolean | 'none' | 'lax' | 'strict';
+  maxAge?: number;
+}
+
 export interface SessionOptions {
   secret: string | string[];
   store: SessionStore;
-  cookie?: {
+  cookie?: CookieOptions & {
     /**
-     * If multiple names are provided, the first one is used as the primary
-     * name for setting the cookie. The other names are used as fallbacks when
-     * reading the cookie in requests. If a fallback name is found in a request,
-     * the cookie value will be transparently re-written to the primary name.
+     * The name of the session cookie. The session is always read from this
+     * named cookie, but it may be written to multiple cookies if `writeNames`
+     * is provided.
      */
-    name?: string | string[];
-    secure?: CookieSecure;
-    httpOnly?: boolean;
-    domain?: string;
-    sameSite?: boolean | 'none' | 'lax' | 'strict';
-    maxAge?: number;
+    name?: string;
+    /**
+     * Multiple write names can be provided to allow for a session cookie to be
+     * written to multiple names. This can be useful for a migration of a cookie
+     * to an explicit subdomain, for example.
+     */
+    writeNames?: string[];
+    /**
+     * Used with `writeNames` to provide additional options for each written cookie.
+     */
+    writeOverrides?: Omit<CookieOptions, 'secure'>[];
   };
 }
 
@@ -54,18 +66,34 @@ const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day
 
 export function createSessionMiddleware(options: SessionOptions) {
   const secrets = Array.isArray(options.secret) ? options.secret : [options.secret];
-  const cookieNames = getCookieNames(options.cookie?.name);
-  const primaryCookieName = cookieNames[0];
+  const cookieName = options.cookie?.name ?? DEFAULT_COOKIE_NAME;
   const cookieMaxAge = options.cookie?.maxAge ?? DEFAULT_COOKIE_MAX_AGE;
   const store = options.store;
+
+  // Ensure that the session cookie that we're reading from will be written to.
+  const writeCookieNames = options.cookie?.writeNames ?? [cookieName];
+  if (!writeCookieNames.includes(cookieName)) {
+    throw new Error('cookie.name must be included in cookie.writeNames');
+  }
+
+  // Validate write overrides.
+  if (options.cookie?.writeOverrides && !options.cookie.writeNames) {
+    throw new Error('cookie.writeOverrides must be used with cookie.writeNames');
+  }
+  if (
+    options.cookie?.writeOverrides &&
+    options.cookie.writeOverrides.length !== writeCookieNames.length
+  ) {
+    throw new Error('cookie.writeOverrides must have the same length as cookie.writeNames');
+  }
 
   return asyncHandler(async function sessionMiddleware(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
-    const sessionCookie = getSessionCookie(req, cookieNames);
-    const cookieSessionId = getSessionIdFromCookie(sessionCookie?.value, secrets);
+    const sessionCookie = getSessionCookie(req, cookieName);
+    const cookieSessionId = getSessionIdFromCookie(sessionCookie, secrets);
     const sessionId = cookieSessionId ?? (await generateSessionId());
     req.session = await loadSession(sessionId, req, store, cookieMaxAge);
 
@@ -82,9 +110,12 @@ export function createSessionMiddleware(options: SessionOptions) {
           // ensure that state sessions aren't left behind. We'll also send commands
           // to clear the cookies both on and off the explicit domain, to handle
           // the case where the application has moved from one domain to another.
-          cookieNames.forEach((cookieName) => {
+          writeCookieNames.forEach((cookieName, i) => {
             res.clearCookie(cookieName);
-            res.clearCookie(cookieName, { domain: options.cookie?.domain });
+            const domain = options.cookie?.writeOverrides?.[i]?.domain ?? options.cookie?.domain;
+            if (domain) {
+              res.clearCookie(cookieName, { domain: options.cookie?.domain });
+            }
           });
           return;
         }
@@ -99,18 +130,24 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
-      const needsRotation = sessionCookie?.name && sessionCookie?.name !== primaryCookieName;
+      // Ensure that all known session cookies are set to the same value.
+      const hasAllCookies = writeCookieNames.every((cookieName) =>
+        Boolean(req.cookies[cookieName]),
+      );
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (isNewSession || didExpirationChange || needsRotation) {
+      if (isNewSession || didExpirationChange || !hasAllCookies) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
-        res.cookie(primaryCookieName, signedSessionId, {
-          secure: secureCookie,
-          httpOnly: options.cookie?.httpOnly ?? true,
-          domain: options.cookie?.domain,
-          sameSite: options.cookie?.sameSite ?? false,
-          expires: req.session.getExpirationDate(),
+        writeCookieNames.forEach((cookieName, i) => {
+          res.cookie(cookieName, signedSessionId, {
+            secure: secureCookie,
+            httpOnly: options.cookie?.httpOnly ?? true,
+            domain: options.cookie?.domain,
+            sameSite: options.cookie?.sameSite ?? false,
+            expires: req.session.getExpirationDate(),
+            ...(options.cookie?.writeOverrides?.[i] ?? {}),
+          });
         });
       }
     });
@@ -169,18 +206,6 @@ export function createSessionMiddleware(options: SessionOptions) {
 
     next();
   });
-}
-
-function getCookieNames(cookieName: string | string[] | undefined): string[] {
-  if (!cookieName) {
-    return [DEFAULT_COOKIE_NAME];
-  }
-
-  if (Array.isArray(cookieName) && cookieName.length === 0) {
-    throw new Error('cookie.name must not be an empty array');
-  }
-
-  return Array.isArray(cookieName) ? cookieName : [cookieName];
 }
 
 function signSessionId(sessionId: string, secret: string): string {

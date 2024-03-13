@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as express from 'express';
@@ -9,8 +9,7 @@ import { format, utcToZonedTime } from 'date-fns-tz';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import { clearCookie } from '../../lib/cookie';
+import { clearCookie, setCookie } from '../../lib/cookie';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -95,58 +94,51 @@ router.post('/', function (req, res, next) {
     clearCookie(res, 'pl2_requested_mode');
     clearCookie(res, 'pl_requested_date');
     clearCookie(res, 'pl2_requested_date');
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {
-    res.cookie('pl2_requested_uid', req.body.pl_requested_uid, {
-      domain: config.cookieDomain,
+    setCookie(res, ['pl_requested_uid', 'pl2_requested_uid'], req.body.pl_requested_uid, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseRole') {
-    res.cookie('pl2_requested_course_role', req.body.pl_requested_course_role, {
-      domain: config.cookieDomain,
-      maxAge: 60 * 60 * 1000,
-    });
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(
+      res,
+      ['pl_requested_course_role', 'pl2_requested_course_role'],
+      req.body.pl_requested_course_role,
+      {
+        maxAge: 60 * 60 * 1000,
+      },
+    );
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseInstanceRole') {
-    res.cookie('pl2_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
-      domain: config.cookieDomain,
-      maxAge: 60 * 60 * 1000,
-    });
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(
+      res,
+      ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role'],
+      req.body.pl_requested_course_instance_role,
+      {
+        maxAge: 60 * 60 * 1000,
+      },
+    );
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeMode') {
-    res.cookie('pl2_requested_mode', req.body.pl_requested_mode, {
-      domain: config.cookieDomain,
+    setCookie(res, ['pl_requested_mode', 'pl2_requested_mode'], req.body.pl_requested_mode, {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
     let date = parseISO(req.body.pl_requested_date);
     if (!isValid(date)) {
       return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
-    res.cookie('pl2_requested_date', date.toISOString(), {
-      domain: config.cookieDomain,
+    setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl2_requested_data_changed', 'true', {
-      domain: config.cookieDomain,
-    });
+    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else {
     return next(error.make(400, 'unknown action: ' + res.locals.__action));

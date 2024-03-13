@@ -5,7 +5,7 @@ const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
 const authnLib = require('../lib/authn');
-const { clearCookie } = require('../lib/cookie');
+const { clearCookie, setCookie } = require('../lib/cookie');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -78,7 +78,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   // - Use the "bypass" authentication option on the login page to log in as
   //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
   // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
-  if (config.devMode && !req.cookies.pl2_disable_auto_authn && !req.cookies.pl2_authn) {
+  if (config.devMode && !req.cookies.pl_disable_auto_authn && !req.cookies.pl_authn) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
@@ -122,11 +122,11 @@ module.exports = asyncHandler(async (req, res, next) => {
     };
   }
 
-  if (!authnData && req.cookies.pl2_authn) {
+  if (!authnData && req.cookies.pl_authn) {
     // If we have a authn cookie then we try and unpack it. If we fail to
     // unpack the cookie's data, then authnData will be null and we'll
     // treat the user as though they're not authenticated.
-    authnData = getCheckedSignedTokenData(req.cookies.pl2_authn, config.secretKey, {
+    authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
   }
@@ -164,7 +164,9 @@ module.exports = asyncHandler(async (req, res, next) => {
         // page from which the HTMX request was made. This ensures that users
         // don't end up redirected to a route that renders HTML that's meant to
         // be embedded in another page.
-        res.cookie('pl2_pre_auth_url', req.get('HX-Current-URL'), { domain: config.cookieDomain });
+        //
+        // Fall back to the home page if we're somehow missing this header.
+        setCookie(res, ['pl_pre_auth_url', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
         res.set('HX-Redirect', loginUrl);
 
         // Note that Node doesn't allow us to set headers if the response is a
@@ -177,7 +179,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       }
 
       // first set the pl2_pre_auth_url cookie for redirection after authn
-      res.cookie('pl2_pre_auth_url', req.originalUrl, { domain: config.cookieDomain });
+      setCookie(res, ['pl_pre_auth_url', 'pl2_pre_auth_url'], req.originalUrl);
 
       res.redirect(loginUrl);
       return;

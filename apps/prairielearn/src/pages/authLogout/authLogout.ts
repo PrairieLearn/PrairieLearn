@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 
 import { config } from '../../lib/config';
-import { clearCookie } from '../../lib/cookie';
+import { clearCookie, setCookie } from '../../lib/cookie';
 
 const router = Router();
 
@@ -20,9 +20,7 @@ router.get(
       // However, folks who want to specifically test authentication behavior can
       // click "Log out". In this case, we want to disable the automatic login
       // until the next time the user authenticates.
-      res.cookie('pl2_disable_auto_authn', '1', {
-        domain: config.cookieDomain,
-      });
+      setCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn'], '1');
     }
 
     await req.session.destroy();

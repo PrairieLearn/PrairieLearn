@@ -11,7 +11,7 @@ const cookies_to_ignore = [
   'pl2_access_as_administrator',
   'pl_disable_auto_authn',
   'pl2_disable_auto_authn',
-  'pl_session',
+  'prairielearn_session',
   'pl2_session',
 ];
 
