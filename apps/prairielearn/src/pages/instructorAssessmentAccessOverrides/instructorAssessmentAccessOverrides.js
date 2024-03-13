@@ -44,7 +44,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
 
 async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
   const user = await selectUserByUid(uid);
-  if (!user) return false;
+  if (!user) return null;
 
   const enrollment = await getEnrollmentForUserInCourseInstance({
     user_id: user.user_id,
