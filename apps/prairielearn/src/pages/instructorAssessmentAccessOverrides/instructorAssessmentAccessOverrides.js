@@ -20,7 +20,6 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       assessment_id: assessment.id,
     });
     if (group_result.rows.length > 0) {
-      
       return { user_id: null, group_id: group_result.rows[0].id };
     } else {
       throw error.make(400, 'Group not found in this assessment.');
@@ -28,7 +27,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
   }
   if (uid) {
     if (group_name) {
-      throw error.make(400, 'Student User ID is required for individual work assessments.');
+      throw error.make(400, 'Student UID is required for individual work assessments.');
     }
     const user = await selectUserEnrolledInCourseInstance({
       uid: uid,
@@ -40,7 +39,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
 
     return { user_id: user.user_id, group_id: null };
   } else {
-    throw error.make(400, 'Student User ID or Group Name is required.');
+    throw error.make(400, 'Student UID or Group Name is required.');
   }
 }
 
