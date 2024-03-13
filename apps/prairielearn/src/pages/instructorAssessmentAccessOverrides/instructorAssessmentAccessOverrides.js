@@ -19,7 +19,6 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       course_instance_id: course_instance_id,
       assessment_id: assessment.id,
     });
-
     if (group_result.rows.length > 0) {
       return { user_id: null, group_id: group_result.rows[0].id };
     } else {
@@ -37,7 +36,6 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
     if (!user) {
       throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
     }
-
     return { user_id: user.user_id, group_id: null };
   } else {
     throw error.make(400, 'Student User ID or Group Name is required.');
@@ -83,7 +81,7 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-      const params = {
+      await sqldb.queryAsync(sql.insert_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         created_by: res.locals.authn_user.user_id,
         credit: req.body.credit,
@@ -93,9 +91,7 @@ router.post(
         start_date: new Date(req.body.start_date),
         group_id: group_id || null,
         user_id: user_id || null,
-      };
-
-      await sqldb.queryAsync(sql.insert_assessment_access_policy, params);
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
@@ -110,8 +106,7 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-
-      const edit_params = {
+      await sqldb.queryAsync(sql.update_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         credit: req.body.credit,
         end_date: new Date(req.body.end_date),
@@ -121,9 +116,7 @@ router.post(
         group_id: group_id || null,
         user_id: user_id || null,
         assessment_access_policies_id: req.body.policy_id,
-      };
-
-      await sqldb.queryAsync(sql.update_assessment_access_policy, edit_params);
+      });
       res.redirect(req.originalUrl);
     }
   }),
