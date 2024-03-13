@@ -15,12 +15,7 @@
 					$('#end_date').addClass('is-invalid');
 					$('#end_date_error').text('End date should be greater than the start date.').show();
 				}
-				// Check if either student_uid or group_id is not empty
-				if (userId === '' && groupName === '') {
-					event.preventDefault();
-					$('#group_id').addClass('is-invalid');
-					$('#group_id_error').text('Either user ID or group ID should be filled.').show();
-				}
+				
 				
 			});
 			$('.edit-override-button').on('click', function (event) {
@@ -96,13 +91,12 @@
 								<% if (!assessment.group_work) { %>
 									<div class="form-group">
 										<label for="student_uid">Student UID</label>
-										<input type="text" class="form-control" id="student_uid" name="student_uid">
+										<input type="text" class="form-control" id="student_uid" name="student_uid" required>
 									</div>
 								<% } else { %>
 									<div class="form-group">
 										<label for="group_id">Group Name</label>
-										<input type="text" class="form-control" id="group_name" name="group_name">
-										<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
+										<input type="text" class="form-control" id="group_name" name="group_name" required>
 									</div>
 								<% } %>
 								<div class="form-group">
@@ -116,7 +110,7 @@
 								</div>
 								<div class="form-group">
 									<label for="credit">Credit</label>
-									<input type="number" class="form-control" id="credit" name="credit">
+									<input type="number" class="form-control" id="credit" name="credit" required>
 								</div>
 								<div class="form-group">
 									<label for="note">Note</label>
