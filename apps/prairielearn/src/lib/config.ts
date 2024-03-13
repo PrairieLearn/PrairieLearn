@@ -70,7 +70,23 @@ const ConfigSchema = z.object({
   sessionStoreExpireSeconds: z.number().default(86400),
   sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
-  cookieDomain: z.string().optional(),
+  cookieDomain: z
+    .string()
+    .nullable()
+    .default(null)
+    .refine(
+      (val) => {
+        // In production environments, require that the the cookie domain is truthy.
+        if (process.env.NODE_ENV === 'production') return !!val;
+
+        // Allow any value in non-production environments, including null values.
+        return true;
+      },
+      { message: 'must be a non-empty string in production environments' },
+    )
+    .refine((val) => val?.startsWith('.') || val === null, {
+      message: 'must start with a dot, e.g. ".example.com"',
+    }),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
