@@ -8,7 +8,7 @@ import { Course, CourseSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-export const CourseWithPermissionsSchema = CourseSchema.extend({
+const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({
     course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
     has_course_permission_own: z.boolean(),
@@ -17,6 +17,7 @@ export const CourseWithPermissionsSchema = CourseSchema.extend({
     has_course_permission_preview: z.boolean(),
   }),
 });
+export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(

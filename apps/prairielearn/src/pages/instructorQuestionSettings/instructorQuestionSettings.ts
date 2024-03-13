@@ -15,12 +15,12 @@ import { copyQuestionBetweenCourses } from '../../lib/copy-question';
 import { flash } from '@prairielearn/flash';
 import { features } from '../../lib/features/index';
 import { getCanonicalHost } from '../../lib/url';
-import { isEnterprise } from '../../lib/license';
 import { selectCoursesWithEditAccess } from '../../models/course';
 import { IdSchema } from '../../lib/db-types';
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
+  SharingSetSchema,
 } from './instructorQuestionSettings.html';
 
 const router = express.Router();
@@ -213,8 +213,6 @@ router.get(
       config.secretKey,
     );
 
-    const isEnterpriseBoolean = isEnterprise();
-
     let questionGHLink: string | null = null;
     if (res.locals.course.repository) {
       const githubRepoMatch = res.locals.course.repository.match(
@@ -237,7 +235,7 @@ router.get(
       z.string().nullable(),
     );
 
-    const a_with_q_for_all_ci = await sqldb.queryRows(
+    const assessmentsWithQuestion = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
@@ -246,14 +244,17 @@ router.get(
 
     let sharingSetsIn, sharingSetsOther;
     if (sharingEnabled) {
-      const result = await sqldb.queryAsync(sql.select_sharing_sets, {
-        question_id: res.locals.question.id,
-        course_id: res.locals.course.id,
-      });
-      sharingSetsIn = result.rows.filter((row) => row.in_set);
-      sharingSetsOther = result.rows.filter((row) => !row.in_set);
+      const result = await sqldb.queryRows(
+        sql.select_sharing_sets,
+        {
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        },
+        SharingSetSchema,
+      );
+      sharingSetsIn = result.filter((row) => row.in_set);
+      sharingSetsOther = result.filter((row) => !row.in_set);
     }
-
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -265,10 +266,9 @@ router.get(
         resLocals: res.locals,
         questionTestPath,
         questionTestCsrfToken,
-        isEnterprise: isEnterpriseBoolean,
         questionGHLink,
         qids,
-        a_with_q_for_all_ci,
+        assessmentsWithQuestion,
         sharingEnabled,
         sharingSetsIn,
         sharingSetsOther,

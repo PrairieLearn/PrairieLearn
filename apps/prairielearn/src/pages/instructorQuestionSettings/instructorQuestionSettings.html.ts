@@ -4,7 +4,8 @@ import { z } from 'zod';
 
 import { Modal } from '../../components/Modal.html';
 import { IdSchema } from '../../lib/db-types';
-import { CourseWithPermissionsSchema } from '../../models/course';
+import { CourseWithPermissions } from '../../models/course';
+import { isEnterprise } from '../../lib/license';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),
@@ -19,22 +20,20 @@ export const SelectedAssessmentsSchema = z.object({
 });
 type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
 
-type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
-
-interface SharingSet {
-  id: string;
-  name: string;
-  in_set: string;
-}
+export const SharingSetSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  in_set: z.boolean(),
+});
+type SharingSet = z.infer<typeof SharingSetSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
   questionTestPath,
   questionTestCsrfToken,
-  isEnterprise,
   questionGHLink,
   qids,
-  a_with_q_for_all_ci,
+  assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
   sharingSetsOther,
@@ -44,12 +43,11 @@ export function InstructorQuestionSettings({
   resLocals: Record<string, any>;
   questionTestPath: string;
   questionTestCsrfToken: string;
-  isEnterprise: boolean;
   questionGHLink: string | null;
   qids: (string | null)[];
-  a_with_q_for_all_ci: SelectedAssessments[];
+  assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: (SharingSet | null)[];
+  sharingSetsIn: SharingSet[];
   sharingSetsOther: SharingSet[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
@@ -219,9 +217,11 @@ export function InstructorQuestionSettings({
                                   : html`
                                       Shared With:
                                       ${sharingSetsIn.map(function (sharing_set) {
-                                        return html`<span class="badge color-gray1"
-                                          >${sharing_set?.name}</span
-                                        >`;
+                                        return html`
+                                          <span class="badge color-gray1">
+                                            ${sharing_set?.name}
+                                          </span>
+                                        `;
                                       })}
                                     `}
                                 ${resLocals.authz_data.has_course_permission_own &&
@@ -284,8 +284,7 @@ export function InstructorQuestionSettings({
                                       >
                                         Share Publicly
                                       </button>
-                                      ${publiclyShareModal({
-                                        isEnterprise,
+                                      ${PubliclyShareModal({
                                         csrfToken: resLocals.__csrf_token,
                                         qid: resLocals.question.qid,
                                       })}
@@ -334,20 +333,12 @@ export function InstructorQuestionSettings({
                   : ''}
               </tbody>
             </table>
-
-            <!--
-          We only want to show the card footer if it will have something inside. Since it is easy
-          to make a mistake when merging logical conditions, we will simply "or" them all.
-        -->
-            ${(editableCourses &&
-              editableCourses.length > 0 &&
-              resLocals.authz_data.has_course_permission_view) ||
+            ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
             (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
               ? html`
                   <div class="card-footer">
                     <div class="row">
-                      ${editableCourses &&
-                      editableCourses.length > 0 &&
+                      ${editableCourses.length > 0 &&
                       resLocals.authz_data.has_course_permission_view &&
                       resLocals.question.course_id === resLocals.course.id
                         ? html`
@@ -362,11 +353,12 @@ export function InstructorQuestionSettings({
                                 data-placement="auto"
                                 title="Copy this question"
                                 data-content="${escapeHtml(
-                                  copyForm({
+                                  CopyForm({
                                     csrfToken: resLocals.__csrf_token,
                                     exampleCourse: resLocals.course.example_course,
                                     editableCourses,
                                     courseId: resLocals.course.id,
+                                    buttonId: 'copyQuestionButton',
                                   }),
                                 )}"
                                 data-trigger="manual"
@@ -384,16 +376,17 @@ export function InstructorQuestionSettings({
                             <div class="col-auto">
                               <button
                                 class="btn btn-sm btn-primary"
+                                id
                                 href="#"
                                 data-toggle="modal"
-                                data-target="#deleteQuestionModal"
+                                data-target="#delete-question-form"
                               >
                                 <i class="fa fa-times" aria-hidden="true"></i> Delete this question
                               </button>
                             </div>
                             ${DeleteQuestionModal({
                               qid: resLocals.question.qid,
-                              a_with_q_for_all_ci,
+                              assessmentsWithQuestion,
                               csrfToken: resLocals.__csrf_token,
                             })}
                           `
@@ -409,16 +402,18 @@ export function InstructorQuestionSettings({
   `.toString();
 }
 
-function copyForm({
+function CopyForm({
   csrfToken,
   exampleCourse,
   editableCourses,
   courseId,
+  buttonId,
 }: {
   csrfToken: string;
   exampleCourse: boolean;
-  editableCourses: Record<string, any>[];
+  editableCourses: CourseWithPermissions[];
   courseId: string;
+  buttonId: string;
 }) {
   return html`
     <form name="copy-question-form" class="needs-validation" method="POST" novalidate>
@@ -443,11 +438,7 @@ function copyForm({
         <div class="invalid-feedback" id="invalidIdMessage"></div>
       </div>
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#<%= buttonID %>').popover('hide')"
-        >
+        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
           Cancel
         </button>
         <button type="submit" class="btn btn-primary">Submit</button>
@@ -484,15 +475,7 @@ function copyForm({
   `;
 }
 
-function publiclyShareModal({
-  isEnterprise,
-  csrfToken,
-  qid,
-}: {
-  isEnterprise: boolean;
-  csrfToken: string;
-  qid: string;
-}) {
+function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string }) {
   return Modal({
     id: 'publiclyShareModal',
     title: 'Confirm Publicly Share Question',
@@ -502,7 +485,7 @@ function publiclyShareModal({
         Once this question is publicly shared, anyone will be able to view it or use it as a part of
         their course. This operation cannot be undone.
       </p>
-      ${isEnterprise
+      ${isEnterprise()
         ? html`
             <p>
               You retain full ownership of all shared content as described in the
@@ -529,11 +512,11 @@ function publiclyShareModal({
 
 function DeleteQuestionModal({
   qid,
-  a_with_q_for_all_ci,
+  assessmentsWithQuestion,
   csrfToken,
 }: {
   qid: string;
-  a_with_q_for_all_ci: Record<string, any>[];
+  assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
 }) {
   return Modal({
@@ -544,11 +527,11 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${a_with_q_for_all_ci
+      ${assessmentsWithQuestion
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
-              ${a_with_q_for_all_ci.map((a_with_q) => {
+              ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
                     <h6>${a_with_q.title}</h6>
