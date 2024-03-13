@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request } from 'express';
 
 import { config } from './config';
 
