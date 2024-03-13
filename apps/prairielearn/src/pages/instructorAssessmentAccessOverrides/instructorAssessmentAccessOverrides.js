@@ -20,6 +20,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       assessment_id: assessment.id,
     });
     if (group_result.rows.length > 0) {
+      
       return { user_id: null, group_id: group_result.rows[0].id };
     } else {
       throw error.make(400, 'Group not found in this assessment.');
@@ -36,6 +37,7 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
     if (!user) {
       throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
     }
+
     return { user_id: user.user_id, group_id: null };
   } else {
     throw error.make(400, 'Student User ID or Group Name is required.');
@@ -51,6 +53,7 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
     course_instance_id: course_instance_id,
   });
   if (!enrollment) return null;
+
   return user;
 }
 
