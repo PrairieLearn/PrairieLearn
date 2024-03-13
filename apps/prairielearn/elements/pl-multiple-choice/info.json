@@ -1,6 +1,8 @@
 {
   "controller": "pl-multiple-choice.py",
   "dependencies": {
-    "elementStyles": ["pl-multiple-choice.css"]
+    "elementStyles": ["pl-multiple-choice.css"],
+    "nodeModulesStyles": ["bootstrap-select/dist/css/bootstrap-select.min.css"],
+    "nodeModulesScripts": ["bootstrap-select/dist/js/bootstrap-select.min.js"]
   }
 }
