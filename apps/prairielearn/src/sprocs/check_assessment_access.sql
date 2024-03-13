@@ -70,12 +70,12 @@ BEGIN
         active = TRUE;
         access_rules = jsonb_agg(
             jsonb_build_object(
-                'credit', COALESCE(credit_from_override::text || '%', 'None'),
+                'credit', credit_from_override::text || '%',
                 'time_limit_min', '—',
                 'start_date', format_date_full(start_date_from_override, display_timezone),
                 'end_date', format_date_full(end_date_from_override, display_timezone),
                 'mode', NULL,
-                'active', 1
+                'active', TRUE
             )
         );
         RETURN;
