@@ -4,7 +4,14 @@ SELECT
     aap.created_at,
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS created_at,
-  aap.created_by::text AS created_by,
+  (
+    SELECT
+      uid
+    FROM
+      users
+    WHERE
+      user_id = aap.created_by
+  ) AS created_by,
   aap.credit::text AS credit,
   format_date_full_compact (
     aap.end_date,
