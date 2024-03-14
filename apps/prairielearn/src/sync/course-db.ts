@@ -388,7 +388,7 @@ export interface Question {
   dependencies: Record<string, string>;
 }
 
-interface CourseInstanceData {
+export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }

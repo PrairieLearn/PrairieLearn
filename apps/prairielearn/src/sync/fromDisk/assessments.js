@@ -297,9 +297,16 @@ function parseSharedQuestionReference(qid) {
  * to be accessible if any access rules either have no end date or have an end date
  * in the future.
  *
- * @param {import('../course-db').CourseInstance} courseInstance
+ * @param {import('../course-db').CourseInstanceData} courseInstanceData
  */
-function isCourseInstanceAccessible(courseInstance) {
+function isCourseInstanceAccessible(courseInstanceData) {
+  const courseInstance = courseInstanceData.courseInstance.data;
+
+  // If the course instance data is not available, treat it as though it's
+  // not accessible.
+  if (!courseInstance) return false;
+
+  // If there are no access rules, the course instance is not accessible.
   if (!courseInstance.allowAccess?.length) return false;
 
   return courseInstance.allowAccess.some((accessRule) => {
@@ -311,15 +318,16 @@ function isCourseInstanceAccessible(courseInstance) {
 /**
  * @param {any} courseId
  * @param {any} courseInstanceId
- * @param {import('../course-db').CourseInstance} courseInstance
- * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
+ * @param {import('../course-db').CourseInstanceData} courseInstanceData
  * @param {{ [qid: string]: any }} questionIds
  */
-export async function sync(courseId, courseInstanceId, courseInstance, assessments, questionIds) {
+export async function sync(courseId, courseInstanceId, courseInstanceData, questionIds) {
+  const assessments = courseInstanceData.assessments;
+
   // We only check exam UUIDs if the course instance is accessible. This allows
   // us to delete the legacy `exams` table without producing sync warnings for
   // exam UUIDs corresponding to course instances that are no longer used.
-  if (isCourseInstanceAccessible(courseInstance) && config.checkAccessRulesExamUuid) {
+  if (isCourseInstanceAccessible(courseInstanceData) && config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
     // solely on the data we're reading off disk.
