@@ -3,12 +3,16 @@ import { z } from 'zod';
 import { get as _get } from 'lodash';
 import * as error from '@prairielearn/error';
 
+const LTI_CLAIM_CONTEXT = 'https://purl.imsglobal.org/spec/lti/claim/context';
+const LTI_CLAIM_ROLES = 'https://purl.imsglobal.org/spec/lti/claim/roles';
+const LTI_CLAIM_DEPLOYMENT_ID = 'https://purl.imsglobal.org/spec/lti/claim/deployment_id';
+
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
 export const Lti13ClaimSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
-  'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
+  LTI_CLAIM_DEPLOYMENT_ID: z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
     id: z.string(),
@@ -31,9 +35,9 @@ export const Lti13ClaimSchema = z.object({
   email: z.string().optional(),
   locale: z.string().optional(),
   // Could be more from OIDC Standard Claims
-  'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
+  LTI_CLAIM_ROLES: z.string().array(),
 
-  'https://purl.imsglobal.org/spec/lti/claim/context': z
+  LTI_CLAIM_CONTEXT: z
     .object({
       id: z.string(),
       type: z.string().array().nullish(),
@@ -90,34 +94,34 @@ export class Lti13Claim {
     this.req = req;
 
     // Check to see that it's not expired
-    this.isValid();
+    this.assertValid();
   }
 
   // Accessors
 
   get context() {
-    this.isValid();
-    return this.claims['https://purl.imsglobal.org/spec/lti/claim/context'];
+    this.assertValid();
+    return this.claims[LTI_CLAIM_CONTEXT];
   }
 
   get roles() {
-    this.isValid();
-    return this.claims['https://purl.imsglobal.org/spec/lti/claim/roles'];
+    this.assertValid();
+    return this.claims[LTI_CLAIM_ROLES];
   }
 
   get deployment_id() {
-    this.isValid();
-    return this.claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
+    this.assertValid();
+    return this.claims[LTI_CLAIM_DEPLOYMENT_ID];
   }
 
   get target_link_uri() {
-    this.isValid();
+    this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
   }
 
   // Functions
 
-  isValid() {
+  private assertValid() {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
       delete this.req.session['lti13_claims'];
@@ -126,12 +130,19 @@ export class Lti13Claim {
   }
 
   isRoleTestUser() {
-    this.isValid();
+    this.assertValid();
     return this.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
   }
 
+  /**
+   * Return if user claim has roles for Instructor. Can toggle if a TA is considered an
+   * instructor or not.
+   *
+   * @param {boolean} taIsInstructor [false]
+   * @returns boolean
+   */
   isRoleInstructor(taIsInstructor = false) {
-    this.isValid();
+    this.assertValid();
     /*
      TA roles from Canvas development system
      [
@@ -160,12 +171,14 @@ export class Lti13Claim {
   }
 
   get(property: string): any {
-    this.isValid();
+    this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
     return _get(this.claims, property);
   }
 
-  // Invalidate the object and remove the claims from the session
+  /**
+   * Invalidate the object and remove the claims from the session
+   */
   remove() {
     this.valid = false;
     delete this.req.session['lti13_claims'];
