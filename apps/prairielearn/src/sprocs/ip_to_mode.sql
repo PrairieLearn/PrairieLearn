@@ -38,8 +38,6 @@ BEGIN
 
     -- Consider each PT reservation which is either active or corresponds to
     -- a session that will start soon or started recently.
-    --
-    -- For each reservation, we'll determine 
     FOR reservation IN
         SELECT
             r.session_id,
