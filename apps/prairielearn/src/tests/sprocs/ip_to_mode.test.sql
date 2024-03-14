@@ -132,6 +132,66 @@ SELECT
 FROM
   new_users;
 
+-- BLOCK insert_second_reservation
+WITH
+  new_locations AS (
+    INSERT INTO
+      pt_locations (filter_networks)
+    VALUES
+      (TRUE)
+    RETURNING
+      *
+  ),
+  new_location_networks AS (
+    INSERT INTO
+      pt_location_networks (location_id, network)
+    SELECT
+      id,
+      '10.1.0.0/16'
+    FROM
+      new_locations
+  ),
+  new_sessions AS (
+    INSERT INTO
+      pt_sessions (location_id, date)
+    SELECT
+      id,
+      NOW()
+    FROM
+      new_locations
+    RETURNING
+      *
+  ),
+  new_exams AS (
+    INSERT INTO
+      pt_exams DEFAULT
+    VALUES
+    RETURNING
+      *
+  )
+INSERT INTO
+  pt_reservations (
+    enrollment_id,
+    exam_id,
+    session_id,
+    access_start,
+    access_end
+  )
+SELECT
+  e.id,
+  x.id,
+  s.id,
+  now() - interval '1 hour',
+  now() + interval '1 hour'
+FROM
+  pt_enrollments AS e,
+  new_exams AS x,
+  new_sessions AS s
+WHERE
+  e.user_id = $user_id
+RETURNING
+  *;
+
 -- BLOCK check_out_reservation
 UPDATE pt_reservations
 SET

@@ -71,8 +71,6 @@ describe('sproc ip_to_mode tests', function () {
       await helperDb.runInTransactionAndRollback(async () => {
         await sqldb.queryAsync(sql.check_out_reservation, {});
 
-        console.log((await sqldb.queryAsync('SELECT * FROM pt_reservations;', {})).rows);
-
         const result = await sqldb.callAsync('ip_to_mode', [
           '10.0.0.1',
           // 10 minutes ago.
@@ -125,25 +123,36 @@ describe('sproc ip_to_mode tests', function () {
       });
     });
 
-    it('should handler multiple reservations simultaneously', async () => {
+    it('should handle multiple reservations simultaneously', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        // Add another exam/session/location/reservation.
+        await sqldb.queryAsync(sql.insert_second_reservation, { user_id });
+
         await sqldb.queryAsync(sql.check_out_reservation, {});
 
-        const resultA = await sqldb.callAsync('ip_to_mode', [
+        const firstSessionInLocation = await sqldb.callAsync('ip_to_mode', [
           '10.0.0.1',
           // 10 minutes ago.
           new Date(Date.now() - 1000 * 60 * 10),
           user_id,
         ]);
-        assert.equal(resultA.rows[0].mode, 'Exam');
+        assert.equal(firstSessionInLocation.rows[0].mode, 'Exam');
 
-        const resultB = await sqldb.callAsync('ip_to_mode', [
+        const secondSessionInLocation = await sqldb.callAsync('ip_to_mode', [
           '10.1.1.1',
           // 10 minutes ago.
           new Date(Date.now() - 1000 * 60 * 10),
           user_id,
         ]);
-        assert.equal(resultB.rows[0].mode, 'Exam');
+        assert.equal(secondSessionInLocation.rows[0].mode, 'Exam');
+
+        const notInLocation = await sqldb.callAsync('ip_to_mode', [
+          '192.168.0.1',
+          // 10 minutes ago.
+          new Date(Date.now() - 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(notInLocation.rows[0].mode, 'Public');
       });
     });
   });
