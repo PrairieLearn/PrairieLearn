@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   UNIQUE (assessment_id, user_id),
   UNIQUE (assessment_id, group_id),
-  CHECK (num_nonnulls (user_id, group_id) = 1)
+  CHECK (num_nonnulls (user_id, group_id) = 1),
   CHECK (credit >= 0)
 );
