@@ -1,9 +1,11 @@
 import _ = require('lodash');
+import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
 import { CourseData, CourseInstance } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const perf = makePerformance('courseInstances');
 
@@ -34,10 +36,13 @@ function getParamsForCourseInstance(courseInstance: CourseInstance | null | unde
   };
 }
 
-export async function sync(courseId: string, courseData: CourseData): Promise<Record<string, any>> {
+export async function sync(
+  courseId: string,
+  courseData: CourseData,
+): Promise<Record<string, string>> {
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
-    ([shortName, courseIntanceData]) => {
-      const { courseInstance } = courseIntanceData;
+    ([shortName, courseInstanceData]) => {
+      const { courseInstance } = courseInstanceData;
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
@@ -51,8 +56,12 @@ export async function sync(courseId: string, courseData: CourseData): Promise<Re
   const params = [courseInstanceParams, courseId];
 
   perf.start('sproc:sync_course_instances');
-  const result = await sqldb.callOneRowAsync('sync_course_instances', params);
+  const result = await sqldb.callRow(
+    'sync_course_instances',
+    params,
+    z.record(z.string(), IdSchema),
+  );
   perf.end('sproc:sync_course_instances');
 
-  return result.rows[0].name_to_id_map as Record<string, any>;
+  return result;
 }

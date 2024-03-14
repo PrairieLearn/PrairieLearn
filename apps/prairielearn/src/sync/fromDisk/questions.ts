@@ -1,8 +1,10 @@
+import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
 import { CourseData, Question } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const perf = makePerformance('questions');
 
@@ -50,7 +52,10 @@ function getParamsForQuestion(q: Question | null | undefined) {
   };
 }
 
-export async function sync(courseId: string, courseData: CourseData): Promise<Record<string, any>> {
+export async function sync(
+  courseId: string,
+  courseData: CourseData,
+): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
@@ -64,8 +69,8 @@ export async function sync(courseId: string, courseData: CourseData): Promise<Re
   const params = [questionParams, courseId];
 
   perf.start('sproc:sync_questions');
-  const result = await sqldb.callOneRowAsync('sync_questions', params);
+  const result = await sqldb.callRow('sync_questions', params, z.record(z.string(), IdSchema));
   perf.end('sproc:sync_questions');
 
-  return result.rows[0].name_to_id_map as Record<string, any>;
+  return result;
 }
