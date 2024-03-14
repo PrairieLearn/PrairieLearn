@@ -19,7 +19,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
   });
 
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
@@ -77,7 +77,7 @@ const WorkspaceVersionLogs = ({
   resLocals,
 }) => {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {

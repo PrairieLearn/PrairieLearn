@@ -14,7 +14,7 @@ FROM
   questions AS q
 WHERE
   q.uuid = $uuid
-  AND q.course_id = $course_id
+  AND q.course_id = $course_id -- TODO: change when we have a way for instructors to copy questions shared with their course
   AND q.deleted_at IS NULL;
 
 -- BLOCK soft_delete_file_transfer

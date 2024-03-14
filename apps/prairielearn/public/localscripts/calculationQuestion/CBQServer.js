@@ -21,7 +21,7 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, Prairie
     // we need to choose at least this many correct answers to ensure we can make the total number
     var minNumberCorrect = Math.max(
       options.minCorrectAnswers,
-      options.numberAnswers - options.incorrectAnswers.length
+      options.numberAnswers - options.incorrectAnswers.length,
     );
 
     // but we must have minNumber <= maxNumber

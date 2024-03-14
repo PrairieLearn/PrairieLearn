@@ -1,0 +1,7 @@
+.rst-content div[class^='highlight'] {
+  border: none;
+}
+
+.rst-content div[class^='highlight'] pre {
+  padding: 0;
+}

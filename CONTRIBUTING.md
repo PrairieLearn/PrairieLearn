@@ -20,7 +20,7 @@ You're now ready to start implementing your changes!
 
 The aforementioned setup documentation also includes instructions on starting a server, running tests, and running the linters.
 
-The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure.
+The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure. Also note that there has been a push to update existing code to use a new set of patterns and best practices, you can find some guidelines in [this Discussion post](https://github.com/PrairieLearn/PrairieLearn/discussions/8874).
 
 If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://go.illinois.edu/PrairieLearnSlack)!
 
@@ -35,6 +35,7 @@ We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/gi
   - For changes that impact UI, it can be helpful to include screenshots and screen recordings.
   - If applicable, include instructions on how to manually test or verify your change.
   - If the change you're making will resolve an existing issue, you should [link the issue to the pull request](https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue) so that the issue is closed automatically once the pull request is merged.
+  - For larger changes (assuming you have already discussed your proposals with the development team, as discussed above), you should break down your changes into smaller, self-contained changes that can be more easily reviewed and tested.
 - Monitor the [GitHub status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks). If they fail, you should check the output to see why. You may need to fix a broken test, adjust the formatting of your code, or fix a lint error.
 - Like many open-source projects, we require you to "sign" a contributor license agreement (CLA) prior to accepting any contributions. When you open your first pull request, a bot will prompt you to leave a comment stating that you accept the terms of [our CLA](https://github.com/PrairieLearn/cla).
 - One or more PrairieLearn maintainers will review your PR. You should be prepared to engage with the maintainers to answer questions, update code, etc.

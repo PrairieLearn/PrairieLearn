@@ -27,12 +27,6 @@ function fakeSqs(options = {}) {
       s3RootKey: randomString(),
     };
   }
-  if (options.mergeMessage) {
-    message = {
-      ...message,
-      ...options.mergeMessage,
-    };
-  }
 
   const receiveMessage = sinon.spy(() => {
     if (callCount < timeoutCount) {
@@ -75,13 +69,13 @@ function fakeSqs(options = {}) {
   });
 }
 
-const TIMEOUT_OVERHEAD = 300;
+const VISIBILITY_TIMEOUT = 60;
 
 describe('queueReceiver', () => {
   beforeEach(() => {
     // Our config-loading system chokes when it's not running in AWS. Instead
     // of loading it, we'll just set the values we need for these tests.
-    config.timeoutOverhead = TIMEOUT_OVERHEAD;
+    config.visibilityTimeout = VISIBILITY_TIMEOUT;
   });
 
   it('tries to receive a message from the correct queue url', (done) => {
@@ -90,12 +84,12 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       'helloworld',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.receiveMessage.args[0][0].input.QueueUrl, 'helloworld');
         done();
-      }
+      },
     );
   });
 
@@ -107,12 +101,12 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       'helloworld',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.receiveMessage.callCount, 2);
         done();
-      }
+      },
     );
   });
 
@@ -124,12 +118,12 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       '',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -144,33 +138,29 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       '',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
   it('updates the timeout of received messages', (done) => {
-    const sqs = fakeSqs({
-      mergeMessage: {
-        timeout: 10,
-      },
-    });
+    const sqs = fakeSqs();
 
     queueReceiver(
       sqs,
       '',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.changeMessageVisibility.callCount, 1);
         const params = sqs.changeMessageVisibility.args[0][0].input;
-        assert.equal(params.VisibilityTimeout, 10 + TIMEOUT_OVERHEAD);
+        assert.equal(params.VisibilityTimeout, VISIBILITY_TIMEOUT);
         done();
-      }
+      },
     );
   });
 
@@ -180,12 +170,12 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       '',
-      (message, errCb, _successCb) => errCb(new Error('RIP')),
+      (message, done) => done(new Error('RIP')),
       (err) => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -195,14 +185,14 @@ describe('queueReceiver', () => {
     queueReceiver(
       sqs,
       'goodbyeworld',
-      (message, errCb, successCb) => successCb(),
+      (message, done) => done(),
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.deleteMessage.callCount, 1);
         assert.equal(sqs.deleteMessage.args[0][0].input.QueueUrl, 'goodbyeworld');
         assert.equal(sqs.deleteMessage.args[0][0].input.ReceiptHandle, sqs.receiptHandle);
         done();
-      }
+      },
     );
   });
 });

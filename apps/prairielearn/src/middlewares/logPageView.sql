@@ -11,7 +11,8 @@ WITH
         question_id,
         variant_id,
         page_type,
-        path
+        path,
+        client_fingerprint_id
       )
     VALUES
       (
@@ -23,7 +24,8 @@ WITH
         $question_id,
         $variant_id,
         $page_type,
-        $path
+        $path,
+        $client_fingerprint_id
       )
     RETURNING
       id

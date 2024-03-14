@@ -123,7 +123,7 @@ export function handler(): RequestHandler {
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
-      }
+      },
     );
     req.pipe(proxyReq, { end: true });
   };
@@ -201,7 +201,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
 function makeManifest(
   metafile: Metafile,
   sourceDirectory: string,
-  buildDirectory: string
+  buildDirectory: string,
 ): Record<string, string> {
   const manifest: Record<string, string> = {};
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
@@ -216,7 +216,7 @@ function makeManifest(
 
 export async function build(
   sourceDirectory: string,
-  buildDirectory: string
+  buildDirectory: string,
 ): Promise<AssetsManifest> {
   // Remove existing assets to ensure that no stale assets are left behind.
   await fs.remove(buildDirectory);

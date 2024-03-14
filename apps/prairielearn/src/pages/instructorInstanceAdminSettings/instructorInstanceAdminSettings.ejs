@@ -40,7 +40,7 @@
         });
     </script>
     <%- include('../partials/navbar'); %>
-    <main id="content" class="container-fluid">
+    <main id="content" class="container">
         <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
@@ -87,6 +87,7 @@
                               <i class="far fa-clipboard"></i>
                             </button>
                             <button type="button" title="Student Link QR Code"
+                                    aria-label="Student Link QR Code"
                                     class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button">
                               <i class="fas fa-qrcode"></i>
                             </button>

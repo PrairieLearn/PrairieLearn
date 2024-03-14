@@ -1,29 +1,29 @@
 // @ts-check
-const { S3 } = require('@aws-sdk/client-s3');
-const {
+import { S3 } from '@aws-sdk/client-s3';
+import {
   SQSClient,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
+} from '@aws-sdk/client-sqs';
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
-const { makeS3ClientConfig, makeAwsClientConfig } = require('./aws');
-const { config } = require('./config');
-const externalGradingSocket = require('./externalGradingSocket');
-const assessment = require('./assessment');
-const externalGraderCommon = require('./externalGraderCommon');
-const { deferredPromise } = require('./deferred');
+import { makeS3ClientConfig, makeAwsClientConfig } from './aws';
+import { config } from './config';
+import { gradingJobStatusUpdated } from './externalGradingSocket';
+import { processGradingResult } from './externalGrader';
+import * as externalGraderCommon from './externalGraderCommon';
+import { deferredPromise } from './deferred';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
 
-module.exports.init = async function () {
+export async function init() {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
@@ -52,7 +52,7 @@ module.exports.init = async function () {
               MaxNumberOfMessages: 10,
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
-            })
+            }),
           );
           messages = data.Messages;
         } catch (err) {
@@ -78,21 +78,21 @@ module.exports.init = async function () {
               new DeleteMessageCommand({
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
-              })
+              }),
             );
           } catch (err) {
             logger.error('Error processing external grader results', err);
             Sentry.captureException(err);
           }
-        })
+        }),
       );
     }
   })().then(() => {
     // Do nothing
   });
-};
+}
 
-module.exports.stop = async function () {
+export async function stop() {
   if (!config.externalGradingUseAws) return;
 
   if (abortController.signal.aborted) {
@@ -104,7 +104,7 @@ module.exports.stop = async function () {
   // The main work loop will resolve this deferred promise when it's finished
   // with any current processing.
   await processingFinished.promise;
-};
+}
 
 /**
  * @param {SQSClient} sqs
@@ -112,17 +112,17 @@ module.exports.stop = async function () {
  */
 async function loadQueueUrl(sqs) {
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`
+    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
   );
   const data = await sqs.send(
-    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName })
+    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName }),
   );
   const queueUrl = data.QueueUrl;
   if (!queueUrl) {
     throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
   }
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`
+    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`,
   );
   return queueUrl;
 }
@@ -142,7 +142,7 @@ async function processMessage(data) {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });
-    externalGradingSocket.gradingJobStatusUpdated(jobId);
+    gradingJobStatusUpdated(jobId);
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
@@ -169,7 +169,7 @@ async function processMessage(data) {
         ResponseContentType: 'application/json',
       });
       if (!data.Body) throw new Error('No body in S3 response');
-      await processResults(jobId, data.Body.transformToString());
+      await processResults(jobId, await data.Body.transformToString());
       return;
     }
   } else {
@@ -178,5 +178,5 @@ async function processMessage(data) {
 }
 
 async function processResults(jobId, data) {
-  await assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
+  await processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }

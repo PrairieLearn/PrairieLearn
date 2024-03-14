@@ -21,11 +21,10 @@ WHERE
 -- BLOCK select_metadata_for_chunks
 SELECT
   chunks.*,
-  (chunks_arr ->> 'type')::enum_chunk_type AS
-type,
-q.qid AS question_name,
-a.tid AS assessment_name,
-ci.short_name AS course_instance_name
+  (chunks_arr ->> 'type')::enum_chunk_type AS type,
+  q.qid AS question_name,
+  a.tid AS assessment_name,
+  ci.short_name AS course_instance_name
 FROM
   JSON_ARRAY_ELEMENTS($chunks_arr::json) AS chunks_arr
   -- Note that we specifically use a LEFT JOIN here - this is what allows the
@@ -156,22 +155,21 @@ ON CONFLICT (
 ) DO
 UPDATE
 SET
-type = EXCLUDED.type,
-question_id = EXCLUDED.question_id,
-course_instance_id = EXCLUDED.course_instance_id,
-assessment_id = EXCLUDED.assessment_id,
-uuid = EXCLUDED.uuid;
+  type = EXCLUDED.type,
+  question_id = EXCLUDED.question_id,
+  course_instance_id = EXCLUDED.course_instance_id,
+  assessment_id = EXCLUDED.assessment_id,
+  uuid = EXCLUDED.uuid;
 
 -- BLOCK delete_chunks
 WITH
   chunks_metadata AS (
     SELECT
-      (cm ->> 'type')::enum_chunk_type AS
-    type,
-    q.id AS question_id,
-    ci.id AS course_instance_id,
-    a.id AS assessment_id,
-    (cm ->> 'uuid')::uuid AS uuid
+      (cm ->> 'type')::enum_chunk_type AS type,
+      q.id AS question_id,
+      ci.id AS course_instance_id,
+      a.id AS assessment_id,
+      (cm ->> 'uuid')::uuid AS uuid
     FROM
       JSON_ARRAY_ELEMENTS($chunks) AS cm
       LEFT JOIN questions AS q ON (

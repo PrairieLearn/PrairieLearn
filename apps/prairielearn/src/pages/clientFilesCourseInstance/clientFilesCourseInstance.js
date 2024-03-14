@@ -9,12 +9,7 @@ const ERR = require('async-stacktrace');
 router.get('/*', function (req, res, next) {
   const filename = req.params[0];
   if (!filename) {
-    return next(
-      error.make(400, 'No filename provided within clientFilesCourseInstance directory', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
+    return next(error.make(400, 'No filename provided within clientFilesCourseInstance directory'));
   }
   const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
   const chunk = {
@@ -28,7 +23,7 @@ router.get('/*', function (req, res, next) {
       coursePath,
       'courseInstances',
       res.locals.course_instance.short_name,
-      'clientFilesCourseInstance'
+      'clientFilesCourseInstance',
     );
     res.sendFile(filename, { root: clientFilesDir });
   });

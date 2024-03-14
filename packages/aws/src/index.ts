@@ -1,0 +1,1 @@
+export { makeAwsConfigProvider } from './config';

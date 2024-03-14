@@ -1,6 +1,5 @@
 import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
-import { callbackify } from 'util';
 import * as _ from 'lodash';
 
 import { makeAwsClientConfig } from '../../lib/aws';
@@ -12,7 +11,7 @@ const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
 
-export const run = callbackify(async () => {
+export async function run() {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
@@ -92,13 +91,13 @@ export const run = callbackify(async () => {
   });
 
   const pageViewsPerSecondMetric = metrics.MetricDataResults?.find(
-    (m) => m.Id === PAGE_VIEWS_PER_SECOND
+    (m) => m.Id === PAGE_VIEWS_PER_SECOND,
   );
   const activeWorkersPerSecondMetric = metrics.MetricDataResults?.find(
-    (m) => m.Id === ACTIVE_WORKERS_PER_SECOND
+    (m) => m.Id === ACTIVE_WORKERS_PER_SECOND,
   );
   const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults?.find(
-    (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
+    (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE,
   );
 
   const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric?.Values) ?? 0;
@@ -116,8 +115,8 @@ export const run = callbackify(async () => {
       desiredInstancesByPageViews,
       desiredInstancesByActiveWorkers,
       desiredInstancesByLoadBalancerRequests,
-      1
-    )
+      1,
+    ),
   );
 
   const dimensions: Dimension[] = [{ Name: 'Server Group', Value: config.groupName }];
@@ -161,7 +160,7 @@ export const run = callbackify(async () => {
   });
 
   await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, desiredInstances);
-});
+}
 
 /**
  * Sets the desired capacity of the given autoscaling group.

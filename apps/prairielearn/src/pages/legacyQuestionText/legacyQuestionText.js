@@ -34,7 +34,7 @@ router.get('/:filename', function (req, res, next) {
         function (err, fullPath, effectiveFilename, rootPath) {
           if (ERR(err, next)) return;
           res.sendFile(effectiveFilename, { root: rootPath });
-        }
+        },
       );
     });
   });

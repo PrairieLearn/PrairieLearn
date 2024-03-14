@@ -4,6 +4,10 @@ interface ErrorWithData extends Error {
   data: any;
 }
 
+interface ErrorWithInfo extends Error {
+  info: string;
+}
+
 interface ErrorWithStatus extends Error {
   status: number;
 }
@@ -22,9 +26,15 @@ export function make(status: number, message: string, data?: any): ErrorWithStat
   return err;
 }
 
-export function makeWithData(message: string, data: any): any {
+export function makeWithData(message: string, data: any): ErrorWithData {
   const err = new Error(message) as ErrorWithData;
   err.data = data;
+  return err;
+}
+
+export function makeWithInfo(message: string, info: string): ErrorWithInfo {
+  const err = new Error(message) as ErrorWithInfo;
+  err.info = info;
   return err;
 }
 

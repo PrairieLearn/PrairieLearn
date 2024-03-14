@@ -1,9 +1,0 @@
-<form name="delete-group-form" method="POST">
-  <input type="hidden" name="__action" value="delete_group">
-  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-  <input type="hidden" name="group_id" value="<%= row.group_id %>">
-  <button type="button" class="btn btn-secondary" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-danger">Delete</button>
-</form>

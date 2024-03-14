@@ -1,68 +1,35 @@
--- BLOCK upsert
+-- BLOCK get_session
+SELECT
+  *
+FROM
+  user_sessions
+WHERE
+  session_id = $session_id
+  AND expires_at > now()
+  AND revoked_at IS NULL;
+
+-- BLOCK set_session
 INSERT INTO
-  pl_sessions (sid, session, updated_at)
+  user_sessions (session_id, user_id, data, updated_at, expires_at)
 VALUES
-  ($sid, $session::jsonb, now())
-ON CONFLICT (sid) DO
+  (
+    $session_id,
+    $user_id,
+    $data::jsonb,
+    now(),
+    $expires_at
+  )
+ON CONFLICT (session_id) DO
 UPDATE
 SET
-  session = $session::jsonb,
-  updated_at = now();
+  user_id = $user_id,
+  data = $data::jsonb,
+  updated_at = now(),
+  expires_at = $expires_at;
 
--- BLOCK get
-WITH
-  delete_expired AS (
-    DELETE FROM pl_sessions
-    WHERE
-      sid = $sid
-      AND EXTRACT(
-        EPOCH
-        FROM
-          (now() - updated_at)
-      ) >= $expirationInSeconds
-    RETURNING
-      sid
-  )
-SELECT
-  pl_sessions.*
-FROM
-  pl_sessions
-  LEFT JOIN delete_expired USING (sid)
-  -- Only return something that isn't in the deleted result
+-- BLOCK destroy_session
+UPDATE user_sessions
+SET
+  revoked_at = now()
 WHERE
-  sid = $sid
-  AND delete_expired.sid IS NULL;
-
--- BLOCK destroy
-DELETE FROM pl_sessions
-WHERE
-  sid = $sid;
-
--- BLOCK length
-SELECT
-  count(*) AS count
-FROM
-  pl_sessions
-WHERE
-  EXTRACT(
-    EPOCH
-    FROM
-      (now() - updated_at)
-  ) < $expirationInSeconds;
-
--- BLOCK clear
-TRUNCATE pl_sessions;
-
--- BLOCK all_sessions
-SELECT
-  session
-FROM
-  pl_sessions
-WHERE
-  EXTRACT(
-    EPOCH
-    FROM
-      (now() - updated_at)
-  ) < $expirationInSeconds
-ORDER BY
-  sid;
+  session_id = $session_id;

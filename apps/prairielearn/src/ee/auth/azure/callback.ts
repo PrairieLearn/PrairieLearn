@@ -22,7 +22,7 @@ function authenticate(req, res): Promise<any> {
         } else {
           resolve(user);
         }
-      }
+      },
     )(req, res);
   });
 }
@@ -43,7 +43,7 @@ router.post(
       redirect: true,
       pl_authn_cookie: true,
     });
-  })
+  }),
 );
 
 export default router;

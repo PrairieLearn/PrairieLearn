@@ -60,6 +60,23 @@ describe('config', () => {
     assert.equal(loader.config.features.baz, true);
   });
 
+  it('replaces arrays', async () => {
+    const schema = z.object({
+      courseDirs: z
+        .array(z.string())
+        .default(['exampleCourse', '/course', '/course2', '/course3', '/course4', '/course5']),
+    });
+    const loader = new ConfigLoader(schema);
+
+    await loader.loadAndValidate([
+      makeLiteralConfigSource({
+        courseDirs: ['testCourse', '/mycourse'],
+      }),
+    ]);
+
+    assert.deepEqual(loader.config.courseDirs, ['testCourse', '/mycourse']);
+  });
+
   it('maintains object identity when loading config', async () => {
     const schema = z.object({});
     const loader = new ConfigLoader(schema);

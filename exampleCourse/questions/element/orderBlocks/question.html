@@ -61,25 +61,29 @@ This question illustrates different use cases for the
   Remember to indent your code! </p>
 <p>
  This examples uses <code>grading-method="ranking"</code> to control how the correct solution is ordered
-  and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation.
+  and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation. This example
+  also demonstrates the use of the attribute <code>distractor-for</code> to visual pair together blocks with
+  their distractor blocks.
 </p>
 </pl-question-panel>
-
 
 <pl-order-blocks
   answers-name="python-ordered"
   grading-method="ranking"
   indentation="true"
+  max-indent="2"
   format="code"
   code-language="python"
+  feedback="first-wrong-verbose"
 >
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
-  <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
-  <pl-answer correct="true" ranking="3" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1" tag="addfirst">sum += first</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1" tag="addsecond">sum += second</pl-answer>
   <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
-  <pl-answer correct="false">sum + first</pl-answer>
-  <pl-answer correct="false">sum + second</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst" distractor-feedback="You need to store the result of the sum in a variable!">sum + first</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst">sum &= first</pl-answer>
+  <pl-answer correct="false" distractor-for="addsecond" distractor-feedback="You need to store the result of the sum in a variable!">sum + second</pl-answer>
 </pl-order-blocks>
 
 <hr>
@@ -98,7 +102,12 @@ The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+<pl-order-blocks
+  answers-name="conjunction-implies-conjunction"
+  grading-method="dag"
+  solution-placement="bottom"
+  feedback="first-wrong"
+>
   <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
@@ -126,3 +135,31 @@ to display the input area above the output area.</p>
   <pl-answer correct="false">carrot</pl-answer>
   <pl-answer correct="true">apple</pl-answer>
 </pl-order-blocks>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 6:</strong> Create a SQL command that selects all students who are enrolled in computer science.
+  </p>
+
+  <p>
+    This example uses the attributes <code>solution-placement="bottom"</code>
+    and <code>block_orientation="horizontal"</code> to create horizontal arrangement 
+    of the source blocks.
+  </p>
+  <br>
+  <b>Note:</b> This model of block arrangement, particularly for the context of computer science, is attributed to
+  <a href="https://doi.org/10.1145/3488042.3489968">"Regex Parsons: Using Horizontal Parsons Problems to Scaffold Learning Regex"</a>
+
+</pl-question-panel>
+
+<pl-order-blocks answers-name="sql-query" format="code" code-language="sql" solution-placement="bottom" inline="true">
+  <pl-answer correct="true">SELECT</pl-answer>
+  <pl-answer correct="true">students</pl-answer>
+  <pl-answer correct="true">FROM</pl-answer>
+  <pl-answer correct="true">enrollments</pl-answer>
+  <pl-answer correct="true">WHERE</pl-answer>
+  <pl-answer correct="true">major</pl-answer>
+  <pl-answer correct="true">=</pl-answer>
+  <pl-answer correct="true">"computer science"</pl-answer>
+</pl-order-blocks>
+

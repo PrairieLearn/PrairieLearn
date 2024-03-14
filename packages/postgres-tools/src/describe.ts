@@ -58,7 +58,7 @@ interface DescribeOptions {
 
 async function describeWithPool(
   pool: PostgresPool,
-  options: DescribeOptions
+  options: DescribeOptions,
 ): Promise<DatabaseDescription> {
   const ignoreTables = options?.ignoreTables || [];
   const ignoreEnums = options?.ignoreEnums || [];
@@ -80,16 +80,19 @@ async function describeWithPool(
       .filter((ignore) => {
         return /^[^\s.]*\.[^\s.]*$/.test(ignore);
       })
-      .reduce((result, value) => {
-        const res = /^(([^\s.]*)\.([^\s.]*))$/.exec(value);
-        if (!res) {
-          throw new Error(`Invalid ignore column: ${value}`);
-        }
-        const table = res[2];
-        const column = res[3];
-        (result[table] || (result[table] = [])).push(column);
-        return result;
-      }, {} as Record<string, string[]>);
+      .reduce(
+        (result, value) => {
+          const res = /^(([^\s.]*)\.([^\s.]*))$/.exec(value);
+          if (!res) {
+            throw new Error(`Invalid ignore column: ${value}`);
+          }
+          const table = res[2];
+          const column = res[3];
+          (result[table] || (result[table] = [])).push(column);
+          return result;
+        },
+        {} as Record<string, string[]>,
+      );
   }
 
   // Get column info for each table
@@ -110,7 +113,7 @@ async function describeWithPool(
       sql.get_foreign_key_constraints_for_table,
       {
         oid: table.oid,
-      }
+      },
     );
 
     const referenceResults = await pool.queryAsync(sql.get_references_for_table, {
@@ -156,7 +159,7 @@ async function describeWithPool(
  */
 export async function describeDatabase(
   databaseName: string,
-  options: DescribeOptions = {}
+  options: DescribeOptions = {},
 ): Promise<DatabaseDescription> {
   // Connect to the database.
   const pool = new PostgresPool();
@@ -181,7 +184,7 @@ export async function describeDatabase(
 
 export function formatDatabaseDescription(
   description: DatabaseDescription,
-  options = { coloredOutput: true }
+  options = { coloredOutput: true },
 ): { tables: Record<string, string>; enums: Record<string, string> } {
   const output = {
     tables: {} as Record<string, string>,

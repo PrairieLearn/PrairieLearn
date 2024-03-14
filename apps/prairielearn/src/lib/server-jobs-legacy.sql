@@ -69,7 +69,7 @@ SELECT
   $description,
   'Running',
   $command,
-  $arguments::TEXT[],
+  $arguments::TEXT [],
   $working_directory,
   $env
 FROM

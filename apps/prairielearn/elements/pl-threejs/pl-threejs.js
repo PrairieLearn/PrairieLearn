@@ -109,6 +109,7 @@ function PLThreeJS(options) {
 
   // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class FontLoader extends THREE.Loader {
+    // eslint-disable-next-line @typescript-eslint/no-useless-constructor
     constructor(manager) {
       super(manager);
     }
@@ -126,7 +127,7 @@ function PLThreeJS(options) {
           if (onLoad) onLoad(font);
         },
         onProgress,
-        onError
+        onError,
       );
     }
 
@@ -169,9 +170,7 @@ function PLThreeJS(options) {
     let offsetX = 0,
       offsetY = 0;
 
-    for (let i = 0; i < chars.length; i++) {
-      const char = chars[i];
-
+    for (const char of chars) {
       if (char === '\n') {
         offsetX = 0;
         offsetY -= line_height;
@@ -195,7 +194,7 @@ function PLThreeJS(options) {
           char +
           '" does not exists in font family ' +
           data.familyName +
-          '.'
+          '.',
       );
 
       return;
@@ -266,7 +265,7 @@ function PLThreeJS(options) {
           function (font) {
             this.font = font;
             callback(null);
-          }.bind(this)
+          }.bind(this),
         );
       }.bind(this),
       // Load each stl
@@ -286,7 +285,7 @@ function PLThreeJS(options) {
                   });
                   var mesh = new THREE.Mesh(
                     geometry.scale(obj.scale, obj.scale, obj.scale),
-                    material
+                    material,
                   );
                   mesh.castShadow = true;
                   mesh.receiveShadow = true;
@@ -299,7 +298,7 @@ function PLThreeJS(options) {
                   }
                   // objects_to_drag.push(mesh);
                   callback(null);
-                }.bind(this)
+                }.bind(this),
               );
             } else if (obj.type === 'txt') {
               var geometry = new TextGeometry(obj.text, {
@@ -337,7 +336,7 @@ function PLThreeJS(options) {
           }.bind(this),
           function (err) {
             callback(err);
-          }
+          },
         );
       }.bind(this),
       function (callback) {
@@ -366,7 +365,7 @@ function PLThreeJS(options) {
 
         // buttons to toggle between camera and body motion
         $('#toggle-type-of-motion-' + uuid).change(
-          PLThreeJS.prototype.toggleTypeOfMotion.bind(this)
+          PLThreeJS.prototype.toggleTypeOfMotion.bind(this),
         );
 
         // mouse control of body pose
@@ -401,16 +400,16 @@ function PLThreeJS(options) {
 
         // buttons to toggle visibility
         $('#pl-threejs-button-bodyobjectsvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this)
+          PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this),
         );
         $('#pl-threejs-button-spaceobjectsvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this)
+          PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this),
         );
         $('#pl-threejs-button-framevisible-' + uuid).click(
-          PLThreeJS.prototype.toggleFrameVisible.bind(this)
+          PLThreeJS.prototype.toggleFrameVisible.bind(this),
         );
         $('#pl-threejs-button-shadowvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleShadowVisible.bind(this)
+          PLThreeJS.prototype.toggleShadowVisible.bind(this),
         );
 
         // reset button
@@ -421,7 +420,7 @@ function PLThreeJS(options) {
             this.camera.position.fromArray(this.resetPose.camera_position);
             this.camera.lookAt(0, 0, 0);
             this.render();
-          }.bind(this)
+          }.bind(this),
         );
 
         // resize with window
@@ -433,7 +432,7 @@ function PLThreeJS(options) {
     function (_err, _results) {
       // Do nothing
       return;
-    }
+    },
   );
 }
 
@@ -686,7 +685,7 @@ PLThreeJS.prototype.onmousedown = function (event) {
     // - state for translation
     this.translatePlane.setFromNormalAndCoplanarPoint(
       this.camera.getWorldDirection(this.translatePlane.normal),
-      this.bodyGroup.position
+      this.bodyGroup.position,
     );
     if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
       this.translateOffset.copy(this.translateIntersection).sub(this.bodyGroup.position);
@@ -716,7 +715,7 @@ PLThreeJS.prototype.onmousemove = function (e) {
       var qCamera = this.camera.quaternion.clone();
       // Rotation to be applied by mouse motion (in camera frame)
       var qMotion = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(deltaMove.y * (Math.PI / 180), deltaMove.x * (Math.PI / 180), 0, 'XYZ')
+        new THREE.Euler(deltaMove.y * (Math.PI / 180), deltaMove.x * (Math.PI / 180), 0, 'XYZ'),
       );
       // Rotation to be applied by mouse motion (in world frame) - note that
       // ".inverse()" modifies qCamera in place, so the order here matters

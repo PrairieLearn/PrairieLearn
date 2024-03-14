@@ -20,7 +20,7 @@ async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promi
       }
       await fn(tmpDir.path);
     },
-    { unsafeCleanup: true }
+    { unsafeCleanup: true },
   );
 }
 
@@ -30,7 +30,7 @@ describe('load-migrations', () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await assert.isRejected(
           readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-          'Invalid migration filename: 001_testing.sql'
+          'Invalid migration filename: 001_testing.sql',
         );
       });
     });
@@ -41,9 +41,9 @@ describe('load-migrations', () => {
         async (tmpDir) => {
           await assert.isRejected(
             readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-            'Duplicate migration timestamp'
+            'Duplicate migration timestamp',
           );
-        }
+        },
       );
     });
   });
@@ -84,7 +84,7 @@ describe('load-migrations', () => {
             filename: '20220101010103_testing_3.sql',
             timestamp: '20220101010103',
           },
-        ]
+        ],
       );
     });
   });

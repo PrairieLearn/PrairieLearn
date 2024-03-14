@@ -25,7 +25,7 @@ router.get(
     } else {
       res.status(200).send(data[0]);
     }
-  })
+  }),
 );
 
 router.get(
@@ -36,7 +36,7 @@ router.get(
       unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
     });
     res.status(200).send(result.rows[0].item);
-  })
+  }),
 );
 
 router.get(
@@ -48,7 +48,7 @@ router.get(
       unsafe_submission_id: null,
     });
     res.status(200).send(result.rows[0].item);
-  })
+  }),
 );
 
 router.get(
@@ -67,10 +67,10 @@ router.get(
 
     const logs = await assessment.selectAssessmentInstanceLog(
       result.rows[0].assessment_instance_id,
-      true
+      true,
     );
     res.status(200).send(logs);
-  })
+  }),
 );
 
 module.exports = router;

@@ -1,14 +1,14 @@
-import ERR from 'async-stacktrace';
+import ERR = require('async-stacktrace');
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import passport = require('passport');
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn';
 
 import { strategy } from './index';
 import { SamlTest } from './router.html';
-import { getInstitutionSamlProvider } from '../../institution/utils';
+import { getInstitutionSamlProvider } from '../../lib/institution';
 
 const router = Router({ mergeParams: true });
 
@@ -20,7 +20,7 @@ router.get('/login', (req, res, next) => {
     additionalParams: req.query.RelayState
       ? {
           // This is used be the SAML configuration page to test SAML. It includes
-          // `?RelayState=test` in the login request. When the callback page recieves
+          // `?RelayState=test` in the login request. When the callback page receives
           // that value, it displays the received attributes instead of creating a
           // new session for the user.
           RelayState: req.query.RelayState,
@@ -45,7 +45,7 @@ function authenticate(req, res): Promise<any> {
         } else {
           resolve(user);
         }
-      }
+      },
     )(req, res);
   });
 }
@@ -82,7 +82,7 @@ router.post(
           nameAttribute,
           attributes: user.attributes,
           resLocals: res.locals,
-        })
+        }),
       );
       return;
     }
@@ -100,13 +100,14 @@ router.post(
       name: authnName,
       uin: authnUin,
       provider: 'SAML',
+      institution_id: institutionId,
     };
 
     await authnLib.loadUser(req, res, authnParams, {
       pl_authn_cookie: true,
       redirect: true,
     });
-  })
+  }),
 );
 
 router.get(
@@ -125,9 +126,9 @@ router.get(
         if (ERR(err, next)) return;
         res.type('application/xml');
         res.send(metadata);
-      }
+      },
     );
-  })
+  }),
 );
 
 export default router;

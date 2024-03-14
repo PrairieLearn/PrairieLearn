@@ -37,7 +37,7 @@ async function createDatabase(
     database,
     templateDatabase,
     prepare,
-  }: CreateDatabaseOptions = {}
+  }: CreateDatabaseOptions = {},
 ): Promise<void> {
   const client = new pg.Client({
     ...getPoolConfig(options),
@@ -46,7 +46,7 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    database ?? getDatabaseNameForCurrentMochaWorker(options.database)
+    database ?? getDatabaseNameForCurrentMochaWorker(options.database),
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
@@ -76,7 +76,7 @@ async function createDatabase(
       },
       (err) => {
         throw err;
-      }
+      },
     );
   }
 }
@@ -103,7 +103,7 @@ async function resetDatabase(options: PostgresTestUtilsOptions): Promise<void> {
 
 async function dropDatabase(
   options: PostgresTestUtilsOptions,
-  { closePool = true, force = false, database }: DropDatabaseOptions = {}
+  { closePool = true, force = false, database }: DropDatabaseOptions = {},
 ): Promise<void> {
   if (closePool) {
     await defaultPool.closeAsync();

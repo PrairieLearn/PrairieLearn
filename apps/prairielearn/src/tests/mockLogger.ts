@@ -1,4 +1,4 @@
-import stream = require('stream');
+import * as stream from 'stream';
 import winston = require('winston');
 
 interface MockLogger {

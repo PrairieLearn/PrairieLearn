@@ -22,12 +22,7 @@ router.get('/:filename', function (req, res, next) {
   sqldb.queryOneRow(sql.check_client_files, params, function (err, result) {
     if (ERR(err, next)) return;
     if (!result.rows[0].access_allowed) {
-      return next(
-        error.make(403, 'Access denied', {
-          locals: res.locals,
-          filename: filename,
-        })
-      );
+      return next(error.make(403, 'Access denied'));
     }
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -56,7 +51,7 @@ router.get('/:filename', function (req, res, next) {
           function (err, fullPath, effectiveFilename, rootPath) {
             if (ERR(err, next)) return;
             res.sendFile(effectiveFilename, { root: rootPath });
-          }
+          },
         );
       });
     });

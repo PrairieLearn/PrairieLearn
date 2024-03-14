@@ -21,11 +21,11 @@ const args = yargs
   .alias('h', 'help')
   .example(
     '$0 --db postgres --dir db_dump',
-    'Diffs the database "postgres" with the description in the directory "db_dump"'
+    'Diffs the database "postgres" with the description in the directory "db_dump"',
   )
   .example(
     '$0 --db postgres --db old_restore',
-    'Diffs the database "postgres" with the database "old_restore"'
+    'Diffs the database "postgres" with the database "old_restore"',
   )
   .strict();
 

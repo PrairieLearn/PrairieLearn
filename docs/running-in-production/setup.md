@@ -15,10 +15,10 @@ Follow the steps to [install PrairieLearn natively](../installingNative.md), inc
 PrairieLearn can be configured by a `config.json` in the root of the repository. You can also provide a path to a config file when starting the server:
 
 ```sh
-NODE_ENV=production node server.js --config /path/to/config.json
+NODE_ENV=production node apps/prairielearn/dist/server.js --config /path/to/config.json
 ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.js`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.js`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
 ### Reverse Proxy
 

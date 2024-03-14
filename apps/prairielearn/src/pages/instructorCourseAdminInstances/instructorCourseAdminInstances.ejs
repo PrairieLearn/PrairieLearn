@@ -43,15 +43,15 @@
                                 <th>CIID</th>
                                 <th id="earliest-access-date">
                                     Earliest Access Date
-                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Order By" tabindex="0"
-                                        data-content="<%= include('popoverStartDate'); %>">
+                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Earliest Access Date" tabindex="0"
+                                        data-content="<%= include('popoverStartDate'); %>" aria-label="Information about Earliest Access Date">
                                         <i class="far fa-question-circle" aria-hidden="true"></i>
                                     </a>
                                 </th>
                                 <th id="latest-access-date">
                                     Latest Access Date
-                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Order By" tabindex="0"
-                                        data-content="<%= include('popoverEndDate'); %>">
+                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Latest Access Date" tabindex="0"
+                                        data-content="<%= include('popoverEndDate'); %>" aria-label="Information about Latest Access Date">
                                         <i class="far fa-question-circle" aria-hidden="true"></i>
                                     </a>
                                 </th>
@@ -59,17 +59,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% if (locals.authz_data && authz_data.course_instances) { %>
-                                <% authz_data.course_instances.forEach(function(row) { %>
-                                    <tr>
-                                        <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
-                                        <td class="align-left"><%= row.short_name %></td>
-                                        <td class="align-left"><%= row.formatted_start_date %></td>
-                                        <td class="align-left"><%= row.formatted_end_date %></td>
-                                        <td class="align-middle"><%= row.number %></td>
-                                    </tr>
-                                <% }); %>
-                            <% } %>
+                            <% course_instances.forEach(function(row) { %>
+                                <tr>
+                                    <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                    <td class="align-left"><%= row.short_name %></td>
+                                    <td class="align-left"><%= row.formatted_start_date %></td>
+                                    <td class="align-left"><%= row.formatted_end_date %></td>
+                                    <td class="align-middle"><%= row.number %></td>
+                                </tr>
+                            <% }); %>
                         </tbody>
                     </table>
                 </div>

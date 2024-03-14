@@ -34,14 +34,14 @@ export async function init(directories: string | string[], project: string) {
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
       await initWithLock(migrationDirectories, project);
-    }
+    },
   );
   logger.verbose(`Released lock ${lockName}`);
 }
 
 export function getMigrationsToExecute(
   migrationFiles: MigrationFile[],
-  executedMigrations: { timestamp: string | null }[]
+  executedMigrations: { timestamp: string | null }[],
 ): MigrationFile[] {
   // If no migrations have ever been run, run them all.
   if (executedMigrations.length === 0) {
@@ -101,7 +101,7 @@ export async function initWithLock(directories: string[], project: string) {
         // This revision was the most recent commit to `master` before the
         // code handling indexes was removed.
         'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-      ].join('\n')
+      ].join('\n'),
     );
   }
 

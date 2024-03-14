@@ -1,0 +1,15 @@
+columns
+    course_id: bigint not null
+    id: bigint not null default nextval('sharing_sets_id_seq'::regclass)
+    name: text not null
+
+indexes
+    sharing_sets_pkey: PRIMARY KEY (id) USING btree (id)
+    sharing_sets_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
+
+foreign-key constraints
+    sharing_sets_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    sharing_set_courses: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    sharing_set_questions: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
