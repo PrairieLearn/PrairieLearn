@@ -6,7 +6,8 @@
 <body>
 	<script>
 		$(function () {
-			$('[data-toggle="popover"]').popover({ sanitize: false })
+			$('[data-toggle="popover"]').popover({ sanitize: false,   container: 'body' });
+			
 			$('#add_new_override').on('submit', function (event) {
 				var startDate = new Date($('#start_date').val());
 				var endDate = new Date($('#end_date').val());
@@ -216,8 +217,8 @@
 								<td><%= policy.credit + '%' %></td>
 								<td><%= policy.note ? policy.note : '-' %></td>
 								<td>
-									<div class="dropdown">
-										<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<div class="dropdown js-question-actions" style="position: static;" >
+										<button class="btn btn-xs btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" data-container="body" data-html="true" aria-haspopup="true" aria-expanded="false" >
 											Action
 										</button>
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
