@@ -29,9 +29,10 @@ WITH
   ),
   new_sessions AS (
     INSERT INTO
-      pt_sessions (location_id)
+      pt_sessions (location_id, date)
     SELECT
-      id
+      id,
+      NOW()
     FROM
       new_locations
     RETURNING

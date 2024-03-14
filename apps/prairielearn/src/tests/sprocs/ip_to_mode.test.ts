@@ -55,8 +55,6 @@ describe('sproc ip_to_mode tests', function () {
   });
 
   describe('PT with checked-in reservation and exam without location', function () {
-    beforeEach('remove IP restriction', async function () {});
-
     it('should return "Exam" even when we have the wrong IP address', async function () {
       await helperDb.runInTransactionAndRollback(async () => {
         // Remove location to simulate a course session.
@@ -64,6 +62,56 @@ describe('sproc ip_to_mode tests', function () {
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
+      });
+    });
+  });
+
+  describe('PT with non-checked-in reservation and IP-restricted exam', function () {
+    it('should return "Exam" with the right IP address when session is starting soon', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const result = await sqldb.callAsync('ip_to_mode', [
+          '192.168.0.1',
+          // 10 minutes ago.
+          new Date(Date.now() - 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(result.rows[0].mode, 'Exam');
+      });
+    });
+
+    it('should return "Exam" with the right IP address when session started recently', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const result = await sqldb.callAsync('ip_to_mode', [
+          '192.168.0.1',
+          // 10 minutes from now.
+          new Date(Date.now() + 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(result.rows[0].mode, 'Exam');
+      });
+    });
+
+    it('should return "Public" with the wrong IP address when session is starting soon', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const result = await sqldb.callAsync('ip_to_mode', [
+          '192.168.0.1',
+          // 10 minutes ago.
+          new Date(Date.now() - 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(result.rows[0].mode, 'Public');
+      });
+    });
+
+    it('should return "Public" with the wrong IP address when session started recently', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const result = await sqldb.callAsync('ip_to_mode', [
+          '192.168.0.1',
+          // 10 minutes from now.
+          new Date(Date.now() + 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(result.rows[0].mode, 'Public');
       });
     });
   });
