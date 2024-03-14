@@ -38,17 +38,26 @@ BEGIN
         mode := 'Exam';
     END IF;
 
-    -- Does the user have an active PT reservation?
+    -- Does the user have an active PT reservation, or a reservation for a session
+    -- that either will start soon or started recently?
     SELECT r.session_id
     INTO v_session_id
     FROM
         pt_reservations AS r
         JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
+        JOIN pt_sessions AS s ON (s.id = r.session_id)
     WHERE
         e.user_id = ip_to_mode.authn_user_id
-        AND (date BETWEEN r.access_start AND r.access_end);
+        AND (
+            (r.access_end IS NULL and s.date BETWEEN ip_to_mode.date - '1 hour'::interval and ip_to_mode.date + '1 hour'::interval)
+            OR (ip_to_mode.date BETWEEN r.access_start AND r.access_end)
+        );
+
+    RAISE NOTICE 'Found % reservations for user %', v_session_id, ip_to_mode.authn_user_id;
 
     IF FOUND THEN
+        RAISE NOTICE 'User has a reservation for session %', v_session_id;
+
         -- The user has a checked-in pt_reservation. Check whether the
         -- reservation is in a testing center location that requires network
         -- filtering.
@@ -62,8 +71,11 @@ BEGIN
             s.id = v_session_id;
 
         IF FOUND THEN
+            RAISE NOTICE 'Session % is in location %', v_session_id, v_location_id;
+
             -- The reservation is in a testing center location.
             IF v_filter_networks THEN
+                RAISE NOTICE 'Location % requires network filtering', v_location_id;
                 -- The reservation is in a testing center location that requires
                 -- network filtering.
 
@@ -74,10 +86,12 @@ BEGIN
                     AND ip <<= ln.network;
 
                 IF FOUND THEN
+                    RAISE NOTICE 'User is physically inside the testing center';
                     -- The user is physically inside the testing center. Set
                     -- mode to 'Exam'.
                     mode := 'Exam';
                 ELSE
+                    RAISE NOTICE 'User is physically outside the testing center';
                     -- Although we have a checked-in reservation, the user is
                     -- physically outside the testing center. Set mode to
                     -- 'Public'.

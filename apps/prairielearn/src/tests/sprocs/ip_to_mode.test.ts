@@ -69,8 +69,12 @@ describe('sproc ip_to_mode tests', function () {
   describe('PT with non-checked-in reservation and IP-restricted exam', function () {
     it('should return "Exam" with the right IP address when session is starting soon', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        await sqldb.queryAsync(sql.check_out_reservation, {});
+
+        console.log((await sqldb.queryAsync('SELECT * FROM pt_reservations;', {})).rows);
+
         const result = await sqldb.callAsync('ip_to_mode', [
-          '192.168.0.1',
+          '10.0.0.1',
           // 10 minutes ago.
           new Date(Date.now() - 1000 * 60 * 10),
           user_id,
@@ -81,8 +85,10 @@ describe('sproc ip_to_mode tests', function () {
 
     it('should return "Exam" with the right IP address when session started recently', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        await sqldb.queryAsync(sql.check_out_reservation, {});
+
         const result = await sqldb.callAsync('ip_to_mode', [
-          '192.168.0.1',
+          '10.0.0.1',
           // 10 minutes from now.
           new Date(Date.now() + 1000 * 60 * 10),
           user_id,
@@ -93,6 +99,8 @@ describe('sproc ip_to_mode tests', function () {
 
     it('should return "Public" with the wrong IP address when session is starting soon', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        await sqldb.queryAsync(sql.check_out_reservation, {});
+
         const result = await sqldb.callAsync('ip_to_mode', [
           '192.168.0.1',
           // 10 minutes ago.
@@ -105,6 +113,8 @@ describe('sproc ip_to_mode tests', function () {
 
     it('should return "Public" with the wrong IP address when session started recently', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        await sqldb.queryAsync(sql.check_out_reservation, {});
+
         const result = await sqldb.callAsync('ip_to_mode', [
           '192.168.0.1',
           // 10 minutes from now.
@@ -112,6 +122,28 @@ describe('sproc ip_to_mode tests', function () {
           user_id,
         ]);
         assert.equal(result.rows[0].mode, 'Public');
+      });
+    });
+
+    it('should handler multiple reservations simultaneously', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await sqldb.queryAsync(sql.check_out_reservation, {});
+
+        const resultA = await sqldb.callAsync('ip_to_mode', [
+          '10.0.0.1',
+          // 10 minutes ago.
+          new Date(Date.now() - 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(resultA.rows[0].mode, 'Exam');
+
+        const resultB = await sqldb.callAsync('ip_to_mode', [
+          '10.1.1.1',
+          // 10 minutes ago.
+          new Date(Date.now() - 1000 * 60 * 10),
+          user_id,
+        ]);
+        assert.equal(resultB.rows[0].mode, 'Exam');
       });
     });
   });
