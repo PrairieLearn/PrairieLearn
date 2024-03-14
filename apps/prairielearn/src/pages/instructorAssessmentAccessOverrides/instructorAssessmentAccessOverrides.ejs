@@ -217,8 +217,8 @@
 								<td><%= policy.credit + '%' %></td>
 								<td><%= policy.note ? policy.note : '-' %></td>
 								<td>
-									<div class="dropdown js-question-actions" style="position: static;" >
-										<button class="btn btn-xs btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" data-container="body" data-html="true" aria-haspopup="true" aria-expanded="false" >
+									<div class="dropdown js-question-actions" >
+										<button class="btn btn-xs btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" data-container="body" data-html="true" aria-haspopup="true" aria-expanded="false" data-boundary="window">
 											Action
 										</button>
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
