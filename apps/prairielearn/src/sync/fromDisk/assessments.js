@@ -1,6 +1,6 @@
 // @ts-check
-const _ = require('lodash');
 import { isFuture, parseISO } from 'date-fns';
+const _ = require('lodash');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
