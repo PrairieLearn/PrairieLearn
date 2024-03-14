@@ -71,9 +71,11 @@
 		<div class="card mb-4">
 			<div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
 				Access Overrides - <%= assessment.title %>
-				<button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal">
+        <% if (authz_data.has_course_instance_permission_edit) { %>
+				<button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal" >
 					Add <i class="fas fa-plus"></i>
 				</button>
+        <% } %>
 			</div>
 			<div class="modal fade" id="addPolicyModal" tabindex="-1" role="dialog" aria-labelledby="addPolicyModalLabel" aria-hidden="true">
 				<div class="modal-dialog" role="document">
@@ -218,9 +220,11 @@
 								<td><%= policy.note ? policy.note : '-' %></td>
 								<td>
 									<div class="dropdown js-question-actions" >
+                    <% if (authz_data.has_course_instance_permission_edit) { %>
 										<button class="btn btn-xs btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" data-container="body" data-html="true" aria-haspopup="true" aria-expanded="false" data-boundary="window">
 											Action
 										</button>
+                    <% } %>
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
 											<form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

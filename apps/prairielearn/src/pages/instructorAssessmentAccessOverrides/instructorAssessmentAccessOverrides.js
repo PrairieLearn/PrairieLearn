@@ -59,8 +59,8 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+    if (!res.locals.authz_data.has_course_instance_permission_view && !res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data viewer or editor)');
     }
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
@@ -73,10 +73,14 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+    if (!res.locals.authz_data.has_course_instance_permission_view && !res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data viewer or editor)');
     }
-    if (req.body.__action === 'add_new_override') {
+
+    if (
+      req.body.__action === 'add_new_override' &&
+      res.locals.authz_data.has_course_instance_permission_edit
+    ) {
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
@@ -95,13 +99,19 @@ router.post(
         user_id: user_id || null,
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_override') {
+    } else if (
+      req.body.__action === 'delete_override' &&
+      res.locals.authz_data.has_course_instance_permission_edit
+    ) {
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_access_policies_id: req.body.policy_id,
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'edit_override') {
+    } else if (
+      req.body.__action === 'edit_override' &&
+      res.locals.authz_data.has_course_instance_permission_edit
+    ) {
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
