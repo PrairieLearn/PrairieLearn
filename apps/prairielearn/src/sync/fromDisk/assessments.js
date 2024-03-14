@@ -1,5 +1,6 @@
 // @ts-check
 const _ = require('lodash');
+import { isFuture, parseISO } from 'date-fns';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -292,13 +293,33 @@ function parseSharedQuestionReference(qid) {
 }
 
 /**
+ * Determines if a course instance is accessible. A course instance is considered
+ * to be accessible if any access rules either have no end date or have an end date
+ * in the future.
+ *
+ * @param {import('../course-db').CourseInstance} courseInstance
+ */
+function isCourseInstanceAccessible(courseInstance) {
+  if (!courseInstance.allowAccess?.length) return false;
+
+  return courseInstance.allowAccess.some((accessRule) => {
+    if (!accessRule.endDate) return true;
+    return isFuture(parseISO(accessRule.endDate));
+  });
+}
+
+/**
  * @param {any} courseId
  * @param {any} courseInstanceId
+ * @param {import('../course-db').CourseInstance} courseInstance
  * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
  * @param {{ [qid: string]: any }} questionIds
  */
-export async function sync(courseId, courseInstanceId, assessments, questionIds) {
-  if (config.checkAccessRulesExamUuid) {
+export async function sync(courseId, courseInstanceId, courseInstance, assessments, questionIds) {
+  // We only check exam UUIDs if the course instance is accessible. This allows
+  // us to delete the legacy `exams` table without producing sync warnings for
+  // exam UUIDs corresponding to course instances that are no longer used.
+  if (isCourseInstanceAccessible(courseInstance) && config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
     // solely on the data we're reading off disk.

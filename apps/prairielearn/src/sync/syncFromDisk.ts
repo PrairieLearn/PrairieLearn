@@ -63,6 +63,7 @@ export async function syncDiskToSqlWithLock(
         syncAssessments.sync(
           courseId,
           courseInstanceId,
+          courseInstanceData.courseInstance,
           courseInstanceData.assessments,
           questionIds,
         ),
