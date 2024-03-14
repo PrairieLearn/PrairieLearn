@@ -1,17 +1,13 @@
-// @ts-check
-const _ = require('lodash');
+import _ = require('lodash');
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData, CourseInstance } from '../course-db';
 
 const perf = makePerformance('courseInstances');
 
-/**
- *
- * @param {import('../course-db').CourseInstance | null | undefined} courseInstance
- */
-function getParamsForCourseInstance(courseInstance) {
+function getParamsForCourseInstance(courseInstance: CourseInstance | null | undefined) {
   if (!courseInstance) return null;
 
   // It used to be the case that instance access rules could be associated with a
@@ -38,12 +34,7 @@ function getParamsForCourseInstance(courseInstance) {
   };
 }
 
-/**
- * @param {any} courseId
- * @param {import('../course-db').CourseData} courseData
- * @returns {Promise<{ [ciid: string]: any }>}
- */
-export async function sync(courseId, courseData) {
+export async function sync(courseId: string, courseData: CourseData): Promise<Record<string, any>> {
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseIntanceData]) => {
       const { courseInstance } = courseIntanceData;
@@ -63,7 +54,5 @@ export async function sync(courseId, courseData) {
   const result = await sqldb.callOneRowAsync('sync_course_instances', params);
   perf.end('sproc:sync_course_instances');
 
-  /** @type {[string, any][]} */
-  const nameToIdMap = result.rows[0].name_to_id_map;
-  return nameToIdMap;
+  return result.rows[0].name_to_id_map as Record<string, any>;
 }

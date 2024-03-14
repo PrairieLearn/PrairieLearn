@@ -1,15 +1,12 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData, Question } from '../course-db';
 
 const perf = makePerformance('questions');
 
-/**
- * @param {import('../course-db').Question | null | undefined} q
- */
-function getParamsForQuestion(q) {
+function getParamsForQuestion(q: Question | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
@@ -53,12 +50,7 @@ function getParamsForQuestion(q) {
   };
 }
 
-/**
- * @param {any} courseId
- * @param {import('../course-db').CourseData} courseData
- * @returns {Promise<{ [qid: string]: any }>}
- */
-export async function sync(courseId, courseData) {
+export async function sync(courseId: string, courseData: CourseData): Promise<Record<string, any>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
@@ -75,7 +67,5 @@ export async function sync(courseId, courseData) {
   const result = await sqldb.callOneRowAsync('sync_questions', params);
   perf.end('sproc:sync_questions');
 
-  /** @type {[string, any][]} */
-  const nameToIdMap = result.rows[0].name_to_id_map;
-  return nameToIdMap;
+  return result.rows[0].name_to_id_map as Record<string, any>;
 }

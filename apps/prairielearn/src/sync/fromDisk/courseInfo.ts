@@ -1,15 +1,11 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
+import { CourseData } from '../course-db';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- * @param {import('../course-db').CourseData} courseData
- * @param {any} courseId
- */
-export async function sync(courseData, courseId) {
+export async function sync(courseData: CourseData, courseId: string) {
   if (infofile.hasErrors(courseData.course)) {
     const params = {
       course_id: courseId,
