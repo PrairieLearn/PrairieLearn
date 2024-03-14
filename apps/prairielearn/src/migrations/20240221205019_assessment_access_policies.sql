@@ -12,4 +12,5 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
   UNIQUE (assessment_id, user_id),
   UNIQUE (assessment_id, group_id),
   CHECK (num_nonnulls (user_id, group_id) = 1)
+  CHECK (credit >= 0)
 );
