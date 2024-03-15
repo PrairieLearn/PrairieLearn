@@ -459,7 +459,7 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else (" one of" if must_match_all_outputs == "any" else " all of")
+                else " one of" if must_match_all_outputs == "any" else " all of"
             )
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
             msg = f"Expected{comment}:{join_str}" + join_str.join(
