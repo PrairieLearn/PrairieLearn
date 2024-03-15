@@ -60,12 +60,7 @@ export async function syncDiskToSqlWithLock(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
       const courseInstanceId = courseInstanceIds[ciid];
       await perf.timed(`syncAssessments${ciid}`, () =>
-        syncAssessments.sync(
-          courseId,
-          courseInstanceId,
-          courseInstanceData.assessments,
-          questionIds,
-        ),
+        syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
       );
     }),
   );

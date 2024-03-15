@@ -1,3 +1,4 @@
+import { isFuture, isValid, parseISO } from 'date-fns';
 import _ = require('lodash');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
@@ -6,7 +7,7 @@ import { config } from '../../lib/config';
 import * as infofile from '../infofile';
 import { features } from '../../lib/features/index';
 import { makePerformance } from '../performance';
-import { Assessment } from '../course-db';
+import { Assessment, CourseInstanceData } from '../course-db';
 import { IdSchema } from '../../lib/db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -300,13 +301,54 @@ function parseSharedQuestionReference(qid) {
   };
 }
 
+/**
+ * Determines if a course instance is accessible. A course instance is considered
+ * to be accessible if any access rules either have no end date or have an end date
+ * in the future.
+ *
+ * Note that this check is only approximate, as this doesn't take into account the
+ * course instance's timezone. See implementation below for more details.
+ */
+function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
+  const courseInstance = courseInstanceData.courseInstance.data;
+
+  // If the course instance data is not available, treat it as though it's
+  // not accessible.
+  if (!courseInstance) return false;
+
+  // If there are no access rules, the course instance is not accessible.
+  if (!courseInstance.allowAccess?.length) return false;
+
+  return courseInstance.allowAccess.some((accessRule) => {
+    if (!accessRule.endDate) return true;
+
+    // We don't have easy access to the course instance's timezone, so we'll
+    // just parse it in the machine's local timezone. This is fine, as we're
+    // only interesting in a rough signal of whether the end date is in the
+    // future. If we're off by up to a day, it's not a big deal.
+    //
+    // If the date is invalid, we'll treat it as though it's in the past and
+    // thus that it does not make the course instance accessible.
+    //
+    // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
+    const parsedDate = parseISO(accessRule.endDate);
+    if (!isValid(parsedDate)) return false;
+    return isFuture(parsedDate);
+  });
+}
+
 export async function sync(
   courseId: string,
   courseInstanceId: string,
-  assessments: Record<string, AssessmentInfoFile>,
+  courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
 ) {
-  if (config.checkAccessRulesExamUuid) {
+  const assessments = courseInstanceData.assessments;
+
+  // We only check exam UUIDs if the course instance is accessible. This allows
+  // us to delete the legacy `exams` table without producing sync warnings for
+  // exam UUIDs corresponding to course instances that are no longer used.
+  if (isCourseInstanceAccessible(courseInstanceData) && config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
     // solely on the data we're reading off disk.

@@ -388,7 +388,7 @@ export interface Question {
   dependencies: Record<string, string>;
 }
 
-interface CourseInstanceData {
+export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }
@@ -940,6 +940,24 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
 }
 
 /**
+ * Returns whether or not an `allowAccess` rule date is valid. It's considered
+ * valid if it matches the regexp used in the `input_date` sproc and if it can
+ * parse into a JavaScript `Date` object. If the supplied date is considered
+ * invalid, `null` is returned.
+ */
+function parseAllowAccessDate(date: string): Date | null {
+  // This ensures we don't accept strings like "2024-04", which `parseISO`
+  // would happily accept. We want folks to always be explicit about days/times.
+  //
+  // This matches the regexp used in the `input_date` sproc.
+  const match = /[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}/.exec(date);
+  if (!match) return null;
+
+  const parsedDate = parseISO(date);
+  return isValid(parsedDate) ? parsedDate : null;
+}
+
+/**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @returns A list of errors, if any, and whether there are any dates in the future
  */
@@ -948,19 +966,26 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   dateInFuture: boolean;
 } {
   const errors: string[] = [];
-  let startDate: Date | null = null,
-    endDate: Date | null = null;
+
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
+  // Note that we're deliberately choosing to ignore timezone handling here. These
+  // will ultimately be interpreted with the course instance's timezone, but all we
+  // care about here are if the dates are valid and that the end date is after the
+  // start date.
+  //
+  // See the `input_date` sproc for where these strings are ultimately parsed for
+  // storage in the database. That sproc actually has stricter validation
   if (rule.startDate) {
-    startDate = parseISO(rule.startDate);
-    if (!isValid(startDate)) {
-      startDate = null;
+    startDate = parseAllowAccessDate(rule.startDate);
+    if (!startDate) {
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if (rule.endDate) {
-    endDate = parseISO(rule.endDate);
-    if (!isValid(endDate)) {
-      endDate = null;
+    endDate = parseAllowAccessDate(rule.endDate);
+    if (!endDate) {
       errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
   }
