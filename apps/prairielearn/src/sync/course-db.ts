@@ -5,7 +5,7 @@ import * as async from 'async';
 import * as jju from 'jju';
 import Ajv, { type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import { isValid, isAfter, isFuture } from 'date-fns';
 
 import { chalk } from '../lib/chalk';
 import { config } from '../lib/config';
