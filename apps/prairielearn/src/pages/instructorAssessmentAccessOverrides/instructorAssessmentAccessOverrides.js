@@ -59,8 +59,8 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view && !res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data viewer or editor)');
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
@@ -73,8 +73,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view && !res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data viewer or editor)');
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
 
     if (
