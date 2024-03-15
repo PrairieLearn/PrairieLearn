@@ -78,8 +78,6 @@
       <span class="small">
         <% if (!submission.user_uid) { %>
           Submitted at <%= submission.formatted_date %> 
-        <% } else if (authz_data.authn_user.uid === submission.user_uid) { %>
-          You submitted at <%= submission.formatted_date %>
         <% } else { %>
           <%= submission.user_uid %> submitted at <%= submission.formatted_date %>
         <% } %>

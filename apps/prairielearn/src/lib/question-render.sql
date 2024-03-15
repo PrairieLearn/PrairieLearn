@@ -192,6 +192,7 @@ SELECT
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS formatted_date,
+  u.uid AS user_uid,
   (
     SELECT
       count(*)
@@ -224,6 +225,7 @@ FROM
   JOIN pl_courses AS qc ON (qc.id = q.course_id)
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
+  LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id
