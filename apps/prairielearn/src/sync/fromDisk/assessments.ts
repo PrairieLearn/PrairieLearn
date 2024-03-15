@@ -1,4 +1,4 @@
-import { isFuture, parseISO } from 'date-fns';
+import { isFuture, isValid } from 'date-fns';
 import _ = require('lodash');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
@@ -306,9 +306,10 @@ function parseSharedQuestionReference(qid) {
  * to be accessible if any access rules either have no end date or have an end date
  * in the future.
  *
- * @param {import('../course-db').CourseInstanceData} courseInstanceData
+ * Note that this check is only approximate, as this doesn't take into account the
+ * course instance's timezone. See implementation below for more details.
  */
-function isCourseInstanceAccessible(courseInstanceData) {
+function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   const courseInstance = courseInstanceData.courseInstance.data;
 
   // If the course instance data is not available, treat it as though it's
@@ -320,7 +321,17 @@ function isCourseInstanceAccessible(courseInstanceData) {
 
   return courseInstance.allowAccess.some((accessRule) => {
     if (!accessRule.endDate) return true;
-    return isFuture(parseISO(accessRule.endDate));
+
+    // We don't have easy access to the course instance's timezone, so we'll
+    // just parse it in the machine's local timezone. This is fine, as we're
+    // only interesting in a rough signal of whether the end date is in the
+    // future. If we're off by up to a day, it's not a big deal.
+    //
+    // If the date is invalid, we'll treat it as though it's in the past and
+    /// thus that it does not make the course instance accessible.
+    const parsedDate = new Date(accessRule.endDate);
+    if (!isValid(parsedDate)) return false;
+    return isFuture(parsedDate);
   });
 }
 
