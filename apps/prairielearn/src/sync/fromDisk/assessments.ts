@@ -1,5 +1,4 @@
-// @ts-check
-const _ = require('lodash');
+import _ = require('lodash');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -7,9 +6,13 @@ import { config } from '../../lib/config';
 import * as infofile from '../infofile';
 import { features } from '../../lib/features/index';
 import { makePerformance } from '../performance';
+import { Assessment } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const perf = makePerformance('assessments');
+
+type AssessmentInfoFile = infofile.InfoFile<Assessment>;
 
 /**
  * SYNCING PROCESS:
@@ -39,12 +42,10 @@ const perf = makePerformance('assessments');
  *   l) Delete unused zones (from deletes assessments)
  */
 
-/**
- *
- * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessmentInfoFile
- * @param {{ [qid: string]: any }} questionIds
- */
-function getParamsForAssessment(assessmentInfoFile, questionIds) {
+function getParamsForAssessment(
+  assessmentInfoFile: AssessmentInfoFile,
+  questionIds: Record<string, any>,
+) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
@@ -53,42 +54,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
   const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
 
-  const assessmentParams = {
-    type: assessment.type,
-    number: assessment.number,
-    title: assessment.title,
-    multiple_instance: assessment.multipleInstance ? true : false,
-    shuffle_questions:
-      (assessment.type === 'Exam' && assessment.shuffleQuestions === undefined) ||
-      assessment.shuffleQuestions
-        ? true
-        : false,
-    allow_issue_reporting: allowIssueReporting,
-    allow_real_time_grading: allowRealTimeGrading,
-    require_honor_code: requireHonorCode,
-    auto_close: !!_.get(assessment, 'autoClose', true),
-    max_points: assessment.maxPoints,
-    max_bonus_points: assessment.maxBonusPoints,
-    set_name: assessment.set,
-    assessment_module_name: assessment.module,
-    text: assessment.text,
-    constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
-    group_work: !!assessment.groupWork,
-    group_max_size: assessment.groupMaxSize || null,
-    group_min_size: assessment.groupMinSize || null,
-    student_group_create: !!assessment.studentGroupCreate,
-    student_group_join: !!assessment.studentGroupJoin,
-    student_group_leave: !!assessment.studentGroupLeave,
-    advance_score_perc: assessment.advanceScorePerc,
-    has_roles: !!assessment.groupRoles,
-  };
-
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const allowAccess = assessment.allowAccess || [];
-  assessmentParams.allowAccess = allowAccess
+  const allowAccess = (assessment.allowAccess ?? [])
     .filter((accessRule) => !_(accessRule).has('role') || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
@@ -108,8 +78,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       };
     });
 
-  const zones = assessment.zones || [];
-  assessmentParams.zones = zones.map((zone, index) => {
+  const zones = (assessment.zones ?? []).map((zone, index) => {
     return {
       number: index + 1,
       title: zone.title,
@@ -122,23 +91,35 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  let allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
-  let assessmentCanView = assessment?.canView ?? allRoleNames;
-  let assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
-  assessmentParams.alternativeGroups = zones.map((zone) => {
-    let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
+  const allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
+  const assessmentCanView = assessment?.canView ?? allRoleNames;
+  const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
+  const alternativeGroups = (assessment.zones ?? []).map((zone) => {
+    const zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
-    let zoneCanView = zone?.canView ?? assessmentCanView;
-    let zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
+    const zoneCanView = zone?.canView ?? assessmentCanView;
+    const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
-      let alternatives = [];
-      let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
+      let alternatives: {
+        qid: string;
+        maxPoints: number | number[];
+        points: number | number[];
+        maxAutoPoints: number | number[];
+        autoPoints: number | number[];
+        manualPoints: number;
+        forceMaxPoints: boolean;
+        triesPerVariant: number;
+        gradeRateMinutes: number;
+        canView: string[] | null;
+        canSubmit: string[] | null;
+        advanceScorePerc: number;
+      }[] = [];
+      const questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
-      let questionCanView = question.canView ?? zoneCanView;
-      let questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
+      const questionCanView = question.canView ?? zoneCanView;
+      const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
@@ -172,8 +153,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             qid: question.id,
             maxPoints: question.maxPoints ?? null,
             points: question.points ?? null,
-            autoPoints: question.autoPoints ?? null,
             maxAutoPoints: question.maxAutoPoints ?? null,
+            autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
@@ -194,7 +175,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
         if (assessment.type === 'Exam') {
-          let pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const maxPoints = Math.max(...pointsList);
 
           return {
@@ -222,57 +203,85 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       });
 
       alternativeGroupNumber++;
-      const alternativeGroupParams = {
+
+      const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
+        assessmentQuestionNumber++;
+        const questionId = questionIds[alternative.qid];
+        return {
+          number: assessmentQuestionNumber,
+          has_split_points: alternative.hasSplitPoints,
+          points_list: alternative.pointsList,
+          init_points: alternative.initPoints,
+          max_points: alternative.maxPoints,
+          manual_points: alternative.manualPoints,
+          force_max_points: alternative.forceMaxPoints,
+          tries_per_variant: alternative.triesPerVariant,
+          grade_rate_minutes: alternative.gradeRateMinutes,
+          question_id: questionId,
+          number_in_alternative_group: alternativeIndex + 1,
+          can_view: alternative.canView,
+          can_submit: alternative.canSubmit,
+          advance_score_perc: alternative.advanceScorePerc,
+          effective_advance_score_perc:
+            alternative.advanceScorePerc ??
+            question.advanceScorePerc ??
+            zone.advanceScorePerc ??
+            assessment.advanceScorePerc ??
+            0,
+        };
+      });
+
+      return {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
+        questions,
       };
-
-      alternativeGroupParams.questions = normalizedAlternatives.map(
-        (alternative, alternativeIndex) => {
-          assessmentQuestionNumber++;
-          const questionId = questionIds[alternative.qid];
-          return {
-            number: assessmentQuestionNumber,
-            has_split_points: alternative.hasSplitPoints,
-            points_list: alternative.pointsList,
-            init_points: alternative.initPoints,
-            max_points: alternative.maxPoints,
-            manual_points: alternative.manualPoints,
-            force_max_points: alternative.forceMaxPoints,
-            tries_per_variant: alternative.triesPerVariant,
-            grade_rate_minutes: alternative.gradeRateMinutes,
-            question_id: questionId,
-            number_in_alternative_group: alternativeIndex + 1,
-            can_view: alternative.canView,
-            can_submit: alternative.canSubmit,
-            advance_score_perc: alternative.advanceScorePerc,
-            effective_advance_score_perc:
-              alternative.advanceScorePerc ??
-              question.advanceScorePerc ??
-              alternativeGroupParams.advance_score_perc ??
-              zone.advanceScorePerc ??
-              assessment.advanceScorePerc ??
-              0,
-          };
-        },
-      );
-
-      return alternativeGroupParams;
     });
   });
 
-  assessmentParams.groupRoles = (assessment.groupRoles ?? []).map((role) => ({
+  const groupRoles = (assessment.groupRoles ?? []).map((role) => ({
     role_name: role.name,
     minimum: role.minimum,
     maximum: role.maximum,
     can_assign_roles: role.canAssignRoles,
   }));
 
-  // Needed when deleting unused alternative groups
-  assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;
-
-  return assessmentParams;
+  return {
+    type: assessment.type,
+    number: assessment.number,
+    title: assessment.title,
+    multiple_instance: assessment.multipleInstance ? true : false,
+    shuffle_questions:
+      (assessment.type === 'Exam' && assessment.shuffleQuestions === undefined) ||
+      assessment.shuffleQuestions
+        ? true
+        : false,
+    allow_issue_reporting: allowIssueReporting,
+    allow_real_time_grading: allowRealTimeGrading,
+    require_honor_code: requireHonorCode,
+    auto_close: !!_.get(assessment, 'autoClose', true),
+    max_points: assessment.maxPoints,
+    max_bonus_points: assessment.maxBonusPoints,
+    set_name: assessment.set,
+    assessment_module_name: assessment.module,
+    text: assessment.text,
+    constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
+    group_work: !!assessment.groupWork,
+    group_max_size: assessment.groupMaxSize || null,
+    group_min_size: assessment.groupMinSize || null,
+    student_group_create: !!assessment.studentGroupCreate,
+    student_group_join: !!assessment.studentGroupJoin,
+    student_group_leave: !!assessment.studentGroupLeave,
+    advance_score_perc: assessment.advanceScorePerc,
+    has_roles: !!assessment.groupRoles,
+    allowAccess,
+    zones,
+    alternativeGroups,
+    groupRoles,
+    // Needed when deleting unused alternative groups
+    lastAlternativeGroupNumber: alternativeGroupNumber,
+  };
 }
 
 function parseSharedQuestionReference(qid) {
@@ -291,13 +300,12 @@ function parseSharedQuestionReference(qid) {
   };
 }
 
-/**
- * @param {any} courseId
- * @param {any} courseInstanceId
- * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
- * @param {{ [qid: string]: any }} questionIds
- */
-export async function sync(courseId, courseInstanceId, assessments, questionIds) {
+export async function sync(
+  courseId: string,
+  courseInstanceId: string,
+  assessments: Record<string, AssessmentInfoFile>,
+  questionIds: Record<string, any>,
+) {
   if (config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
@@ -305,10 +313,8 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
     // To be efficient, we'll collect all UUIDs from all assessments and check for
     // their existence in a single sproc call. We'll store a reverse mapping from UUID
     // to exams to be able to efficiently add warning information for missing UUIDs.
-    /** @type {Set<string>} */
-    const examUuids = new Set();
-    /** @type {Map<string, string[]>} */
-    const uuidAssessmentMap = new Map();
+    const examUuids = new Set<string>();
+    const uuidAssessmentMap = new Map<string, string[]>();
     Object.entries(assessments).forEach(([tid, assessment]) => {
       if (!assessment.data) return;
       (assessment.data.allowAccess || []).forEach((allowAccess) => {
@@ -325,9 +331,12 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
       });
     });
 
-    const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]) };
-    const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
-    uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
+    const uuidsRes = await sqldb.queryRows(
+      sql.check_access_rules_exam_uuid,
+      { exam_uuids: JSON.stringify([...examUuids]) },
+      z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
+    );
+    uuidsRes.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
         uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
@@ -339,23 +348,17 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
     });
   }
 
-  /**
-   * A set of all imported question IDs.
-   * @type {Set<string>}
-   */
-  const importedQids = new Set();
+  // A set of all imported question IDs.
+  const importedQids = new Set<string>();
 
-  /**
-   * A mapping from assessment "TIDs" to a list of questions they import.
-   * @type {Map<string, string[]>}
-   */
-  const assessmentImportedQids = new Map();
+  // A mapping from assessment "TIDs" to a list of questions they import.
+  const assessmentImportedQids = new Map<string, string[]>();
 
   Object.entries(assessments).forEach(([tid, assessment]) => {
     if (!assessment.data) return;
     (assessment.data.zones || []).forEach((zone) => {
       (zone.questions || []).forEach((question) => {
-        let qids = question.alternatives?.map((alternative) => alternative.id) ?? [];
+        const qids = question.alternatives?.map((alternative) => alternative.id) ?? [];
         if (question.id) {
           qids.push(question.id);
         }
@@ -397,14 +400,20 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
     }
   }
 
-  const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
-    course_id: courseId,
-    imported_question_info: JSON.stringify(Array.from(importedQids, parseSharedQuestionReference)),
-  });
-  for (let row of importedQuestions.rows) {
+  const importedQuestions = await sqldb.queryRows(
+    sql.get_imported_questions,
+    {
+      course_id: courseId,
+      imported_question_info: JSON.stringify(
+        Array.from(importedQids, parseSharedQuestionReference),
+      ),
+    },
+    z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+  );
+  for (const row of importedQuestions) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
-  let missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
+  const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
   if (config.checkSharingOnSync) {
     for (const [tid, qids] of assessmentImportedQids.entries()) {
       const assessmentMissingQids = qids.filter((qid) => missingQids.has(qid));
@@ -429,8 +438,12 @@ export async function sync(courseId, courseInstanceId, assessments, questionIds)
     ]);
   });
 
-  const params = [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync];
   perf.start('sproc:sync_assessments');
-  await sqldb.callOneRowAsync('sync_assessments', params);
+  await sqldb.callOneRowAsync('sync_assessments', [
+    assessmentParams,
+    courseId,
+    courseInstanceId,
+    config.checkSharingOnSync,
+  ]);
   perf.end('sproc:sync_assessments');
 }
