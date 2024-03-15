@@ -250,7 +250,7 @@ interface SEBConfig {
   allowPrograms: string[];
 }
 
-interface AssessmentAllowAccess {
+export interface AssessmentAllowAccess {
   mode: 'Public' | 'Exam' | 'SEB';
   examUuid: string;
   role: string; // Role is only allowed in legacy questions
