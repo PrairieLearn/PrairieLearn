@@ -32,15 +32,13 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const assessmentModuleNames = [...knownAssessmentModuleNames];
 
-  const params = [
+  perf.start('sproc:sync_assessment_modules');
+  await sqldb.callOneRowAsync('sync_assessment_modules', [
     isInfoCourseValid,
     deleteUnused,
     courseAssessmentModules,
     assessmentModuleNames,
     courseId,
-  ];
-
-  perf.start('sproc:sync_assessment_modules');
-  await sqldb.callOneRowAsync('sync_assessment_modules', params);
+  ]);
   perf.end('sproc:sync_assessment_modules');
 }

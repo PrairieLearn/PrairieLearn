@@ -66,10 +66,12 @@ export async function sync(
     ]);
   });
 
-  const params = [questionParams, courseId];
-
   perf.start('sproc:sync_questions');
-  const result = await sqldb.callRow('sync_questions', params, z.record(z.string(), IdSchema));
+  const result = await sqldb.callRow(
+    'sync_questions',
+    [questionParams, courseId],
+    z.record(z.string(), IdSchema),
+  );
   perf.end('sproc:sync_questions');
 
   return result;

@@ -7,6 +7,7 @@ import * as infofile from '../infofile';
 import { features } from '../../lib/features/index';
 import { makePerformance } from '../performance';
 import { Assessment } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const perf = makePerformance('assessments');
@@ -330,9 +331,12 @@ export async function sync(
       });
     });
 
-    const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]) };
-    const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
-    uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
+    const uuidsRes = await sqldb.queryRows(
+      sql.check_access_rules_exam_uuid,
+      { exam_uuids: JSON.stringify([...examUuids]) },
+      z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
+    );
+    uuidsRes.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
         uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
@@ -396,11 +400,17 @@ export async function sync(
     }
   }
 
-  const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
-    course_id: courseId,
-    imported_question_info: JSON.stringify(Array.from(importedQids, parseSharedQuestionReference)),
-  });
-  for (const row of importedQuestions.rows) {
+  const importedQuestions = await sqldb.queryRows(
+    sql.get_imported_questions,
+    {
+      course_id: courseId,
+      imported_question_info: JSON.stringify(
+        Array.from(importedQids, parseSharedQuestionReference),
+      ),
+    },
+    z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+  );
+  for (const row of importedQuestions) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
   const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
@@ -428,8 +438,12 @@ export async function sync(
     ]);
   });
 
-  const params = [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync];
   perf.start('sproc:sync_assessments');
-  await sqldb.callOneRowAsync('sync_assessments', params);
+  await sqldb.callOneRowAsync('sync_assessments', [
+    assessmentParams,
+    courseId,
+    courseInstanceId,
+    config.checkSharingOnSync,
+  ]);
   perf.end('sproc:sync_assessments');
 }

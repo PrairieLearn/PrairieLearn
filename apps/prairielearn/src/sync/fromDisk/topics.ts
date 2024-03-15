@@ -35,15 +35,13 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const questionTopicNames = [...knownQuestionTopicNames];
 
-  const params = [
+  perf.start('sproc:sync_topics');
+  await sqldb.callAsync('sync_topics', [
     !infofile.hasErrors(courseData.course),
     deleteUnused,
     courseTopics,
     questionTopicNames,
     courseId,
-  ];
-
-  perf.start('sproc:sync_topics');
-  await sqldb.callAsync('sync_topics', params);
+  ]);
   perf.end('sproc:sync_topics');
 }

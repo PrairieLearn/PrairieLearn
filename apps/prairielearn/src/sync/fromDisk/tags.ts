@@ -1,8 +1,10 @@
+import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
 import { CourseData } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const perf = makePerformance('tags');
 
@@ -34,23 +36,15 @@ export async function sync(
   });
   const questionTagNames = [...knownQuestionTagsNames];
 
-  const params = [
-    !infofile.hasErrors(courseData.course),
-    deleteUnused,
-    courseTags,
-    questionTagNames,
-    courseId,
-  ];
-
   perf.start('sproc:sync_course_tags');
-  const res = await sqldb.callOneRowAsync('sync_course_tags', params);
+  const newTags = await sqldb.callRow(
+    'sync_course_tags',
+    [!infofile.hasErrors(courseData.course), deleteUnused, courseTags, questionTagNames, courseId],
+    z.array(z.tuple([z.string(), IdSchema])),
+  );
   perf.end('sproc:sync_course_tags');
 
-  const newTags = res.rows[0].new_tags_json as [string, any][];
-  const tagIdsByName = newTags.reduce((acc, [name, id]) => {
-    acc.set(name, id);
-    return acc;
-  }, new Map<string, any>());
+  const tagIdsByName = new Map(newTags);
 
   const questionTagsParam: string[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {

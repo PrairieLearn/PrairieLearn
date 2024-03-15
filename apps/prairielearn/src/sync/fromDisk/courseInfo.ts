@@ -7,12 +7,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 export async function sync(courseData: CourseData, courseId: string) {
   if (infofile.hasErrors(courseData.course)) {
-    const params = {
+    const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course_errors, {
       course_id: courseId,
       sync_errors: infofile.stringifyErrors(courseData.course),
       sync_warnings: infofile.stringifyWarnings(courseData.course),
-    };
-    const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course_errors, params);
+    });
     if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
     return;
   }
@@ -22,7 +21,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     throw new Error('Course info file is missing data');
   }
 
-  const params = {
+  const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, {
     course_id: courseId,
     short_name: courseInfo.name,
     title: courseInfo.title,
@@ -30,8 +29,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     example_course: courseInfo.exampleCourse,
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),
-  };
-  const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);
+  });
   if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
   courseInfo.timezone = res.rows[0].display_timezone;
 }

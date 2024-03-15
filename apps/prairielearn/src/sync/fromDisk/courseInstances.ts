@@ -53,12 +53,10 @@ export async function sync(
     },
   );
 
-  const params = [courseInstanceParams, courseId];
-
   perf.start('sproc:sync_course_instances');
   const result = await sqldb.callRow(
     'sync_course_instances',
-    params,
+    [courseInstanceParams, courseId],
     z.record(z.string(), IdSchema),
   );
   perf.end('sproc:sync_course_instances');
