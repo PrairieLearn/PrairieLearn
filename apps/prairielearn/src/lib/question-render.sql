@@ -97,7 +97,7 @@ FROM
     LIMIT
       1
   ) AS gj ON TRUE
-  JOIN users u ON (s.auth_user_id = u.user_id)
+  LEFT JOIN users u ON (s.auth_user_id = u.user_id)
 WHERE
   v.id = $variant_id
 ORDER BY

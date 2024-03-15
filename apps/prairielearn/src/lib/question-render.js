@@ -63,7 +63,7 @@ const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).e
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
-  user_uid: z.string(),
+  user_uid: z.string().nullable(),
 });
 
 const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);

@@ -76,12 +76,13 @@
         </span>
       </div>
       <span class="small">
-        <% if (authz_data.authn_user.uid == submission.user_uid) { %>
-          You
+        <% if (!submission.user_uid) { %>
+          Submitted at <%= submission.formatted_date %> 
+        <% } else if (authz_data.authn_user.uid === submission.user_uid) { %>
+          You submitted at <%= submission.formatted_date %>
         <% } else { %>
-          <%= submission.user_uid %>
+          <%= submission.user_uid %> submitted at <%= submission.formatted_date %>
         <% } %>
-        submitted at <%- submission.formatted_date %>
       </span>
     </div>
     <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
