@@ -5,7 +5,7 @@ import * as async from 'async';
 import * as jju from 'jju';
 import Ajv, { type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
-import { isValid, isAfter, isFuture } from 'date-fns';
+import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 
 import { chalk } from '../lib/chalk';
 import { config } from '../lib/config';
@@ -946,12 +946,14 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
  * invalid, `null` is returned.
  */
 function parseAllowAccessDate(date: string): Date | null {
+  // This ensures we don't accept strings like "2024-04", which `parseISO`
+  // would happily accept. We want folks to always be explicit about days/times.
+  //
+  // This matches the regexp used in the `input_date` sproc.
   const match = /[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}/.exec(date);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
 
-  const parsedDate = new Date(match[0]);
+  const parsedDate = parseISO(date);
   return isValid(parsedDate) ? parsedDate : null;
 }
 

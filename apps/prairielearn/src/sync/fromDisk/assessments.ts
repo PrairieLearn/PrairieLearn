@@ -1,4 +1,4 @@
-import { isFuture, isValid } from 'date-fns';
+import { isFuture, isValid, parseISO } from 'date-fns';
 import _ = require('lodash');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
@@ -328,8 +328,10 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
     // future. If we're off by up to a day, it's not a big deal.
     //
     // If the date is invalid, we'll treat it as though it's in the past and
-    /// thus that it does not make the course instance accessible.
-    const parsedDate = new Date(accessRule.endDate);
+    // thus that it does not make the course instance accessible.
+    //
+    // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
+    const parsedDate = parseISO(accessRule.endDate);
     if (!isValid(parsedDate)) return false;
     return isFuture(parsedDate);
   });
