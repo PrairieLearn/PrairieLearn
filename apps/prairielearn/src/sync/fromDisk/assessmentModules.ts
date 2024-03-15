@@ -1,16 +1,12 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData } from '../course-db';
 
 const perf = makePerformance('assessmentModules');
 
-/**
- * @param {any} courseId
- * @param {import('../course-db').CourseData} courseData
- */
-export async function sync(courseId, courseData) {
+export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused assessment modules if both `infoCourse.json`
   // and all `infoAssessment.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -19,16 +15,14 @@ export async function sync(courseId, courseData) {
   });
   const deleteUnused = isInfoCourseValid && areAllInfoAssessmentsValid;
 
-  /** @type {string[]} */
-  let courseAssessmentModules = [];
+  let courseAssessmentModules: string[] = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseAssessmentModules = (courseData.course.data?.assessmentModules ?? []).map((u) =>
       JSON.stringify([u.name, u.heading]),
     );
   }
 
-  /** @type Set<string> */
-  const knownAssessmentModuleNames = new Set();
+  const knownAssessmentModuleNames = new Set<string>();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
       if (!infofile.hasErrors(a) && a.data?.module !== undefined) {
@@ -38,15 +32,13 @@ export async function sync(courseId, courseData) {
   });
   const assessmentModuleNames = [...knownAssessmentModuleNames];
 
-  const params = [
+  perf.start('sproc:sync_assessment_modules');
+  await sqldb.callOneRowAsync('sync_assessment_modules', [
     isInfoCourseValid,
     deleteUnused,
     courseAssessmentModules,
     assessmentModuleNames,
     courseId,
-  ];
-
-  perf.start('sproc:sync_assessment_modules');
-  await sqldb.callOneRowAsync('sync_assessment_modules', params);
+  ]);
   perf.end('sproc:sync_assessment_modules');
 }
