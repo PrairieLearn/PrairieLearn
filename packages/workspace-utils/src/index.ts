@@ -87,6 +87,18 @@ export async function getWorkspaceGradedFiles(
     })
   ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
 
+  // We generally use `archiver` downstream of this, which does not elegantly
+  // handle file names with backslashes:
+  // https://github.com/archiverjs/node-archiver/issues/743
+  // To prevent downstream issues, we disallow any files with backslashes in
+  // their paths. We fail hard rather than silently dropping these files so
+  // that it's clear to the user what's happening.
+  const backslashPaths = files.filter((file) => file.path.includes('\\'));
+  if (backslashPaths.length > 0) {
+    const paths = backslashPaths.map((file) => file.path).join(', ');
+    throw new Error(`Cannot submit files with paths that contain backslashes: ${paths}`);
+  }
+
   if (files.length > limits.maxFiles) {
     throw new Error(`Cannot submit more than ${limits.maxFiles} files from the workspace.`);
   }
