@@ -1,16 +1,12 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData } from '../course-db';
 
 const perf = makePerformance('assessmentSets');
 
-/**
- * @param {any} courseId
- * @param {import('../course-db').CourseData} courseData
- */
-export async function sync(courseId, courseData) {
+export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused assessment sets if both `infoCourse.json`
   // and all `infoAssessment.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -19,16 +15,14 @@ export async function sync(courseId, courseData) {
   });
   const deleteUnused = isInfoCourseValid && areAllInfoAssessmentsValid;
 
-  /** @type {string[]} */
-  let courseAssessmentSets = [];
+  let courseAssessmentSets: string[] = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseAssessmentSets = (courseData.course.data?.assessmentSets ?? []).map((t) =>
       JSON.stringify([t.name, t.abbreviation, t.heading, t.color]),
     );
   }
 
-  /** @type Set<string> */
-  const knownAssessmentSetNames = new Set();
+  const knownAssessmentSetNames = new Set<string>();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
       if (!infofile.hasErrors(a) && a.data?.set) {
@@ -38,15 +32,13 @@ export async function sync(courseId, courseData) {
   });
   const assessmentSetNames = [...knownAssessmentSetNames];
 
-  const params = [
+  perf.start('sproc:sync_assessment_sets');
+  await sqldb.callOneRowAsync('sync_assessment_sets', [
     isInfoCourseValid,
     deleteUnused,
     courseAssessmentSets,
     assessmentSetNames,
     courseId,
-  ];
-
-  perf.start('sproc:sync_assessment_sets');
-  await sqldb.callOneRowAsync('sync_assessment_sets', params);
+  ]);
   perf.end('sproc:sync_assessment_sets');
 }
