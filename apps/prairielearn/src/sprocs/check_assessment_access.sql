@@ -74,7 +74,7 @@ BEGIN
                 'time_limit_min', '—',
                 'start_date', format_date_full(start_date_from_override, display_timezone),
                 'end_date', format_date_full(end_date_from_override, display_timezone),
-                'mode', NULL,
+                'mode', 'Public',
                 'active', TRUE
             )
         );
