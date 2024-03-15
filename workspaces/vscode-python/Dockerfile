@@ -70,7 +70,7 @@ RUN code-server --disable-telemetry --force \
 USER coder
 RUN mkdir -p "/home/coder/workspace" "/home/coder/.local/share/code-server/User"
 WORKDIR "/home/coder/workspace"
-COPY --chmod=0644 --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/settings.json
+COPY --chmod=0644 --chown=coder:coder settings.json tasks.json /home/coder/.local/share/code-server/User/
 
 # Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
 USER root
