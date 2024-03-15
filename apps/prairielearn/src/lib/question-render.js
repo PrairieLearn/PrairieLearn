@@ -63,6 +63,7 @@ const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).e
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
 });
 
 const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
@@ -97,6 +98,7 @@ const SubmissionInfoSchema = z.object({
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
+  user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
 });
@@ -631,6 +633,7 @@ export async function renderPanelsForSubmission({
     grading_job_id,
     grading_job_status,
     formatted_date,
+    user_uid,
   } = submissionInfo;
 
   /** @type {SubmissionPanels} */
@@ -691,6 +694,7 @@ export async function renderPanelsForSubmission({
           grading_job_status,
           formatted_date,
           grading_job_stats,
+          user_uid,
           submission_number: submission_index,
         }),
         submissionHtml: htmls.submissionHtmls[0],
