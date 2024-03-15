@@ -3,16 +3,12 @@ import { z } from 'zod';
 import { get as _get } from 'lodash';
 import * as error from '@prairielearn/error';
 
-const LTI_CLAIM_CONTEXT = 'https://purl.imsglobal.org/spec/lti/claim/context';
-const LTI_CLAIM_ROLES = 'https://purl.imsglobal.org/spec/lti/claim/roles';
-const LTI_CLAIM_DEPLOYMENT_ID = 'https://purl.imsglobal.org/spec/lti/claim/deployment_id';
-
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
 export const Lti13ClaimSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
-  LTI_CLAIM_DEPLOYMENT_ID: z.string(),
+  'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
     id: z.string(),
@@ -35,9 +31,9 @@ export const Lti13ClaimSchema = z.object({
   email: z.string().optional(),
   locale: z.string().optional(),
   // Could be more from OIDC Standard Claims
-  LTI_CLAIM_ROLES: z.string().array(),
+  'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
 
-  LTI_CLAIM_CONTEXT: z
+  'https://purl.imsglobal.org/spec/lti/claim/context': z
     .object({
       id: z.string(),
       type: z.string().array().nullish(),
@@ -101,17 +97,17 @@ export class Lti13Claim {
 
   get context() {
     this.assertValid();
-    return this.claims[LTI_CLAIM_CONTEXT];
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/context'];
   }
 
   get roles() {
     this.assertValid();
-    return this.claims[LTI_CLAIM_ROLES];
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/roles'];
   }
 
   get deployment_id() {
     this.assertValid();
-    return this.claims[LTI_CLAIM_DEPLOYMENT_ID];
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
   }
 
   get target_link_uri() {
