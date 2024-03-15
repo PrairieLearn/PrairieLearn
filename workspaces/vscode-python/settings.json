@@ -12,5 +12,6 @@
   "telemetry.enableTelemetry": false,
   "telemetry.telemetryLevel": "off",
   "editor.fontSize": 16,
+  "window.menuBarVisibility": "visible",
   "workbench.colorTheme": "Default Dark Modern"
 }
