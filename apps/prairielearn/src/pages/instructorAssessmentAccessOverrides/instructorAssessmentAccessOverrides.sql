@@ -91,7 +91,6 @@ VALUES
 -- BLOCK update_assessment_access_policy
 UPDATE assessment_access_policies
 SET
-  created_at = NOW(),
   credit = $credit,
   end_date = $end_date,
   group_id = $group_id,
