@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 
-import enum
 import json
 import os
 import pathlib
@@ -8,6 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+from typing import Literal
 
 import lxml.etree as ET
 
@@ -50,10 +50,7 @@ INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentatio
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
 
-class OutputMatchingOption(enum.Enum):
-    all = "all"
-    partial = "partial"
-    any = "any"
+OutputMatchingOption = Literal["all", "partial", "any"]
 
 
 TIMEOUT_MESSAGE = """
@@ -415,6 +412,11 @@ class CGrader:
         elif not isinstance(reject_output, list):
             reject_output = [reject_output]
 
+        if must_match_all_outputs is True:
+            must_match_all_outputs = "all"
+        elif must_match_all_outputs is False:
+            must_match_all_outputs = "any"
+
         def compile_re(t):
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
@@ -457,11 +459,7 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else (
-                    " all of"
-                    if must_match_all_outputs in (True, "all", "partial")
-                    else " one of"
-                )
+                else (" one of" if must_match_all_outputs == "any" else " all of")
             )
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
             msg = f"Expected{comment}:{join_str}" + join_str.join(
@@ -501,7 +499,7 @@ class CGrader:
                 * sum(1 if r.search(outcmp) is not None else 0 for _, r in exp_output)
                 / len(exp_output)
             )
-        elif not (all if must_match_all_outputs in ("all", True) else any)(
+        elif not (all if must_match_all_outputs == "all" else any)(
             r.search(outcmp) is not None for _, r in exp_output
         ):
             points = 0
