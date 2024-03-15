@@ -210,7 +210,7 @@ The `exp_output` argument can also be used to check for multiple output patterns
 
 - `must_match_all_outputs="any"`: if any of the patterns is found in the program output, the test passes and full points are assigned (this is the default). The value `False` is also accepted for backwards compatibility.
 - `must_match_all_outputs="all"`: all patterns must be found in the program output to pass the test. The value `True` is also accepted for backwards compatibility.
-- `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.25 points).
+- `must_match_all_outputs="partial"`: the points assigned to the test are based on the number of patterns that are found in the program output (for example, if three patterns out of four are found, then the test is assigned 0.75 points).
 
 ```python
 self.test_run("./square", exp_output=["SUCCESS", "CORRECT"]) # default, either SUCCESS or CORRECT are enough for full points
