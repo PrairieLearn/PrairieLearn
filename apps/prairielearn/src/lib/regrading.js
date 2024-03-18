@@ -69,13 +69,12 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
 
   serverJob.executeInBackground(async (job) => {
     job.info('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-    const jobResult = await sqldb.callRow(
+    const regrade = await sqldb.callRow(
       'assessment_instances_regrade',
       [assessment_instance_id, authn_user_id],
       AssessmentInstanceRegradeSchema,
     );
     job.info('Regrading complete');
-    var regrade = jobResult;
     if (regrade.updated) {
       job.info('Questions updated: ' + regrade.updated_question_names.join(', '));
       job.info(
