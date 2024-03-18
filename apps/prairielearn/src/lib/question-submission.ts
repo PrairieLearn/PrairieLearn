@@ -81,7 +81,7 @@ export async function processSubmission(
   // force-breaks variants, as we could be in a case where the variant wasn't
   // broken when the user loaded the page but it is broken when they submit.
   if (variant.broken_at) {
-    throw error.make(400, 'Cannot submit to a broken variant');
+    throw error.make(403, 'Cannot submit to a broken variant');
   }
 
   if (req.body.__action === 'grade') {
