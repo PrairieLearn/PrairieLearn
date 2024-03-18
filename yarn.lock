@@ -3706,7 +3706,6 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@socket.io/redis-emitter": ^5.1.0
     "@types/node": ^20.11.24
-    execa: ^5.1.1
     fast-glob: ^3.3.2
     filesize: ^10.1.0
     socket.io: ^4.7.4

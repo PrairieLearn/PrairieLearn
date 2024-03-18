@@ -1,2 +1,2 @@
 ALTER TABLE workspaces
-ADD COLUMN disk_usage BIGINT;
+ADD COLUMN disk_usage_bytes BIGINT;

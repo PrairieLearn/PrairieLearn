@@ -4,8 +4,8 @@ import type { Server as SocketIOServer } from 'socket.io';
 import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import execa from 'execa';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -118,8 +118,8 @@ export async function getWorkspaceGradedFiles(
 
 /**
  * Updates the disk usage of a workspace. This is computed as the sum of the
- * sizes of all versions of the workspace. The result is stored in the `disk_usage`
- * column of the `workspaces` table. The total size is returned.
+ * sizes of all versions of the workspace. The result is stored in the
+ * `disk_usage_bytes` column of the `workspaces` table. The total size is returned.
  *
  * @param workspace_id The ID of the workspace to update.
  * @param workspacesRoot The root directory of all workspace data.
@@ -145,23 +145,25 @@ export async function updateWorkspaceDiskUsage(
     totalSize += size ?? 0;
   }
 
-  await queryAsync(sql.update_workspace_disk_usage, { workspace_id, disk_usage: totalSize });
+  await queryAsync(sql.update_workspace_disk_usage_bytes, {
+    workspace_id,
+    disk_usage_bytes: totalSize,
+  });
 
   return totalSize;
 }
 
 async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
-  try {
-    // macOS `du` doesn't support the `-b` flag, so we use `-k` instead and
-    // multiply the result by 1024 to convert from kilobytes to bytes.
-    const res = await execa('du', ['-sk', dir]);
-    const [size] = res.stdout.split(/\s/);
-    return Number.parseInt(size, 10) * 1024;
-  } catch (err) {
-    console.error(err);
-    // If this fails for any reason, assume the directory doesn't exist.
-    return null;
+  let size = 0;
+
+  const files = await fs.readdir(dir, { recursive: true });
+
+  for (const file of files) {
+    const stats = await fs.stat(path.join(dir, file));
+    size += stats.size;
   }
+
+  return size;
 }
 
 /**

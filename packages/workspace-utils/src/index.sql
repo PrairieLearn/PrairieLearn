@@ -6,10 +6,10 @@ FROM
 WHERE
   id = $workspace_id;
 
--- BLOCK update_workspace_disk_usage
+-- BLOCK update_workspace_disk_usage_bytes
 UPDATE workspaces as w
 SET
-  disk_usage = $disk_usage
+  disk_usage_bytes = $disk_usage_bytes
 WHERE
   w.id = $workspace_id;
 
