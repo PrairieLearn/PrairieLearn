@@ -622,40 +622,41 @@ export function InstructorAssessmentInstance({
                       <td class="text-nowrap">${row.formatted_date}</td>
                       <td>${row.auth_user_uid ?? html`$mdash;`}</td>
                       ${resLocals.instance_user
-                        ? html`${row.client_fingerprint && row.client_fingerprint_number !== null
-                            ? html`
-                                <td>
-                                  <a
-                                    tabindex="0"
-                                    class="badge color-${FINGERPRINT_COLORS[
-                                      row.client_fingerprint_number % 6
-                                    ]} color-hover"
-                                    role="button"
-                                    id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
-                                    data-toggle="popover"
-                                    data-container="body"
-                                    data-html="true"
-                                    data-placement="auto"
-                                    title="Fingerprint ${row.client_fingerprint_number}"
-                                    data-content="
-                                        <div>
-                                            IP Address: <a href=https://client.rdap.org/?type=ip&object=${row
-                                      .client_fingerprint?.ip_address} target=blank>${row
-                                      .client_fingerprint?.ip_address} </a>
-                                        </div>
-                                        <div>
-                                            Session ID: ${row.client_fingerprint?.user_session_id}
-                                        </div>
-                                        <div>
-                                            User Agent: ${row.client_fingerprint?.user_agent}
-                                        </div>
-                                        "
-                                  >
-                                    ${row.client_fingerprint_number}
-                                  </a>
-                                </td>
-                              `
-                            : html`<td>&mdash;</td>`}`
+                        ? row.client_fingerprint && row.client_fingerprint_number !== null
+                          ? html`
+                              <td>
+                                <a
+                                  tabindex="0"
+                                  class="badge color-${FINGERPRINT_COLORS[
+                                    row.client_fingerprint_number % 6
+                                  ]} color-hover"
+                                  role="button"
+                                  id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                  data-toggle="popover"
+                                  data-container="body"
+                                  data-html="true"
+                                  data-placement="auto"
+                                  title="Fingerprint ${row.client_fingerprint_number}"
+                                  data-content="${escapeHtml(html`
+                                    <div>
+                                      IP Address:
+                                      <a
+                                        href="https://client.rdap.org/?type=ip&object=${row
+                                          .client_fingerprint.ip_address}"
+                                        target="_blank"
+                                      >
+                                        ${row.client_fingerprint.ip_address}
+                                      </a>
+                                    </div>
+                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
+                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
+                                  `)}"
+                                >
+                                  ${row.client_fingerprint_number}
+                                </a>
+                              </td>
+                            `
+                          : html`<td>&mdash;</td>`
                         : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
