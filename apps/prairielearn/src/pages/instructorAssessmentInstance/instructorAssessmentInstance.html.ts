@@ -637,22 +637,20 @@ export function InstructorAssessmentInstance({
                                   data-html="true"
                                   data-placement="auto"
                                   title="Fingerprint ${row.client_fingerprint_number}"
-                                  data-content="${html`
+                                  data-content="${escapeHtml(html`
                                     <div>
                                       IP Address:
                                       <a
                                         href="https://client.rdap.org/?type=ip&object=${row
-                                          .client_fingerprint?.ip_address}"
+                                          .client_fingerprint.ip_address}"
                                         target="_blank"
                                       >
-                                        ${row.client_fingerprint?.ip_address}
+                                        ${row.client_fingerprint.ip_address}
                                       </a>
                                     </div>
-                                    <div>
-                                      Session ID: ${row.client_fingerprint?.user_session_id}
-                                    </div>
-                                    <div>User Agent: ${row.client_fingerprint?.user_agent}</div>
-                                  `.toString()}"
+                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
+                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
+                                  `)}"
                                 >
                                   ${row.client_fingerprint_number}
                                 </a>
