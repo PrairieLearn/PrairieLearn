@@ -35,6 +35,12 @@ const AssessmentInstanceRegradeSchema = z.object({
   old_score_perc: z.number(),
 });
 
+/**
+ * @param {string} assessment_instance_id
+ * @param {string} user_id
+ * @param {string} authn_user_id
+ * @returns {Promise<string>} The job sequence ID
+ */
 export async function regradeAssessmentInstance(assessment_instance_id, user_id, authn_user_id) {
   const assessmentInstance = await sqldb.queryRow(
     sql.select_regrade_assessment_instance_info,
@@ -87,6 +93,12 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
   return serverJob.jobSequenceId;
 }
 
+/**
+ * @param {string} assessment_id
+ * @param {string} user_id
+ * @param {string} authn_user_id
+ * @returns {Promise<string>} The job sequence ID
+ */
 export async function regradeAllAssessmentInstances(assessment_id, user_id, authn_user_id) {
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_regrade_assessment_info,
