@@ -159,7 +159,7 @@ async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
   const files = await fs.readdir(dir, { recursive: true });
 
   for (const file of files) {
-    const stats = await fs.stat(path.join(dir, file));
+    const stats = await fs.lstat(path.join(dir, file));
     size += stats.size;
   }
 
