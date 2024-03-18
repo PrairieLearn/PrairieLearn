@@ -58,6 +58,9 @@ router.post(
           sso_login_url: req.body.sso_login_url,
           issuer: req.body.issuer,
           certificate: req.body.certificate,
+          validate_audience: req.body.validate_audience === '1',
+          want_assertions_signed: req.body.want_assertions_signed === '1',
+          want_authn_response_signed: req.body.want_authn_response_signed === '1',
           // Normalize empty strings to `null`.
           uin_attribute: req.body.uin_attribute || null,
           uid_attribute: req.body.uid_attribute || null,

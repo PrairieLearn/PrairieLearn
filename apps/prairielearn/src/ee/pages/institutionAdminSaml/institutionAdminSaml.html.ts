@@ -148,6 +148,61 @@ ${samlProvider?.certificate ?? ''}</textarea
               >
             </div>
 
+            <div class="form-group form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="validate_audience"
+                name="validate_audience"
+                value="1"
+                ${samlProvider?.validate_audience ?? true ? 'checked' : ''}
+                aria-describedBy="validateAudienceHelp"
+              />
+              <label class="form-check-label" for="validate_audience">Validate audience</label>
+              <small id="validateAudienceHelp" class="form-text text-muted mt-0">
+                Whether or not to validate the audience of the SAML response. This should be enabled
+                unless the Identity Provider doesn't send a correct value for the audience.
+              </small>
+            </div>
+
+            <div class="form-group form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="want_assertions_signed"
+                name="want_assertions_signed"
+                value="1"
+                ${samlProvider?.want_assertions_signed ?? true ? 'checked' : ''}
+                aria-describedBy="wantAssertionsSignedHelp"
+              />
+              <label class="form-check-label" for="want_assertions_signed">
+                Require signed assertions
+              </label>
+              <small id="wantAssertionsSignedHelp" class="form-text text-muted mt-0">
+                Whether or not to require that assertions are signed. This should be enabled unless
+                the Identity Provider doesn't sign assertions.
+              </small>
+            </div>
+
+            <div class="form-group form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="want_authn_response_signed"
+                name="want_authn_response_signed"
+                value="1"
+                ${samlProvider?.want_authn_response_signed ?? true ? 'checked' : ''}
+                aria-describedBy="wantAuthnResponseSignedHelp"
+              />
+              <label class="form-check-label" for="want_authn_response_signed">
+                Require signed response
+              </label>
+              <small id="wantAuthnResponseSignedHelp" class="form-text text-muted mt-0">
+                Whether or not to require that the response is signed. This should be enabled unless
+                the Identity Provider doesn't sign responses.
+              </small>
+            </div>
+
             <h3 class="h5">Attribute mappings</h3>
             <p>
               You must specify a mapping from your Identity Provider's attributes to PrairieLearn's
