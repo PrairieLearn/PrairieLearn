@@ -1,12 +1,11 @@
 // @ts-check
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { createServerJob } from './server-jobs';
 import * as sqldb from '@prairielearn/postgres';
+
+import { createServerJob } from './server-jobs';
 import * as ltiOutcomes from './ltiOutcomes';
-import { z } from 'zod';
 import { IdSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -89,7 +88,6 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
 }
 
 export async function regradeAllAssessmentInstances(assessment_id, user_id, authn_user_id) {
-  debug('regradeAllAssessmentInstances()');
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_regrade_assessment_info,
     { assessment_id },
