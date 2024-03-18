@@ -1,15 +1,14 @@
-// @ts-check
+import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData, Question } from '../course-db';
+import { IdSchema } from '../../lib/db-types';
 
 const perf = makePerformance('questions');
 
-/**
- * @param {import('../course-db').Question | null | undefined} q
- */
-function getParamsForQuestion(q) {
+function getParamsForQuestion(q: Question | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
@@ -53,12 +52,10 @@ function getParamsForQuestion(q) {
   };
 }
 
-/**
- * @param {any} courseId
- * @param {import('../course-db').CourseData} courseData
- * @returns {Promise<{ [qid: string]: any }>}
- */
-export async function sync(courseId, courseData) {
+export async function sync(
+  courseId: string,
+  courseData: CourseData,
+): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
@@ -69,13 +66,13 @@ export async function sync(courseId, courseData) {
     ]);
   });
 
-  const params = [questionParams, courseId];
-
   perf.start('sproc:sync_questions');
-  const result = await sqldb.callOneRowAsync('sync_questions', params);
+  const result = await sqldb.callRow(
+    'sync_questions',
+    [questionParams, courseId],
+    z.record(z.string(), IdSchema),
+  );
   perf.end('sproc:sync_questions');
 
-  /** @type {[string, any][]} */
-  const nameToIdMap = result.rows[0].name_to_id_map;
-  return nameToIdMap;
+  return result;
 }

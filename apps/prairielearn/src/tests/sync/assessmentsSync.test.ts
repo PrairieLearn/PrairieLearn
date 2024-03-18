@@ -2039,4 +2039,85 @@ describe('Assessment syncing', () => {
     assert.isNull(newAssessmentRow2?.deleted_at);
     assert.equal(newAssessmentRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
+
+  describe('exam UUID validation', () => {
+    let originalCheckAccessRulesExamUuid: boolean;
+    before(() => {
+      originalCheckAccessRulesExamUuid = config.checkAccessRulesExamUuid;
+      config.checkAccessRulesExamUuid = true;
+    });
+    after(() => {
+      config.checkAccessRulesExamUuid = originalCheckAccessRulesExamUuid;
+    });
+
+    it('validates exam UUIDs for assessments in an accessible course instances', async () => {
+      const courseData = util.getCourseData();
+
+      // Ensure the course instance is accessible.
+      const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      const courseInstance = courseInstanceData.courseInstance;
+      if (!courseInstance) throw new Error('missing courseInstance');
+      courseInstance.allowAccess = [
+        {
+          startDate: '2000-01-01T00:00:00',
+          endDate: '3000-01-01T00:00:00',
+        },
+      ];
+
+      // This assessment has both valid and invalid exam UUIDs.
+      const assessment = makeAssessment(courseData);
+      assessment.allowAccess = [
+        {
+          mode: 'Exam',
+          examUuid: '00000000-0000-0000-0000-000000000000',
+        },
+        {
+          mode: 'Exam',
+          examUuid: '11111111-1111-1111-1111-111111111111',
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+      // Insert a `pt_exams` row for the valid exam UUID.
+      await sqldb.queryAsync(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
+
+      await util.writeAndSyncCourseData(courseData);
+      const syncedAssessment = await findSyncedAssessment('fail');
+      assert.match(
+        syncedAssessment?.sync_warnings,
+        /examUuid "00000000-0000-0000-0000-000000000000" not found./,
+      );
+      assert.notMatch(syncedAssessment?.sync_warnings, /11111111-1111-1111-1111-111111111111/);
+    });
+
+    it('does not validate exam UUIDs for assessments in an inaccessible course instance', async () => {
+      const courseData = util.getCourseData();
+
+      // Ensure the course instance is not accessible.
+      const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      const courseInstance = courseInstanceData.courseInstance;
+      if (!courseInstance) throw new Error('missing courseInstance');
+      courseInstance.allowAccess = [
+        {
+          startDate: '1000-01-01T00:00:00',
+          endDate: '2000-01-01T00:00:00',
+        },
+      ];
+
+      // Create an assessment with an invalid exam UUID.
+      const assessment = makeAssessment(courseData);
+      assessment.type = 'Exam';
+      assessment.allowAccess = [
+        {
+          mode: 'Exam',
+          examUuid: '00000000-0000-0000-0000-000000000000',
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+      await util.writeAndSyncCourseData(courseData);
+      const syncedAssessment = await findSyncedAssessment('fail');
+      assert.isNotOk(syncedAssessment?.sync_warnings);
+    });
+  });
 });

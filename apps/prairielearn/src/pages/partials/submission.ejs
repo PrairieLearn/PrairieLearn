@@ -75,7 +75,13 @@
           <% } %>
         </span>
       </div>
-      <small>Submitted at <%- submission.formatted_date %></small>
+      <span class="small">
+        <% if (!submission.user_uid) { %>
+          Submitted at <%= submission.formatted_date %> 
+        <% } else { %>
+          <%= submission.user_uid %> submitted at <%= submission.formatted_date %>
+        <% } %>
+      </span>
     </div>
     <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
