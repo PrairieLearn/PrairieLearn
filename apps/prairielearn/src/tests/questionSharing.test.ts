@@ -76,7 +76,7 @@ describe('Question Sharing', function () {
     });
 
     step('Fail to sync course when validating shared question paths', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
           `Sync of ${TEST_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
@@ -92,7 +92,7 @@ describe('Question Sharing', function () {
     step(
       'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
-        const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+        const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
         if (result?.hadJsonErrorsOrWarnings) {
           throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
         }
@@ -358,7 +358,7 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = false;
     });
     step('Re-sync test course, validating shared questions', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
       }

@@ -69,7 +69,6 @@ export async function questionFilePathAsync(
       throw error.make(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
-        { sql: sql.select_question, params: params },
       );
     }
 

@@ -1,8 +1,11 @@
+//@ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
+import * as express from 'express';
+import * as error from '@prairielearn/error';
+
+import * as serverJobs from '../../lib/server-jobs-legacy';
+
 const router = express.Router();
-const serverJobs = require('../../lib/server-jobs-legacy');
-const error = require('@prairielearn/error');
 
 router.get('/:job_sequence_id', function (req, res, next) {
   const job_sequence_id = req.params.job_sequence_id;
@@ -51,4 +54,4 @@ router.get('/:job_sequence_id', function (req, res, next) {
   });
 });
 
-module.exports = router;
+export default router;

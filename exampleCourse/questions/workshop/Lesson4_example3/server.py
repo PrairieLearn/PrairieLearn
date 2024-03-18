@@ -19,19 +19,19 @@ def parse(data):
         else:
             if name in ["Tb", "T1"]:
                 if var > 100:
-                    data["format_errors"][
-                        name
-                    ] = "Temperature {} looks too high.".format(name)
+                    data["format_errors"][name] = (
+                        "Temperature {} looks too high.".format(name)
+                    )
                 elif var < 10:
-                    data["format_errors"][
-                        name
-                    ] = "Temperature {} looks too low.".format(name)
+                    data["format_errors"][name] = (
+                        "Temperature {} looks too low.".format(name)
+                    )
             elif name in ["D", "L", "x1"]:
                 if var > 0.5:
-                    data["format_errors"][
-                        name
-                    ] = "Dimension {} is outside the range of acceptable values for this experiment. Check your units?".format(
-                        name
+                    data["format_errors"][name] = (
+                        "Dimension {} is outside the range of acceptable values for this experiment. Check your units?".format(
+                            name
+                        )
                     )
 
 

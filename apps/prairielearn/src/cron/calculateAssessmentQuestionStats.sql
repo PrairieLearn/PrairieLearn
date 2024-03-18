@@ -1,6 +1,6 @@
 -- BLOCK select_assessments
 SELECT
-  *
+  a.id
 FROM
   assessments AS a
 WHERE

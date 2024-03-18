@@ -17,6 +17,7 @@
 .yarn/install-state.gz
 !pyproject.toml
 !apps/
+apps/prairielearn/server.log
 !database/
 !docs/
 !docker/

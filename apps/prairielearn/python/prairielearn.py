@@ -265,9 +265,6 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
 
-    This function does not try to preserve information like the assumptions on
-    variables in a sympy expression.
-
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
@@ -369,9 +366,6 @@ def from_json(v):
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
-
-    This function does not try to recover information like the assumptions on
-    variables in a sympy expression.
 
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
@@ -557,20 +551,17 @@ def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
-    ...
+def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str: ...
 
 
 @overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
-    ...
+def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
 
 
 @overload
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None:
-    ...
+) -> str | None: ...
 
 
 def get_string_attrib(element, name, *args):
@@ -586,20 +577,19 @@ def get_string_attrib(element, name, *args):
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
-    ...
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
 
 
 @overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool:
-    ...
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: bool
+) -> bool: ...
 
 
 @overload
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> bool | None:
-    ...
+) -> bool | None: ...
 
 
 def get_boolean_attrib(element, name, *args):
@@ -639,20 +629,19 @@ def get_boolean_attrib(element, name, *args):
 
 # Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
-    ...
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int: ...
 
 
 @overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) -> int:
-    ...
+def get_integer_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: int
+) -> int: ...
 
 
 @overload
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> int | None:
-    ...
+) -> int | None: ...
 
 
 def get_integer_attrib(element, name, *args):
@@ -700,15 +689,13 @@ def get_float_attrib(element, name, *args):
 
 
 @overload
-def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
-    ...
+def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str: ...
 
 
 @overload
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> str | None:
-    ...
+) -> str | None: ...
 
 
 def get_color_attrib(element, name, *args):
@@ -1175,9 +1162,9 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 value = a_frac
                 data["submitted_answers"] = to_json(value)
             except FloatingPointError:  # Caused by numpy division
-                data[
-                    "format_errors"
-                ] = "Your expression resulted in a division by zero."
+                data["format_errors"] = (
+                    "Your expression resulted in a division by zero."
+                )
             except Exception as error:
                 data["format_errors"] = f"Invalid format: {str(error)}"
         else:

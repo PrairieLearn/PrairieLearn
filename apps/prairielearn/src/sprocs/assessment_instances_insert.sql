@@ -8,8 +8,7 @@ CREATE FUNCTION
         IN time_limit_min integer DEFAULT NULL,
         IN date timestamptz DEFAULT NULL,
         IN client_fingerprint_id bigint DEFAULT NULL,
-        OUT assessment_instance_id bigint,
-        OUT new_instance_question_ids bigint[]
+        OUT assessment_instance_id bigint
     )
 AS $$
 #variable_conflict use_column -- fix user_id reference in ON CONFLICT
@@ -130,13 +129,6 @@ BEGIN
 
     -- ######################################################################
     -- create new questions if necessary
-
-    IF assessment.type = 'Homework' THEN
-        new_instance_question_ids := array[]::bigint[];
-    ELSIF assessment.type = 'Exam' THEN
-        PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
-    ELSE
-        RAISE EXCEPTION 'invalid assessment.type: %', assessment.type;
-    END IF;
+    PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;

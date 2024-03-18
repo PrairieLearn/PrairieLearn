@@ -31,9 +31,7 @@ router.post(
         uid_regexp: req.body.uid_regexp.trim() || null,
       });
     } else {
-      throw error.make(400, 'Unknown action', {
-        body: req.body,
-      });
+      throw error.make(400, 'Unknown action');
     }
 
     res.redirect(req.originalUrl);

@@ -1,5 +1,5 @@
 columns
-    group_config_id: bigint
+    group_config_id: bigint not null
     group_id: bigint not null
     user_id: bigint not null
 

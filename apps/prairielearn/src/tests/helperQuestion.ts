@@ -121,6 +121,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
         return;
       }
       assert.equal(locals.variant?.broken, false);
+      assert.isNull(locals.variant?.broken_at);
     });
 
     it('should have a CSRF token if has grade or save button', function () {

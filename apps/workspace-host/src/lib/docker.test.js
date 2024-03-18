@@ -1,7 +1,7 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const { parseDockerLogs } = require('./docker');
+import { parseDockerLogs } from './docker';
 
 // See "Stream format" docs on the Docker ContainerAttach API:
 // https://docs.docker.com/engine/api/v1.41/#tag/Container/operation/ContainerAttach

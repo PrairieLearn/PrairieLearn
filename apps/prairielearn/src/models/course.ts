@@ -122,3 +122,7 @@ export async function selectCoursesWithEditAccess({
   });
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
+
+export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
+  return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
+}
