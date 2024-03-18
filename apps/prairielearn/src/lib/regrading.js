@@ -11,18 +11,36 @@ import { IdSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
+const RegradeAssessmentInstanceInfoSchema = z.object({
+  assessment_instance_label: z.string(),
+  user_uid: z.string().nullable(),
+  group_name: z.string().nullable(),
+  assessment_id: IdSchema,
+  course_instance_id: IdSchema,
+  course_id: IdSchema,
+});
+const RegradeAssessmentInfoSchema = z.object({
+  assessment_label: z.string(),
+  course_instance_id: IdSchema,
+  course_id: IdSchema,
+});
+const RegradeAssessmentInstancesSchema = z.object({
+  assessment_instance_id: IdSchema,
+  assessment_instance_label: z.string(),
+  user_uid: z.string(),
+});
+const AssessmentInstanceRegradeSchema = z.object({
+  updated: z.boolean(),
+  updated_question_names: z.array(z.string()),
+  new_score_perc: z.number(),
+  old_score_perc: z.number(),
+});
+
 export async function regradeAssessmentInstance(assessment_instance_id, user_id, authn_user_id) {
   const assessmentInstance = await sqldb.queryRow(
     sql.select_regrade_assessment_instance_info,
     { assessment_instance_id },
-    z.object({
-      assessment_instance_label: z.string(),
-      user_uid: z.string().nullable(),
-      group_name: z.string().nullable(),
-      assessment_id: IdSchema,
-      course_instance_id: IdSchema,
-      course_id: IdSchema,
-    }),
+    RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
   let jobInfo;
@@ -49,12 +67,7 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
     const jobResult = await sqldb.callRow(
       'assessment_instances_regrade',
       [assessment_instance_id, authn_user_id],
-      z.object({
-        updated: z.boolean(),
-        updated_question_names: z.array(z.string()),
-        new_score_perc: z.number(),
-        old_score_perc: z.number(),
-      }),
+      AssessmentInstanceRegradeSchema,
     );
     job.info('Regrading complete');
     var regrade = jobResult;
@@ -80,7 +93,7 @@ export async function regradeAllAssessmentInstances(assessment_id, user_id, auth
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_regrade_assessment_info,
     { assessment_id },
-    z.object({ assessment_label: z.string(), course_instance_id: IdSchema, course_id: IdSchema }),
+    RegradeAssessmentInfoSchema,
   );
 
   const serverJob = await createServerJob({
@@ -99,11 +112,7 @@ export async function regradeAllAssessmentInstances(assessment_id, user_id, auth
     const assessment_instances = await sqldb.queryRows(
       sql.select_regrade_assessment_instances,
       { assessment_id },
-      z.object({
-        assessment_instance_id: IdSchema,
-        assessment_instance_label: z.string(),
-        user_uid: z.string().nullable(),
-      }),
+      RegradeAssessmentInstancesSchema,
     );
 
     let updated_count = 0;
@@ -121,12 +130,7 @@ export async function regradeAllAssessmentInstances(assessment_id, user_id, auth
         const regrade = await sqldb.callRow(
           'assessment_instances_regrade',
           [row.assessment_instance_id, authn_user_id],
-          z.object({
-            updated: z.boolean(),
-            updated_question_names: z.array(z.string()),
-            new_score_perc: z.number(),
-            old_score_perc: z.number(),
-          }),
+          AssessmentInstanceRegradeSchema,
         );
         msg = `Regraded ${row.assessment_instance_label} for ${row.user_uid}: `;
         if (regrade.updated) {
