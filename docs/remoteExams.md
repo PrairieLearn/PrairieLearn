@@ -20,7 +20,7 @@ If you are using the CBTF for remote proctoring then the access control should l
 
 Some notes about this configuration:
 
-- The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
+- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
 - Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
 
 ## CBTF exams with a few students outside the CBTF
