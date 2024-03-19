@@ -90,8 +90,10 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
 
     // After explicitly authenticating, clear the cookie that disables
     // automatic authentication.
-    clearCookie(res, 'pl_disable_auto_authn');
-    clearCookie(res, 'pl2_disable_auto_authn');
+    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+      clearCookie(res, 'pl_disable_auto_authn');
+      clearCookie(res, 'pl2_disable_auto_authn');
+    }
   }
 
   if (options.redirect) {

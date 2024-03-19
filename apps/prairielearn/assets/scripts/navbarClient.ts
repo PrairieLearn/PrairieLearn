@@ -54,8 +54,8 @@ onDocumentReady(() => {
   // When removing cookies, we need to remove the cookies both with and without
   // an explicit domain.
   function removeCookie(names: OldAndNewCookieNames) {
-    Cookies.remove(names[0]);
-    CookiesModule.remove(names[1]);
+    OldCookies.remove(names[0]);
+    Cookies.remove(names[1]);
   }
 
   const accessAsAdministrator = usernameNav.dataset.accessAsAdministrator === 'true';
