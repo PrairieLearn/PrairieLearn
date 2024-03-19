@@ -1,5 +1,6 @@
 columns
     deleted_at: timestamp with time zone
+    email: character varying(255)
     institution_id: bigint not null default 1
     lti_context_id: text
     lti_course_instance_id: bigint
