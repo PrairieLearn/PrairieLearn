@@ -15,6 +15,7 @@ import {
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render';
+import { PublicQuestionPreview } from './publicQuestionPreview.html';
 
 const logPageView = promisify(LogPageView(path.basename(__filename, '.ts')));
 
@@ -80,7 +81,7 @@ router.get(
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView(req, res);
     setRendererHeader(res);
-    res.render(__filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    res.send(PublicQuestionPreview({ resLocals: res.locals }));
   }),
 );
 

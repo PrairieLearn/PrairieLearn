@@ -224,8 +224,7 @@ export function InstructorQuestionSettings({
                                         `;
                                       })}
                                     `}
-                                ${resLocals.authz_data.has_course_permission_own &&
-                                !resLocals.course.example_course
+                                ${resLocals.authz_data.has_course_permission_own
                                   ? html`
                                       ${sharingSetsOther.length > 0
                                         ? html`

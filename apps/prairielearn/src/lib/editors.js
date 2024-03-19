@@ -24,6 +24,8 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import * as sqldb from '@prairielearn/postgres';
+import * as b64Util from '../lib/base64-util';
+import { html } from '@prairielearn/html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -56,7 +58,9 @@ async function syncCourseFromDisk(course, startGitHash, job) {
 }
 
 export async function cleanAndResetRepository(course, env, job) {
+  job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
+  job.info('Reset state to remote git repository');
   await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
     cwd: course.path,
     env,
@@ -131,25 +135,39 @@ export class Editor {
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
         const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
-        if (config.fileEditorUseGit) {
-          await cleanAndResetRepository(this.course, gitEnv, job);
-        }
-
-        try {
-          job.info('Write changes to disk');
-          await this.write();
-        } catch (err) {
-          if (config.fileEditorUseGit) {
-            await cleanAndResetRepository(this.course, gitEnv, job);
-          }
-
-          throw err;
-        }
-
         if (!config.fileEditorUseGit) {
+          // If we are not using git (e.g., if we are running locally), then we:
+          //
+          // - Write changes to disk
+          // - Sync changes from disk
+          //
+          // Either the job ends with a thrown error or with the return statement.
+
+          job.info('Write changes to disk');
+          job.data.saveAttempted = true;
+          await this.write();
+          job.data.saveSucceeded = true;
+
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
           await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
+
           return;
         }
+
+        // If we are using git (e.g., if we are running in production), then we:
+        //
+        // - Pull from remote (then clean and reset)
+        // - Write changes to disk
+        // - Push to remote (then clean and reset)
+        // - Sync changes from disk
+        //
+        // If anything goes wrong in the pull, we error and exit.
+        //
+        // If anything goes wrong in the write or push, we make sure to clean/reset
+        // (removing changes made by this edit) and sync (because changes were made
+        // by the pull) before we error and exit.
 
         // Safety check: make sure the course has a defined branch and repository.
         if (!this.course.branch || !this.course.repository) {
@@ -157,7 +175,26 @@ export class Editor {
           return;
         }
 
+        job.info('Update to latest remote origin address');
+        await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        job.info('Fetch from remote git repository');
+        await job.exec('git', ['fetch'], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        await cleanAndResetRepository(this.course, gitEnv, job);
+
         try {
+          job.data.saveAttempted = true;
+          job.info('Write changes to disk');
+          await this.write();
+
+          job.info('Commit changes');
           await job.exec('git', ['add', ...this.pathsToAdd], {
             cwd: this.course.path,
             env: gitEnv,
@@ -178,40 +215,35 @@ export class Editor {
               env: gitEnv,
             },
           );
-        } catch (err) {
-          await cleanAndResetRepository(this.course, gitEnv, job);
-          throw err;
-        }
 
-        try {
-          job.data.pushAttempted = true;
-
+          job.info('Push changes to remote git repository');
           await job.exec('git', ['push'], {
             cwd: this.course.path,
             env: gitEnv,
           });
-
-          // We'll look for this flag on the `editError` page to know if
-          // we need to display instructions to recover from a failed push.
-          job.data.pushSucceeded = true;
+          job.data.saveSucceeded = true;
         } finally {
-          // Regardless of whether we error, we'll do a clean and reset:
+          // Whether or not we error, we'll do a clean and reset.
           //
           // If pushing succeeded, the clean will remove any empty directories
           // that might have been left behind by operations like renames.
           //
-          // If pushing errored, the reset will get us back to a known good state.
+          // If pushing (or anything before pushing) failed, the reset will get
+          // us back to a known good state.
           await cleanAndResetRepository(this.course, gitEnv, job);
+
+          // Similarly, whether or not we error, we'll a course sync.
+          //
+          // If pushing succeeded, then we will be syncing the changes made
+          // by this edit.
+          //
+          // If pushing (or anything before pushing) failed, then we will be
+          // syncing the changes we pulled from the remote git repository.
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
         }
-
-        job.data.syncAttempted = true;
-
-        await syncCourseFromDisk(this.course, startGitHash, job);
-
-        // As with `job.data.pushSucceeded` above, we'll check this flag
-        // on the `editError` page to know if syncing failed so we can
-        // display appropriate instructions.
-        job.data.syncSucceeded = true;
       });
     });
   }
@@ -221,9 +253,7 @@ export class Editor {
       (serverJob) => {
         this.executeWithServerJob(serverJob).then(
           () => callback(null, serverJob.jobSequenceId),
-          (err) => {
-            callback(err, serverJob.jobSequenceId);
-          },
+          (err) => callback(err, serverJob.jobSequenceId),
         );
       },
       (err) => {
@@ -981,11 +1011,16 @@ export class FileDeleteEditor extends Editor {
     if (!contains(this.container.rootPath, this.deletePath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The path of the file to delete</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -996,10 +1031,14 @@ export class FileDeleteEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The path of the file to delete</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1041,10 +1080,16 @@ export class FileRenameEditor extends Editor {
     if (!contains(this.container.rootPath, this.oldPath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file's old path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1052,10 +1097,16 @@ export class FileRenameEditor extends Editor {
     if (!contains(this.container.rootPath, this.newPath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file's new path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1068,10 +1119,14 @@ export class FileRenameEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file's old path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1082,10 +1137,14 @@ export class FileRenameEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file's new path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1161,10 +1220,16 @@ export class FileUploadEditor extends Editor {
     if (!contains(this.container.rootPath, this.filePath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1175,10 +1240,14 @@ export class FileUploadEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1197,6 +1266,118 @@ export class FileUploadEditor extends Editor {
 
     debug(`write file`);
     await fs.writeFile(this.filePath, this.fileContents);
+    this.pathsToAdd = [this.filePath];
+    this.commitMessage = this.description;
+  }
+}
+
+export class FileModifyEditor extends Editor {
+  // Naming convention for contents and hashes in FileModifyEditor:
+  //
+  //    xyzContentsUTF - contents of xyz file as utf8
+  //
+  //    xyzContents - contents of xyz file as utf8 that is base64-encoded
+  //
+  //    xyzHash - hash of contents of xyz file as utf8 that is base64-encoded
+  //
+  // The base64 encoding and its corresponding hash are used by the file editor.
+  // If this weren't the case, then we wouldn't use it here either. For example,
+  // FileUploadEditor - which is used by the file browser - doesn't require any
+  // base64 encoding. In that case, contents/hashes are just utf8.
+
+  constructor(params) {
+    super(params);
+    this.container = params.container;
+    this.filePath = params.filePath;
+    this.editContents = params.editContents;
+    this.origHash = params.origHash;
+    if (this.course.path === this.container.rootPath) {
+      this.prefix = '';
+    } else {
+      this.prefix = `${path.basename(this.container.rootPath)}: `;
+    }
+    this.description = `${this.prefix}modify ${path.relative(
+      this.container.rootPath,
+      this.filePath,
+    )}`;
+  }
+
+  getHash(contents) {
+    return sha256(contents).toString();
+  }
+
+  shouldEdit(callback) {
+    debug('get hash of edit contents');
+    const editHash = this.getHash(this.editContents);
+    debug('editHash: ' + editHash);
+    debug('origHash: ' + this.origHash);
+    if (this.origHash === editHash) {
+      debug('edit contents are the same as orig contents, so abort');
+      callback(null, false);
+    } else {
+      debug('edit contents are different from orig contents, so continue');
+      callback(null, true);
+    }
+  }
+
+  canEdit(callback) {
+    if (!contains(this.container.rootPath, this.filePath)) {
+      const err = error.makeWithInfo(
+        'Invalid file path',
+        html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `.toString(),
+      );
+      return callback(err);
+    }
+
+    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+      contains(invalidRootPath, this.filePath),
+    );
+    if (found) {
+      const err = error.makeWithInfo(
+        'Invalid file path',
+        html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
+      );
+      return callback(err);
+    }
+
+    super.canEdit((err) => {
+      if (ERR(err, callback)) return;
+      callback(null);
+    });
+  }
+
+  async write() {
+    debug('FileModifyEditor: write()');
+
+    debug(`ensure path exists`);
+    await fs.ensureDir(path.dirname(this.filePath));
+
+    debug(`verify disk hash matches orig hash`);
+    const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
+    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskHash = this.getHash(diskContents);
+    if (this.origHash !== diskHash) {
+      throw new Error('Another user made changes to the file you were editing.');
+    }
+
+    debug(`write file`);
+    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
     this.pathsToAdd = [this.filePath];
     this.commitMessage = this.description;
   }

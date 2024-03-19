@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
+import { Modal } from '../../components/Modal.html';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -77,6 +78,7 @@ export function InstructorAssessmentInstance({
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
+        ${compiledScriptTag('instructorAssessmentInstanceClient.ts')}
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
           )}"></script>
@@ -96,6 +98,10 @@ export function InstructorAssessmentInstance({
           navPage: '',
         })}
         <main id="content" class="container-fluid">
+          ${ResetQuestionVariantsModal({
+            csrfToken: resLocals.__csrf_token,
+            groupWork: resLocals.assessment.group_work,
+          })}
           ${renderEjs(
             __filename,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -300,7 +306,8 @@ export function InstructorAssessmentInstance({
                   <th class="text-center">Manual grading points</th>
                   <th class="text-center">Awarded points</th>
                   <th class="text-center" colspan="2">Percentage score</th>
-                  <th></th>
+                  <th><!--Manual grading column --></th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -486,6 +493,33 @@ export function InstructorAssessmentInstance({
                             `
                           : ''}
                       </td>
+                      <td class="text-right">
+                        <div class="dropdown js-question-actions">
+                          <button
+                            type="button"
+                            class="btn btn-secondary btn-xs dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          >
+                            Action <span class="caret"></span>
+                          </button>
+                          <div class="dropdown-menu dropdown-menu-right">
+                            ${resLocals.authz_data.has_course_instance_permission_edit
+                              ? html`
+                                  <button
+                                    class="dropdown-item"
+                                    data-toggle="modal"
+                                    data-target="#resetQuestionVariantsModal"
+                                    data-instance-question-id="${instance_question.id}"
+                                  >
+                                    Reset question variants
+                                  </button>
+                                `
+                              : ''}
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   `;
                 })}
@@ -586,42 +620,43 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid}</td>
+                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
                       ${resLocals.instance_user
-                        ? html`${row.client_fingerprint && row.client_fingerprint_number !== null
-                            ? html`
-                                <td>
-                                  <a
-                                    tabindex="0"
-                                    class="badge color-${FINGERPRINT_COLORS[
-                                      row.client_fingerprint_number % 6
-                                    ]} color-hover"
-                                    role="button"
-                                    id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
-                                    data-toggle="popover"
-                                    data-container="body"
-                                    data-html="true"
-                                    data-placement="auto"
-                                    title="Fingerprint ${row.client_fingerprint_number}"
-                                    data-content="
-                                        <div>
-                                            IP Address: <a href=https://client.rdap.org/?type=ip&object=${row
-                                      .client_fingerprint?.ip_address} target=blank>${row
-                                      .client_fingerprint?.ip_address} </a>
-                                        </div>
-                                        <div>
-                                            Session ID: ${row.client_fingerprint?.user_session_id}
-                                        </div>
-                                        <div>
-                                            User Agent: ${row.client_fingerprint?.user_agent}
-                                        </div>
-                                        "
-                                  >
-                                    ${row.client_fingerprint_number}
-                                  </a>
-                                </td>
-                              `
-                            : html`<td>&mdash;</td>`}`
+                        ? row.client_fingerprint && row.client_fingerprint_number !== null
+                          ? html`
+                              <td>
+                                <a
+                                  tabindex="0"
+                                  class="badge color-${FINGERPRINT_COLORS[
+                                    row.client_fingerprint_number % 6
+                                  ]} color-hover"
+                                  role="button"
+                                  id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                  data-toggle="popover"
+                                  data-container="body"
+                                  data-html="true"
+                                  data-placement="auto"
+                                  title="Fingerprint ${row.client_fingerprint_number}"
+                                  data-content="${escapeHtml(html`
+                                    <div>
+                                      IP Address:
+                                      <a
+                                        href="https://client.rdap.org/?type=ip&object=${row
+                                          .client_fingerprint.ip_address}"
+                                        target="_blank"
+                                      >
+                                        ${row.client_fingerprint.ip_address}
+                                      </a>
+                                    </div>
+                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
+                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
+                                  `)}"
+                                >
+                                  ${row.client_fingerprint_number}
+                                </a>
+                              </td>
+                            `
+                          : html`<td>&mdash;</td>`
                         : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
@@ -769,4 +804,35 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
       </div>
     </form>
   `;
+}
+
+function ResetQuestionVariantsModal({
+  csrfToken,
+  groupWork,
+}: {
+  csrfToken: string;
+  groupWork: boolean;
+}) {
+  return Modal({
+    id: 'resetQuestionVariantsModal',
+    title: 'Confirm reset question variants',
+    body: html`
+      <p>
+        Are your sure you want to reset all current variants of this question for this
+        ${groupWork ? 'group' : 'student'}?
+        <strong>All ungraded attempts will be lost.</strong>
+      </p>
+      <p>
+        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
+        this question.
+      </p>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="reset_question_variants" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
 }
