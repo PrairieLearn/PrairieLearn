@@ -1,7 +1,7 @@
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { z } from 'zod';
-import { loadSqlEquiv, queryRow, queryAsync, callValidatedOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
 import { Course, CourseSchema } from '../lib/db-types';
@@ -94,12 +94,10 @@ export async function selectCoursesWithStaffAccess({
   user_id: string;
   is_administrator: boolean;
 }) {
-  const { courses } = await callValidatedOneRow(
-    'courses_with_staff_access',
-    [user_id, is_administrator],
-    z.object({
-      courses: z.array(CourseWithPermissionsSchema),
-    }),
+  const courses = await queryRows(
+    sql.select_courses_with_staff_access,
+    { user_id, is_administrator },
+    CourseWithPermissionsSchema,
   );
   return courses;
 }
@@ -123,4 +121,8 @@ export async function selectCoursesWithEditAccess({
     is_administrator,
   });
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
+}
+
+export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
+  return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
 }

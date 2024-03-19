@@ -22,6 +22,7 @@ VALUES
 ON CONFLICT (session_id) DO
 UPDATE
 SET
+  user_id = $user_id,
   data = $data::jsonb,
   updated_at = now(),
   expires_at = $expires_at;

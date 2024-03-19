@@ -1,6 +1,7 @@
 columns
     branch: text default 'master'::text
     commit_hash: text
+    course_instance_enrollment_limit: integer
     created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
     display_timezone: text not null
@@ -8,7 +9,7 @@ columns
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
     options: jsonb not null default '{}'::jsonb
-    path: text
+    path: text not null
     repository: text
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()
@@ -18,6 +19,7 @@ columns
     sync_warnings: text
     template_course: boolean not null default false
     title: text
+    yearly_enrollment_limit: integer
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)

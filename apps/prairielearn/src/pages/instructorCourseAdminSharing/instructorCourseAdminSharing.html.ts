@@ -118,11 +118,13 @@ export const InstructorSharing = ({
   sharingName,
   sharingToken,
   sharingSets,
+  publicSharingLink,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
   sharingSets: { name: string; id: string; shared_with: string[] }[];
+  publicSharingLink: string;
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
@@ -135,9 +137,7 @@ export const InstructorSharing = ({
       <body>
         <script>
           $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
+            $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -190,6 +190,19 @@ export const InstructorSharing = ({
                     </form>
                   </td>
                 </tr>
+                <tr>
+                  <th>Public Questions Page</th>
+                  <td class="align-middle">
+                    <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
+                    <button
+                      class="btn btn-xs btn-secondary mx-2"
+                      onclick="navigator.clipboard.writeText('${publicSharingLink}');"
+                    >
+                      <i class="fa fa-copy"></i>
+                      <span>Copy</span>
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -212,8 +225,6 @@ export const InstructorSharing = ({
                         data-placement="auto"
                         title="Create Sharing Set"
                         data-content="${addSharingSetPopover(resLocals)}"
-                        data-trigger="manual"
-                        onclick="$(this).popover('show')"
                       >
                         <i class="fas fa-plus" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Create Sharing Set</span>
@@ -252,8 +263,6 @@ export const InstructorSharing = ({
                                   resLocals,
                                   sharing_set,
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>

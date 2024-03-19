@@ -3,13 +3,13 @@ import { step } from 'mocha-steps';
 import { config } from '../lib/config';
 import fetch from 'node-fetch';
 import { fetchCheerio } from './helperClient';
-import helperServer = require('./helperServer');
-import sqldb = require('@prairielearn/postgres');
+import * as helperServer from './helperServer';
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 import { features } from '../lib/features/index';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 
-import syncFromDisk = require('../sync/syncFromDisk');
+import * as syncFromDisk from '../sync/syncFromDisk';
 
 import { makeMockLogger } from './mockLogger';
 const { logger } = makeMockLogger();
@@ -76,7 +76,7 @@ describe('Question Sharing', function () {
     });
 
     step('Fail to sync course when validating shared question paths', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
           `Sync of ${TEST_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
@@ -92,7 +92,7 @@ describe('Question Sharing', function () {
     step(
       'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
-        const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+        const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
         if (result?.hadJsonErrorsOrWarnings) {
           throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
         }
@@ -104,7 +104,7 @@ describe('Question Sharing', function () {
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment();
-        assert(!res.text().includes(sharedQuestionQid));
+        assert(!(await res.text()).includes(sharedQuestionQid));
 
         // Question can be accessed through the owning course
         const questionId = (
@@ -170,7 +170,7 @@ describe('Question Sharing', function () {
       });
 
       response = await fetchCheerio(sharingUrl);
-      const result = UUID_REGEXP.exec(response.text());
+      const result = UUID_REGEXP.exec(await response.text());
       exampleCourseSharingToken = result ? result[0] : null;
       assert(exampleCourseSharingToken != null);
     });
@@ -178,7 +178,7 @@ describe('Question Sharing', function () {
     step('Get default sharing token for test course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
       const response = await fetchCheerio(sharingUrl);
-      const result = UUID_REGEXP.exec(response.text());
+      const result = UUID_REGEXP.exec(await response.text());
       testCourseSharingToken = result ? result[0] : null;
       assert(testCourseSharingToken != null);
     });
@@ -358,7 +358,7 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = false;
     });
     step('Re-sync test course, validating shared questions', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(TEST_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
       }

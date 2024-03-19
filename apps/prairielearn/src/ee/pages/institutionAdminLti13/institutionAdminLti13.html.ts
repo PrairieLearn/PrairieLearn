@@ -12,12 +12,14 @@ export function InstitutionAdminLti13({
   instance,
   resLocals,
   platform_defaults,
+  canonicalHost,
 }: {
   institution: Institution;
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
   resLocals: Record<string, any>;
   platform_defaults: LTI13InstancePlatforms;
+  canonicalHost: string;
 }): string {
   return html`
     <!doctype html>
@@ -72,7 +74,9 @@ export function InstitutionAdminLti13({
               </form>
             </div>
 
-            <div class="col-9">${LTI13Instance(instance, resLocals, platform_defaults)}</div>
+            <div class="col-9">
+              ${LTI13Instance(instance, resLocals, platform_defaults, canonicalHost)}
+            </div>
           </div>
         </main>
       </body>
@@ -84,6 +88,7 @@ function LTI13Instance(
   instance: Lti13Instance | null,
   resLocals: Record<string, any>,
   platform_defaults: LTI13InstancePlatforms,
+  canonicalHost: string,
 ) {
   if (instance) {
     return html`
@@ -117,8 +122,11 @@ function LTI13Instance(
       </div>
 
       <p>
-        <a href="/pl/lti13_instance/${instance.id}/config">LTI 1.3 config for instance</a> |
-        <a href="/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
+        <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/config"
+          >LTI 1.3 config for instance</a
+        >
+        |
+        <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
         (${instance.keystore?.keys ? instance.keystore.keys.length : 0}
         key${instance.keystore?.keys?.length === 1 ? '' : 's'})
       </p>
@@ -240,7 +248,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       <hr />
       <h5>Keystore:</h5>
 
-      <a href="/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
+      <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
       contains ${instance.keystore?.keys ? instance.keystore.keys.length : 0}
       key${instance.keystore?.keys?.length === 1 ? '' : 's'}.<br />
       <ul>
@@ -339,6 +347,13 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
+      <p>
+        For testing, have the LMS admin configure their OpenID Connect Initiation URL to
+        <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/auth/login?test">
+          ${canonicalHost}/pl/lti13_instance/${instance.id}/auth/login?test
+        </a>
+      </p>
+
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="remove_instance" />

@@ -1,7 +1,7 @@
 import express = require('express');
 import asyncHandler = require('express-async-handler');
 
-import serverJobs = require('../../lib/server-jobs-legacy');
+import * as serverJobs from '../../lib/server-jobs-legacy';
 import { AdministratorJobSequence } from './administratorJobSequence.html';
 
 const router = express.Router();

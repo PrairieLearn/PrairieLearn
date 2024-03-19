@@ -1,9 +1,9 @@
-import crypto = require('crypto');
+import * as crypto from 'node:crypto';
 import express = require('express');
-import fs = require('fs');
-import path = require('path');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { hashElement, type HashElementNode } from 'folder-hash';
-import compiledAssets = require('@prairielearn/compiled-assets');
+import * as compiledAssets from '@prairielearn/compiled-assets';
 
 import { config } from './config';
 import { APP_ROOT_PATH } from './paths';

@@ -1,3 +1,3 @@
 module.exports = {
-  require: ['ts-node/register'],
+  require: ['tsx'],
 };

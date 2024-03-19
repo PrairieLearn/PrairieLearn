@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { createServerJob } from './server-jobs';
 import * as manualGrading from './manualGrading';
 import { IdSchema } from './db-types';
+import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -340,7 +341,7 @@ async function updateInstanceQuestionFromJson(
         qid,
       },
       z.object({
-        submission_id: IdSchema,
+        submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
         qid: z.string(),
@@ -420,17 +421,9 @@ async function updateAssessmentInstanceFromJson(
     }
 
     if (_.has(json, 'score_perc')) {
-      await sqldb.callAsync('assessment_instances_update_score_perc', [
-        assessment_instance_id,
-        json.score_perc,
-        authn_user_id,
-      ]);
+      await updateAssessmentInstanceScore(assessment_instance_id, json.score_perc, authn_user_id);
     } else if (_.has(json, 'points')) {
-      await sqldb.callAsync('assessment_instances_update_points', [
-        assessment_instance_id,
-        json.points,
-        authn_user_id,
-      ]);
+      await updateAssessmentInstancePoints(assessment_instance_id, json.points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }

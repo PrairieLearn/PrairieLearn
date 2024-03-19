@@ -6,13 +6,13 @@ import * as tar from 'tar';
 const _ = require('lodash');
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
-const PassThroughStream = require('stream').PassThrough;
+import { PassThrough } from 'stream';
 import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws';
-const { config: globalConfig } = require('./config');
+import { config as globalConfig } from './config';
 import { getJobDirectory, buildDirectory } from './externalGraderCommon';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -45,7 +45,7 @@ export class ExternalGraderSqs {
             ['.'],
           );
 
-          const passthrough = new PassThroughStream();
+          const passthrough = new PassThrough();
           tarball.pipe(passthrough);
 
           const params = {

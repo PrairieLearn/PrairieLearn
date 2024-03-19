@@ -101,13 +101,19 @@ $(function () {
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
+    // TODO: remove second argument once all servers no longer require it.
     socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
       console.log('joinWorkspace, msg =', msg);
-      setState(msg.state);
+      if (msg.errorMessage) {
+        setMessage('Error joining workspace: ' + msg.errorMessage);
+      } else {
+        setState(msg.state);
+      }
     });
   });
 
   // Only start the workspace when the page is first loaded, not on reconnects.
+  // TODO: remove second argument once all servers no longer require it.
   socket.emit('startWorkspace', { workspace_id: workspaceId });
 
   let lastVisibleTime = Date.now();
@@ -118,6 +124,7 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
+      // TODO: remove second argument once all servers no longer require it.
       socket.emit('heartbeat', { workspace_id: workspaceId }, (msg: any) => {
         console.log('heartbeat, msg =', msg);
       });

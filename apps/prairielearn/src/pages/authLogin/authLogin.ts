@@ -105,8 +105,8 @@ router.get(
 );
 
 const DevLoginParamsSchema = z.object({
-  uid: z.string().nonempty(),
-  name: z.string().nonempty(),
+  uid: z.string().min(1),
+  name: z.string().min(1),
   uin: z.string().nullable().optional().default(null),
 });
 
@@ -123,7 +123,7 @@ router.post(
       const authnParams = {
         uid: body.uid,
         name: body.name,
-        uin: body.uin,
+        uin: body.uin || null,
         provider: 'dev',
       };
 

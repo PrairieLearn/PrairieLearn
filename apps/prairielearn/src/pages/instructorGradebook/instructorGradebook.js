@@ -7,9 +7,11 @@ import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { callbackify } from 'node:util';
 
 import { getCourseOwners, checkBelongs } from '../../lib/course';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name';
+import { updateAssessmentInstanceScore } from '../../lib/assessment';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -118,31 +120,26 @@ router.post('/', function (req, res, next) {
     checkBelongs(assessment_instance_id, course_instance_id, (err) => {
       if (ERR(err, next)) return;
 
-      let params = [
+      callbackify(updateAssessmentInstanceScore)(
         req.body.assessment_instance_id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
-      ];
-      sqldb.call('assessment_instances_update_score_perc', params, function (err, _result) {
-        if (ERR(err, next)) return;
-
-        let queryParams = {
-          assessment_instance_id: req.body.assessment_instance_id,
-        };
-
-        sqldb.query(sql.assessment_instance_score, queryParams, function (err, result) {
+        function (err) {
           if (ERR(err, next)) return;
-          res.send(JSON.stringify(result.rows));
-        });
-      });
+
+          let queryParams = {
+            assessment_instance_id: req.body.assessment_instance_id,
+          };
+
+          sqldb.query(sql.assessment_instance_score, queryParams, function (err, result) {
+            if (ERR(err, next)) return;
+            res.send(JSON.stringify(result.rows));
+          });
+        },
+      );
     });
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(error.make(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

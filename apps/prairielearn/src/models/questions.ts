@@ -1,4 +1,4 @@
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 import AnsiUp from 'ansi_up';
 import {
   TopicSchema,
@@ -21,6 +21,7 @@ const QuestionsPageDataSchema = z.object({
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
+  shared_publicly: z.boolean().optional(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
   assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
 });

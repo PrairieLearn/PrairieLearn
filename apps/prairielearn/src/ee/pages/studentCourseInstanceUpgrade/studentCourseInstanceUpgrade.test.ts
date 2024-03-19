@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import fetch from 'node-fetch';
 
 import { config } from '../../../lib/config';
-import helperServer = require('../../../tests/helperServer');
+import * as helperServer from '../../../tests/helperServer';
 import { enableEnterpriseEdition } from '../../tests/ee-helpers';
 import {
   reconcilePlanGrantsForCourseInstance,

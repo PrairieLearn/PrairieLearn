@@ -5,10 +5,13 @@ import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
-import { features } from '../lib/features/index';
 import * as helperServer from './helperServer';
 import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -22,6 +25,7 @@ const defaultUser: User = {
 
 type MockUser = User & {
   user_id?: string;
+  authUid: string;
 };
 
 interface RubricItem {
@@ -107,6 +111,7 @@ async function submitGradeForm(
   const params = new URLSearchParams({
     __action: 'add_manual_grade',
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    submission_id: form.find('input[name=submission_id]').attr('value') || '',
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
     score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
     score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
@@ -360,10 +365,6 @@ describe('Manual Grading', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  before('ensure course has manual grading enabled', async () => {
-    await features.enable('manual-grading-rubrics');
-  });
-
   before('build assessment manual grading page URL', async () => {
     const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
@@ -374,19 +375,20 @@ describe('Manual Grading', function () {
   before('add staff users', async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const courseStaffParams = [1, staff.authUid, 'None', 1];
-        const courseStaffResult = await sqldb.callAsync(
-          'course_permissions_insert_by_user_uid',
-          courseStaffParams,
-        );
-        assert.equal(courseStaffResult.rowCount, 1);
-        staff.user_id = courseStaffResult.rows[0].user_id;
-        const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqldb.callAsync(
-          'course_instance_permissions_insert',
-          ciStaffParams,
-        );
-        assert.equal(ciStaffResult.rowCount, 1);
+        const { user_id } = await insertCoursePermissionsByUserUid({
+          course_id: '1',
+          uid: staff.authUid,
+          course_role: 'None',
+          authn_user_id: '1',
+        });
+        staff.user_id = user_id;
+        await insertCourseInstancePermissions({
+          course_id: '1',
+          user_id: staff.user_id,
+          course_instance_id: '1',
+          course_instance_role: 'Student Data Editor',
+          authn_user_id: '1',
+        });
       }),
     );
   });
@@ -742,6 +744,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -784,6 +787,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.5',
               max_extra_points: '0.5',
@@ -823,6 +827,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -892,6 +897,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -969,6 +975,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',

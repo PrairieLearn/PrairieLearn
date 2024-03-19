@@ -203,7 +203,7 @@ SET
   explanation = COALESCE($explanation, explanation),
   grader_note = COALESCE($grader_note, grader_note),
   key_binding = CASE
-    WHEN $number > 10 THEN NULL
+    WHEN $number >= 10 THEN NULL
     ELSE MOD($number + 1, 10)
   END,
   always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
@@ -235,7 +235,7 @@ VALUES
     $explanation,
     $grader_note,
     CASE
-      WHEN $number > 10 THEN NULL
+      WHEN $number >= 10 THEN NULL
       ELSE MOD($number + 1, 10)
     END,
     $always_show_to_students

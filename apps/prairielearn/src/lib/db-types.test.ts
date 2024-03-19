@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import parsePostgresInterval = require('postgres-interval');
 
 import { IdSchema, IntervalSchema } from './db-types';
 
@@ -30,6 +31,11 @@ describe('IdSchema', () => {
 });
 
 describe('IntervalSchema', () => {
+  it('handles a PostgresInterval object', () => {
+    const interval = IntervalSchema.parse(parsePostgresInterval('1 year 2 months 3 days'));
+    assert.equal(interval, 37000800000);
+  });
+
   it('parses an interval with date', () => {
     const interval = IntervalSchema.parse('1 year 2 months 3 days');
     assert.equal(interval, 37000800000);

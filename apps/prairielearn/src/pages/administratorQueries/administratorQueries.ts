@@ -17,7 +17,7 @@ router.get(
     const queries = await Promise.all(
       jsonList.map(async (f) => {
         const contents = AdministratorQueryJsonSchema.parse(
-          await jsonLoad.readJSONAsync(path.join(queriesDir, f)),
+          await jsonLoad.readJSON(path.join(queriesDir, f)),
         );
         return {
           ...contents,

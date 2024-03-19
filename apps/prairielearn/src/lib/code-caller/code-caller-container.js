@@ -142,6 +142,7 @@ class CodeCallerContainer {
     this.lastCallData = null;
 
     this.coursePath = null;
+    this.forbiddenModules = [];
 
     this._checkState();
 
@@ -194,9 +195,11 @@ class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {string} coursePath
+   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
    */
-  async prepareForCourse(coursePath) {
+  async prepareForCourse({ coursePath, forbiddenModules }) {
+    this.forbiddenModules = forbiddenModules;
+
     if (this.coursePath && this.coursePath === coursePath) {
       // Same course as before; we can reuse the existing setup
       return;
@@ -235,7 +238,7 @@ class CodeCallerContainer {
       throw new Error('not ready for call');
     }
 
-    const callData = { type, directory, file, fcn, args };
+    const callData = { type, directory, file, fcn, args, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
     // Reset output accumulators.
@@ -294,6 +297,7 @@ class CodeCallerContainer {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      this.forbiddenModules = [];
       this.coursePath = null;
       this.callCount = 0;
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);

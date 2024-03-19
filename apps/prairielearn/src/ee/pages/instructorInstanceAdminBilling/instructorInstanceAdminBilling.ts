@@ -2,7 +2,7 @@ import { Router, type Response } from 'express';
 import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 
 import {
   EnrollmentLimitSource,

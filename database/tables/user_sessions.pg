@@ -15,3 +15,6 @@ indexes
 
 foreign-key constraints
     user_sessions_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    client_fingerprints: FOREIGN KEY (user_session_id) REFERENCES user_sessions(id)

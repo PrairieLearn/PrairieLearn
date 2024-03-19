@@ -19,10 +19,9 @@ export const GradingJobQueryResultSchema = z.object({
   formatted_grading_received_at: z.string().nullable(),
   formatted_grading_started_at: z.string().nullable(),
   formatted_grading_finished_at: z.string().nullable(),
-  formatted_graded_at: z.string(),
+  formatted_graded_at: z.string().nullable(),
   question_qid: z.string(),
   user_uid: z.string(),
-  course_instance_short_name: z.string(),
 });
 type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
 
@@ -202,16 +201,16 @@ export function InstructorGradingJob({
                     </div>
                   `
                 : gradingJobQueryResult.grading_job.output
-                ? html`
-                    <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
+                  ? html`
+                      <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
 ${gradingJobQueryResult.grading_job.output}</pre
-                    >
-                  `
-                : html`
-                    <pre class="bg-dark text-white rounded p-3 mb-0">
+                      >
+                    `
+                  : html`
+                      <pre class="bg-dark text-white rounded p-3 mb-0">
 No output was captured for this grading job.</pre
-                    >
-                  `}
+                      >
+                    `}
             </div>
           </div>
         </main>

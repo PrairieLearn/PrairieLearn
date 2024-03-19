@@ -75,9 +75,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "graded": bool(feedback),
-        "gradable": results["gradable"]
-        if (results is not None and "gradable" in results)
-        else True,
+        "gradable": (
+            results["gradable"]
+            if (results is not None and "gradable" in results)
+            else True
+        ),
         "grading_succeeded": grading_succeeded,
         "format_errors": grader_format_errors,
         "has_format_errors": bool(grader_format_errors),

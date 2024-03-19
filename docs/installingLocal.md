@@ -13,10 +13,17 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 - Run PrairieLearn with:
 
   ```sh
-  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+  cd PrairieLearn
+  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
+  ```
 
-  # You can now run the following commands inside the container:
+  This will launch a shell inside a Docker container running the PrairieLearn image, but using the current working directory for its code. If you'd rather run the command from somewhere other than the root of the repo, replace `.` with the path to the directory in `.:/PrairieLearn`.
 
+  If you're running on an Apple Silicon Mac or another ARM-based machine, you may get an error like `no matching manifest for linux/arm64/v8 in the manifest list entries`. To resolve this, add `--platform linux/x86_64` before the image in the command (`prairielearn/prairielearn`).
+
+  You can now run the following commands inside the container:
+
+  ```sh
   # Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
   # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
   # If editing code in `packages/`, you should also repeat either this command or `make build`.
@@ -32,8 +39,6 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
   # To exit the container, press Ctrl-C and then Ctrl-D.
   ```
 
-The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows command prompt outside WSL), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
-
 ## Auto-restarting the node server
 
 The steps above require you to manually stop and restart PrairieLearn after you have edited any JavaScript files. You can alternatively configure the server to automatically restart when changes are detected. To do this, run the PrairieLearn container as described at the start of this page and then run:
@@ -45,7 +50,7 @@ make dev
 Alternatively, you can set the `DEV=true` environment variable while running PrairieLearn automatically:
 
 ```sh
-docker run -it --rm -p 3000:3000 -e DEV=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
+docker run -it --rm -p 3000:3000 -e DEV=true -v .:/PrairieLearn prairielearn/prairielearn
 ```
 
 ## Running the test suite
@@ -53,7 +58,7 @@ docker run -it --rm -p 3000:3000 -e DEV=true -v /path/to/PrairieLearn:/PrairieLe
 The linters and tests for the JavaScript and Python code can be run with the following commands inside the container:
 
 ```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 # You can now run the following commands inside the container:
 make lint   # or run "make lint-js" and "make lint-python" separately
@@ -63,7 +68,7 @@ make test   # or "make test-js" and "make test-python"
 To run specific tests you first need to run `make start-support` to start the database and other services:
 
 ```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 # following commands are inside the container:
 make start-support

@@ -54,8 +54,7 @@ router.all('/', function (req, res, next) {
   // Password protect the assessment. Note that this only handles the general
   // case of an existing assessment instance. This middleware can't handle
   // the intricacies of creating a new assessment instance. We handle those
-  // cases on the `studentAssessmentExam` and `studentAssessmentHomework`
-  // pages.
+  // cases on the `studentAssessment` page.
   if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
     return;
   }

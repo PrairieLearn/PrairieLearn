@@ -7,8 +7,8 @@ CREATE FUNCTION
         IN mode enum_mode,
         IN time_limit_min integer DEFAULT NULL,
         IN date timestamptz DEFAULT NULL,
-        OUT assessment_instance_id bigint,
-        OUT new_instance_question_ids bigint[]
+        IN client_fingerprint_id bigint DEFAULT NULL,
+        OUT assessment_instance_id bigint
     )
 AS $$
 #variable_conflict use_column -- fix user_id reference in ON CONFLICT
@@ -89,11 +89,11 @@ BEGIN
 
     INSERT INTO assessment_instances
             ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close,
-              date_limit, number, include_in_statistics)
+              date_limit, number, include_in_statistics, last_client_fingerprint_id)
     VALUES  (authn_user_id, assessment_id,
             CASE WHEN group_work THEN NULL      ELSE user_id END,
             CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close,
-              date_limit, number, include_in_statistics)
+              date_limit, number, include_in_statistics, client_fingerprint_id)
     ON CONFLICT (assessment_id, group_id, number) DO UPDATE
     SET assessment_id = excluded.assessment_id
     RETURNING id
@@ -108,8 +108,8 @@ BEGIN
 
     -- ######################################################################
     -- Add a log entry for the original time limit of the assessment instance
-    INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id)
-    VALUES (true, assessment_instance_id, date_limit, authn_user_id);
+    INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id, client_fingerprint_id)
+    VALUES (true, assessment_instance_id, date_limit, authn_user_id, client_fingerprint_id);
 
     -- ######################################################################
     -- record the last access time
@@ -129,13 +129,6 @@ BEGIN
 
     -- ######################################################################
     -- create new questions if necessary
-
-    IF assessment.type = 'Homework' THEN
-        new_instance_question_ids := array[]::bigint[];
-    ELSIF assessment.type = 'Exam' THEN
-        PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
-    ELSE
-        RAISE EXCEPTION 'invalid assessment.type: %', assessment.type;
-    END IF;
+    PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
