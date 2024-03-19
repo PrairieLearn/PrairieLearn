@@ -119,7 +119,7 @@ router.post(
           user_id: user_id || null,
         }
       });
-      console.log(inserted);
+    
       res.redirect(req.originalUrl);
     } else if (
       req.body.__action === 'delete_override' &&
