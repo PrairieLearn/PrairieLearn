@@ -6,6 +6,8 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { config } from './config';
 import { shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
+import { isEnterprise } from './license';
+import { shouldRedirectToTermsPage, redirectToTermsPage } from '../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -99,6 +101,13 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       redirUrl = req.cookies.preAuthUrl;
       res.clearCookie('preAuthUrl');
     }
+
+    // Potentially prompt the user to accept the terms before redirecting them.
+    if (isEnterprise() && (await shouldRedirectToTermsPage(selectedUser.user, req.ip))) {
+      redirectToTermsPage(res, redirUrl);
+      return;
+    }
+
     res.redirect(redirUrl);
     return;
   }

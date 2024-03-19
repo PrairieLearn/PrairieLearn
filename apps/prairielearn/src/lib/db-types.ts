@@ -84,6 +84,9 @@ export const DateFromISOString = z
   )
   .transform((s) => new Date(s));
 
+export const ModeSchema = z.enum(['Public', 'Exam', 'SEB']);
+export type Mode = z.infer<typeof ModeSchema>;
+
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
@@ -183,6 +186,7 @@ export const UserSchema = z.object({
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
   stripe_customer_id: z.string().nullable(),
+  terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,
@@ -581,7 +585,7 @@ export const SubmissionSchema = z.object({
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
-  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  mode: ModeSchema.nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -776,7 +780,7 @@ export const AssessmentInstanceSchema = z.object({
   last_client_fingerprint_id: IdSchema.nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
-  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  mode: ModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number().nullable(),
   open: z.boolean().nullable(),
