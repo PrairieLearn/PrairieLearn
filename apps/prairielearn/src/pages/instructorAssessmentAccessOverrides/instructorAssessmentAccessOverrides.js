@@ -74,8 +74,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data editor)');
     }
 
     if (
