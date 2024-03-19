@@ -1,4 +1,3 @@
-// @ts-check
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -36,12 +35,13 @@ const AssessmentInstanceRegradeSchema = z.object({
 });
 
 /**
- * @param {string} assessment_instance_id
- * @param {string} user_id
- * @param {string} authn_user_id
- * @returns {Promise<string>} The job sequence ID
+ * @returns The job sequence ID
  */
-export async function regradeAssessmentInstance(assessment_instance_id, user_id, authn_user_id) {
+export async function regradeAssessmentInstance(
+  assessment_instance_id: string,
+  user_id: string,
+  authn_user_id: string,
+): Promise<string> {
   const assessmentInstance = await sqldb.queryRow(
     sql.select_regrade_assessment_instance_info,
     { assessment_instance_id },
@@ -93,12 +93,13 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
 }
 
 /**
- * @param {string} assessment_id
- * @param {string} user_id
- * @param {string} authn_user_id
- * @returns {Promise<string>} The job sequence ID
+ * @returns The job sequence ID
  */
-export async function regradeAllAssessmentInstances(assessment_id, user_id, authn_user_id) {
+export async function regradeAllAssessmentInstances(
+  assessment_id: string,
+  user_id: string,
+  authn_user_id: string,
+): Promise<string> {
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_regrade_assessment_info,
     { assessment_id },
@@ -130,11 +131,10 @@ export async function regradeAllAssessmentInstances(assessment_id, user_id, auth
     // accumulate output lines in the "output" variable and actually
     // output put them every 100 lines, to avoid spamming the updates
 
-    /** @type {string|null} */
-    let output = null;
+    let output: string | null = null;
     let output_count = 0;
     for (const row of assessment_instances) {
-      let msg;
+      let msg: string;
       try {
         const regrade = await sqldb.callRow(
           'assessment_instances_regrade',
@@ -156,11 +156,8 @@ export async function regradeAllAssessmentInstances(assessment_id, user_id, auth
         error_count++;
         msg = `ERROR updating ${row.assessment_instance_label} for ${row.user_uid}`;
       }
-      if (output == null) {
-        output = msg;
-      } else {
-        output += '\n' + msg;
-      }
+      output = (output == null ? '' : `${output}\n`) + msg;
+
       output_count++;
       if (output_count >= 100) {
         job.info(output);
