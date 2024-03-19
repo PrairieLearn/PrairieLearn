@@ -11,7 +11,6 @@ export const AssessmentAccessRulesSchema = z.object({
   time_limit: z.string(),
   password: z.string(),
   exam_uuid: z.string().nullable(),
-  ps_exam_id: z.string().nullable(),
   pt_course_id: z.string().nullable(),
   pt_course_name: z.string().nullable(),
   pt_exam_id: z.string().nullable(),
@@ -115,7 +114,7 @@ export function InstructorAssessmentAccess({
                                   ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
                                 </a>
                               `
-                            : access_rule.exam_uuid && !access_rule.ps_exam_id
+                            : access_rule.exam_uuid
                               ? resLocals.devMode
                                 ? access_rule.exam_uuid
                                 : html`

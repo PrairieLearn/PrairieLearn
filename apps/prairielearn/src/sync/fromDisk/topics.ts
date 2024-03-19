@@ -1,15 +1,12 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import * as infofile from '../infofile';
 import { makePerformance } from '../performance';
+import { CourseData } from '../course-db';
 
 const perf = makePerformance('topics');
 
-/**
- * @param {import('../course-db').CourseData} courseData
- */
-export async function sync(courseId, courseData) {
+export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused topics if both `infoCourse.json` and all
   // question `info.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
@@ -18,16 +15,14 @@ export async function sync(courseId, courseData) {
   );
   const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
 
-  /** @type {string[]} */
-  let courseTopics = [];
+  let courseTopics: string[] = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseTopics = (courseData.course.data?.topics ?? []).map((t) =>
       JSON.stringify([t.name, t.description, t.color]),
     );
   }
 
-  /** @type Set<string> */
-  const knownQuestionTopicNames = new Set();
+  const knownQuestionTopicNames = new Set<string>();
   Object.values(courseData.questions).forEach((q) => {
     // We technically allow courses to define an "empty string" topic, so we'll
     // support that for implicit topics as well by checking if the topic is
@@ -40,15 +35,13 @@ export async function sync(courseId, courseData) {
   });
   const questionTopicNames = [...knownQuestionTopicNames];
 
-  const params = [
+  perf.start('sproc:sync_topics');
+  await sqldb.callAsync('sync_topics', [
     !infofile.hasErrors(courseData.course),
     deleteUnused,
     courseTopics,
     questionTopicNames,
     courseId,
-  ];
-
-  perf.start('sproc:sync_topics');
-  await sqldb.callAsync('sync_topics', params);
+  ]);
   perf.end('sproc:sync_topics');
 }

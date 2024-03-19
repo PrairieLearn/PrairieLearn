@@ -29,7 +29,6 @@ SELECT
     ELSE aar.password
   END AS password,
   aar.exam_uuid,
-  e.exam_id AS ps_exam_id,
   pt_c.id AS pt_course_id,
   pt_c.name AS pt_course_name,
   pt_x.id AS pt_exam_id,
@@ -42,8 +41,6 @@ FROM
   assessment_access_rules AS aar
   JOIN assessments AS a ON (a.id = aar.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN exams AS e ON (e.uuid = aar.exam_uuid)
-  LEFT JOIN courses AS ps_c ON (ps_c.course_id = e.course_id)
   LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = aar.exam_uuid)
   LEFT JOIN pt_courses AS pt_c ON (pt_c.id = pt_x.course_id)
 WHERE
