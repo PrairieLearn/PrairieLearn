@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment';
 import { selectUserByUid } from '../../models/user';
+import { insertAuditLog } from '../../models/audit-log';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -98,15 +99,50 @@ router.post(
         group_id: group_id || null,
         user_id: user_id || null,
       });
+      
+      const inserted = await insertAuditLog({
+        authn_user_id: res.locals.authn_user.user_id,
+        table_name: 'assessment_access_policies',
+        action: 'insert',
+        institution_id: res.locals.institution.id,
+        course_id: res.locals.assessment.id,
+        course_instance_id: res.locals.course_instance.id,
+        new_state: {
+          assessment_id: res.locals.assessment.id,
+          created_by: res.locals.authn_user.user_id,
+          credit: req.body.credit,
+          end_date: new Date(req.body.end_date),
+          group_name: req.body.group_name || null,
+          note: req.body.note || null,
+          start_date: new Date(req.body.start_date),
+          group_id: group_id || null,
+          user_id: user_id || null,
+        }
+      });
+      console.log(inserted);
       res.redirect(req.originalUrl);
     } else if (
       req.body.__action === 'delete_override' &&
       res.locals.authz_data.has_course_instance_permission_edit
     ) {
+      const deletedRow = await sqldb.queryAsync(sql.select_assessment_access_policies, {
+        assessment_id: res.locals.assessment.id,
+        assessment_access_policies_id: req.body.policy_id,
+      });
       await sqldb.queryAsync(sql.delete_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_access_policies_id: req.body.policy_id,
       });
+      await insertAuditLog({
+        authn_user_id: res.locals.authn_user.user_id,
+        table_name: 'assessment_access_policies',
+        action: 'delete',
+        institution_id: res.locals.institution.id,
+        course_id: res.locals.assessment.id,
+        course_instance_id: res.locals.course_instance.id,
+        old_state: JSON.stringify(deletedRow.rows),
+      });
+      
       res.redirect(req.originalUrl);
     } else if (
       req.body.__action === 'edit_override' &&
@@ -129,6 +165,26 @@ router.post(
         user_id: user_id || null,
         assessment_access_policies_id: req.body.policy_id,
       });
+      
+      await insertAuditLog({
+        authn_user_id: res.locals.authn_user.user_id,
+        table_name: 'assessment_access_policies',
+        action: 'edit',
+        institution_id: res.locals.institution.id,
+        course_id: res.locals.assessment.id,
+        course_instance_id: res.locals.course_instance.id,
+        new_state: JSON.stringify({
+          assessment_id: res.locals.assessment.id,
+          credit: req.body.credit,
+          end_date: new Date(req.body.end_date),
+          group_name: req.body.group_name || null,
+          note: req.body.note || null,
+          start_date: new Date(req.body.start_date),
+          group_id: group_id || null,
+          user_id: user_id || null,
+        }),
+      });
+      
       res.redirect(req.originalUrl);
     }
   }),
