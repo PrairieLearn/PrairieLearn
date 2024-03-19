@@ -197,7 +197,7 @@
           "enum": ["Public", "Exam", "SEB"]
         },
         "examUuid": {
-          "description": "The scheduler exam UUID for which a student must be registered.",
+          "description": "The PrairieTest exam UUID for which a student must be registered.",
           "type": "string",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },

@@ -9,6 +9,7 @@ AS $$
 DECLARE
     reservation RECORD;
 BEGIN
+    -- Is the user accessing via an exam mode network?
     PERFORM *
     FROM exam_mode_networks
     WHERE ip <<= network AND date <@ during;
@@ -17,23 +18,6 @@ BEGIN
         mode := 'Exam';
     ELSE
         mode := 'Public';
-    END IF;
-
-    -- Does the user have an active online CBTF reservation, if so set mode to 'Exam'
-    PERFORM *
-    FROM
-        reservations AS r
-        JOIN exams AS e USING (exam_id)
-    WHERE
-        r.user_id = ip_to_mode.authn_user_id
-        AND r.delete_date IS NULL
-        AND r.checked_in IS NOT NULL
-        AND r.access_start IS NOT NULL
-        AND date BETWEEN r.access_start AND r.access_end
-        AND e.exam_type = 'online';
-
-    IF FOUND THEN
-        mode := 'Exam';
     END IF;
 
     -- Consider each PT reservation which is either active or corresponds to

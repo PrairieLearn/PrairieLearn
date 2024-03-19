@@ -9,8 +9,6 @@ CREATE FUNCTION
         OUT authorized boolean,
         OUT exam_access_end TIMESTAMP WITH TIME ZONE
     ) AS $$
-DECLARE
-    ps_linked boolean;
 BEGIN
     authorized := TRUE;
 
@@ -45,9 +43,9 @@ BEGIN
     END IF;
 
     -- ############################################################
-    -- check access with schedulers
+    -- check access with PrairieTest
 
-    << schedule_access >>
+    << prairietest_access >>
     BEGIN
         -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_uuid IS NOT NULL THEN
@@ -55,7 +53,7 @@ BEGIN
             -- require exam mode
             IF check_assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
                 authorized := FALSE;
-                EXIT schedule_access;
+                EXIT prairietest_access;
             END IF;
 
             -- is there a checked-in pt_reservation?
@@ -72,13 +70,13 @@ BEGIN
 
             IF FOUND THEN
                 -- we have a valid reservation, don't keep going to "authorized := FALSE"
-                EXIT schedule_access;
+                EXIT prairietest_access;
             END IF;
 
             -- we only get here if we don't have a reservation, so block access
             authorized := FALSE;
 
         END IF;
-    END schedule_access;
+    END prairietest_access;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
