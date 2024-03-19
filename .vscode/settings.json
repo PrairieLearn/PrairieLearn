@@ -27,5 +27,6 @@
   "[html][css][json][yaml][sql][markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
-  }
+  },
+  "editor.renderWhitespace": "all"
 }
