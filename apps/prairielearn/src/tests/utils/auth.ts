@@ -7,6 +7,7 @@ export interface AuthUser {
   name: string;
   uid: string;
   uin: string;
+  email: string;
 }
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
@@ -36,13 +37,14 @@ export async function getConfiguredUser(): Promise<User> {
     uid: config.authUid,
     name: config.authName,
     uin: config.authUin,
+    email: config.authEmail,
   });
 }
 
 export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   const user = await callRow(
     'users_select_or_insert',
-    [authUser.uid, authUser.name, authUser.uin, 'dev'],
+    [authUser.uid, authUser.name, authUser.uin, authUser.email, 'dev'],
     // The sproc returns multiple columns, but we only use the ID.
     z.object({ user_id: IdSchema }),
   );

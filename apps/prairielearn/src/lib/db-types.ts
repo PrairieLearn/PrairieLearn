@@ -141,6 +141,7 @@ export type Institution = z.infer<typeof InstitutionSchema>;
 
 export const SamlProviderSchema = z.object({
   certificate: z.string(),
+  email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
   issuer: z.string(),
@@ -177,6 +178,7 @@ export type GroupConfig = z.infer<typeof GroupConfigSchema>;
 
 export const UserSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
+  email: z.string().nullable(),
   institution_id: IdSchema,
   lti_context_id: z.string().nullable(),
   lti_course_instance_id: IdSchema.nullable(),

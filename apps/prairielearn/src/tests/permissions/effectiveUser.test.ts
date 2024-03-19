@@ -34,18 +34,21 @@ describe('effective user', function () {
       'instructor@illinois.edu',
       'Instructor User',
       '100000000',
+      'instructor@illinois.edu',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'staff03@illinois.edu',
       'Staff Three',
       null,
+      'staff@illinois.edu',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@illinois.edu',
       'Student User',
       '000000001',
+      'student@illinois.edu',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({
