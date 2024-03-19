@@ -23,12 +23,11 @@ const baseUrl = siteUrl + '/pl';
 
 const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 
-const sharingCourseSharingName = 'sharing-course';
-const consumingCourseSharingName = 'consuming-course';
-const sharingSetName = 'share-set-example';
-const sharedQuestionQid = 'shared-via-sharing-set';
-const publiclySharedQuestionQid = 'shared-publicly';
-let publiclySharedQuestionId;
+const SHARING_COURSE_SHARING_NAME = 'sharing-course';
+const CONSUMING_COURSE_SHARING_NAME = 'consuming-course';
+const SHARING_SET_NAME = 'share-set-example';
+const SHARING_QUESTION_QID = 'shared-via-sharing-set';
+const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -78,13 +77,13 @@ describe('Question Sharing', function () {
     const sharingCourseData = syncUtil.getCourseData();
     sharingCourseData.course.name = 'SHARING 101';
     sharingCourseData.questions = {
-      [sharedQuestionQid]: {
+      [SHARING_QUESTION_QID]: {
         uuid: '00000000-0000-0000-0000-000000000000',
         type: 'v3',
         title: 'Shared via sharing set',
         topic: 'TOPIC HERE',
       },
-      [publiclySharedQuestionQid]: {
+      [PUBLICLY_SHARED_QUESTION_QID]: {
         uuid: '11111111-1111-1111-1111-111111111111',
         type: 'v3',
         title: 'Shared publicly',
@@ -98,11 +97,11 @@ describe('Question Sharing', function () {
     // Fill in empty `question.html` files for our two questions so that we can
     // view them without errors. We don't actually need any contents.
     await fs.writeFile(
-      path.join(sharingCourse.path, 'questions', sharedQuestionQid, 'question.html'),
+      path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID, 'question.html'),
       '',
     );
     await fs.writeFile(
-      path.join(sharingCourse.path, 'questions', publiclySharedQuestionQid, 'question.html'),
+      path.join(sharingCourse.path, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
 
@@ -114,11 +113,11 @@ describe('Question Sharing', function () {
       {
         questions: [
           {
-            id: `@${sharingCourseSharingName}/${sharedQuestionQid}`,
+            id: `@${SHARING_COURSE_SHARING_NAME}/${SHARING_QUESTION_QID}`,
             points: 1,
           },
           {
-            id: `@${sharingCourseSharingName}/${publiclySharedQuestionQid}`,
+            id: `@${SHARING_COURSE_SHARING_NAME}/${PUBLICLY_SHARED_QUESTION_QID}`,
             points: 1,
           },
         ],
@@ -165,13 +164,13 @@ describe('Question Sharing', function () {
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment(consumingCourse.id);
-        assert(!(await res.text()).includes(sharedQuestionQid));
+        assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
         const questionId = (
           await sqldb.queryOneRowAsync(sql.get_question_id, {
             course_id: sharingCourse.id,
-            qid: sharedQuestionQid,
+            qid: SHARING_QUESTION_QID,
           })
         ).rows[0].id;
         const sharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${questionId}`;
@@ -197,28 +196,28 @@ describe('Question Sharing', function () {
     });
 
     step('Set consuming course sharing name', async () => {
-      await setSharingName(consumingCourse.id, consumingCourseSharingName);
+      await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(consumingCourse.id));
       assert(sharingPage.ok);
       assert.include(
         sharingPage.$('[data-testid="sharing-name"]').text(),
-        consumingCourseSharingName,
+        CONSUMING_COURSE_SHARING_NAME,
       );
     });
 
     // TODO: fix this test?
     step('Fail if trying to set sharing name again.', async () => {
-      const result = await setSharingName(consumingCourse.id, consumingCourseSharingName);
+      const result = await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
       assert.equal(result.status, 200);
     });
 
     step('Set sharing course sharing name', async () => {
-      await setSharingName(sharingCourse.id, sharingCourseSharingName);
+      await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
       assert(sharingPage.ok);
       assert.include(
         sharingPage.$('[data-testid="sharing-name"]').text(),
-        sharingCourseSharingName,
+        SHARING_COURSE_SHARING_NAME,
       );
     });
 
@@ -257,7 +256,7 @@ describe('Question Sharing', function () {
         body: new URLSearchParams({
           __action: 'sharing_set_create',
           __csrf_token: token,
-          sharing_set_name: sharingSetName,
+          sharing_set_name: SHARING_SET_NAME,
         }),
       });
     });
@@ -271,7 +270,7 @@ describe('Question Sharing', function () {
         body: new URLSearchParams({
           __action: 'sharing_set_create',
           __csrf_token: token,
-          sharing_set_name: sharingSetName,
+          sharing_set_name: SHARING_SET_NAME,
         }),
       });
       assert.equal(result.status, 500);
@@ -345,10 +344,10 @@ describe('Question Sharing', function () {
       assert.equal(res.status, 400);
     });
 
-    step(`Add question "${sharedQuestionQid}" to sharing set`, async () => {
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
       const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
         course_id: sharingCourse.id,
-        qid: sharedQuestionQid,
+        qid: SHARING_QUESTION_QID,
       });
       const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
       const resGet = await fetchCheerio(questionSettingsUrl);
@@ -366,16 +365,21 @@ describe('Question Sharing', function () {
       assert(resPost.ok);
 
       const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
-      assert.include(settingsPageResponse.$('[data-testid="shared-with"]').text(), sharingSetName);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
     });
   });
 
   describe('Test Sharing a Question Publicly', function () {
+    let publiclySharedQuestionId;
+
     before('Get id for publicly shared question', async () => {
       publiclySharedQuestionId = (
         await sqldb.queryOneRowAsync(sql.get_question_id, {
           course_id: sharingCourse.id,
-          qid: publiclySharedQuestionQid,
+          qid: PUBLICLY_SHARED_QUESTION_QID,
         })
       ).rows[0].id;
     });
