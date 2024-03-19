@@ -12,6 +12,7 @@ export function getAzureStrategy() {
       clientSecret: config.azureClientSecret,
       cookieEncryptionKeys: config.azureCookieEncryptionKeys,
       loggingLevel: config.azureLoggingLevel,
+      scope: ['openid', 'profile', 'email'],
       responseType: 'code id_token',
       responseMode: 'form_post',
       scope: ['openid', 'profile', 'email'],
