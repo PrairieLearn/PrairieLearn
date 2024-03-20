@@ -156,14 +156,26 @@ export async function updateWorkspaceDiskUsage(
 async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
   let size = 0;
 
-  const files = await fs.readdir(dir, { recursive: true });
-
-  for (const file of files) {
+  for (const file of await getWorkspaceFiles(dir)) {
     const stats = await fs.lstat(path.join(dir, file));
     size += stats.size;
   }
 
   return size;
+}
+
+async function getWorkspaceFiles(dir: string): Promise<string[]> {
+  try {
+    return await fs.readdir(dir, { recursive: true });
+  } catch (e: any) {
+    // Workspace directories might not exist at all. For instance, this can
+    // happen if a workspace is created for a variant but is never initialized
+    // and started. We'll treat this as a workspace with no files.
+    if (e.code === 'ENOENT') {
+      return [];
+    }
+    throw e;
+  }
 }
 
 /**
