@@ -290,22 +290,23 @@ export const WorkspaceLogSchema = z.object({
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
 
 export const Lti13InstanceSchema = z.object({
+  access_token_expires_at: z.date().nullable(),
+  access_tokenset: z.any().nullable(),
+  client_params: z.any().nullable(),
+  created_at: z.date(),
+  custom_fields: z.any().nullable(),
+  deleted_at: z.date().nullable(),
+  email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
-  created_at: z.date(),
-  deleted_at: z.date().nullable(),
-  platform: z.string(),
-  name: z.string(),
-  tool_platform_name: z.string().nullable(),
-  keystore: z.any().nullable(),
   issuer_params: z.any().nullable(),
-  client_params: z.any().nullable(),
-  custom_fields: z.any().nullable(),
-  access_tokenset: z.any().nullable(),
-  access_token_expires_at: z.date().nullable(),
+  keystore: z.any().nullable(),
+  name_attribute: z.string().nullable(),
+  name: z.string(),
+  platform: z.string(),
+  tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
-  name_attribute: z.string().nullable(),
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
