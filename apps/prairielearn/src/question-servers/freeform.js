@@ -332,7 +332,10 @@ async function elementFunction(codeCaller, fcn, elementName, elementHtml, data, 
   const directory = resolvedElementName;
 
   try {
-    return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+    const start = Date.now();
+    const res = await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+    console.log(`elementFunction ${fcn} ${elementName} ${Date.now() - start}ms`);
+    return res;
   } catch (err) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
@@ -848,6 +851,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     args = [phase, codeCaller, data, context, $];
   }
 
+  const start = Date.now();
   const {
     courseIssues,
     data: resultData,
@@ -855,6 +859,9 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     fileData,
     renderedElementNames,
   } = await processFunction(...args);
+  console.log(
+    `Processed question HTML in phase ${phase} (${data.panel}) in ${Date.now() - start}ms`,
+  );
 
   if (phase === 'grade' || phase === 'test') {
     if (context.question.partial_credit) {
