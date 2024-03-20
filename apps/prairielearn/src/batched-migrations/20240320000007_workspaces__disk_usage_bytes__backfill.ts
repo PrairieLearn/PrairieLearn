@@ -15,16 +15,14 @@ export default makeBatchedMigration({
     };
   },
   async execute(min: bigint, max: bigint): Promise<void> {
+    // We skip all workspaces that already have a disk usage value.
     const workspaces = await queryRows(
-      'SELECT * FROM workspaces WHERE id >= $min AND id <= $max',
+      'SELECT * FROM workspaces WHERE id >= $min AND id <= $max AND disk_usage_bytes IS NULL',
       { min, max },
       WorkspaceSchema,
     );
 
     for (const workspace of workspaces) {
-      // We may have already computed the disk usage for this workspace.
-      if (workspace.disk_usage_bytes !== null) continue;
-
       await updateWorkspaceDiskUsage(workspace.id, config.workspaceHomeDirRoot);
     }
   },
