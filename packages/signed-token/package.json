@@ -1,0 +1,26 @@
+{
+  "name": "@prairielearn/signed-token",
+  "version": "1.0.13",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/signed-token"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "*",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^20.11.24",
+    "mocha": "^10.3.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "base64url": "^3.0.1",
+    "debug": "^4.3.4",
+    "lodash": "^4.17.21"
+  }
+}

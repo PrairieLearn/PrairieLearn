@@ -1,0 +1,26 @@
+{{#has_names_user_description}}
+    <div class="card mb-3">
+    <table class="table table-sm table-hover">
+        <thead class="thead-light">
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                {{#has_descriptions}}
+                <th>Description</th>
+                {{/has_descriptions}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#names_user_description}}
+            <tr>
+                <td><code>{{name}}</code></td>
+                <td>{{type}}</td>
+                {{#has_descriptions}}
+                <td>{{{description}}}</td>
+                {{/has_descriptions}}
+            </tr>
+            {{/names_user_description}}
+        </tbody>
+    </table>
+    </div>
+{{/has_names_user_description}}

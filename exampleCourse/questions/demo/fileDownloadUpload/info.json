@@ -1,0 +1,9 @@
+{
+    "uuid": "c0444a42-1472-4aa5-a024-ee1091bdab8e",
+    "title": "Demo: File upload for manual grading",
+    "topic": "Demo",
+    "tags": ["mfsilva"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "Manual"
+}

@@ -3,15 +3,15 @@
     "title": "Autograder Demo: Sales Tax in C++",
     "topic": "Autograder",
     "tags": [
-        "jonatan", "autograder", "demo", "c++"
+        "jonatan", "code",  "c++"
     ],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
-        "image": "jonatanschroeder/cgrader",
-        "timeout": 1000,
+        "image": "prairielearn/grader-c",
+        "timeout": 10,
         "entrypoint": "python3 /grade/tests/test.py"
     }
 }

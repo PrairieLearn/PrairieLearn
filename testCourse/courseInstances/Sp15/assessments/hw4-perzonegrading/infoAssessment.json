@@ -4,6 +4,7 @@
     "title": "Homework to test per-zone grading",
     "set": "Homework",
     "number": "4",
+    "module": "Module2",
     "allowAccess": [
         {
             "mode": "Public",

@@ -1,0 +1,20 @@
+{
+  "name": "@prairielearn/bind-mount",
+  "version": "1.0.2",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/bind-mount"
+  },
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "nan": "^2.18.0",
+    "node-gyp": "^10.0.1"
+  },
+  "scripts": {
+    "build": "node-gyp rebuild",
+    "install": "node-gyp rebuild"
+  }
+}

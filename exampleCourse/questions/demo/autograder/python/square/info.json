@@ -3,17 +3,16 @@
     "title": "Autograder demo: Square a number",
     "topic": "Autograder",
     "tags": [
-        "v3",
         "sp20",
         "mfsilva",
         "nnytko2",
-        "short-coding"
+        "code"
     ],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
-        "comment": "testing comments in external grading blocks", 
+        "comment": "testing comments in external grading blocks",
         "enabled": true,
         "image": "prairielearn/grader-python",
         "entrypoint": "/python_autograder/run.sh",

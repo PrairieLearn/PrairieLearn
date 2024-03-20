@@ -1,0 +1,77 @@
+<pl-question-panel>
+
+<p>Suppose you define a random number in <code>server.py</code> using the following:</p>
+
+<pl-code language=python>a = random.uniform(1,10)</pl-code>
+
+<p> and you want display the value of <code>a</code> in your question panel. We often
+    prefer to display a rounded value of <code>a</code>, such that instead of providing </p>
+
+<p>$a = {{params.aexact}}$</p>
+
+<p> we use </p>
+
+<p>$a = {{params.a}}$</p>
+
+<p> In situations like this, make sure to use the
+  rounded values when performing calculations in <code>server.py</code>. </p>
+
+
+<div class="card my-2">
+
+<div class="card-header">
+    Example 1: How you should <strong>NOT</strong> write a question (try it out and check the behavior):
+</div>
+
+<div class="card-body">
+
+<p>Given $a = {{params.a}}$, determine the product $2a$:</p>
+<p><pl-number-input answers-name="2aexact" label="$2a =$" comparison="relabs" rtol="1e-4"></pl-number-input></p>
+
+In <code>server.py</code>, the calculations were performed using the exact value of <code>a</code>:
+<pl-code language="python">
+a = random.uniform(1,10)
+data["params"]["a"] = np.round(a, 2)
+data["correct_answers"]["2a"] = 2*a
+</pl-code>
+
+</div>
+
+</div>
+
+<div class="card my-2">
+<div class="card-header">
+    Example 2: This is what you should do instead:
+</div>
+
+<div class="card-body">
+<p>Given $a = {{params.a}}$, determine the product $2a$:</p>
+<p><pl-number-input answers-name="2a" label="$2a =$"></pl-number-input></p>
+
+<code>server.py:</code>
+<pl-code language="python">
+a = random.uniform(1,10)
+around = np.round(a, 2)
+data["params"]["a"] = around
+data["correct_answers"]["2a"] = 2*around
+</pl-code>
+</div>
+
+
+</div>
+
+</pl-question-panel>
+
+<pl-answer-panel>
+  <p>Example 1: $2a = {{correct_answers.2aexact}}$. Note that this example
+  uses the exact value of $a$ to calculate the correct answer, but mistakenly provides the
+  rounded value in the user interface.</p>
+  <p>Example 2: $2a = {{correct_answers.2a}}$</p>
+</pl-answer-panel>
+
+
+
+<pl-submission-panel>
+  <p>Example 1: $2a = {{submitted_answers.2aexact}}$</p>
+  <p>Example 2: $2a = {{submitted_answers.2a}}$</p>
+</pl-submission-panel>

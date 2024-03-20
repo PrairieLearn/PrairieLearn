@@ -1,0 +1,118 @@
+<pl-question-panel>
+    <p>
+        Questions below were designed to showcase the different features of
+        <a
+            href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>.
+        The goal of <a
+            href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+        is to allow users to enter <b>real values with units</b>. This element has similar behavior to the <a
+            href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>
+        element, with the added benefit of being able to interact with units.
+    </p>
+</pl-question-panel>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p> Within this question, you can observe the default behavior of the <a
+                    href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                element. The submitted answer and reference solutions will be first be converted to base units and then
+                compared. Submitting units of incorrect dimensionality will not be given any credit.
+            </p>
+            <p> What is the length of a meter stick? </p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_1" correct-answer="1m"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here, we've set <code>grading-mode="exact-units"</code>, requiring units matching the reference solution
+                exactly. The default input field has help text as a placeholder as well as a question button and
+                is set to use <code>"relabs"</code> to check the tolerance, which is a combination of relative
+                (<code>"rtol"</code>) and absolute (<code>"atol"</code>) tolerances.
+                Make sure to include the unit suffix <code>m</code> to indicate that your answer is in meters.
+            </p>
+            <p> What is the length of a meter stick? </p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_2" correct-answer="1m" magnitude-partial-credit="0.5"
+            grading-mode="exact-units"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of
+                <code>1e-8</code>) underneath <a
+                    href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                element. Furthermore, we add a label to the front of the input field to specify what the field should
+                receive.
+            </p>
+            <p> Let $c$ be the length of a meter stick. What is the value of $c$?</p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_3" label="$c = $" rtol="1e-3" atol="1e-10" correct-answer="1m"
+            grading-mode="exact-units"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>In this question, we opt to change the default comparison of <a
+                    href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits
+                (<code>comparison="sigfigs"</code>), which has a default of two digits. In additon, this question
+                showcases some of the more complex units that this element can handle.
+                We also remove the help popup box found in by setting <code>show-help-text="false"</code>.
+            </p>
+            <p> Let $g$ be the acceleration due to gravity at Earth's surface. What is the value of $g$?</p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_4" label="$g = $" comparison="sigfig" correct-answer="9.8 m/s**2"
+            show-help-text="false" grading-mode="exact-units"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p> For this question, we only ask for units by setting <code>grading-mode="only-units"</code>.
+            </p>
+            <p> What is the acceleration due to gravity at Earth's surface? </p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_5" label="$9.8$" grading-mode="only-units"
+            correct-answer="m/s^2"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>This example shows the use of the attribute <code>size</code> to control the width of the input box.
+                We also use <code>placeholder=""</code> and <code>show-help-text="false"</code>. We have also
+                set <code>allow-feedback="False"</code> to suppress feedback given to students, and
+                <code>custom-format=".2g"</code> to show a fixed number of digits after the answer has been parsed.
+            </p>
+            <p>Express the distance of one mile in feet (include unit).</p>
+        </pl-question-panel>
+        Distance of 1 mile =
+        <pl-units-input answers-name="c_6" placeholder="" show-help-text="false" size="10" comparison="exact"
+            allow-feedback="false" grading-mode="exact-units" digits="4" custom-format=".3g"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>This example shows the use of the attribute <code>allow-blank</code> to allow students to leave
+                this input blank. We set <code>blank-value="1m"</code> to customize the value used for the blank input.
+                We also set <code>show-score="false"</code> to hide the score badge.
+            </p>
+            <p>How long is a meter stick? Leave the box blank to submit "1 meter".</p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_7" display="block" correct-answer="1m" allow-blank="True" atol="1cm"
+            blank-value="1m" placeholder="1 meter" show-score="false"></pl-units-input>
+    </div>
+</div>

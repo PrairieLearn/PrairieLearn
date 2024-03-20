@@ -1,0 +1,14 @@
+/apps/prairielearn/elements/pl-big-o-input @eliotwrobson
+/apps/prairielearn/elements/pl-card @tdy
+/apps/prairielearn/elements/pl-dataframe @eliotwrobson
+/apps/prairielearn/elements/pl-external-grader-variables @nicknytko @eliotwrobson
+/apps/prairielearn/elements/pl-graph @nicknytko @eliotwrobson
+/apps/prairielearn/elements/pl-hidden-hints @eliotwrobson
+/apps/prairielearn/elements/pl-order-blocks @SethPoulsen
+/apps/prairielearn/elements/pl-python-variable @nicknytko @eliotwrobson
+/apps/prairielearn/elements/pl-rich-text-editor @jonatanschroeder
+/apps/prairielearn/elements/pl-template @eliotwrobson
+/apps/prairielearn/elements/pl-units-input @eliotwrobson
+
+/graders/c @jonatanschroeder
+/graders/java @jonatanschroeder

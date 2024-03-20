@@ -1,0 +1,78 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  pre {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+</style>
+
+<p>
+  <a href="https://github.com/jonatanschroeder">Jonatan Schroeder</a> continues his excellent work
+  with another new feature! PrairieLearn now allows instructors to set a minimum time that students
+  must wait between grading their answers to a question. For the student this looks like:
+</p>
+
+<p>
+  <img src="gradeBlocked.png" />
+</p>
+
+<p>
+  Saving answers is still allowed when a grading rate limit is in effect for a question, but the
+  question can't be graded again until either the waiting time has elapsed, or when the assessment
+  finishes.
+</p>
+
+<p>
+  To configure a grading rate limit, set the <code>gradeRateMinutes</code> key in
+  <code>infoAssessment.json</code>. This indicates how long a student needs to wait after grading a
+  question to resubmit a new answer to the same question for grading and it can be set at different
+  levels of the assessment, with lower levels overriding higher ones. For example:
+</p>
+
+<pre class="mb-3 rounded">
+"zones": [
+    {
+        "gradeRateMinutes": 30,
+        "questions": [
+            {"id": "canOnlySubmitEvery30minutes", "points": 10},
+            {"id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60},
+            {"id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0}
+        ]
+    }
+],
+</pre>
+
+<p>
+  The motivation behind grading rate limits is to prevent mindless trial-and-error problem solving.
+  While we know that practice is key for learning and that it's important to allow room for mistakes
+  and repeated attempts, it's also valuable to compel students to evaluate, experiment and test
+  their own work, and to encourage reflection and thinking between solution attempts. To achieve
+  this, controlling resubmissions can be an effective tool (<a
+    href="https://dl.acm.org/doi/pdf/10.1145/1930464.1930480"
+    target="_blank"
+    >Ihantola et. al. 2010, "Review of Recent Systems for Automatic Assessment of Programming
+    Assignments"</a
+  >), such as by limiting the grading rate.
+</p>
+
+<p>
+  Additional information about grading rate limits can be found in the
+  <a
+    href="https://prairielearn.readthedocs.io/en/latest/assessment/#limiting-the-rate-at-which-answers-can-be-graded"
+    >PrairieLearn documentation page</a
+  >.
+</p>

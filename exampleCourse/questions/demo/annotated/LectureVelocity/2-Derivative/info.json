@@ -1,0 +1,14 @@
+{
+    "uuid": "9FC9FB0E-0C9F-42F8-BDDA-A966C566302A",
+    "title": "Derivative definition",
+    "topic": "Math",
+    "type": "v3",
+    "tags": ["mfsilva", "Sp21"],
+    "singleVariant": true,
+    "workspaceOptions": {
+      "image": "prairielearn/workspace-jupyterlab",
+      "port": 8080,
+      "home": "/home/jovyan",
+      "rewriteUrl": false
+    }
+}

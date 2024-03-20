@@ -1,8 +1,0 @@
-parent: testbase
-properties:
-  testBoolean:
-    default: false
-  testNumber:
-    default: 456
-  testString:
-    default: 'goodbye'

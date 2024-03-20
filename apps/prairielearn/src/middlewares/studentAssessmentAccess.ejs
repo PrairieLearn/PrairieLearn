@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../pages/partials/head'); %>
+    <% if (prompt == 'SEB') { %>
+    <script>
+        function backOnFocus() {
+            window.addEventListener("focus", function(event) {
+                window.history.back();
+            }, false);
+        }
+    </script>
+    <% } %>
+</head>
+<body>
+    <%- include('../pages/partials/navbar', {navPage: ''}); %>
+    <main id="content" class="container">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+            </div>
+
+            <div class="card-body">
+
+                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.active === false) && prompt !== 'closedAssessmentNotActiveHiddenGrade') { %>
+
+                    <div class="row align-items-center">
+                      <div class="col-md-3 col-sm-6">
+                        <% include('../pages/partials/pointsFormatter'); %>
+                        Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
+                      </div>
+                      <div class="col-md-3 col-sm-6">
+                        <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
+                      </div>
+                      
+                      <% if (assessment_instance.open === false) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is <strong>closed</strong> and is no longer available.
+                        </div>
+                      <% } else if (authz_result.next_active_time === null) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is no longer available.
+                        </div>
+                      <% } else { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment will become available on <%= authz_result.next_active_time %>.
+                        </div>
+                      <% } %>
+                    </div>
+
+                    <% if (authz_data.mode == 'SEB') { %>
+                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a></p>
+                    <% } %>
+
+                <% } else if (prompt == 'SEB') { %>
+
+                    <p class="lead text-center">
+                        This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
+                    </p>
+
+                    <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
+
+                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>" onClick="backOnFocus();">
+                        Launch into the Safe Exam Browser
+                    </a>
+                
+                <% } else if (typeof assessment_instance === 'undefined' || assessment_instance.open) { %>
+
+                    <% if (authz_result.next_active_time === null) { %>
+                        <div class="test-suite-assessment-closed-message">
+                            Assessment is no longer available.
+                        </div>
+                    <% } else { %>
+                        <div class="test-suite-assessment-closed-message">
+                            Assessment will become available on <%= authz_result.next_active_time %>.
+                        </div>
+                    <% } %>
+
+                <% } else { %> <!-- Case where assessment instance is closed and grade is hidden -->
+                    <div class="test-suite-assessment-closed-message">
+                        Assessment is <strong>closed</strong> and is no longer available.
+                    </div>
+                <% } %>
+            </div> <!-- panel-body -->
+        </div>
+    </main>
+</body>
+</html>

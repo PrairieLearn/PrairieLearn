@@ -10,11 +10,13 @@
         on the integer values of $x \in \left[0, 10\right]$, with a linear scale for the x-axis and a logarithmic scale for the y-axis.  Save the plot in the variable <code>plot</code> using <code>plt.gca()</code>.
     </p>
 
-    <p>The setup code gives the following variables:</p>
-    <p><pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables></p>
+    <p>The setup code does not provide any variables.</p>
+    <pl-external-grader-variables params-name="names_for_user" empty="true"></pl-external-grader-variables>
 
     <p>Your code snippet should define the following variables:</p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user">
+        <pl-variable name="plot" type="matplotlib.axes instance">The plot as described above.</pl-variable>
+    </pl-external-grader-variables>
     <pl-file-editor
         file-name="user_code.py"
         ace-mode="ace/mode/python"

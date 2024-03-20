@@ -1,0 +1,32 @@
+<%
+    include('pointsFormatter');
+    let points, max_points, points_pending;
+    if (locals.component == 'auto') {
+        points = instance_question.auto_points;
+        max_points = locals.max_points ?? locals.assessment_question?.max_auto_points ?? instance_question.max_auto_points;
+        points_pending = ['saved', 'grading'].includes(instance_question.status) && max_points;
+    } else if (locals.component == 'manual') {
+        points = instance_question.manual_points;
+        max_points = locals.max_points ?? locals.assessment_question?.max_manual_points ?? instance_question.max_manual_points;
+        points_pending = instance_question.requires_manual_grading;
+    } else {
+        points = instance_question.points;
+        max_points = locals.max_points ?? locals.assessment_question?.max_points ?? instance_question.max_points;
+        points_pending = ['saved', 'grading'].includes(instance_question.status) || instance_question.requires_manual_grading;
+    }
+%>
+
+<span class="text-nowrap">
+  <% if (!points && !max_points && !points_pending) {%>
+  &mdash;
+  <% } else if (instance_question.status == 'unanswered') { %>
+  &mdash;
+  <% } else if (points_pending) {%>
+  <span class="badge badge-info">pending</span>
+  <% } else { %>
+  <span data-testid="awarded-points"><%= getStringFromFloat(points) %></span>
+  <% } %>
+  <% if (max_points) { %>
+  <small>/<span class="text-muted"><%= max_points %></span></small>
+  <% } %>
+</span>

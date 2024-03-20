@@ -1,25 +1,25 @@
 <pl-question-panel>
-<markdown>Questions below were designed to showcase the different features of 
-[`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element). 
+<markdown>Questions below were designed to showcase the different features of
+[`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element).
  The goal of [`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element)
 is to display different programming languages with appropriate syntax highlighting and code line emphasis.
 </markdown>
 </pl-question-panel>
 
-      
+
 <div class="card my-2">
 <div class="card-body">
 <pl-question-panel>
 <markdown>
 The most common use of `pl-code` is to display pre-written code with appropriate syntax highlighting.
 The language must be specified with the `language` attribute. In this case, we are requesting
-python with `language="python"`.
+python with `language="python"`. We also enable the copy code button by setting `copy-code-button="True"`.
 </markdown>
-<pl-code language="python">
+<pl-code language="python" copy-code-button="True">
 def square(x):
     return x * x
 </pl-code>
-</pl-question-panel>                
+</pl-question-panel>
 </div>
 </div>
 
@@ -31,8 +31,7 @@ Another useful feature of `pl-code` is the ability to highlight specific lines. 
 `highlight-lines="low-high"` attribute. Moreover, one can disable selecting the code region by
 adding `prevent-select="true"`.
 </markdown>
-<pl-code language="python" highlight-lines="5-6" prevent-select="true">
-# Here's a version that highlights specific lines of code and disables selection
+<pl-code language="python" highlight-lines="4-5" prevent-select="true">
 def foo():
     return 'foo'
 
@@ -42,7 +41,7 @@ def square(x):
 def bar(x):
     return 'bar'
 </pl-code>
-</pl-question-panel>                
+</pl-question-panel>
 </div>
 </div>
 
@@ -50,11 +49,51 @@ def bar(x):
 <div class="card-body">
 <pl-question-panel>
 <markdown>
-Lastly, `pl-code` also provides the ability to have code included from an external file. 
-This can be achieved with `source-file-name="my_code_file.py"` attribute.
+The `pl-code` element also provides the ability to have code included from an external file.
+This can be achieved with `source-file-name="myCode.py"` attribute.
 </markdown>
 <pl-code language="python" source-file-name="myCode.py"></pl-code>
 <pl-code language="html" source-file-name="sample-cd-data.xml"></pl-code>
+</pl-question-panel>
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+To change the style in use for a particular code block, the attribute `style` can be used. Any of <a href="https://pygments.org/styles/" target="_blank">the built-in pygments styles</a> may be used. The examples below use the `sas`, `staroffice` and `github-dark` styles, respectively.
+</markdown>
+<pl-code language="python" style="sas" source-file-name="myCode.py"></pl-code>
+<pl-code language="python" style="staroffice" source-file-name="myCode.py"></pl-code>
+<pl-code language="python" style="github-dark" source-file-name="myCode.py"></pl-code>
+</pl-question-panel>
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+The `pl-code` element can also be used to show output of a terminal command using ANSI colors, by setting the language attribute to `ansi-color`.
+</markdown>
+<pl-code language="ansi-color" source-file-name="ansiOutput.txt"></pl-code>
+</pl-question-panel>
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+Combined with the Python `pprint` module, the `pl-code` element can be used to display complex Python objects that cannot be JSON serialized
+easily. In particular, we used the `pprint.pformat()` function to generate the string to display below. We also enabled line numbers by setting
+`show-line-numbers="True"`.
+</markdown>
+<pl-code language="python" show-line-numbers="True" copy-code-button="True">
+my_object = \
+{{params.my_object_string}}
+</pl-code>
 </pl-question-panel>
 </div>
 </div>

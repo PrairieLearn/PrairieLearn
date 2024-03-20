@@ -1,0 +1,51 @@
+{
+    "uuid": "854E9FAF-7282-4501-99D8-B8C309AD7C9E",
+    "type": "Homework",
+    "title": "Questions using external auto-graders",
+    "set": "Collection",
+    "number": "2",
+    "zones": [
+        {
+            "title": "Questions using Python External Grader",
+            "questions": [
+                {"id": "demo/autograder/codeEditor",            "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/codeUpload",            "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/square",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/numpy",          "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/leadingTrailing","points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/pandas",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/plots",          "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/random",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/earlyExit",      "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/randomFunctionName",      "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/ansiOutput",            "points": 2, "maxPoints": 4},
+                {"id": "demo/autograder/python/orderBlocksRandomParams",     "points": 1, "maxPoints": 2},
+                {"id": "demo/autograder/python/orderBlocksAddNumpy",         "points": 1, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Questions using C External Grader",
+            "questions": [
+                {"id": "demo/autograder/c/drawTriangle",     "points": 1},
+                {"id": "demo/autograder/c/square",           "points": 1},
+                {"id": "demo/autograder/c/salesTax",         "points": 1},
+                {"id": "demo/autograder/c/squareCheck",      "points": 1},
+                {"id": "demo/autograder/c/linkedListDelete", "points": 1}
+            ]
+        },
+        {
+            "title": "Questions using Java External Grader",
+            "questions": [
+                {"id": "demo/autograder/java/square", "points": 1},
+                {"id": "demo/autograder/java/helloWorld", "points": 1}
+
+            ]
+        },
+        {
+            "title": "Questions using R External Grader",
+            "questions": [
+                {"id": "demo/autograder/r/createRObject", "points": 1}
+            ]
+        }
+    ]
+}

@@ -1,4 +1,4 @@
-FROM amazonlinux:2
+FROM amazonlinux:2023
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -12,3 +12,6 @@ COPY python_autograder /python_autograder
 
 # Anything that needs to be run post-install
 RUN /bin/bash /post-install.sh
+
+# Add serverFilesCourse to Python path
+ENV PYTHONPATH=/grade/serverFilesCourse/

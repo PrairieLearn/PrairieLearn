@@ -1,0 +1,36 @@
+{
+  "name": "@prairielearn/postgres",
+  "version": "1.9.2",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/postgres"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "mocha --no-config --require tsx src/*.test.ts"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/mocha": "^10.0.6",
+    "@types/multipipe": "^3.0.5",
+    "@types/node": "^20.11.24",
+    "chai": "^4.4.1",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^10.3.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/lodash": "^4.14.202",
+    "@types/pg-cursor": "^2.7.2",
+    "multipipe": "^4.0.0",
+    "pg": "^8.11.3",
+    "pg-cursor": "^2.10.3",
+    "pg-pool": "^3.6.1",
+    "zod": "^3.22.4"
+  }
+}

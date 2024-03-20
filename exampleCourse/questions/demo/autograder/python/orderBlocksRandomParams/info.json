@@ -2,7 +2,7 @@
     "uuid": "3551731f-b6b4-4afc-b1f8-a8a4f7f73bcd",
     "title": "Element pl-order-blocks: Externally graded python code with randomized parameters",
     "topic": "Autograder",
-    "tags": ["code", "v3"],
+    "tags": ["code"],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",

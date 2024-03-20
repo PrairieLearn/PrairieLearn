@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@novnc/novnc": "^1.4.0",
+    "command-line-args": "^5.2.1",
+    "command-line-usage": "^7.0.1",
+    "express": "^4.18.2",
+    "express-ws": "^5.0.2",
+    "http-proxy": "^1.18.1",
+    "spin.js": "^4.1.1"
+  }
+}

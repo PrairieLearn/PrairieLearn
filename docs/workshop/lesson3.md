@@ -10,18 +10,17 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 **Consider:**
 
-* $A$ and $b$ are randomized
-* How do you want to provide (display) the matrices? Take a look at `pl-variable-output`, `pl-matrix-latex` and `pl-python-variable`.
-* How do you want students to submit their answers? Take a look at `pl-matrix-component-input` and `pl-matrix-input`.
+- $A$ and $b$ are randomized
+- How do you want to provide (display) the matrices? Take a look at `pl-variable-output`, `pl-matrix-latex` and `pl-python-variable`.
+- How do you want students to submit their answers? Take a look at `pl-matrix-component-input` and `pl-matrix-input`.
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211625/preview)
+- [workshop/Lesson3_example1_v1](https://us.prairielearn.com/pl/course/108/question/8211625/preview)
 
-- [workshop/Lesson3\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211627/preview)
+- [workshop/Lesson3_example1_v2](https://us.prairielearn.com/pl/course/108/question/8211627/preview)
 
-- [workshop/Lesson3\_example1\_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211626/preview)
-
+- [workshop/Lesson3_example1_v3](https://us.prairielearn.com/pl/course/108/question/8211626/preview)
 
 ## Example 2:
 
@@ -33,13 +32,13 @@ The table below has the geometric properties for different specifications for a 
 
 ![](figs/properties.png)
 
-For the **S20 x 66** beam, what is the maximum normal stress $\sigma_x$  assuming that the maximum moment is equal to $M_{max} = 5 \times 10^5 \rm\ lb \cdot in$.
+For the **S20 x 66** beam, what is the maximum normal stress $\sigma_x$ assuming that the maximum moment is equal to $M_{max} = 5 \times 10^5 \rm\ lb \cdot in$.
 
 **Solution:**
 
 For the **S20 x 66** beam, we use $I_x = 1190 \rm\ in^4$ and $c = h/2 = 10 \rm\ in$. Hence the maximum normal stress is:
 
-$$ \sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\ ksi$$
+$$\sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\ ksi$$
 
 **Take one step further:**
 
@@ -56,11 +55,11 @@ You can download the figure files and the table:
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example2\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211628/preview)
+- [workshop/Lesson3_example2_v1](https://us.prairielearn.com/pl/course/108/question/8211628/preview)
 
-- [workshop/Lesson3\_example2\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211629/preview)
+- [workshop/Lesson3_example2_v2](https://us.prairielearn.com/pl/course/108/question/8211629/preview)
 
-- [workshop/Lesson3\_example2\_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211630/preview)
+- [workshop/Lesson3_example2_v3](https://us.prairielearn.com/pl/course/108/question/8211630/preview)
 
 ## Example 3:
 
@@ -72,7 +71,7 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211631/preview)
+- [workshop/Lesson3_example3](https://us.prairielearn.com/pl/course/108/question/8211631/preview)
 
 ## Example 4:
 
@@ -88,26 +87,24 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example4\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211632/preview)
+- [workshop/Lesson3_example4_v1](https://us.prairielearn.com/pl/course/108/question/8211632/preview)
 
-- [workshop/Lesson3\_example4\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211633/preview)
+- [workshop/Lesson3_example4_v2](https://us.prairielearn.com/pl/course/108/question/8211633/preview)
 
 ## Homework 3
 
-Create new questions using some of the elements discussed today and add the url link to the
-[spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
-Use the tab for `Homework 3`. I will take a look at your question and provide feedback.
+Create new questions using some of the elements discussed today:
 
-`pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793641/preview)
+`pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793641/preview)
 
-`pl-matrix-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611932/preview)
+`pl-matrix-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/611932/preview)
 
-`pl-matrix-latex` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-latex-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793638/preview)
+`pl-matrix-latex` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-latex-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793638/preview)
 
-`pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637022/preview)
+`pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
 
-`pl-python-variable` [documentation]() and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
+`pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element) and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
 
-`pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793642/preview)
+`pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793642/preview)
 
-`pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911589/preview)
+`pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://us.prairielearn.com/pl/course/108/question/7911589/preview)

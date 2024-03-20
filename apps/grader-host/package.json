@@ -1,0 +1,52 @@
+{
+  "name": "@prairielearn/grader-host",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev:no-watch": "tsx src/index.js",
+    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "start": "node dist/index.js",
+    "test": "mocha src/**/*.test.{js,ts}"
+  },
+  "dependencies": {
+    "@aws-sdk/client-auto-scaling": "^3.525.0",
+    "@aws-sdk/client-ecr": "^3.525.0",
+    "@aws-sdk/client-s3": "^3.525.0",
+    "@aws-sdk/client-sqs": "^3.525.0",
+    "@aws-sdk/credential-providers": "^3.525.0",
+    "@aws-sdk/lib-storage": "^3.525.0",
+    "@prairielearn/aws": "workspace:^",
+    "@prairielearn/config": "workspace:^",
+    "@prairielearn/docker-utils": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/sanitize": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
+    "ajv": "^8.12.0",
+    "async": "^3.2.5",
+    "async-stacktrace": "^0.0.2",
+    "byline": "^5.0.0",
+    "chai": "^4.4.1",
+    "dockerode": "^3.3.5",
+    "fs-extra": "^11.2.0",
+    "logform": "^2.6.0",
+    "tmp": "^0.2.3",
+    "winston": "^3.11.0",
+    "winston-transport": "^4.7.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.24",
+    "@types/chai": "^4.3.12",
+    "@types/dockerode": "^3.3.24",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.24",
+    "@types/tmp": "^0.2.6",
+    "mocha": "^10.3.0",
+    "nodemon": "^3.1.0",
+    "sinon": "^17.0.1",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "typescript-cp": "^0.1.9"
+  }
+}

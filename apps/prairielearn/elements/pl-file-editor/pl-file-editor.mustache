@@ -1,0 +1,80 @@
+{{#question}}
+<script>
+$(function() {
+    var UUID = "{{uuid}}";
+
+    new window.PLFileEditor(UUID, {
+        originalContents: "{{original_file_contents}}",
+        currentContents: "{{current_file_contents}}",
+        readOnly: {{read_only}},
+        aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
+        aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}},
+        fontSize: {{#font_size}}"{{font_size}}"{{/font_size}}{{^font_size}}undefined{{/font_size}},
+        minLines: {{#min_lines}}{{min_lines}}{{/min_lines}}{{^min_lines}}undefined{{/min_lines}},
+        maxLines: {{#max_lines}}{{max_lines}}{{/max_lines}}{{^max_lines}}undefined{{/max_lines}},
+        autoResize: {{auto_resize}},
+        preview: {{#preview}}"{{preview}}"{{/preview}}{{^preview}}undefined{{/preview}},
+        plOptionFocus: {{focus}}
+    });
+});
+</script>
+<div id="file-editor-{{uuid}}" class="mathjax_ignore">
+    <input type="hidden" name="{{name}}">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+             {{file_name}}
+             <button type="button" class="btn btn-sm btn-secondary settings-button" title="Editor settings" aria-label="Editor settings">
+                 <i class="fa fa-cog"></i>
+             </button>
+         </div>
+        <div class="editor"></div>
+        <div class="modal fade" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-hidden="true" aria-labelledby="modal-{{uuid}}">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"  id="modal-{{uuid}}">Editor Settings</h5>
+                        <button type="button" class="close close-settings-button" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="modal-{{uuid}}-themes">Editor Theme</label>
+                            <select class="custom-select" id="modal-{{uuid}}-themes">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-{{uuid}}-fontsize">Font Size</label>
+                            <select class="custom-select" id="modal-{{uuid}}-fontsize">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-{{uuid}}-keyboardHandler">Key Bindings</label>
+                            <select class="custom-select" id="modal-{{uuid}}-keyboardHandler">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close-settings-button" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary save-settings-button">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{#preview}}
+            <div class="card-footer">Preview</div>
+            <div class="preview p-2 mathjax_process"></div>
+        {{/preview}}
+        <div class="card-footer d-flex">
+            <div class="ml-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm restore-original" tabindex="-1" type="button">Restore original file</button>
+                <div class="restore-original-confirm-container" style="display: none;">
+                    <button type="button" class="btn btn-success btn-sm restore-original-confirm" tabindex="-1">Confirm restore original</button>
+                    <button type="button" class="btn btn-secondary btn-sm restore-original-cancel" tabindex="-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{submission}}
+</div>
+{{/question}}

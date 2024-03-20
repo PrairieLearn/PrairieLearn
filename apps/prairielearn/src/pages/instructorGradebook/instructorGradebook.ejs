@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
+  </head>
+  <script>
+    $(function() {
+        $('#gradebook-table').bootstrapTable({
+            url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
+            buttons: {
+                download: {
+                    text: 'Download',
+                    icon: 'fa-download',
+                    attributes: { title: 'Download gradebook data in CSV format' },
+                    event: () => {
+                        window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
+                    },
+                },
+                studentsOnly: {
+                    text: 'Students Only',
+                    icon: 'fa-user-graduate',
+                    attributes: { title: 'List only enrolled students' },
+                    event: () => {
+                        const table = $('#gradebook-table');
+                        const filterOn = !table.data('filter-student-only');
+                        table.data('filter-student-only', filterOn);
+
+                        $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    },
+                },
+            },
+            onPreBody: function() {
+                $('.spinning-wheel').show();
+                $('button.edit-score').popover('hide');
+            },
+            onResetView: function () {
+                $('button.edit-score').popover({
+                    sanitize: false,
+                    placement: 'auto',
+                    container: 'body',
+                    html: true,
+                    content: function() {
+                        var that = this
+                        var assessmentInstanceId = $(this).data('ai-id')
+                        var score = $(this).data('score')
+                        var otherUsers = $(this).data('other-users')
+                        var form = $('<form name="edit-total-score-perc-form" method="POST"></form>')
+                        form.append('<input type="hidden" name="__action" value="edit_total_score_perc">')
+                        form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">')
+                        form.append('<input type="hidden" name="assessment_instance_id" value="' + assessmentInstanceId + '">')
+                        var formGroup = $('<div class="form-group">')
+                        var inputGroup = $('<div class="input-group">')
+                        inputGroup.append('<input type="text" class="form-control" name="score_perc" value="' + score + '">')
+                        inputGroup.append('<div class="input-group-append"><span class="input-group-text">%</span></div>')
+                        formGroup.append(inputGroup)
+                        form.append(formGroup)
+                        if (otherUsers && otherUsers.length) {
+                            var warning = $('<div class="alert alert-info"><small>This is a group assessment. Updating this grade will also update grades for:</small></div>')
+                            var list = $('<ul/>')
+                            otherUsers.forEach(uid => {
+                                list.append('<li><small>' + uid + '</small></li>')
+                            })
+                            warning.append(list).appendTo(form)
+                        }
+                        form.append('<p><small>This change will be overwritten if further questions are answered by the student.</small></p>')
+                        var cancel = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>')
+                        cancel.on('click', function() {
+                            $(that).popover('hide')
+                        })
+                        form.append(cancel)
+                        form.append('<button type="submit" class="btn btn-primary">Change</button>')
+                        form.submit(function(e) {
+                            e.preventDefault();
+                            $.post($(this).attr('action'), $(this).serialize(), function(data) {
+                                data.forEach(score => {
+                                    $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
+                                        id: score.user_id,
+                                        field: `score_${score.assessment_id}`,
+                                        value: score.score_perc,
+                                    });
+                                })
+                            }, 'json');
+                            $(that).popover('hide');
+                        })
+                        return form
+                    },
+                    title: 'Change total percentage score',
+                    trigger: 'click',
+                }).on('show.bs.popover', function(e) {
+                    $('button.edit-score').not(this).popover('hide');
+                });
+                $('.spinning-wheel').hide();
+            },
+        });
+
+        $(document).keydown(event => {
+            if ((event.ctrlKey || event.metaKey) &&
+                String.fromCharCode(event.which).toLowerCase() == 'f') {
+                $('.fixed-table-toolbar .search input').focus();
+                event.preventDefault();
+            }
+        });
+
+        $('[data-toggle="modal"]').click(function (e) {
+            e.stopPropagation(); // Keep click from changing sort
+            $($(e.currentTarget).data('target')).modal('show');
+        })
+    });
+    function gradeFormatter(score, row, index, field) {
+        var assessment_instance_id = row[field + '_ai_id'];
+        var other_users = _.escape(JSON.stringify(row[field + '_other']));
+        if (score == null) {
+            return "—";
+        } else {
+            var text = `<a href="<%= urlPrefix %>/assessment_instance/${assessment_instance_id}">${Math.floor(score)}%</a>`;
+            if (<%= authz_data.has_course_instance_permission_edit %>) {
+                text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
+                                 data-ai-id="${assessment_instance_id}" data-score="${score}"
+                                 data-other-users="${other_users}">
+                           <i class="bi-pencil-square" aria-hidden="true"></i>
+                         </button>`;
+            }
+            return text;
+        }
+    }
+  </script>
+  <style>
+    .sticky-column {
+      position: sticky;
+      left: 0;
+      background: white;
+      background-clip: padding-box;
+      box-shadow: inset -1px 0 #dee2e6;
+    }
+    .table-hover tbody tr:hover td.sticky-column {
+        color: #212529;
+        background-color: #efefef;
+    }
+    .fixed-table-toolbar {
+        padding: 0 1em 0 1em;
+    }
+    .fixed-table-toolbar div.pagination,
+    .fixed-table-toolbar div.pagination-detail {
+        margin: 0 1em 0 0 !important;
+    }
+    .gradebook-uin {
+        max-width: 10em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+  </style>
+  <body>
+    <%- include('../partials/navbar'); %>
+    <main id="content" class="container-fluid">
+      <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
+
+      <% if (!authz_data.has_course_instance_permission_view) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            Gradebook
+          </div>
+          <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>You must have permission to view student data in order to access the gradebook.</p>
+            <% if (authz_data.has_course_permission_own) { %>
+              <p>
+                You can grant yourself access to student data on the course's
+                <a href="<%= urlPrefix %>/course_admin/staff">Staff tab</a>.
+              </p>
+            <% } else if (course_owners.length > 0) { %>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+                <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+                </li>
+              <% }); %>
+              </ul>
+            <% } %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            Gradebook
+          </div>
+          <table id="gradebook-table"
+                data-unique-id="user_id"
+                data-classes="table table-sm table-hover table-bordered"
+                data-thead-classes="thead-light"
+                data-show-button-text="true"
+                data-minimum-count-columns="0"
+                data-search="true"
+                data-show-columns="true"
+                data-show-columns-toggle-all="true"
+                data-show-refresh="true"
+                data-pagination="true"
+                data-pagination-v-align="both"
+                data-pagination-h-align="left"
+                data-pagination-detail-h-align="right"
+                data-page-list="[10,20,50,100,200,500,unlimited]"
+                data-page-size="50"
+                data-smart-display="false"
+                data-show-extended-pagination="true"
+                data-toolbar=".fixed-table-pagination:nth(0)"
+                data-sticky-header="true">
+              <thead>
+                <tr>
+                  <th data-field="uid"
+                      data-sortable="true"
+                      data-class="sticky-column text-nowrap"
+                      data-switchable="false">UID</th>
+                  <th data-field="uin"
+                      data-sortable="true"
+                      data-class="text-nowrap gradebook-uin">UIN</th>
+                  <th data-field="user_name"
+                      data-sortable="true"
+                      data-class="text-nowrap">Name</th>
+                  <th data-field="role"
+                      data-sortable="true"
+                      data-sort-order="desc">
+                    Role
+                    <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                      <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  </th>
+                  <% course_assessments.forEach(function(assessment, iAssessment) { %>
+                  <th data-field="score_<%= assessment.assessment_id %>"
+                      data-sortable="true"
+                      data-class="text-nowrap"
+                      data-formatter="gradeFormatter"
+                      data-sort-order="desc"
+                      data-search-formatter="false"><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                  <% }); %>
+                </tr>
+              </thead>
+          </table>
+
+          <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
+        </div>
+
+        <div class="modal fade" id="role-help" tabindex="-1" role="dialog" aria-labelledby="role-help-title">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Roles</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <ul>
+                  <li><strong>Staff</strong> is a member of the course staff. They can see the data of all users, and depending on course settings may have permission to edit the information of other users.</li>
+                  <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
+                  <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
+                </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% } %>
+      </main>
+    <!-- needed for tests since we can't grab it out of javascript -->
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"
+  </body>
+</html>

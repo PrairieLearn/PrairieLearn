@@ -1,14 +1,37 @@
-PATH := node_modules/.bin/:$(PATH)
+build:
+	@yarn turbo run build
+build-sequential:
+	@yarn turbo run --concurrency 1 build
+python-deps:
+	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+deps:
+	@yarn
+	@make python-deps build
+
+migrate:
+	@yarn migrate
+migrate-dev:
+	@yarn migrate-dev
+
+refresh-workspace-hosts:
+	@yarn refresh-workspace-hosts
+refresh-workspace-hosts-dev:
+	@yarn refresh-workspace-hosts-dev
+
+dev: start-support
+	@yarn dev
+dev-workspace-host: start-support
+	@yarn dev-workspace-host
 
 start: start-support
-	@node server.js
-start-nodemon: start-support
-	@nodemon -L server.js
-start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js &
+	@yarn start
+start-workspace-host: start-support
+	@yarn start-workspace-host
+start-executor:
+	@node apps/prairielearn/dist/executor.js
 
-kill-running-workspaces:
-	@docker/kill_running_workspaces.sh
+update-database-description:
+	@yarn workspace @prairielearn/prairielearn pg-describe postgres -o ../../database
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
@@ -20,26 +43,49 @@ start-s3rver:
 
 test: test-js test-python
 test-js: start-support
-	@nyc --reporter=lcov mocha tests/index.js
-test-nocoverage: start-support
-	@mocha tests/index.js
+	@yarn turbo run test
+test-js-dist: start-support
+	@yarn turbo run test:dist
 test-python:
-	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 -m pytest
+test-prairielearn: start-support
+	@yarn workspace @prairielearn/prairielearn run test
 
-lint: lint-js lint-python
+check-dependencies:
+	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+
+lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@eslint --ext js "**/*.js"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
 	@python3 -m flake8 ./
+lint-html:
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-links:
+	@node tools/validate-links.mjs
 
-typecheck:
-	@tsc
-depcheck:
-	-depcheck --ignore-patterns=public/**
-	@echo WARNING:
-	@echo WARNING: Before removing an unused package, also check that it is not used
-	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
-	@echo WARNING:
-	@echo WARNING: Note that many devDependencies will show up as unused. This is not
-	@echo WARNING: a problem.
-	@echo WARNING:
+format: format-js format-python
+format-js:
+	@yarn eslint --ext js --fix "**/*.{js,ts}"
+	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
+
+typecheck: typecheck-js typecheck-python
+# This is just an alias to our build script, which will perform typechecking
+# as a side-effect.
+# TODO: Do we want to have a separate typecheck command for all packages/apps?
+# Maybe using TypeScript project references?
+typecheck-tools:
+	@yarn tsc
+typecheck-js:
+	@yarn turbo run build
+typecheck-python:
+	@yarn pyright --skipunannotated
+
+changeset:
+	@yarn changeset
+
+ci: lint typecheck check-dependencies test

@@ -1,0 +1,19 @@
+{
+    "uuid": "3e5005c1-6a5e-4959-9fc4-13f6e6f83961",
+    "title": "Workspace demo: using dynamic files",
+    "topic": "Workspace",
+    "tags": [
+        "sp23",
+        "jonatan"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-xtermjs",
+        "port": 8080,
+        "home": "/home/student",
+        "gradedFiles": [
+            "dynamic.txt"
+        ]
+    }
+}

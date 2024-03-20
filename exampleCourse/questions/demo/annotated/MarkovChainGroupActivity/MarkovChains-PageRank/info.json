@@ -1,0 +1,26 @@
+{
+    "uuid": "2ec15fd2-5b09-4050-8721-069ab7db9517",
+    "title": "PageRank",
+    "topic": "Coding",
+    "tags": [
+        "workspace", "mfsilva", "Sp21"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    },
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-jupyterlab",
+        "port": 8080,
+        "home": "/home/jovyan",
+        "rewriteUrl": false,
+        "gradedFiles": [
+            "Markov-Chains-3.ipynb"
+        ]
+    }
+}

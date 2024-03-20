@@ -1,0 +1,26 @@
+{
+    "uuid": "689A41B2-4144-43C7-A54E-403A47398423",
+    "title": "Gambler Example",
+    "topic": "Coding",
+    "tags": [
+        "workspace", "mfsilva", "Sp21"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    },
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-jupyterlab",
+        "port": 8080,
+        "home": "/home/jovyan",
+        "rewriteUrl": false,
+        "gradedFiles": [
+            "Markov-Chains-2.ipynb"
+        ]
+    }
+}

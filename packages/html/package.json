@@ -1,0 +1,24 @@
+{
+  "name": "@prairielearn/html",
+  "version": "3.1.5",
+  "main": "dist/index.js",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/html"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "mocha --no-config --require tsx src/index.test.ts"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.11.24",
+    "chai": "^4.4.1",
+    "mocha": "^10.3.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

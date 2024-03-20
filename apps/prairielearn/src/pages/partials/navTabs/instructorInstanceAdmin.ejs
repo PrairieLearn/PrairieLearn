@@ -1,0 +1,37 @@
+<%- include('navTab', {
+    activeSubPage:  'access',
+    urlSuffix:      '/instance_admin/access',
+    iconClasses:    'far fa-calendar-alt',
+    tabLabel:       'Access'}); %>
+<%- include('navTab', {
+    activeSubPage:  'assessments',
+    urlSuffix:      '/instance_admin/assessments',
+    iconClasses:    'fa fa-list',
+    tabLabel:       'Assessments'}) %>
+<%- include('navTab', {
+    activeSubPage:  ['file_view', 'file_edit'],
+    urlSuffix:      '/instance_admin/file_view',
+    iconClasses:    'fa fa-edit',
+    tabLabel:       'Files'}) %>
+<%- include('navTab', {
+    activeSubPage:  'gradebook',
+    urlSuffix:      '/instance_admin/gradebook',
+    iconClasses:    'fas fa-balance-scale',
+    tabLabel:       'Gradebook'}) %>
+<%- include('navTab', {
+    activeSubPage:  'lti',
+    urlSuffix:      '/instance_admin/lti',
+    iconClasses:    'fas fa-graduation-cap',
+    tabLabel:       'LTI'}) %>
+<% if (billing_enabled) { %>
+    <%- include('navTab', {
+        activeSubPage:  'billing',
+        urlSuffix:      '/instance_admin/billing',
+        iconClasses:    'fas fa-credit-card',
+        tabLabel:       'Billing'}) %>
+<% } %>
+<%- include('navTab', {
+    activeSubPage:  'settings',
+    urlSuffix:      '/instance_admin/settings',
+    iconClasses:    'fas fa-cog',
+    tabLabel:       'Settings'}) %>
