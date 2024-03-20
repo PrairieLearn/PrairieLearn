@@ -177,10 +177,7 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
-        logger.error(
-          'Error running the batched migration job. To re-run the migration job, open the Admin Panel and click "Retry Failed Jobs".',
-          error,
-        );
+        logger.error('Error running the batched migration job.', error);
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');
