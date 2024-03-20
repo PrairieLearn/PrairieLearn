@@ -71,6 +71,19 @@ export async function processSubmission(
     res.locals.question.id,
     res.locals.instance_question?.id,
   );
+
+  // This is also checked when we try to save a submission, but if that check
+  // fails, it's reported as a 500. We report with a friendlier error message
+  // and status code here, which will keep this error from contributing to 5XX
+  // monitors.
+  //
+  // We have a decent chance of hitting this code path if an instructor
+  // force-breaks variants, as we could be in a case where the variant wasn't
+  // broken when the user loaded the page but it is broken when they submit.
+  if (variant.broken_at) {
+    throw error.make(403, 'Cannot submit to a broken variant');
+  }
+
   if (req.body.__action === 'grade') {
     const overrideRateLimits = !studentSubmission;
     await saveAndGradeSubmission(

@@ -19,7 +19,7 @@ const perf = makePerformance('sync');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
-interface SyncResults {
+export interface SyncResults {
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;

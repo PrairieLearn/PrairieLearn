@@ -4,8 +4,8 @@
 PID=$(lsof -i :5000 -t)
 if [ -n "$PID" ]; then
     # Check if this process is actually s3rver
-    PROCESS_NAME=$(ps -p $PID -o comm=)
-    if grep -q "[s]3rver" $PROCESS_NAME; then
+    PROCESS_NAME=$(ps -p $PID -o args=)
+    if grep -q "[s]3rver" <<< $PROCESS_NAME; then
         exit
     fi
 
@@ -15,7 +15,7 @@ if [ -n "$PID" ]; then
 
     # If the user is on macOS, warn them that this might be caused by AirPlay
     # Receiver.
-    if [ "$(uname)" == "Darwin" ] && grep -q "ControlCenter" $PROCESS_NAME; then
+    if [ "$(uname)" == "Darwin" ] && grep -q "ControlCenter" <<< $PROCESS_NAME; then
         echo "This might be caused by AirPlay Receiver."
         echo "For more details, see the following:"
         echo "https://apple.stackexchange.com/questions/431154/should-controlcenter-app-listen-to-port-5000-tcp-on-a-normal-macos-monterey-syst"
