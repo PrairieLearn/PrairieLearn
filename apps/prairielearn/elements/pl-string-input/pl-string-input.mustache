@@ -6,6 +6,20 @@
             container: 'body',
             template: '<div class="popover pl-string-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
+        document.querySelectorAll('.multiline-input').forEach((input) => {
+            input.addEventListener('input', function () {
+            // Adjusts the height based on the feedback content. If the feedback changes, the height
+            // changes as well. This is done by resetting the height (so the scrollHeight is computed
+            // based on the minimum height) and then using the scrollHeight plus padding as the new height.
+            this.style.height = '';
+            if (this.scrollHeight) {
+                const style = window.getComputedStyle(this);
+                this.style.height =
+                this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+            }
+            });
+            input.dispatchEvent(new Event('input'));
+        });
     });
 </script>
 
@@ -16,20 +30,37 @@
             <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
+        {{^multiline}}
         <input
+        {{/multiline}}
+        {{#multiline}}
+        <textarea
+            wrap="soft"
+        {{/multiline}}
             name="{{name}}"
             type="text"
             inputmode="text"
-            class="form-control pl-string-input-input"
-            size="{{size}}"
+            class="form-control pl-string-input-input {{#multiline}}multiline-input{{/multiline}}"
+            {{^multiline}}
+                size="{{size}}"
+                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            {{/multiline}}
+            {{#multiline}}
+                cols="{{size}}"
+                rows="2"
+            {{/multiline}}
             autocomplete="off"
             {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
+            aria-describedby="pl-string-input-{{uuid}}-label pl-string-input-{{uuid}}-suffix"
             placeholder="{{placeholder}}"
-        />
+        {{^multiline}}
+        >
+        {{/multiline}}
+        {{#multiline}}
+        >{{raw_submitted_answer}}</textarea>
+        {{/multiline}}
         <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
+            {{#suffix}}<span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
 
             {{#show_info}}
                 <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="String" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">

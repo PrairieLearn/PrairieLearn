@@ -997,8 +997,13 @@ def generate(data):
 | `ignore-case`             | boolean             | false    | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").                                                                                                     |
 | `normalize-to-ascii`      | boolean             | false    | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading. |
 | `placeholder`             | text                | None     | Hint displayed inside the input box describing the expected type of input.                                                                                                |
-| `size`                    | integer             | 35       | Size of the input box.                                                                                                                                                    |
+| `size`                    | integer             | 35       | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
+| `multiline`               | boolean             | false    | Whether or not to to allow the input to include line breaks.                                                                                                              |
+
+#### Details
+
+The student answer will use a single `\n` as a newline character, even if `multiline` is not enabled. To avoid issues with newlines, they can be ignored by enabling `remove-spaces`. Keep in mind that longer strings may not display cleanly on the submitted or correct answer panels, so it may be best to hide these panels if students are submitting longer strings.
 
 #### Example implementations
 

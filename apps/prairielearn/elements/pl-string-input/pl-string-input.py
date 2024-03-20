@@ -1,4 +1,5 @@
 import random
+import re
 from enum import Enum
 from typing import Any
 
@@ -27,6 +28,7 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
+MULTILINE_DEFAULT = False
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -49,6 +51,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "normalize-to-ascii",
         "show-score",
+        "multiline",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -130,6 +133,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "raw_submitted_answer": raw_submitted_answer,
             "parse_error": parse_error,
+            "multiline": pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT),
         }
 
         if show_score and score is not None:
@@ -180,6 +184,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
+        a_tru = pl.escape_unicode_string(a_tru)
+
         html_params = {
             "answer": True,
             "label": label,
@@ -203,7 +209,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
-
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
@@ -226,6 +231,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Remove the blank spaces between characters
     if remove_spaces:
         a_sub = "".join(a_sub.split())
+
+    # Always simplify multiline characters (if they still exist)
+    a_sub = re.sub("\r*\n", "\n", a_sub)
 
     if not a_sub and not allow_blank:
         data["format_errors"][
