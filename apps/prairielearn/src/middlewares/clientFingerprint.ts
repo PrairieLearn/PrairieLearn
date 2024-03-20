@@ -1,3 +1,4 @@
+// @ts-check
 import asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../lib/db-types';
@@ -14,6 +15,11 @@ export default asyncHandler(async (req, res, next) => {
   const client_fingerprint_id = await getClientFingerprintId(req, res);
 
   if (
+    // Only update the client fingerprint if the assessment is open and the
+    // access to the assessment is active (i.e., student has permission to
+    // submit new answers)
+    res.locals.assessment_instance?.open &&
+    res.locals.authz_result?.active &&
     !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
   ) {
     await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
