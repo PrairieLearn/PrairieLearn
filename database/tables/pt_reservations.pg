@@ -1,6 +1,7 @@
 columns
     access_end: timestamp with time zone
     access_start: timestamp with time zone
+    checked_in: timestamp with time zone
     enrollment_id: bigint not null
     exam_id: bigint not null
     id: bigint not null default nextval('pt_reservations_id_seq'::regclass)

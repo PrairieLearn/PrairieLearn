@@ -1,4 +1,5 @@
 columns
+    date: timestamp with time zone not null
     id: bigint not null default nextval('pt_sessions_id_seq'::regclass)
     location_id: bigint
 
