@@ -20,7 +20,7 @@ function authzHasCourseInstanceView(req, res, next) {
 router.use(require('./prettyPrintJson'));
 
 // All course instance pages require authorization
-router.use('/course_instances/:course_instance_id', [
+router.use('/course_instances/:course_instance_id(\\d+)', [
   require('../../middlewares/authzCourseOrInstance'),
   // Asserts that the user has either course preview or course instance student
   // data access. If a route provides access to student data, you should also
@@ -32,26 +32,26 @@ router.use('/course_instances/:course_instance_id', [
 
 // ROUTES
 router.use(
-  '/course_instances/:course_instance_id/assessments',
+  '/course_instances/:course_instance_id(\\d+)/assessments',
   require('./endpoints/courseInstanceAssessments'),
 );
 router.use(
-  '/course_instances/:course_instance_id/assessment_instances',
+  '/course_instances/:course_instance_id(\\d+)/assessment_instances',
   authzHasCourseInstanceView,
   require('./endpoints/courseInstanceAssessmentInstances'),
 );
 router.use(
-  '/course_instances/:course_instance_id/submissions',
+  '/course_instances/:course_instance_id(\\d+)/submissions',
   authzHasCourseInstanceView,
   require('./endpoints/courseInstanceSubmissions'),
 );
 router.use(
-  '/course_instances/:course_instance_id/gradebook',
+  '/course_instances/:course_instance_id(\\d+)/gradebook',
   authzHasCourseInstanceView,
   require('./endpoints/courseInstanceGradebook'),
 );
 router.use(
-  '/course_instances/:course_instance_id/course_instance_access_rules',
+  '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
   require('./endpoints/courseInstanceAccessRules'),
 );
 

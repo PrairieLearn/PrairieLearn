@@ -13,7 +13,7 @@ const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
-  '/:job_id',
+  '/:job_id(\\d+)',
   asyncHandler(async (req, res) => {
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
       sql.select_job,
@@ -44,7 +44,7 @@ router.get(
 );
 
 router.get(
-  '/:job_id/file/:file',
+  '/:job_id(\\d+)/file/:file',
   asyncHandler(async (req, res) => {
     const file = req.params.file;
     const allowList = res.locals.authz_data.has_course_permission_view

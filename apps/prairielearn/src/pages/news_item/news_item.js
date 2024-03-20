@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/:news_item_id', function (req, res, next) {
+router.get('/:news_item_id(\\d+)', function (req, res, next) {
   const params = {
     news_item_id: req.params.news_item_id,
     user_id: res.locals.authn_user.user_id,
@@ -42,7 +42,7 @@ router.get('/:news_item_id', function (req, res, next) {
   });
 });
 
-router.get('/:news_item_id/*', function (req, res, next) {
+router.get('/:news_item_id(\\d+)/*', function (req, res, next) {
   const filename = req.params[0];
   const params = {
     news_item_id: req.params.news_item_id,
