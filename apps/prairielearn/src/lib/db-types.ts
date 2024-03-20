@@ -359,9 +359,6 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
-  // Currently unused.
-  // TODO: remove from schema entirely?
-  role: z.any(),
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
