@@ -43,6 +43,50 @@ WITH
     WHERE
       f.instance_question_id = $instance_question_id
       AND f.deleted_at IS NULL
+  ),
+  variant_max_submission_scores AS (
+    SELECT
+      v.id AS variant_id,
+      max(s.score) AS max_submission_score
+    FROM
+      instance_questions AS iq
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    WHERE
+      iq.assessment_instance_id = ai.id
+      AND aq.deleted_at IS NULL
+      AND s.score IS NOT NULL
+    GROUP BY
+      v.id
+  ),
+  instance_question_variants AS (
+    SELECT
+      iq.id AS instance_question_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'variant_id',
+          v.id,
+          'max_submission_score',
+          COALESCE(vmss.max_submission_score, 0)
+        )
+        ORDER BY
+          v.date
+      ) AS variants
+    FROM
+      instance_questions AS iq
+      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
+    WHERE
+      iq.assessment_instance_id = ai.id
+      AND aq.deleted_at IS NULL
+      AND NOT v.open
+      AND NOT v.broken
+    GROUP BY
+      iq.id
   )
 SELECT
   jsonb_set(
@@ -98,7 +142,9 @@ SELECT
     'sequence_locked',
     iqi.sequence_locked,
     'instructor_question_number',
-    admin_assessment_question_number (aq.id)
+    admin_assessment_question_number (aq.id),
+    'previous_variants',
+    iqv.variants
   ) AS instance_question_info,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(q) AS question,
@@ -123,6 +169,7 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
   LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
+  LEFT JOIN instance_question_variants AS iqv ON (iqv.instance_question_id = iq.id)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,

@@ -50,6 +50,12 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
+  previous_variants: z.array(
+    z.object({
+      variant_id: IdSchema,
+      max_submission_score: z.number(),
+    }),
+  ),
 });
 
 async function ensureUpToDate(locals) {
