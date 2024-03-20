@@ -46,16 +46,19 @@ describe('getEnrollmentCountsForInstitution', () => {
       uid: 'free@example.com',
       name: 'Free Student',
       uin: 'free1',
+      email: 'free@example.com',
     });
     const paidUser1 = await getOrCreateUser({
       uid: 'paid1@example.com',
       name: 'Paid Student 1',
       uin: 'paid1',
+      email: 'paid1@example.com',
     });
     const paidUser2 = await getOrCreateUser({
       uid: 'paid2@example.com',
       name: 'Paid Student 2',
       uin: 'paid2',
+      email: 'paid2@example.com',
     });
 
     await ensureEnrollment({
@@ -137,6 +140,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
@@ -151,6 +155,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -176,6 +181,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -219,6 +225,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
@@ -233,6 +240,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -258,6 +266,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });

@@ -15,7 +15,6 @@ export function getAzureStrategy() {
       scope: ['openid', 'profile', 'email'],
       responseType: 'code id_token',
       responseMode: 'form_post',
-      scope: ['openid', 'profile', 'email'],
       // We're using the common metadata endpoint, so we need to disable issuer validation.
       validateIssuer: false,
       passReqToCallback: false,

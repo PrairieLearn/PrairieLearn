@@ -14,22 +14,25 @@ export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise
   const originalName = config.authName;
   const originalUid = config.authUid;
   const originalUin = config.authUin;
+  const originalEmail = config.authEmail;
 
   try {
     config.authName = user.name;
     config.authUid = user.uid;
     config.authUin = user.uin;
+    config.authEmail = user.email;
 
     return await fn();
   } finally {
     config.authName = originalName;
     config.authUid = originalUid;
     config.authUin = originalUin;
+    config.authEmail = originalEmail;
   }
 }
 
 export async function getConfiguredUser(): Promise<User> {
-  if (!config.authUid || !config.authName || !config.authUin) {
+  if (!config.authUid || !config.authName || !config.authUin || !config.authEmail) {
     throw new Error('No configured user');
   }
 
