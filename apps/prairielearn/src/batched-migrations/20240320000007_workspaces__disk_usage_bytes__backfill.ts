@@ -22,6 +22,9 @@ export default makeBatchedMigration({
     );
 
     for (const workspace of workspaces) {
+      // We may have already computed the disk usage for this workspace.
+      if (workspace.disk_usage_bytes !== null) continue;
+
       await updateWorkspaceDiskUsage(workspace.id, config.workspaceHomeDirRoot);
     }
   },
