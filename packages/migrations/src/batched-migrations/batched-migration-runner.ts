@@ -177,6 +177,11 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
+        console.error('Error running the batched migration job: ');
+        console.error(error);
+        console.error(
+          'To re-run the migration job, open the Admin Panel and click "Retry Failed Jobs"',
+        );
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');
