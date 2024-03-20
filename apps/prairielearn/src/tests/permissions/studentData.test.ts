@@ -46,7 +46,7 @@ describe('student data access', function () {
       'student@illinois.edu',
       'Student User',
       '000000001',
-      'instructor@illinois.edu',
+      'student@illinois.edu',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({
