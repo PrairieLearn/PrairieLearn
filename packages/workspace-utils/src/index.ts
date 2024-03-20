@@ -156,10 +156,14 @@ export async function updateWorkspaceDiskUsage(
 async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
   let size = 0;
 
-  const files = await fs.readdir(dir, { recursive: true });
+  // We use `withFileTypes: true` to avoid a bug where Node will try to recurse
+  // into Unix domain socket files and fail with `ENOTDIR`.
+  //
+  // https://github.com/nodejs/node/issues/52159
+  const files = await fs.readdir(dir, { recursive: true, withFileTypes: true });
 
   for (const file of files) {
-    const stats = await fs.lstat(path.join(dir, file));
+    const stats = await fs.lstat(path.join(file.path, file.name));
     size += stats.size;
   }
 
