@@ -1,8 +1,10 @@
 //@ts-check
-const express = require('express');
+import * as express from 'express';
+import * as error from '@prairielearn/error';
+
+import { decodePath } from '../../lib/uri-util';
+
 const router = express.Router();
-const { decodePath } = require('../../lib/uri-util');
-const error = require('@prairielearn/error');
 
 router.get('/*', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_view) {
@@ -13,4 +15,4 @@ router.get('/*', function (req, res, next) {
   res.sendFile(decodePath(req.params[0]), { root: res.locals.course.path });
 });
 
-module.exports = router;
+export default router;

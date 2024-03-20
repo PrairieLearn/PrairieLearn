@@ -62,6 +62,7 @@ WITH
       ai.score_perc,
       ai.number AS assessment_instance_number,
       ai.open,
+      format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
       gi.id AS group_id,
       gi.name AS group_name,
       gi.uid_list AS group_uids,

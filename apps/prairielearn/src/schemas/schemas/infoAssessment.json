@@ -176,20 +176,10 @@
           "description": "The maximum number of users that should be in this role in a group.",
           "type": "number"
         },
-        "canAssignRolesAtStart": {
-          "description": "Whether users with this role can assign other users' group roles before the assessment starts.",
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
           "default": false
-        },
-        "canAssignRolesDuringAssessment": {
-          "description": "Whether users with this role can assign other users' group roles during an assessment.",
-          "type": "boolean",
-          "default": false
-        },
-        "canSubmitAssessment": {
-          "description": "Whether users with this role can press the 'Save and Grade All' button in an exam.",
-          "type": "boolean",
-          "default": true
         }
       }
     },
@@ -207,7 +197,7 @@
           "enum": ["Public", "Exam", "SEB"]
         },
         "examUuid": {
-          "description": "The scheduler exam UUID for which a student must be registered.",
+          "description": "The PrairieTest exam UUID for which a student must be registered.",
           "type": "string",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },

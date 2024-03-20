@@ -6,14 +6,6 @@ SELECT
       SELECT
         1
       FROM
-        exams
-      WHERE
-        exams.uuid = exam_uuids.value::uuid
-    )
-    OR EXISTS (
-      SELECT
-        1
-      FROM
         pt_exams
       WHERE
         pt_exams.uuid = exam_uuids.value::uuid
@@ -46,6 +38,7 @@ FROM
   )
 WHERE
   ssc.course_id = $course_id
+  AND c.example_course IS FALSE
 UNION
 SELECT
   q.qid,
@@ -59,7 +52,8 @@ FROM
     AND iqi.qid = q.qid
   )
 WHERE
-  q.shared_publicly;
+  q.shared_publicly
+  AND c.example_course IS FALSE;
 
 -- BLOCK get_institution_id
 SELECT

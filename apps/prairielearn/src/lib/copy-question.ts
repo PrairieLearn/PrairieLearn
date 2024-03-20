@@ -65,10 +65,6 @@ export async function copyQuestionBetweenCourses(
     throw error.make(403, 'Access denied (must be a course Viewer)');
   }
 
-  if (!fromCourse.path) {
-    throw new Error(`Course ${fromCourse.id} does not have a path`);
-  }
-
   if (!question.qid) {
     throw new Error(`Question ${question.id} does not have a qid`);
   }

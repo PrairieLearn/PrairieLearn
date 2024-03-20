@@ -1,0 +1,28 @@
+<% if (!rolesInfo.rolesAreBalanced) { %>
+<div class="alert alert-danger" role="alert">
+    At least one student has too many roles. In a group with <%= groupSize %> students, every student must be assigned to exactly <strong>one</strong> role. 
+</div>
+<% } %>
+<% if (rolesInfo.validationErrors?.length > 0) { %>
+  <% rolesInfo.validationErrors.forEach(function ({ role_id, role_name, count, minimum, maximum }) { %>
+    <div class="alert alert-danger" role="alert">
+    <% if (count < minimum) { %>
+        <%= minimum - count %> more <%= minimum - count === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>"
+    <% } else if (count > maximum) { %>
+        <%= count - maximum %> less <%= count - maximum === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>"
+    <% } %>
+    <% if (maximum === minimum) { %>
+        (<%= count %> assigned, <%= minimum %> expected).
+    <% } else if (maximum == null) { %>
+        (<%= count %> assigned, at least <%= minimum %> expected).
+    <% } else { %>
+        (<%= count %> assigned, between <%= minimum ?? 0 %> and <%= maximum %> expected).
+    <% } %>
+    </div>
+  <% }) %>
+<% } %>
+<% if (rolesInfo.usersWithoutRoles?.length > 0) { %>
+<div class="alert alert-danger" role="alert">
+    At least one user does not have a role. All users must have a role.
+</div>
+<% } %>

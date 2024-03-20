@@ -1,10 +1,15 @@
-import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { config } from '../config';
 
 const sql = loadSqlEquiv(__filename);
+
+const IsFeatureEnabledSchema = z.object({
+  has_feature_grant: z.boolean(),
+  course_dev_mode_features: z.unknown(),
+});
 
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
 const DEFAULT_CONTEXT = {
@@ -68,7 +73,7 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   allFeatures() {
-    return [...this.features];
+    return [...this.features] as FeatureName[];
   }
 
   /**
@@ -91,18 +96,33 @@ export class FeatureManager<FeatureName extends string> {
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const featureIsEnabled = await queryValidatedSingleColumnOneRow(
+    const featureIsEnabled = await queryRow(
       sql.is_feature_enabled,
       {
         name,
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.boolean(),
+      IsFeatureEnabledSchema,
     );
-    if (featureIsEnabled) return true;
 
-    // Default to disabled if not explicitly enabled by a specific grant or config.
+    if (featureIsEnabled.has_feature_grant) return true;
+
+    // Allow features to be enabled in dev mode via `options.devModeFeatures`
+    // in `infoCourse.json`.
+    //
+    // We could check for the feature in the array in SQL, but it's easier to
+    // write this more defensively in JavaScript.
+    if (
+      config.devMode &&
+      Array.isArray(featureIsEnabled.course_dev_mode_features) &&
+      featureIsEnabled.course_dev_mode_features.includes(name)
+    ) {
+      return true;
+    }
+
+    // Default to disabled if not explicitly enabled by a specific grant, config,
+    // or course options.
     return false;
   }
 

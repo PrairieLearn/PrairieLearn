@@ -1,0 +1,81 @@
+<% const roleConfigProblems = rolesInfo.validationErrors.length + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) + (rolesInfo.rolesAreBalanced ? 0 : 1); %>
+<% if (roleConfigProblems > 0) { %>
+  <div class="alert alert-danger mt-2" role="alert">
+    Your group's role configuration is currently invalid. Please review the role requirements and <%= userCanAssignRoles || authz_data.has_course_instance_permission_edit ? 'assign a valid role configuration' : 'ask a user with an assigner role to update the role configuration' %>. Question submissions are disabled until the role configuration is valid.
+  </div>
+<% } %>
+<details class="card mb-2">
+  <summary class="card-header bg-secondary text-light">
+    <%= userCanAssignRoles || authz_data.has_course_instance_permission_edit ? 'Manage group roles' : 'View group roles' %> 
+    <% if (roleConfigProblems > 0) { %>
+      <span class="badge badge-pill badge-danger"><%= roleConfigProblems %></span>
+    <% } %>
+  </summary>
+  <div class="card-body">
+    <%- include('./groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+    <p>
+      This assessment contains group roles, which selectively allow students to view questions, submit answers, and change group role assignments.
+    </p>
+
+    <form id="role-select-form" name="role-select-form" method="POST">
+      <table class="table table-bordered table-striped table-sm">
+        <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col">Roles</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% groupMembers.forEach(function (user) { %>
+          <tr>
+            <td><%= user.uid %></td>
+            <td>
+              <% rolesInfo.groupRoles.forEach(function (role) { %>
+                <label class="ml-2 <%= rolesInfo.disabledRoles.includes(role.role_name) ? 'text-muted' : ''%>">
+                  <input
+                    type="checkbox"
+                    id="user_role_<%= role.id %>-<%= user.user_id %>" <%# Used for tests %>
+                    name="user_role_<%= role.id %>-<%= user.user_id %>"
+                    <%= (rolesInfo.disabledRoles.includes(role.role_name) || (!userCanAssignRoles && !authz_data.has_course_instance_permission_edit)) ? 'disabled' : '' %>
+                    <%= rolesInfo.roleAssignments[user.uid]?.some((a) => a.group_role_id == role.id) ? 'checked' : '' %>
+                  >
+                  <%= role.role_name %>
+                </label>
+              <% }) %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% if (userCanAssignRoles || authz_data.has_course_instance_permission_edit) { %>
+        <div class="d-flex justify-content-center">
+          <input type="hidden" name="__action" value="update_group_roles" />
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+          <button type="submit" class="btn btn-primary">Update Roles</button>
+        </div>
+      <% } %>
+    </form>
+  </div>
+  <div class="card-footer small">
+    <table class="table table-bordered table-striped table-sm w-auto">
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th scope="col">Minimum assignments</th>
+          <th scope="col">Maximum assignments</th>
+          <th scope="col">Can assign roles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rolesInfo.groupRoles.forEach(function (groupRole) { %>
+          <tr>
+          <td><%= groupRole.role_name %></td>
+          <td><%= groupRole.minimum ?? 0 %></td>
+          <td><%= groupRole.maximum ?? 'Unlimited' %></td>
+          <td><%= groupRole.can_assign_roles ? 'Yes' : 'No' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</details>

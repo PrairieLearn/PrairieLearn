@@ -1,12 +1,13 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const express = require('express');
-const router = express.Router();
-
+const { OAuth2Client } = require('google-auth-library');
 const { logger } = require('@prairielearn/logger');
+const error = require('@prairielearn/error');
+
 const { config } = require('../../lib/config');
 
-const { OAuth2Client } = require('google-auth-library');
+const router = express.Router();
 
 router.get('/', function (req, res, next) {
   if (
@@ -15,7 +16,7 @@ router.get('/', function (req, res, next) {
     !config.googleClientSecret ||
     !config.googleRedirectUrl
   ) {
-    return next(new Error('Google login is not enabled'));
+    return next(error.make(404, 'Google login is not enabled'));
   }
 
   let url;
@@ -25,10 +26,9 @@ router.get('/', function (req, res, next) {
       config.googleClientSecret,
       config.googleRedirectUrl,
     );
-    const scopes = ['openid', 'profile', 'email'];
     url = oauth2Client.generateAuthUrl({
       access_type: 'online',
-      scope: scopes,
+      scope: ['openid', 'profile', 'email'],
       prompt: 'select_account',
       // FIXME: should add some state here to avoid CSRF
     });

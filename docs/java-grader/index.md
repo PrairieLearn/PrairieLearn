@@ -108,6 +108,22 @@ import org.prairielearn.autograder.AutograderInfo;
 
 To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
+To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection). Calling [the `publishEntry` method for the test reporter](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
+
+```java
+@Test
+@DisplayName("Test addition of values 1 and 1")
+void addition(TestReporter reporter) {
+    // Produce a single line of output
+    reporter.publishEntry("Calculating the addition of 1 and 1, which should result in 2");
+    // Alternatively, multiple key-value entries may be provided instead
+    reporter.publishEntry("TEST", "Adding 1 plus 1");
+    reporter.publishEntry("EXPECTED", "2");
+    reporter.publishEntry("RESULT", calculator.add(1, 1).toString());
+    assertEquals(2, calculator.add(1, 1));
+}
+```
+
 The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be compiled with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
 
 ### Dynamic, parameterized and repeated tests

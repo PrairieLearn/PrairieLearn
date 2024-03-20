@@ -142,7 +142,7 @@ When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to s
   }
   ```
 
-You will be able to find the `examUuid` in the CBTF scheduler app.
+You will be able to find the `examUuid` in PrairieTest.
 
 ## Homework 2
 

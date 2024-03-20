@@ -71,7 +71,9 @@ def process(
     # Otherwise, this will remain `None`.
     result = None
 
-    def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
+    def process_element(
+        element: lxml.html.HtmlElement,
+    ) -> None | str | lxml.html.HtmlElement:
         nonlocal result
 
         if element.tag not in elements:

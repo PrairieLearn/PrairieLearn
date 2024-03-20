@@ -828,7 +828,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.info(chalkDim(`Acquired lock`));
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
-    const courseData = await courseDB.loadFullCourse(courseDir);
+    const courseData = await courseDB.loadFullCourse(course_id, courseDir);
     job.info(chalkDim(`Loaded course data`));
 
     job.info(chalk.bold(`Generating all chunks`));

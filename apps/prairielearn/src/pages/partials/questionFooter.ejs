@@ -14,6 +14,7 @@
           <% if (showSaveButton) { %>
             <button
               class="btn btn-info question-save disable-on-submit order-2"
+              <%= disableSaveButton ? "disabled" : "" %>
               <% if (question.type === 'Freeform') { %>name="__action" value="save"<% } %>
             >
               <% if (showGradeButton) { %>
@@ -41,6 +42,18 @@
               <% } else if (question_context != 'instructor') { %>
                 <small class="font-italic ml-2">Unlimited attempts</small>
               <% } %>
+            </button>
+          <% } %>
+          <% if (locals.assessment?.group_config?.has_roles &&
+                 !locals.instance_question?.group_role_permissions?.can_submit) { %>
+            <button
+              type="button"
+              class="btn btn-xs order-3"
+              data-toggle="popover"
+              data-trigger="focus"
+              data-content="Your group role (<%= assessment_instance.user_group_roles %>) is not allowed to submit this question."
+              aria-label="Submission blocked">
+              <i class="fa fa-lock" aria-hidden="true"></i>
             </button>
           <% } %>
         </span>

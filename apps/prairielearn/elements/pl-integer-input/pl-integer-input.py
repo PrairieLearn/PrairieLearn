@@ -258,7 +258,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["format_errors"][name] = chevron.render(template, opts).strip()
         data["submitted_answers"][name] = None
     elif not pl.is_int_json_serializable(a_sub_parsed):
-        data["submitted_answers"][name] = a_sub
+        data["submitted_answers"][name] = str(a_sub_parsed)
     else:
         data["submitted_answers"][name] = a_sub_parsed
 

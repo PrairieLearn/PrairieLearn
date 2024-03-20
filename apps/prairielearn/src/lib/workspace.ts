@@ -351,7 +351,6 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     WorkspaceDataSchema,
   );
 
-  assert(course.path, `Workspace ${workspace_id} is part of a course that has no directory`);
   assert(question.qid, `Workspace ${workspace_id} is part of a question that has no directory`);
 
   const course_path = chunks.getRuntimeDirectoryForCourse({ id: course.id, path: course.path });
@@ -474,6 +473,15 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
             });
             return null;
           }
+
+          if (!('contents' in file)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.`,
+              data: file,
+            });
+          }
+
           return {
             name: file.name,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
@@ -635,34 +643,26 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   }
 
   // Zip files from filesystem to zip file
-  await async.eachLimit(gradedFiles || [], config.workspaceJobsParallelLimit, async (file) => {
-    try {
-      const remotePath = path.join(remoteDir, file.path);
-      debug(`Zipping graded file ${remotePath} into ${zipPath}`);
-      archive.file(remotePath, { name: file.path });
-    } catch (err) {
-      debug(`Graded file ${file.path} does not exist`);
-    }
+  (gradedFiles ?? []).forEach((file) => {
+    const remotePath = path.join(remoteDir, file.path);
+    debug(`Zipping graded file ${remotePath} into ${zipPath}`);
+    archive.file(remotePath, { name: file.path });
   });
 
   // Write zip file to disk
   const stream = fs.createWriteStream(zipPath);
   await new Promise((resolve, reject) => {
+    archive.on('error', (err) => reject(err));
+
     stream
-      .on('open', () => {
-        archive.pipe(stream);
-        archive.on('error', (err) => {
-          throw err;
-        });
-        archive.finalize();
-      })
-      .on('error', (err) => {
-        reject(err);
-      })
+      .on('error', (err) => reject(err))
       .on('finish', () => {
         debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
         resolve(zipPath);
       });
+
+    archive.pipe(stream);
+    archive.finalize().catch((err) => reject(err));
   });
   return zipPath;
 }

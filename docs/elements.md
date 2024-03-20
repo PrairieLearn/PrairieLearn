@@ -706,22 +706,19 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                                    |
-| ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                           |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                                        |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                                     |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
-| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                          |
-| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                                         |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                               |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                                     |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                                   |
-| `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
+| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                    |
+| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
+| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                           |
+| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                    |
+| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
+| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                   |
+| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
+| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                          |
+| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                         |
+| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
+| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
+| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -729,9 +726,11 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `random`: the corresponding choice will always be shown, and will be randomly correct, with probability proportional to the total number of correct choices. In other words, if there are `N` possible correct choices in total, this choice will be correct with probability `1/N`.
 - `correct`: the corresponding choice will always be shown and will always be the correct answer.
 - `incorrect`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
-- `true`: same as `random`, accepted for backwards compatibility.
 
-Note that "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+**Notes**
+
+- "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+- Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -879,7 +878,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `source-header`       | string                                          | "Drag from here"               | The text that appears at the start of the source area.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `solution-header`     | string                                          | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `solution-placement`  | "right" or "bottom"                             | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                                                                      |
-| `partial-credit`      | "none" or "lcs"                                 | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so.                                                       |
+| `partial-credit`      | "none" or "lcs"                                 | Depends on `grading-method`    | For the `dag`, `ordered`, and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` for partial credit based on the LCS edit-distance from the student solution to some correct solution. Note that `partial-credit` defaults to `lcs` for the `dag` and `ranking` grading method, and to `none` for the `ordered` grading method for backward compatibility. Grading method `unordered` will always assign partial credit.         |
 | `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) |
 | `format`              | "code" or "default"                             | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                                                                           |
 | `code-language`       | string                                          | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                                                                                |
@@ -1057,6 +1056,7 @@ def generate(data):
 | `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                                                                                                                                  |
 | `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                        |
 | `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.                                                                                                               |
+| `allow-trig-functions`       | boolean             | true                  | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                              |
 | `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                               |
 | `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                                    |
 | `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                                                                                                                                          |
@@ -1191,8 +1191,12 @@ line callouts.
 
 ![](elements/pl-code.png)
 
+<!-- prettier-ignore -->
 ```html
-<pl-code language="python"> def square(x): return x * x </pl-code>
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
 ```
 
 #### Customizations
@@ -2486,7 +2490,6 @@ that if there are many submitted answers, the page will load slowly.
 [demo/randomdataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
 [demo/randommultiplechoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
 [demo/randomplot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
-[demo/randomsymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
 [demo/proofblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 
 <!-- Element option overview questions -->

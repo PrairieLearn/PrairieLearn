@@ -1,6 +1,5 @@
 import * as async from 'async';
 import { EC2 } from '@aws-sdk/client-ec2';
-import { callbackify } from 'util';
 import fetch from 'node-fetch';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
@@ -13,13 +12,13 @@ import * as workspaceHostUtils from '../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 
-export const run = callbackify(async () => {
+export async function run() {
   if (!config.runningInEc2) return;
 
   await checkDBConsistency();
   await terminateHosts();
   await checkHealth();
-});
+}
 
 function setDifference<T>(a: Set<T>, b: Set<T>): Set<T> {
   const diff = new Set<T>();

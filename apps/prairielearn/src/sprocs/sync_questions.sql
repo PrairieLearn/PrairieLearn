@@ -97,7 +97,7 @@ BEGIN
         RETURNING dest.qid AS src_qid, dest.id AS inserted_dest_id
     )
     -- Make a map from QID to ID to return to the caller
-    SELECT jsonb_object_agg(src_qid, COALESCE(dest_id, inserted_dest_id))
+    SELECT COALESCE(jsonb_object_agg(src_qid, COALESCE(dest_id, inserted_dest_id)), '{}'::JSONB)
     INTO name_to_id_map
     FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_qid);
 

@@ -31,7 +31,7 @@ SELECT
     WHERE
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
-  ) AS file_count,
+  )::INT AS file_count,
   qo.sequence_locked AS sequence_locked,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
