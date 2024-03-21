@@ -36,17 +36,17 @@ router.get(
       return;
     }
 
-    const LTI = new Lti13Claim(req);
-    const courseName = `${LTI.context?.label}: ${LTI.context?.title}`;
-    const role_instructor = LTI.isRoleInstructor();
+    const ltiClaim = new Lti13Claim(req);
+    const courseName = `${ltiClaim.context?.label}: ${ltiClaim.context?.title}`;
+    const role_instructor = ltiClaim.isRoleInstructor();
 
     // Get lti13_course_instance info, if present
     const lci = await queryOptionalRow(
       sql.get_course_instance,
       {
         lti13_instance_id: req.params.lti13_instance_id,
-        deployment_id: LTI.deployment_id,
-        context_id: LTI.context?.id,
+        deployment_id: ltiClaim.deployment_id,
+        context_id: ltiClaim.context?.id,
       },
       Lti13CourseInstanceSchema,
     );
@@ -57,17 +57,17 @@ router.get(
         await queryAsync(sql.upsert_lci, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lci.course_instance_id,
-          deployment_id: LTI.deployment_id,
-          context_id: LTI.context?.id,
-          context_label: LTI.context?.label,
-          context_title: LTI.context?.title,
+          deployment_id: ltiClaim.deployment_id,
+          context_id: ltiClaim.context?.id,
+          context_label: ltiClaim.context?.label,
+          context_title: ltiClaim.context?.title,
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?
       }
 
       // LTI claims are not used after this page so remove them from the session
-      LTI.remove();
+      ltiClaim.remove();
 
       // Redirect to linked course instance
       res.redirect(
@@ -140,7 +140,7 @@ router.post(
     const unsafe_course_instance_id = req.body.ci_id;
     const unsafe_lti13_instance_id = req.params.lti13_instance_id;
 
-    const LTI = new Lti13Claim(req);
+    const ltiClaim = new Lti13Claim(req);
     const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
     // Validate user login matches this lti13_instance
@@ -169,16 +169,16 @@ router.post(
       (x) => x.id === ci?.course_id && x.permissions_course.has_course_permission_own,
     );
 
-    if (!LTI.isRoleInstructor() || !ci_is_owner) {
+    if (!ltiClaim.isRoleInstructor() || !ci_is_owner) {
       throw error.make(403, 'Permission denied');
     }
 
     await queryAsync(sql.insert_lci, {
       lti13_instance_id: req.params.lti13_instance_id,
-      deployment_id: LTI.deployment_id,
-      context_id: LTI.context?.id,
-      context_label: LTI.context?.label,
-      context_title: LTI.context?.title,
+      deployment_id: ltiClaim.deployment_id,
+      context_id: ltiClaim.context?.id,
+      context_label: ltiClaim.context?.label,
+      context_title: ltiClaim.context?.title,
       course_instance_id: unsafe_course_instance_id,
     });
 
