@@ -79,9 +79,7 @@ router.post(
     }
 
     if (
-      req.body.__action === 'add_new_override' &&
-      res.locals.authz_data.has_course_instance_permission_edit
-    ) {
+      req.body.__action === 'add_new_override') {
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
@@ -114,9 +112,7 @@ router.post(
     
       res.redirect(req.originalUrl);
     } else if (
-      req.body.__action === 'delete_override' &&
-      res.locals.authz_data.has_course_instance_permission_edit
-    ) {
+      req.body.__action === 'delete_override') {
       
       const deletedAccessPolicy = await sqldb.queryAsync(sql.delete_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
@@ -138,9 +134,7 @@ router.post(
       
       res.redirect(req.originalUrl);
     } else if (
-      req.body.__action === 'edit_override' &&
-      res.locals.authz_data.has_course_instance_permission_edit
-    ) {
+      req.body.__action === 'edit_override') {
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
