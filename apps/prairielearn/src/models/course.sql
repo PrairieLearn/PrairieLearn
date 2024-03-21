@@ -76,3 +76,16 @@ SELECT
   *
 FROM
   inserted_course;
+
+-- BLOCK select_course_last_sync
+SELECT
+  finish_date
+FROM
+  job_sequences
+WHERE
+  course_id = $course_id
+  AND status = 'Success'
+ORDER BY
+  id DESC
+LIMIT
+  1;

@@ -1,7 +1,13 @@
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { z } from 'zod';
-import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryAsync,
+  queryRows,
+  queryOptionalRow,
+} from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
 import { Course, CourseSchema } from '../lib/db-types';
@@ -125,4 +131,14 @@ export async function selectCoursesWithEditAccess({
 
 export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
   return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
+}
+
+export async function getCourseLastSync(course_id: string) {
+  const syncDate = await queryOptionalRow(
+    sql.select_course_last_sync,
+    { course_id: course_id },
+    z.date(),
+  );
+
+  return syncDate ?? new Date(0); // epoch
 }

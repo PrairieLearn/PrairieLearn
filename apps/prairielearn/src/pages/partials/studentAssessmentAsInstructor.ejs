@@ -1,0 +1,19 @@
+<% if (instance_role === 'Staff'
+       && authz_data.has_course_instance_permission_edit
+       && typeof warn_newer_than_sync != "undefined"
+       ) { %>
+<div class="alert alert-warning alert-dismissable fade show" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+
+    <form method="POST" class="form-inline">
+        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+        <input type="hidden" name="__action" value="delete_instance">
+        <strong>Instructor self menu: </strong>
+        <span class="mx-1"><%= warn_newer_than_sync %></span>
+        <input type="submit" class="btn btn-xs btn-dark" value="Delete this instance">
+    </form>
+
+</div>
+<% } %>

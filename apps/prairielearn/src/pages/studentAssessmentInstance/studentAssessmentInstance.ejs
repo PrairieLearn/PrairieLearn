@@ -78,6 +78,7 @@
     <% } // showTimeLimitExpiredModal %>
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <main id="content" class="container">
+      <%- include('../partials/studentAssessmentAsInstructor'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
