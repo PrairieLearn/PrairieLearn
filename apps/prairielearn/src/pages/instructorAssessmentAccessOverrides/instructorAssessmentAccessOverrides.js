@@ -88,7 +88,8 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-      await sqldb.queryAsync(sql.insert_assessment_access_policy, {
+      
+      const inserted = await sqldb.queryAsync(sql.insert_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         created_by: res.locals.authn_user.user_id,
         credit: req.body.credit,
@@ -100,24 +101,14 @@ router.post(
         user_id: user_id || null,
       });
       
-      const inserted = await insertAuditLog({
+      await insertAuditLog({
         authn_user_id: res.locals.authn_user.user_id,
         table_name: 'assessment_access_policies',
         action: 'insert',
         institution_id: res.locals.institution.id,
         course_id: res.locals.assessment.id,
         course_instance_id: res.locals.course_instance.id,
-        new_state: {
-          assessment_id: res.locals.assessment.id,
-          created_by: res.locals.authn_user.user_id,
-          credit: req.body.credit,
-          end_date: new Date(req.body.end_date),
-          group_name: req.body.group_name || null,
-          note: req.body.note || null,
-          start_date: new Date(req.body.start_date),
-          group_id: group_id || null,
-          user_id: user_id || null,
-        }
+        new_state: JSON.stringify(inserted.rows)
       });
     
       res.redirect(req.originalUrl);

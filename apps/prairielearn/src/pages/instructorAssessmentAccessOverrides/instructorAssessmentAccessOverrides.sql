@@ -86,7 +86,8 @@ VALUES
     $note,
     $start_date,
     $user_id
-  );
+  )
+RETURNING *;
 
 -- BLOCK update_assessment_access_policy
 UPDATE assessment_access_policies
