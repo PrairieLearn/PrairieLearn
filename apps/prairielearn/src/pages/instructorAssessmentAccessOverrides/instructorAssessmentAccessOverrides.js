@@ -106,7 +106,7 @@ router.post(
         table_name: 'assessment_access_policies',
         action: 'insert',
         institution_id: res.locals.institution.id,
-        course_id: res.locals.assessment.id,
+        course_id: res.locals.course.id,
         course_instance_id: res.locals.course_instance.id,
         new_state: JSON.stringify(inserted.rows),
         row_id: inserted.rows[0].id
@@ -117,23 +117,24 @@ router.post(
       req.body.__action === 'delete_override' &&
       res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      const deletedRow = await sqldb.queryAsync(sql.select_assessment_access_policies, {
-        assessment_id: res.locals.assessment.id,
-        assessment_access_policies_id: req.body.policy_id,
-      });
-      await sqldb.queryAsync(sql.delete_assessment_access_policy, {
+      
+      const deletedAccessPolicy = await sqldb.queryAsync(sql.delete_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_access_policies_id: req.body.policy_id,
       });
-      await insertAuditLog({
-        authn_user_id: res.locals.authn_user.user_id,
-        table_name: 'assessment_access_policies',
-        action: 'delete',
-        institution_id: res.locals.institution.id,
-        course_id: res.locals.assessment.id,
-        course_instance_id: res.locals.course_instance.id,
-        old_state: JSON.stringify(deletedRow.rows),
-      });
+      if (deletedAccessPolicy.rows.length > 0) {
+        await insertAuditLog({
+          authn_user_id: res.locals.authn_user.user_id,
+          table_name: 'assessment_access_policies',
+          action: 'delete',
+          institution_id: res.locals.institution.id,
+          course_id: res.locals.assessment.id,
+          course_instance_id: res.locals.course_instance.id,
+          old_state: JSON.stringify(deletedAccessPolicy.rows),
+          row_id: deletedAccessPolicy.rows[0].id
+        });
+      }
+      
       
       res.redirect(req.originalUrl);
     } else if (

@@ -106,4 +106,5 @@ WHERE
 DELETE FROM assessment_access_policies
 WHERE
   assessment_id = $assessment_id
-  AND id = $unsafe_assessment_access_policies_id;
+  AND id = $unsafe_assessment_access_policies_id
+RETURNING *;
