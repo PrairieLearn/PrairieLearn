@@ -88,7 +88,7 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-      
+
       const inserted = await sqldb.queryAsync(sql.insert_assessment_access_policy, {
         assessment_id: res.locals.assessment.id,
         created_by: res.locals.authn_user.user_id,
@@ -108,7 +108,8 @@ router.post(
         institution_id: res.locals.institution.id,
         course_id: res.locals.assessment.id,
         course_instance_id: res.locals.course_instance.id,
-        new_state: JSON.stringify(inserted.rows)
+        new_state: JSON.stringify(inserted.rows),
+        row_id: inserted.rows[0].id
       });
     
       res.redirect(req.originalUrl);
