@@ -49,6 +49,14 @@ WHERE
 ORDER BY
   aap.created_at DESC;
 
+-- BLOCK select_assessment_access_policy
+SELECT
+  *
+FROM
+  assessment_access_policies
+WHERE
+  id = $policy_id;
+
 -- BLOCK select_group_in_assessment
 SELECT
   g.id,
@@ -100,7 +108,8 @@ SET
   user_id = $user_id
 WHERE
   assessment_id = $assessment_id
-  AND id = $assessment_access_policies_id;
+  AND id = $assessment_access_policies_id
+RETURNING *;
 
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
