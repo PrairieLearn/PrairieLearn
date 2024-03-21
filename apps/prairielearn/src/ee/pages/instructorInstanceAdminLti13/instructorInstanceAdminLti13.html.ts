@@ -15,11 +15,11 @@ export function InstructorInstanceAdminLti13({
 }): string {
   return html`
     <!doctype html>
-    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
+          navSubPage: 'lti13',
         })}
       </head>
       <body>
@@ -44,12 +44,11 @@ export function InstructorInstanceAdminLti13({
                 <div class="col-3">
                   <select class="custom-select mb-2" id="selectLti13Instance">
                     ${lti13Instances.map((li) => {
-                      return html`<option
-                        value="${li.id}"
-                        ${lti13Instance.id === li.id ? 'selected' : ''}
-                      >
-                        ${li.name}
-                      </option>`;
+                      return html`
+                        <option value="${li.id}" ${lti13Instance.id === li.id ? 'selected' : ''}>
+                          ${li.name}
+                        </option>
+                      `;
                     })}
                   </select>
                   Quick links:
@@ -60,7 +59,7 @@ export function InstructorInstanceAdminLti13({
                 <div class="col-9">
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
-                    <input type="hidden" name="__action" value="remove_connection" />
+                    <input type="hidden" name="__action" value="delete_lti13_course_instance" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <button
                       class="btn btn-danger btn-sm"

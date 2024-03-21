@@ -12,8 +12,6 @@ const router = Router({ mergeParams: true });
 router.get(
   '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {
-    res.locals.navSubPage = 'lti13';
-
     const lti13Instances = await selectLti13InstancesByCourseInstance(
       res.locals.course_instance.id,
     );
@@ -37,7 +35,7 @@ router.get(
     }
 
     const lti13CourseInstance = await queryRow(
-      sql.get_lci,
+      sql.select_lti13_course_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         lti13_instance_id: lti13Instance.id,
@@ -59,8 +57,8 @@ router.get(
 router.post(
   '/:unsafe_lti13_instance_id',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'remove_connection') {
-      await queryAsync(sql.remove_connection, {
+    if (req.body.__action === 'delete_lti13_course_instance') {
+      await queryAsync(sql.delete_lti13_course_instance, {
         course_instance_id: res.locals.course_instance.id,
         lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
