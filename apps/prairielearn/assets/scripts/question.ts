@@ -123,6 +123,32 @@ function fetchResults(socket: Socket, submissionId: string | number) {
     function (msg: any) {
       // We're done with the socket for this incarnation of the page
       socket.close();
+      if (msg.extraHeadersHtml) {
+        const parser = new DOMParser();
+        const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
+
+        const currentLinks = Array.from(
+          document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+        ).map((link) => link.href);
+        headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
+          if (!currentLinks.includes(header.href)) {
+            document.head.appendChild(header);
+          }
+        });
+
+        const currentScripts = Array.from(
+          document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+        ).map((script) => script.src);
+        headers
+          .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
+          .forEach((header) => {
+            if (!currentScripts.includes(header.src)) {
+              document.head.appendChild(header);
+            }
+          });
+
+        // TODO Handle importmap changes
+      }
       if (msg.answerPanel) {
         const answerContainer = document.querySelector('.answer-body');
         if (answerContainer) {
