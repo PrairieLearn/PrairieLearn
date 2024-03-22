@@ -222,6 +222,10 @@
               <td class="text-center">
                 <%= formatFloat(row.mean_question_score, 1) %>
               </td>
+              <!-- Adding the median calculation to the table -->
+              <td class="text-center">
+                <%= formatFloat(parseFloat(row.median_question_score), 1) %>
+              </td>
               <td class="text-center">
                 <%= formatFloat(row.question_score_variance, 1) %>
               </td>
