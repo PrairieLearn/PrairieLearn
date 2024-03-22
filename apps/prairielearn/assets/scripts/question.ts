@@ -139,7 +139,18 @@ function fetchResults(socket: Socket, submissionId: string | number) {
             // functionality. Once an existing importmap has been created, the
             // importmap cannot be modified. Once this functionality exists this
             // code can be modified to update the importmap.
-            // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap#syntax
+            // https://html.spec.whatwg.org/multipage/webappapis.html#import-map-processing-model
+            const newImportMapJson = JSON.parse(newImportMap.textContent || '{}');
+            const currentImportMapJson = JSON.parse(currentImportMap.textContent || '{}');
+            const newImportMapKeys = Object.keys(newImportMapJson.imports || {}).filter(
+              (key) => !(key in currentImportMapJson.imports),
+            );
+            if (newImportMapKeys.length > 0) {
+              console.warn(
+                'Cannot update importmap. New importmap has imports not in current importmap: ',
+                newImportMapKeys,
+              );
+            }
           }
         }
 
