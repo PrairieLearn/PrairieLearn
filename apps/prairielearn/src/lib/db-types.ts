@@ -705,6 +705,19 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
+export const Lti13CourseInstanceSchema = z.object({
+  context_id: z.string(),
+  context_label: z.string().nullable(),
+  context_title: z.string().nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  deployment_id: z.string(),
+  id: IdSchema,
+  lti13_instance_id: IdSchema,
+});
+
+export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),

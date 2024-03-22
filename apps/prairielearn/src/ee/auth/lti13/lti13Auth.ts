@@ -3,10 +3,10 @@ import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
-import { get as _get } from 'lodash';
 import { callbackify } from 'util';
 import * as crypto from 'crypto';
 import { URL } from 'url';
+import { Lti13ClaimType, Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -36,6 +36,12 @@ router.post(
     const lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
+    // Put the LTI 1.3 claims in the session
+    req.session.lti13_claims = lti13_claims;
+    req.session.authn_lti13_instance_id = lti13_instance.id;
+
+    const ltiClaim = new Lti13Claim(req);
+
     let uid: string;
     let uin: string | null;
     let name: string | null;
@@ -47,14 +53,10 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      uid = _get(lti13_claims, lti13_instance.uid_attribute);
+      uid = ltiClaim.get(lti13_instance.uid_attribute);
       if (!uid) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
-        if (
-          lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles']?.includes(
-            'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
-          )
-        ) {
+        if (ltiClaim.isRoleTestUser()) {
           throw error.make(
             403,
             `Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.`,
@@ -74,7 +76,7 @@ router.post(
     if (lti13_instance.uin_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-      uin = _get(lti13_claims, lti13_instance.uin_attribute);
+      uin = ltiClaim.get(lti13_instance.uin_attribute);
       if (!uin) {
         throw error.make(
           500,
@@ -91,7 +93,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "name"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      name = _get(lti13_claims, lti13_instance.name_attribute);
+      name = ltiClaim.get(lti13_instance.name_attribute);
     }
 
     const userInfo = {
@@ -122,13 +124,11 @@ router.post(
     await queryAsync(sql.update_lti13_users, {
       user_id: res.locals.authn_user.user_id,
       lti13_instance_id: lti13_instance.id,
-      sub: lti13_claims.sub,
+      sub: ltiClaim.get('sub'),
     });
 
     // Get the target_link out of the LTI request and redirect
-    const redirUrl =
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] ?? '/pl';
-    res.redirect(redirUrl);
+    res.redirect(ltiClaim.target_link_uri ?? '/pl');
   }),
 );
 
@@ -151,77 +151,6 @@ const OIDCLaunchFlowSchema = z.object({
   client_id: z.string().optional(),
   target_link_uri: z.string(),
   // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
-});
-
-// Validate LTI 1.3
-// https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-const LTI13Schema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
-  'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
-  'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-    id: z.string(),
-    description: z.string().nullish(),
-    title: z.string().nullish(),
-  }),
-  // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
-  // https://www.imsglobal.org/spec/security/v1p0/#id-token
-  iss: z.string(),
-  aud: z.string(),
-  sub: z.string(),
-  exp: z.number(),
-  iat: z.number(),
-  azp: z.string().optional(),
-  nonce: z.string(),
-
-  given_name: z.string().optional(),
-  family_name: z.string().optional(),
-  name: z.string().optional(),
-  email: z.string().optional(),
-  locale: z.string().optional(),
-  // Could be more from OIDC Standard Claims
-  'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/context': z
-    .object({
-      id: z.string(),
-      type: z.string().array().nullish(),
-      label: z.string().nullish(),
-      title: z.string().nullish(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
-    .object({
-      guid: z.string().max(255),
-      name: z.string().optional(),
-      contact_email: z.string().optional(),
-      description: z.string().optional(),
-      url: z.string().optional(),
-      product_family_code: z.string().optional(),
-      version: z.string().optional(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/launch_presentation': z
-    .object({
-      document_target: z.string().optional(),
-      height: z.number().optional(),
-      width: z.number().optional(),
-      return_url: z.string().optional(),
-      locale: z.string().optional(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullish(),
-  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullish(),
-
-  // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
-  // My development Canvas sends their own named extension as a top level property
-  // "https://www.instructure.com/placement": "course_navigation"
 });
 
 //
@@ -302,7 +231,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = LTI13Schema.passthrough().parse(tokenSet.claims());
+  const lti13_claims: Lti13ClaimType = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;

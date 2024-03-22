@@ -73,6 +73,7 @@ const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
+const { validateLti13CourseInstance } = require('./ee/models/lti13Instance');
 const { SocketActivityMetrics } = require('./lib/telemetry/socket-activity-metrics');
 
 process.on('warning', (e) => console.warn(e));
@@ -1261,13 +1262,16 @@ module.exports.initExpress = function () {
       next();
     },
     asyncHandler(async (req, res, next) => {
-      // The navigation tabs rely on this value to know when to show/hide the
-      // billing tab, so we need to load it for all instance admin pages.
+      // The navigation tabs rely on these values to know when to show/hide themselves
+      // so we need to load it for all instance admin pages.
       const hasCourseInstanceBilling = await features.enabledFromLocals(
         'course-instance-billing',
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1332,6 +1336,10 @@ module.exports.initExpress = function () {
       },
       require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
     ]);
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
+      require('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13').default,
+    );
   }
 
   // Global client files
