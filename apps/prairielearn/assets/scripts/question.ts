@@ -127,6 +127,22 @@ function fetchResults(socket: Socket, submissionId: string | number) {
         const parser = new DOMParser();
         const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
 
+        const newImportMap = headers.querySelector<HTMLScriptElement>('script[type="importmap"]');
+        if (newImportMap != null) {
+          const currentImportMap = document.head.querySelector<HTMLScriptElement>(
+            'script[type="importmap"]',
+          );
+          if (!currentImportMap) {
+            document.head.appendChild(newImportMap);
+          } else {
+            // This case is not currently possible with existing importmap
+            // functionality. Once an existing importmap has been created, the
+            // importmap cannot be modified. Once this functionality exists this
+            // code can be modified to update the importmap.
+            // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap#syntax
+          }
+        }
+
         const currentLinks = Array.from(
           document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
         ).map((link) => link.href);
@@ -146,9 +162,8 @@ function fetchResults(socket: Socket, submissionId: string | number) {
               document.head.appendChild(header);
             }
           });
-
-        // TODO Handle importmap changes
       }
+
       if (msg.answerPanel) {
         const answerContainer = document.querySelector('.answer-body');
         if (answerContainer) {
@@ -156,6 +171,7 @@ function fetchResults(socket: Socket, submissionId: string | number) {
           answerContainer.closest('.grading-block')?.classList.remove('d-none');
         }
       }
+
       if (msg.submissionPanel) {
         // Using jQuery here because msg.submissionPanel may contain scripts
         // that must be executed. Typical vanilla JS alternatives don't support
