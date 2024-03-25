@@ -1911,6 +1911,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@github/relative-time-element@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@github/relative-time-element@npm:4.3.1"
+  checksum: 26ef7335ec20fe9064019ea2db1d69901963149c4d3a1f1d9e3ec922542b1eb292ccd786c343138c49806de20a92299a15c857a986a150416a08c30a6581b02f
+  languageName: node
+  linkType: hard
+
 "@grpc/grpc-js@npm:^1.10.1, @grpc/grpc-js@npm:^1.7.1":
   version: 1.10.1
   resolution: "@grpc/grpc-js@npm:1.10.1"
@@ -3342,6 +3349,7 @@ __metadata:
     "@aws-sdk/credential-providers": ^3.525.0
     "@aws-sdk/lib-storage": ^3.525.0
     "@fortawesome/fontawesome-free": ^6.5.1
+    "@github/relative-time-element": ^4.3.1
     "@octokit/rest": ^19.0.13
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/bind-mount": "workspace:^"
