@@ -923,7 +923,10 @@ WITH
           avg(question_stats_by_user_or_group.score_perc)
         )
       ) AS mean_question_score,
-      percentile_cont(0.5) WITHIN GROUP (ORDER BY question_stats_by_user_or_group.score_perc) AS median_question_score,
+      percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY
+          question_stats_by_user_or_group.score_perc
+      ) AS median_question_score,
       sqrt(
         var_pop(question_stats_by_user_or_group.score_perc)
       ) AS question_score_variance,

@@ -1,2 +1,2 @@
-ALTER TABLE assessment_questions 
+ALTER TABLE assessment_questions
 ADD COLUMN median_question_score NUMERIC;
