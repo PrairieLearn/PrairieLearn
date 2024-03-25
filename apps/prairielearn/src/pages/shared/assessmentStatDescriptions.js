@@ -4,7 +4,6 @@ var stat_descriptions = {
     non_html_title: 'Mean',
     description: 'Mean score of a question is the average score for all students on the question.',
   },
-  // adding median score 
   MEDIAN_SCORE: {
     title: 'Median',
     non_html_title: 'Median',
