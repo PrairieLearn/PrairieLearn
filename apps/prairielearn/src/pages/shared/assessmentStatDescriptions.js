@@ -9,7 +9,7 @@ var stat_descriptions = {
     title: 'Median',
     non_html_title: 'Median',
     description:
-      'Median score of a question is the score which separates the lower half and the upper half of students scores.',
+      'Median score of a question is the 50th percentile score for all students on the question.',
   },
   VARIANCE: {
     title: 'SD (σ)',
