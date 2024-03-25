@@ -5,6 +5,6 @@ CREATE FUNCTION
     ) RETURNS text AS $$
 BEGIN
     EXECUTE 'SET LOCAL timezone TO ' || quote_literal(coalesce(display_timezone, 'UTC'));
-    RETURN to_char(d, 'YYYY-MM-DD') || 'T' || to_char(d, 'HH24:MI:SSOF');
+    RETURN to_char(d, 'YYYY-MM-DD') || 'T' || to_char(d, 'HH24:MI:SSTZH:TZM');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
