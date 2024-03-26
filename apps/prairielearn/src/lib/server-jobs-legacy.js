@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as util from 'util';
 import * as async from 'async';
@@ -193,34 +192,28 @@ export async function errorAbandonedJobs() {
  *
  * @param {string} job_sequence_id
  * @param {string | null} course_id
- * @param {(err: Error | null | undefined, jobSequence: any) => void} callback
  */
-export function getJobSequence(job_sequence_id, course_id, callback) {
-  var params = {
+export async function getJobSequence(job_sequence_id, course_id) {
+  const result = await sqldb.queryOneRowAsync(sql.select_job_sequence_with_course_id_as_json, {
     job_sequence_id: job_sequence_id,
     course_id: course_id,
-  };
-  sqldb.queryOneRow(sql.select_job_sequence_with_course_id_as_json, params, function (err, result) {
-    if (ERR(err, callback)) return;
-
-    const jobSequence = result.rows[0];
-
-    // Generate a token to authorize websocket requests for this job sequence.
-    const jobSequenceTokenData = {
-      jobSequenceId: job_sequence_id.toString(),
-    };
-    jobSequence.token = generateSignedToken(jobSequenceTokenData, config.secretKey);
-
-    (jobSequence.jobs ?? []).forEach((job) => {
-      // Also generate a token for each job.
-      const jobTokenData = { jobId: job.id.toString() };
-      job.token = generateSignedToken(jobTokenData, config.secretKey);
-    });
-
-    callback(null, jobSequence);
   });
+  const jobSequence = result.rows[0];
+
+  // Generate a token to authorize websocket requests for this job sequence.
+  const jobSequenceTokenData = {
+    jobSequenceId: job_sequence_id.toString(),
+  };
+  jobSequence.token = generateSignedToken(jobSequenceTokenData, config.secretKey);
+
+  (jobSequence.jobs ?? []).forEach((job) => {
+    // Also generate a token for each job.
+    const jobTokenData = { jobId: job.id.toString() };
+    job.token = generateSignedToken(jobTokenData, config.secretKey);
+  });
+
+  return jobSequence;
 }
-export const getJobSequenceAsync = util.promisify(getJobSequence);
 
 /**
  * Resolves with a job sequence, where each job's output has been turned into
@@ -228,23 +221,20 @@ export const getJobSequenceAsync = util.promisify(getJobSequence);
  *
  * @param {any} job_sequence_id
  * @param {any} course_id
- * @param {(err: Error | null, jobSequence: any) => void} callback
  */
-export function getJobSequenceWithFormattedOutput(job_sequence_id, course_id, callback) {
-  getJobSequence(job_sequence_id, course_id, (err, jobSequence) => {
-    if (ERR(err, callback)) return;
+export async function getJobSequenceWithFormattedOutputAsync(job_sequence_id, course_id) {
+  const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
-    (jobSequence.jobs ?? []).forEach((job) => {
-      job.output_raw = job.output;
-      if (job.output) {
-        const ansiup = new AnsiUp();
-        job.output = ansiup.ansi_to_html(job.output);
-      }
-    });
-
-    callback(null, jobSequence);
+  (jobSequence.jobs ?? []).forEach((job) => {
+    job.output_raw = job.output;
+    if (job.output) {
+      const ansiup = new AnsiUp();
+      job.output = ansiup.ansi_to_html(job.output);
+    }
   });
+
+  return jobSequence;
 }
-export const getJobSequenceWithFormattedOutputAsync = util.promisify(
-  getJobSequenceWithFormattedOutput,
+export const getJobSequenceWithFormattedOutput = util.callbackify(
+  getJobSequenceWithFormattedOutputAsync,
 );
