@@ -87,18 +87,19 @@ router.post(
         group_name: req.body.group_name,
       });
 
-      const inserted = await sqldb.queryAsync(sql.insert_assessment_access_policy, {
-        assessment_id: res.locals.assessment.id,
-        created_by: res.locals.authn_user.user_id,
-        credit: req.body.credit,
-        end_date: new Date(req.body.end_date),
-        group_name: req.body.group_name || null,
-        note: req.body.note || null,
-        start_date: new Date(req.body.start_date),
-        group_id: group_id || null,
-        user_id: user_id || null,
-      });
+      
       await runInTransactionAsync(async () => {
+        const inserted = await sqldb.queryAsync(sql.insert_assessment_access_policy, {
+          assessment_id: res.locals.assessment.id,
+          created_by: res.locals.authn_user.user_id,
+          credit: req.body.credit,
+          end_date: new Date(req.body.end_date),
+          group_name: req.body.group_name || null,
+          note: req.body.note || null,
+          start_date: new Date(req.body.start_date),
+          group_id: group_id || null,
+          user_id: user_id || null,
+        });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'assessment_access_policies',
@@ -113,12 +114,13 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
-      const deletedAccessPolicy = await sqldb.queryAsync(sql.delete_assessment_access_policy, {
-        assessment_id: res.locals.assessment.id,
-        unsafe_assessment_access_policies_id: req.body.policy_id,
-      });
-      if (deletedAccessPolicy.rows.length > 0) {
-        await runInTransactionAsync(async () => {
+      
+      await runInTransactionAsync(async () => {
+        const deletedAccessPolicy = await sqldb.queryAsync(sql.delete_assessment_access_policy, {
+          assessment_id: res.locals.assessment.id,
+          unsafe_assessment_access_policies_id: req.body.policy_id,
+        });
+        if (deletedAccessPolicy.rows.length > 0) {
           await insertAuditLog({
             authn_user_id: res.locals.authn_user.user_id,
             table_name: 'assessment_access_policies',
@@ -129,8 +131,9 @@ router.post(
             old_state: JSON.stringify(deletedAccessPolicy.rows),
             row_id: deletedAccessPolicy.rows[0].id,
           });
-        });
-      }
+        }
+      });
+      
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
@@ -142,23 +145,22 @@ router.post(
       });
 
       const oldStateAccessPolicy = await sqldb.queryAsync(sql.select_assessment_access_policy, {
-        // assessment_id: res.locals.assessment.id,
         policy_id: req.body.policy_id,
       });
-      const editAccessPolicy = await sqldb.queryAsync(sql.update_assessment_access_policy, {
-        assessment_id: res.locals.assessment.id,
-        credit: req.body.credit,
-        end_date: new Date(req.body.end_date),
-        group_name: req.body.group_name || null,
-        note: req.body.note || null,
-        start_date: new Date(req.body.start_date),
-        group_id: group_id || null,
-        user_id: user_id || null,
-        assessment_access_policies_id: req.body.policy_id,
-      });
-      // console.log(editAccessPolicy);
-      // console.log(JSON.stringify(oldStateAccessPolicy.rows));
+      
+      
       await runInTransactionAsync(async () => {
+        const editAccessPolicy = await sqldb.queryAsync(sql.update_assessment_access_policy, {
+          assessment_id: res.locals.assessment.id,
+          credit: req.body.credit,
+          end_date: new Date(req.body.end_date),
+          group_name: req.body.group_name || null,
+          note: req.body.note || null,
+          start_date: new Date(req.body.start_date),
+          group_id: group_id || null,
+          user_id: user_id || null,
+          assessment_access_policies_id: req.body.policy_id,
+        });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'assessment_access_policies',
