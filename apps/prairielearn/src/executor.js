@@ -10,6 +10,7 @@ const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
  * @property {string} file
  * @property {string} fcn
  * @property {any[]} args
+ * @property {string[]} forbidden_modules
  */
 
 /**
@@ -65,7 +66,10 @@ async function handleInput(line, codeCaller) {
 
   // Course will always be at `/course` in the Docker executor
   try {
-    await codeCaller.prepareForCourse('/course');
+    await codeCaller.prepareForCourse({
+      coursePath: '/course',
+      forbiddenModules: request.forbidden_modules,
+    });
   } catch (err) {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.

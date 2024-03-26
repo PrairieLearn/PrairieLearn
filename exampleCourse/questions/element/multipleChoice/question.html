@@ -1,263 +1,261 @@
 <pl-question-panel>
-    <p>
-        Questions below were designed to showcase the different features of
-        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>.
-        The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>
-        is to allow users to select a <b>single option</b> from a list of choices. To allow for more than one option, please consider using <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>.
-    </p>
+  <p>
+    Questions below were designed to showcase the different features of
+    <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>.
+    The goal of
+    <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>
+    is to allow users to select a <b>single option</b> from a list of choices. To allow for more
+    than one option, please consider using
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>.
+  </p>
 </pl-question-panel>
 
-
 <div class="card my-2">
-    <div class="card-header">
-        Part 1
-    </div>
+  <div class="card-header">Part 1</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, you can observe the default behavior of the <code>pl-multiple-choice</code> element.
+        In particular, all options are presented in a randomized form. Only one option may be
+        selected from the list.
+      </p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-        <pl-question-panel>
-            <p>Here, you can observe the default behavior of the <code>pl-multiple-choice</code> element.
-               In particular, all options are presented in a randomized form. Only one option may be selected from the list. </p>
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color1">
-          <pl-answer correct="true">Blue</pl-answer>
-          <pl-answer>Pink</pl-answer>
-          <pl-answer>Purple</pl-answer>
-          <pl-answer>Orange</pl-answer>
-          <pl-answer>Yellow</pl-answer>
-          <pl-answer>Brown</pl-answer>
-          <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color1">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 2
-    </div>
+  <div class="card-header">Part 2</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, the <code>pl-multiple-choice</code> element is restricted to displaying
+        <b>4</b> choices with one of the choices being the correct answer. In addition, the choices
+        are placed "inline" instead of being displayed within a list. We also set
+        <code>hide-score-badge="True"</code> to hide the partial score percentage and badge.
+      </p>
 
-        <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer.
-            In addition, the choices are placed "inline" instead of being displayed
-            within a list. </p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color2" number-answers="4" inline="true">
-          <pl-answer correct="true">Blue</pl-answer>
-          <pl-answer>Pink</pl-answer>
-          <pl-answer>Purple</pl-answer>
-          <pl-answer>Orange</pl-answer>
-          <pl-answer>Yellow</pl-answer>
-          <pl-answer>Brown</pl-answer>
-          <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color2" number-answers="4" display="inline" hide-score-badge="True">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 3
-    </div>
+  <div class="card-header">Part 3</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, the <code>pl-multiple-choice</code> element displays options as they were written,
+        e.g. <code>order="fixed"</code>, which means there is no randomization of choices.
+        Moreover, the weight of this question has also been increased meaning it will contribute
+        more to the overall score than other elements.
+      </p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-        <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices.
-               Moreover, the weight of this question has also been increased meaning it will contribute more to the overall score than other elements.</p>
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color3" fixed-order="true" weight="3">
-          <pl-answer correct="true">Blue</pl-answer>
-          <pl-answer>Pink</pl-answer>
-          <pl-answer>Purple</pl-answer>
-          <pl-answer>Orange</pl-answer>
-          <pl-answer>Yellow</pl-answer>
-          <pl-answer>Brown</pl-answer>
-          <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color3" order="fixed" weight="3">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 4
-    </div>
+  <div class="card-header">Part 4</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, letter keys are hidden with <code>hide-letter-keys="true"</code>. This option is
+        especially useful when the answer options themselves are letters.
+      </p>
 
-        <pl-question-panel>
-            <p>
-              Here, letter keys are hidden with <code>hide-letter-keys="true"</code>.
-              This option is especially useful when the answer options themselves are letters.
-            </p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p>What is the color of the sky?</p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color4" hide-letter-keys="true">
-            <pl-answer correct="true">Blue</pl-answer>
-            <pl-answer>Pink</pl-answer>
-            <pl-answer>Purple</pl-answer>
-            <pl-answer>Orange</pl-answer>
-            <pl-answer>Yellow</pl-answer>
-            <pl-answer>Brown</pl-answer>
-            <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color4" hide-letter-keys="true">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 5
-    </div>
+  <div class="card-header">Part 5</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, the <code>pl-multiple-choice</code> element displays "All of the above" and "None of
+        the above" as options below the correct and incorrect options provided. By setting these
+        options to <code>"random"</code>, the options could be correct with the same probability as
+        all of the individual correct options. The number of options displayed is also consistent
+        across all variants, and is determined automatically if <code>number-answers</code> is not
+        set.
+      </p>
 
-        <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element
-              displays "All of the above" and "None of the above" as
-              options below the correct and incorrect options
-              provided.  By setting these options
-              to <code>"random"</code>, they options could be correct
-              with the same probability as all of the individual
-              correct options. The number of options displayed is also
-              consistent across all variants, and is determined
-              automatically if <code>number-answers</code> is not
-              set.</p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color5" none-of-the-above="random" all-of-the-above="random">
-          <pl-answer correct="true">Blue</pl-answer>
-          <pl-answer correct="true">Dark Blue</pl-answer>
-          <pl-answer correct="true">Light Blue</pl-answer>
-          <pl-answer correct="true">Clear Blue</pl-answer>
-          <pl-answer>Pink</pl-answer>
-          <pl-answer>Purple</pl-answer>
-          <pl-answer>Orange</pl-answer>
-          <pl-answer>Yellow</pl-answer>
-          <pl-answer>Brown</pl-answer>
-          <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color5" none-of-the-above="random" all-of-the-above="random">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer correct="true">Dark Blue</pl-answer>
+      <pl-answer correct="true">Light Blue</pl-answer>
+      <pl-answer correct="true">Clear Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 6
-    </div>
+  <div class="card-header">Part 6</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        The options for "All of the above" and "None of the above" can also be set to always be
+        incorrect (i.e., a distractor).
+      </p>
 
-        <pl-question-panel>
-          <p>The options for "All of the above" and "None of the above" can also be set to always be incorrect (i.e., a distractor).</p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color6" none-of-the-above="incorrect" all-of-the-above="incorrect">
-          <pl-answer correct="true">Blue</pl-answer>
-          <pl-answer correct="true">Dark Blue</pl-answer>
-          <pl-answer correct="true">Light Blue</pl-answer>
-          <pl-answer correct="true">Clear Blue</pl-answer>
-          <pl-answer>Pink</pl-answer>
-          <pl-answer>Purple</pl-answer>
-          <pl-answer>Orange</pl-answer>
-          <pl-answer>Yellow</pl-answer>
-          <pl-answer>Brown</pl-answer>
-          <pl-answer>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color6" none-of-the-above="incorrect" all-of-the-above="incorrect">
+      <pl-answer correct="true">Blue</pl-answer>
+      <pl-answer correct="true">Dark Blue</pl-answer>
+      <pl-answer correct="true">Light Blue</pl-answer>
+      <pl-answer correct="true">Clear Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer>Purple</pl-answer>
+      <pl-answer>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer>Brown</pl-answer>
+      <pl-answer>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 7
-    </div>
+  <div class="card-header">Part 7</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, you can observe the behavior of the <code>feedback</code> attribute in
+        <code>pl-answer</code>. Feedback is expected to convey a small piece of information that
+        explains why an answer is correct or incorrect. When an answer with a feedback setting is
+        selected and graded, a small box containing the feedback is displayed next to the answer.
+      </p>
 
-        <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if they exist,
-                from <code>sky-color.json</code> file inside <code>serverFilesQuestion/</code> directory. By default, the external json file should have <code>"correct"</code>
-                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct-key"</code>
-                and <code>"external-json-incorrect-key"</code>.</p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color7" external-json="serverFilesQuestion/sky-color.json" external-json-incorrect-key="incorrect_choices">
-        </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color8">
+      <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not pink.">Pink</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not purple.">Purple</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not orange">Orange</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not yellow.">Yellow</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not brown.">Brown</pl-answer>
+      <pl-answer feedback="Incorrect. The sky is not red.">Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 8
-    </div>
+  <div class="card-header">
+    Part 8
+  </div>
 
-    <div class="card-body">
+  <div class="card-body">
 
-        <pl-question-panel>
-            <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an
-                answer is correct or incorrect. When an answer with a feedback setting is selected and graded, a small box containing the feedback is displayed next to the answer.</p>
+    <pl-question-panel>
+      <p>Here, you can observe the behavior of the <code>score</code> attribute in <code>pl-answer</code>.
+        The score for a question the percentage of points given to it if selected (default is 0 for
+        incorrect answers and 1 for correct ones). This also allows no submission by the student, done by
+        setting <code>allow-blank="true"</code>.</p>
+      <p> What is the color of the sky? </p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color8">
-            <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not pink.">Pink</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not purple.">Purple</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not orange">Orange</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not yellow.">Yellow</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not brown.">Brown</pl-answer>
-            <pl-answer feedback="Incorrect. The sky is not red.">Red</pl-answer>
-          </pl-multiple-choice>
-
-    </div>
+    <pl-multiple-choice answers-name="sky-color9" allow-blank="true">
+      <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer score=0.5>Purple</pl-answer>
+      <pl-answer feedback="Not quite" score=0.1>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer score=0.3>Brown</pl-answer>
+      <pl-answer score=0.2>Red</pl-answer>
+    </pl-multiple-choice>
+  </div>
 </div>
 
 <div class="card my-2">
-    <div class="card-header">
-        Part 9
-    </div>
+  <div class="card-header">Part 9</div>
 
-    <div class="card-body">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>
+        Here, we observe the dropdown display option. This lets students input an answer from a
+        dropdown list instead of choosing from multiple choice radio buttons. Note that the
+        dropdown list supports $\LaTeX$ rendering.
+      </p>
 
-        <pl-question-panel>
-            <p>Here, you can observe the behavior of the <code>score</code> attribute in <code>pl-answer</code>.
-            The score for a question the percentage of points given to it if selected (default is 0 for
-            incorrect answers and 1 for correct ones). This also allows no submission by the student, done by
-            setting <code>allow-blank="true"</code>.</p>
+      <p>What is the color of the sky?</p>
+    </pl-question-panel>
 
-            <p> What is the color of the sky? </p>
-        </pl-question-panel>
-
-        <pl-multiple-choice answers-name="sky-color9" allow-blank="true">
-            <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
-            <pl-answer>Pink</pl-answer>
-            <pl-answer score=0.5>Purple</pl-answer>
-            <pl-answer feedback="Not quite" score=0.1>Orange</pl-answer>
-            <pl-answer>Yellow</pl-answer>
-            <pl-answer score=0.3>Brown</pl-answer>
-            <pl-answer score=0.2>Red</pl-answer>
-        </pl-multiple-choice>
-
-    </div>
+    <p>
+      The sky is
+      <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random">
+        <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue ($470nm$)</pl-answer>
+        <pl-answer score="0.5">Purple ($400nm$)</pl-answer>
+        <pl-answer feedback="Hint: The correct answer is a complementary color to this one." score="0.1">
+          Orange ($600nm$)
+        </pl-answer>
+        <pl-answer>Yellow ($580nm$)</pl-answer>
+        <pl-answer score="0.3">Green ($520nm$)</pl-answer>
+        <pl-answer score="0.2">Red ($700nm$)</pl-answer>
+      </pl-multiple-choice>.
+      This is because of the way that light is scattered in the earth's atmosphere.
+    </p>
+  </div>
 </div>

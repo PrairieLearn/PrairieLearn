@@ -342,6 +342,72 @@ WHERE
 GROUP BY
   gu.user_id;
 
+-- BLOCK delete_group
+WITH
+  group_to_delete AS (
+    SELECT
+      g.id
+    FROM
+      groups AS g
+      JOIN group_configs AS gc ON (g.group_config_id = gc.id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.id = $group_id
+      AND g.deleted_at IS NULL
+      AND gc.deleted_at IS NULL
+    FOR NO KEY UPDATE OF
+      g
+  ),
+  deleted_group_users AS (
+    DELETE FROM group_users AS gu
+    WHERE
+      gu.group_id IN (
+        SELECT
+          gd.id
+        FROM
+          group_to_delete AS gd
+      )
+    RETURNING
+      user_id,
+      group_id
+  ),
+  deleted_group_users_logs AS (
+    INSERT INTO
+      group_logs (authn_user_id, user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      user_id,
+      group_id,
+      'leave'
+    FROM
+      deleted_group_users
+  ),
+  deleted_group AS (
+    UPDATE groups AS g
+    SET
+      deleted_at = NOW()
+    FROM
+      group_to_delete AS gd
+    WHERE
+      gd.id = g.id
+    RETURNING
+      g.id
+  ),
+  deleted_group_log AS (
+    INSERT INTO
+      group_logs (authn_user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      id,
+      'delete'
+    FROM
+      deleted_group
+  )
+SELECT
+  id
+FROM
+  deleted_group;
+
 -- BLOCK delete_all_groups
 WITH
   assessment_groups AS (

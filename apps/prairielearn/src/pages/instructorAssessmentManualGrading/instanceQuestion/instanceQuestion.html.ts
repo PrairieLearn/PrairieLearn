@@ -16,12 +16,10 @@ export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
 export function InstanceQuestion({
   resLocals,
-  rubric_settings_visible,
   conflict_grading_job,
   graders,
 }: {
   resLocals: Record<string, any>;
-  rubric_settings_visible: boolean;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
 }) {
@@ -87,12 +85,7 @@ export function InstanceQuestion({
               <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">Grading</div>
                 <div class="js-main-grading-panel">
-                  ${GradingPanel({
-                    resLocals,
-                    context: 'main',
-                    rubric_settings_visible,
-                    graders,
-                  })}
+                  ${GradingPanel({ resLocals, context: 'main', graders })}
                 </div>
               </div>
 

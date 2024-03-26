@@ -1913,9 +1913,9 @@ class Axes(BaseElement):
             "yneg": pl.get_float_attrib(el, "yneg", 160),
             "ypos": pl.get_float_attrib(el, "ypos", 160),
             "supporting_lines": json.loads(
-                pl.get_string_attrib(el, "supporting-lines", "{}")
+                pl.get_string_attrib(el, "supporting-lines", "[]")
             ),
-            "label_list": json.loads(pl.get_string_attrib(el, "grid-label", "{}")),
+            "label_list": json.loads(pl.get_string_attrib(el, "grid-label", "[]")),
             "labelx": pl.get_string_attrib(el, "label-x", "x"),
             "labely": pl.get_string_attrib(el, "label-y", "y"),
             "offsetx_label_x": pl.get_float_attrib(el, "offsetx-label-x", 0),

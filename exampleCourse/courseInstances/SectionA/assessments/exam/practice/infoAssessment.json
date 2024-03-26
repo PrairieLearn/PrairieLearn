@@ -22,12 +22,12 @@
     "zones": [
         {
             "questions": [
-                {"id": "demo/annotated/mathNumberInput","points": [3,1]}
+                {"id": "template/number-input/random-prompt","points": [3,1]}
             ]
         },
         {
             "questions": [
-              {"id": "demo/annotated/graphAdjacencyMatrix","points": [3,1]}
+              {"id": "template/matrix-component-input/random-graph","points": [3,1]}
             ]
         },
         {

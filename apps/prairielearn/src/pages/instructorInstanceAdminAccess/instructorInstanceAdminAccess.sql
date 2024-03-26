@@ -21,6 +21,5 @@ FROM
   JOIN course_instances AS ci ON (ci.id = ciar.course_instance_id)
 WHERE
   ciar.course_instance_id = $course_instance_id
-  AND ((ciar.role > 'Student') IS NOT TRUE)
 ORDER BY
   ciar.number;
