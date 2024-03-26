@@ -206,7 +206,7 @@ export async function getJobSequence(job_sequence_id, course_id) {
   };
   jobSequence.token = generateSignedToken(jobSequenceTokenData, config.secretKey);
 
-  (jobSequence.jobs ?? []).forEach((job) => {
+  jobSequence.jobs?.forEach((job) => {
     // Also generate a token for each job.
     const jobTokenData = { jobId: job.id.toString() };
     job.token = generateSignedToken(jobTokenData, config.secretKey);
@@ -225,7 +225,7 @@ export async function getJobSequence(job_sequence_id, course_id) {
 export async function getJobSequenceWithFormattedOutputAsync(job_sequence_id, course_id) {
   const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
-  (jobSequence.jobs ?? []).forEach((job) => {
+  jobSequence.jobs?.forEach((job) => {
     job.output_raw = job.output;
     if (job.output) {
       const ansiup = new AnsiUp();
