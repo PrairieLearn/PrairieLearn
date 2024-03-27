@@ -50,7 +50,7 @@ describe('Editing course settings', () => {
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
 
     const course = await queryAsync(sql.get_courses, {});
-    console.log('course:', course);
+    // console.log('course:', course);
   });
   after(helperServer.after);
 
@@ -62,7 +62,7 @@ describe('Editing course settings', () => {
   // Access the course settings page
   step('access the course settings page', async () => {
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
-    console.log('settingsPageResponse:', settingsPageResponse);
+    // console.log('settingsPageResponse:', settingsPageResponse);
     assert.equal(settingsPageResponse.status, 200);
   });
 
@@ -71,7 +71,7 @@ describe('Editing course settings', () => {
   // change course timezone
   step('change course info', async () => {
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
-    console.log('settingsPageResponse:', await settingsPageResponse.text());
+    // console.log('settingsPageResponse:', await settingsPageResponse.text());
 
     // console.log('csrfToken:', settingsPageResponse.$('input[name="__csrf_token"]').val());
     // console.log('orig_hash:', settingsPageResponse.$('input[name="orig_hash"]').val());
@@ -96,8 +96,8 @@ describe('Editing course settings', () => {
 
   step('verify course info change', async () => {
     const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
-    // console.log('courseInfo:', courseInfo);
-    assert.equal(courseInfo.short_name, 'TEST 102');
+    console.log('courseInfo:', courseInfo);
+    assert.equal(courseInfo.name, 'TEST 102');
     assert.equal(courseInfo.title, 'Test Course 102');
     assert.equal(courseInfo.timezone, 'America/Los_Angeles');
   });
