@@ -15,6 +15,7 @@ const sql = loadSqlEquiv(__filename);
 
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
 const baseDir = tmp.dirSync().name;
+const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseInfoPath = path.join(courseLiveDir, 'infoCourse.json');
 // console.log('courseInfoPath:', courseInfoPath);
@@ -25,7 +26,12 @@ console.log('siteUrl:', siteUrl);
 describe('Editing course settings', () => {
   before(async () => {
     // init git repo in directory
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseLiveDir], {
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+      cwd: '.',
+      env: process.env,
+    });
+
+    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
       cwd: '.',
       env: process.env,
     });
@@ -34,14 +40,14 @@ describe('Editing course settings', () => {
     await fs.copy(courseTemplateDir, courseLiveDir);
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
-    exec(`git add -A`, execOptions);
-    exec(`git commit -m "Initial commit"`, execOptions);
-    exec(`git push origin master`, execOptions);
+    await execa('git', ['add', '-A'], execOptions);
+    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
+    await execa('git', ['push', 'origin', 'master'], execOptions);
 
     await helperServer.before(courseLiveDir)();
 
     // update db with course repo info
-    await queryAsync(sql.update_course_repo, { repo: courseLiveDir });
+    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
 
     const course = await queryAsync(sql.get_courses, {});
     console.log('course:', course);
