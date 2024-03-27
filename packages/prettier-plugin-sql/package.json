@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.11.24",
+    "@types/node": "^20.11.30",
     "prettier": "3.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.3"
   },
   "dependencies": {
-    "sql-formatter": "^15.2.0"
+    "sql-formatter": "^15.3.0"
   }
 }
