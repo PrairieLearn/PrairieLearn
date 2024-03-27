@@ -9,11 +9,13 @@ export function InstructorCourseAdminSettings({
   coursePathExists,
   courseInfoExists,
   availableTimezones,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   coursePathExists: boolean;
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
+  origHash: string;
 }) {
   return html`
     <!doctype html>
@@ -46,6 +48,7 @@ export function InstructorCourseAdminSettings({
               }
               <form name="edit-course-settings-form" method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
                   <label for="short_name">Short Name</label>
                   <input

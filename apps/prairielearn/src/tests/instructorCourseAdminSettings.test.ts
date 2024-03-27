@@ -1,7 +1,7 @@
 import { config } from '../lib/config';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync, callAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
 import { exec } from 'child_process';
@@ -10,6 +10,9 @@ import execa = require('execa');
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
 import { assert } from 'chai';
+import { selectCourseById } from '../models/course';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions';
+import { getOrCreateUser, withUser } from './utils/auth';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -17,7 +20,9 @@ const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate
 const baseDir = tmp.dirSync().name;
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseInfoPath = path.join(courseLiveDir, 'infoCourse.json');
+const courseLiveInfoPath = path.join(courseLiveDir, 'infoCourse.json');
+const courseDevDir = path.join(baseDir, 'courseDev');
+const courseDevInfoPath = path.join(courseDevDir, 'infoCourse.json');
 // console.log('courseInfoPath:', courseInfoPath);
 
 const siteUrl = `http://localhost:${config.serverPort}`;
@@ -43,38 +48,23 @@ describe('Editing course settings', () => {
     await execa('git', ['add', '-A'], execOptions);
     await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
     await execa('git', ['push', 'origin', 'master'], execOptions);
+    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 
     await helperServer.before(courseLiveDir)();
 
     // update db with course repo info
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
-
-    const course = await queryAsync(sql.get_courses, {});
-    // console.log('course:', course);
   });
   after(helperServer.after);
 
   step('access the test course info file', async () => {
-    const courseInfo = JSON.parse(await fs.readFileSync(courseInfoPath, 'utf8'));
+    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
     assert.equal(courseInfo.name, 'TEST 101');
   });
 
-  // Access the course settings page
-  step('access the course settings page', async () => {
-    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
-    // console.log('settingsPageResponse:', settingsPageResponse);
-    assert.equal(settingsPageResponse.status, 200);
-  });
-
-  // Change course short name
-  // change course title
-  // change course timezone
   step('change course info', async () => {
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
-    // console.log('settingsPageResponse:', await settingsPageResponse.text());
-
-    // console.log('csrfToken:', settingsPageResponse.$('input[name="__csrf_token"]').val());
-    // console.log('orig_hash:', settingsPageResponse.$('input[name="orig_hash"]').val());
+    assert.equal(settingsPageResponse.status, 200);
 
     const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
       method: 'POST',
@@ -87,27 +77,162 @@ describe('Editing course settings', () => {
         display_timezone: 'America/Los_Angeles',
       },
     });
-    // console.log('response:', await response.text());
-
-    // const newResponse = await fetchCheerio(response.url);
-    // console.log('newResponse:', newResponse.$('main'));
     assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course/1/course_admin/settings`);
   });
 
   step('verify course info change', async () => {
-    const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
-    console.log('courseInfo:', courseInfo);
-    assert.equal(courseInfo.name, 'TEST 102');
-    assert.equal(courseInfo.title, 'Test Course 102');
-    assert.equal(courseInfo.timezone, 'America/Los_Angeles');
+    const courseLiveInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
+    assert.equal(courseLiveInfo.name, 'TEST 102');
+    assert.equal(courseLiveInfo.title, 'Test Course 102');
+    assert.equal(courseLiveInfo.timezone, 'America/Los_Angeles');
   });
-  // try submitting without being an authorized user
 
-  // try submitting without course info file
+  step('pull and verify changes', async () => {
+    await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
+    const courseDevInfo = JSON.parse(
+      await fs.readFile(path.join(courseDevDir, 'infoCourse.json'), 'utf8'),
+    );
+    assert.equal(courseDevInfo.name, 'TEST 102');
+    assert.equal(courseDevInfo.title, 'Test Course 102');
+    assert.equal(courseDevInfo.timezone, 'America/Los_Angeles');
+  });
+
+  step('verify course info change in db', async () => {
+    const course = await selectCourseById('1');
+    assert.equal(course.short_name, 'TEST 102');
+    assert.equal(course.title, 'Test Course 102');
+    assert.equal(course.display_timezone, 'America/Los_Angeles');
+  });
+
+  // try submitting without being an authorized user
+  step('should not be able to submit without being an authorized user', async () => {
+    const user = await getOrCreateUser({
+      uid: 'viewer@example.com',
+      name: 'Viewer User',
+      uin: 'viewer',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'viewer@example.com',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    await withUser(user, async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course/1/course_admin/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
+        method: 'POST',
+        form: {
+          __action: 'update_configuration',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          short_name: 'TEST 103',
+          title: 'Test Course 103',
+          display_timezone: 'America/Los_Angeles',
+        },
+      });
+      assert.equal(response.status, 403);
+    });
+  });
+
+  step('should not be able to submit without course info file', async () => {
+    await fs.move(courseLiveInfoPath, `${courseLiveInfoPath}.bak`);
+    try {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course/1/course_admin/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
+        method: 'POST',
+        form: {
+          __action: 'update_configuration',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          short_name: 'TEST 104',
+          title: 'Test Course 104',
+          display_timezone: 'America/Los_Angeles',
+        },
+      });
+      assert.equal(response.status, 400);
+    } finally {
+      await fs.move(`${courseLiveInfoPath}.bak`, courseLiveInfoPath);
+    }
+  });
 
   // try submitting without any changes
+  step('should not be able to submit without any changes', async () => {
+    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
+    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
+    const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
+      method: 'POST',
+      form: {
+        __action: 'update_configuration',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+        short_name: courseInfo.name,
+        title: courseInfo.title,
+        display_timezone: courseInfo.timezone,
+      },
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+  });
 
   // try submitting if local course info file has been changed
+  step('should not be able to submit if local course info file has been changed', async () => {
+    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
+
+    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
+    const newCourseInfo = { ...courseInfo, name: 'TEST 105' };
+    await fs.writeFile(courseLiveInfoPath, JSON.stringify(newCourseInfo, null, 2));
+
+    const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
+      method: 'POST',
+      form: {
+        __action: 'update_configuration',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+        short_name: 'TEST 106',
+        title: 'Test Course 106',
+        display_timezone: 'America/Los_Angeles',
+      },
+    });
+    console.log('responseURL:', response.url);
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+  });
 
   // try submitting if github course info file has been changed
+  step('should not be able to submit if repo course info file has been changed', async () => {
+    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
+
+    const courseInfo = JSON.parse(await fs.readFile(courseDevInfoPath, 'utf8'));
+    const newCourseInfo = { ...courseInfo, name: 'TEST 107' };
+    await fs.writeFile(courseDevInfoPath, JSON.stringify(newCourseInfo, null, 2));
+    await execa('git', ['add', '-A'], { cwd: courseDevDir, env: process.env });
+    await execa('git', ['commit', '-m', 'Change course info'], {
+      cwd: courseDevDir,
+      env: process.env,
+    });
+    await execa('git', ['push', 'origin', 'master'], { cwd: courseDevDir, env: process.env });
+
+    const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
+      method: 'POST',
+      form: {
+        __action: 'update_configuration',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+        short_name: 'TEST 108',
+        title: 'Test Course 108',
+        display_timezone: 'America/Los_Angeles',
+      },
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+  });
 });

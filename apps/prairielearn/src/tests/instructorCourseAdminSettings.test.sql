@@ -1,11 +1,3 @@
---BLOCK select_test_course_id
-SELECT
-  c.id
-FROM
-  pl_courses as c
-WHERE
-  short_name = 'TEST 101';
-
 --BLOCK get_courses
 SELECT
   *
