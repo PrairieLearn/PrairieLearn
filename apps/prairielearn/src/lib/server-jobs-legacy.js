@@ -117,7 +117,7 @@ export function connection(socket) {
         output = ansiUp.ansi_to_html(result.rows[0].output);
       }
 
-      callback({ status: status, output: output });
+      callback({ status, output });
     });
   });
 
@@ -154,7 +154,7 @@ export function connection(socket) {
       }
       var job_count = result.rows[0].job_count;
 
-      callback({ job_count: job_count });
+      callback({ job_count });
     });
   });
 }
@@ -195,8 +195,8 @@ export async function errorAbandonedJobs() {
  */
 export async function getJobSequence(job_sequence_id, course_id) {
   const result = await sqldb.queryOneRowAsync(sql.select_job_sequence_with_course_id_as_json, {
-    job_sequence_id: job_sequence_id,
-    course_id: course_id,
+    job_sequence_id,
+    course_id,
   });
   const jobSequence = result.rows[0];
 

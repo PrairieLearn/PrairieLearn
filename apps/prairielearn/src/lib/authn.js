@@ -78,7 +78,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
 
   if (options.pl_authn_cookie) {
     var tokenData = {
-      user_id: user_id,
+      user_id,
       authn_provider_name: authnParams.provider || null,
     };
     var pl_authn = generateSignedToken(tokenData, config.secretKey);
