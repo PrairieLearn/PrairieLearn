@@ -178,7 +178,11 @@ function fetchResults(socket: Socket, submissionId: string | number) {
       if (msg.answerPanel) {
         const answerContainer = document.querySelector('.answer-body');
         if (answerContainer) {
-          answerContainer.innerHTML = msg.answerPanel;
+          // Using jQuery here because msg.answerPanel may contain scripts that
+          // must be executed. Typical vanilla JS alternatives don't support
+          // this kind of script.
+          $(answerContainer).html(msg.answerPanel);
+          mathjaxTypeset();
           answerContainer.closest('.grading-block')?.classList.remove('d-none');
         }
       }
