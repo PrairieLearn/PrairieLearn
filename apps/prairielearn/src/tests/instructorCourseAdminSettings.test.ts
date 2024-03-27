@@ -4,7 +4,6 @@ import * as fs from 'fs-extra';
 import { loadSqlEquiv, queryRow, queryAsync, callAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
-import { exec } from 'child_process';
 import execa = require('execa');
 
 import * as helperServer from './helperServer';
