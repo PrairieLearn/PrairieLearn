@@ -243,7 +243,7 @@ async function reportReceived(info) {
     jobId: job.jobId,
     event: 'job_received',
     data: {
-      receivedTime: receivedTime,
+      receivedTime,
     },
   };
   const sqs = new SQSClient(makeAwsClientConfig());

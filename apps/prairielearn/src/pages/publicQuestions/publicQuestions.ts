@@ -24,7 +24,7 @@ router.get(
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         showAddQuestionButton: false,
         resLocals: res.locals,
       }),

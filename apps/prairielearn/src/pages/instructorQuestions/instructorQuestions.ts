@@ -32,7 +32,7 @@ router.get(
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&

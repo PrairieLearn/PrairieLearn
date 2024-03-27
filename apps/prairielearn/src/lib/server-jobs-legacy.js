@@ -229,7 +229,7 @@ export function connection(socket) {
         output = ansiUp.ansi_to_html(result.rows[0].output);
       }
 
-      callback({ status: status, output: output });
+      callback({ status, output });
     });
   });
 
@@ -266,7 +266,7 @@ export function connection(socket) {
       }
       var job_count = result.rows[0].job_count;
 
-      callback({ job_count: job_count });
+      callback({ job_count });
     });
   });
 }
@@ -481,8 +481,8 @@ export async function failJobSequenceAsync(job_sequence_id) {
  */
 export function getJobSequence(job_sequence_id, course_id, callback) {
   var params = {
-    job_sequence_id: job_sequence_id,
-    course_id: course_id,
+    job_sequence_id,
+    course_id,
   };
   sqldb.queryOneRow(sql.select_job_sequence_with_course_id_as_json, params, function (err, result) {
     if (ERR(err, callback)) return;

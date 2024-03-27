@@ -102,7 +102,7 @@ describe('assessment instance group synchronization test', function () {
       request.post(
         {
           url: locals.instructorAssessmentsUrlGroupTab,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (err, response) {
@@ -161,7 +161,7 @@ describe('assessment instance group synchronization test', function () {
         __csrf_token: locals.__csrf_token,
       };
       request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
+        { url: locals.assessmentUrl, form, followAllRedirects: true },
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {
@@ -260,7 +260,7 @@ describe('assessment instance group synchronization test', function () {
       };
       _.assign(form, locals.submittedAnswer);
       request.post(
-        { url: locals.questionUrl, form: form, followAllRedirects: true },
+        { url: locals.questionUrl, form, followAllRedirects: true },
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {

@@ -378,7 +378,7 @@ describe('@prairielearn/postgres', function () {
         const ac = new AbortController();
         const writable = new Writable({
           objectMode: true,
-          write: function (chunk, _encoding, callback) {
+          write(chunk, _encoding, callback) {
             rows.push(chunk);
 
             // After receiving the first row, abort the stream. This lets us test
