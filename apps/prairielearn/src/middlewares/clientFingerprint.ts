@@ -48,7 +48,7 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     // from inadvertently recording a fingerprint change
     // for an instructor viewing the assessment instance.
     user_id: res.locals.authn_user.user_id,
-    user_session_id: user_session_id,
+    user_session_id,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
   };

@@ -223,7 +223,7 @@ router.post('/*', (req, res, next) => {
 
       const editor = new FileModifyEditor({
         locals: res.locals,
-        container: container,
+        container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,
         origHash: req.body.file_edit_orig_hash,
@@ -342,7 +342,7 @@ async function readDraftEdit(fileEdit) {
 async function updateJobSequenceId(edit_id, job_sequence_id) {
   await sqldb.queryAsync(sql.update_job_sequence_id, {
     id: edit_id,
-    job_sequence_id: job_sequence_id,
+    job_sequence_id,
   });
   debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }

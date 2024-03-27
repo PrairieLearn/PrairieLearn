@@ -439,7 +439,7 @@ export function InstructorAssessmentInstance({
                                   {
                                     ...resLocals,
                                     id: 'editQuestionPoints' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
                               >
@@ -471,7 +471,7 @@ export function InstructorAssessmentInstance({
                                   {
                                     ...resLocals,
                                     id: 'editQuestionScorePerc' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
                               >

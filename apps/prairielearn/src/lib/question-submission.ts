@@ -55,9 +55,9 @@ export async function processSubmission(
     submitted_answer = postData.submittedAnswer;
   }
   const submission = {
-    variant_id: variant_id,
+    variant_id,
     auth_user_id: res.locals.authn_user.user_id,
-    submitted_answer: submitted_answer,
+    submitted_answer,
     ...(studentSubmission
       ? {
           credit: res.locals.authz_result.credit,

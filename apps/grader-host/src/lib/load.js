@@ -82,7 +82,7 @@ module.exports = {
       queue_name: config.jobsQueueName,
       average_jobs: 0,
       max_jobs: 0,
-      config: config,
+      config,
     };
     sqldb.query(sql.insert_config, params, (err) => {
       if (err) logger.error('Error reporting config:', err);
