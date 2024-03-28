@@ -84,9 +84,9 @@ router.post(
       );
       res.redirect(
         res.locals.plainUrlPrefix +
-        '/course_instance/' +
-        courseInstanceID +
-        '/instructor/instance_admin/settings',
+          '/course_instance/' +
+          courseInstanceID +
+          '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
@@ -103,7 +103,8 @@ router.post(
     } else if (req.body.__action === 'change_id') {
       if (!req.body.id) throw error.make(400, `Invalid CIID (was falsy): ${req.body.id}`);
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(400,
+        throw error.make(
+          400,
           `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
