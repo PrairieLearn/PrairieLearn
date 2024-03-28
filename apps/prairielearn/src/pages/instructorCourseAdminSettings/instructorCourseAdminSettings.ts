@@ -4,14 +4,13 @@ import asyncHandler = require('express-async-handler');
 import * as fs from 'fs-extra';
 import { CourseInfoEditor, FileModifyEditor } from '../../lib/editors';
 import * as error from '@prairielearn/error';
-import { v4 as uuidv4 } from 'uuid';
 import { flash } from '@prairielearn/flash';
 import sha256 = require('crypto-js/sha256');
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
 import { getAvailableTimezones } from '../../lib/timezones';
-import { b64EncodeUnicode } from '../../lib/base64-util';
 import { getPaths } from '../../lib/instructorFiles';
+import { b64EncodeUnicode } from '../../lib/base64-util';
 
 const router = express.Router();
 
@@ -22,21 +21,16 @@ router.get(
     const courseInfoExists = await fs.pathExists(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
+    const availableTimezones = await getAvailableTimezones();
 
     let origHash = '';
     if (courseInfoExists) {
-      const courseInfo = JSON.parse(
-        await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
-      );
-      console.log('courseInfo', courseInfo);
-      const courseInfoContents = JSON.stringify(courseInfo, null, 2);
-      console.log('courseInfoContents', courseInfoContents);
-      const b64courseInfoContents = b64EncodeUnicode(courseInfoContents);
-      console.log('b64courseInfoContents', b64courseInfoContents);
-      origHash = sha256(b64courseInfoContents).toString();
-      console.log('origHash', origHash);
+      origHash = sha256(
+        b64EncodeUnicode(
+          await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
+        ),
+      ).toString();
     }
-    const availableTimezones = await getAvailableTimezones();
 
     res.send(
       InstructorCourseAdminSettings({
@@ -52,25 +46,29 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course) {
-      return next(
-        error.make(403, 'Access denied (must be course editor and must not be example course)'),
-      );
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied. Must be course editor to make changes.');
+    }
+
+    if (res.locals.course.example_course) {
+      throw error.make(403, 'Access denied. Cannot make changes to example course.');
     }
 
     if (req.body.__action === 'update_configuration') {
-      if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
-        throw error.make(400, 'infoCourse.json does not exist');
-      }
+      console.log('req.body:', req.body);
+      const paths = getPaths(req, res);
+
       const courseInfo = JSON.parse(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
-      courseInfo.name = req.body.short_name;
-      courseInfo.title = req.body.title;
-      courseInfo.timezone = req.body.display_timezone;
 
-      const paths = getPaths(req, res);
+      const origHash = req.body.orig_hash;
+
+      const courseInfoEdit = courseInfo;
+      courseInfoEdit.name = req.body.short_name;
+      courseInfoEdit.title = req.body.title;
+      courseInfoEdit.timezone = req.body.display_timezone;
 
       const editor = new FileModifyEditor({
         locals: res.locals,
@@ -78,9 +76,9 @@ router.post(
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
         },
-        filePath: path.join(paths.workingPath, 'infoCourse.json'),
-        editContents: courseInfo,
-        origHash: req.body.orig_hash,
+        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
+        editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
+        origHash,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -94,23 +92,8 @@ router.post(
     }
 
     if (req.body.__action === 'add_configuration') {
-      console.log(res.locals.institution);
-      const infoJson = {
-        uuid: uuidv4(),
-        name: path.basename(res.locals.course.path),
-        title: path.basename(res.locals.course.path),
-        timezone: res.locals.institution.display_timezone,
-        options: {
-          useNewQuestionRenderer: true,
-        },
-        tags: [],
-        topics: [],
-      };
-
       const editor = new CourseInfoEditor({
         locals: res.locals,
-        infoJson,
-        flag: 'wx',
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -120,7 +103,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {
-      next(error.make(400, `unknown __action: ${req.body.__action}`));
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
