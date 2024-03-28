@@ -1068,7 +1068,7 @@ module.exports.initExpress = function () {
 
   // single question
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./middlewares/ansifySyncErrorsAndWarnings.js'),
   ]);
   app.use(
@@ -1369,7 +1369,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
     [
-      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./middlewares/selectAndAuthzInstructorQuestion').default,
       require('./pages/clientFilesQuestion/clientFilesQuestion')(),
     ],
   );
@@ -1378,7 +1378,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
-      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./middlewares/selectAndAuthzInstructorQuestion').default,
       require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
     ],
   );
@@ -1387,7 +1387,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
     [
-      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./middlewares/selectAndAuthzInstructorQuestion').default,
       require('./pages/submissionFile/submissionFile')(),
     ],
   );
@@ -1395,19 +1395,19 @@ module.exports.initExpress = function () {
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/text', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionText/legacyQuestionText'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionText/legacyQuestionText'),
   ]);
 
@@ -1573,7 +1573,7 @@ module.exports.initExpress = function () {
   // single question
 
   app.use('/pl/course/:course_id/question/:question_id', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./middlewares/ansifySyncErrorsAndWarnings.js'),
   ]);
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -1771,38 +1771,38 @@ module.exports.initExpress = function () {
     require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/clientFilesQuestion/clientFilesQuestion')(),
   ]);
 
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
   ]);
 
   // Submission files
   app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/submissionFile/submissionFile')(),
   ]);
 
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/preview/file', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/text', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionText/legacyQuestionText'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/preview/text', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/selectAndAuthzInstructorQuestion').default,
     require('./pages/legacyQuestionText/legacyQuestionText'),
   ]);
 

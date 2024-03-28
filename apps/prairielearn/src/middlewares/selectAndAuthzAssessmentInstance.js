@@ -1,9 +1,9 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 const asyncHandler = require('express-async-handler');
 
-var sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
