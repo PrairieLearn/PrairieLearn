@@ -1388,7 +1388,6 @@ export class CourseInfoEditor extends Editor {
     super(params);
     this.description = `Write infoCourse.json`;
     this.infoJson = params.infoJson;
-    this.flag = params.flag || '';
   }
 
   async write() {
@@ -1398,7 +1397,7 @@ export class CourseInfoEditor extends Editor {
     // This will error if:
     // - this.course.path does not exist (use of writeJson)
     // - Creating a new file and infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: this.flag });
+    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
 
     this.pathsToAdd = [infoPath];
     this.commitMessage = `write to infoCourse.json`;

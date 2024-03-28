@@ -6,6 +6,7 @@ import { CourseInfoEditor, FileModifyEditor } from '../../lib/editors';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import sha256 = require('crypto-js/sha256');
+import { v4 as uuidv4 } from 'uuid';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
 import { getAvailableTimezones } from '../../lib/timezones';
@@ -92,8 +93,20 @@ router.post(
     }
 
     if (req.body.__action === 'add_configuration') {
+      const infoJson = {
+        uuid: uuidv4(),
+        name: path.basename(res.locals.course.path),
+        title: path.basename(res.locals.course.path),
+        timezone: res.locals.institution.display_timezone,
+        options: {
+          useNewQuestionRenderer: true,
+        },
+        tags: [],
+        topics: [],
+      };
       const editor = new CourseInfoEditor({
         locals: res.locals,
+        infoJson,
       });
       const serverJob = await editor.prepareServerJob();
       try {
