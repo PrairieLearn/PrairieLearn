@@ -1953,9 +1953,9 @@ module.exports.initExpress = function () {
     next(err);
   });
 
+  // The Sentry error handler must come before our own.
   app.use(Sentry.Handlers.errorHandler());
 
-  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
