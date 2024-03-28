@@ -1,4 +1,3 @@
-// @ts-check
 import * as express from 'express';
 import asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
