@@ -1386,30 +1386,21 @@ export class FileModifyEditor extends Editor {
 export class CourseInfoEditor extends Editor {
   constructor(params) {
     super(params);
-    this.description = `Create infoCourse.json`;
+    this.description = `Write infoCourse.json`;
+    this.infoJson = params.infoJson;
+    this.flag = params.flag || '';
   }
 
   async write() {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
-    let infoJson = {
-      uuid: uuidv4(),
-      name: path.basename(this.course.path),
-      title: path.basename(this.course.path),
-      options: {
-        useNewQuestionRenderer: true,
-      },
-      tags: [],
-      topics: [],
-    };
-
     // This will error if:
     // - this.course.path does not exist (use of writeJson)
-    // - infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, infoJson, { spaces: 4, flag: 'wx' });
+    // - Creating a new file and infoPath does exist (use of 'wx')
+    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: this.flag });
 
     this.pathsToAdd = [infoPath];
-    this.commitMessage = `create infoCourse.json`;
+    this.commitMessage = `write to infoCourse.json`;
   }
 }
