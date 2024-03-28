@@ -5,8 +5,6 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
 import execa = require('execa');
-import sha256 = require('crypto-js/sha256');
-import * as b64Util from '../lib/base64-util';
 
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
@@ -53,7 +51,6 @@ describe('Editing course settings', () => {
 
     // update db with course repo info
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
-    console.log('course: ', await selectCourseById('1'));
   });
   after(helperServer.after);
 
