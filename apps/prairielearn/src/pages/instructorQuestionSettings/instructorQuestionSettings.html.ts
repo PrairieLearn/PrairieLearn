@@ -84,7 +84,7 @@ export function InstructorQuestionSettings({
           )}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              Question TESTING${resLocals.question.qid}
+              Question ${resLocals.question.qid}
             </div>
 
             <table class="table table-sm two-column-description">
