@@ -53,7 +53,7 @@
         {
             "title": "Zone 4: Manually graded questions",
             "questions": [
-                {"id": "demo/autograder/codeUpload",           "autoPoints": 10, "manualPoints": 5},
+                {"id": "demo/autograder/codeUpload",           "points": 16, "manualPerc": 37.5},
                 {"id": "demo/fileDownloadUpload",              "points": 10},
                 {"id": "demo/markdownEditorLivePreview",       "points": 5}
             ]

@@ -1,0 +1,2 @@
+ALTER TABLE assessment_questions
+ADD COLUMN IF NOT EXISTS manual_perc DOUBLE PRECISION;
