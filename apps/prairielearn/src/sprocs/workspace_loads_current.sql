@@ -122,9 +122,9 @@ BEGIN
     --
     -- A worked example with the following values:
     --
-    --   100 workspaces running on healthy hosts
+    --   100 workspaces running on healthy/draining hosts
     --   50 workspaces launching
-    --   100 workspaces running on unhealthy/draining hosts
+    --   100 workspaces running on unhealthy hosts
     --   workspace_capacity_factor = 1.5
     --
     -- This means that we have the following values for the below computation:
