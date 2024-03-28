@@ -9,7 +9,7 @@ const error = require('@prairielearn/error');
 const { isEnterprise } = require('../lib/license');
 const { authzCourseOrInstance } = require('./authzCourseOrInstance');
 const { selectAndAuthzInstanceQuestion } = require('./selectAndAuthzInstanceQuestion');
-const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
+const { selectAndAuthzAssessmentInstance } = require('./selectAndAuthzAssessmentInstance');
 const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
 const authzHasCoursePreviewOrInstanceView = promisify(
   require('./authzHasCoursePreviewOrInstanceView'),

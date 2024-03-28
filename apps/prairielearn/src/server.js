@@ -1060,7 +1060,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
     [
-      require('./middlewares/selectAndAuthzAssessmentInstance'),
+      require('./middlewares/selectAndAuthzAssessmentInstance').default,
       require('./pages/shared/floatFormatters'),
       require('./pages/instructorAssessmentInstance/instructorAssessmentInstance').default,
     ],
@@ -1443,7 +1443,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
     [
-      require('./middlewares/selectAndAuthzAssessmentInstance'),
+      require('./middlewares/selectAndAuthzAssessmentInstance').default,
       require('./middlewares/studentAssessmentAccess'),
       require('./middlewares/clientFingerprint').default,
       require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
@@ -1453,13 +1453,13 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
     [
-      require('./middlewares/selectAndAuthzAssessmentInstance'),
+      require('./middlewares/selectAndAuthzAssessmentInstance').default,
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
     ],
   );
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
-    require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/selectAndAuthzAssessmentInstance').default,
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
