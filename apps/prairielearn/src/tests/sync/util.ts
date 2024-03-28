@@ -277,6 +277,7 @@ export const ALTERNATIVE_QUESTION_ID = 'test2';
 export const MANUAL_GRADING_QUESTION_ID = 'test_manual';
 export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
+export const ASSESSMENT_ID = 'test';
 
 const course: Course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
@@ -383,7 +384,7 @@ const questions: Record<string, Question> = {
 const courseInstances: Record<string, CourseInstanceData> = {
   [COURSE_INSTANCE_ID]: {
     assessments: {
-      test: {
+      [ASSESSMENT_ID]: {
         uuid: '73432669-2663-444e-ade5-43f689a50dea',
         title: 'Test assessment',
         type: 'Exam',
@@ -451,17 +452,18 @@ export function getFakeLogger() {
  */
 export async function syncCourseData(courseDir: string) {
   const logger = getFakeLogger();
-  await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
+  return await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
 }
 
 export async function createAndSyncCourseData() {
   const courseData = getCourseData();
   const courseDir = await writeCourseToTempDirectory(courseData);
-  await syncCourseData(courseDir);
+  const syncResults = await syncCourseData(courseDir);
 
   return {
     courseData,
     courseDir,
+    syncResults,
   };
 }
 
@@ -470,12 +472,15 @@ export async function createAndSyncCourseData() {
  * path to the directory.
  *
  * @param courseData - The course data to write and sync
- * @returns The path to the new temp directory
+ * @returns The path to the new temp directory and the sync results
  */
-export async function writeAndSyncCourseData(courseData: CourseData): Promise<string> {
+export async function writeAndSyncCourseData(courseData: CourseData): Promise<{
+  courseDir: string;
+  syncResults: syncFromDisk.SyncResults;
+}> {
   const courseDir = await writeCourseToTempDirectory(courseData);
-  await syncCourseData(courseDir);
-  return courseDir;
+  const syncResults = await syncCourseData(courseDir);
+  return { courseDir, syncResults };
 }
 
 /**

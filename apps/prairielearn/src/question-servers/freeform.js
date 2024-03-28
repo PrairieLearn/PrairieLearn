@@ -1149,7 +1149,7 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
     raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
-    panel: panel,
+    panel,
     num_valid_submissions: _.get(variant, 'num_tries', null),
   };
 
@@ -1620,7 +1620,7 @@ export async function file(filename, variant, question, course) {
       correct_answers: _.get(variant, 'true_answer', {}),
       variant_seed: parseInt(variant.variant_seed, 36),
       options: _.get(variant, 'options', {}),
-      filename: filename,
+      filename,
     };
     _.extend(data.options, getContextOptions(context));
 
@@ -1757,7 +1757,7 @@ export async function test(variant, question, course, test_type) {
       options: _.get(variant, 'options', {}),
       raw_submitted_answers: {},
       gradable: true,
-      test_type: test_type,
+      test_type,
     };
     _.extend(data.options, getContextOptions(context));
     return withCodeCaller(course, async (codeCaller) => {

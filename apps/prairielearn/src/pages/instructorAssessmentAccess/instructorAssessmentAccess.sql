@@ -45,6 +45,5 @@ FROM
   LEFT JOIN pt_courses AS pt_c ON (pt_c.id = pt_x.course_id)
 WHERE
   a.id = $assessment_id
-  AND ((aar.role > 'Student') IS NOT TRUE)
 ORDER BY
   aar.number;

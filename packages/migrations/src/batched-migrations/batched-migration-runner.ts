@@ -177,6 +177,10 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
+        logger.error(
+          `Error running job ${nextJob.id} for batched migration ${migration.filename}`,
+          error,
+        );
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');
