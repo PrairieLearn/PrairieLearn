@@ -613,7 +613,7 @@ module.exports.initExpress = function () {
     require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
   );
   app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
-    require('./middlewares/authzCourseOrInstance'),
+    require('./middlewares/authzCourseOrInstance').default,
     require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
   ]);
 
@@ -666,7 +666,7 @@ module.exports.initExpress = function () {
   // sets res.locals.course and res.locals.course_instance
   app.use(
     '/pl/course_instance/:course_instance_id',
-    require('./middlewares/authzCourseOrInstance'),
+    require('./middlewares/authzCourseOrInstance').default,
   );
 
   // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
@@ -754,7 +754,7 @@ module.exports.initExpress = function () {
 
   // all pages under /pl/course require authorization
   app.use('/pl/course/:course_id', [
-    require('./middlewares/authzCourseOrInstance'), // set res.locals.course
+    require('./middlewares/authzCourseOrInstance').default, // set res.locals.course
     require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     require('./middlewares/selectOpenIssueCount'),
     function (req, res, next) {

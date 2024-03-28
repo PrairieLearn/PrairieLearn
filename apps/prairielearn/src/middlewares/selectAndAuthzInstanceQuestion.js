@@ -8,7 +8,7 @@ import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../li
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-const middleware = asyncHandler(async (req, res, next) => {
+export async function selectAndAuthzInstanceQuestion(req, res) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     instance_question_id: req.params.instance_question_id,
     assessment_id: req.params.assessment_id,
@@ -59,6 +59,10 @@ const middleware = asyncHandler(async (req, res, next) => {
       }
     }
   }
+}
+
+const middleware = asyncHandler(async (req, res, next) => {
+  await selectAndAuthzInstanceQuestion(req, res);
   next();
 });
 

@@ -1,3 +1,4 @@
+// @ts-check
 const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
 const { promisify } = require('util');
@@ -6,10 +7,8 @@ const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
 
 const { isEnterprise } = require('../lib/license');
-const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
-const selectAndAuthzInstanceQuestion = promisify(
-  require('./selectAndAuthzInstanceQuestion').default,
-);
+const { authzCourseOrInstance } = require('./authzCourseOrInstance');
+const { selectAndAuthzInstanceQuestion } = require('./selectAndAuthzInstanceQuestion');
 const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
 const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
 const authzHasCoursePreviewOrInstanceView = promisify(

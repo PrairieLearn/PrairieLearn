@@ -1,19 +1,20 @@
-const _ = require('lodash');
+// @ts-check
+import * as _ from 'lodash';
 const asyncHandler = require('express-async-handler');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
-const { parseISO, isValid } = require('date-fns');
-const { config } = require('../lib/config');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { html } = require('@prairielearn/html');
-const { idsEqual } = require('../lib/id');
-const { features } = require('../lib/features/index');
+import * as path from 'path';
+import debugfn from 'debug';
+import { parseISO, isValid } from 'date-fns';
+import { config } from '../lib/config';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { html } from '@prairielearn/html';
+import { idsEqual } from '../lib/id';
+import { features } from '../lib/features/index';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
-module.exports = asyncHandler(async (req, res, next) => {
+export async function authzCourseOrInstance(req, res) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
 
   // Note that req.params.course_id and req.params.course_instance_id are strings and not
@@ -582,6 +583,9 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   res.locals.authz_data.mode = effectiveResult.rows[0].mode;
   res.locals.req_date = req_date;
+}
 
+export default asyncHandler(async (req, res, next) => {
+  await authzCourseOrInstance(req, res);
   next();
 });

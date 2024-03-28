@@ -22,7 +22,7 @@ router.use(require('./prettyPrintJson'));
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id', [
-  require('../../middlewares/authzCourseOrInstance'),
+  require('../../middlewares/authzCourseOrInstance').default,
   // Asserts that the user has either course preview or course instance student
   // data access. If a route provides access to student data, you should also
   // include the `authzHasCourseInstanceView` middleware to ensure that access
