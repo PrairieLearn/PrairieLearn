@@ -66,7 +66,7 @@ async function makeVariant(
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
   const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
   let variant: VariantCreationData = {
-    variant_seed: variant_seed,
+    variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
     options: data.options || {},
@@ -95,7 +95,7 @@ async function makeVariant(
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
     variant = {
-      variant_seed: variant_seed,
+      variant_seed,
       params: data.params || {},
       true_answer: data.true_answer || {},
       options: data.options || {},

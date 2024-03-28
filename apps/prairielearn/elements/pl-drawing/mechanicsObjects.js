@@ -28,7 +28,7 @@ var mechanicsObjects = {};
  */
 mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
   type: 'spring',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.left = this.x1;
@@ -52,7 +52,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
       this.dirty = true;
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     let len = this.length;
     let l2 = len / 2;
     let h = this.scaleY * this.height;
@@ -108,7 +108,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
   type: 'coil',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.left = this.x1;
@@ -133,7 +133,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
       this.dirty = true;
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     let len = this.length;
     let R2 = this.h;
     let R = 0.5 * R2;
@@ -183,7 +183,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
   type: 'rod',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originY = 'center';
@@ -211,7 +211,7 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
       this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var rPx = this.height / 2;
     let len = this.length;
     let l2 = len / 2;
@@ -246,7 +246,7 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
   type: 'rod',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originY = 'center';
@@ -260,7 +260,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
     update_visuals();
     this.on('update_visuals', update_visuals);
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var d = this.height / 2;
     var w1 = this.w1;
     var w2 = this.w2;
@@ -341,7 +341,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
   type: 'Lshaperod',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.originY = 'center';
     this.callSuper('initialize', options);
@@ -374,7 +374,7 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
     this.on('update_visuals', updateVisuals);
   },
 
-  _render: function (ctx) {
+  _render(ctx) {
     var L1 = this.length1;
     var L2 = this.length2;
     var d = this.height / 2;
@@ -440,7 +440,7 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
   type: 'Tshaperod',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.originY = 'center';
     this.callSuper('initialize', options);
@@ -488,7 +488,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
     update_visuals();
     this.on('update_visuals', update_visuals);
   },
-  get_distance: function (angle, d) {
+  get_distance(angle, d) {
     if (Math.abs(angle) < 1e-4) {
       return 0;
     } else if (Math.abs(angle) - Math.pi / 2 < 1e-4 || Math.abs(angle) - (3 * Math.pi) / 2 < 1e-4) {
@@ -497,7 +497,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
       return d / Math.sin(angle) - d / Math.tan(angle);
     }
   },
-  _render: function (ctx) {
+  _render(ctx) {
     let L1 = this.length1;
     let L2 = this.length2;
     let L3 = this.length3;
@@ -595,7 +595,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
   type: 'clamped',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originX = 'right';
@@ -610,7 +610,7 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
       this.y1 = this.top;
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var h = this.height;
     var w = this.width;
     var gradient = ctx.createLinearGradient(-w, -h / 2, 0, h / 2);
@@ -635,7 +635,7 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
   type: 'fixed-pin',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originX = 'center';
@@ -656,7 +656,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
       this.y1 = this.top - Math.sin(ang_rad) * (this.h / 2);
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     let h = this.h;
     let w = this.w;
     ctx.translate(0, -h / 2);
@@ -700,7 +700,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
   type: 'roller',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originX = 'center';
@@ -721,7 +721,7 @@ mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
       this.y1 = this.top - Math.sin(ang_rad) * (this.h / 2);
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     let h = this.h;
     let w = this.w;
     ctx.translate(0, -h / 2);
@@ -780,7 +780,7 @@ mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
   type: 'arrow',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.set('arrowheadOffsetRatio', options.arrowheadOffsetRatio || 1);
@@ -804,14 +804,14 @@ mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
       }
     }
   },
-  toObject: function () {
+  toObject() {
     return fabric.util.object.extend(this.callSuper('toObject'), {
       // Should write here the properties that were added in initialize
       // and that should appear on the server
       name: this.get('name'),
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var lengthPx = this.width;
     var w = this.strokeWidth;
     var l = 7 * w * this.arrowheadOffsetRatio;
@@ -861,7 +861,7 @@ mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
   type: 'arrow',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.set('arrowheadOffsetRatio', options.arrowheadOffsetRatio || 1);
@@ -885,14 +885,14 @@ mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
       }
     }
   },
-  toObject: function () {
+  toObject() {
     return fabric.util.object.extend(this.callSuper('toObject'), {
       // should write here the properties that were added in initialize
       // and that should appear on the server
       name: this.get('name'),
     });
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var lengthPx = this.width;
     var w = this.strokeWidth;
     var l = 6 * w * this.arrowheadOffsetRatio;
@@ -933,7 +933,7 @@ mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
   type: 'latex-text',
-  parse: function (str) {
+  parse(str) {
     // Because the MathJax renderer expects text to be already formatted in LaTeX,
     // manually parse inputs for $$ and escape non-latex with `\text{}`
 
@@ -954,7 +954,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     }
     return built_str;
   },
-  gen_text: async function (str, options) {
+  async gen_text(str, options) {
     await MathJax.startup.promise;
     let svgResult = await MathJax.tex2svgPromise(str, { display: false });
     const svg = svgResult.children[0];
@@ -1020,7 +1020,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
       options,
     );
   },
-  initialize: function (text, options) {
+  initialize(text, options) {
     options = options || {};
     if (!options.selectable) {
       options.evented = false;
@@ -1044,7 +1044,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
       });
     }
   },
-  _render: function (ctx) {
+  _render(ctx) {
     if (this.image != null) {
       this.image._render(ctx);
     }
@@ -1053,7 +1053,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
   type: 'dist-force',
-  initialize: function (options) {
+  initialize(options) {
     this.callSuper('initialize', options);
     this.spacing = options.spacing;
     this.anchor_is_tail = options.anchor_is_tail === 'true';
@@ -1100,7 +1100,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
       this.range = this.width * this.scaleX;
     });
   },
-  drawArrow: function (ctx, x1, y1, x2, y2) {
+  drawArrow(ctx, x1, y1, x2, y2) {
     // Copied from the Arrow class, so much for DRY
     let arrowheadOffsetRatio = this.arrowheadOffsetRatio;
     let arrowheadWidthRatio = this.arrowheadWidthRatio;
@@ -1135,7 +1135,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     ctx.stroke();
     ctx.fill();
   },
-  drawLine: function (ctx, x1, y1, x2, y2) {
+  drawLine(ctx, x1, y1, x2, y2) {
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
@@ -1145,7 +1145,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     ctx.stroke();
     ctx.fill();
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var nSpaces = Math.ceil(this.getScaledWidth() / this.spacing);
     var dx = this.getScaledWidth() / nSpaces;
 
@@ -1189,7 +1189,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
   type: 'pulley',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.originX = 'center';
@@ -1262,7 +1262,7 @@ mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
     this.on('update_visuals', update_visuals);
     update_visuals();
   },
-  _render: function (ctx) {
+  _render(ctx) {
     // Draw pulley circle
     ctx.beginPath();
     ctx.fillStyle = this.color;
@@ -1295,7 +1295,7 @@ mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
 
 mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
   type: 'arc',
-  initialize: function (options) {
+  initialize(options) {
     options = options || {};
     this.callSuper('initialize', options);
     this.set('arrowheadOffsetRatio', options.arrowheadOffsetRatio || 1);
@@ -1323,19 +1323,19 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
       }
     }
   },
-  toObject: function () {
+  toObject() {
     return fabric.util.object.extend(this.callSuper('toObject'), {
       name: this.get('name'),
       // Should write here the properties that were added in initialize
       // and that should appear on the server
     });
   },
-  get_point_arc: function (alpha, er, et, r) {
+  get_point_arc(alpha, er, et, r) {
     var uvec = er.multiply(-r * (1 - Math.cos(alpha)));
     uvec = uvec.add(et.multiply(r * Math.sin(alpha)));
     return uvec;
   },
-  make_arrow_head: function (ctx, theta, alpha, beta, r, l, c, h) {
+  make_arrow_head(ctx, theta, alpha, beta, r, l, c, h) {
     let er = $V([Math.cos(theta), Math.sin(theta)]);
     let et = $V([-Math.sin(theta), Math.cos(theta)]);
     let uE = er.multiply(r);
@@ -1360,7 +1360,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     ctx.closePath();
     return uD;
   },
-  _render: function (ctx) {
+  _render(ctx) {
     var w = this.strokeWidth;
     var l = 7 * w * this.arrowheadOffsetRatio;
     var h = 0.5 * l * this.arrowheadWidthRatio;
@@ -1418,7 +1418,7 @@ mechanicsObjects.makeCoordinates = function (options) {
     left: 0,
     top: 0,
     name: 'coordinates',
-    selectable: selectable,
+    selectable,
     evented: selectable,
   });
 
@@ -1458,9 +1458,9 @@ mechanicsObjects.makeCoordinates = function (options) {
 
 mechanicsObjects.makeControlHandle = function (left, top, handleRadius, strokeWidth) {
   var c = new fabric.Circle({
-    left: left,
-    top: top,
-    strokeWidth: strokeWidth,
+    left,
+    top,
+    strokeWidth,
     radius: handleRadius,
     fill: 'white',
     stroke: '#666',
@@ -1535,7 +1535,7 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
         fontSize: options.fontSize,
-        selectable: selectable,
+        selectable,
         evented: selectable,
         textAlign: 'left',
         angle: options.angle || 0,
@@ -1547,7 +1547,7 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
         fontSize: options.fontSize,
-        selectable: selectable,
+        selectable,
         evented: selectable,
         textAlign: 'left',
         angle: options.angle || 0,

@@ -118,7 +118,7 @@ router.post(
       } else {
         const editor = new CourseInstanceRenameEditor({
           locals: res.locals,
-          ciid_new: ciid_new,
+          ciid_new,
         });
 
         const serverJob = await editor.prepareServerJob();

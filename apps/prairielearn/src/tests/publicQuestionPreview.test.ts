@@ -67,8 +67,8 @@ describe('Public Question Preview', function () {
 
   describe('Test Question Previews', function () {
     const previewPageInfo = {
-      siteUrl: siteUrl,
-      baseUrl: baseUrl,
+      siteUrl,
+      baseUrl,
       questionBaseUrl: baseUrl + '/public/course/1/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,

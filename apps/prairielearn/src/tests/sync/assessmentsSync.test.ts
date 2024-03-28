@@ -102,7 +102,7 @@ describe('Assessment syncing', () => {
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.push({
       title: 'zone 2',
       questions: [{ id: util.ALTERNATIVE_QUESTION_ID, points: 10 }],
@@ -537,7 +537,7 @@ describe('Assessment syncing', () => {
       },
     ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedData = await getSyncedAssessmentData('newexam');
     const originalFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
@@ -578,7 +578,7 @@ describe('Assessment syncing', () => {
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
@@ -602,7 +602,7 @@ describe('Assessment syncing', () => {
       },
     );
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const syncedAssessments = await util.dumpTable('assessments');
     const originalSyncedAssessment = syncedAssessments.find((a) => a.tid === 'newexam');
 
@@ -968,7 +968,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
       groupAssessment;
 
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Check group roles
     const syncedRoles = await util.dumpTable('group_roles');
@@ -1207,7 +1207,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
       groupAssessment;
 
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const syncedRoles = await util.dumpTable('group_roles');
 
     // Ensure both roles are present
@@ -1275,7 +1275,7 @@ describe('Assessment syncing', () => {
     const missingAssessmentSetName = 'missing tag name';
     assessment.set = missingAssessmentSetName;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['new'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedAssessmentSets = await util.dumpTable('assessment_sets');
     let syncedAssessmentSet = syncedAssessmentSets.find(
       (aset) => aset.name === missingAssessmentSetName,
@@ -1843,7 +1843,7 @@ describe('Assessment syncing', () => {
     // @ts-expect-error -- intentionally breaking the assessment
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.uuid = oldUuid;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('missinguuid');
@@ -1855,7 +1855,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const originalSyncedAssessment = await findSyncedAssessment('originalname');
     delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newname'] = assessment;
@@ -1868,7 +1868,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('unused');
@@ -1882,7 +1882,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.set = assessmentSet.name;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const originalSyncedAssessment = await findSyncedAssessment('testAssessment');
 
     // now delete the assessment set, but leave the assessment in place
@@ -1901,7 +1901,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment and re-sync
     assessment.uuid = '98c427af-1216-47ad-b982-6e88974080e1';
@@ -1915,7 +1915,7 @@ describe('Assessment syncing', () => {
     const originalAssessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       originalAssessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
@@ -2009,7 +2009,7 @@ describe('Assessment syncing', () => {
     const originalAssessment = makeAssessment(courseData);
     originalAssessment.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
     courseInstanceData.assessments['a'] = originalAssessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above assessment to a new directory AND add another with the
     // same UUID.

@@ -292,8 +292,8 @@ router.post('/*', function (req, res, next) {
       }
       const editor = new FileDeleteEditor({
         locals: res.locals,
-        container: container,
-        deletePath: deletePath,
+        container,
+        deletePath,
       });
       editor.canEdit((err) => {
         if (ERR(err, next)) return;
@@ -343,9 +343,9 @@ router.post('/*', function (req, res, next) {
       } else {
         const editor = new FileRenameEditor({
           locals: res.locals,
-          container: container,
-          oldPath: oldPath,
-          newPath: newPath,
+          container,
+          oldPath,
+          newPath,
         });
         editor.canEdit((err) => {
           if (ERR(err, next)) return;
@@ -388,8 +388,8 @@ router.post('/*', function (req, res, next) {
       }
       const editor = new FileUploadEditor({
         locals: res.locals,
-        container: container,
-        filePath: filePath,
+        container,
+        filePath,
         fileContents: req.file.buffer,
       });
       editor.shouldEdit((err, yes) => {

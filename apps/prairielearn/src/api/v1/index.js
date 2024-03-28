@@ -1,6 +1,7 @@
 const express = require('express');
 
 const error = require('@prairielearn/error');
+const Sentry = require('@prairielearn/sentry');
 
 const router = express.Router();
 
@@ -58,7 +59,10 @@ router.use(
 // If no earlier routes matched, 404 the route
 router.use(require('./notFound'));
 
-// Handle errors independently from the normal PL eror handling
+// The Sentry error handler must come before our own.
+router.use(Sentry.Handlers.errorHandler());
+
+// Handle errors independently from the normal PL error handling
 router.use(require('./error'));
 
 module.exports = router;

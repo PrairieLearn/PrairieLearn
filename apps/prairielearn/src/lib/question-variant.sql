@@ -25,8 +25,8 @@ WHERE
 
 -- BLOCK insert_workspace
 INSERT INTO
-  workspaces DEFAULT
-VALUES
+  workspaces
+DEFAULT VALUES
 RETURNING
   id;
 
