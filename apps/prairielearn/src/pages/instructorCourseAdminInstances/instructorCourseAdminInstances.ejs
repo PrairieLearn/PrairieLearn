@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
+        <script type="module" src="<%= node_modules_asset_path('@github/relative-time-element/dist/index.js') %>"></script>
     </head>
     <body>
         <script>
@@ -63,8 +64,12 @@
                                 <tr>
                                     <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
                                     <td class="align-left"><%= row.short_name %></td>
-                                    <td class="align-left"><%= row.formatted_start_date %></td>
-                                    <td class="align-left"><%= row.formatted_end_date %></td>
+                                    <td class="align-left">
+                                        <relative-time format="datetime" hour="2-digit" minute="2-digit" datetime="<%= row.formatted_start_date %>">-</relative-time>
+                                    </td>
+                                    <td class="align-left">
+                                        <relative-time format="datetime" hour="2-digit" minute="2-digit" datetime="<%= row.formatted_end_date %>">-</relative-time>
+                                    </td>
                                     <td class="align-middle"><%= row.number %></td>
                                 </tr>
                             <% }); %>
