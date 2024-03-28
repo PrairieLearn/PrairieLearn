@@ -26,7 +26,60 @@ DECLARE
     active_access_rule_id bigint;
     next_active_start_date TIMESTAMP WITH TIME ZONE;
     next_active_credit integer;
+    override_group_id bigint;
+    end_date_from_override TIMESTAMP WITH TIME ZONE;
+    credit_from_override integer;
+    start_date_from_override TIMESTAMP WITH TIME ZONE;
 BEGIN
+    SELECT g.id  
+    INTO override_group_id
+    FROM groups as g JOIN group_configs AS gc 
+                ON g.group_config_id = gc.id 
+        JOIN group_users AS gu 
+                ON gu.group_id = g.id 
+    WHERE gc.assessment_id = check_assessment_access.assessment_id 
+        AND gu.user_id = check_assessment_access.user_id 
+        AND g.deleted_at IS NULL;
+        
+    -- Check if the user has an entry in the assessment_access_policies table for this assessment_id.
+    -- If yes, get the end_date from the assessment_access_policies table, otherwise, use the end_date from the assessment_access_rules table.
+    SELECT aap.end_date , aap.credit , aap.start_date
+    INTO end_date_from_override , credit_from_override , start_date_from_override
+    FROM assessment_access_policies as aap
+    WHERE aap.assessment_id = check_assessment_access.assessment_id
+        AND ((aap.user_id= check_assessment_access.user_id) 
+        OR (aap.group_id = override_group_id))
+        AND aap.start_date <= check_assessment_access.date
+        AND aap.end_date >= check_assessment_access.date
+    ORDER BY end_date DESC
+    LIMIT 1;
+
+    IF end_date_from_override IS NOT NULL THEN
+        authorized = TRUE;
+        credit = credit_from_override;
+        credit_date_string =  CASE
+            WHEN (credit_from_override > 0) THEN
+                credit_from_override::text || '%' || ' until ' || format_date_short(end_date_from_override, display_timezone)
+                ELSE '' END;
+        time_limit_min = NULL;
+        password = NULL;
+        mode = NULL;
+        seb_config = NULL;
+        show_closed_assessment = TRUE;
+        show_closed_assessment_score = TRUE;
+        active = TRUE;
+        access_rules = jsonb_agg(
+            jsonb_build_object(
+                'credit', credit_from_override::text || '%',
+                'time_limit_min', '—',
+                'start_date', format_date_full(start_date_from_override, display_timezone),
+                'end_date', format_date_full(end_date_from_override, display_timezone),
+                'mode', 'Public',
+                'active', TRUE
+            )
+        );
+        RETURN;
+    END IF;
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
@@ -172,3 +225,4 @@ BEGIN
         );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
+
