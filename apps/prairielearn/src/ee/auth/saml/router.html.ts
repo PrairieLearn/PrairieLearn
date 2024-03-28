@@ -5,22 +5,37 @@ export const SamlTest = ({
   uid,
   uin,
   name,
+  email,
   uidAttribute,
   uinAttribute,
   nameAttribute,
+  emailAttribute,
   attributes,
   resLocals,
 }) => {
   const hasUidAttribute = !!uidAttribute;
   const hasUinAttribute = !!uinAttribute;
   const hasNameAttribute = !!nameAttribute;
+  const hasEmailAttribute = !!emailAttribute;
 
   const hasUid = !!uid;
   const hasUin = !!uin;
   const hasName = !!name;
+  const hasEmail = !!email;
 
+  // Note that even though the normal login flow doesn't yet validate the
+  // presence of an email, we want to make it obvious during all future SAML
+  // configuration processes that `emailAttribute` should be set and that the
+  // corresponding value should be present.
   const hasError =
-    !hasUidAttribute || !hasUinAttribute || !hasNameAttribute || !hasUid || !hasUin || !hasName;
+    !hasUidAttribute ||
+    !hasUinAttribute ||
+    !hasNameAttribute ||
+    !hasEmailAttribute ||
+    !hasUid ||
+    !hasUin ||
+    !hasName ||
+    !hasEmail;
 
   return html`
     <!DOCTYPE html>
@@ -52,6 +67,11 @@ export const SamlTest = ({
                             No name attribute mapping is configured for this institution
                           </li>`
                         : ''}
+                      ${!hasEmailAttribute
+                        ? html`<li>
+                            No email attribute mapping is configured for this institution
+                          </li>`
+                        : ''}
                       ${hasUidAttribute && !hasUid
                         ? html`<li>
                             No value fond for configured UID attribute
@@ -68,6 +88,12 @@ export const SamlTest = ({
                         ? html`<li>
                             No value found for configured name attribute
                             (<code>${nameAttribute}</code>)
+                          </li>`
+                        : ''}
+                      ${hasEmailAttribute && !hasEmail
+                        ? html`<li>
+                            No value found for configured email attribute
+                            (<code>${emailAttribute}</code>)
                           </li>`
                         : ''}
                     </ul>
@@ -90,6 +116,11 @@ export const SamlTest = ({
                     ${hasName
                       ? html`<li>
                           <strong>Name:</strong> ${name} (<code>${nameAttribute}</code>)
+                        </li>`
+                      : ''}
+                    ${hasEmail
+                      ? html`<li>
+                          <strong>Email:</strong> ${email} (<code>${nameAttribute}</code>)
                         </li>`
                       : ''}
                   </ul>

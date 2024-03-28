@@ -206,7 +206,7 @@
                 <% if (row.show_user) { %>
                   <% if (row.manually_reported) { %>by<% } else { %>for<% } %>
                   <% let body = encodeURIComponent("Hello " + row.user_name + ",\n\nRegarding the issue of:\n\n\"" + (row.student_message || '-') +"\"\n\nWe've..."); %>
-                  <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)
+                  <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_email || row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)
                 <% } %>
               </small>
               <% if (row.manually_reported) { %>

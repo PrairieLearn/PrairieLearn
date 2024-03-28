@@ -5,6 +5,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     custom_fields: jsonb default '{}'::jsonb
     deleted_at: timestamp with time zone
+    email_attribute: text
     id: bigint not null default nextval('lti13_instances_id_seq'::regclass)
     institution_id: bigint not null
     issuer_params: jsonb default '{}'::jsonb

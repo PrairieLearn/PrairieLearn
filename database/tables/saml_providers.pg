@@ -1,5 +1,6 @@
 columns
     certificate: text not null
+    email_attribute: text
     id: bigint not null default nextval('saml_providers_id_seq'::regclass)
     institution_id: bigint not null
     issuer: text not null

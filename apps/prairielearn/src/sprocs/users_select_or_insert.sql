@@ -3,6 +3,7 @@ CREATE FUNCTION
         IN uid text,
         IN name text,
         IN uin text,
+        IN email text,
         IN authn_provider_name text,
         IN institution_id bigint DEFAULT NULL,
         OUT result text,
@@ -99,11 +100,19 @@ BEGIN
 
     -- if we don't have the user already, make it
     IF u.user_id IS NULL THEN
-        INSERT INTO users
-            (uid, name, uin, institution_id)
-        VALUES
-            (users_select_or_insert.uid, users_select_or_insert.name,
-            users_select_or_insert.uin, institution.id)
+        INSERT INTO users (
+            uid,
+            name,
+            uin,
+            email,
+            institution_id
+        ) VALUES (
+            users_select_or_insert.uid,
+            users_select_or_insert.name,
+            users_select_or_insert.uin,
+            users_select_or_insert.email,
+            institution.id
+        )
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
@@ -157,6 +166,22 @@ BEGIN
         VALUES
             ('users', 'uin', u.user_id, 'update',
             jsonb_build_object('uin', uin),
+            to_jsonb(u), to_jsonb(new_u));
+    END IF;
+
+    IF email IS NOT NULL AND email IS DISTINCT FROM u.email THEN
+        UPDATE users
+        SET email = users_select_or_insert.email
+        WHERE users.user_id = u.user_id
+        RETURNING * INTO new_u;
+
+        INSERT INTO audit_logs
+            (table_name, column_name, row_id, action,
+            parameters,
+            old_state, new_state)
+        VALUES
+            ('users', 'email', u.user_id, 'update',
+            jsonb_build_object('email', email),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 

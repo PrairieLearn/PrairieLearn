@@ -71,6 +71,7 @@ router.get(
       uid: identity.email,
       name: identity.name || identity.email,
       uin: identity.sub,
+      email: identity.email,
       provider: 'Google',
     };
     await authnLib.loadUser(req, res, authnParams, {

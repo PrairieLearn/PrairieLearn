@@ -19,6 +19,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string} [uid]
  * @property {string | null} [uin]
  * @property {string | null} [name]
+ * @property {string | null} [email]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
  * @property {number | string | null} [institution_id]
@@ -40,6 +41,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
+      authnParams.email,
       authnParams.provider,
       authnParams.institution_id,
     ];
