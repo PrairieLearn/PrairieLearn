@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { make, makeWithData, addData, newMessage, makeWithInfo } from './index';
+import { make, makeWithData, addData, newMessage, makeWithInfo, augmentError } from './index';
 
 describe('make', () => {
   it('makes an error without data', () => {
@@ -66,5 +66,18 @@ describe('newMessage', () => {
     const newErr = newMessage('Not Found', '404');
     assert.equal(newErr.message, '404: Not Found');
     assert.equal(newErr.data._previousMessages[0], 'Not Found');
+  });
+});
+
+describe('augmentError', () => {
+  it('adds status, message, and data to an error', () => {
+    const err = new Error('Not Found');
+    const newErr = augmentError(err, { status: 404, message: 'Missing', data: { foo: 'bar' } });
+
+    assert.equal(newErr.message, 'Missing: Not Found');
+    assert.equal(newErr.status, 404);
+    assert.equal(newErr.data.foo, 'bar');
+    assert.equal(newErr.cause, err);
+    assert.equal((newErr.cause as any).message, 'Not Found');
   });
 });
