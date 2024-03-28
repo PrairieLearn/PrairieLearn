@@ -85,6 +85,7 @@ export function connection(socket) {
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
+          extraHeadersHtml: panels.extraHeadersHtml,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
           questionPanelFooter: panels.questionPanelFooter,
