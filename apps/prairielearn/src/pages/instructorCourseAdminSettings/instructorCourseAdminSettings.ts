@@ -57,7 +57,9 @@ router.post(
     }
 
     if (req.body.__action === 'update_configuration') {
-      console.log('req.body:', req.body);
+      if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
+        throw error.make(400, 'infoCourse.json does not exist');
+      }
       const paths = getPaths(req, res);
 
       const courseInfo = JSON.parse(

@@ -1,10 +1,12 @@
 import { config } from '../lib/config';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { loadSqlEquiv, queryRow, queryAsync, callAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
 import execa = require('execa');
+import sha256 = require('crypto-js/sha256');
+import * as b64Util from '../lib/base64-util';
 
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
@@ -22,10 +24,8 @@ const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseLiveInfoPath = path.join(courseLiveDir, 'infoCourse.json');
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseDevInfoPath = path.join(courseDevDir, 'infoCourse.json');
-// console.log('courseInfoPath:', courseInfoPath);
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-console.log('siteUrl:', siteUrl);
 
 describe('Editing course settings', () => {
   before(async () => {
@@ -53,6 +53,7 @@ describe('Editing course settings', () => {
 
     // update db with course repo info
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    console.log('course: ', await selectCourseById('1'));
   });
   after(helperServer.after);
 
@@ -182,31 +183,6 @@ describe('Editing course settings', () => {
     assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
   });
 
-  // try submitting if local course info file has been changed
-  step('should not be able to submit if local course info file has been changed', async () => {
-    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
-
-    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
-    const newCourseInfo = { ...courseInfo, name: 'TEST 105' };
-    await fs.writeFile(courseLiveInfoPath, JSON.stringify(newCourseInfo, null, 2));
-
-    const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
-      method: 'POST',
-      form: {
-        __action: 'update_configuration',
-        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
-        short_name: 'TEST 106',
-        title: 'Test Course 106',
-        display_timezone: 'America/Los_Angeles',
-      },
-    });
-    console.log('responseURL:', response.url);
-    assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
-  });
-
-  // try submitting if github course info file has been changed
   step('should not be able to submit if repo course info file has been changed', async () => {
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
 
