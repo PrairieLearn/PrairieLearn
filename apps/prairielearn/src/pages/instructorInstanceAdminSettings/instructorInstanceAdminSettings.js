@@ -63,30 +63,31 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-
-        const courseInstanceID = await sqldb.queryRow(
-          sql.select_course_instance_id_from_uuid,
-          { uuid: editor.uuid, course_id: res.locals.course.id },
-          IdSchema,
-        );
-
-        if (courseInstanceID === null) {
-          throw new Error('Failed to find the new course instance ID');
-        }
-
-        flash(
-          'success',
-          'Course instance copied successfully. You are new viewing your copy of the course instance.',
-        );
-        res.redirect(
-          res.locals.plainUrlPrefix +
-            '/course_instance/' +
-            courseInstanceID +
-            '/instructor/instance_admin/settings',
-        );
       } catch (err) {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
+
+      const courseInstanceID = await sqldb.queryRow(
+        sql.select_course_instance_id_from_uuid,
+        { uuid: editor.uuid, course_id: res.locals.course.id },
+        IdSchema,
+      );
+
+      if (courseInstanceID === null) {
+        throw new Error('Failed to find the new course instance ID');
+      }
+
+      flash(
+        'success',
+        'Course instance copied successfully. You are new viewing your copy of the course instance.',
+      );
+      res.redirect(
+        res.locals.plainUrlPrefix +
+        '/course_instance/' +
+        courseInstanceID +
+        '/instructor/instance_admin/settings',
+      );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
         locals: res.locals,
@@ -100,9 +101,9 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw new Error(`Invalid CIID (was falsy): ${req.body.id}`);
+      if (!req.body.id) throw error.make(400, `Invalid CIID (was falsy): ${req.body.id}`);
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw new Error(
+        throw error.make(400,
           `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
@@ -110,7 +111,7 @@ router.post(
       try {
         ciid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw new Error(`Invalid CIID (could not be normalized): ${req.body.id}`);
+        throw error.make(400, `Invalid CIID (could not be normalized): ${req.body.id}`);
       }
       if (res.locals.course_instance.short_name === ciid_new) {
         res.redirect(req.originalUrl);
