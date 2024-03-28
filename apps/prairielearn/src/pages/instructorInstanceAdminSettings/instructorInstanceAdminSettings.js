@@ -23,12 +23,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const short_names = await sqldb.queryRow(
+    res.locals.short_names = await sqldb.queryRow(
       sql.short_names,
       { course_id: res.locals.course.id },
       z.array(z.string()),
     );
-    res.locals.short_names = short_names;
 
     const host = getCanonicalHost(req);
     res.locals.studentLink = new URL(
