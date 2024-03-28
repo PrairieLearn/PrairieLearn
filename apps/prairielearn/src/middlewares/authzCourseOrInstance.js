@@ -140,7 +140,7 @@ export async function authzCourseOrInstance(req, res) {
   }
   if (overrides.length === 0) {
     debug('no requested overrides');
-    return next();
+    return;
   }
 
   // Cannot request a user data override without instructor permissions
@@ -155,7 +155,7 @@ export async function authzCourseOrInstance(req, res) {
     // If on a student page route, silently exit and ignore effective user requests
     if ((res.locals.viewType || 'none') === 'student') {
       debug('on student page, so silently exit and ignore requested overrides');
-      return next();
+      return;
     }
 
     debug('not on student page, so clear all requested overrides and throw an error');
@@ -339,7 +339,7 @@ export async function authzCourseOrInstance(req, res) {
 
     res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
-    return next();
+    return;
   }
 
   // Now that we know the effective user has access, parse the authz data
