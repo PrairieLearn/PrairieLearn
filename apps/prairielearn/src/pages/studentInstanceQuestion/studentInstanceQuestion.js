@@ -117,7 +117,7 @@ async function processIssue(req, res) {
 
   const variantId = await getValidVariantId(req, res);
   await insertIssue({
-    variantId: variantId,
+    variantId,
     studentMessage: description,
     instructorMessage: 'student-reported issue',
     manuallyReported: true,

@@ -255,7 +255,7 @@ export async function addUserToGroup({
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
-      authn_user_id: authn_user_id,
+      authn_user_id,
       group_role_id: groupRoleId,
     });
   });

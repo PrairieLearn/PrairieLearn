@@ -63,9 +63,7 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
     """
     seen = set()
     for i, node in enumerate(submission):
-        if node is None or not all(
-            u in seen for (u, _) in graph.in_edges(node)  # type: ignore
-        ):
+        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
             return i
         seen.add(node)
     return len(submission)
@@ -137,7 +135,7 @@ def add_edges_for_groups(
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
-        for dependency, _ in graph.in_edges(group_tag):  # type: ignore
+        for dependency, _ in graph.in_edges(group_tag):
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 

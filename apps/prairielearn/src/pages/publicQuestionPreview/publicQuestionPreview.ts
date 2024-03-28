@@ -16,6 +16,7 @@ import {
   setRendererHeader,
 } from '../../lib/question-render';
 import { PublicQuestionPreview } from './publicQuestionPreview.html';
+import { setQuestionCopyTargets } from '../../lib/copy-question';
 
 const logPageView = promisify(LogPageView(path.basename(__filename, '.ts')));
 
@@ -80,6 +81,7 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView(req, res);
+    await setQuestionCopyTargets(res);
     setRendererHeader(res);
     res.send(PublicQuestionPreview({ resLocals: res.locals }));
   }),

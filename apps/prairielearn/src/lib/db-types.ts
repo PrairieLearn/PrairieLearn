@@ -239,6 +239,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
+  disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
   heartbeat_at: DateFromISOString.nullable(),
   hostname: z.string().nullable(),
   id: IdSchema,
@@ -358,9 +359,6 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
-  // Currently unused.
-  // TODO: remove from schema entirely?
-  role: z.any(),
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;

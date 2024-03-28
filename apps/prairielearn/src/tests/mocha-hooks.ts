@@ -18,7 +18,7 @@ export async function mochaGlobalTeardown() {
  * We take advantage of this to create a separate database for each worker.
  */
 export const mochaHooks: RootHookObject = {
-  beforeAll: async function () {
+  async beforeAll() {
     const logger = await import('@prairielearn/logger');
 
     const consoleTransport = logger.logger.transports.find(

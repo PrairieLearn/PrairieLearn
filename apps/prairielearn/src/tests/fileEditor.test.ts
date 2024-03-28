@@ -494,20 +494,17 @@ function editPost(
         file_edit_orig_hash: locals.file_edit_orig_hash,
       };
       locals.preEndTime = Date.now();
-      request.post(
-        { url: url, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postEndTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request.post({ url, form, followAllRedirects: true }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        locals.postEndTime = Date.now();
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);

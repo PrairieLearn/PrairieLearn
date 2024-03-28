@@ -4,6 +4,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
+import { type Dirent } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -156,14 +157,38 @@ export async function updateWorkspaceDiskUsage(
 async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
   let size = 0;
 
-  const files = await fs.readdir(dir, { recursive: true });
-
-  for (const file of files) {
-    const stats = await fs.lstat(path.join(dir, file));
-    size += stats.size;
+  for (const file of await getWorkspaceFiles(dir)) {
+    try {
+      const stats = await fs.lstat(path.join(file.path, file.name));
+      size += stats.size;
+    } catch (err: any) {
+      // This code is susceptible to TOCTOU issues, but we're ok with that.
+      // We'll just silently ignore any files that can't be read. This would
+      // most frequently occur when we're reading files from an active
+      // workspace and a student deletes a file before we can read it.
+      if (err.code !== 'ENOENT') throw err;
+    }
   }
 
   return size;
+}
+
+async function getWorkspaceFiles(dir: string): Promise<Dirent[]> {
+  try {
+    // We use `withFileTypes: true` to avoid a bug where Node will try to recurse
+    // into Unix domain socket files and fail with `ENOTDIR`.
+    //
+    // https://github.com/nodejs/node/issues/52159
+    return await fs.readdir(dir, { recursive: true, withFileTypes: true });
+  } catch (e: any) {
+    // Workspace directories might not exist at all. For instance, this can
+    // happen if a workspace is created for a variant but is never initialized
+    // and started. We'll treat this as a workspace with no files.
+    if (e.code === 'ENOENT') {
+      return [];
+    }
+    throw e;
+  }
 }
 
 /**
