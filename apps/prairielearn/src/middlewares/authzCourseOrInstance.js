@@ -10,8 +10,25 @@ const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
 const { features } = require('../lib/features/index');
+const { clearCookie } = require('../lib/cookie');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * Removes all override cookies from the response.
+ *
+ * @param {import('express').Response} res
+ * @param {{ cookie: string }[]} overrides
+ */
+function clearOverrideCookies(res, overrides) {
+  overrides.forEach((override) => {
+    debug(`clearing cookie: ${override.cookie}`);
+    clearCookie(res, override.cookie);
+
+    const oldName = override.cookie.replace(/^pl2_/, 'pl_');
+    clearCookie(res, oldName);
+  });
+}
 
 module.exports = asyncHandler(async (req, res, next) => {
   const isCourseInstance = Boolean(req.params.course_instance_id);
@@ -100,7 +117,8 @@ module.exports = asyncHandler(async (req, res, next) => {
   if (req.cookies.pl_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
     if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
-      res.clearCookie('pl_requested_uid');
+      clearCookie(res, 'pl_requested_uid');
+      clearCookie(res, 'pl2_requested_uid');
     } else {
       overrides.push({
         name: 'UID',
@@ -158,11 +176,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     }
 
     debug('not on student page, so clear all requested overrides and throw an error');
-
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     let err = error.make(403, 'Access denied');
     err.info = html`
@@ -191,10 +205,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     // No user was found - remove all override cookies and return with error
     if (result.rowCount === 0) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -235,10 +246,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // The effective user is an administrator and the authn user is not - remove
     // all override cookies and return with error
     if (result.rows[0].is_administrator && !is_administrator) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -265,10 +273,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     req_date = parseISO(req.cookies.pl_requested_date);
     if (!isValid(req_date)) {
       debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -349,10 +354,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_course_permission_preview &&
     effectiveResult.rows[0].permissions_course.has_course_permission_preview
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     let err = error.make(403, 'Access denied');
     err.info = html`
@@ -370,10 +372,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_course_permission_view &&
     effectiveResult.rows[0].permissions_course.has_course_permission_view
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     let err = error.make(403, 'Access denied');
     err.info = html`
@@ -391,10 +390,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_course_permission_edit &&
     effectiveResult.rows[0].permissions_course.has_course_permission_edit
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     let err = error.make(403, 'Access denied');
     err.info = html`
@@ -412,10 +408,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_course_permission_own &&
     effectiveResult.rows[0].permissions_course.has_course_permission_own
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     let err = error.make(403, 'Access denied');
     err.info = html`
@@ -434,10 +427,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       !res.locals.authz_data.authn_has_course_instance_permission_view &&
       effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -457,10 +447,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       !res.locals.authz_data.authn_has_course_instance_permission_edit &&
       effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -486,10 +473,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     ) {
       // authn user is not a Student Data Editor
       debug('cannot emulate student if not student data editor');
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`
@@ -516,10 +500,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
       !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       let err = error.make(403, 'Access denied');
       err.info = html`

@@ -5,6 +5,7 @@ const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
 const authnLib = require('../lib/authn');
+const { clearCookie, setCookie } = require('../lib/cookie');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -134,7 +135,8 @@ module.exports = asyncHandler(async (req, res, next) => {
     // We failed to authenticate.
 
     // Clear the pl_authn cookie in case it was bad
-    res.clearCookie('pl_authn');
+    clearCookie(res, 'pl_authn');
+    clearCookie(res, 'pl2_authn');
 
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.
@@ -162,7 +164,9 @@ module.exports = asyncHandler(async (req, res, next) => {
         // page from which the HTMX request was made. This ensures that users
         // don't end up redirected to a route that renders HTML that's meant to
         // be embedded in another page.
-        res.cookie('preAuthUrl', req.get('HX-Current-URL'));
+        //
+        // Fall back to the home page if we're somehow missing this header.
+        setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
         res.set('HX-Redirect', loginUrl);
 
         // Note that Node doesn't allow us to set headers if the response is a
@@ -175,7 +179,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       }
 
       // first set the preAuthUrl cookie for redirection after authn
-      res.cookie('preAuthUrl', req.originalUrl);
+      setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.originalUrl);
 
       res.redirect(loginUrl);
       return;
