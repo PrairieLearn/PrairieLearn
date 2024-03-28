@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { config } from '../lib/config';
 
