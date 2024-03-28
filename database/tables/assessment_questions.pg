@@ -31,6 +31,7 @@ columns
     max_submission_score_hist: double precision[]
     max_submission_score_variance: double precision
     mean_question_score: double precision
+    median_question_score: double precision
     number: integer
     number_in_alternative_group: integer
     number_submissions_hist: double precision[]
