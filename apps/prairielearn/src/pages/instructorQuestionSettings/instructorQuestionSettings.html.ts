@@ -526,7 +526,7 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${assessmentsWithQuestion
+      ${assessmentsWithQuestion.length
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
