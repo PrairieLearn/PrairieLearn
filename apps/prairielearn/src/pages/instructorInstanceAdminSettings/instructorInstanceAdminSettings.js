@@ -131,7 +131,7 @@ router.post('/', function (req, res, next) {
     } else {
       const editor = new CourseInstanceRenameEditor({
         locals: res.locals,
-        ciid_new: ciid_new,
+        ciid_new,
       });
       editor.canEdit((err) => {
         if (ERR(err, next)) return;

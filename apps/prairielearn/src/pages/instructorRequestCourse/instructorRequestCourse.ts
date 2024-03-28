@@ -137,12 +137,12 @@ router.post(
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {
-        short_name: short_name,
-        title: title,
+        short_name,
+        title,
         institution_id: existingSettingsResult.institution_id,
         display_timezone: existingSettingsResult.display_timezone,
         path: path.join(config.coursesRoot, repo_short_name),
-        repo_short_name: repo_short_name,
+        repo_short_name,
         github_user,
         course_request_id,
       };

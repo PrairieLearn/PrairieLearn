@@ -141,7 +141,7 @@ router.post('/', function (req, res, next) {
     } else {
       const editor = new AssessmentRenameEditor({
         locals: res.locals,
-        tid_new: tid_new,
+        tid_new,
       });
 
       editor.canEdit((err) => {

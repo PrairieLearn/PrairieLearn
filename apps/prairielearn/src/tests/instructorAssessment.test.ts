@@ -252,7 +252,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -330,7 +330,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -407,7 +407,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -484,7 +484,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -580,7 +580,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorGradebookUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {

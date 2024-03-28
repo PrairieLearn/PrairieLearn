@@ -232,13 +232,13 @@ describe('Access control', function () {
   const postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
     const form: Record<string, any> = {
       __action: 'new_instance',
-      __csrf_token: __csrf_token,
+      __csrf_token,
     };
     if (includePassword) form.password = 'secret';
     request.post(
       {
         url: assessmentUrl,
-        form: form,
+        form,
         jar: cookies,
         followAllRedirects: true,
       },
@@ -390,11 +390,11 @@ describe('Access control', function () {
     };
     const form = {
       __action: 'save',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       postData: JSON.stringify({ variant, submittedAnswer }),
     };
     request.post(
-      { url: q1Url, form: form, jar: cookies, followAllRedirects: true },
+      { url: q1Url, form, jar: cookies, followAllRedirects: true },
       function (error, response) {
         if (error) {
           return callback(error);

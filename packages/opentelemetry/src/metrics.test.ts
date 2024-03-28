@@ -29,7 +29,7 @@ describe('instrumentedWithMetrics', () => {
     meter = meterProvider.getMeter('test');
     exporter = new InMemoryMetricExporter(AggregationTemporality.DELTA);
     metricReader = new PeriodicExportingMetricReader({
-      exporter: exporter,
+      exporter,
       exportIntervalMillis: 50,
     });
     meterProvider.addMetricReader(metricReader);
