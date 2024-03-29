@@ -16,7 +16,7 @@ interface LoadUserOptions {
   redirect?: boolean;
 }
 
-interface LoadUserAuth {
+export interface LoadUserAuth {
   uid?: string;
   uin?: string | null;
   name?: string | null;

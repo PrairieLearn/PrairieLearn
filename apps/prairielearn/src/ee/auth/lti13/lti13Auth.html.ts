@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { Lti13Instance } from '../../../lib/db-types';
-import { LoadUserAuth } from '../../../lib/authn';
+import { type LoadUserAuth } from '../../../lib/authn';
 
 export const Lti13Test = ({
   resLocals,
