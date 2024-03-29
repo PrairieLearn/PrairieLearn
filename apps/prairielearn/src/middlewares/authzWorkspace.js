@@ -1,7 +1,8 @@
+import { checkPlanGrantsForLocals } from '../ee/lib/billing/plan-grants';
+
 // @ts-check
 const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
-const { promisify } = require('util');
 
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
@@ -11,9 +12,7 @@ const { authzCourseOrInstance } = require('./authzCourseOrInstance');
 const { selectAndAuthzInstanceQuestion } = require('./selectAndAuthzInstanceQuestion');
 const { selectAndAuthzAssessmentInstance } = require('./selectAndAuthzAssessmentInstance');
 const { selectAndAuthzInstructorQuestion } = require('./selectAndAuthzInstructorQuestion');
-const authzHasCoursePreviewOrInstanceView = promisify(
-  require('./authzHasCoursePreviewOrInstanceView'),
-);
+const { authzHasCoursePreviewOrInstanceView } = require('./authzHasCoursePreviewOrInstanceView');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -43,8 +42,11 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
-      const checkPlanGrants = promisify(require('../ee/middlewares/checkPlanGrants').default);
-      await checkPlanGrants(req, res);
+      const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
+      if (!hasPlanGrants) {
+        res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/upgrade`);
+        return;
+      }
     }
 
     if (res.locals.instance_question_id) {

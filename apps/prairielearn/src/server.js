@@ -749,7 +749,7 @@ module.exports.initExpress = function () {
   // All other course instance instructor pages require the effective user to have permissions
   app.use(
     '/pl/course_instance/:course_instance_id/instructor',
-    require('./middlewares/authzHasCoursePreviewOrInstanceView'),
+    require('./middlewares/authzHasCoursePreviewOrInstanceView').default,
   );
 
   // all pages under /pl/course require authorization
