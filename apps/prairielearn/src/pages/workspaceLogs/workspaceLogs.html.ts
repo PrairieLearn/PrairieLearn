@@ -143,13 +143,13 @@ export function WorkspaceVersionLogs({
   `.toString();
 }
 
-const WorkspaceLogsTable = ({
+export function WorkspaceLogsTable({
   workspaceLogs,
   includeVersion = true,
 }: {
   workspaceLogs: WorkspaceLogRow[];
   includeVersion?: boolean;
-}) => {
+}) {
   return html`
     <div class="table-responsive">
       <table class="table table-sm">
@@ -177,4 +177,4 @@ const WorkspaceLogsTable = ({
       </table>
     </div>
   `;
-};
+}
