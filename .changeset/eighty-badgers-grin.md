@@ -1,5 +1,5 @@
 ---
-"@prairielearn/error": minor
+'@prairielearn/error': minor
 ---
 
-Introduce `AugmentedError` class
+Introduce `AugmentedError` and `HttpStatusError` classes

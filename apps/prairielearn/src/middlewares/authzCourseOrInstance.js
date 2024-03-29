@@ -6,7 +6,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const { parseISO, isValid } = require('date-fns');
 const { config } = require('../lib/config');
-const error = require('@prairielearn/error');
+const { AugmentedError, HttpStatusError } = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
@@ -36,12 +36,15 @@ module.exports = asyncHandler(async (req, res, next) => {
   };
 
   if (params.course_id == null && params.course_instance_id == null) {
-    throw error.make(403, 'Access denied (both course_id and course_instance_id are null)');
+    throw new HttpStatusError(
+      403,
+      'Access denied (both course_id and course_instance_id are null)',
+    );
   }
 
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, params);
   if (result.rowCount === 0) {
-    throw error.make(403, 'Access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 
   // Now that we know the user has access, parse the authz data
@@ -165,7 +168,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       res.clearCookie(override.cookie);
     });
 
-    throw new error.AugmentedError('Access denied', {
+    throw new AugmentedError('Access denied', {
       status: 403,
       info: html`
         <p>
@@ -198,7 +201,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -244,7 +247,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -275,7 +278,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -360,7 +363,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       res.clearCookie(override.cookie);
     });
 
-    throw new error.AugmentedError('Access denied', {
+    throw new AugmentedError('Access denied', {
       status: 403,
       info: html`
         <p>
@@ -382,7 +385,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       res.clearCookie(override.cookie);
     });
 
-    throw new error.AugmentedError('Access denied', {
+    throw new AugmentedError('Access denied', {
       status: 403,
       info: html`
         <p>
@@ -404,7 +407,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       res.clearCookie(override.cookie);
     });
 
-    throw new error.AugmentedError('Access denied', {
+    throw new AugmentedError('Access denied', {
       status: 403,
       info: html`
         <p>
@@ -426,7 +429,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       res.clearCookie(override.cookie);
     });
 
-    throw new error.AugmentedError('Access denied', {
+    throw new AugmentedError('Access denied', {
       status: 403,
       info: html`
         <p>
@@ -449,7 +452,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -472,7 +475,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -501,7 +504,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>
@@ -533,7 +536,7 @@ module.exports = asyncHandler(async (req, res, next) => {
         res.clearCookie(override.cookie);
       });
 
-      throw new error.AugmentedError('Access denied', {
+      throw new AugmentedError('Access denied', {
         status: 403,
         info: html`
           <p>

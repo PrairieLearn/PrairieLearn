@@ -56,20 +56,29 @@ export function newMessage(err: any, newMsg: string): ErrorWithData {
 
 export interface AugmentedErrorOptions {
   status?: number;
-  info?: string;
   data?: any;
+  info?: string;
   cause?: unknown;
 }
 
 export class AugmentedError extends Error {
-  status?: number;
-  info?: string;
+  status: number;
   data?: any;
+  info?: string;
 
   constructor(message: string, options: AugmentedErrorOptions) {
     super(message, { cause: options.cause });
-    this.status = options.status;
+    this.status = options.status ?? 500;
     this.data = options.data;
     this.info = options.info;
+  }
+}
+
+export class HttpStatusError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
   }
 }
