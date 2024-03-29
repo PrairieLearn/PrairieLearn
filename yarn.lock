@@ -2914,6 +2914,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/error@workspace:packages/error"
   dependencies:
+    "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.6
     "@types/node": ^20.11.30

@@ -5,7 +5,7 @@ import * as path from 'path';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { config } from '../lib/config';
-import * as error from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { html } from '@prairielearn/html';
 import { idsEqual } from '../lib/id';
@@ -36,12 +36,15 @@ export async function authzCourseOrInstance(req, res) {
   };
 
   if (params.course_id == null && params.course_instance_id == null) {
-    throw error.make(403, 'Access denied (both course_id and course_instance_id are null)');
+    throw new HttpStatusError(
+      403,
+      'Access denied (both course_id and course_instance_id are null)',
+    );
   }
 
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, params);
   if (result.rowCount === 0) {
-    throw error.make(403, 'Access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 
   // Now that we know the user has access, parse the authz data
@@ -165,14 +168,15 @@ export async function authzCourseOrInstance(req, res) {
       res.clearCookie(override.cookie);
     });
 
-    let err = error.make(403, 'Access denied');
-    err.info = html`
-      <p>
-        You must be a member of the course staff in order to change the effective user. All
-        requested changes to the effective user have been removed.
-      </p>
-    `.toString();
-    throw err;
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You must be a member of the course staff in order to change the effective user. All
+          requested changes to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // We are trying to override the user data.
@@ -197,40 +201,42 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one with uid
-          <code>${req.cookies.pl_requested_uid}</code>, when no such user exists. All requested
-          changes to the effective user have been removed.
-        </p>
-      `.toString();
-
-      if (config.devMode && is_administrator) {
-        err.info += html`
-          <div class="alert alert-warning" role="alert">
-            <p>
-              In Development Mode,
-              <a href="/pl/administrator/query/select_or_insert_user">go here to add the user</a>
-              first and then try the emulation again.
-            </p>
-          </div>
-        `.toString();
-        if (isCourseInstance) {
-          err.info += html`
-            <p>
-              To auto-generate many users for testing, see
-              <a href="/pl/administrator/query/generate_and_enroll_users"
-                >Generate random users and enroll them in a course instance</a
-              >
-              <br />
-              (Hint your course_instance_id is
-              <strong>${res.locals.course_instance.id}</strong>)
-            </p>
-          `.toString();
-        }
-      }
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one with uid
+            <code>${req.cookies.pl_requested_uid}</code>, when no such user exists. All requested
+            changes to the effective user have been removed.
+          </p>
+          ${config.devMode && is_administrator
+            ? html`
+                <div class="alert alert-warning" role="alert">
+                  <p>
+                    In Development Mode,
+                    <a href="/pl/administrator/query/select_or_insert_user"
+                      >go here to add the user</a
+                    >
+                    first and then try the emulation again.
+                  </p>
+                </div>
+                ${isCourseInstance
+                  ? html`
+                      <p>
+                        To auto-generate many users for testing, see
+                        <a href="/pl/administrator/query/generate_and_enroll_users"
+                          >Generate random users and enroll them in a course instance</a
+                        >
+                        <br />
+                        (Hint your course_instance_id is
+                        <strong>${res.locals.course_instance.id}</strong>)
+                      </p>
+                    `
+                  : ''}
+              `
+            : ''}
+        `,
+      });
     }
 
     // The effective user is an administrator and the authn user is not - remove
@@ -241,14 +247,15 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one who is an administrator, when you are
-          not an administrator. All requested changes to the effective user have been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one who is an administrator, when you are
+            not an administrator. All requested changes to the effective user have been removed.
+          </p>
+        `,
+      });
     }
 
     user = _.cloneDeep(result.rows[0].user);
@@ -271,15 +278,16 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have requested an invalid effective date:
-          <code>${req.cookies.pl_requested_date}</code>. All requested changes to the effective user
-          have been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have requested an invalid effective date:
+            <code>${req.cookies.pl_requested_date}</code>. All requested changes to the effective
+            user have been removed.
+          </p>
+        `,
+      });
     }
 
     debug(`effective req_date = ${req_date}`);
@@ -355,14 +363,15 @@ export async function authzCourseOrInstance(req, res) {
       res.clearCookie(override.cookie);
     });
 
-    let err = error.make(403, 'Access denied');
-    err.info = html`
-      <p>
-        You have tried to change the effective user to one who is a course previewer, when you are
-        not a course previewer. All requested changes to the effective user have been removed.
-      </p>
-    `.toString();
-    throw err;
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You have tried to change the effective user to one who is a course previewer, when you are
+          not a course previewer. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // The effective user is a Viewer and the authn_user is not - remove
@@ -376,14 +385,15 @@ export async function authzCourseOrInstance(req, res) {
       res.clearCookie(override.cookie);
     });
 
-    let err = error.make(403, 'Access denied');
-    err.info = html`
-      <p>
-        You have tried to change the effective user to one who is a course viewer, when you are not
-        a course viewer. All requested changes to the effective user have been removed.
-      </p>
-    `.toString();
-    throw err;
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You have tried to change the effective user to one who is a course viewer, when you are
+          not a course viewer. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // The effective user is an Editor and the authn_user is not - remove
@@ -397,14 +407,15 @@ export async function authzCourseOrInstance(req, res) {
       res.clearCookie(override.cookie);
     });
 
-    let err = error.make(403, 'Access denied');
-    err.info = html`
-      <p>
-        You have tried to change the effective user to one who is a course editor, when you are not
-        a course editor. All requested changes to the effective user have been removed.
-      </p>
-    `.toString();
-    throw err;
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You have tried to change the effective user to one who is a course editor, when you are
+          not a course editor. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // The effective user is an Owner and the authn_user is not - remove
@@ -418,14 +429,15 @@ export async function authzCourseOrInstance(req, res) {
       res.clearCookie(override.cookie);
     });
 
-    let err = error.make(403, 'Access denied');
-    err.info = html`
-      <p>
-        You have tried to change the effective user to one who is a course owner, when you are not a
-        course owner. All requested changes to the effective user have been removed.
-      </p>
-    `.toString();
-    throw err;
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You have tried to change the effective user to one who is a course owner, when you are not
+          a course owner. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   if (isCourseInstance) {
@@ -440,16 +452,16 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one who can view student data in the course
-          instance <code>${res.locals.course_instance.short_name}</code>, when you do not have
-          permission to view these student data. All requested changes to the effective user have
-          been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one who is a student data viewer in the
+            course instance <code>${res.locals.course_instance.short_name}</code>, when you are not
+            a student data viewer. All requested changes to the effective user have been removed.
+          </p>
+        `,
+      });
     }
 
     // The effective user is a Student Data Editor and the authn_user is not -
@@ -463,16 +475,16 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one who can edit student data in the course
-          instance <code>${res.locals.course_instance.short_name}</code>, when you do not have
-          permission to edit these student data. All requested changes to the effective user have
-          been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one who is a student data editor in the
+            course instance <code>${res.locals.course_instance.short_name}</code>, when you are not
+            a student data editor. All requested changes to the effective user have been removed.
+          </p>
+        `,
+      });
     }
 
     // The effective user is a student (with no course or course instance role prior to
@@ -492,16 +504,18 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one who is a student in the course instance
-          <code>${res.locals.course_instance.short_name}</code>, when you do not have permission to
-          edit student data in this course instance. All requested changes to the effective user
-          have been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one who is a student in the course
+            instance
+            <code>${res.locals.course_instance.short_name}</code>, when you do not have permission
+            to edit student data in this course instance. All requested changes to the effective
+            user have been removed.
+          </p>
+        `,
+      });
     }
 
     // The effective user is not enrolled in the course instance and is also not
@@ -522,14 +536,15 @@ export async function authzCourseOrInstance(req, res) {
         res.clearCookie(override.cookie);
       });
 
-      let err = error.make(403, 'Access denied');
-      err.info = html`
-        <p>
-          You have tried to change the effective user to one who is not enrolled in this course
-          instance. All required changes to the effective user have been removed.
-        </p>
-      `.toString();
-      throw err;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have tried to change the effective user to one who is not enrolled in this course
+            instance. All required changes to the effective user have been removed.
+          </p>
+        `,
+      });
     }
   }
 

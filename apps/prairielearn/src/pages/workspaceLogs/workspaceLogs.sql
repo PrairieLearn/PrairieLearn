@@ -12,11 +12,8 @@ WHERE
 
 -- BLOCK select_workspace_logs
 SELECT
-  date,
-  format_date_full_compact (date, $display_timezone) AS date_formatted,
-  message,
-  version,
-  state
+  *,
+  format_date_full_compact (date, $display_timezone) AS date_formatted
 FROM
   workspace_logs
 WHERE

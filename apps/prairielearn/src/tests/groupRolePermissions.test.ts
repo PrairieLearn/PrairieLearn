@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { config } from '../lib/config';
 
@@ -10,11 +10,12 @@ import {
   queryOneRowAsync,
   queryRow,
 } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(__filename);
 
-import helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 import { TEST_COURSE_PATH } from '../lib/paths';
 import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types';
+
+const sql = loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
