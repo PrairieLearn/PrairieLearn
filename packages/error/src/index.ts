@@ -53,3 +53,23 @@ export function newMessage(err: any, newMsg: string): ErrorWithData {
   newErr.message = `${newMsg}: ${newErr.message}`;
   return newErr;
 }
+
+export interface AugmentedErrorOptions {
+  status?: number;
+  info?: string;
+  data?: any;
+  cause?: unknown;
+}
+
+export class AugmentedError extends Error {
+  status?: number;
+  data?: any;
+  info?: any;
+
+  constructor(message: string, options: AugmentedErrorOptions) {
+    super(message, { cause: options.cause });
+    this.status = options.status;
+    this.data = options.data;
+    this.info = options.info;
+  }
+}
