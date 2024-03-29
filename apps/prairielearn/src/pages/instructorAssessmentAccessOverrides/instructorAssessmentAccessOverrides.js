@@ -128,7 +128,7 @@ router.post(
             institution_id: res.locals.institution.id,
             course_id: res.locals.course.id,
             course_instance_id: res.locals.course_instance.id,
-            old_state: JSON.stringify(deletedAccessPolicy.rows),
+            old_state: JSON.stringify(deletedAccessPolicy.rows[0]),
             row_id: deletedAccessPolicy.rows[0].id,
           });
         }
@@ -168,8 +168,8 @@ router.post(
           institution_id: res.locals.institution.id,
           course_id: res.locals.course.id,
           course_instance_id: res.locals.course_instance.id,
-          new_state: JSON.stringify(editAccessPolicy.rows),
-          old_state: JSON.stringify(oldStateAccessPolicy.rows),
+          new_state: JSON.stringify(editAccessPolicy.rows[0]),
+          old_state: JSON.stringify(oldStateAccessPolicy.rows[0]),
           row_id: editAccessPolicy.rows[0].id,
         });
       });
