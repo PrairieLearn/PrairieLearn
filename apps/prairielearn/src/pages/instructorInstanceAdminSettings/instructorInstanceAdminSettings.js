@@ -80,9 +80,9 @@ router.post(
       );
       res.redirect(
         res.locals.plainUrlPrefix +
-        '/course_instance/' +
-        courseInstanceID +
-        '/instructor/instance_admin/settings',
+          '/course_instance/' +
+          courseInstanceID +
+          '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
