@@ -144,7 +144,7 @@ router.post(
         group_name: req.body.group_name,
       });
 
-      const oldStateAccessPolicy = await sqldb.queryAsync(sql.select_assessment_access_policy, {
+      const oldStateAccessPolicy = await sqldb.queryOneRowAsync(sql.select_assessment_access_policy, {
         policy_id: req.body.policy_id,
       });
 
