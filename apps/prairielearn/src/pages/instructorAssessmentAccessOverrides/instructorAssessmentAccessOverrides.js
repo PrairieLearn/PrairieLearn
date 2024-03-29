@@ -163,7 +163,7 @@ router.post(
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'assessment_access_policies',
-          action: 'edit',
+          action: 'update',
           institution_id: res.locals.institution.id,
           course_id: res.locals.course.id,
           course_instance_id: res.locals.course_instance.id,
