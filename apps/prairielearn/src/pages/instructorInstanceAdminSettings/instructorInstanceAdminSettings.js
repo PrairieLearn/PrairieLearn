@@ -23,10 +23,10 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.short_names = await sqldb.queryRow(
+    res.locals.short_names = await sqldb.queryRows(
       sql.short_names,
       { course_id: res.locals.course.id },
-      z.array(z.string()),
+      z.string(),
     );
 
     const host = getCanonicalHost(req);
@@ -74,19 +74,15 @@ router.post(
         IdSchema,
       );
 
-      if (courseInstanceID === null) {
-        throw new Error('Failed to find the new course instance ID');
-      }
-
       flash(
         'success',
         'Course instance copied successfully. You are new viewing your copy of the course instance.',
       );
       res.redirect(
         res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstanceID +
-          '/instructor/instance_admin/settings',
+        '/course_instance/' +
+        courseInstanceID +
+        '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
