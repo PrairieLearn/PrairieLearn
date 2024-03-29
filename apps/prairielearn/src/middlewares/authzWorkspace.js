@@ -1,5 +1,3 @@
-import { checkPlanGrantsForLocals } from '../ee/lib/billing/plan-grants';
-
 // @ts-check
 const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
@@ -42,6 +40,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
+      const { checkPlanGrantsForLocals } = require('../ee/lib/billing/plan-grants');
       const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
       if (!hasPlanGrants) {
         res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/upgrade`);
