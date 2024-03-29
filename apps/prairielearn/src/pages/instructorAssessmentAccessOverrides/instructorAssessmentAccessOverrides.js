@@ -107,7 +107,7 @@ router.post(
           institution_id: res.locals.institution.id,
           course_id: res.locals.course.id,
           course_instance_id: res.locals.course_instance.id,
-          new_state: JSON.stringify(inserted.rows),
+          new_state: JSON.stringify(inserted.rows[0]),
           row_id: inserted.rows[0].id,
         });
       });
