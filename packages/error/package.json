@@ -13,6 +13,7 @@
     "test": "mocha --no-config --require tsx src/*.test.ts"
   },
   "devDependencies": {
+    "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.30",
