@@ -457,6 +457,7 @@ export const AssessmentQuestionSchema = z.object({
   max_submission_score_hist: z.array(z.number()).nullable(),
   max_submission_score_variance: z.number().nullable(),
   mean_question_score: z.number().nullable(),
+  median_question_score: z.number().nullable(),
   number: z.number().nullable(),
   number_in_alternative_group: z.number().nullable(),
   number_submissions_hist: z.array(z.number()).nullable(),
