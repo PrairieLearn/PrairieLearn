@@ -10,7 +10,7 @@ const { logger } = require('@prairielearn/logger');
  * @param {number} depth
  * @returns {string}
  */
-function indentStack(stack, depth) {
+function indentString(stack, depth) {
   if (depth === 0) return stack;
 
   const indent = '    '.repeat(depth);
@@ -20,10 +20,20 @@ function indentStack(stack, depth) {
     .join('\n');
 }
 
+/**
+ * Recursively formats an error into a string. Correctly handles both the
+ * `.cause` property and `AggregateError` instances.
+ *
+ * @param {any} err
+ * @param {number} [depth]
+ * @param {string} [prefix]
+ * @returns {string}
+ */
 function formatErrorStack(err, depth = 0, prefix = '') {
+  // This will handle both circular references and unnecessarily deep chains.
   if (depth > 10) return '...';
 
-  let stack = indentStack(prefix + err.stack, depth);
+  let stack = indentString(prefix + err.stack, depth);
 
   if (err.cause) {
     stack += `\n\n${formatErrorStack(err.cause, depth + 1, 'Cause: ')}`;
