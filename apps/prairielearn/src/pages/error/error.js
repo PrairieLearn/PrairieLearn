@@ -5,6 +5,45 @@ var jsonStringifySafe = require('json-stringify-safe');
 
 const { logger } = require('@prairielearn/logger');
 
+/**
+ * @param {string} stack
+ * @param {number} depth
+ * @returns {string}
+ */
+function indentStack(stack, depth) {
+  if (depth === 0) return stack;
+
+  const indent = '    '.repeat(depth);
+  return stack
+    .split('\n')
+    .map((line) => (indent + line).trimEnd())
+    .join('\n');
+}
+
+function formatErrorStack(err, depth = 0, prefix = '') {
+  if (depth > 10) return '...';
+
+  let stack = indentStack(prefix + err.stack, depth);
+
+  if (err.cause) {
+    stack += `\n\n${formatErrorStack(err.cause, depth + 1, 'Cause: ')}`;
+  }
+
+  if (err instanceof AggregateError) {
+    const indent = '    '.repeat(depth + 1);
+    stack += `\n\n${indent}Errors: [\n`;
+
+    err.errors.forEach((error, i) => {
+      stack += formatErrorStack(error, depth + 2);
+      if (i < err.errors.length - 1) stack += '\n\n';
+    });
+
+    stack += `\n${indent}]`;
+  }
+
+  return stack;
+}
+
 /** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
   const errorId = res.locals.error_id;
@@ -13,6 +52,7 @@ module.exports = function (err, req, res, _next) {
   res.status(err.status);
 
   var referrer = req.get('Referrer') || null;
+  console.log('logging here');
   logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
     msg: err.message,
     id: errorId,
@@ -47,6 +87,7 @@ module.exports = function (err, req, res, _next) {
 
   const templateData = {
     error: err,
+    errorStack: err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
