@@ -83,7 +83,9 @@
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th class="text-right">Actions</th>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                  <th class="text-right">Actions</th>
+                <% } %>
               </tr>
             </thead>
             <tbody>
@@ -211,14 +213,14 @@
                   <% }); %>
                   <% } %>
                 </td>
-                <td class="text-right">
-                  <div class="dropdown js-question-actions">
-                    <button type="button" class="btn btn-secondary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      Action <span class="caret"></span>
-                    </button>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                  <td class="text-right">
+                    <div class="dropdown js-question-actions">
+                      <button type="button" class="btn btn-secondary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Action <span class="caret"></span>
+                      </button>
 
-                    <div class="dropdown-menu">
-                      <% if (authz_data.has_course_instance_permission_edit) { %>
+                      <div class="dropdown-menu">
                         <button
                           class="dropdown-item"
                           data-toggle="modal"
@@ -227,10 +229,10 @@
                         >
                           Reset question variants
                         </button>
-                      <% } %>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
+                <% } %>
               </tr>
               <% }); %>
             </tbody>
