@@ -32,10 +32,10 @@ router.get(
     const host = getCanonicalHost(req);
     res.locals.studentLink = new URL(
       res.locals.plainUrlPrefix +
-      '/course_instance/' +
-      res.locals.course_instance.id +
-      '/assessment/' +
-      res.locals.assessment.id,
+        '/course_instance/' +
+        res.locals.course_instance.id +
+        '/assessment/' +
+        res.locals.assessment.id,
       host,
     ).href;
     res.locals.studentLinkQRCode = new QR({
@@ -95,7 +95,8 @@ router.post(
     } else if (req.body.__action === 'change_id') {
       if (!req.body.id) throw error.make(400, `Invalid TID (was falsy): ${req.body.id}`);
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(400,
+        throw error.make(
+          400,
           `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
