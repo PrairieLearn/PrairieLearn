@@ -1,9 +1,9 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const { compiledScriptTag } = require('../../lib/assets');
+import { compiledScriptTag } from '../../lib/assets';
 
-function Workspace({
+export function Workspace({
   navTitle,
   navTitleHref,
   showLogs,
@@ -11,6 +11,14 @@ function Workspace({
   visibilityTimeoutSec,
   socketToken,
   resLocals,
+}: {
+  navTitle: string;
+  navTitleHref: string;
+  showLogs: boolean;
+  heartbeatIntervalSec: number;
+  visibilityTimeoutSec: number;
+  socketToken: string;
+  resLocals: Record<string, any>;
 }) {
   return html`
     <!doctype html>
@@ -241,5 +249,3 @@ function Workspace({
     </html>
   `.toString();
 }
-
-module.exports.Workspace = Workspace;
