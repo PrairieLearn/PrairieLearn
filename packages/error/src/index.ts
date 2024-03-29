@@ -63,8 +63,8 @@ export interface AugmentedErrorOptions {
 
 export class AugmentedError extends Error {
   status?: number;
+  info?: string;
   data?: any;
-  info?: any;
 
   constructor(message: string, options: AugmentedErrorOptions) {
     super(message, { cause: options.cause });
