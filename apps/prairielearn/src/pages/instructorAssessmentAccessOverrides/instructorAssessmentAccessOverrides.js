@@ -116,7 +116,7 @@ router.post(
     } else if (req.body.__action === 'delete_override') {
       
       await runInTransactionAsync(async () => {
-        const deletedAccessPolicy = await sqldb.queryAsync(sql.delete_assessment_access_policy, {
+        const deletedAccessPolicy = await sqldb.queryZeroOrOneRowAsync(sql.delete_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           unsafe_assessment_access_policies_id: req.body.policy_id,
         });
