@@ -89,7 +89,7 @@ router.post(
 
       
       await runInTransactionAsync(async () => {
-        const inserted = await sqldb.queryAsync(sql.insert_assessment_access_policy, {
+        const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           created_by: res.locals.authn_user.user_id,
           credit: req.body.credit,
