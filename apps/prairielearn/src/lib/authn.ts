@@ -1,42 +1,40 @@
-// @ts-check
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from './config';
-import { shouldSecureCookie } from '../lib/cookie';
+import { shouldSecureCookie } from './cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- * @typedef {Object} LoadUserOptions
- * @property {boolean} [pl_authn_cookie] - Create the cookie?
- * @property {boolean} [redirect] - Redirect after processing?
- */
-/**
- * @typedef {Object} LoadUserAuth
- * @property {string} [uid]
- * @property {string | null} [uin]
- * @property {string | null} [name]
- * @property {string} [provider]
- * @property {number} [user_id] - If present, skip the users_select_or_insert call
- * @property {number | string | null} [institution_id]
- */
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {LoadUserAuth} authnParams
- * @param {LoadUserOptions} [optionsParams]
- */
-export async function loadUser(req, res, authnParams, optionsParams = {}) {
-  let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
+interface LoadUserOptions {
+  /** Should we send back an authentication cookie? */
+  pl_authn_cookie?: boolean;
+  /** Should we redirect the user? */
+  redirect?: boolean;
+}
 
-  let user_id;
-  if ('user_id' in authnParams) {
-    user_id = authnParams.user_id;
-  } else {
-    let params = [
+interface LoadUserAuth {
+  uid?: string;
+  uin?: string | null;
+  name?: string | null;
+  provider?: string;
+  /** If this attribute is present, the `users_select_or_insert` call will be skipped. */
+  user_id?: number;
+  institution_id?: number | string | null;
+}
+
+export async function loadUser(
+  req: Request,
+  res: Response,
+  authnParams: LoadUserAuth,
+  options: LoadUserOptions = {},
+) {
+  let user_id = authnParams.user_id;
+  if (user_id == null) {
+    const params = [
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
@@ -44,7 +42,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.institution_id,
     ];
 
-    let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
+    const userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
     const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
@@ -76,12 +74,12 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
 
-  if (options.pl_authn_cookie) {
-    var tokenData = {
+  if (options.pl_authn_cookie ?? true) {
+    const tokenData = {
       user_id,
       authn_provider_name: authnParams.provider || null,
     };
-    var pl_authn = generateSignedToken(tokenData, config.secretKey);
+    const pl_authn = generateSignedToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
@@ -93,7 +91,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     res.clearCookie('pl_disable_auto_authn');
   }
 
-  if (options.redirect) {
+  if (options.redirect ?? false) {
     let redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;
