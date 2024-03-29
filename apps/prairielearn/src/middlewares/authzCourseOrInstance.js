@@ -175,7 +175,7 @@ module.exports = asyncHandler(async (req, res, next) => {
           You must be a member of the course staff in order to change the effective user. All
           requested changes to the effective user have been removed.
         </p>
-      `.toString(),
+      `,
     });
   }
 
@@ -235,7 +235,7 @@ module.exports = asyncHandler(async (req, res, next) => {
                   : ''}
               `
             : ''}
-        `.toString(),
+        `,
       });
     }
 
@@ -254,7 +254,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             You have tried to change the effective user to one who is an administrator, when you are
             not an administrator. All requested changes to the effective user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
 
@@ -286,7 +286,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             <code>${req.cookies.pl_requested_date}</code>. All requested changes to the effective
             user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
 
@@ -370,7 +370,7 @@ module.exports = asyncHandler(async (req, res, next) => {
           You have tried to change the effective user to one who is a course previewer, when you are
           not a course previewer. All requested changes to the effective user have been removed.
         </p>
-      `.toString(),
+      `,
     });
   }
 
@@ -392,7 +392,7 @@ module.exports = asyncHandler(async (req, res, next) => {
           You have tried to change the effective user to one who is a course viewer, when you are
           not a course viewer. All requested changes to the effective user have been removed.
         </p>
-      `.toString(),
+      `,
     });
   }
 
@@ -414,7 +414,7 @@ module.exports = asyncHandler(async (req, res, next) => {
           You have tried to change the effective user to one who is a course editor, when you are
           not a course editor. All requested changes to the effective user have been removed.
         </p>
-      `.toString(),
+      `,
     });
   }
 
@@ -436,7 +436,7 @@ module.exports = asyncHandler(async (req, res, next) => {
           You have tried to change the effective user to one who is a course owner, when you are not
           a course owner. All requested changes to the effective user have been removed.
         </p>
-      `.toString(),
+      `,
     });
   }
 
@@ -460,7 +460,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             course instance <code>${res.locals.course_instance.short_name}</code>, when you are not
             a student data viewer. All requested changes to the effective user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
 
@@ -483,7 +483,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             course instance <code>${res.locals.course_instance.short_name}</code>, when you are not
             a student data editor. All requested changes to the effective user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
 
@@ -514,7 +514,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             to edit student data in this course instance. All requested changes to the effective
             user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
 
@@ -543,7 +543,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             You have tried to change the effective user to one who is not enrolled in this course
             instance. All required changes to the effective user have been removed.
           </p>
-        `.toString(),
+        `,
       });
     }
   }
