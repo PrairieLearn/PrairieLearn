@@ -307,7 +307,9 @@ export function InstructorAssessmentInstance({
                   <th class="text-center">Awarded points</th>
                   <th class="text-center" colspan="2">Percentage score</th>
                   <th><!--Manual grading column --></th>
-                  <th class="text-right">Actions</th>
+                  ${resLocals.authz_data.has_course_instance_permission_edit
+                    ? html`<th class="text-right">Actions</th>`
+                    : ''}
                 </tr>
               </thead>
               <tbody>
@@ -493,20 +495,20 @@ export function InstructorAssessmentInstance({
                             `
                           : ''}
                       </td>
-                      <td class="text-right">
-                        <div class="dropdown js-question-actions">
-                          <button
-                            type="button"
-                            class="btn btn-secondary btn-xs dropdown-toggle"
-                            data-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                          >
-                            Action <span class="caret"></span>
-                          </button>
-                          <div class="dropdown-menu dropdown-menu-right">
-                            ${resLocals.authz_data.has_course_instance_permission_edit
-                              ? html`
+                      ${resLocals.authz_data.has_course_instance_permission_edit
+                        ? html`
+                            <td class="text-right">
+                              <div class="dropdown js-question-actions">
+                                <button
+                                  type="button"
+                                  class="btn btn-secondary btn-xs dropdown-toggle"
+                                  data-toggle="dropdown"
+                                  aria-haspopup="true"
+                                  aria-expanded="false"
+                                >
+                                  Action <span class="caret"></span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
                                   <button
                                     class="dropdown-item"
                                     data-toggle="modal"
@@ -515,11 +517,11 @@ export function InstructorAssessmentInstance({
                                   >
                                     Reset question variants
                                   </button>
-                                `
-                              : ''}
-                          </div>
-                        </div>
-                      </td>
+                                </div>
+                              </div>
+                            </td>
+                          `
+                        : ''}
                     </tr>
                   `;
                 })}
