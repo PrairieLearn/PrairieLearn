@@ -87,7 +87,6 @@ router.post(
         group_name: req.body.group_name,
       });
 
-      
       await runInTransactionAsync(async () => {
         const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
@@ -114,12 +113,14 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
-      
       await runInTransactionAsync(async () => {
-        const deletedAccessPolicy = await sqldb.queryZeroOrOneRowAsync(sql.delete_assessment_access_policy, {
-          assessment_id: res.locals.assessment.id,
-          unsafe_assessment_access_policies_id: req.body.policy_id,
-        });
+        const deletedAccessPolicy = await sqldb.queryZeroOrOneRowAsync(
+          sql.delete_assessment_access_policy,
+          {
+            assessment_id: res.locals.assessment.id,
+            unsafe_assessment_access_policies_id: req.body.policy_id,
+          },
+        );
         if (deletedAccessPolicy.rows.length > 0) {
           await insertAuditLog({
             authn_user_id: res.locals.authn_user.user_id,
@@ -133,7 +134,6 @@ router.post(
           });
         }
       });
-      
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
@@ -147,10 +147,9 @@ router.post(
       const oldStateAccessPolicy = await sqldb.queryAsync(sql.select_assessment_access_policy, {
         policy_id: req.body.policy_id,
       });
-      
-      
+
       await runInTransactionAsync(async () => {
-        const editAccessPolicy = await sqldb.queryAsync(sql.update_assessment_access_policy, {
+        const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           credit: req.body.credit,
           end_date: new Date(req.body.end_date),
