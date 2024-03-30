@@ -51,7 +51,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
     if (result === 'invalid_authn_provider') {
       throw new HttpRedirect(
-        `/pl/login?invalid_provider=true&institution_id=${user_institution_id}`,
+        `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
       );
     }
   }
