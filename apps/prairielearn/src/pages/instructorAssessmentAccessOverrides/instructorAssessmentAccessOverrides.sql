@@ -95,7 +95,8 @@ VALUES
     $start_date,
     $user_id
   )
-RETURNING *;
+RETURNING
+  *;
 
 -- BLOCK update_assessment_access_policy
 UPDATE assessment_access_policies
@@ -109,11 +110,13 @@ SET
 WHERE
   assessment_id = $assessment_id
   AND id = $assessment_access_policies_id
-RETURNING *;
+RETURNING
+  *;
 
 -- BLOCK delete_assessment_access_policy
 DELETE FROM assessment_access_policies
 WHERE
   assessment_id = $assessment_id
   AND id = $unsafe_assessment_access_policies_id
-RETURNING *;
+RETURNING
+  *;

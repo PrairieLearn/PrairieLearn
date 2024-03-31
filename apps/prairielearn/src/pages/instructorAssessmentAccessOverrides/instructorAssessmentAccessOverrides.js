@@ -144,9 +144,12 @@ router.post(
         group_name: req.body.group_name,
       });
 
-      const oldStateAccessPolicy = await sqldb.queryOneRowAsync(sql.select_assessment_access_policy, {
-        policy_id: req.body.policy_id,
-      });
+      const oldStateAccessPolicy = await sqldb.queryOneRowAsync(
+        sql.select_assessment_access_policy,
+        {
+          policy_id: req.body.policy_id,
+        },
+      );
 
       await runInTransactionAsync(async () => {
         const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
