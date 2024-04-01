@@ -156,7 +156,7 @@ export function InstructorCourseAdminSettings({
                     The Github repository that can be used to sync course files.
                   </small>
                 </div>
-                ${displayEditButtons({
+                ${EditActions({
                   coursePathExists,
                   courseInfoExists,
                   hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
@@ -212,7 +212,7 @@ function CourseDirectoryMissingAlert({
   }
 }
 
-function displayEditButtons({
+function EditActions({
   coursePathExists,
   courseInfoExists,
   hasCoursePermissionView,
