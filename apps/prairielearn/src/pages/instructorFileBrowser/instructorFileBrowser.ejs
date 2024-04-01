@@ -70,23 +70,23 @@
                 <% if (file_browser.isFile) { %>
 
                 <%# File head %>
-                <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
+                <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>
-                <button id="instructorFileUploadForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
+                <button type="button" id="instructorFileUploadForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
                   <i class="fa fa-arrow-up"></i>
                   <span>Upload</span>
                 </button>
-                <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.file.encodedPath %>?attachment=<%= file_browser.file.encodedName %>">
+                <a class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.file.encodedPath %>?attachment=<%= file_browser.file.encodedName %>">
                   <i class="fa fa-arrow-down"></i>
                   <span>Download</span>
                 </a>
-                <button id="instructorFileRenameForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canRename) { %>disabled<% } %>>
+                <button type="button" id="instructorFileRenameForm-<%= file_browser.file.id %>" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canRename) { %>disabled<% } %>>
                   <i class="fa fa-i-cursor"></i>
                   <span>Rename</span>
                 </button>
-                <button id="instructorFileDeleteForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canDelete) { %>disabled<% } %>>
+                <button type="button" id="instructorFileDeleteForm-<%= file_browser.file.id %>" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canDelete) { %>disabled<% } %>>
                   <i class="far fa-trash-alt"></i>
                   <span>Delete</span>
                 </button>
@@ -97,13 +97,13 @@
                 <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                 <% if (file_browser.paths.specialDirs) { %>
                   <% file_browser.paths.specialDirs.forEach((d) => { %>
-                    <button id="instructorFileUploadForm-New<%= d.label %>" tabindex="0" class="btn btn-sm btn-light" role="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New' + d.label, info: d.info, working_path: d.path}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <button type="button" id="instructorFileUploadForm-New<%= d.label %>" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New' + d.label, info: d.info, working_path: d.path}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                       <i class="fa fa-plus"></i>
                       <span>Add new <%= d.label.toLowerCase() %> file</span>
                     </button>
                   <% }); %>
                 <% } %>
-                <button id="instructorFileUploadForm-New" tabindex="0" class="btn btn-sm btn-light" role="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New', working_path: file_browser.paths.workingPath}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                <button type="button" id="instructorFileUploadForm-New" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New', working_path: file_browser.paths.workingPath}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-plus"></i>
                   <span>Add new file</span>
                 </button>
@@ -143,13 +143,13 @@
               <tr>
                 <td>
                   <% if (f.sync_errors) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                  <button type="button" class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
                           data-html="true" data-container="body" data-trigger="hover"
                           data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= f.sync_errors_ansified %></pre>">
                     <i class="fa fa-times text-danger" aria-hidden="true"></i>
                   </button>
                   <% } else if (f.sync_warnings) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                  <button type="button" class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
                           data-html="true" data-container="body" data-trigger="hover"
                           data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= f.sync_warnings_ansified %></pre>">
                     <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
@@ -163,23 +163,23 @@
                   <% } %>
                 </td>
                 <td>
-                  <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
+                  <a class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
                     <i class="fa fa-edit"></i>
                     <span>Edit</span>
                   </a>
-                  <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canUpload) { %>disabled<% } %>>
+                  <button type="button" id="instructorFileUploadForm-<%= f.id %>" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canUpload) { %>disabled<% } %>>
                     <i class="fa fa-arrow-up"></i>
                     <span>Upload</span>
                   </button>
-                  <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= f.encodedPath %>?attachment=<%= f.encodedName %>">
+                  <a class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= f.encodedPath %>?attachment=<%= f.encodedName %>">
                     <i class="fa fa-arrow-down"></i>
                     <span>Download</span>
                   </a>
-                  <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
+                  <button type="button" id="instructorFileRenameForm-<%= f.id %>"class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
                     <i class="fa fa-i-cursor"></i>
                     <span>Rename</span>
                   </button>
-                  <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canDelete) { %>disabled<% } %>>
+                  <button type="button" id="instructorFileDeleteForm-<%= f.id %>" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canDelete) { %>disabled<% } %>>
                     <i class="far fa-trash-alt"></i>
                     <span>Delete</span>
                   </button>
