@@ -43,8 +43,9 @@ module.exports = asyncHandler(async (req, res, next) => {
       const { checkPlanGrantsForLocals } = require('../ee/lib/billing/plan-grants');
       const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
       if (!hasPlanGrants) {
-        res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/upgrade`);
-        return;
+        // TODO: Show a fancier error page explaining what happened and prompting
+        // the user to contact their instructor.
+        throw error.make(403, 'Access denied');
       }
     }
 
