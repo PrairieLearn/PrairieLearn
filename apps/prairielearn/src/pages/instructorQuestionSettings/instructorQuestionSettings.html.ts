@@ -423,7 +423,7 @@ function CopyForm({
         </label>
         <select class="form-control" id="to-course-id-select" name="to_course_id" required>
           ${exampleCourse
-            ? html` <option hidden disabled selected value>-- select a course --</option> `
+            ? html`<option hidden disabled selected value>-- select a course --</option>`
             : ''}
           ${editableCourses.map((c) => {
             return html`
