@@ -135,7 +135,7 @@ function LoginPageContainer({
 
 function ShibLoginButton() {
   return html`
-    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback" role="button">
+    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
       ${config.shibLinkLogo != null
         ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
         : html`<span class="social-icon"></span>`}
@@ -146,7 +146,7 @@ function ShibLoginButton() {
 
 function GoogleLoginButton() {
   return html`
-    <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login" role="button">
+    <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
       <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Google</span>
     </a>
@@ -155,7 +155,7 @@ function GoogleLoginButton() {
 
 function MicrosoftLoginButton() {
   return html`
-    <a class="btn btn-dark d-block position-relative" href="/pl/azure_login" role="button">
+    <a class="btn btn-dark d-block position-relative" href="/pl/azure_login">
       <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Microsoft</span>
     </a>
@@ -299,7 +299,7 @@ export function AuthLoginUnsupportedProvider({
 
 function DevModeBypass() {
   return html`
-    <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
+    <a class="btn btn-success w-100" href="/pl/dev_login">
       <span class="font-weight-bold">Dev Mode Bypass</span>
     </a>
     <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
