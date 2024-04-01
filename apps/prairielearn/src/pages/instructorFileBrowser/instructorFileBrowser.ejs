@@ -74,7 +74,7 @@
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>
-                <button type="button" id="instructorFileUploadForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
+                <button type="button" id="instructorFileUploadForm-<%= file_browser.file.id %>" class="btn btn-sm btn-light" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
                   <i class="fa fa-arrow-up"></i>
                   <span>Upload</span>
                 </button>
@@ -175,7 +175,7 @@
                     <i class="fa fa-arrow-down"></i>
                     <span>Download</span>
                   </a>
-                  <button type="button" id="instructorFileRenameForm-<%= f.id %>"class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
+                  <button type="button" id="instructorFileRenameForm-<%= f.id %>" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
                     <i class="fa fa-i-cursor"></i>
                     <span>Rename</span>
                   </button>

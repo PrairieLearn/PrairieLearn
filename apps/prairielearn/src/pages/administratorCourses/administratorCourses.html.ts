@@ -326,7 +326,6 @@ function CourseUpdateColumn({
         type="button"
         class="btn btn-xs btn-secondary"
         id="courseButton${course.id}-${column_name}"
-        tabindex="0"
         data-toggle="popover"
         data-container="body"
         data-html="true"
