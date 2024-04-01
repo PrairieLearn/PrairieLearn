@@ -85,11 +85,11 @@ module.exports = asyncHandler(async (req, res, next) => {
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
     if (req.cookies.pl_test_user === 'test_student') {
-      uid = 'student@illinois.edu';
+      uid = 'student@example.com';
       name = 'Student User';
       uin = '000000001';
     } else if (req.cookies.pl_test_user === 'test_instructor') {
-      uid = 'instructor@illinois.edu';
+      uid = 'instructor@example.com';
       name = 'Instructor User';
       uin = '100000000';
     }
