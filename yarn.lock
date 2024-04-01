@@ -3177,7 +3177,7 @@ __metadata:
     multipipe: ^4.0.0
     pg: ^8.11.3
     pg-cursor: ^2.10.3
-    pg-pool: ^3.6.1
+    pg-pool: ^3.6.2
     tsx: ^4.7.1
     typescript: ^5.4.3
     zod: ^3.22.4
@@ -13425,6 +13425,15 @@ __metadata:
   peerDependencies:
     pg: ">=8.0"
   checksum: 8a6513e6f74a794708c9dd16d2ccda0debadc56435ec2582de2b2e35b01315550c5dab8a0a9a2a16f4adce45523228f5739940fb7687ec7e9c300f284eb08fd1
+  languageName: node
+  linkType: hard
+
+"pg-pool@npm:^3.6.2":
+  version: 3.6.2
+  resolution: "pg-pool@npm:3.6.2"
+  peerDependencies:
+    pg: ">=8.0"
+  checksum: 5ceee4320a35fce08777d085d50a30a1253574257e1e7c5c56c915056d387d340f797115580c8d90a46691f83c39a9b4da1fd810d9ad168cc455c79c289116f4
   languageName: node
   linkType: hard
 
