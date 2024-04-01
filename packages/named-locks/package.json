@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "pg": "^8.11.3"
+    "pg": "^8.11.4"
   }
 }
