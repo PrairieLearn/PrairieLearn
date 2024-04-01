@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.1.1
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
 ## 1.1.0
 
 ### Minor Changes
