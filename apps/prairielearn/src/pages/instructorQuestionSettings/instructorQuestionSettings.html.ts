@@ -418,9 +418,9 @@ function CopyForm({
       <input type="hidden" name="__action" value="copy_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
-        <label for="to-course-id-select"
-          >The copied question will be added to the following course:</label
-        >
+        <label for="to-course-id-select">
+          The copied question will be added to the following course:
+        </label>
         <select class="form-control" id="to-course-id-select" name="to_course_id" required>
           ${exampleCourse
             ? html` <option hidden disabled selected value>-- select a course --</option> `
