@@ -117,7 +117,6 @@ export function InstructorAssessmentGroups({
                             <button
                               type="button"
                               class="btn btn-sm btn-light"
-                              tabindex="0"
                               data-toggle="modal"
                               data-target="#addGroupModal"
                             >
@@ -126,7 +125,6 @@ export function InstructorAssessmentGroups({
                             <button
                               type="button"
                               class="btn btn-sm btn-danger"
-                              tabindex="0"
                               data-toggle="modal"
                               data-target="#deleteAllGroupsModal"
                             >
