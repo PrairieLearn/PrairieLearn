@@ -128,7 +128,7 @@ export function InstructorQuestionSettings({
                         `
                       : ''}
                     ${questionGHLink
-                      ? html` <a target="_blank" href="${questionGHLink}"> view on GitHub </a> `
+                      ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                       : ''}
                   </td>
                 </tr>
