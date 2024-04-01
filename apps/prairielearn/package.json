@@ -163,7 +163,7 @@
     "socket.io-client": "^4.7.5",
     "streamifier": "^0.1.1",
     "strip-ansi": "^6.0.1",
-    "stripe": "^14.22.0",
+    "stripe": "^14.23.0",
     "tablesorter": "^2.31.3",
     "tar": "^6.2.1",
     "three": "0.160.1",
