@@ -155,7 +155,7 @@ export function InstructorQuestionSettings({
                                   <span>Edit</span>
                                 </a>
                               `
-                            : html`info.json`}
+                            : ''}
                         `
                       : ''}
                   </td>
