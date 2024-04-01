@@ -137,7 +137,7 @@ export function UserSettings({
             ${newAccessTokens.length > 0
               ? html`
                   <div class="card-body">
-                    <div class="alert alert-primary mt-3" role="alert">
+                    <div class="alert alert-primary" role="alert">
                       New access token created! Be sure to copy it now, as you won't be able to see
                       it later.
                     </div>
@@ -241,6 +241,7 @@ function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string })
           id="token_name"
           name="token_name"
           placeholder="My token"
+          autocomplete="off"
         />
       </div>
       <div class="text-right">
