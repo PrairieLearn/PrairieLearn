@@ -9,7 +9,7 @@ import * as mustache from 'mustache';
 // support for questions with legacy renderer.
 import * as cheerio from 'cheerio/lib/slim';
 import * as parse5 from 'parse5';
-const debugfn = require('debug');
+import debugfn from 'debug';
 const objectHash = require('object-hash');
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';

@@ -624,8 +624,11 @@ module.exports.initExpress = function () {
     },
     require('./middlewares/authzWorkspace'),
   ]);
-  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
-  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace').default);
+  app.use(
+    '/pl/workspace/:workspace_id/logs',
+    require('./pages/workspaceLogs/workspaceLogs').default,
+  );
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
@@ -1917,6 +1920,10 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/notFound'));
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+
+  // This is not a true error handler; it just implements support for
+  // "throwing" redirects.
+  app.use(require('./lib/redirect').thrownRedirectMiddleware);
 
   /**
    * Attempts to extract a numeric status code from a Postgres error object.

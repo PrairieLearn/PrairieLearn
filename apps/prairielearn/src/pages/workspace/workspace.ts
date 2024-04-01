@@ -1,23 +1,19 @@
-// @ts-check
-const path = require('path');
-const express = require('express');
+import * as express from 'express';
+import asyncHandler = require('express-async-handler');
+import * as sqldb from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
+import * as error from '@prairielearn/error';
+
+import { config } from '../../lib/config';
+import { selectVariantIdForWorkspace } from '../../models/workspace';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import { Workspace } from './workspace.html';
+
 const router = express.Router();
-const asyncHandler = require('express-async-handler');
-const sqldb = require('@prairielearn/postgres');
-const workspaceUtils = require('@prairielearn/workspace-utils');
-
-const { config } = require('../../lib/config');
-const { selectVariantIdForWorkspace } = require('../../models/workspace');
-const { generateSignedToken } = require('@prairielearn/signed-token');
-
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-
-const { Workspace } = require('./workspace.html');
-
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function getNavTitleHref(res) {
+async function getNavTitleHref(res: express.Response): Promise<string> {
   const variant_id = await selectVariantIdForWorkspace(res.locals.workspace_id);
 
   if (res.locals.assessment == null) {
@@ -39,7 +35,7 @@ async function getNavTitleHref(res) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    let navTitle;
+    let navTitle: string;
     if (res.locals.assessment == null) {
       // instructor preview
       res.locals.pageNote = 'Preview';
@@ -75,14 +71,12 @@ router.post(
     const workspace_id = res.locals.workspace_id;
 
     if (req.body.__action === 'reboot') {
-      debug(`Rebooting workspace ${workspace_id}`);
       await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
       await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
         workspace_id,
       });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (req.body.__action === 'reset') {
-      debug(`Resetting workspace ${workspace_id}`);
       await workspaceUtils.updateWorkspaceState(
         workspace_id,
         'uninitialized',
@@ -96,4 +90,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

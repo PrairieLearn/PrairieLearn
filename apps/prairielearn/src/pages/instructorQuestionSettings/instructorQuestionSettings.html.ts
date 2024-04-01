@@ -147,7 +147,6 @@ export function InstructorQuestionSettings({
                           !resLocals.course.example_course
                             ? html`
                                 <a
-                                  role="button"
                                   class="btn btn-xs btn-secondary mx-2"
                                   href="${resLocals.urlPrefix}/question/${resLocals.question
                                     .id}/file_edit/${infoPath}"

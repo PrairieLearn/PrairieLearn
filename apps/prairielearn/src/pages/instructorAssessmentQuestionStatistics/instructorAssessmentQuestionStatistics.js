@@ -89,6 +89,7 @@ router.get(
             record.qid,
             record.question_title,
             record.mean_question_score,
+            record.median_question_score,
             record.question_score_variance,
             record.discrimination,
             record.some_submission_perc,

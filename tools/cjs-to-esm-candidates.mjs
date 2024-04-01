@@ -23,6 +23,7 @@ const CJS_ONLY_MODULES = new Set([
   'express-async-handler',
   'express-list-endpoints',
   'form-data',
+  'get-port',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
