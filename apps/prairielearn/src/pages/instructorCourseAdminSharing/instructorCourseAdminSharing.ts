@@ -47,8 +47,8 @@ router.get(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
-        sharingSets: sharingSets,
-        publicSharingLink: publicSharingLink,
+        sharingSets,
+        publicSharingLink,
         resLocals: res.locals,
       }),
     );

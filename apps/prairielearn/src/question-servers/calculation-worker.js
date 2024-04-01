@@ -94,7 +94,7 @@ function grade(server, coursePath, submission, variant, question) {
   }
 
   return {
-    score: score,
+    score,
     v2_score: grading.score,
     feedback: grading.feedback ?? null,
     partial_scores: {},

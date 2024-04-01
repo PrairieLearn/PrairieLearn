@@ -1,4 +1,3 @@
-import { Response } from 'express';
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
@@ -9,6 +8,7 @@ import {
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment';
 import { assertNever } from '../lib/types';
+import { HttpRedirect } from '../lib/redirect';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -40,14 +40,12 @@ export async function ensureCheckedEnrollment({
   course,
   course_instance,
   authz_data,
-  redirect,
 }: {
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
   authz_data: any;
-  redirect: Response['redirect'];
-}): Promise<boolean> {
+}) {
   // Safety check: ensure the student would otherwise have access to the course.
   // If they don't, throw an access denied error. In most cases, this should
   // have already been checked.
@@ -65,11 +63,9 @@ export async function ensureCheckedEnrollment({
 
     switch (status) {
       case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED:
-        redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
-        return false;
+        throw new HttpRedirect(`/pl/course_instance/${course_instance.id}/upgrade`);
       case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED:
-        redirect('/pl/enroll/limit_exceeded');
-        return false;
+        throw new HttpRedirect('/pl/enroll/limit_exceeded');
       case PotentialEnterpriseEnrollmentStatus.ALLOWED:
         break;
       default:
@@ -81,8 +77,6 @@ export async function ensureCheckedEnrollment({
     course_instance_id: course_instance.id,
     user_id: authz_data.authn_user.user_id,
   });
-
-  return true;
 }
 
 export async function getEnrollmentForUserInCourseInstance({

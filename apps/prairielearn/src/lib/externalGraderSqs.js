@@ -104,7 +104,7 @@ async function sendJobToQueue(jobId, question, config) {
     },
     async () => {
       const messageBody = {
-        jobId: jobId,
+        jobId,
         image: question.external_grading_image,
         entrypoint: question.external_grading_entrypoint,
         s3Bucket: config.externalGradingS3Bucket,

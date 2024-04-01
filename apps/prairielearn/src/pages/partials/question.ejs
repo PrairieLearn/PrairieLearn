@@ -107,7 +107,7 @@
         <% } %>
         <% // Show even when question_copy_targets is empty. %>
         <% // We'll show a CTA to request a course if the user isn't an editor of any course. %>
-        <% if (course.template_course && question_context != 'manual_grading') { %>
+        <% if (typeof question_copy_targets !== 'undefined' && course.template_course && question_context != 'manual_grading') { %>
           <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
             <i class="fa fa-clone"></i>
             Copy question

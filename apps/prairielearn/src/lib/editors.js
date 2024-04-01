@@ -15,7 +15,7 @@ import {
 import { config } from './config';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import * as error from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import { v4 as uuidv4 } from 'uuid';
@@ -99,12 +99,12 @@ export class Editor {
   assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be course editor)');
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     // Do not allow users to edit the exampleCourse
     if (this.course.example_course) {
-      throw error.make(403, `Access denied (cannot edit the example course)`);
+      throw new HttpStatusError(403, `Access denied (cannot edit the example course)`);
     }
   }
 
@@ -1009,9 +1009,8 @@ export class FileDeleteEditor extends Editor {
 
   canEdit(callback) {
     if (!contains(this.container.rootPath, this.deletePath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The path of the file to delete</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
@@ -1020,8 +1019,8 @@ export class FileDeleteEditor extends Editor {
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
           </div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1029,17 +1028,16 @@ export class FileDeleteEditor extends Editor {
       contains(invalidRootPath, this.deletePath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The path of the file to delete</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
           </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1078,9 +1076,8 @@ export class FileRenameEditor extends Editor {
   canEdit(callback) {
     debug('FileRenameEditor: canEdit()');
     if (!contains(this.container.rootPath, this.oldPath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file's old path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
@@ -1089,15 +1086,14 @@ export class FileRenameEditor extends Editor {
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
           </div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
     if (!contains(this.container.rootPath, this.newPath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file's new path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
@@ -1106,8 +1102,8 @@ export class FileRenameEditor extends Editor {
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
           </div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1117,17 +1113,16 @@ export class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.oldPath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file's old path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
           </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1135,17 +1130,16 @@ export class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.newPath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file's new path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
           </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1218,9 +1212,8 @@ export class FileUploadEditor extends Editor {
 
   canEdit(callback) {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
@@ -1229,8 +1222,8 @@ export class FileUploadEditor extends Editor {
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
           </div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1238,17 +1231,16 @@ export class FileUploadEditor extends Editor {
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
           </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1322,9 +1314,8 @@ export class FileModifyEditor extends Editor {
 
   canEdit(callback) {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
@@ -1333,8 +1324,8 @@ export class FileModifyEditor extends Editor {
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
           </div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 
@@ -1342,17 +1333,16 @@ export class FileModifyEditor extends Editor {
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        html`
+      const err = new AugmentedError('Invalid file path', {
+        info: html`
           <p>The file path</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
           </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `.toString(),
-      );
+        `,
+      });
       return callback(err);
     }
 

@@ -6,6 +6,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { config } from './config';
 import { shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
+import { HttpRedirect } from './redirect';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -51,8 +52,9 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     user_id = userSelectOrInsertRes.rows[0].user_id;
     const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
     if (result === 'invalid_authn_provider') {
-      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`);
-      return;
+      throw new HttpRedirect(
+        `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
+      );
     }
   }
 
@@ -80,7 +82,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
 
   if (options.pl_authn_cookie) {
     var tokenData = {
-      user_id: user_id,
+      user_id,
       authn_provider_name: authnParams.provider || null,
     };
     var pl_authn = generateSignedToken(tokenData, config.secretKey);

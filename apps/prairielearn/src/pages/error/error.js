@@ -19,7 +19,7 @@ module.exports = function (err, req, res, _next) {
     status: err.status,
     stack: err.stack,
     data: jsonStringifySafe(err.data),
-    referrer: referrer,
+    referrer,
     response_id: res.locals.response_id,
   });
 
@@ -56,7 +56,7 @@ module.exports = function (err, req, res, _next) {
     error_data_sqlParams: jsonStringifySafe(_.get(err, ['data', 'sqlParams'], null), null, '    '),
     error_data_sqlQuery: sqlQuery,
     id: errorId,
-    referrer: referrer,
+    referrer,
   };
   if (req.app.get('env') === 'development') {
     // development error handler

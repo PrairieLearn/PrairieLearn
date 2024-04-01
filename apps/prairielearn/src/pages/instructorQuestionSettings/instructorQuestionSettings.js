@@ -110,7 +110,7 @@ router.post(
       } else {
         const editor = new QuestionRenameEditor({
           locals: res.locals,
-          qid_new: qid_new,
+          qid_new,
         });
         const serverJob = await editor.prepareServerJob();
         try {

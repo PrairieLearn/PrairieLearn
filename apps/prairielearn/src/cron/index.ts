@@ -1,4 +1,3 @@
-// @ts-check
 import * as _ from 'lodash';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,29 +15,24 @@ const debug = debugfn('prairielearn:cron');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
- * @type {Record<number | string, number | NodeJS.Timeout>}
- *
  * jobTimeouts meaning (used by stop()):
  *     Timeout object = timeout is running and can be canceled
  *     0 = job is currently running
  *     -1 = stop requested
  */
-const jobTimeouts = {};
+const jobTimeouts: Record<string | number, number | NodeJS.Timeout> = {};
 
-/**
- * @typedef {Object} CronJobModule
- * @property {() => Promise<void>} run
- */
+interface CronJobModule {
+  run: () => Promise<void>;
+}
 
-/**
- * @typedef {Object} CronJob
- * @property {string} name
- * @property {CronJobModule} module
- * @property { number | 'daily'} intervalSec
- */
+interface CronJob {
+  name: string;
+  module: CronJobModule;
+  intervalSec: number | 'daily';
+}
 
-/** @type {CronJob[]} */
-export let jobs = [];
+export let jobs: CronJob[] = [];
 
 // Cron jobs are protected by two layers:
 // 1. We use a namedLock of the form `cron:JOB_NAME`
@@ -176,7 +170,7 @@ export function init() {
     } else if (Number.isNaN(intervalSecNum)) {
       throw new Error(`Invalid cron interval: ${intervalSec}`);
     } else if (intervalSecNum > 0) {
-      queueJobs(jobsList, intervalSec);
+      queueJobs(jobsList, intervalSecNum);
     } // zero or negative intervalSec jobs are not run
   });
 }
@@ -199,7 +193,7 @@ export async function stop() {
   }
 }
 
-function queueJobs(jobsList, intervalSec) {
+function queueJobs(jobsList: CronJob[], intervalSec: number) {
   debug(`queueJobs(): ${intervalSec}`);
   function queueRun() {
     debug(`queueJobs(): ${intervalSec}: starting run`);
@@ -224,7 +218,7 @@ function queueJobs(jobsList, intervalSec) {
   jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
 }
 
-function queueDailyJobs(jobsList) {
+function queueDailyJobs(jobsList: CronJob[]) {
   debug(`queueDailyJobs()`);
   function timeToNextMS() {
     const now = Date.now();
@@ -232,7 +226,7 @@ function queueDailyJobs(jobsList) {
     const sinceMidnightMS = now - midnight;
     const cronDailyMS = config.cronDailySec * 1000;
     const dayMS = 24 * 60 * 60 * 1000;
-    var tMS = (cronDailyMS - sinceMidnightMS + dayMS) % dayMS;
+    let tMS = (cronDailyMS - sinceMidnightMS + dayMS) % dayMS;
     if (tMS < 0) {
       logger.error('negative tMS', {
         now,
@@ -270,7 +264,7 @@ function queueDailyJobs(jobsList) {
 }
 
 // run a list of jobs
-async function runJobs(jobsList) {
+async function runJobs(jobsList: CronJob[]) {
   debug(`runJobs()`);
   const cronUuid = uuidv4();
   logger.verbose('cron: jobs starting', { cronUuid });
@@ -322,7 +316,7 @@ async function runJobs(jobsList) {
 }
 
 // try and get the job lock, and run the job if we get it
-async function tryJobWithLock(job, cronUuid) {
+async function tryJobWithLock(job: CronJob, cronUuid: string) {
   debug(`tryJobWithLock(): ${job.name}`);
   const lockName = 'cron:' + job.name;
   const didLock = await namedLocks.doWithLock(
@@ -352,9 +346,9 @@ async function tryJobWithLock(job, cronUuid) {
 // See how long it is since we last ran the job and only run it if
 // enough time has elapsed. We are protected by a lock here so we
 // have exclusive access.
-async function tryJobWithTime(job, cronUuid) {
+async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}`);
-  var interval_secs;
+  let interval_secs;
   if (Number.isInteger(job.intervalSec)) {
     interval_secs = job.intervalSec;
   } else if (job.intervalSec === 'daily') {
@@ -388,7 +382,7 @@ async function tryJobWithTime(job, cronUuid) {
 }
 
 // actually run the job
-async function runJob(job, cronUuid) {
+async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
   const startTime = Date.now();

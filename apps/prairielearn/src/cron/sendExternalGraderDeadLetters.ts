@@ -1,4 +1,3 @@
-// @ts-check
 import * as async from 'async';
 import {
   SQSClient,
@@ -36,11 +35,7 @@ export async function run() {
     .catch((err) => logger.error(`Error posting external grading dead letters to slack`, err.data));
 }
 
-/**
- * @param {SQSClient} sqs
- * @param {string} queueName
- */
-async function loadQueueUrl(sqs, queueName) {
+async function loadQueueUrl(sqs: SQSClient, queueName: string) {
   if (QUEUE_URLS[queueName] != null) return;
 
   logger.verbose(`Dead letter queue ${queueName}: getting URL...`);
@@ -49,14 +44,10 @@ async function loadQueueUrl(sqs, queueName) {
   logger.verbose(`Dead letter queue ${queueName}: got URL ${QUEUE_URLS[queueName]}`);
 }
 
-/**
- * @param {SQSClient} sqs
- * @param {string} queueName
- */
-async function getDeadLetterMsg(sqs, queueName) {
+async function getDeadLetterMsg(sqs: SQSClient, queueName: string) {
   const messages = await drainQueue(sqs, queueName);
   let msgDL = `_Dead letter queue, past 24 hours:_ *${queueName}:* count: ${messages.length}\n`;
-  for (let message of messages) {
+  for (const message of messages) {
     msgDL += JSON.stringify(message) + '\n';
   }
   logger.verbose('cron:sendExternalGraderDeadLetters', {
@@ -67,12 +58,8 @@ async function getDeadLetterMsg(sqs, queueName) {
   return msgDL;
 }
 
-/**
- * @param {SQSClient} sqs
- * @param {string} queueName
- */
-async function drainQueue(sqs, queueName) {
-  const messages = [];
+async function drainQueue(sqs: SQSClient, queueName: string) {
+  const messages: any[] = [];
   await async.doWhilst(
     async () => {
       const data = await sqs.send(

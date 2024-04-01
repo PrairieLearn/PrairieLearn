@@ -217,7 +217,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -242,7 +242,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.homeworkQuestionVariant.id,
         c: context.homeworkQuestionVariant.true_answer.c,
       };
@@ -267,7 +267,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -290,7 +290,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.examQuestionVariant.id,
         c: context.examQuestionVariant.true_answer.c,
       };
@@ -332,7 +332,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -357,7 +357,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.homeworkQuestionVariant.id,
         c: context.homeworkQuestionVariant.true_answer.c,
       };
@@ -382,7 +382,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -405,7 +405,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.examQuestionVariant.id,
         c: context.examQuestionVariant.true_answer.c,
       };
