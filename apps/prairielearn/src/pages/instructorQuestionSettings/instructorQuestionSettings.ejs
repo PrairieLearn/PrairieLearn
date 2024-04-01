@@ -54,7 +54,7 @@
                     info.json
                   </a>
                   <% if ((authz_data.has_course_permission_edit) && (!course.example_course)) { %>
-                    <a role="button" class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= infoPath %>">
+                    <a class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= infoPath %>">
                       <i class="fa fa-edit"></i>
                       <span>Edit</span>
                     </a>

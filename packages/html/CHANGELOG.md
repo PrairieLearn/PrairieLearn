@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 3.1.7
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
 ## 3.1.6
 
 ### Patch Changes

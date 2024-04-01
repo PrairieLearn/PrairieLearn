@@ -83,7 +83,6 @@ export function InstructorInstanceAdminSettings({
                       ? html`
                           <button
                             id="changeCiidButton"
-                            tabindex="0"
                             class="btn btn-xs btn-secondary"
                             type="button"
                             data-toggle="popover"
@@ -204,7 +203,6 @@ function EditConfiguration({
         infoCourseInstance.json
       </a>
       <a
-        tabindex="0"
         class="btn btn-xs btn-secondary mx-2"
         role="button"
         href="${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}"

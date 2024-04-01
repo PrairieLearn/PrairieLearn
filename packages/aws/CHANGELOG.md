@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 1.0.10
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
 ## 1.0.9
 
 ### Patch Changes

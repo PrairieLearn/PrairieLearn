@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 2.0.6
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
 ## 2.0.5
 
 ### Patch Changes

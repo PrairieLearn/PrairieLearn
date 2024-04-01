@@ -1,5 +1,13 @@
 # @prairielearn/html-ejs
 
+## 1.1.19
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/html@3.1.7
+
 ## 1.1.18
 
 ### Patch Changes
