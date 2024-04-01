@@ -516,7 +516,11 @@ export function InstructorAssessmentInstance({
                                     Reset question variants
                                   </button>
                                 `
-                              : ''}
+                              : html`
+                                  <button class="dropdown-item disabled" disabled>
+                                    Must have editor permission
+                                  </button>
+                                `}
                           </div>
                         </div>
                       </td>

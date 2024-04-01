@@ -10,7 +10,7 @@ WHERE
 
 -- BLOCK tids
 SELECT
-  array_agg(a.tid) AS tids
+  a.tid AS tid
 FROM
   assessments AS a
 WHERE

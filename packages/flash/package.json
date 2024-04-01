@@ -19,7 +19,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/express-session": "^1.18.0",
-    "@types/node": "^20.11.30",
+    "@types/node": "^20.12.2",
     "chai": "^4.4.1",
     "mocha": "^10.4.0",
     "tsx": "^4.7.1",

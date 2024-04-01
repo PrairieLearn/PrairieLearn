@@ -1,5 +1,12 @@
 # @prairielearn/error
 
+## 1.1.0
+
+### Minor Changes
+
+- 9550c19: Introduce `AugmentedError` and `HttpStatusError` classes
+- 3f2beec: Add `augmentError` function
+
 ## 1.0.15
 
 ### Patch Changes

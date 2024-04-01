@@ -1921,6 +1921,10 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  // This is not a true error handler; it just implements support for
+  // "throwing" redirects.
+  app.use(require('./lib/redirect').thrownRedirectMiddleware);
+
   /**
    * Attempts to extract a numeric status code from a Postgres error object.
    * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
