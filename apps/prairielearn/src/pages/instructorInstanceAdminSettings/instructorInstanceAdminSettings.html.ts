@@ -93,8 +93,9 @@ export function InstructorInstanceAdminSettings({
                             title="Change CIID"
                             data-content="${renderEjs(
                               __filename,
-                              "<%= include('../partials/changeIdForm' %>",
+                              "<%= include('../partials/changeIdForm') %>",
                               {
+                                ...resLocals,
                                 id_label: 'CIID',
                                 buttonID: 'changeCiidButton',
                                 id_old: resLocals.course_instance.short_name,
@@ -193,12 +194,15 @@ function EditConfiguration({
   navPage: string;
   infoCourseInstancePath: string;
 }) {
-  if (!hasCoursePermissionView || !hasCoursePermissionEdit) {
+  if (!hasCoursePermissionView && !hasCoursePermissionEdit) {
     return 'infoCourseInstance.json';
   }
 
   if (hasCoursePermissionEdit && !exampleCourse) {
     return html`
+      <a href="${urlPrefix}/${navPage}/file_view/${infoCourseInstancePath}">
+        infoCourseInstance.json
+      </a>
       <a
         tabindex="0"
         class="btn btn-xs btn-secondary mx-2"
