@@ -51,7 +51,13 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-export function InstructorAssessmentQuestions({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorAssessmentQuestions({
+  resLocals,
+  questions,
+}: {
+  resLocals: Record<string, any>;
+  questions: AssessmentQuestionRow[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -131,8 +137,8 @@ export function InstructorAssessmentQuestions({ resLocals }: { resLocals: Record
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
             </div>
             ${AssessmentQuestionsTable({
-              questions: resLocals.questions,
-              assessment: resLocals.assessment,
+              questions,
+              assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
               hasCourseInstancePermissionEdit:
                 resLocals.authz_data.has_course_instance_permission_edit,
@@ -147,11 +153,11 @@ export function InstructorAssessmentQuestions({ resLocals }: { resLocals: Record
 function AssessmentQuestionsTable({
   questions,
   urlPrefix,
-  assessment,
+  assessmentType,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
-  assessment: Record<string, any>;
+  assessmentType: string;
   urlPrefix: string;
   hasCourseInstancePermissionEdit: boolean;
 }) {
@@ -164,12 +170,12 @@ function AssessmentQuestionsTable({
     }).length >= 1;
   if (showAdvanceScorePercCol) nTableCols++;
 
-  function maxPoints({ max_auto_points, max_manual_points, assessment, points_list, init_points }) {
+  function maxPoints({ max_auto_points, max_manual_points, points_list, init_points }) {
     if (max_auto_points || !max_manual_points) {
-      if (assessment.type === 'Exam') {
+      if (assessmentType === 'Exam') {
         return `${(points_list || [max_manual_points]).map((p) => p - max_manual_points)}`;
       }
-      if (assessment.type === 'Homework') {
+      if (assessmentType === 'Homework') {
         return `${init_points - max_manual_points}/${max_auto_points}`;
       } else {
         return html`&mdash;`;
@@ -295,7 +301,6 @@ function AssessmentQuestionsTable({
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,
                     max_manual_points: question.max_manual_points,
-                    assessment,
                     points_list: question.points_list,
                     init_points: question.init_points,
                   })}

@@ -17,7 +17,7 @@ const sql = loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await queryRows(
+    const questionRows = await queryRows(
       sql.questions,
       {
         assessment_id: res.locals.assessment.id,
@@ -25,12 +25,12 @@ router.get(
       },
       AssessmentQuestionRowSchema,
     );
-    res.locals.questions = questions.map((row) => {
+    const questions = questionRows.map((row) => {
       if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
       if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
       return row;
     });
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals }));
+    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );
 
