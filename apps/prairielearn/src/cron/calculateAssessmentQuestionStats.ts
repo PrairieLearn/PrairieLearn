@@ -1,4 +1,3 @@
-// @ts-check
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 

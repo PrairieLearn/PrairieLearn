@@ -84,6 +84,9 @@ export const DateFromISOString = z
   )
   .transform((s) => new Date(s));
 
+export const ModeSchema = z.enum(['Public', 'Exam', 'SEB']);
+export type Mode = z.infer<typeof ModeSchema>;
+
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
@@ -239,6 +242,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
+  disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
   heartbeat_at: DateFromISOString.nullable(),
   hostname: z.string().nullable(),
   id: IdSchema,
@@ -358,9 +362,6 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
-  // Currently unused.
-  // TODO: remove from schema entirely?
-  role: z.any(),
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
@@ -459,6 +460,7 @@ export const AssessmentQuestionSchema = z.object({
   max_submission_score_hist: z.array(z.number()).nullable(),
   max_submission_score_variance: z.number().nullable(),
   mean_question_score: z.number().nullable(),
+  median_question_score: z.number().nullable(),
   number: z.number().nullable(),
   number_in_alternative_group: z.number().nullable(),
   number_submissions_hist: z.array(z.number()).nullable(),
@@ -581,7 +583,7 @@ export const SubmissionSchema = z.object({
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
-  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  mode: ModeSchema.nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -776,7 +778,7 @@ export const AssessmentInstanceSchema = z.object({
   last_client_fingerprint_id: IdSchema.nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
-  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  mode: ModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number().nullable(),
   open: z.boolean().nullable(),

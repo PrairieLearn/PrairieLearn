@@ -4,6 +4,12 @@ var stat_descriptions = {
     non_html_title: 'Mean',
     description: 'Mean score of a question is the average score for all students on the question.',
   },
+  MEDIAN_SCORE: {
+    title: 'Median',
+    non_html_title: 'Median',
+    description:
+      'Median score of a question is the score which separates the lower half and the upper half of students scores.',
+  },
   VARIANCE: {
     title: 'SD (σ)',
     non_html_title: 'SD',

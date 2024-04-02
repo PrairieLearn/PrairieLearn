@@ -923,6 +923,10 @@ WITH
           avg(question_stats_by_user_or_group.score_perc)
         )
       ) AS mean_question_score,
+      percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY
+          question_stats_by_user_or_group.score_perc
+      ) AS median_question_score,
       sqrt(
         var_pop(question_stats_by_user_or_group.score_perc)
       ) AS question_score_variance,
@@ -1039,6 +1043,7 @@ UPDATE assessment_questions AS aq
 SET
   quintile_question_scores = quintile_scores_as_array.scores,
   mean_question_score = aq_stats.mean_question_score,
+  median_question_score = aq_stats.median_question_score,
   question_score_variance = aq_stats.question_score_variance,
   discrimination = aq_stats.discrimination,
   some_submission_perc = aq_stats.some_submission_perc,

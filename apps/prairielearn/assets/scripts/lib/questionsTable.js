@@ -174,8 +174,8 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody: function () {},
-    onResetView: function () {
+    onPreBody() {},
+    onResetView() {
       $('.js-sync-popover[data-toggle="popover"]')
         .popover({
           sanitize: false,
