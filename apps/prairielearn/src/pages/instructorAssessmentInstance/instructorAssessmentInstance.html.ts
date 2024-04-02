@@ -35,7 +35,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_manual_points: z.number().nullable(),
   max_points: z.number().nullable(),
   modified_at: z.string(),
-  qid: z.string().nullable(),
+  qid: z.string(),
   question_id: IdSchema,
   question_number: z.string(),
   question_title: z.string().nullable(),
