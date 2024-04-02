@@ -73,10 +73,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
-    remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
-    )
+
     remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
@@ -87,6 +84,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     score = data["partial_scores"].get(name, {"score": None}).get("score", None)
     parse_error = data["format_errors"].get(name)
+
+    # Defaults here depend on multiline
+    display = pl.get_enum_attrib(element, "display", DisplayType, DisplayType.BLOCK if multiline else DISPLAY_DEFAULT)
+    remove_leading_trailing = pl.get_boolean_attrib(
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
+    )
+
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
