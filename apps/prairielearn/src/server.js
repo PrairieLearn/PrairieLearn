@@ -624,8 +624,11 @@ module.exports.initExpress = function () {
     },
     require('./middlewares/authzWorkspace'),
   ]);
-  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
-  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace').default);
+  app.use(
+    '/pl/workspace/:workspace_id/logs',
+    require('./pages/workspaceLogs/workspaceLogs').default,
+  );
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
@@ -1918,6 +1921,10 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  // This is not a true error handler; it just implements support for
+  // "throwing" redirects.
+  app.use(require('./lib/redirect').thrownRedirectMiddleware);
+
   /**
    * Attempts to extract a numeric status code from a Postgres error object.
    * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
@@ -1953,9 +1960,9 @@ module.exports.initExpress = function () {
     next(err);
   });
 
+  // The Sentry error handler must come before our own.
   app.use(Sentry.Handlers.errorHandler());
 
-  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
@@ -2061,7 +2068,7 @@ module.exports.insertDevUser = function (callback) {
   // add dev user as Administrator
   var sql =
     'INSERT INTO users (uid, name)' +
-    " VALUES ('dev@illinois.edu', 'Dev User')" +
+    " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';

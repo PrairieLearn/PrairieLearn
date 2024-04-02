@@ -110,13 +110,30 @@ BEGIN
 
     -- Compute desired number of workspace hosts.
     --
-    -- We only consider workspaces that are launching OR that are running on
-    -- a healthy host. In the case where a workspace is running on a host that
-    -- is unhealthy, that workspace will continue to run there until it times
-    -- out and is shut down. We don't want to include those workspaces in the
-    -- computation to avoid overprovisioning after deploys when all existing
-    -- hosts are marked as unhealthy.
-    workspace_jobs_capacity_desired := workspace_active_on_healthy_hosts_count * workspace_capacity_factor;
+    -- We consider both the number of active workspaces on healthy hosts, and
+    -- the overall number of active workspaces. The former is used directly to
+    -- ensure we have enough capacity to run all active workspaces. The latter
+    -- is used to help ensure that we have enough capacity to quickly launch
+    -- new workspaces, and is multiplied by a scaling factor.
+    --
+    -- The former value deliberately excludes workspaces running on unhealthy
+    -- hosts. This is because we don't want to overprovision capacity after a
+    -- deploy when we mark all existing hosts as unhealthy.
+    --
+    -- A worked example with the following values:
+    --
+    --   100 workspaces running on healthy/draining hosts
+    --   50 workspaces launching
+    --   100 workspaces running on unhealthy hosts
+    --   workspace_capacity_factor = 1.5
+    --
+    -- This means that we have the following values for the below computation:
+    --
+    --   workspace_active_on_healthy_hosts_count = 150
+    --   workspace_active_count = 250
+    --
+    -- We find that we want to have capacity for 150 + (250 * 0.5) = 275 workspaces.
+    workspace_jobs_capacity_desired := workspace_active_on_healthy_hosts_count + workspace_active_count * (workspace_capacity_factor - 1);
     workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;

@@ -110,9 +110,8 @@ export function getPaths(req, res) {
   }
 
   if (!contains(paths.rootPath, paths.workingPath)) {
-    throw error.makeWithInfo(
-      'Invalid working directory',
-      html`
+    throw new error.AugmentedError('Invalid working directory', {
+      info: html`
         <p>The working directory</p>
         <div class="container">
           <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
@@ -122,17 +121,16 @@ export function getPaths(req, res) {
           <pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre>
         </div>
         <p>when looking at <code>${res.locals.navPage}</code> files.</p>
-      `.toString(),
-    );
+      `,
+    });
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
     contains(invalidRootPath, paths.workingPath),
   );
   if (found) {
-    throw error.makeWithInfo(
-      'Invalid working directory',
-      html`
+    throw new error.AugmentedError('Invalid working directory', {
+      info: html`
         <p>The working directory</p>
         <div class="container">
           <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
@@ -140,8 +138,8 @@ export function getPaths(req, res) {
         <p>must <em>not</em> be inside the directory</p>
         <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         <p>when looking at <code>${res.locals.navPage}</code> files.</p>
-      `.toString(),
-    );
+      `,
+    });
   }
 
   let curPath = res.locals.course.path;

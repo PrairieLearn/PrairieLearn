@@ -1,4 +1,3 @@
-// @ts-check
 import { logger } from '@prairielearn/logger';
 import * as opsbot from '../lib/opsbot';
 import * as sqldb from '@prairielearn/postgres';

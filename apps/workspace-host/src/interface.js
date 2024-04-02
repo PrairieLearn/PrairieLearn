@@ -245,7 +245,7 @@ async
       // don't correspond to any known workspace. Clean them up.
       const allContainers = await docker.listContainers({
         all: true,
-        filters: { label: ['prairielearn.workspace-id'] },
+        filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
