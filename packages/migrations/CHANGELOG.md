@@ -1,5 +1,53 @@
 # @prairielearn/migrations
 
+## 2.0.19
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/named-locks@2.0.3
+  - @prairielearn/postgres@1.9.4
+  - @prairielearn/logger@1.0.15
+  - @prairielearn/error@1.1.1
+
+## 2.0.18
+
+### Patch Changes
+
+- Updated dependencies [9550c19]
+- Updated dependencies [3f2beec]
+  - @prairielearn/error@1.1.0
+
+## 2.0.17
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/named-locks@2.0.2
+  - @prairielearn/postgres@1.9.3
+  - @prairielearn/logger@1.0.14
+  - @prairielearn/error@1.0.15
+
+## 2.0.16
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+- Updated dependencies [3395c25]
+  - @prairielearn/named-locks@2.0.1
+  - @prairielearn/postgres@1.9.2
+  - @prairielearn/logger@1.0.13
+  - @prairielearn/error@1.0.14
+
+## 2.0.15
+
+### Patch Changes
+
+- Updated dependencies [79c74ca]
+  - @prairielearn/named-locks@2.0.0
+
 ## 2.0.14
 
 ### Patch Changes

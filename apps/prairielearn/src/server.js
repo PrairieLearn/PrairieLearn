@@ -73,7 +73,7 @@ const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
-const { makeCookieMigrationMiddleware } = require('./lib/cookie');
+const { SocketActivityMetrics } = require('./lib/telemetry/socket-activity-metrics');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -300,8 +300,15 @@ module.exports.initExpress = function () {
     proxyReq.setHeader('cookie', filteredItems.join(';'));
   }
 
+  // Collect metrics on workspace proxy sockets. Note that this only tracks
+  // outgoing sockets (those going to workspaces). Incoming sockets are tracked
+  // globally for the entire server.
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+  const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
+  workspaceProxySocketActivityMetrics.start();
+
   // proxy workspaces to remote machines
-  let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
+  const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -400,13 +407,16 @@ module.exports.initExpress = function () {
   ]);
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
-    makeCookieMigrationMiddleware(config.rewriteCookies),
     (req, res, next) => {
       // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
     workspaceAuthRouter,
+    (req, res, next) => {
+      workspaceProxySocketActivityMetrics.addSocket(req.socket);
+      next();
+    },
     workspaceProxy,
   ]);
 
@@ -420,7 +430,6 @@ module.exports.initExpress = function () {
   });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
-  app.use(makeCookieMigrationMiddleware(config.rewriteCookies));
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
@@ -615,8 +624,11 @@ module.exports.initExpress = function () {
     },
     require('./middlewares/authzWorkspace'),
   ]);
-  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
-  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace').default);
+  app.use(
+    '/pl/workspace/:workspace_id/logs',
+    require('./pages/workspaceLogs/workspaceLogs').default,
+  );
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
@@ -977,7 +989,8 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzAssessmentQuestion'),
-      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion')
+        .default,
     ],
   );
   app.use(
@@ -1908,6 +1921,10 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  // This is not a true error handler; it just implements support for
+  // "throwing" redirects.
+  app.use(require('./lib/redirect').thrownRedirectMiddleware);
+
   /**
    * Attempts to extract a numeric status code from a Postgres error object.
    * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
@@ -1943,9 +1960,9 @@ module.exports.initExpress = function () {
     next(err);
   });
 
+  // The Sentry error handler must come before our own.
   app.use(Sentry.Handlers.errorHandler());
 
-  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
@@ -1997,6 +2014,10 @@ module.exports.startServer = async () => {
     },
   );
 
+  const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
+  server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
+  serverSocketActivity.start();
+
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.listen(config.serverPort);
@@ -2047,7 +2068,7 @@ module.exports.insertDevUser = function (callback) {
   // add dev user as Administrator
   var sql =
     'INSERT INTO users (uid, name)' +
-    " VALUES ('dev@illinois.edu', 'Dev User')" +
+    " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';
@@ -2363,12 +2384,14 @@ if (require.main === module && config.startServer) {
           process.exit(0);
         }
       },
-      function (callback) {
-        if (!config.initNewsItems) return callback(null);
-        const notify_with_new_server = false;
-        news_items.init(notify_with_new_server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+      async () => {
+        if (!config.initNewsItems) return;
+
+        // We initialize news items asynchronously so that servers can boot up
+        // in production as quickly as possible.
+        news_items.initInBackground({
+          // Always notify in production environments.
+          notifyIfPreviouslyEmpty: !config.devMode,
         });
       },
       // We need to initialize these first, as the code callers require these

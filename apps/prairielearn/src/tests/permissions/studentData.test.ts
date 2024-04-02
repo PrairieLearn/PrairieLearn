@@ -6,6 +6,11 @@ import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+  updateCourseInstancePermissionsRole,
+} from '../../models/course-permissions';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -31,23 +36,23 @@ describe('student data access', function () {
 
   before('insert users', async function () {
     await sqldb.callAsync('users_select_or_insert', [
-      'instructor@illinois.edu',
+      'instructor@example.com',
       'Instructor User',
       '100000000',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
-      'student@illinois.edu',
+      'student@example.com',
       'Student User',
       '000000001',
       'dev',
     ]);
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     await ensureEnrollment({
       user_id: '3',
       course_instance_id: '1',
@@ -162,13 +167,13 @@ describe('student data access', function () {
   });
 
   step('instructor (student data viewer) can view HW1 instance of student', async () => {
-    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-      1,
-      2,
-      1,
-      'Student Data Viewer',
-      2,
-    ]);
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: '2',
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '2',
+    });
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,
@@ -210,7 +215,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -235,7 +240,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.homeworkQuestionVariant.id,
         c: context.homeworkQuestionVariant.true_answer.c,
       };
@@ -260,7 +265,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -283,7 +288,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.examQuestionVariant.id,
         c: context.examQuestionVariant.true_answer.c,
       };
@@ -298,7 +303,7 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) cannot emulate student', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
     };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,
@@ -309,13 +314,13 @@ describe('student data access', function () {
   step(
     'instructor (student data editor) cannot attach file to HW1 instance of student',
     async () => {
-      await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-        1,
-        2,
-        1,
-        'Student Data Editor',
-        2,
-      ]);
+      await updateCourseInstancePermissionsRole({
+        course_id: '1',
+        course_instance_id: '1',
+        user_id: '2',
+        course_instance_role: 'Student Data Editor',
+        authn_user_id: '2',
+      });
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
@@ -325,7 +330,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -350,7 +355,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.homeworkQuestionVariant.id,
         c: context.homeworkQuestionVariant.true_answer.c,
       };
@@ -375,7 +380,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
       const form = {
         __action: 'attach_text',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         filename: 'notes.txt',
         contents: 'This is a test.',
       };
@@ -398,7 +403,7 @@ describe('student data access', function () {
       assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
       const form = {
         __action: 'grade',
-        __csrf_token: __csrf_token,
+        __csrf_token,
         __variant_id: context.examQuestionVariant.id,
         c: context.examQuestionVariant.true_answer.c,
       };
@@ -415,7 +420,7 @@ describe('student data access', function () {
     'instructor (student data editor) can attach file to HW1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
@@ -441,7 +446,7 @@ describe('student data access', function () {
     'instructor (student data editor) can submit answer to HW1/Q1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         headers,
@@ -469,7 +474,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         headers,
@@ -496,7 +501,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);

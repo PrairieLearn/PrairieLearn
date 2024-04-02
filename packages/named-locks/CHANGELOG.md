@@ -1,5 +1,35 @@
 # @prairielearn/named-locks
 
+## 2.0.3
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/postgres@1.9.4
+
+## 2.0.2
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/postgres@1.9.3
+
+## 2.0.1
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+- Updated dependencies [3395c25]
+  - @prairielearn/postgres@1.9.2
+
+## 2.0.0
+
+### Major Changes
+
+- 79c74ca: Remove `tryWithLock`, `tryLockAsync`, `tryLock`, `waitLockAsync`, `waitLock`, `releaseLockAsync`, and `releaseLock`. Use `doWithLock` instead.
+
 ## 1.5.11
 
 ### Patch Changes

@@ -130,10 +130,10 @@ async function describeWithPool(
     });
 
     output.tables[table.name] = {
-      columns: columns,
+      columns,
       indexes: indexResults.rows,
       foreignKeyConstraints: foreignKeyConstraintResults.rows,
-      references: references,
+      references,
       checkConstraints: checkConstraintResults.rows,
     };
   }

@@ -74,7 +74,9 @@ To fix this, add `--platform linux/amd64` before the image in any `docker run` c
 docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
 ```
 
-Note that the use of R in `server.py` is not currently supported on ARM64 hardware.
+When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check "Use Rosetta for x86/amd64 emulation on Apple Silicon", and click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+
+_Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
 ### Support for external graders and workspaces
 

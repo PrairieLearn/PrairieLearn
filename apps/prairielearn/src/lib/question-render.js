@@ -41,8 +41,11 @@ const VariantSelectResultSchema = VariantSchema.extend({
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
-  assessment_instance_date: DateFromISOString.nullable(),
-  formatted_date: z.string().nullable(),
+  instance_question: InstanceQuestionSchema.extend({
+    assigned_grader_name: z.string().nullable(),
+    last_grader_name: z.string().nullable(),
+  }).nullable(),
+  formatted_date: z.string(),
 });
 
 const detailedSubmissionColumns = /** @type {const} */ ({
@@ -60,6 +63,7 @@ const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).e
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
 });
 
 const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
@@ -94,6 +98,7 @@ const SubmissionInfoSchema = z.object({
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
+  user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
 });
@@ -365,11 +370,18 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
 
   if (variant_id != null) {
-    locals.variant = await sqldb.callRow(
-      'variants_select',
-      [variant_id, locals.question.id, locals.instance_question?.id],
+    locals.variant = await sqldb.queryOptionalRow(
+      sql.select_variant_for_render,
+      {
+        variant_id,
+        question_id: locals.question.id,
+        instance_question_id: locals.instance_question?.id,
+      },
       VariantSelectResultSchema,
     );
+    if (locals.variant == null) {
+      throw error.make(404, 'Variant not found');
+    }
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
     const instance_question_id = locals.instance_question?.id;
@@ -621,6 +633,7 @@ export async function renderPanelsForSubmission({
     grading_job_id,
     grading_job_status,
     formatted_date,
+    user_uid,
   } = submissionInfo;
 
   /** @type {SubmissionPanels} */
@@ -681,6 +694,7 @@ export async function renderPanelsForSubmission({
           grading_job_status,
           formatted_date,
           grading_job_stats,
+          user_uid,
           submission_number: submission_index,
         }),
         submissionHtml: htmls.submissionHtmls[0],
