@@ -314,7 +314,7 @@ function AssessmentQuestionsTable({
                           : ''}"
                         data-testid="advance-score-perc"
                       >
-                        ${question.assessment_question_advance_score_perc}
+                        ${question.assessment_question_advance_score_perc}%
                       </td>
                     `
                   : ''}
