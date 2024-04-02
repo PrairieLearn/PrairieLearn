@@ -170,7 +170,7 @@ function AssessmentQuestionsTable({
         return (points_list || [max_manual_points]).map((p) => p - max_manual_points);
       }
       if (assessment.type === 'Homework') {
-        return init_points - max_manual_points / max_auto_points;
+        return `${init_points - max_manual_points}/${max_auto_points}`;
       } else {
         return html`&mdash;`;
       }
