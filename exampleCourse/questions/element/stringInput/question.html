@@ -1,9 +1,9 @@
 <pl-card>
   <pl-question-panel>
     <p> For the following python code snippet, enter below the resulting string:</p>
-<pl-code language="python">
-a = "{{params.stringname}}"*{{params.a}}
-</pl-code>
+    <pl-code language="python">
+      a = "{{params.stringname}}"*{{params.a}}
+    </pl-code>
   </pl-question-panel>
   <pl-string-input answers-name="ans1" label="a = ">
   </pl-string-input>
@@ -12,10 +12,10 @@ a = "{{params.stringname}}"*{{params.a}}
 <pl-card>
   <pl-question-panel>
     <p> For the following python code snippet, what is d = b + c?</p>
-<pl-code language="python">
-b = "{{params.b}}"
-c = "{{params.c}}"
-</pl-code>
+    <pl-code language="python">
+      b = "{{params.b}}"
+      c = "{{params.c}}"
+    </pl-code>
   </pl-question-panel>
   <pl-string-input answers-name="ans2" label="b + c = ">
   </pl-string-input>
@@ -64,7 +64,7 @@ c = "{{params.c}}"
       This will autoconvert both the student answer and the correct answer to lower case. Entering the string below with
       any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
 
-  <pl-code language="python">"{{params.e}}"</pl-code>
+    <pl-code language="python">"{{params.e}}"</pl-code>
   </pl-question-panel>
 
   <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
@@ -117,5 +117,6 @@ c = "{{params.c}}"
     </p>
     <pl-code copy-code-button="true" language="python">print("Hello\nWorld!")</pl-code>
   </pl-question-panel>
-  <pl-string-input answers-name="ans9" label="Program output " multiline="true"></pl-string-input>
+  <pl-string-input answers-name="ans9" label="Program output " multiline="true" display="block"
+    suffix="aoeaeoua"></pl-string-input>
 </pl-card>
