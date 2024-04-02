@@ -229,11 +229,7 @@ router.get(
       questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     }
 
-    const qids = await sqldb.queryRows(
-      sql.qids,
-      { course_id: res.locals.course.id },
-      z.string().nullable(),
-    );
+    const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 
     const assessmentsWithQuestion = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,
