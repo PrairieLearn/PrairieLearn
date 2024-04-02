@@ -30,7 +30,6 @@ router.get(
       if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
       return row;
     });
-    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals }));
   }),
 );
