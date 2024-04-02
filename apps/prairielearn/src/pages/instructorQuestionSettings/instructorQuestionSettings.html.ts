@@ -44,7 +44,7 @@ export function InstructorQuestionSettings({
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
-  qids: (string | null)[];
+  qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSet[];
