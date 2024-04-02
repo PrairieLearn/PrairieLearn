@@ -86,11 +86,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error = data["format_errors"].get(name)
 
     # Defaults here depend on multiline
-    display = pl.get_enum_attrib(element, "display", DisplayType, DisplayType.BLOCK if multiline else DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(
+        element,
+        "display",
+        DisplayType,
+        DisplayType.BLOCK if multiline else DISPLAY_DEFAULT,
+    )
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
-
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -153,12 +157,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
-            "multiline": multiline
+            "multiline": multiline,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
+
             if a_sub is None:
                 raise Exception("submitted answer is None")
 
@@ -198,7 +203,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": a_tru,
             "suffix": suffix,
             "multiline": multiline,
-            "uuid": pl.get_uuid()
+            "uuid": pl.get_uuid(),
         }
 
         return chevron.render(template, html_params).strip()
@@ -244,9 +249,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     a_sub = re.sub("\r*\n", "\n", a_sub)
 
     if not a_sub and not allow_blank:
-        data["format_errors"][
-            name
-        ] = "Invalid format. The submitted answer was left blank."
+        data["format_errors"][name] = (
+            "Invalid format. The submitted answer was left blank."
+        )
         data["submitted_answers"][name] = None
     else:
         data["submitted_answers"][name] = pl.to_json(a_sub)
