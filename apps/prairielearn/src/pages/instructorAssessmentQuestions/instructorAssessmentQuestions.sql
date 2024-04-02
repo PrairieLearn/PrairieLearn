@@ -59,7 +59,7 @@ SELECT
     count(*) OVER (
       PARTITION BY
         ag.number
-    )
+    )::integer
   ) AS alternative_group_size,
   z.title AS zone_title,
   z.number AS zone_number,
