@@ -17,8 +17,8 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       throw error.make(400, 'Group name is required for group work assessments.');
     }
     const group_result = await sqldb.queryZeroOrOneRowAsync(sql.select_group_in_assessment, {
-      group_name: group_name,
-      course_instance_id: course_instance_id,
+      group_name,
+      course_instance_id,
       assessment_id: assessment.id,
     });
     if (group_result.rows.length > 0) {
@@ -32,8 +32,8 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
       throw error.make(400, 'Student UID is required for individual work assessments.');
     }
     const user = await selectUserEnrolledInCourseInstance({
-      uid: uid,
-      course_instance_id: course_instance_id,
+      uid,
+      course_instance_id,
     });
     if (!user) {
       throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
@@ -51,7 +51,7 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
 
   const enrollment = await getEnrollmentForUserInCourseInstance({
     user_id: user.user_id,
-    course_instance_id: course_instance_id,
+    course_instance_id,
   });
   if (!enrollment) return null;
 
