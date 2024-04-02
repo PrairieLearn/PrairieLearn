@@ -103,7 +103,7 @@ export function InstructorAssessmentQuestions({ resLocals }: { resLocals: Record
                 <div class="modal-footer">
                   <form name="reset-question-variants-form" method="POST">
                     <input type="hidden" name="__action" value="reset_question_variants" />
-                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input
                       type="hidden"
                       name="unsafe_assessment_question_id"
@@ -167,7 +167,7 @@ function AssessmentQuestionsTable({
   function maxPoints({ max_auto_points, max_manual_points, assessment, points_list, init_points }) {
     if (max_auto_points || !max_manual_points) {
       if (assessment.type === 'Exam') {
-        return (points_list || [max_manual_points]).map((p) => p - max_manual_points);
+        return `${(points_list || [max_manual_points]).map((p) => p - max_manual_points)}`;
       }
       if (assessment.type === 'Homework') {
         return `${init_points - max_manual_points}/${max_auto_points}`;
@@ -371,7 +371,7 @@ function AssessmentQuestionsTable({
                               class="dropdown-item"
                               data-toggle="modal"
                               data-target="#resetQuestionVariantsModal"
-                              data-assessment-question-id="<%= question.id %>"
+                              data-assessment-question-id="${question.id}"
                             >
                               Reset question variants
                             </button>
