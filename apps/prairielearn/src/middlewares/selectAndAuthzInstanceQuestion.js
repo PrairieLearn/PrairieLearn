@@ -61,9 +61,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
   }
 }
 
-const middleware = asyncHandler(async (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   await selectAndAuthzInstanceQuestion(req, res);
   next();
 });
-
-export default middleware;
