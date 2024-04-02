@@ -1001,9 +1001,9 @@ def generate(data):
 | `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
 | `multiline`               | boolean             | false    | Whether or not to to allow the input to include line breaks.                                                                                                              |
 
-#### Details
+#### Using multiline inputs
 
-The student answer will use a single `\n` as a newline character, even if `multiline` is not enabled. To avoid issues with newlines, they can be ignored by enabling `remove-spaces`. Keep in mind that longer strings may not display cleanly on the submitted or correct answer panels, so it may be best to hide these panels if students are submitting longer strings.
+Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to use `remove-leading-trailing="true"` when using multiline inputs.
 
 #### Example implementations
 
