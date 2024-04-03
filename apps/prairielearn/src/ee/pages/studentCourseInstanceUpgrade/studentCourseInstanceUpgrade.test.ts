@@ -83,7 +83,7 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie: `pl_requested_uid=student@example.com; pl_requested_course_roleNone; pl_requested_course_instance_role=None`,
+        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=None; pl_requested_course_instance_role=None`,
       },
     });
     assert.isOk(res.ok);
@@ -98,7 +98,7 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie: `pl_requested_uid=student@example.com; pl_requested_course_roleOwner; pl_requested_course_instance_role=Student Data Editor`,
+        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=Owner; pl_requested_course_instance_role=Student Data Editor`,
       },
     });
     assert.isOk(res.ok);
