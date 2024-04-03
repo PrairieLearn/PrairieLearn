@@ -3,6 +3,7 @@ var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
+const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 
 /** @type {import('express').ErrorRequestHandler} */
@@ -17,7 +18,9 @@ module.exports = function (err, req, res, _next) {
     msg: err.message,
     id: errorId,
     status: err.status,
-    stack: err.stack,
+    // Use the "safe" version when logging so that we don't error out while
+    // trying to log the actual error.
+    stack: formatErrorStackSafe(err.stack),
     data: jsonStringifySafe(err.data),
     referrer,
     response_id: res.locals.response_id,
@@ -47,6 +50,7 @@ module.exports = function (err, req, res, _next) {
 
   const templateData = {
     error: err,
+    errorStack: err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
