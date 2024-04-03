@@ -27,7 +27,7 @@ WITH
     RETURNING
       *
   ),
-  new_sessions AS (
+  new_center_sessions AS (
     INSERT INTO
       pt_sessions (location_id, date)
     SELECT
@@ -35,6 +35,14 @@ WITH
       NOW()
     FROM
       new_locations
+    RETURNING
+      *
+  ),
+  new_course_sessions AS (
+    INSERT INTO
+      pt_sessions (date)
+    VALUES
+      (NOW())
     RETURNING
       *
   ),
@@ -54,33 +62,41 @@ WITH
     DEFAULT VALUES
     RETURNING
       *
-  ),
-  new_reservations AS (
-    INSERT INTO
-      pt_reservations (
-        enrollment_id,
-        exam_id,
-        session_id,
-        access_start,
-        access_end
-      )
-    SELECT
-      e.id,
-      x.id,
-      s.id,
-      now() - interval '1 hour',
-      now() + interval '1 hour'
-    FROM
-      new_enrollments AS e,
-      new_exams AS x,
-      new_sessions AS s
-    RETURNING
-      *
   )
 SELECT
   user_id
 FROM
   new_users;
+
+-- BLOCK create_center_exam_reservation
+INSERT INTO
+  pt_reservations (enrollment_id, exam_id, session_id)
+SELECT
+  e.id,
+  x.id,
+  s.id
+FROM
+  pt_enrollments AS e,
+  pt_exams AS x,
+  pt_sessions AS s
+WHERE
+  e.user_id = $user_id
+  AND s.location_id IS NOT NULL;
+
+-- BLOCK create_course_exam_reservation
+INSERT INTO
+  pt_reservations (enrollment_id, exam_id, session_id)
+SELECT
+  e.id,
+  x.id,
+  s.id
+FROM
+  pt_enrollments AS e,
+  pt_exams AS x,
+  pt_sessions AS s
+WHERE
+  e.user_id = $user_id
+  AND s.location_id IS NULL;
 
 -- BLOCK insert_second_reservation
 WITH
@@ -114,25 +130,17 @@ WITH
   ),
   new_exams AS (
     INSERT INTO
-      pt_exams DEFAULT
-    VALUES
+      pt_exams
+    DEFAULT VALUES
     RETURNING
       *
   )
 INSERT INTO
-  pt_reservations (
-    enrollment_id,
-    exam_id,
-    session_id,
-    access_start,
-    access_end
-  )
+  pt_reservations (enrollment_id, exam_id, session_id)
 SELECT
   e.id,
   x.id,
-  s.id,
-  now() - interval '1 hour',
-  now() + interval '1 hour'
+  s.id
 FROM
   pt_enrollments AS e,
   new_exams AS x,
@@ -142,9 +150,15 @@ WHERE
 RETURNING
   *;
 
--- BLOCK check_out_reservation
+-- BLOCK check_in_reservations
 UPDATE pt_reservations
 SET
-  checked_in = NULL,
-  access_start = NULL,
-  access_end = NULL;
+  -- Check in 5 minutes in the past to avoid races between PT and JS time.
+  checked_in = NOW() - interval '5 minutes';
+
+-- BLOCK start_reservations
+UPDATE pt_reservations
+SET
+  -- Start 5 minutes in the past to avoid races between PT and JS time.
+  access_start = NOW() - interval '5 minutes',
+  access_end = NOW() + interval '1 hour';

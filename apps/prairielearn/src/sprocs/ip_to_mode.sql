@@ -25,7 +25,11 @@ BEGIN
     FOR reservation IN
         SELECT
             r.session_id,
-            (ip_to_mode.date BETWEEN r.access_start AND access_end) AS reservation_active,
+            (
+                (r.checked_in IS NOT NULL AND ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval)
+                OR ip_to_mode.date BETWEEN r.access_start AND r.access_end
+            ) AS reservation_active,
+            -- (ip_to_mode.date BETWEEN r.access_start AND r.access_end) AS reservation_active,
             l.id AS location_id,
             l.filter_networks AS location_filter_networks
         FROM
@@ -36,30 +40,29 @@ BEGIN
         WHERE
             e.user_id = ip_to_mode.authn_user_id
             AND (
-                (r.access_end IS NULL and ip_to_mode.date BETWEEN s.date - '1 hour'::interval and s.date + '1 hour'::interval)
+                (r.checked_in IS NOT NULL and ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval)
+                OR (r.access_end IS NULL and ip_to_mode.date BETWEEN s.date - '1 hour'::interval and s.date + '1 hour'::interval)
                 OR (ip_to_mode.date BETWEEN r.access_start AND r.access_end)
             )
     LOOP
-        IF reservation.location_id IS NULL THEN
-            -- The reservation isn't for a testing center location (it's a
-            -- course-run session). If the reservation is "active", we're
-            -- in 'Exam' mode, and we return immediately. Otherwise, we might
-            -- be in 'Public' mode, but we continue looping to see if we have
-            -- any other reservations that might put us in 'Exam' mode.
+        RAISE NOTICE 'here!';
+
+        IF reservation.location_id IS NULL OR NOT reservation.location_filter_networks THEN
+            -- Either the reservation is for a course-run session, or the
+            -- center location doesn't require network filtering. If the
+            -- reservation is "active", we're in 'Exam' mode, and we return
+            -- immediately. Otherwise, we might be in 'Public' mode, but we
+            -- continue looping to see if we have any other reservations that
+            -- might put us in 'Exam' mode.
             IF reservation.reservation_active THEN
                 mode := 'Exam';
+                RAISE NOTICE 'Exam mode A';
                 RETURN;
             END IF;
 
+            RAISE NOTICE 'Public mode A';
             mode := 'Public';
             CONTINUE;
-        END IF;
-
-        IF NOT reservation.location_filter_networks THEN
-            -- The reservation is in a testing center location that doesn't
-            -- require network filtering. Set mode to 'Exam'.
-            mode := 'Exam';
-            RETURN;
         END IF;
 
         PERFORM *
