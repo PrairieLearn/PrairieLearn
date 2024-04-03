@@ -23,6 +23,13 @@ describe('sproc ip_to_mode tests', function () {
   });
   after('tear down testing database', helperDb.after);
 
+  describe('No reservations', () => {
+    it('should return "Public"', async () => {
+      const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
+      assert.equal(result.rows[0].mode, 'Public');
+    });
+  });
+
   describe('Center exam with IP restrictions', () => {
     describe('before check-in', () => {
       it('should return "Exam" with a correct IP address when session is starting soon', async () => {
@@ -152,13 +159,55 @@ describe('sproc ip_to_mode tests', function () {
     });
 
     describe('after access start', () => {
-      it('should return "Exam" with the right IP address, within the access date range', () => {});
+      it('should return "Exam" with the right IP address, within the access date range', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await sqldb.queryAsync(sql.start_reservations, {});
 
-      it('should return "Exam" with the right IP address, shortly after the access date range', () => {});
+          const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
+          assert.equal(result.rows[0].mode, 'Exam');
+        });
+      });
 
-      it('should return "Public" with the right IP address, a long time after the access date range', () => {});
+      it('should return "Exam" with the right IP address, shortly after the access date range', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await sqldb.queryAsync(sql.start_reservations, {});
 
-      it('should return "Public" with the wrong IP address', () => {});
+          const result = await sqldb.callAsync('ip_to_mode', [
+            '10.0.0.1',
+            // 65 minutes from now (5 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 65),
+            user_id,
+          ]);
+          assert.equal(result.rows[0].mode, 'Exam');
+        });
+      });
+
+      it('should return "Public" with the right IP address, a long time after the access date range', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await sqldb.queryAsync(sql.start_reservations, {});
+
+          const result = await sqldb.callAsync('ip_to_mode', [
+            '10.0.0.1',
+            // 100 minutes from now (40 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 100),
+            user_id,
+          ]);
+          assert.equal(result.rows[0].mode, 'Public');
+        });
+      });
+
+      it('should return "Public" with the wrong IP address', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await sqldb.queryAsync(sql.start_reservations, {});
+
+          const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
+          assert.equal(result.rows[0].mode, 'Public');
+        });
+      });
     });
   });
 

@@ -29,7 +29,6 @@ BEGIN
                 (r.checked_in IS NOT NULL AND ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval)
                 OR ip_to_mode.date BETWEEN r.access_start AND r.access_end
             ) AS reservation_active,
-            -- (ip_to_mode.date BETWEEN r.access_start AND r.access_end) AS reservation_active,
             l.id AS location_id,
             l.filter_networks AS location_filter_networks
         FROM
@@ -40,13 +39,18 @@ BEGIN
         WHERE
             e.user_id = ip_to_mode.authn_user_id
             AND (
+                -- Handle recently checked-in reservations.
                 (r.checked_in IS NOT NULL and ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval)
+                -- Handle reservations that will start soon.
                 OR (r.access_end IS NULL and ip_to_mode.date BETWEEN s.date - '1 hour'::interval and s.date + '1 hour'::interval)
-                OR (ip_to_mode.date BETWEEN r.access_start AND r.access_end)
+                -- Handle active and recently-active reservations. The recently-active
+                -- piece is really only relevant for center exams with IP filtering, where
+                -- we want to ensure that we don't immediately revert to 'Public' mode when
+                -- access ends, which would give students a chance to exfiltrate exam
+                -- content via Public-mode assessments.
+                OR (ip_to_mode.date BETWEEN r.access_start AND r.access_end + '30 minutes'::interval)
             )
     LOOP
-        RAISE NOTICE 'here!';
-
         IF reservation.location_id IS NULL OR NOT reservation.location_filter_networks THEN
             -- Either the reservation is for a course-run session, or the
             -- center location doesn't require network filtering. If the
@@ -56,11 +60,9 @@ BEGIN
             -- might put us in 'Exam' mode.
             IF reservation.reservation_active THEN
                 mode := 'Exam';
-                RAISE NOTICE 'Exam mode A';
                 RETURN;
             END IF;
 
-            RAISE NOTICE 'Public mode A';
             mode := 'Public';
             CONTINUE;
         END IF;
