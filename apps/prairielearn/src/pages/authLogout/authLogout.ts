@@ -9,12 +9,9 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    clearCookie(res, 'prairielearn_session');
-    clearCookie(res, 'pl2_session');
-    clearCookie(res, 'pl_authn');
-    clearCookie(res, 'pl2_authn');
-    clearCookie(res, 'pl_assessmentpw');
-    clearCookie(res, 'pl2_assessmentpw');
+    clearCookie(res, ['prairielearn_session', 'pl2_session']);
+    clearCookie(res, ['pl_authn', 'pl2_authn']);
+    clearCookie(res, ['pl_assessmentpw', 'pl2_assessmentpw']);
 
     if (config.devMode) {
       // In dev mode, a user will typically by automatically authenticated by our

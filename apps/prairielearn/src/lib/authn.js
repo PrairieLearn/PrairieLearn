@@ -93,8 +93,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     // After explicitly authenticating, clear the cookie that disables
     // automatic authentication.
     if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
-      clearCookie(res, 'pl_disable_auto_authn');
-      clearCookie(res, 'pl2_disable_auto_authn');
+      clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
     }
   }
 
@@ -102,8 +101,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     let redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;
-      clearCookie(res, 'preAuthUrl');
-      clearCookie(res, 'pl2_pre_auth_url');
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
     res.redirect(redirUrl);
     return;

@@ -121,8 +121,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   if (req.cookies.pl_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
     if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
-      clearCookie(res, 'pl_requested_uid');
-      clearCookie(res, 'pl2_requested_uid');
+      clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
     } else {
       overrides.push({
         name: 'UID',

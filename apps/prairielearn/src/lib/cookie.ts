@@ -11,16 +11,18 @@ export function shouldSecureCookie(req: Request): boolean {
   return !config.devMode || req.protocol === 'https';
 }
 
+type OldAndNewCookieNames = [string, string];
+
 /**
  * Helper function to clear a cookie regardless of if it was set with an
  * explicit domain or not.
  */
-export function clearCookie(res: Response, name: string): void {
-  res.clearCookie(name);
-  res.clearCookie(name, { domain: config.cookieDomain ?? undefined });
+export function clearCookie(res: Response, names: OldAndNewCookieNames): void {
+  for (const name of names) {
+    res.clearCookie(name);
+    res.clearCookie(name, { domain: config.cookieDomain ?? undefined });
+  }
 }
-
-type OldAndNewCookieNames = [string, string];
 
 /**
  * Helper function to set both "old" and "new" cookies. The "old" cookie is

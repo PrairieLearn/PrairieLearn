@@ -19,8 +19,7 @@ module.exports = function (req, res, next) {
   // will receive an error page as expected.
 
   if (req.cookies.pl_requested_data_changed) {
-    clearCookie(res, 'pl_requested_data_changed');
-    clearCookie(res, 'pl2_requested_data_changed');
+    clearCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed']);
     res.locals.pl_requested_data_changed = true;
   }
   next();

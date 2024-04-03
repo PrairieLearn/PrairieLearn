@@ -84,16 +84,11 @@ router.post('/', function (req, res, next) {
   }
 
   if (req.body.__action === 'reset') {
-    clearCookie(res, 'pl_requested_uid');
-    clearCookie(res, 'pl2_requested_uid');
-    clearCookie(res, 'pl_requested_course_role');
-    clearCookie(res, 'pl2_requested_course_role');
-    clearCookie(res, 'pl_requested_course_instance_role');
-    clearCookie(res, 'pl2_requested_course_instance_role');
-    clearCookie(res, 'pl_requested_mode');
-    clearCookie(res, 'pl2_requested_mode');
-    clearCookie(res, 'pl_requested_date');
-    clearCookie(res, 'pl2_requested_date');
+    clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
+    clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
+    clearCookie(res, ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
+    clearCookie(res, ['pl_requested_mode', 'pl2_requested_mode']);
+    clearCookie(res, ['pl_requested_date', 'pl2_requested_date']);
     setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {

@@ -134,9 +134,8 @@ module.exports = asyncHandler(async (req, res, next) => {
   if (authnData == null) {
     // We failed to authenticate.
 
-    // Clear the pl_authn cookie in case it was bad
-    clearCookie(res, 'pl_authn');
-    clearCookie(res, 'pl2_authn');
+    // Clear the auth cookie in case it was bad
+    clearCookie(res, ['pl_authn', 'pl2_authn']);
 
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.

@@ -22,8 +22,7 @@ router.post('/', function (req, res) {
     httpOnly: true,
     secure: shouldSecureCookie(req),
   });
-  clearCookie(res, 'pl_pw_origUrl');
-  clearCookie(res, 'pl2_pw_original_url');
+  clearCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url']);
   return res.redirect(redirectUrl);
 });
 module.exports = router;
