@@ -17,7 +17,8 @@ type OldAndNewCookieNames = [string, string];
  * Helper function to clear a cookie regardless of if it was set with an
  * explicit domain or not.
  */
-export function clearCookie(res: Response, names: OldAndNewCookieNames): void {
+export function clearCookie(res: Response, name: string | OldAndNewCookieNames): void {
+  const names = Array.isArray(name) ? name : [name];
   for (const name of names) {
     res.clearCookie(name);
     res.clearCookie(name, { domain: config.cookieDomain ?? undefined });
