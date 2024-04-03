@@ -1,4 +1,3 @@
-// @ts-check
 import * as _ from 'lodash';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';

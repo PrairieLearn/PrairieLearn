@@ -61,6 +61,16 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
 
 function QuestionInfoPanel({ resLocals }: { resLocals: Record<string, any> }) {
   const { user, course, question, variant, plainUrlPrefix } = resLocals;
+
+  // Example course questions can be publicly shared, but we don't allow them to
+  // be imported into courses, so we won't show the sharing name in the QID.
+  //
+  // In the future, this should use some kind of "allow import" flag on the question
+  // so that this behavior can be achieved within other courses.
+  const displayQid = course.example_course
+    ? question.qid
+    : `@${course.sharing_name}/${question.qid}`;
+
   return html`
     <div class="card mb-4 border-warning">
       <div class="card-header bg-warning">Staff information</div>
@@ -80,7 +90,7 @@ function QuestionInfoPanel({ resLocals }: { resLocals: Record<string, any> }) {
             <a
               href="${plainUrlPrefix}/public/course/${course.id}/question/${question.id}/preview?variant_seed=${variant.variant_seed}"
             >
-              @${course.sharing_name}/${question.qid}
+              ${displayQid}
             </a>
           </div>
         </div>

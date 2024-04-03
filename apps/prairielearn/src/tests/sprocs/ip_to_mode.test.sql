@@ -50,8 +50,8 @@ WITH
   ),
   new_exams AS (
     INSERT INTO
-      pt_exams DEFAULT
-    VALUES
+      pt_exams
+    DEFAULT VALUES
     RETURNING
       *
   ),

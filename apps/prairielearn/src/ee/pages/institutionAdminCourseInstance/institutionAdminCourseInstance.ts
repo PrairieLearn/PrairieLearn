@@ -29,7 +29,7 @@ async function selectCourseInstanceAndCourseInInstitution({
   return await queryRow(
     sql.select_course_and_instance,
     {
-      institution_id: institution_id,
+      institution_id,
       course_id: unsafe_course_id,
       course_instance_id: unsafe_course_instance_id,
     },

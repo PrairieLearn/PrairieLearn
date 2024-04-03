@@ -38,6 +38,7 @@ FROM
   )
 WHERE
   ssc.course_id = $course_id
+  AND c.example_course IS FALSE
 UNION
 SELECT
   q.qid,
@@ -51,7 +52,8 @@ FROM
     AND iqi.qid = q.qid
   )
 WHERE
-  q.shared_publicly;
+  q.shared_publicly
+  AND c.example_course IS FALSE;
 
 -- BLOCK get_institution_id
 SELECT

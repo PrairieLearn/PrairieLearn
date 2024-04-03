@@ -44,6 +44,7 @@ module.exports = {
         message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
       },
     ],
+    'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',

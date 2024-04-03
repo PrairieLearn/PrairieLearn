@@ -35,7 +35,7 @@ module.exports = function (options = { publicEndpoint: false }) {
         has_instance_question: !!res.locals.instance_question,
         instance_question_id: res.locals.instance_question?.id,
         question_id: res.locals.question.id,
-        variant_id: variant_id,
+        variant_id,
       });
       const variant = result.rows[0];
 
