@@ -3,73 +3,8 @@ var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
+const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
-
-/**
- * @param {string} stack
- * @param {number} depth
- * @returns {string}
- */
-function indentString(stack, depth) {
-  if (depth === 0) return stack;
-
-  const indent = '    '.repeat(depth);
-  return stack
-    .split('\n')
-    .map((line) => (indent + line).trimEnd())
-    .join('\n');
-}
-
-/**
- * Recursively formats an error into a string. Correctly handles both the
- * `.cause` property and `AggregateError` instances.
- *
- * @param {any} err
- * @param {number} [depth]
- * @param {string} [prefix]
- * @returns {string}
- */
-function formatErrorStack(err, depth = 0, prefix = '') {
-  // This will handle both circular references and unnecessarily deep chains.
-  if (depth > 10) return '...';
-
-  let stack = indentString(prefix + err.stack, depth);
-
-  if (err.cause) {
-    stack += `\n\n${formatErrorStack(err.cause, depth + 1, 'Cause: ')}`;
-  }
-
-  if (err instanceof AggregateError) {
-    const indent = '    '.repeat(depth + 1);
-    stack += `\n\n${indent}Errors: [\n`;
-
-    err.errors.forEach((error, i) => {
-      stack += formatErrorStack(error, depth + 2);
-      if (i < err.errors.length - 1) stack += '\n\n';
-    });
-
-    stack += `\n${indent}]`;
-  }
-
-  return stack;
-}
-
-/**
- * This is a version of {@link formatErrorStack} that won't error in the case
- * of an unexpected error object. We'll use the original function if it works,
- * but if it fails for any reason, we'll just return the plain stack, whatever
- * it might be.
- *
- * @param {any} err
- * @returns {string}
- */
-function safeFormatErrorStack(err) {
-  try {
-    return formatErrorStack(err);
-  } catch (e) {
-    return err.stack;
-  }
-}
 
 /** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
@@ -85,7 +20,7 @@ module.exports = function (err, req, res, _next) {
     status: err.status,
     // Use the "safe" version when logging so that we don't error out while
     // trying to log the actual error.
-    stack: safeFormatErrorStack(err.stack),
+    stack: formatErrorStackSafe(err.stack),
     data: jsonStringifySafe(err.data),
     referrer,
     response_id: res.locals.response_id,
