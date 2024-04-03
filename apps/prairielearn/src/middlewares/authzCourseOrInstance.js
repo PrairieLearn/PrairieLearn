@@ -1,20 +1,20 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 const asyncHandler = require('express-async-handler');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
-const { parseISO, isValid } = require('date-fns');
-const { config } = require('../lib/config');
-const { AugmentedError, HttpStatusError } = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { html } = require('@prairielearn/html');
-const { idsEqual } = require('../lib/id');
-const { features } = require('../lib/features/index');
+import * as path from 'path';
+import debugfn from 'debug';
+import { parseISO, isValid } from 'date-fns';
+import { config } from '../lib/config';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { html } from '@prairielearn/html';
+import { idsEqual } from '../lib/id';
+import { features } from '../lib/features/index';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
-module.exports = asyncHandler(async (req, res, next) => {
+export async function authzCourseOrInstance(req, res) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
 
   // Note that req.params.course_id and req.params.course_instance_id are strings and not
@@ -143,7 +143,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
   if (overrides.length === 0) {
     debug('no requested overrides');
-    return next();
+    return;
   }
 
   // Cannot request a user data override without instructor permissions
@@ -158,7 +158,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // If on a student page route, silently exit and ignore effective user requests
     if ((res.locals.viewType || 'none') === 'student') {
       debug('on student page, so silently exit and ignore requested overrides');
-      return next();
+      return;
     }
 
     debug('not on student page, so clear all requested overrides and throw an error');
@@ -347,7 +347,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
-    return next();
+    return;
   }
 
   // Now that we know the effective user has access, parse the authz data
@@ -598,6 +598,9 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   res.locals.authz_data.mode = effectiveResult.rows[0].mode;
   res.locals.req_date = req_date;
+}
 
+export default asyncHandler(async (req, res, next) => {
+  await authzCourseOrInstance(req, res);
   next();
 });
