@@ -33,7 +33,7 @@ createSessionMiddleware({
   cookie: {
     name: 'legacy_session',
     writeNames: ['legacy_session', 'session'],
-    writeOverrides: [{ domain: null }, { domain: '.example.com' }],
+    writeOverrides: [{ domain: undefined }, { domain: '.example.com' }],
   },
 });
 ```

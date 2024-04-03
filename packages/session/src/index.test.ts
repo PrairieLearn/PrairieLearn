@@ -584,6 +584,7 @@ describe('session middleware', () => {
         cookie: {
           name: 'legacy_session',
           writeNames: ['legacy_session', 'session'],
+          writeOverrides: [{ domain: undefined }, { domain: '.example.com' }],
         },
       }),
     );
@@ -611,7 +612,9 @@ describe('session middleware', () => {
       const cookies = parseSetCookie(header ?? '');
       assert.equal(cookies.length, 2);
       assert.equal(cookies[0].name, 'legacy_session');
+      assert.isUndefined(cookies[0].domain);
       assert.equal(cookies[1].name, 'session');
+      assert.equal(cookies[1].domain, '.example.com');
 
       // Ensure that the legacy session is migrated to a new session.
       assert.equal(newSessionId, legacySessionId);
