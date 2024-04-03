@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { HtmlSafeString } from '@prairielearn/html';
 
 interface ErrorWithData extends Error {
   data: any;
@@ -78,4 +79,33 @@ export function augmentError(
   newErr.status = status ?? 500;
   newErr.data = data;
   return newErr;
+}
+
+export interface AugmentedErrorOptions {
+  status?: number;
+  data?: any;
+  info?: HtmlSafeString;
+  cause?: unknown;
+}
+
+export class AugmentedError extends Error {
+  status: number;
+  data?: any;
+  info?: string;
+
+  constructor(message: string, options: AugmentedErrorOptions) {
+    super(message, { cause: options.cause });
+    this.status = options.status ?? 500;
+    this.data = options.data;
+    this.info = options.info?.toString();
+  }
+}
+
+export class HttpStatusError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
 }

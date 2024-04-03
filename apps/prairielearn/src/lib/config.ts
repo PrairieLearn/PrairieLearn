@@ -61,7 +61,7 @@ const ConfigSchema = z.object({
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
-  authUid: z.string().nullable().default('dev@illinois.edu'),
+  authUid: z.string().nullable().default('dev@example.com'),
   /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
   /** Sets the default user UIN in development. */
