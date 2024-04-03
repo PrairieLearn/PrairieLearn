@@ -1,13 +1,25 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import { WorkspaceLogSchema } from '../../lib/db-types';
+import { z } from 'zod';
 
-const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
+export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
+  date_formatted: z.string(),
+});
+export type WorkspaceLogRow = z.infer<typeof WorkspaceLogRowSchema>;
+
+export function WorkspaceLogs({
+  workspaceLogs,
+  resLocals,
+}: {
+  workspaceLogs: WorkspaceLogRow[];
+  resLocals: Record<string, any>;
+}) {
   // Get the list of unique versions and the date at which they were created.
   // These are ordered by date, so we can use the date of the first log for
   // each version as the version's creation date.
   const knownVersions = new Set();
-  const uniqueVersions = [];
+  const uniqueVersions: { version: string; date_formatted: string }[] = [];
   workspaceLogs.forEach((log) => {
     if (!knownVersions.has(log.version)) {
       knownVersions.add(log.version);
@@ -67,15 +79,21 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
       </body>
     </html>
   `.toString();
-};
+}
 
-const WorkspaceVersionLogs = ({
+export function WorkspaceVersionLogs({
   workspaceLogs,
   containerLogs,
   containerLogsEnabled,
   containerLogsExpired,
   resLocals,
-}) => {
+}: {
+  workspaceLogs: WorkspaceLogRow[];
+  containerLogs: string | null;
+  containerLogsEnabled: boolean;
+  containerLogsExpired: boolean;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -123,9 +141,15 @@ const WorkspaceVersionLogs = ({
       </body>
     </html>
   `.toString();
-};
+}
 
-const WorkspaceLogsTable = ({ workspaceLogs, includeVersion = true }) => {
+export function WorkspaceLogsTable({
+  workspaceLogs,
+  includeVersion = true,
+}: {
+  workspaceLogs: WorkspaceLogRow[];
+  includeVersion?: boolean;
+}) {
   return html`
     <div class="table-responsive">
       <table class="table table-sm">
@@ -153,7 +177,4 @@ const WorkspaceLogsTable = ({ workspaceLogs, includeVersion = true }) => {
       </table>
     </div>
   `;
-};
-
-module.exports.WorkspaceLogs = WorkspaceLogs;
-module.exports.WorkspaceVersionLogs = WorkspaceVersionLogs;
+}

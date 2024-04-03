@@ -61,15 +61,31 @@ const ConfigSchema = z.object({
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
-  authUid: z.string().nullable().default('dev@illinois.edu'),
+  authUid: z.string().nullable().default('dev@example.com'),
   /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  cookieDomain: z
+    .string()
+    .nullable()
+    .default(null)
+    .refine(
+      (val) => {
+        // In production environments, require that the the cookie domain is truthy.
+        if (process.env.NODE_ENV === 'production') return !!val;
+
+        // Allow any value in non-production environments, including null values.
+        return true;
+      },
+      { message: 'must be a non-empty string in production environments' },
+    )
+    .refine((val) => val?.startsWith('.') || val === null, {
+      message: 'must start with a dot, e.g. ".example.com"',
+    }),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
