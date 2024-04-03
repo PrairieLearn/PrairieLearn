@@ -2,7 +2,7 @@ import express from 'express';
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
-import { parse as parseSetCookie } from 'set-cookie-parser';
+import setCookie from 'set-cookie-parser';
 import asyncHandler from 'express-async-handler';
 import { withServer } from '@prairielearn/express-test-utils';
 
@@ -10,6 +10,10 @@ import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
 
 const TEST_SECRET = 'test-secret';
+
+function parseSetCookie(header: string) {
+  return setCookie.parse(setCookie.splitCookiesString(header));
+}
 
 describe('session middleware', () => {
   it('sets a session cookie', async () => {
@@ -578,7 +582,9 @@ describe('session middleware', () => {
         store,
         secret: TEST_SECRET,
         cookie: {
-          name: ['session', 'legacy_session'],
+          name: 'legacy_session',
+          writeNames: ['legacy_session', 'session'],
+          writeOverrides: [{ domain: undefined }, { domain: '.example.com' }],
         },
       }),
     );
@@ -604,8 +610,11 @@ describe('session middleware', () => {
       const header = res.headers.get('set-cookie');
       assert.isNotNull(header);
       const cookies = parseSetCookie(header ?? '');
-      assert.equal(cookies.length, 1);
-      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies.length, 2);
+      assert.equal(cookies[0].name, 'legacy_session');
+      assert.isUndefined(cookies[0].domain);
+      assert.equal(cookies[1].name, 'session');
+      assert.equal(cookies[1].domain, '.example.com');
 
       // Ensure that the legacy session is migrated to a new session.
       assert.equal(newSessionId, legacySessionId);

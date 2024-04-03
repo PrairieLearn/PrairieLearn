@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from './config';
-import { shouldSecureCookie } from '../lib/cookie';
+import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
 import { HttpRedirect } from './redirect';
 
@@ -84,7 +84,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authn_provider_name: authnParams.provider || null,
     };
     var pl_authn = generateSignedToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
+    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
       secure: shouldSecureCookie(req),
@@ -92,14 +92,16 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
 
     // After explicitly authenticating, clear the cookie that disables
     // automatic authentication.
-    res.clearCookie('pl_disable_auto_authn');
+    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+      clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
+    }
   }
 
   if (options.redirect) {
     let redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
     res.redirect(redirUrl);
     return;

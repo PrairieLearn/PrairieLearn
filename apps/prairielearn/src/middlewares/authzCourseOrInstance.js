@@ -10,9 +10,24 @@ import * as sqldb from '@prairielearn/postgres';
 import { html } from '@prairielearn/html';
 import { idsEqual } from '../lib/id';
 import { features } from '../lib/features/index';
+import { clearCookie } from '../lib/cookie';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+
+/**
+ * Removes all override cookies from the response.
+ *
+ * @param {import('express').Response} res
+ * @param {{ cookie: string }[]} overrides
+ */
+function clearOverrideCookies(res, overrides) {
+  overrides.forEach((override) => {
+    debug(`clearing cookie: ${override.cookie}`);
+    const newName = override.cookie.replace(/^pl_/, 'pl2_');
+    clearCookie(res, [override.cookie, newName]);
+  });
+}
 
 export async function authzCourseOrInstance(req, res) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
@@ -104,7 +119,7 @@ export async function authzCourseOrInstance(req, res) {
   if (req.cookies.pl_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
     if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
-      res.clearCookie('pl_requested_uid');
+      clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
     } else {
       overrides.push({
         name: 'UID',
@@ -162,11 +177,7 @@ export async function authzCourseOrInstance(req, res) {
     }
 
     debug('not on student page, so clear all requested overrides and throw an error');
-
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
       status: 403,
@@ -196,10 +207,7 @@ export async function authzCourseOrInstance(req, res) {
 
     // No user was found - remove all override cookies and return with error
     if (result.rowCount === 0) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -242,10 +250,7 @@ export async function authzCourseOrInstance(req, res) {
     // The effective user is an administrator and the authn user is not - remove
     // all override cookies and return with error
     if (result.rows[0].is_administrator && !is_administrator) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -273,10 +278,7 @@ export async function authzCourseOrInstance(req, res) {
     req_date = parseISO(req.cookies.pl_requested_date);
     if (!isValid(req_date)) {
       debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -358,10 +360,7 @@ export async function authzCourseOrInstance(req, res) {
     !res.locals.authz_data.authn_has_course_permission_preview &&
     effectiveResult.rows[0].permissions_course.has_course_permission_preview
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
       status: 403,
@@ -380,10 +379,7 @@ export async function authzCourseOrInstance(req, res) {
     !res.locals.authz_data.authn_has_course_permission_view &&
     effectiveResult.rows[0].permissions_course.has_course_permission_view
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
       status: 403,
@@ -402,10 +398,7 @@ export async function authzCourseOrInstance(req, res) {
     !res.locals.authz_data.authn_has_course_permission_edit &&
     effectiveResult.rows[0].permissions_course.has_course_permission_edit
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
       status: 403,
@@ -424,10 +417,7 @@ export async function authzCourseOrInstance(req, res) {
     !res.locals.authz_data.authn_has_course_permission_own &&
     effectiveResult.rows[0].permissions_course.has_course_permission_own
   ) {
-    overrides.forEach((override) => {
-      debug(`clearing cookie: ${override.cookie}`);
-      res.clearCookie(override.cookie);
-    });
+    clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
       status: 403,
@@ -447,10 +437,7 @@ export async function authzCourseOrInstance(req, res) {
       !res.locals.authz_data.authn_has_course_instance_permission_view &&
       effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -470,10 +457,7 @@ export async function authzCourseOrInstance(req, res) {
       !res.locals.authz_data.authn_has_course_instance_permission_edit &&
       effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -499,10 +483,7 @@ export async function authzCourseOrInstance(req, res) {
     ) {
       // authn user is not a Student Data Editor
       debug('cannot emulate student if not student data editor');
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -531,10 +512,7 @@ export async function authzCourseOrInstance(req, res) {
       !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
       !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
     ) {
-      overrides.forEach((override) => {
-        debug(`clearing cookie: ${override.cookie}`);
-        res.clearCookie(override.cookie);
-      });
+      clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
         status: 403,
