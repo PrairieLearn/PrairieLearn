@@ -36,7 +36,7 @@ BEGIN
         WHERE
             e.user_id = ip_to_mode.authn_user_id
             AND (
-                (r.access_end IS NULL and s.date BETWEEN ip_to_mode.date - '1 hour'::interval and ip_to_mode.date + '1 hour'::interval)
+                (r.access_end IS NULL and ip_to_mode.date BETWEEN s.date - '1 hour'::interval and s.date + '1 hour'::interval)
                 OR (ip_to_mode.date BETWEEN r.access_start AND r.access_end)
             )
     LOOP
