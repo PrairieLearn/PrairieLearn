@@ -79,6 +79,7 @@ BEGIN
             -- 'Public', but continue looping to see if we have any other
             -- reservations that might put us in 'Exam' mode.
             mode := 'Public';
+            CONTINUE;
         END IF;
     END LOOP;
 END;
