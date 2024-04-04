@@ -46,3 +46,14 @@ export function redirectToTermsPage(res: Response, redirectUrl?: string): void {
   }
   throw new HttpRedirect('/pl/terms');
 }
+
+export async function redirectToTermsPageIfNeeded(
+  res: Response,
+  user: User,
+  ip: string,
+  redirectUrl?: string,
+): Promise<void> {
+  if (await shouldRedirectToTermsPage(user, ip)) {
+    redirectToTermsPage(res, redirectUrl);
+  }
+}

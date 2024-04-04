@@ -8,7 +8,7 @@ import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
 import { HttpRedirect } from './redirect';
 import { isEnterprise } from './license';
-import { shouldRedirectToTermsPage, redirectToTermsPage } from '../ee/lib/terms';
+import { redirectToTermsPageIfNeeded } from '../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -107,9 +107,8 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     }
 
     // Potentially prompt the user to accept the terms before redirecting them.
-    if (isEnterprise() && (await shouldRedirectToTermsPage(selectedUser.user, req.ip))) {
-      redirectToTermsPage(res, redirUrl);
-      return;
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, selectedUser.user, req.ip, redirUrl);
     }
 
     res.redirect(redirUrl);

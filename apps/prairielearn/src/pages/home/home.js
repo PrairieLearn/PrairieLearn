@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
 import { isEnterprise } from '../../lib/license';
-import { shouldRedirectToTermsPage, redirectToTermsPage } from '../../ee/lib/terms';
+import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();
@@ -13,17 +13,16 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    // Potentially prompt the user to accept the terms before proceeding.
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
+    }
+
     res.locals.navPage = 'home';
     res.locals.isAuthenticated = !!res.locals.authn_user;
 
     if (!res.locals.isAuthenticated) {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      return;
-    }
-
-    // Potentially prompt the user to accept the terms before proceeding.
-    if (isEnterprise() && (await shouldRedirectToTermsPage(res.locals.authn_user, req.ip))) {
-      redirectToTermsPage(res, req.originalUrl);
       return;
     }
 

@@ -6,7 +6,7 @@ import * as crypto from 'node:crypto';
 import { config } from '../../lib/config';
 import { AuthPrairieTest } from './prairietest.html';
 import { isEnterprise } from '../../lib/license';
-import { shouldRedirectToTermsPage, redirectToTermsPage } from '../lib/terms';
+import { redirectToTermsPageIfNeeded } from '../lib/terms';
 
 const router = Router({ mergeParams: true });
 
@@ -15,9 +15,8 @@ router.get(
   asyncHandler(async (req, res) => {
     // Potentially prompt the user to accept the terms before redirecting to
     // PrairieTest.
-    if (isEnterprise() && (await shouldRedirectToTermsPage(res.locals.authn_user, req.ip))) {
-      redirectToTermsPage(res, req.originalUrl);
-      return;
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
     const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
