@@ -163,7 +163,7 @@ By default the Java compiler will show all compilation warnings to the user, exc
 }
 ```
 
-The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/11/tools/javac.html). Some options of interest may include:
+The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html#options). Some options of interest may include:
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
