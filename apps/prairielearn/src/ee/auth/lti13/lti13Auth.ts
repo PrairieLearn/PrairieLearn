@@ -291,7 +291,7 @@ async function setupPassport(lti13_instance_id: string) {
     'lti13',
     new Strategy(
       {
-        client: client,
+        client,
         passReqToCallback: true,
       },
       callbackify(verify),

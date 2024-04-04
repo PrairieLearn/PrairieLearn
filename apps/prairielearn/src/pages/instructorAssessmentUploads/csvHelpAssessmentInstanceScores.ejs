@@ -2,12 +2,12 @@
   Upload a CSV file like this:
 </p>
 <pre class="ml-4">uid,instance,score_perc
-mwest@illinois.edu,1,63.5
-zilles@illinois.edu,1,100</pre>
+student1@example.com,1,63.5
+student2@example.com,1,100</pre>
 <p>
   The example above will change the total assessment
-  percentage scores for <code>mwest@illinois.edu</code> to 63.5% and for
-  <code>zilles@illinois.edu</code> to 100%. The <code>instance</code> column
+  percentage scores for <code>student1@example.com</code> to 63.5% and for
+  <code>student2@example.com</code> to 100%. The <code>instance</code> column
   indicates which assessment instance to modify, and should
   be <code>1</code> if there is only a single instance per student.
 </p>
@@ -16,8 +16,8 @@ zilles@illinois.edu,1,100</pre>
   containing a <code>points</code> column, like:
 </p>
 <pre class="ml-4">uid,instance,points
-mwest@illinois.edu,1,120
-zilles@illinois.edu,1,130.27</pre>
+student1@example.com,1,120
+student2@example.com,1,130.27</pre>
 <p>
   For assessments using group work, use the <code>group_name</code> column instead:
 </p>

@@ -1,5 +1,21 @@
 # @prairielearn/flash
 
+## 1.1.9
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/html@3.1.7
+
+## 1.1.8
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/html@3.1.6
+
 ## 1.1.7
 
 ### Patch Changes

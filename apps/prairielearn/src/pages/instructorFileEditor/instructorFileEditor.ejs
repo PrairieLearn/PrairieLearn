@@ -147,13 +147,16 @@
                             </span>
                         </div>
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
-                            <a id="help-<%= fileEdit.uuid %>-button"
-                               class="btn btn-light btn-sm"
-                               data-toggle="collapse" href="#help-<%= fileEdit.uuid %>"
-                               role="button" aria-expanded="false">
+                            <button
+                                type="button"
+                                id="help-<%= fileEdit.uuid %>-button"
+                                class="btn btn-light btn-sm"
+                                data-toggle="collapse"
+                                data-target="#help-<%= fileEdit.uuid %>"
+                                aria-expanded="false">
                                 <i class="far fa-question-circle" aria-hidden="true"></i>
                                 <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
-                            </a>
+                            </button>
                             <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-light btn-sm" disabled>
                                 <i class="fas fa-save" aria-hidden="true"></i>
                                 Save and sync
@@ -190,7 +193,7 @@
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
                                 <div class="col-auto">
-                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button" id="results-<%= fileEdit.uuid %>-button">Show detail</a>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="collapse" data-target="#results-<%= fileEdit.uuid %>" id="results-<%= fileEdit.uuid %>-button">Show detail</button>
                                 </div>
                                 <% } %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">

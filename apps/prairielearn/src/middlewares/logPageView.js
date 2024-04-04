@@ -24,7 +24,7 @@ module.exports = function (pageType) {
 
     const params = {
       authn_user_id: res.locals.authn_user.user_id,
-      user_id: user_id,
+      user_id,
       course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
       assessment_id: res.locals.assessment ? res.locals.assessment.id : null,
       assessment_instance_id: res.locals.assessment_instance

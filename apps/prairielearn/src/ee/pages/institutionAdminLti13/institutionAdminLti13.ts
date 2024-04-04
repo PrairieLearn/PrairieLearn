@@ -113,7 +113,7 @@ router.post(
       await keystore.generate('RSA', 2048, {
         alg: 'RS256',
         use: 'sig',
-        kid: kid,
+        kid,
       });
 
       await queryAsync(sql.update_keystore, {
