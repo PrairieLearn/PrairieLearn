@@ -124,7 +124,7 @@ void addition(TestReporter reporter) {
 }
 ```
 
-The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be compiled with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
+The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be executed with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
 
 ### Dynamic, parameterized and repeated tests
 
@@ -158,7 +158,7 @@ By default the Java compiler will show all compilation warnings to the user, exc
     "image": "prairielearn/grader-java",
     "timeout": 10,
     "entrypoint": "autograder.sh",
-    "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3" }
+    "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3", "JDK_JAVA_OPTIONS": "-ea" }
   }
 }
 ```
@@ -167,8 +167,12 @@ The example above disables the `static` warning (use of static fields applied to
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
-- `-source 10` to compile using the Java 10 language version;
-- `-ea` to enable [Java assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html).
+- `-source 10` to compile using the Java 10 language version.
+
+Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java' documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
+
+- `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
+- `-ea` to enable [Java assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html).
 
 ### Libraries and instructor-provided classes
 
