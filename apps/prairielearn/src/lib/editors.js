@@ -1373,10 +1373,10 @@ export class FileModifyEditor extends Editor {
   }
 }
 
-export class CourseInfoEditor extends Editor {
+export class CourseInfoCreateEditor extends Editor {
   constructor(params) {
     super(params);
-    this.description = `Write infoCourse.json`;
+    this.description = `Create infoCourse.json`;
     this.infoJson = params.infoJson;
   }
 
@@ -1390,6 +1390,6 @@ export class CourseInfoEditor extends Editor {
     await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
 
     this.pathsToAdd = [infoPath];
-    this.commitMessage = `write to infoCourse.json`;
+    this.commitMessage = `create infoCourse.json`;
   }
 }

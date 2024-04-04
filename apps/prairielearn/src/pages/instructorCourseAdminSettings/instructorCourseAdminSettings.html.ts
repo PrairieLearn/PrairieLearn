@@ -87,20 +87,6 @@ export function InstructorCourseAdminSettings({
                   </small>
                 </div>
                 <div class="form-group">
-                  <label for="institution">Institution</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="institution"
-                    name="institution"
-                    value="${resLocals.institution.short_name} (${resLocals.institution.long_name})"
-                    disabled
-                  />
-                  <small class="form-text text-muted">
-                    This is your academic institution (e.g., "University of Illinois").
-                  </small>
-                </div>
-                <div class="form-group">
                   <label for="display_timezone">Timezone</label>
                   <select
                     class="form-control"
@@ -126,6 +112,20 @@ export function InstructorCourseAdminSettings({
                   <small class="form-text text-muted">
                     The allowable timezones are from the tz database. It's best to use a city-based
                     timezone that has the same times as you.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="institution">Institution</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="institution"
+                    name="institution"
+                    value="${resLocals.institution.short_name} (${resLocals.institution.long_name})"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    This is your academic institution (e.g., "University of Illinois").
                   </small>
                 </div>
                 <div class="form-group">
@@ -230,7 +230,7 @@ function EditActions({
   navPage: string;
 }) {
   if (!coursePathExists || !courseInfoExists || !hasCoursePermissionView) {
-    return;
+    return '';
   }
 
   if (!hasCoursePermissionEdit || exampleCourse) {
@@ -240,34 +240,33 @@ function EditActions({
         in <code>infoCourse.json</code>
       </p>
     `;
-  } else {
-    return html`
-      <button
-        id="save-button"
-        type="submit"
-        class="btn btn-primary mb-2"
-        name="__action"
-        value="update_configuration"
-      >
-        Save
-      </button>
-      <button
-        id="cancel-button"
-        type="button"
-        class="btn btn-secondary mb-2"
-        onclick="window.location.reload()"
-      >
-        Cancel
-      </button>
-      <p class="mb-0">
-        <a
-          data-testid="edit-course-configuration-link"
-          href="${urlPrefix}/${navPage}/file_edit/infoCourse.json"
-        >
-          Edit course configuration
-        </a>
-        in <code>infoCourse.json</code>
-      </p>
-    `;
   }
+  return html`
+    <button
+      id="save-button"
+      type="submit"
+      class="btn btn-primary mb-2"
+      name="__action"
+      value="update_configuration"
+    >
+      Save
+    </button>
+    <button
+      id="cancel-button"
+      type="button"
+      class="btn btn-secondary mb-2"
+      onclick="window.location.reload()"
+    >
+      Cancel
+    </button>
+    <p class="mb-0">
+      <a
+        data-testid="edit-course-configuration-link"
+        href="${urlPrefix}/${navPage}/file_edit/infoCourse.json"
+      >
+        Edit course configuration
+      </a>
+      in <code>infoCourse.json</code>
+    </p>
+  `;
 }
