@@ -258,7 +258,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: 'form[name="delete-course-instance-form"]',
+    formSelector: '#delete-course-instance-form',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',
@@ -288,7 +288,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: 'form[name="delete-course-instance-form"]',
+    formSelector: '#delete-course-instance-form',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',

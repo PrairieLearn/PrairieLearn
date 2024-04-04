@@ -250,7 +250,7 @@ function CopyCourseInstanceForm({
       </button>
     </div>
     ${Modal({
-      id: 'deleteCourseInstanceModal',
+      id: 'delete-course-instance-form',
       title: 'Delete course instance',
       body: html`
         <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
