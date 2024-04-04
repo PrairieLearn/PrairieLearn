@@ -331,7 +331,7 @@ SELECT
       WHERE
         gr.id IS NOT NULL
     ),
-    array[]::text []
+    array[]::text[]
   )
 FROM
   group_users AS gu

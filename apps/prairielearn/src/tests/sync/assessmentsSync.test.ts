@@ -102,7 +102,7 @@ describe('Assessment syncing', () => {
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.push({
       title: 'zone 2',
       questions: [{ id: util.ALTERNATIVE_QUESTION_ID, points: 10 }],
@@ -537,7 +537,7 @@ describe('Assessment syncing', () => {
       },
     ];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedData = await getSyncedAssessmentData('newexam');
     const originalFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
@@ -578,7 +578,7 @@ describe('Assessment syncing', () => {
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.zones?.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
@@ -602,7 +602,7 @@ describe('Assessment syncing', () => {
       },
     );
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const syncedAssessments = await util.dumpTable('assessments');
     const originalSyncedAssessment = syncedAssessments.find((a) => a.tid === 'newexam');
 
@@ -968,7 +968,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
       groupAssessment;
 
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Check group roles
     const syncedRoles = await util.dumpTable('group_roles');
@@ -1207,7 +1207,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
       groupAssessment;
 
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const syncedRoles = await util.dumpTable('group_roles');
 
     // Ensure both roles are present
@@ -1275,7 +1275,7 @@ describe('Assessment syncing', () => {
     const missingAssessmentSetName = 'missing tag name';
     assessment.set = missingAssessmentSetName;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['new'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedAssessmentSets = await util.dumpTable('assessment_sets');
     let syncedAssessmentSet = syncedAssessmentSets.find(
       (aset) => aset.name === missingAssessmentSetName,
@@ -1843,7 +1843,7 @@ describe('Assessment syncing', () => {
     // @ts-expect-error -- intentionally breaking the assessment
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     assessment.uuid = oldUuid;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('missinguuid');
@@ -1855,7 +1855,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const originalSyncedAssessment = await findSyncedAssessment('originalname');
     delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newname'] = assessment;
@@ -1868,7 +1868,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('unused');
@@ -1882,7 +1882,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.set = assessmentSet.name;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     const originalSyncedAssessment = await findSyncedAssessment('testAssessment');
 
     // now delete the assessment set, but leave the assessment in place
@@ -1901,7 +1901,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment and re-sync
     assessment.uuid = '98c427af-1216-47ad-b982-6e88974080e1';
@@ -1915,7 +1915,7 @@ describe('Assessment syncing', () => {
     const originalAssessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       originalAssessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
@@ -2009,7 +2009,7 @@ describe('Assessment syncing', () => {
     const originalAssessment = makeAssessment(courseData);
     originalAssessment.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
     courseInstanceData.assessments['a'] = originalAssessment;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above assessment to a new directory AND add another with the
     // same UUID.
@@ -2038,5 +2038,86 @@ describe('Assessment syncing', () => {
     const newAssessmentRow2 = assessments.find((a) => a.tid === 'c' && a.deleted_at === null);
     assert.isNull(newAssessmentRow2?.deleted_at);
     assert.equal(newAssessmentRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+  });
+
+  describe('exam UUID validation', () => {
+    let originalCheckAccessRulesExamUuid: boolean;
+    before(() => {
+      originalCheckAccessRulesExamUuid = config.checkAccessRulesExamUuid;
+      config.checkAccessRulesExamUuid = true;
+    });
+    after(() => {
+      config.checkAccessRulesExamUuid = originalCheckAccessRulesExamUuid;
+    });
+
+    it('validates exam UUIDs for assessments in an accessible course instances', async () => {
+      const courseData = util.getCourseData();
+
+      // Ensure the course instance is accessible.
+      const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      const courseInstance = courseInstanceData.courseInstance;
+      if (!courseInstance) throw new Error('missing courseInstance');
+      courseInstance.allowAccess = [
+        {
+          startDate: '2000-01-01T00:00:00',
+          endDate: '3000-01-01T00:00:00',
+        },
+      ];
+
+      // This assessment has both valid and invalid exam UUIDs.
+      const assessment = makeAssessment(courseData);
+      assessment.allowAccess = [
+        {
+          mode: 'Exam',
+          examUuid: '00000000-0000-0000-0000-000000000000',
+        },
+        {
+          mode: 'Exam',
+          examUuid: '11111111-1111-1111-1111-111111111111',
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+      // Insert a `pt_exams` row for the valid exam UUID.
+      await sqldb.queryAsync(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
+
+      await util.writeAndSyncCourseData(courseData);
+      const syncedAssessment = await findSyncedAssessment('fail');
+      assert.match(
+        syncedAssessment?.sync_warnings,
+        /examUuid "00000000-0000-0000-0000-000000000000" not found./,
+      );
+      assert.notMatch(syncedAssessment?.sync_warnings, /11111111-1111-1111-1111-111111111111/);
+    });
+
+    it('does not validate exam UUIDs for assessments in an inaccessible course instance', async () => {
+      const courseData = util.getCourseData();
+
+      // Ensure the course instance is not accessible.
+      const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      const courseInstance = courseInstanceData.courseInstance;
+      if (!courseInstance) throw new Error('missing courseInstance');
+      courseInstance.allowAccess = [
+        {
+          startDate: '1000-01-01T00:00:00',
+          endDate: '2000-01-01T00:00:00',
+        },
+      ];
+
+      // Create an assessment with an invalid exam UUID.
+      const assessment = makeAssessment(courseData);
+      assessment.type = 'Exam';
+      assessment.allowAccess = [
+        {
+          mode: 'Exam',
+          examUuid: '00000000-0000-0000-0000-000000000000',
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+
+      await util.writeAndSyncCourseData(courseData);
+      const syncedAssessment = await findSyncedAssessment('fail');
+      assert.isNotOk(syncedAssessment?.sync_warnings);
+    });
   });
 });

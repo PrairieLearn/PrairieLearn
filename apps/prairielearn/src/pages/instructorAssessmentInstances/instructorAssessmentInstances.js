@@ -7,7 +7,7 @@ import * as error from '@prairielearn/error';
 import { regradeAssessmentInstance } from '../../lib/regrading';
 import {
   checkBelongsAsync,
-  gradeAssessmentInstanceAsync,
+  gradeAssessmentInstance,
   gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
@@ -102,7 +102,7 @@ router.post(
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         assessment_instance_id,
         res.locals.authn_user.user_id,
         requireOpen,

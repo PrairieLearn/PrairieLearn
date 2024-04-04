@@ -17,6 +17,7 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
     has_course_permission_preview: z.boolean(),
   }),
 });
+export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(

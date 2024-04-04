@@ -95,22 +95,30 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
+    const start = performance.now();
+    let didOutput = false;
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
     proc2.all?.setEncoding('utf-8');
     proc2.all?.on('data', (data) => {
+      didOutput = true;
       this.addToOutput(data);
     });
 
     try {
       await proc2;
     } finally {
-      // Ensure there is an empty line after all command output.
-      if (!this.output.endsWith('\n\n')) {
+      // Ensure we start a new line after all command output, but only if there
+      // was in fact any output from the command.
+      if (didOutput && !this.output.endsWith('\n')) {
         this.addToOutput('\n');
       }
+
+      // Record timing information.
+      const duration = (performance.now() - start).toFixed(2);
+      this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
   }
 

@@ -34,7 +34,6 @@ export function AdministratorAdmins({
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
                 id="administratorInsertButton"
-                tabindex="0"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
@@ -46,8 +45,6 @@ export function AdministratorAdmins({
                     id: 'administratorInsertButton',
                   }),
                 )}"
-                data-trigger="manual"
-                onclick="$(this).popover('show')"
               >
                 <i class="fa fa-user-plus" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add administrator</span>
@@ -75,7 +72,6 @@ export function AdministratorAdmins({
                             type="button"
                             class="btn btn-sm btn-danger float-right"
                             id="administratorDeleteButton${i}"
-                            tabindex="0"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -89,8 +85,6 @@ export function AdministratorAdmins({
                                 userId: admin.user_id,
                               }),
                             )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Remove
                           </button>

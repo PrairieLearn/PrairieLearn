@@ -20,7 +20,7 @@ If you are using the CBTF for remote proctoring then the access control should l
 
 Some notes about this configuration:
 
-- The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
+- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
 - Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
 
 ## CBTF exams with a few students outside the CBTF
@@ -35,7 +35,7 @@ Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-fa
         "credit": 100
     },
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -64,7 +64,7 @@ This configuration is good when:
 ```json
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -73,7 +73,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "uids": ["student3@example.com", "student4@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",
@@ -121,7 +121,7 @@ This configuration is good when:
 ```json
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T06:00:00",
@@ -164,7 +164,7 @@ This configuration is good when:
 "allowRealTimeGrading": false,
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -181,7 +181,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "uids": ["student3@example.com", "student4@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",

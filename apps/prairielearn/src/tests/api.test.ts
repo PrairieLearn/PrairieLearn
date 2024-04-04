@@ -183,7 +183,7 @@ describe('API', function () {
 
       const json = await res.json();
       const assessmentInstance = json[0];
-      assert.equal(assessmentInstance.user_uid, 'dev@illinois.edu');
+      assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
       assert.equal(assessmentInstance.max_points, helperExam.assessmentMaxPoints);
 
@@ -206,7 +206,7 @@ describe('API', function () {
       const json = await res.json();
       assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
       assert.equal(json.assessment_id, locals.assessment_id);
-      assert.equal(json.user_uid, 'dev@illinois.edu');
+      assert.equal(json.user_uid, 'dev@example.com');
       assert.equal(json.points, assessmentPoints);
       assert.equal(json.max_points, helperExam.assessmentMaxPoints);
     });
@@ -259,7 +259,7 @@ describe('API', function () {
       assert.equal(res.status, 200);
 
       const json = await res.json();
-      const user = json.find((o) => o.user_uid === 'dev@illinois.edu');
+      const user = json.find((o) => o.user_uid === 'dev@example.com');
       assert.exists(user);
       const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
       assert.exists(assessment);

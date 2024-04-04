@@ -90,6 +90,7 @@ export type Mode = z.infer<typeof ModeSchema>;
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
+  course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
@@ -107,6 +108,7 @@ export const CourseSchema = z.object({
   sync_warnings: z.string().nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
+  yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
 
@@ -241,6 +243,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
+  disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
   heartbeat_at: DateFromISOString.nullable(),
   hostname: z.string().nullable(),
   id: IdSchema,
@@ -360,9 +363,6 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
-  // Currently unused.
-  // TODO: remove from schema entirely?
-  role: z.any(),
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
@@ -461,6 +461,7 @@ export const AssessmentQuestionSchema = z.object({
   max_submission_score_hist: z.array(z.number()).nullable(),
   max_submission_score_variance: z.number().nullable(),
   mean_question_score: z.number().nullable(),
+  median_question_score: z.number().nullable(),
   number: z.number().nullable(),
   number_in_alternative_group: z.number().nullable(),
   number_submissions_hist: z.array(z.number()).nullable(),
@@ -563,7 +564,7 @@ export const InstanceQuestionSchema = z.object({
     .nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
-  variants_points_list: z.array(z.number()),
+  variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 
@@ -701,9 +702,10 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
-  short_name: z.string().nullable(),
-  title: z.string().nullable(),
-  user_id: IdSchema.nullable(),
+  referral_source: z.string().nullable(),
+  short_name: z.string(),
+  title: z.string(),
+  user_id: IdSchema,
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;

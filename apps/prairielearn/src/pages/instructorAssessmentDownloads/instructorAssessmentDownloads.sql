@@ -563,7 +563,7 @@ SELECT
       WHERE
         gr.role_name IS NOT NULL
     ),
-    '{}'::text []
+    '{}'::text[]
   ) AS roles
 FROM
   group_configs AS gc

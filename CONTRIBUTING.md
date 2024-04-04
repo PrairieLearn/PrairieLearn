@@ -22,7 +22,7 @@ The aforementioned setup documentation also includes instructions on starting a 
 
 The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure. Also note that there has been a push to update existing code to use a new set of patterns and best practices, you can find some guidelines in [this Discussion post](https://github.com/PrairieLearn/PrairieLearn/discussions/8874).
 
-If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://go.illinois.edu/PrairieLearnSlack)!
+If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://prairielearn.com/slack)!
 
 ## Opening a pull request
 
