@@ -2,6 +2,8 @@ import { type Response } from 'express';
 import { callRow } from '@prairielearn/postgres';
 
 import { ModeSchema, type User } from '../../lib/db-types';
+import { HttpRedirect } from '../../lib/redirect';
+import { setCookie } from '../../lib/cookie';
 
 function hasUserAcceptedTerms(user: User): boolean {
   // At the moment, we only have one revision of our terms and conditions, so
@@ -38,7 +40,9 @@ export async function shouldRedirectToTermsPage(user: User, ip: string) {
  */
 export function redirectToTermsPage(res: Response, redirectUrl?: string): void {
   if (redirectUrl) {
-    res.cookie('preTermsUrl', redirectUrl, { maxAge: 1000 * 60 * 60 });
+    setCookie(res, ['pl_pre_terms_url', 'pl2_pre_terms_url'], redirectUrl, {
+      maxAge: 1000 * 60 * 60,
+    });
   }
-  res.redirect('/pl/terms');
+  throw new HttpRedirect('/pl/terms');
 }

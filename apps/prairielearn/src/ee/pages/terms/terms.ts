@@ -4,6 +4,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import { Terms } from './terms.html';
+import { clearCookie } from '../../../lib/cookie';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -22,8 +23,8 @@ router.post(
       await queryAsync(sql.user_accept_terms, { user_id: res.locals.authn_user.user_id });
 
       // This cookie would have been set by `redirectToTermsPage`.
-      res.clearCookie('preTermsUrl');
-      res.redirect(req.cookies.preTermsUrl || '/');
+      clearCookie(res, ['pl_pre_terms_url', 'pl2_pre_terms_url']);
+      res.redirect(req.cookies.pl_pre_terms_url || '/');
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
