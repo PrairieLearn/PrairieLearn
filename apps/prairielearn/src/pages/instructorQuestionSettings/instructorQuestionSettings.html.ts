@@ -254,7 +254,7 @@ export function InstructorQuestionSettings({
                           href="${resLocals.urlPrefix}/question/${resLocals.question
                             .id}/file_edit/${infoPath}"
                         >
-                          Edit course configuration
+                          Edit question configuration
                         </a>
                         in <code>info.json</code>
                       `
