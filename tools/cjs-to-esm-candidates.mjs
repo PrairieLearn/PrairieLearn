@@ -41,7 +41,6 @@ const CJS_ONLY_MODULES = new Set([
   'winston-transport',
   // Relative paths to PrairieLearn files.
   'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzCourseOrInstance',
   'apps/prairielearn/src/middlewares/authzIsAdministrator',
   'apps/prairielearn/src/middlewares/logPageView',
   'apps/prairielearn/src/middlewares/staticNodeModules',

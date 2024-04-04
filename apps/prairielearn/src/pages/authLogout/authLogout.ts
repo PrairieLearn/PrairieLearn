@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+
 import { config } from '../../lib/config';
+import { clearCookie, setCookie } from '../../lib/cookie';
 
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    res.clearCookie('pl_authn');
-    res.clearCookie('pl_assessmentpw');
+    clearCookie(res, ['prairielearn_session', 'pl2_session']);
+    clearCookie(res, ['pl_authn', 'pl2_authn']);
+    clearCookie(res, ['pl_assessmentpw', 'pl2_assessmentpw']);
 
     if (config.devMode) {
       // In dev mode, a user will typically by automatically authenticated by our
@@ -16,13 +19,13 @@ router.get(
       // However, folks who want to specifically test authentication behavior can
       // click "Log out". In this case, we want to disable the automatic login
       // until the next time the user authenticates.
-      res.cookie('pl_disable_auto_authn', '1');
+      setCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn'], '1');
     }
 
-    await req.session.destroy();
     // Hold-over from the old express-session implementation
-    res.clearCookie('connect.sid');
-    res.clearCookie('prairielearn_session');
+    clearCookie(res, 'connect.sid');
+
+    await req.session.destroy();
 
     const redirect = req.query.redirect;
     if (redirect && typeof redirect === 'string') {

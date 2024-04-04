@@ -45,7 +45,7 @@
           <p><strong>Standard output:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error.data.outputStdout %></pre>
           <% } %>
 
-          <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error.stack %></pre><% } %>
+          <% if (errorStack) { %><p><strong>Stack trace:</strong></p><pre class="bg-dark text-white rounded p-2"><%= errorStack %></pre><% } %>
 
           <% if (error.data && error.data.sqlError) {%>
           <p><strong>SQL error:</strong></p><pre class="bg-dark text-white rounded p-2">error: <%= error.data.sqlError.message %>
