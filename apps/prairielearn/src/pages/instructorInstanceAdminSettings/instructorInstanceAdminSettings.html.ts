@@ -1,11 +1,14 @@
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { nodeModulesAssetPath } from '../../lib/assets';
+import { Modal } from '../../components/Modal.html';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
+  studentLinkQRCode,
   infoCourseInstancePath,
 }: {
   resLocals: Record<string, any>;
@@ -152,7 +155,7 @@ export function InstructorInstanceAdminSettings({
                     </span>
                     <div class="d-none">
                       <div id="js-student-link-qrcode">
-                        <center>${resLocals.studentLinkQRCode}</center>
+                        <center>${unsafeHtml(studentLinkQRCode)}</center>
                       </div>
                     </div>
                   </td>
@@ -246,33 +249,18 @@ function CopyCourseInstanceForm({
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
     </div>
-    <div
-      class="modal fade"
-      id="deleteCourseInstanceModal"
-      tabindex="-1"
-      role="dialog"
-      aria-labelledby="deleteCourseInstanceModalLabel"
-    >
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h4 class="modal-title" id="deleteCourseInstanceModalLabel">Delete course instance</h4>
-          </div>
-          <div class="modal-body">
-            <p>
-              Are you sure you want to delete the course instance <strong>${shortName}</strong>?
-            </p>
-          </div>
-          <div class="modal-footer">
-            <form name="delete-course-instance-form" method="POST">
-              <input type="hidden" name="__action" value="delete_course_instance" />
-              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-danger">Delete</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    ${Modal({
+      id: 'deleteCourseInstanceModal',
+      title: 'Delete course instance',
+      body: html`
+        <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
+      `,
+      footer: html`
+        <input type="hidden" name="__action" value="delete_course_instance" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Delete</button>
+      `,
+    })}
   `;
 }
