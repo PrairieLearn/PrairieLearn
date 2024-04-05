@@ -37,7 +37,7 @@ export function init(callback) {
   const doHealthCheck = () => {
     docker.ping((err) => {
       if (err) {
-        module.exports.flagUnhealthy('Docker unreachable');
+        flagUnhealthy('Docker unreachable');
       }
       setTimeout(doHealthCheck, config.healthCheckInterval);
     });
