@@ -116,7 +116,7 @@ for (const file of files.sort()) {
 
 if (candidatesPerFileCount.size > 0) {
   console.log('\n\n');
-  console.log('Summary:');
+  console.log(`Summary (${candidatesPerFileCount.size} files):`);
 
   const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
     (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
