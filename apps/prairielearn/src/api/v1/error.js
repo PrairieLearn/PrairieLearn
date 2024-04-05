@@ -1,10 +1,10 @@
-const { logger } = require('@prairielearn/logger');
-const status = require('http-status');
+import { logger } from '@prairielearn/logger';
+import status from 'http-status';
 
-module.exports = (err, req, res, _next) => {
+export default function (err, req, res, _next) {
   logger.error('API Error', err);
   const statusCode = err.status || 500;
   res.status(statusCode).send({
     message: status[statusCode],
   });
-};
+}

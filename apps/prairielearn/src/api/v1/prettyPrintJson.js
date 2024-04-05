@@ -1,4 +1,4 @@
-module.exports = (req, res, next) => {
+export default function (req, res, next) {
   res.json = (body) => {
     if (!res.get('Content-Type')) {
       res.set('Content-Type', 'application/json');
@@ -6,4 +6,4 @@ module.exports = (req, res, next) => {
     res.send(JSON.stringify(body, null, 2));
   };
   next();
-};
+}
