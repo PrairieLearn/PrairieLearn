@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
   end_date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INTEGER NOT NULL,
   note TEXT,
-  created_by BIGINT NOT NULL REFERENCES users (user_id),
+  created_by BIGINT NOT NULL REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   UNIQUE (assessment_id, user_id),
   UNIQUE (assessment_id, group_id),
