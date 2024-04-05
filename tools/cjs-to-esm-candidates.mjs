@@ -24,6 +24,7 @@ const CJS_ONLY_MODULES = new Set([
   'express-list-endpoints',
   'form-data',
   'get-port',
+  'http-status',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
