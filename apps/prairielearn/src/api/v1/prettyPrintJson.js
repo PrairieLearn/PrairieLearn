@@ -1,3 +1,5 @@
+// @ts-check
+
 export default function (req, res, next) {
   res.json = (body) => {
     if (!res.get('Content-Type')) {

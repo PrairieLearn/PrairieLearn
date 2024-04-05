@@ -1,5 +1,6 @@
+// @ts-check
 import { logger } from '@prairielearn/logger';
-import status from 'http-status';
+const status = require('http-status');
 
 export default function (err, req, res, _next) {
   logger.error('API Error', err);
