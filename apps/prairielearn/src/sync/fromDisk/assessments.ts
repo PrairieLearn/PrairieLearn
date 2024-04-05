@@ -481,6 +481,7 @@ export async function sync(
   });
 
   perf.start('sproc:sync_assessments');
+  console.log(assessmentParams);
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,
     courseId,

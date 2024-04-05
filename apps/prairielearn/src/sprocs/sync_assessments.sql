@@ -393,7 +393,7 @@ BEGIN
                         END IF;
 
                         INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
-                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
+                        VALUES (syncing_course_id, '@sharingid/qid', null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;

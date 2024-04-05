@@ -1,0 +1,16 @@
+{
+    "uuid": "792683bb-3d18-42c6-9c2e-9a51f6416a70",
+    "type": "Homework",
+    "title": "Questions using workspaces",
+    "set": "Collection",
+    "number": "777",
+    "zones": [
+        {
+            "questions": [
+              {"id": "demo/workspace/vscode",       "points": 1, "maxPoints": 5},
+              {"id": "demo/workspace/jupyterlab",   "points": 1, "maxPoints": 5},
+              {"id": "@btest-course/addNumbers", "points": 1}
+            ]
+        }
+    ]
+}
