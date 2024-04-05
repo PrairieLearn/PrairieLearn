@@ -19,7 +19,7 @@ function hasUserAcceptedTerms(user: User): boolean {
  * accessing the site in Public mode. We want to avoid prompting for terms
  * acceptance if the user is accessing the site in Exam mode, since they may not
  * have time to read the terms or accept them before the exam starts, or the network
- * may not even allow them to the terms pages.
+ * may not even allow them to access the terms pages.
  *
  * @param user The user to check
  * @param ip The IP address of the request

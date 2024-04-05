@@ -13,17 +13,17 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // Potentially prompt the user to accept the terms before proceeding.
-    if (isEnterprise()) {
-      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
-    }
-
     res.locals.navPage = 'home';
     res.locals.isAuthenticated = !!res.locals.authn_user;
 
     if (!res.locals.isAuthenticated) {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
+    }
+
+    // Potentially prompt the user to accept the terms before proceeding.
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
     const result = await sqldb.queryOneRowAsync(sql.select_home, {
