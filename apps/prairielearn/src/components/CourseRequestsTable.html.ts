@@ -98,8 +98,6 @@ export function CourseRequestsTable({
                                 csrfToken,
                               }),
                             )}"
-                            name="approve_deny_action"
-                            value="deny"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Deny
                           </button>
