@@ -221,5 +221,8 @@
 <p>
     Your answer must be a piece of text (sequence of letters, numbers, and characters). Any symbolic expressions or numbers will be intepreted as text.<br>
     {{space_hint}}
+    {{#escape_unicode}}
+    Invisible or unprintable unicode characters are replaced with a text representation of their hex id: <code class="user-output">&lt;U+xxxx&gt;</code>.
+    {{/escape_unicode}}
 </p>
 {{/format}}

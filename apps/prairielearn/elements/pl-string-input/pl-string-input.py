@@ -14,6 +14,17 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
+SPACE_HINT_DICT = {
+    (True, True): "All spaces will be removed from your answer.",
+    (True, False): "Leading and trailing spaces will be removed from your answer.",
+    (
+        False,
+        True,
+    ): "All spaces between text will be removed but leading and trailing spaces will be left as part of your answer.",
+    (False, False): "Leading and trailing spaces will be left as part of your answer.",
+}
+
+
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
@@ -29,6 +40,7 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 MULTILINE_DEFAULT = False
+ESCAPE_UNICODE_DEFAULT = True
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -52,6 +64,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "normalize-to-ascii",
         "show-score",
         "multiline",
+        "escape-unicode",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -96,6 +109,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
+    escape_unicode = pl.get_boolean_attrib(
+        element, "escape-unicode", False if multiline else ESCAPE_UNICODE_DEFAULT
+    )
+
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
         template = f.read()
@@ -103,24 +120,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
-        space_hint_pair = (remove_leading_trailing, remove_spaces)
-        match space_hint_pair:
-            case (True, True):
-                space_hint = "All spaces will be removed from your answer."
-            case (True, False):
-                space_hint = (
-                    "Leading and trailing spaces will be removed from your answer."
-                )
-            case (False, True):
-                space_hint = "All spaces between text will be removed but leading and trailing spaces will be left as part of your answer."
-            case (False, False):
-                space_hint = (
-                    "Leading and trailing spaces will be left as part of your answer."
-                )
-            case _:
-                raise Exception("Should never reach here.")
-
-        info_params = {"format": True, "space_hint": space_hint}
+        space_hint = SPACE_HINT_DICT[(remove_leading_trailing, remove_spaces)]
+        info_params = {
+            "format": True,
+            "space_hint": space_hint,
+            "escape_unicode": escape_unicode,
+        }
         info = chevron.render(template, info_params).strip()
 
         show_help_text = pl.get_boolean_attrib(
@@ -171,7 +176,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            # TODO escaping unicode was removed, should we add it back as an option?
+            if escape_unicode:
+                a_sub = pl.escape_unicode_string(a_sub)
 
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
@@ -195,7 +201,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        # TODO escaping unicode was removed, should we add it back as an option?
+        if escape_unicode:
+            a_tru = pl.escape_unicode_string(a_tru)
 
         html_params = {
             "answer": True,

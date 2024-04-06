@@ -432,3 +432,11 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 )
 def test_index2key(idx: int, expected_output: str) -> None:
     assert pl.index2key(idx) == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_str, expected_output",
+    [("j", "j"), ("\n", "<U+000A>")],
+)
+def test_escape_unicode_string(input_str: str, expected_output: str) -> None:
+    assert pl.escape_unicode_string(input_str) == expected_output

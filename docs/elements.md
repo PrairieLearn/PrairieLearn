@@ -999,7 +999,8 @@ def generate(data):
 | `placeholder`             | text                | None     | Hint displayed inside the input box describing the expected type of input.                                                                                                |
 | `size`                    | integer             | 35       | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
-| `multiline`               | boolean             | false    | Whether or not to to allow the input to include line breaks.                                                                                                              |
+| `multiline`               | boolean             | false    | Whether or not to allow the input to include line breaks.                                                                                                                 |
+| `escape-unicode`          | boolean             | true     | Whether or not to escape unprintable unicode characters. Default is `false` if `multiline` is enabled.                                                                    |
 
 #### Using multiline inputs
 

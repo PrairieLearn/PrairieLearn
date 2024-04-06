@@ -1660,12 +1660,13 @@ def escape_unicode_string(string: str) -> str:
     https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
     """
 
-    def escape_unprintable(x):
+    def escape_unprintable(x: str) -> str:
         category = unicodedata.category(x)
-        if category == "Cc" or category == "Cf":
-            return f"<U+{ord(x):x}>"
-        else:
-            return x
+
+        if category in {"Cc", "Cf"}:
+            return f"<U+{ord(x):04X}>"
+
+        return x
 
     return "".join(map(escape_unprintable, string))
 
