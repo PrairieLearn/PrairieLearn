@@ -14,7 +14,7 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
-SPACE_HINT_DICT = {
+SPACE_HINT_DICT: dict[tuple[bool, bool], str] = {
     (True, True): "All spaces will be removed from your answer.",
     (True, False): "Leading and trailing spaces will be removed from your answer.",
     (
