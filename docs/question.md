@@ -301,7 +301,7 @@ You can also use this functionality in file-based elements (`pl-figure`, `pl-fil
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
 
 - On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-- On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
+- On `Exam`-type assessments, all questions are effectively single-variant, so the `singleVariant` option has no effect.
 
 ## The `partialCredit` option
 

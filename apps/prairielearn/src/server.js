@@ -159,7 +159,11 @@ module.exports.initExpress = function () {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: config.sessionCookieNames,
+        name: 'prairielearn_session',
+        writeNames: ['prairielearn_session', 'pl2_session'],
+        // Ensure that the legacy session cookie doesn't have a domain specified.
+        // We can only safely set domains on the new session cookie.
+        writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
         httpOnly: true,
         maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting
@@ -288,12 +292,16 @@ module.exports.initExpress = function () {
       const name = item.split('=')[0].trim();
       return (
         name !== 'pl_authn' &&
+        name !== 'pl2_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'pl2_assessmentpw' &&
         name !== 'connect.sid' &&
         name !== 'prairielearn_session' &&
+        name !== 'pl2_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
-        !name.startsWith('pl_authz_workspace_')
+        !name.startsWith('pl_authz_workspace_') &&
+        !name.startsWith('pl2_authz_workspace_')
       );
     });
 
