@@ -25,7 +25,6 @@ function makeStatsCsvFilename(locals) {
     locals.course_instance,
     locals.course,
   );
-  // locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
   return prefix + 'question_stats.csv';
 }
 
