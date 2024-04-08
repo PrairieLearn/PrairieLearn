@@ -67,7 +67,7 @@ const ConfigSchema = z.object({
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   /** Sets the default user email in development. */
-  authEmail: z.string().nullable().default('dev@illinois.edu'),
+  authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
