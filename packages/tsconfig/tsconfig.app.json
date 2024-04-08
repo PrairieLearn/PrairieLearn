@@ -2,8 +2,6 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "inlineSourceMap": true,
-    "inlineSources": true,
     // This doesn't play nicely with our packages that are compiled by `tsc`.
     // Once we switch to using native ESM, we can enable this, since it matches
     // Node's behavior.
