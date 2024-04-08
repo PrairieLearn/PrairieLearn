@@ -10,7 +10,10 @@ import {
   updateAssessmentQuestionStatsForAssessment,
   updateAssessmentStatistics,
 } from '../../lib/assessment';
-import { InstructorAssessmentQuestionStatistics } from './instructorAssessmentQuestionStatistics.html';
+import {
+  AssessmentQuestionStatsRowSchema,
+  InstructorAssessmentQuestionStatistics,
+} from './instructorAssessmentQuestionStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -48,15 +51,19 @@ router.get(
     });
     res.locals.stats_last_updated = lastUpdateResult.rows[0].stats_last_updated;
 
-    const questionResult = await sqldb.queryAsync(sql.questions, {
-      assessment_id: res.locals.assessment.id,
-      course_id: res.locals.course.id,
-    });
-    res.locals.questions = questionResult.rows;
+    const rows = await sqldb.queryRows(
+      sql.questions,
+      {
+        assessment_id: res.locals.assessment.id,
+        course_id: res.locals.course.id,
+      },
+      AssessmentQuestionStatsRowSchema,
+    );
 
     res.send(
       InstructorAssessmentQuestionStatistics({
         questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        rows,
         resLocals: res.locals,
       }),
     );

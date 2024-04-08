@@ -1,13 +1,43 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import {
+  AlternativeGroupSchema,
+  AssessmentQuestionSchema,
+  CourseInstanceSchema,
+  CourseSchema,
+  IdSchema,
+  QuestionSchema,
+  TopicSchema,
+  ZoneSchema,
+} from '../../lib/db-types';
+
+export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
+  course_short_name: CourseSchema.shape.short_name,
+  course_instance_short_name: CourseInstanceSchema.shape.short_name,
+  assessment_label: z.string(),
+  qid: QuestionSchema.shape.qid,
+  question_title: QuestionSchema.shape.title,
+  topic: TopicSchema,
+  question_id: IdSchema,
+  assessment_question_number: z.string(),
+  alternative_group_number: AlternativeGroupSchema.shape.number,
+  alternative_group_size: z.number(),
+  zone_title: ZoneSchema.shape.title,
+  start_new_zone: z.boolean(),
+  start_new_alternative_group: z.boolean(),
+});
+type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,
+  rows,
   resLocals,
 }: {
   questionStatsCsvFilename: string;
+  rows: AssessmentQuestionStatsRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -175,7 +205,7 @@ export function InstructorAssessmentQuestionStatistics({
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.questions.map(
+                  ${rows.map(
                     (row, i) => html`
                       <tr>
                         <td>
@@ -185,22 +215,24 @@ export function InstructorAssessmentQuestionStatistics({
                         </td>
                         <td class="text-center align-middle">
                           ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
-                            score: Math.round(row.mean_question_score),
+                            score: row.mean_question_score
+                              ? Math.round(row.mean_question_score)
+                              : null,
                           })}
                         </td>
                         <td class="text-center align-middle">
                           ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
-                            score: Math.round(row.discrimination),
+                            score: row.discrimination ? Math.round(row.discrimination) : null,
                           })}
                         </td>
                         <td class="text-center">
-                          ${row.max_auto_points > 0 ||
+                          ${(row.max_auto_points ?? 0) > 0 ||
                           row.max_manual_points === 0 ||
-                          row.average_number_submissions > 0
+                          (row.average_number_submissions ?? 0) > 0
                             ? resLocals.formatFloat(row.average_number_submissions)
                             : html`&mdash;`}
                         </td>
-                        ${row.number > 0
+                        ${(row.number ?? 0) > 0
                           ? html`
                               <td class="text-center">
                                 <div id="scoreHist${i}" class="miniHist"></div>
@@ -208,7 +240,7 @@ export function InstructorAssessmentQuestionStatistics({
                               <script>
                                 $(function () {
                                   // TODO: Store data on 'data-' attribute
-                                  var data = [${row.quintile_question_scores.join(',')}];
+                                  var data = [${(row.quintile_question_scores ?? []).join(',')}];
                                   var options = {
                                     width: 60,
                                     height: 20,
@@ -326,7 +358,7 @@ export function InstructorAssessmentQuestionStatistics({
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.questions.map(function (row, i) {
+                  ${rows.map(function (row, i) {
                     return html`
                       <tr>
                         <td style="white-space: nowrap;">
@@ -344,7 +376,7 @@ export function InstructorAssessmentQuestionStatistics({
                           ${resLocals.formatFloat(row.question_score_variance, 1)}
                         </td>
                         <td class="text-center">${resLocals.formatFloat(row.discrimination, 1)}</td>
-                        ${row.max_auto_points > 0 || row.max_manual_points === 0
+                        ${(row.max_auto_points ?? 0) > 0 || row.max_manual_points === 0
                           ? html`
                               <td class="text-center">
                                 ${resLocals.formatFloat(row.some_submission_perc, 1)}
