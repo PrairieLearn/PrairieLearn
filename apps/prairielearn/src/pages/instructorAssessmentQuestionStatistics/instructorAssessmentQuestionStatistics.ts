@@ -1,5 +1,4 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 import * as error from '@prairielearn/error';
@@ -78,6 +77,7 @@ router.get(
           'Question number',
           'QID',
           'Question title',
+          // @ts-expect-error -- We can resolve this once we're no longer reading from `res.locals`
           ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
         ],
         transform(record) {
