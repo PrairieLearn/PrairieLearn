@@ -10,6 +10,7 @@ import {
   updateAssessmentQuestionStatsForAssessment,
   updateAssessmentStatistics,
 } from '../../lib/assessment';
+import { InstructorAssessmentQuestionStatistics } from './instructorAssessmentQuestionStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -54,7 +55,7 @@ router.get(
     });
     res.locals.questions = questionResult.rows;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentQuestionStatistics({ resLocals: res.locals }));
   }),
 );
 
