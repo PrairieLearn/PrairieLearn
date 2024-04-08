@@ -56,6 +56,9 @@
                   <%= formatFloat(row.mean_question_score, 1) %>
               </td>
               <td class="text-center">
+                  <%= formatFloat(row.median_question_score, 1) %>
+              </td>
+              <td class="text-center">
                   <%= formatFloat(row.question_score_variance, 1) %>
               </td>
               <td class="text-center">
@@ -146,6 +149,7 @@
               </td>
               <td class="text-center">
                   <% if (row.quintile_question_scores !== null) { %>
+                    here
                 <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>

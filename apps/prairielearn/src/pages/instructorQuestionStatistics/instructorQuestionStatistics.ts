@@ -29,7 +29,7 @@ router.get(
     });
     res.locals.assessment_stats = statsResult.rows;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(__filename.replace(/\.(j|t)s$/, '.ejs'), res.locals);
   }),
 );
 
