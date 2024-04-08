@@ -11,7 +11,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const error = require('@prairielearn/error');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
-const { shouldSecureCookie } = require('../../lib/cookie');
+const { shouldSecureCookie, setCookie } = require('../../lib/cookie');
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -118,7 +118,7 @@ router.post(
       authn_provider_name: 'LTI',
     };
     const pl_authn = generateSignedToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
+    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
       secure: shouldSecureCookie(req),

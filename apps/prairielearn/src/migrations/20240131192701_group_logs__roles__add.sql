@@ -1,2 +1,2 @@
 ALTER TABLE group_logs
-ADD COLUMN roles TEXT [];
+ADD COLUMN roles TEXT[];

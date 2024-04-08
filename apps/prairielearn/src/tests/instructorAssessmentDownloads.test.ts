@@ -91,7 +91,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
   });
@@ -139,7 +139,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
   });
@@ -187,7 +187,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Username'], 'dev');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
@@ -215,7 +215,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert(_.every(data, (entry) => entry['UID'] === 'dev@illinois.edu'));
+      assert(_.every(data, (entry) => entry['UID'] === 'dev@example.com'));
       assert(_.every(data, (entry) => entry['Assessment'] === 'Exam 1'));
       const questions = _.map(data, (entry) => entry['Question']).sort();
       const expectedQuestions = _.map(helperExam.questionsArray, (q) => q.qid);
@@ -242,7 +242,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['uid'], 'dev@illinois.edu');
+      assert.equal(data[0]['uid'], 'dev@example.com');
       assert.equal(data[0]['qid'], 'addNumbers');
     });
   });
@@ -266,7 +266,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
       assert.equal(data[0]['Correct'], 'TRUE');
@@ -292,7 +292,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
       assert.equal(data[0]['Correct'], 'TRUE');
@@ -320,7 +320,7 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
-      assert.equal(data[0]['UID'], 'dev@illinois.edu');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
       assert.equal(data[0]['Correct'], 'TRUE');

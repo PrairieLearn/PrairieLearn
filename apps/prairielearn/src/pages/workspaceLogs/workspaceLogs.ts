@@ -1,14 +1,18 @@
-// @ts-check
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const fetch = require('node-fetch').default;
-const { S3 } = require('@aws-sdk/client-s3');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import express = require('express');
+import asyncHandler = require('express-async-handler');
+import fetch from 'node-fetch';
+import { S3 } from '@aws-sdk/client-s3';
+import error = require('@prairielearn/error');
+import sqldb = require('@prairielearn/postgres');
 
-const { makeS3ClientConfig } = require('../../lib/aws');
-const { config } = require('../../lib/config');
-const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
+import { makeS3ClientConfig } from '../../lib/aws';
+import { config } from '../../lib/config';
+import {
+  WorkspaceLogRow,
+  WorkspaceLogRowSchema,
+  WorkspaceLogs,
+  WorkspaceVersionLogs,
+} from './workspaceLogs.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -16,11 +20,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
 /**
  * Given a list of workspace logs for a specific version sorted by date in
  * ascending order, checks if the logs are considered expired.
- *
- * @param {any[]} workspaceLogs
- * @returns {boolean}
  */
-function areContainerLogsExpired(workspaceLogs) {
+function areContainerLogsExpired(workspaceLogs: WorkspaceLogRow[]): boolean {
   if (config.workspaceLogsExpirationDays === null) {
     // Expiration is disabled.
     return false;
@@ -28,6 +29,7 @@ function areContainerLogsExpired(workspaceLogs) {
 
   if (workspaceLogs.length === 0) return false;
   const firstLog = workspaceLogs[0];
+  // @ts-expect-error -- We need to mark `workspace_logs.date` as non-nullable.
   return firstLog.date < config.workspaceLogsExpirationDays * 24 * 60 * 60 * 1000;
 }
 
@@ -41,10 +43,11 @@ function areContainerLogsEnabled() {
  * The logs for the current running version, if any, are fetched from the
  * workspace host directly. We also load all the logs for the given version
  * from S3. Together, this gives us all the logs for the given version.
- *
- * @returns {Promise<string | null>}
  */
-async function loadLogsForWorkspaceVersion(workspaceId, version) {
+async function loadLogsForWorkspaceVersion(
+  workspaceId: string,
+  version: string | number,
+): Promise<string | null> {
   // Safety check for TypeScript.
   if (!config.workspaceLogsS3Bucket) return null;
 
@@ -55,8 +58,7 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   });
   const workspace = workspaceRes.rows[0];
 
-  /** @type {string[]} */
-  const logParts = [];
+  const logParts: string[] = [];
 
   // Load the logs from S3. When workspaces are rebooted, we write the logs to
   // an object before shutting down the container. This means that we may have
@@ -125,13 +127,17 @@ router.use((req, res, next) => {
 router.get(
   '/',
   asyncHandler(async (_req, res, _next) => {
-    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_logs, {
-      workspace_id: res.locals.workspace_id,
-      workspace_version: null,
-      display_timezone:
-        res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
-    });
-    res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
+    const workspaceLogs = await sqldb.queryRows(
+      sql.select_workspace_logs,
+      {
+        workspace_id: res.locals.workspace_id,
+        workspace_version: null,
+        display_timezone:
+          res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
+      },
+      WorkspaceLogRowSchema,
+    );
+    res.send(WorkspaceLogs({ workspaceLogs, resLocals: res.locals }));
   }),
 );
 
@@ -140,16 +146,20 @@ router.get(
 router.get(
   '/version/:version',
   asyncHandler(async (req, res, _next) => {
-    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_logs, {
-      workspace_id: res.locals.workspace_id,
-      workspace_version: req.params.version,
-      display_timezone:
-        res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
-    });
+    const workspaceLogs = await sqldb.queryRows(
+      sql.select_workspace_logs,
+      {
+        workspace_id: res.locals.workspace_id,
+        workspace_version: req.params.version,
+        display_timezone:
+          res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
+      },
+      WorkspaceLogRowSchema,
+    );
     const containerLogsEnabled = areContainerLogsEnabled();
-    const containerLogsExpired = areContainerLogsExpired(workspaceLogs.rows);
+    const containerLogsExpired = areContainerLogsExpired(workspaceLogs);
 
-    let containerLogs = null;
+    let containerLogs: string | null = null;
     if (containerLogsEnabled && !containerLogsExpired) {
       containerLogs = await loadLogsForWorkspaceVersion(
         res.locals.workspace_id,
@@ -159,7 +169,7 @@ router.get(
 
     res.send(
       WorkspaceVersionLogs({
-        workspaceLogs: workspaceLogs.rows,
+        workspaceLogs,
         containerLogs,
         containerLogsEnabled,
         containerLogsExpired,
@@ -169,4 +179,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;
