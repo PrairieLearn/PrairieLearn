@@ -3,7 +3,13 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
 
-export function InstructorQuestionStatistics({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorQuestionStatistics({
+  questionStatsCsvFilename,
+  resLocals,
+}: {
+  questionStatsCsvFilename: string;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -254,9 +260,9 @@ export function InstructorQuestionStatistics({ resLocals }: { resLocals: Record<
                 Download
                 <a
                   href="${resLocals.urlPrefix}/question/${resLocals.question
-                    .id}/statistics/${resLocals.questionStatsCsvFilename}"
+                    .id}/statistics/${questionStatsCsvFilename}"
                 >
-                  ${resLocals.questionStatsCsvFilename}
+                  ${questionStatsCsvFilename}
                 </a>
               </p>
               <small>

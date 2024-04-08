@@ -15,21 +15,20 @@ import { InstructorAssessmentQuestionStatistics } from './instructorAssessmentQu
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const setFilenames = function (locals) {
+function makeStatsCsvFilename(locals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
     locals.course,
   );
-  locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
-};
+  // locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
+  return prefix + 'question_stats.csv';
+}
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
-
     // make sure statistics are up to date
     await updateAssessmentStatistics(res.locals.assessment.id);
 
@@ -55,15 +54,19 @@ router.get(
     });
     res.locals.questions = questionResult.rows;
 
-    res.send(InstructorAssessmentQuestionStatistics({ resLocals: res.locals }));
+    res.send(
+      InstructorAssessmentQuestionStatistics({
+        questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
-    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+    if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.questions, {
         assessment_id: res.locals.assessment.id,
         course_id: res.locals.course.id,

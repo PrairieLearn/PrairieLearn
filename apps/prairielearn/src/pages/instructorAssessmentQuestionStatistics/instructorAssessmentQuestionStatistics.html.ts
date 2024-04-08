@@ -4,8 +4,10 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
 
 export function InstructorAssessmentQuestionStatistics({
+  questionStatsCsvFilename,
   resLocals,
 }: {
+  questionStatsCsvFilename: string;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -240,9 +242,9 @@ export function InstructorAssessmentQuestionStatistics({
                 Download
                 <a
                   href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                    .id}/question_statistics/${resLocals.questionStatsCsvFilename}"
+                    .id}/question_statistics/${questionStatsCsvFilename}"
                 >
-                  ${resLocals.questionStatsCsvFilename}
+                  ${questionStatsCsvFilename}
                 </a>
               </p>
               <small>
@@ -541,9 +543,9 @@ export function InstructorAssessmentQuestionStatistics({
                 Download
                 <a
                   href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                    .id}/question_statistics/${resLocals.questionStatsCsvFilename}"
+                    .id}/question_statistics/${questionStatsCsvFilename}"
                 >
-                  ${resLocals.questionStatsCsvFilename}
+                  ${questionStatsCsvFilename}
                 </a>
               </p>
               <small>

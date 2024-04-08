@@ -5,16 +5,16 @@ import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as sanitizeName from '../../lib/sanitize-name';
+import { questionFilenamePrefix } from '../../lib/sanitize-name';
 import { InstructorQuestionStatistics } from './instructorQuestionStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const setFilenames = function (locals) {
-  const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
-  locals.questionStatsCsvFilename = prefix + 'stats.csv';
-};
+function makeStatsCsvFilename(locals) {
+  const prefix = questionFilenamePrefix(locals.question, locals.course);
+  return prefix + 'stats.csv';
+}
 
 router.get(
   '/',
@@ -24,13 +24,17 @@ router.get(
     if (res.locals.question.course_id !== res.locals.course.id) {
       return next(error.make(403, 'Access denied'));
     }
-    setFilenames(res.locals);
     const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
       question_id: res.locals.question.id,
     });
     res.locals.assessment_stats = statsResult.rows;
 
-    res.send(InstructorQuestionStatistics({ resLocals: res.locals }));
+    res.send(
+      InstructorQuestionStatistics({
+        questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
@@ -42,9 +46,8 @@ router.get(
     if (res.locals.question.course_id !== res.locals.course.id) {
       return next(error.make(403, 'Access denied'));
     }
-    setFilenames(res.locals);
 
-    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+    if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.assessment_question_stats, {
         question_id: res.locals.question.id,
       });
