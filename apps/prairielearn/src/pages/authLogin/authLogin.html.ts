@@ -324,6 +324,13 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>
+      <div class="form-group">
+        <label for="dev_email">Email</label>
+        <input class="form-control" id="dev_email" name="email" aria-describedby="dev_email_help" />
+        <small id="dev_email_help" class="form-text text-muted">
+          Optional; will be set to <tt>null</tt> if not specified.
+        </small>
+      </div>
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="submit" class="btn btn-primary btn-block" name="__action" value="dev_login">
         <span class="font-weight-bold">Dev Mode Login</span>
