@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as sanitizeName from '../../lib/sanitize-name';
+import { InstructorQuestionStatistics } from './instructorQuestionStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -29,7 +30,7 @@ router.get(
     });
     res.locals.assessment_stats = statsResult.rows;
 
-    res.render(__filename.replace(/\.(j|t)s$/, '.ejs'), res.locals);
+    res.send(InstructorQuestionStatistics({ resLocals: res.locals }));
   }),
 );
 

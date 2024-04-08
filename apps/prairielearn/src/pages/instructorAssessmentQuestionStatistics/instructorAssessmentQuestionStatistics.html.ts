@@ -31,10 +31,6 @@ export function InstructorAssessmentQuestionStatistics({
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
-
-          <!-- ###################################################################### -->
-          <!-- ###################################################################### -->
-
           ${resLocals.authz_data.has_course_permission_edit
             ? html`
                 <div
@@ -464,60 +460,66 @@ export function InstructorAssessmentQuestionStatistics({
                                   : ''}
                               </td>
                               <script>
-                                $(function () {
-                                  const options = {
-                                    width: 60,
-                                    height: 20,
-                                    ymax: 1,
-                                  };
-                                  // TODO: replace these all with 'data-' attributes
-                                  // TODO: interpolation of arrays is probably broken?
-                                  histmini(
-                                    '#firstSubmissionScoreHist${i}',
-                                    [${row.first_submission_score_hist.join(',')}],
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#lastSubmissionScoreHist${i}',
-                                    [${row.last_submission_score_hist.join(',')}],
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#maxSubmissionScoreHist${i}',
-                                    [${row.max_submission_score_hist.join(',')}],
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#averageSubmissionScoreHist${i}',
-                                    [${row.average_submission_score_hist.join(',')}],
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#submissionScoreArray${i}',
-                                    [${row.submission_score_array_averages.join(',')}],
-                                    options,
-                                  );
-                                  histmini(
-                                    '#incrementalSubmissionScoreArray${i}',
-                                    [${row.incremental_submission_score_array_averages.join(',')}],
-                                    options,
-                                  );
-                                  histmini(
-                                    '#incrementalSubmissionPointsArray${i}',
-                                    [${row.incremental_submission_points_array_averages.join(',')}],
-                                    _.defaults({ ymax: ${row.max_points} }, options),
-                                  );
-                                  histmini(
-                                    '#numberSubmissionsHist${i}',
-                                    [${row.number_submissions_hist.join(',')}],
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#quintileQuestionScoresHist${i}',
-                                    [${row.quintile_question_scores.join(',')}],
-                                    _.defaults({ ymax: 100 }, options),
-                                  );
-                                });
+                                    $(function () {
+                                      const options = {
+                                        width: 60,
+                                        height: 20,
+                                        ymax: 1,
+                                      };
+                                      // TODO: replace these all with 'data-' attributes
+                                histmini(
+                                  '#firstSubmissionScoreHist${i}',
+                                  [${(row.first_submission_score_hist ?? []).join(',')}],
+                                  _.defaults({ normalize: true }, options),
+                                );
+                                histmini(
+                                  '#lastSubmissionScoreHist${i}',
+                                  [${(row.last_submission_score_hist ?? []).join(',')}],
+                                  _.defaults({ normalize: true }, options),
+                                );
+                                histmini(
+                                  '#maxSubmissionScoreHist${i}',
+                                  [${(row.max_submission_score_hist ?? []).join(',')}],
+                                  _.defaults({ normalize: true }, options),
+                                );
+                                histmini(
+                                  '#averageSubmissionScoreHist${i}',
+                                  [${(row.average_submission_score_hist ?? []).join(',')}],
+                                  _.defaults({ normalize: true }, options),
+                                );
+                                histmini(
+                                  '#submissionScoreArray${i}',
+                                  [${(row.submission_score_array_averages ?? []).join(',')}],
+                                  options,
+                                );
+                                histmini(
+                                  '#incrementalSubmissionScoreArray${i}',
+                                  [
+                                    ${(row.incremental_submission_score_array_averages ?? []).join(
+                                  ',',
+                                )},
+                                  ],
+                                  options,
+                                );
+                                histmini(
+                                  '#incrementalSubmissionPointsArray${i}',
+                                  [
+                                    ${(row.incremental_submission_points_array_averages ?? []).join(
+                                  ',',
+                                )},
+                                  ],
+                                  _.defaults({ ymax: ${row.max_points} }, options),
+                                );
+                                histmini(
+                                  '#numberSubmissionsHist${i}',
+                                  [${(row.number_submissions_hist ?? []).join(',')}],
+                                  _.defaults({ normalize: true }, options),
+                                );
+                                histmini(
+                                  '#quintileQuestionScoresHist${i}',
+                                  [${(row.quintile_question_scores ?? []).join(',')}],
+                                  _.defaults({ ymax: 100 }, options),
+                                );
                               </script>
                             `
                           : html`
