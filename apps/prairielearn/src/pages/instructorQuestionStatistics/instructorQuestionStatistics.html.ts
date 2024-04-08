@@ -1,13 +1,39 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import {
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  CourseInstanceSchema,
+  CourseSchema,
+  IdSchema,
+  QuestionSchema,
+} from '../../lib/db-types';
+
+export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
+  course_short_name: CourseSchema.shape.short_name,
+  course_instance_short_name: CourseInstanceSchema.shape.short_name,
+  assessment_label: z.string(),
+  assessment_color: AssessmentSetSchema.shape.color,
+  assessment_id: IdSchema,
+  assessment_type: AssessmentSchema.shape.type,
+  course_instance_id: IdSchema,
+  qid: QuestionSchema.shape.qid,
+  question_title: QuestionSchema.shape.title,
+  assessment_question_number: z.string(),
+});
+type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorQuestionStatistics({
   questionStatsCsvFilename,
+  rows,
   resLocals,
 }: {
   questionStatsCsvFilename: string;
+  rows: AssessmentQuestionStatsRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -63,7 +89,7 @@ export function InstructorQuestionStatistics({
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.assessment_stats.map(function (row, i) {
+                  ${rows.map(function (row, i) {
                     return html`
                       <tr>
                         <td>${row.course_instance_short_name}</td>

@@ -6,7 +6,10 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { questionFilenamePrefix } from '../../lib/sanitize-name';
-import { InstructorQuestionStatistics } from './instructorQuestionStatistics.html';
+import {
+  AssessmentQuestionStatsRowSchema,
+  InstructorQuestionStatistics,
+} from './instructorQuestionStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -18,20 +21,24 @@ function makeStatsCsvFilename(locals) {
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      return next(error.make(403, 'Access denied'));
+      throw error.make(403, 'Access denied');
     }
-    const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
-      question_id: res.locals.question.id,
-    });
-    res.locals.assessment_stats = statsResult.rows;
+    const rows = await sqldb.queryRows(
+      sql.assessment_question_stats,
+      {
+        question_id: res.locals.question.id,
+      },
+      AssessmentQuestionStatsRowSchema,
+    );
 
     res.send(
       InstructorQuestionStatistics({
         questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        rows,
         resLocals: res.locals,
       }),
     );
@@ -40,11 +47,11 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      return next(error.make(403, 'Access denied'));
+      throw error.make(403, 'Access denied');
     }
 
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
