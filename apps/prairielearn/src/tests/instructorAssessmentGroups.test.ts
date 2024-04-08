@@ -125,13 +125,13 @@ describe('Instructor group controls', () => {
         __action: 'add_group',
         group_name: 'TestGroupWithInstructor',
         // Add instructor to the group
-        uids: 'dev@illinois.edu',
+        uids: 'dev@example.com',
       }),
     });
     assert.equal(response.status, 200);
     const groupRow = response.$('#usersTable tr:contains(TestGroupWithInstructor)');
     assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(`:contains("dev@illinois.edu")`));
+    assert.ok(groupRow.is(`:contains("dev@example.com")`));
   });
 
   step('can add a user to an existing group', async () => {

@@ -73,7 +73,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   step('add an institution for host.com', async () => {
-    await sqldb.queryAsync(sql.insert_host_com, []);
+    await sqldb.queryAsync(sql.insert_host_com_institution, []);
   });
 
   step('user 1 updates institution_id', async () => {
@@ -142,7 +142,7 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 2 create under Shibboleth', async () => {
     const user = {
-      uid: 'joe@illinois.edu',
+      uid: 'joe@example.com',
       name: 'Joe Bob',
       uin: '444444444',
       institution_id: '1',
@@ -156,14 +156,14 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  step('add an institution for illinois.edu', async () => {
-    await sqldb.queryAsync(sql.insert_illinois_edu, []);
+  step('add an institution for example.com', async () => {
+    await sqldb.queryAsync(sql.insert_example_com_institution, []);
   });
 
   step('user 2 logs in via Google', async () => {
     const user = {
-      uid: 'joe@illinois.edu',
-      name: 'joe@illinois.edu',
+      uid: 'joe@example.com',
+      name: 'joe@example.com',
       uin: null,
       institution_id: '200',
     };
@@ -185,8 +185,8 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 2 fails to log in via Azure', async () => {
     const user = {
-      uid: 'joe@illinois.edu',
-      name: 'joe@illinois.edu',
+      uid: 'joe@example.com',
+      name: 'joe@example.com',
       uin: null,
       institution_id: '200',
     };
@@ -198,8 +198,8 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 3 create under Google', async () => {
     const user = {
-      uid: 'sally@illinois.edu',
-      name: 'sally@illinois.edu',
+      uid: 'sally@example.com',
+      name: 'sally@example.com',
       uin: null,
       institution_id: '200',
     };
@@ -214,7 +214,7 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 3 logs in via SAML', async () => {
     const user = {
-      uid: 'sally@illinois.edu',
+      uid: 'sally@example.com',
       name: 'Sally Ann',
       uin: '555566665',
       institution_id: '200',
@@ -230,8 +230,8 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 3 logs back in via Google', async () => {
     const user = {
-      uid: 'sally@illinois.edu',
-      name: 'sally@illinois.edu',
+      uid: 'sally@example.com',
+      name: 'sally@example.com',
       uin: null,
       institution_id: '200',
     };
@@ -253,7 +253,7 @@ describe('sproc users_select_or_insert tests', () => {
 
   step('user 4 created with wrong netid and correct UIN', async () => {
     const user = {
-      uid: 'uin-888899990@illinois.edu',
+      uid: 'uin-888899990@example.com',
       name: 'UIN 888899990',
       uin: '888899990',
       institution_id: '200',
@@ -305,7 +305,7 @@ describe('sproc users_select_or_insert tests', () => {
     };
 
     const secondUser = {
-      uid: 'alex@illinois.edu',
+      uid: 'alex@example.com',
       name: 'Alex Wong',
       uin: '787878787',
       institution_id: '200',

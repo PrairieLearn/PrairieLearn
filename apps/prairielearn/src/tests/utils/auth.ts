@@ -4,10 +4,10 @@ import { config } from '../../lib/config';
 import { IdSchema, User, UserSchema } from '../../lib/db-types';
 
 export interface AuthUser {
-  name: string;
+  name: string | null;
   uid: string;
-  uin: string;
-  email: string;
+  uin: string | null;
+  email: string | null;
 }
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
