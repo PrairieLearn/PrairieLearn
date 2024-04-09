@@ -248,9 +248,12 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // The authentication libraries under openid-connect will fail (silently) if the key length
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
-          error.make(400, 'Authentication failed, before user validation.', {
-            info_raw: info,
-            info: info?.toString(),
+          new error.AugmentedError('Authentication failed, before user validation.', {
+            status: 400,
+            data: {
+              info_raw: info,
+              info: info?.toString(),
+            },
           }),
         );
       } else {
