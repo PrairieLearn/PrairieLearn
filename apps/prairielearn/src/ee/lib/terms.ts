@@ -4,6 +4,7 @@ import { callRow } from '@prairielearn/postgres';
 import { ModeSchema, type User } from '../../lib/db-types';
 import { HttpRedirect } from '../../lib/redirect';
 import { setCookie } from '../../lib/cookie';
+import { features } from '../../lib/features';
 
 function hasUserAcceptedTerms(user: User): boolean {
   // At the moment, we only have one revision of our terms and conditions, so
@@ -27,6 +28,12 @@ function hasUserAcceptedTerms(user: User): boolean {
  */
 export async function shouldRedirectToTermsPage(user: User, ip: string) {
   if (hasUserAcceptedTerms(user)) return false;
+
+  const featureEnabled = await features.enabled('terms-clickthrough', {
+    institution_id: user.institution_id,
+    user_id: user.user_id,
+  });
+  if (!featureEnabled) return false;
 
   const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], ModeSchema);
   return mode === 'Public';
