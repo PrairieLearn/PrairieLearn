@@ -1,32 +1,33 @@
-const util = require('util');
+// @ts-check
+import * as util from 'node:util';
 const ERR = require('async-stacktrace');
-const fs = require('fs-extra');
-const async = require('async');
-const tmp = require('tmp');
+import * as fs from 'fs-extra';
+import * as async from 'async';
+import * as tmp from 'tmp';
 const Docker = require('dockerode');
-const { S3 } = require('@aws-sdk/client-s3');
-const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const { Upload } = require('@aws-sdk/lib-storage');
-const { exec } = require('child_process');
-const path = require('path');
+import { S3 } from '@aws-sdk/client-s3';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Upload } from '@aws-sdk/lib-storage';
+import { exec } from 'child_process';
+import * as path from 'path';
 const byline = require('byline');
-const { pipeline } = require('node:stream/promises');
-const Sentry = require('@prairielearn/sentry');
-const sqldb = require('@prairielearn/postgres');
-const { sanitizeObject } = require('@prairielearn/sanitize');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+import { pipeline } from 'node:stream/promises';
+import * as Sentry from '@prairielearn/sentry';
+import * as sqldb from '@prairielearn/postgres';
+import { sanitizeObject } from '@prairielearn/sanitize';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 
-const globalLogger = require('./lib/logger');
-const { makeJobLogger } = require('./lib/jobLogger');
-const { config, loadConfig } = require('./lib/config');
-const healthCheck = require('./lib/healthCheck');
-const lifecycle = require('./lib/lifecycle');
-const pullImages = require('./lib/pullImages');
-const receiveFromQueue = require('./lib/receiveFromQueue');
-const timeReporter = require('./lib/timeReporter');
-const load = require('./lib/load');
-const { makeAwsClientConfig, makeS3ClientConfig } = require('./lib/aws');
+import globalLogger from './lib/logger';
+import { makeJobLogger } from './lib/jobLogger';
+import { config, loadConfig } from './lib/config';
+import * as healthCheck from './lib/healthCheck';
+import * as lifecycle from './lib/lifecycle';
+import pullImages from './lib/pullImages';
+import receiveFromQueue from './lib/receiveFromQueue';
+import * as timeReporter from './lib/timeReporter';
+import * as load from './lib/load';
+import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -61,7 +62,7 @@ async.series(
         host: config.postgresqlHost,
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
-        password: config.postgresqlPassword,
+        password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
@@ -110,39 +111,50 @@ async.series(
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
       for (let i = 0; i < config.maxConcurrentJobs; i++) {
-        async.forever((next) => {
-          if (!healthCheck.isHealthy() || processTerminating) return;
-          receiveFromQueue(
-            sqs,
-            config.jobsQueueUrl,
-            (job, done) => {
-              globalLogger.info(`received ${job.jobId} from queue`);
+        async.forever(
+          (next) => {
+            if (!healthCheck.isHealthy() || processTerminating) return;
 
-              // Ensure that this job wasn't canceled in the time since job submission.
-              isJobCanceled(job, (err, canceled) => {
-                if (ERR(err, done)) return;
+            if (!config.jobsQueueUrl) {
+              next(new Error('jobsQueueUrl is not defined'));
+              return;
+            }
 
-                if (canceled) {
-                  globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
-                  done();
-                  return;
-                }
+            receiveFromQueue(
+              sqs,
+              config.jobsQueueUrl,
+              (job, done) => {
+                globalLogger.info(`received ${job.jobId} from queue`);
 
-                handleJob(job, (err) => {
-                  globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+                // Ensure that this job wasn't canceled in the time since job submission.
+                isJobCanceled(job, (err, canceled) => {
                   if (ERR(err, done)) return;
-                  globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                  done();
+
+                  if (canceled) {
+                    globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
+                    done();
+                    return;
+                  }
+
+                  handleJob(job, (err) => {
+                    globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+                    if (ERR(err, done)) return;
+                    globalLogger.info(`handleJob(${job.jobId}) succeeded`);
+                    done();
+                  });
                 });
-              });
-            },
-            (err) => {
-              if (ERR(err, (err) => globalLogger.error('receive error:', err)));
-              globalLogger.info('Completed full request cycle');
-              next();
-            },
-          );
-        });
+              },
+              (err) => {
+                ERR(err, (err) => globalLogger.error('receive error:', err));
+                globalLogger.info('Completed full request cycle');
+                next();
+              },
+            );
+          },
+          (err) => {
+            globalLogger.error('forever error:', err);
+          },
+        );
       }
     },
   ],
@@ -204,6 +216,7 @@ function handleJob(job, done) {
         'uploadArchive',
         function (results, callback) {
           logger.info('Removing temporary directories');
+          // @ts-expect-error -- Incomplete typing information.
           results.initFiles.tempDirCleanup();
           logger.info('Successfully removed temporary directories');
           callback(null);
@@ -234,6 +247,10 @@ async function context(info) {
 }
 
 async function reportReceived(info) {
+  if (!config.resultsQueueUrl) {
+    throw new Error('resultsQueueUrl is not defined');
+  }
+
   const {
     context: { job, receivedTime, logger },
   } = info;
@@ -422,6 +439,7 @@ function runJob(info, callback) {
   let jobEnvironment = environment || {};
 
   let jobFailed = false;
+  /** @type {NodeJS.Timeout | null} */
   let jobTimeoutId = setTimeout(() => {
     jobFailed = true;
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
@@ -551,7 +569,7 @@ function runJob(info, callback) {
       },
       (callback) => {
         // We made it through the Docker danger zone!
-        clearTimeout(jobTimeoutId);
+        clearTimeout(jobTimeoutId ?? undefined);
         jobTimeoutId = null;
         logger.info('Reading course results');
         // Now that the job has completed, let's extract the results
@@ -574,7 +592,7 @@ function runJob(info, callback) {
               }
 
               try {
-                const parsedResults = JSON.parse(data);
+                const parsedResults = JSON.parse(data.toString());
                 results.results = sanitizeObject(parsedResults);
                 results.succeeded = true;
               } catch (e) {
@@ -596,7 +614,7 @@ function runJob(info, callback) {
       },
     ],
     (err) => {
-      if (ERR(err, (err) => logger.error('runJob error:', err)));
+      ERR(err, (err) => logger.error('runJob error:', err));
 
       // It's possible that we get here with an error prior to the global job timeout exceeding.
       // If that happens, Docker is still alive, but it just errored. We'll cancel
@@ -663,6 +681,10 @@ function uploadResults(info, callback) {
         // instead rely on PL fetching them via S3.
         if (JSON.stringify(results).length <= 250 * 1024) {
           messageBody.data = results;
+        }
+
+        if (!config.resultsQueueUrl) {
+          throw new Error('resultsQueueUrl is not defined');
         }
 
         const sqs = new SQSClient(makeAwsClientConfig());

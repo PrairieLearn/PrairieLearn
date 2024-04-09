@@ -31,6 +31,7 @@ const CJS_ONLY_MODULES = new Set([
   'lodash',
   'loopbench',
   'oauth-signature',
+  'object-hash',
   'node:assert',
   'passport',
   'postgres-interval',
@@ -48,6 +49,8 @@ const CJS_ONLY_MODULES = new Set([
   'apps/prairielearn/src/pages/elementFiles/elementFiles',
 ]);
 
+const candidatesPerFileCount = new Map();
+
 function maybeLogLocation(filePath, node, modulePath) {
   let resolvedModulePath = modulePath;
   if (modulePath.startsWith('.')) {
@@ -59,6 +62,7 @@ function maybeLogLocation(filePath, node, modulePath) {
   if (CJS_ONLY_MODULES.has(resolvedModulePath)) return;
 
   console.log(`${filePath}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
+  candidatesPerFileCount.set(filePath, (candidatesPerFileCount.get(filePath) ?? 0) + 1);
 }
 
 const importEqualsOnly = process.argv.includes('--import-equals-only');
@@ -134,4 +138,16 @@ for (const file of files.sort()) {
       }
     }
   });
+}
+
+if (candidatesPerFileCount.size > 0) {
+  console.log('\n\n');
+  console.log(`Summary (${candidatesPerFileCount.size} files):`);
+
+  const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
+    (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
+  );
+  for (const [file, count] of sortedCandidates) {
+    console.log(`${file}: ${count}`);
+  }
 }

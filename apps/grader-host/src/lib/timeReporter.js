@@ -1,4 +1,5 @@
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -11,8 +12,8 @@ function reportTime(sqlBlockName) {
   };
 }
 
-module.exports.reportReceivedTime = reportTime('update_job_received_time');
+export const reportReceivedTime = reportTime('update_job_received_time');
 
-module.exports.reportStartTime = reportTime('update_job_start_time');
+export const reportStartTime = reportTime('update_job_start_time');
 
-module.exports.reportEndTime = reportTime('update_job_end_time');
+export const reportEndTime = reportTime('update_job_end_time');

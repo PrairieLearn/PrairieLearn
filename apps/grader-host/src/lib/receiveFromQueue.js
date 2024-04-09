@@ -1,19 +1,19 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const Ajv = require('ajv').default;
-const {
+import * as async from 'async';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import Ajv from 'ajv';
+import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
-const Sentry = require('@prairielearn/sentry');
-const { setTimeout: sleep } = require('node:timers/promises');
+} from '@aws-sdk/client-sqs';
+import * as Sentry from '@prairielearn/sentry';
+import { setTimeout as sleep } from 'node:timers/promises';
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
+import globalLogger from './logger';
+import { config } from './config';
 
 let messageSchema = null;
 
@@ -73,7 +73,7 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
  * @param {Function} receiveCallback
  * @param {Function} doneCallback
  */
-module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
+export default function (sqs, queueUrl, receiveCallback, doneCallback) {
   let parsedMessage, receiptHandle;
 
   /** @type {AbortController} */
@@ -161,4 +161,4 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       doneCallback(null);
     },
   );
-};
+}
