@@ -150,7 +150,7 @@ function handleGraderError(grading_job_id: string, err: Error): void {
 
 async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
   await sqldb.queryAsync(sql.update_grading_submitted_time, {
-    grading_job_id: grading_job_id,
+    grading_job_id,
     grading_submitted_at: new Date().toISOString(),
   });
   externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
@@ -158,7 +158,7 @@ async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
 
 async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
   await sqldb.queryAsync(sql.update_grading_received_time, {
-    grading_job_id: grading_job_id,
+    grading_job_id,
     grading_received_at: receivedTime,
   });
   externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
@@ -172,11 +172,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
 export async function processGradingResult(content: any): Promise<void> {
   try {
     if (!_.isObject(content.grading)) {
-      throw error.makeWithData('invalid grading', { content: content });
+      throw error.makeWithData('invalid grading', { content });
     }
 
     if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
-      throw error.makeWithData('invalid grading.feedback', { content: content });
+      throw error.makeWithData('invalid grading.feedback', { content });
     }
 
     // There are two "succeeded" flags in the grading results. The first

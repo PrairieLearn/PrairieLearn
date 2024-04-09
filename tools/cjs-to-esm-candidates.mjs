@@ -23,6 +23,8 @@ const CJS_ONLY_MODULES = new Set([
   'express-async-handler',
   'express-list-endpoints',
   'form-data',
+  'get-port',
+  'http-status',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
@@ -40,7 +42,6 @@ const CJS_ONLY_MODULES = new Set([
   'winston-transport',
   // Relative paths to PrairieLearn files.
   'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzCourseOrInstance',
   'apps/prairielearn/src/middlewares/authzIsAdministrator',
   'apps/prairielearn/src/middlewares/logPageView',
   'apps/prairielearn/src/middlewares/staticNodeModules',
@@ -106,6 +107,31 @@ for (const file of files.sort()) {
     ) {
       const modulePath = node.moduleReference.expression.value;
       maybeLogLocation(file, node, modulePath);
+    }
+
+    // Handle `module.exports = ...` and `module.exports.foo = ...` statements.
+    if (
+      node.type === 'ExpressionStatement' &&
+      node.expression.type === 'AssignmentExpression' &&
+      node.expression.left.type === 'MemberExpression'
+    ) {
+      if (
+        (node.expression.left.object.type === 'Identifier' &&
+          node.expression.left.object.name === 'module' &&
+          node.expression.left.property.type === 'Identifier' &&
+          node.expression.left.property.name === 'exports') ||
+        (node.expression.left.object.type === 'MemberExpression' &&
+          node.expression.left.object.object.type === 'Identifier' &&
+          node.expression.left.object.object.name === 'module' &&
+          node.expression.left.object.property.type === 'Identifier' &&
+          node.expression.left.object.property.name === 'exports')
+      ) {
+        const left = contents.substring(
+          node.expression.left.range[0],
+          node.expression.left.range[1],
+        );
+        maybeLogLocation(file, node, left);
+      }
     }
   });
 }

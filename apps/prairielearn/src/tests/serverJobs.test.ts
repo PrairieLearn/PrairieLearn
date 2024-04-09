@@ -36,10 +36,7 @@ describe('server-jobs', () => {
         job.data.foo = 'bar';
       });
 
-      const finishedJobSequence = await serverJobs.getJobSequenceAsync(
-        serverJob.jobSequenceId,
-        null,
-      );
+      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.type, 'test');
       assert.equal(finishedJobSequence.description, 'test server job');
@@ -68,10 +65,7 @@ describe('server-jobs', () => {
         'failing job',
       );
 
-      const finishedJobSequence = await serverJobs.getJobSequenceAsync(
-        serverJob.jobSequenceId,
-        null,
-      );
+      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);
@@ -94,10 +88,7 @@ describe('server-jobs', () => {
         'failing job',
       );
 
-      const finishedJobSequence = await serverJobs.getJobSequenceAsync(
-        serverJob.jobSequenceId,
-        null,
-      );
+      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);
@@ -127,10 +118,7 @@ describe('server-jobs', () => {
 
       await helperServer.waitForJobSequenceAsync(serverJob.jobSequenceId);
 
-      const finishedJobSequence = await serverJobs.getJobSequenceAsync(
-        serverJob.jobSequenceId,
-        null,
-      );
+      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);

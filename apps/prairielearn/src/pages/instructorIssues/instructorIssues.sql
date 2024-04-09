@@ -53,20 +53,20 @@ WITH
         OR i.manually_reported != $filter_automatically_reported::boolean
       )
       AND (
-        $filter_qids::text [] IS NULL
-        OR q.qid ILIKE ANY ($filter_qids::text [])
+        $filter_qids::text[] IS NULL
+        OR q.qid ILIKE ANY ($filter_qids::text[])
       )
       AND (
-        $filter_not_qids::text [] IS NULL
-        OR q.qid NOT ILIKE ANY ($filter_not_qids::text [])
+        $filter_not_qids::text[] IS NULL
+        OR q.qid NOT ILIKE ANY ($filter_not_qids::text[])
       )
       AND (
-        $filter_users::text [] IS NULL
-        OR u.uid ILIKE ANY ($filter_users::text [])
+        $filter_users::text[] IS NULL
+        OR u.uid ILIKE ANY ($filter_users::text[])
       )
       AND (
-        $filter_not_users::text [] IS NULL
-        OR u.uid NOT ILIKE ANY ($filter_not_users::text [])
+        $filter_not_users::text[] IS NULL
+        OR u.uid NOT ILIKE ANY ($filter_not_users::text[])
       )
       AND (
         $filter_query_text::text IS NULL

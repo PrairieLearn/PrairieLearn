@@ -61,15 +61,15 @@ const ConfigSchema = z.object({
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
-  authUid: z.string().nullable().default('dev@illinois.edu'),
+  authUid: z.string().nullable().default('dev@example.com'),
   /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -503,18 +503,6 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
-  /**
-   * PrairieLearn is currently in the process of migrating to new cookie names.
-   * This is necessary so that we can re-scope them to a specific domain. We
-   * have middleware that will automatically rewrite the old cookie names to
-   * the new ones, which is currently disabled until we also deploy code that
-   * sets the new cookies with domains. When that code is in place, we can
-   * toggle this setting to `true`.
-   *
-   * Note that the middleware also provides forward compatibility so that old
-   * versions of PrairieLearn can still function with the new cookie names.
-   */
-  rewriteCookies: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -534,11 +522,25 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
+
   if (config.questionRenderCacheType !== null) {
     logger.warn(
       'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
     );
     config.cacheType = config.questionRenderCacheType;
+  }
+
+  // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
+  // since we parse the schema to get defaults. Instead, we do the checks here
+  // after the config has been completely loaded.
+  if (process.env.NODE_ENV === 'production') {
+    if (!config.cookieDomain) {
+      throw new Error('cookieDomain must be set in production environments');
+    }
+
+    if (!config.cookieDomain.startsWith('.')) {
+      throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
+    }
   }
 }
 

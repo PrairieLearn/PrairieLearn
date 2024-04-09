@@ -60,7 +60,6 @@ export async function init() {
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
-      'assessment_instances_select_for_auto_finish.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',

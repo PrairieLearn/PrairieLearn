@@ -77,7 +77,7 @@ async function callFunction(func, question_course, question, inputData) {
       const res = await codeCaller.call('v2-question', null, questionServerRuntimePath, null, [
         {
           questionServerPath: questionServerRuntimePath,
-          func: func,
+          func,
           coursePath: courseRuntimePath,
           question,
           ...inputData,

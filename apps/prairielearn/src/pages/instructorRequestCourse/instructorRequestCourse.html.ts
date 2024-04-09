@@ -31,6 +31,18 @@ export function RequestCourse({
               $('.role-comment').hide();
               $('.role-comment-' + role).show();
             });
+
+            // Only show the "other" referral source input when "other" is selected.
+            $('#cr-referral-source').change(function () {
+              if (this.value === 'other') {
+                $('#cr-referral-source-other')
+                  .removeClass('d-none')
+                  .attr('required', 'required')
+                  .focus();
+              } else {
+                $('#cr-referral-source-other').addClass('d-none').removeAttr('required');
+              }
+            });
           });
         </script>
       </head>
@@ -205,6 +217,35 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <small class="form-text text-muted">
               Providing your GitHub username will allow you to edit course content offline. You do
               not need to provide this if you would like to use the online web editor.
+            </small>
+          </div>
+          <div class="form-group">
+            <label id="cr-referral-source-label">How did you hear about PrairieLearn?</label>
+            <select
+              class="custom-select"
+              name="cr-referral-source"
+              id="cr-referral-source"
+              aria-labelledby="cr-referral-source-label"
+              required
+            >
+              <option value="" disabled selected></option>
+              <option value="I've used PrairieLearn before">I've used PrairieLearn before</option>
+              <option value="Word of mouth">Word of mouth</option>
+              <option value="Web search">Web search</option>
+              <option value="Conference or workshop">Conference or workshop</option>
+              <option value="Publication">Publication</option>
+              <option value="other">Other...</option>
+            </select>
+            <input
+              type="text"
+              class="form-control mt-2 d-none"
+              name="cr-referral-source-other"
+              id="cr-referral-source-other"
+              aria-labelledby="cr-referral-source-label"
+            />
+            <small class="form-text text-muted">
+              This information helps us understand how people find out about PrairieLearn. Thank you
+              for sharing!
             </small>
           </div>
           <div class="form-group">

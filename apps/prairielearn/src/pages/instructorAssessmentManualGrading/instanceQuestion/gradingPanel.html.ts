@@ -120,7 +120,7 @@ ${submission.feedback?.manual}</textarea
         <li class="list-group-item d-flex align-items-center">
           ${!hide_back_to_question
             ? html`
-                <a role="button" class="btn btn-primary" href="${assessment_question_url}">
+                <a class="btn btn-primary" href="${assessment_question_url}">
                   <i class="fas fa-arrow-left"></i>
                   Back to Question
                 </a>
@@ -141,7 +141,6 @@ ${submission.feedback?.manual}</textarea
               : ''}
             <div class="btn-group">
               <a
-                role="button"
                 class="btn btn-secondary"
                 href="${assessment_question_url}/next_ungraded?prior_instance_question_id=${resLocals
                   .instance_question.id}"

@@ -76,7 +76,6 @@ BEGIN
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
-        AND ((aar.role > 'Student') IS NOT TRUE)
     ORDER BY
         aar.credit DESC NULLS LAST,
         aar.number
@@ -114,7 +113,6 @@ BEGIN
             AND aar.active
             AND aar.start_date > check_assessment_access.date
             AND caar.authorized
-            AND ((aar.role > 'Student') IS NOT TRUE)
         ORDER BY
             aar.start_date,
             aar.credit DESC NULLS LAST,
@@ -168,7 +166,6 @@ BEGIN
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND ((aar.role > 'Student') IS NOT TRUE)
         AND (
             (aar.active AND caar.authorized)
             OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors

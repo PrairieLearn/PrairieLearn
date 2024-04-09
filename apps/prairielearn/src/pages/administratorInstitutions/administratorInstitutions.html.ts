@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { isEnterprise } from '../../lib/license';
 import { InstitutionSchema } from '../../lib/db-types';
-import { type Timezone } from '../../lib/timezones';
+import { type Timezone, formatTimezone } from '../../lib/timezones';
 import { Modal } from '../../components/Modal.html';
 
 export const InstitutionRowSchema = z.object({
@@ -94,15 +94,7 @@ export function AdministratorInstitutions({
                     <option value="" selected disabled hidden>Timezone</option>
                     ${availableTimezones.map(
                       (tz, i) => html`
-                        <option value="${tz.name}" id="timezone-${i}">
-                          ${`${tz.utc_offset.hours ? tz.utc_offset.hours : '00'}:${
-                            tz.utc_offset.minutes
-                              ? tz.utc_offset.minutes > 0
-                                ? tz.utc_offset.minutes
-                                : tz.utc_offset.minutes * -1
-                              : '00'
-                          } ${tz.name}`}
-                        </option>
+                        <option value="${tz.name}" id="timezone-${i}">${formatTimezone(tz)}</option>
                       `,
                     )}
                   </select>
