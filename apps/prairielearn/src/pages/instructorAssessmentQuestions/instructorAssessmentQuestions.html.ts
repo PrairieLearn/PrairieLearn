@@ -2,53 +2,52 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
-import { AssessmentQuestionSchema, IdSchema, TopicSchema } from '../../lib/db-types';
+import {
+  AlternativeGroupSchema,
+  AssessmentQuestionSchema,
+  AssessmentsFormatForQuestionSchema,
+  QuestionSchema,
+  TagSchema,
+  TopicSchema,
+  ZoneSchema,
+} from '../../lib/db-types';
 import { Modal } from '../../components/Modal.html';
 
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: z.number().nullable(),
-  alternative_group_number: z.number().nullable(),
+  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
+  alternative_group_number: AlternativeGroupSchema.shape.number,
   alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: z.number().nullable(),
-  avg_question_score_perc: z.number().nullable(),
+  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
+  avg_question_score_perc: AssessmentQuestionSchema.shape.mean_question_score,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
   open_issue_count: z.string().nullable(),
-  other_assessments: z
-    .array(
-      z.object({
-        color: z.string(),
-        label: z.string(),
-        assessment_id: IdSchema,
-        course_instance_id: IdSchema,
-      }),
-    )
-    .nullable(),
+  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors_ansified: z.string().optional(),
-  sync_errors: z.string().nullable(),
+  sync_errors: QuestionSchema.shape.sync_errors,
   sync_warnings_ansified: z.string().optional(),
-  sync_warnings: z.string().nullable(),
+  sync_warnings: QuestionSchema.shape.sync_warnings,
   topic: TopicSchema.nullable(),
-  qid: z.string(),
+  qid: QuestionSchema.shape.qid,
   start_new_zone: z.boolean().nullable(),
   start_new_alternative_group: z.boolean().nullable(),
   tags: z
     .array(
       z.object({
-        color: z.string(),
-        id: IdSchema,
-        name: z.string(),
+        color: TagSchema.shape.color,
+        id: TagSchema.shape.id,
+        name: TagSchema.shape.name,
       }),
     )
     .nullable(),
-  title: z.string().nullable(),
-  zone_best_questions: z.number().nullable(),
+  title: QuestionSchema.shape.title,
+  zone_best_questions: ZoneSchema.shape.best_questions,
   zone_has_best_questions: z.boolean().nullable(),
   zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: z.number().nullable(),
-  zone_number_choose: z.number().nullable(),
-  zone_number: z.number().nullable(),
-  zone_title: z.string().nullable(),
+  zone_max_points: ZoneSchema.shape.max_points,
+  zone_number_choose: ZoneSchema.shape.number_choose,
+  zone_number: ZoneSchema.shape.number,
+  zone_title: ZoneSchema.shape.title,
 });
 type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
