@@ -318,7 +318,7 @@ export function InstructorQuestionSettings({
                                   id
                                   href="#"
                                   data-toggle="modal"
-                                  data-target="#delete-question-form"
+                                  data-target="#deleteQuestionModal"
                                 >
                                   <i class="fa fa-times" aria-hidden="true"></i> Delete this
                                   question
@@ -461,7 +461,7 @@ function DeleteQuestionModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: 'delete-question-form',
+    id: 'deleteQuestionModal',
     title: 'Delete question',
     body: html`
       <p>

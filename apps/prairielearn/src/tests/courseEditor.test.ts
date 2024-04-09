@@ -75,7 +75,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: '#delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -110,7 +110,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: '#delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
