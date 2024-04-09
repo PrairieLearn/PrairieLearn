@@ -921,7 +921,6 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'question_statistics';
         next();
       },
-      require('./pages/shared/assessmentStatDescriptions'),
       require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics')
         .default,
     ],
@@ -1118,7 +1117,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'statistics';
       next();
     },
-    require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_edit', [
@@ -1615,7 +1613,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'statistics';
       next();
     },
-    require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/file_edit', [

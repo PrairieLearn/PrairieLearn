@@ -14,6 +14,7 @@ import {
   ZoneSchema,
 } from '../../lib/db-types';
 import { formatFloat } from '../../lib/format';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -339,7 +340,7 @@ export function InstructorAssessmentQuestionStatistics({
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
-                    ${Object.keys(resLocals.stat_descriptions).map(function (stat) {
+                    ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                       if (
                         stat !== 'INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES' ||
                         resLocals.assessment.type !== 'Homework'
@@ -347,11 +348,8 @@ export function InstructorAssessmentQuestionStatistics({
                         // We use `unsafeHtml` for the description below because some
                         // contain raw HTML. This is safe, as none of this is user-controlled.
                         return html`
-                          <th
-                            class="text-center"
-                            title="${resLocals.stat_descriptions[stat].description}"
-                          >
-                            ${unsafeHtml(resLocals.stat_descriptions[stat].title)}
+                          <th class="text-center" title="${STAT_DESCRIPTIONS[stat].description}">
+                            ${unsafeHtml(STAT_DESCRIPTIONS[stat].title)}
                           </th>
                         `;
                       }
@@ -577,11 +575,11 @@ export function InstructorAssessmentQuestionStatistics({
               </p>
               <small>
                 <ul>
-                  ${Object.keys(resLocals.stat_descriptions).map(function (stat) {
+                  ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                     return html`
                       <li>
-                        <strong>${unsafeHtml(resLocals.stat_descriptions[stat].title)}: </strong>
-                        ${unsafeHtml(resLocals.stat_descriptions[stat].description)}
+                        <strong>${unsafeHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
+                        ${unsafeHtml(STAT_DESCRIPTIONS[stat].description)}
                       </li>
                     `;
                   })}

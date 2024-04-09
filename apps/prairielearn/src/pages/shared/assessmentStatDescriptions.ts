@@ -1,4 +1,10 @@
-var stat_descriptions = {
+interface StatDescription {
+  title: string;
+  non_html_title: string;
+  description: string;
+}
+
+export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
   MEAN_SCORE: {
     title: 'Mean (μ)',
     non_html_title: 'Mean',
@@ -152,9 +158,4 @@ var stat_descriptions = {
     description:
       'Quintiles show the average auto-graded scores on the question for students in the lowest 20% of the class, the next 20%, etc, where the quintiles are determined by total assessment score.',
   },
-};
-
-module.exports = function (req, res, next) {
-  res.locals.stat_descriptions = stat_descriptions;
-  next();
 };

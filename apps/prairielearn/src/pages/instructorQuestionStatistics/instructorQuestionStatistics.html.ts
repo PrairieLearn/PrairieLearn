@@ -13,6 +13,7 @@ import {
   QuestionSchema,
 } from '../../lib/db-types';
 import { formatFloat } from '../../lib/format';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -77,13 +78,10 @@ export function InstructorQuestionStatistics({
                   <tr>
                     <th class="text-center">Course Instance</th>
                     <th class="text-center">Assessment</th>
-                    ${Object.keys(resLocals.stat_descriptions).map(function (stat) {
+                    ${Object.values(STAT_DESCRIPTIONS).map((stat) => {
                       return html`
-                        <th
-                          class="text-center"
-                          title="${resLocals.stat_descriptions[stat].description}"
-                        >
-                          ${unsafeHtml(resLocals.stat_descriptions[stat].title)}
+                        <th class="text-center" title="${stat.description}">
+                          ${unsafeHtml(stat.title)}
                         </th>
                       `;
                     })}
@@ -286,11 +284,11 @@ export function InstructorQuestionStatistics({
               </p>
               <small>
                 <ul>
-                  ${Object.keys(resLocals.stat_descriptions).map(function (stat) {
+                  ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                     return html`
                       <li>
-                        <strong> ${unsafeHtml(resLocals.stat_descriptions[stat].title)}: </strong>
-                        ${resLocals.stat_descriptions[stat].description}
+                        <strong> ${unsafeHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
+                        ${STAT_DESCRIPTIONS[stat].description}
                       </li>
                     `;
                   })}

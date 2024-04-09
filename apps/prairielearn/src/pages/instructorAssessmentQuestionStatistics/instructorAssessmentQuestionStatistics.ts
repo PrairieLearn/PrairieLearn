@@ -14,6 +14,7 @@ import {
   AssessmentQuestionStatsRowSchema,
   InstructorAssessmentQuestionStatistics,
 } from './instructorAssessmentQuestionStatistics.html';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -87,8 +88,7 @@ router.get(
           'Question number',
           'QID',
           'Question title',
-          // @ts-expect-error -- We can resolve this once we're no longer reading from `res.locals`
-          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+          ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
           return [
