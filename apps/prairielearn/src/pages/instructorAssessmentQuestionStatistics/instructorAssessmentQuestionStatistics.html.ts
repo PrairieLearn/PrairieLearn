@@ -131,22 +131,32 @@ export function InstructorAssessmentQuestionStatistics({
             ${resLocals.assessment.score_stat_number > 0
               ? html`
                   <div class="card-body">
-                    <div id="difficultyDiscriminationScatter" class="scatter"></div>
+                    <div
+                      id="difficultyDiscriminationScatter"
+                      class="scatter"
+                      data-scatter-xvalues="${JSON.stringify(
+                        rows.map((q) => q.mean_question_score),
+                      )}"
+                      data-scatter-yvalues="${JSON.stringify(rows.map((q) => q.discrimination))}"
+                      data-scatter-labels="${JSON.stringify(
+                        rows.map((q) => q.assessment_question_number),
+                      )}"
+                    ></div>
                     <script>
-                      $(function() {
-                          var xdata = [<% questions.forEach(function(question) { %><%= question.mean_question_score %>,<% }); %>];
-                          var ydata = [<% questions.forEach(function(question) { %><%= question.discrimination %>,<% }); %>];
-                          var labels = [<% questions.forEach(function(question) { %><%= question.assessment_question_number %>,<% }); %>];
-                          var options = {
-                              xgrid: _.range(0, 110, 10),
-                              ygrid: _.range(0, 110, 10),
-                              xlabel: 'mean score / %',
-                              ylabel: 'discrimination / %',
-                              radius: 2,
-                              topMargin: 30,
-                              labels: labels
-                          };
-                          scatter("#difficultyDiscriminationScatter", xdata, ydata, options);
+                      $(function () {
+                        const xdata = $('#difficultyDiscriminationScatter').data('scatter-xvalues');
+                        const ydata = $('#difficultyDiscriminationScatter').data('scatter-yvalues');
+                        const labels = $('#difficultyDiscriminationScatter').data('scatter-labels');
+                        const options = {
+                          xgrid: _.range(0, 110, 10),
+                          ygrid: _.range(0, 110, 10),
+                          xlabel: 'mean score / %',
+                          ylabel: 'discrimination / %',
+                          radius: 2,
+                          topMargin: 30,
+                          labels: labels,
+                        };
+                        scatter('#difficultyDiscriminationScatter', xdata, ydata, options);
                       });
                     </script>
                   </div>
@@ -258,7 +268,8 @@ export function InstructorAssessmentQuestionStatistics({
                             ? html`
                                 <a
                                   class="btn btn-xs btn-primary"
-                                  href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= row.id %>"
+                                  href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                                    .id}/manual_grading/assessment_question/${row.id}"
                                 >
                                   Manual grading
                                 </a>
