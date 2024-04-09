@@ -153,7 +153,7 @@ function AssessmentQuestionsTable({
   function maxPoints({ max_auto_points, max_manual_points, points_list, init_points }) {
     if (max_auto_points || !max_manual_points) {
       if (assessmentType === 'Exam') {
-        return `${(points_list || [max_manual_points]).map((p) => p - max_manual_points)}`;
+        return (points_list || [max_manual_points]).map((p) => p - max_manual_points).join(',');
       }
       if (assessmentType === 'Homework') {
         return `${init_points - max_manual_points}/${max_auto_points}`;
