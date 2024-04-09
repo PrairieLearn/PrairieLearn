@@ -20,7 +20,7 @@ module.exports = function (err, req, res, _next) {
     status: err.status,
     // Use the "safe" version when logging so that we don't error out while
     // trying to log the actual error.
-    stack: formatErrorStackSafe(err.stack),
+    stack: formatErrorStackSafe(err),
     data: jsonStringifySafe(err.data),
     referrer,
     response_id: res.locals.response_id,
