@@ -154,7 +154,7 @@ const findEditUrlData = [
   },
   {
     name: 'question',
-    selector: 'a:contains("info.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-question-configuration-link"]',
     url: courseInstanceQuestionSettingsUrl,
     expectedEditUrl: courseInstanceQuestionJsonEditUrl,
   },

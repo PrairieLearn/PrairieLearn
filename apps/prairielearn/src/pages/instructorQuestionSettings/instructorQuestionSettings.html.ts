@@ -251,6 +251,7 @@ export function InstructorQuestionSettings({
                     !resLocals.course.example_course
                     ? html`
                         <a
+                          data-testid="edit-question-configuration-link"
                           href="${resLocals.urlPrefix}/question/${resLocals.question
                             .id}/file_edit/${infoPath}"
                         >
