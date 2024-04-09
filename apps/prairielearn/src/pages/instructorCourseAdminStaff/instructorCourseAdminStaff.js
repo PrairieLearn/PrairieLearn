@@ -158,11 +158,8 @@ router.post(
       );
 
       if (result.errors.length > 0) {
-        /**
-         * @type {Error & { info?: string }}
-         */
-        const err = error.make(409, 'Failed to grant access to some users');
-        err.info = '';
+        /** @type {import('@prairielearn/html').HtmlSafeString[]} */
+        const info = [];
         const given_cp_and_cip = result.given_cp.filter(
           (uid) => !result.not_given_cip.includes(uid),
         );
@@ -171,7 +168,7 @@ router.post(
         debug(`given_cp_and_cip: ${given_cp_and_cip}`);
         if (given_cp_and_cip.length > 0) {
           if (course_instance) {
-            err.info += html`
+            info.push(html`
               <hr />
               <p>
                 The following users were added to the course staff, were given course content access
@@ -181,9 +178,9 @@ router.post(
               <div class="container">
                 <pre class="bg-dark text-white rounded p-2">${given_cp_and_cip.join(',\n')}</pre>
               </div>
-            `.toString();
+            `);
           } else {
-            err.info += html`
+            info.push(html`
               <hr />
               <p>
                 The following users were added to the course staff and were given course content
@@ -195,11 +192,11 @@ ${given_cp_and_cip.join(',\n')}
                 </pre
                 >
               </div>
-            `.toString();
+            `);
           }
         }
         if (course_instance && result.not_given_cip.length > 0) {
-          err.info += html`
+          info.push(html`
             <hr />
             <p>
               The following users were added to the course staff and were given course content
@@ -213,10 +210,10 @@ ${given_cp_and_cip.join(',\n')}
               If you return to the <a href="${req.originalUrl}">access page</a>, you will find these
               users in the list of course staff and can add student data access to each of them.
             </p>
-          `.toString();
+          `);
         }
         if (result.not_given_cp.length > 0) {
-          err.info += html`
+          info.push(html`
             <hr />
             <p>The following users were <strong>not</strong> added to the course staff:</p>
             <div class="container">
@@ -229,16 +226,19 @@ ${given_cp_and_cip.join(',\n')}
               member of the course staff, in which case you will find them in the list and can
               update their course content access as appropriate.
             </p>
-          `.toString();
+          `);
         }
-        err.info += html`
+        info.push(html`
           <hr />
           <p>Here is the reason for each failure to grant access:</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${result.errors.join('\n\n')}</pre>
           </div>
-        `.toString();
-        throw err;
+        `);
+        throw new error.AugmentedError('Failed to grant access to some users', {
+          status: 409,
+          info: html`${info}`,
+        });
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {

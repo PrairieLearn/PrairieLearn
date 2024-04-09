@@ -36,7 +36,7 @@ function makeTestBatchMigration() {
         // Throw an error with some data to make sure it gets persisted. We
         // specifically use BigInt values here to make sure that they are
         // correctly serialized to strings.
-        throw error.makeWithData('Execution failure', { start, end });
+        throw new error.AugmentedError('Execution failure', { data: { start, end } });
       }
     },
     setFailingIds(ids: bigint[]) {
