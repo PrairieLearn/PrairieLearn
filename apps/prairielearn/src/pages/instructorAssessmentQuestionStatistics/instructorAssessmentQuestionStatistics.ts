@@ -1,35 +1,38 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
+import { z } from 'zod';
 
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import {
   updateAssessmentQuestionStatsForAssessment,
   updateAssessmentStatistics,
 } from '../../lib/assessment';
+import {
+  AssessmentQuestionStatsRowSchema,
+  InstructorAssessmentQuestionStatistics,
+} from './instructorAssessmentQuestionStatistics.html';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const setFilenames = function (locals) {
+function makeStatsCsvFilename(locals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
     locals.course,
   );
-  locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
-};
+  return prefix + 'question_stats.csv';
+}
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
-
     // make sure statistics are up to date
     await updateAssessmentStatistics(res.locals.assessment.id);
 
@@ -44,26 +47,36 @@ router.get(
     // different to assessments.statistics_last_updated_at (the time we last
     // updated the assessment instance statistics stored in the assessments
     // row itself).
-    const lastUpdateResult = await sqldb.queryOneRowAsync(sql.assessment_stats_last_updated, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.stats_last_updated = lastUpdateResult.rows[0].stats_last_updated;
+    const statsLastUpdated = await sqldb.queryRow(
+      sql.assessment_stats_last_updated,
+      { assessment_id: res.locals.assessment.id },
+      z.string(),
+    );
 
-    const questionResult = await sqldb.queryAsync(sql.questions, {
-      assessment_id: res.locals.assessment.id,
-      course_id: res.locals.course.id,
-    });
-    res.locals.questions = questionResult.rows;
+    const rows = await sqldb.queryRows(
+      sql.questions,
+      {
+        assessment_id: res.locals.assessment.id,
+        course_id: res.locals.course.id,
+      },
+      AssessmentQuestionStatsRowSchema,
+    );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessmentQuestionStatistics({
+        questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        statsLastUpdated,
+        rows,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
-    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+    if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.questions, {
         assessment_id: res.locals.assessment.id,
         course_id: res.locals.course.id,
@@ -78,7 +91,7 @@ router.get(
           'Question number',
           'QID',
           'Question title',
-          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+          ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
           return [
