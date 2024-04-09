@@ -1,7 +1,6 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 import * as express from 'express';
-import * as async from 'async';
+const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import * as fs from 'fs-extra';
@@ -17,7 +16,7 @@ import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
 import { isBinaryFile } from 'isbinaryfile';
 import * as modelist from 'ace-code/src/ext/modelist';
 import { idsEqual } from '../../lib/id';
-import { getPathsCallback } from '../../lib/instructorFiles';
+import { getPaths } from '../../lib/instructorFiles';
 import { getCourseOwners } from '../../lib/course';
 import { logger } from '@prairielearn/logger';
 import { FileModifyEditor } from '../../lib/editors';
@@ -25,30 +24,27 @@ import { FileModifyEditor } from '../../lib/editors';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/*', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    // Access denied, but instead of sending them to an error page, we'll show
-    // them an explanatory message and prompt them to get edit permissions.
-    getCourseOwners(res.locals.course.id)
-      .then((owners) => {
-        res.locals.course_owners = owners;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      })
-      .catch((err) => next(err));
-    return;
-  }
+router.get(
+  '/*',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get edit permissions.
+      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
+      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      return;
+    }
 
-  // Do not allow users to edit the exampleCourse
-  if (res.locals.course.example_course) {
-    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    return;
-  }
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.example_course) {
+      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      return;
+    }
 
-  // Do not allow users to edit files in bad locations (e.g., outside the
-  // current course, outside the current course instance, etc.). Do this by
-  // wrapping everything in getPaths, which throws an error on a bad path.
-  getPathsCallback(req, res, (err, paths) => {
-    if (ERR(err, next)) return;
+    // Do not allow users to edit files in bad locations (e.g., outside the
+    // current course, outside the current course instance, etc.). Do this by
+    // wrapping everything in getPaths, which throws an error on a bad path.
+    const paths = getPaths(req, res);
 
     // We could also check if the file exists, if the file actually is a
     // file and not a directory, if the file is non-binary, etc., and try
@@ -74,141 +70,127 @@ router.get('/*', (req, res, next) => {
       jobSequence: /** @type {any} */ (null),
     };
 
-    debug(
-      `Edit file in browser\n` +
-        ` fileName: ${fileEdit.fileName}\n` +
-        ` coursePath: ${fileEdit.coursePath}\n` +
-        ` fullPath: ${fullPath}\n` +
-        ` relPath: ${relPath}`,
-    );
+    debug('Read from db');
+    await readDraftEdit(fileEdit);
 
-    async.waterfall(
-      [
-        async () => {
-          debug('Read from db');
-          await readDraftEdit(fileEdit);
+    debug('Read from disk');
+    const contents = await fs.readFile(fullPath);
+    fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
+    fileEdit.diskHash = getHash(fileEdit.diskContents);
 
-          debug('Read from disk');
-          const contents = await fs.readFile(fullPath);
-          fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
-          fileEdit.diskHash = getHash(fileEdit.diskContents);
+    const binary = await isBinaryFile(contents);
+    debug(`isBinaryFile: ${binary}`);
+    if (binary) {
+      debug('found a binary file');
+      throw new Error('Cannot edit binary file');
+    } else {
+      debug('found a text file');
+    }
 
-          const binary = await isBinaryFile(contents);
-          debug(`isBinaryFile: ${binary}`);
-          if (binary) {
-            debug('found a binary file');
-            throw new Error('Cannot edit binary file');
-          } else {
-            debug('found a text file');
-          }
+    if (fileEdit.jobSequenceId != null) {
+      debug('Read job sequence');
+      fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+        fileEdit.jobSequenceId,
+        res.locals.course.id,
+      );
+    }
 
-          if (fileEdit.jobSequenceId != null) {
-            debug('Read job sequence');
-            fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
-              fileEdit.jobSequenceId,
-              res.locals.course.id,
-            );
-          }
+    const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
+    const ansiUp = new AnsiUp();
+    fileEdit.sync_errors = data.errors;
+    fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
+    fileEdit.sync_warnings = data.warnings;
+    fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
 
-          const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
-          const ansiUp = new AnsiUp();
-          fileEdit.sync_errors = data.errors;
-          fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
-          fileEdit.sync_warnings = data.warnings;
-          fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
-        },
-      ],
-      (err) => {
-        if (ERR(err, next)) return;
-        if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
-          // Because of the redirect, if the job sequence ends up failing to save,
-          // then the corresponding draft will be lost (all drafts are soft-deleted
-          // from the database on readDraftEdit).
-          debug('Job sequence is still running - redirect to status page');
-          res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
-          return;
-        }
+    if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
+      // Because of the redirect, if the job sequence ends up failing to save,
+      // then the corresponding draft will be lost (all drafts are soft-deleted
+      // from the database on readDraftEdit).
+      debug('Job sequence is still running - redirect to status page');
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
+      return;
+    }
 
-        fileEdit.alertChoice = false;
-        fileEdit.didSave = false;
-        fileEdit.didSync = false;
+    fileEdit.alertChoice = false;
+    fileEdit.didSave = false;
+    fileEdit.didSync = false;
 
-        if (fileEdit.jobSequence) {
-          // No draft is older than 24 hours, so it is safe to assume that no
-          // job sequence is legacy... but, just in case, we will check and log
-          // a warning if we find one. We will treat the corresponding draft as
-          // if it was neither saved nor synced.
-          if (fileEdit.jobSequence.legacy) {
-            debug('Found a legacy job sequence');
-            logger.warn(
-              `Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
-                `in a file edit (id=${fileEdit.editID})`,
-            );
-          } else {
-            const job = fileEdit.jobSequence.jobs[0];
+    if (fileEdit.jobSequence) {
+      // No draft is older than 24 hours, so it is safe to assume that no
+      // job sequence is legacy... but, just in case, we will check and log
+      // a warning if we find one. We will treat the corresponding draft as
+      // if it was neither saved nor synced.
+      if (fileEdit.jobSequence.legacy) {
+        debug('Found a legacy job sequence');
+        logger.warn(
+          `Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
+            `in a file edit (id=${fileEdit.editID})`,
+        );
+      } else {
+        const job = fileEdit.jobSequence.jobs[0];
 
-            debug('Found a job sequence');
-            debug(` saveAttempted=${job.data.saveAttempted}`);
-            debug(` saveSucceeded=${job.data.saveSucceeded}`);
-            debug(` syncAttempted=${job.data.syncAttempted}`);
-            debug(` syncSucceeded=${job.data.syncSucceeded}`);
+        debug('Found a job sequence');
+        debug(` saveAttempted=${job.data.saveAttempted}`);
+        debug(` saveSucceeded=${job.data.saveSucceeded}`);
+        debug(` syncAttempted=${job.data.syncAttempted}`);
+        debug(` syncSucceeded=${job.data.syncSucceeded}`);
 
-            // We check for the presence of a `saveSucceeded` key to know if
-            // the edit was saved (i.e., written to disk in the case of no git,
-            // or written to disk and then pushed in the case of git). If this
-            // key exists, its value will be true.
-            if (job.data.saveSucceeded) {
-              fileEdit.didSave = true;
+        // We check for the presence of a `saveSucceeded` key to know if
+        // the edit was saved (i.e., written to disk in the case of no git,
+        // or written to disk and then pushed in the case of git). If this
+        // key exists, its value will be true.
+        if (job.data.saveSucceeded) {
+          fileEdit.didSave = true;
 
-              // We check for the presence of a `syncSucceeded` key to know
-              // if the sync was successful. If this key exists, its value will
-              // be true. Note that the cause of sync failure could be a file
-              // other than the one being edited.
-              //
-              // By "the sync" we mean "the sync after a successfully saved
-              // edit." Remember that, if using git, we pull before we push.
-              // So, if we error on save, then we still try to sync whatever
-              // was pulled from the remote repository, even though changes
-              // made by the edit will have been discarded. We ignore this
-              // in the UI for now.
-              if (job.data.syncSucceeded) {
-                fileEdit.didSync = true;
-              }
-            }
+          // We check for the presence of a `syncSucceeded` key to know
+          // if the sync was successful. If this key exists, its value will
+          // be true. Note that the cause of sync failure could be a file
+          // other than the one being edited.
+          //
+          // By "the sync" we mean "the sync after a successfully saved
+          // edit." Remember that, if using git, we pull before we push.
+          // So, if we error on save, then we still try to sync whatever
+          // was pulled from the remote repository, even though changes
+          // made by the edit will have been discarded. We ignore this
+          // in the UI for now.
+          if (job.data.syncSucceeded) {
+            fileEdit.didSync = true;
           }
         }
+      }
+    }
 
-        if (fileEdit.editID) {
-          // There is a recently saved draft ...
-          fileEdit.alertResults = true;
-          if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
-            // ...that was not written to disk and that differs from what is on disk.
-            fileEdit.alertChoice = true;
-            fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
-          }
-        }
+    if (fileEdit.editID) {
+      // There is a recently saved draft ...
+      fileEdit.alertResults = true;
+      if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
+        // ...that was not written to disk and that differs from what is on disk.
+        fileEdit.alertChoice = true;
+        fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
+      }
+    }
 
-        if (!fileEdit.alertChoice) {
-          fileEdit.editContents = fileEdit.diskContents;
-          fileEdit.origHash = fileEdit.diskHash;
-        }
+    if (!fileEdit.alertChoice) {
+      fileEdit.editContents = fileEdit.diskContents;
+      fileEdit.origHash = fileEdit.diskHash;
+    }
 
-        res.locals.fileEdit = fileEdit;
-        res.locals.fileEdit.paths = paths;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      },
-    );
-  });
-});
+    res.locals.fileEdit = fileEdit;
+    res.locals.fileEdit.paths = paths;
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
-router.post('/*', (req, res, next) => {
-  debug('POST /');
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
-  }
+router.post(
+  '/*',
+  asyncHandler(async (req, res) => {
+    debug('POST /');
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied (must be a course Editor)');
+    }
 
-  getPathsCallback(req, res, (err, paths) => {
-    if (ERR(err, next)) return;
+    const paths = getPaths(req, res);
+
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
@@ -228,56 +210,45 @@ router.post('/*', (req, res, next) => {
         editContents: req.body.file_edit_contents,
         origHash: req.body.file_edit_orig_hash,
       });
-      editor.shouldEdit((err, yes) => {
-        if (ERR(err, next)) return;
-        if (!yes) return res.redirect(req.originalUrl);
-        editor.canEdit((err) => {
-          if (ERR(err, next)) return;
-          let editID = null;
-          let jobSequenceID = null;
-          async.series(
-            [
-              async () => {
-                debug('Write draft file edit to db and to file store');
-                const fileEdit = {
-                  userID: res.locals.user.user_id,
-                  authnUserID: res.locals.authn_user.user_id,
-                  courseID: res.locals.course.id,
-                  dirName: paths.workingDirectory,
-                  fileName: paths.workingFilename,
-                  origHash: req.body.file_edit_orig_hash,
-                  coursePath: res.locals.course.path,
-                  uid: res.locals.user.uid,
-                  user_name: res.locals.user.name,
-                  editContents: req.body.file_edit_contents,
-                };
-                editID = await writeDraftEdit(fileEdit);
-              },
-              (callback) => {
-                editor.doEdit((err, job_sequence_id) => {
-                  // An error here should be logged but not passed on,
-                  // because the UI will look at the job_sequence_id.
-                  ERR(err, (e) => logger.error('Error in doEdit()', e));
-                  jobSequenceID = job_sequence_id;
-                  callback(null);
-                });
-              },
-              async () => {
-                await updateJobSequenceId(editID, jobSequenceID);
-              },
-            ],
-            (err) => {
-              if (ERR(err, next)) return;
-              res.redirect(req.originalUrl);
-            },
-          );
-        });
+
+      if (!editor.shouldEdit()) {
+        res.redirect(req.originalUrl);
+        return;
+      }
+
+      editor.assertCanEdit();
+
+      debug('Write draft file edit to db and to file store');
+      const editID = await writeDraftEdit({
+        userID: res.locals.user.user_id,
+        authnUserID: res.locals.authn_user.user_id,
+        courseID: res.locals.course.id,
+        dirName: paths.workingDirectory,
+        fileName: paths.workingFilename,
+        origHash: req.body.file_edit_orig_hash,
+        coursePath: res.locals.course.path,
+        uid: res.locals.user.uid,
+        user_name: res.locals.user.name,
+        editContents: req.body.file_edit_contents,
       });
+
+      const serverJob = await editor.prepareServerJob();
+      await updateJobSequenceId(editID, serverJob.jobSequenceId);
+
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        // We're deliberately choosing to ignore errors here. If there was an
+        // error, we'll still redirect the user back to the same page, which will
+        // allow them to handle the error.
+      }
+
+      res.redirect(req.originalUrl);
     } else {
-      return next(error.make(400, `unknown __action: ${req.body.__action}`));
+      throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
-  });
-});
+  }),
+);
 
 function getHash(contents) {
   return sha256(contents).toString();

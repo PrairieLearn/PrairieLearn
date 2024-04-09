@@ -5,7 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type PlanGrant, type Institution } from '../../../lib/db-types';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { Timezone } from '../../../lib/timezones';
+import { formatTimezone, Timezone } from '../../../lib/timezones';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
@@ -112,13 +112,7 @@ export function InstitutionAdminGeneral({
                       value="${tz.name}"
                       ${institution.display_timezone === tz.name ? 'selected' : ''}
                     >
-                      ${`${tz.utc_offset.hours ? tz.utc_offset.hours : '00'}:${
-                        tz.utc_offset.minutes
-                          ? tz.utc_offset.minutes > 0
-                            ? tz.utc_offset.minutes
-                            : tz.utc_offset.minutes * -1
-                          : '00'
-                      } ${tz.name}`}
+                      ${formatTimezone(tz)}
                     </option>
                   `,
                 )}

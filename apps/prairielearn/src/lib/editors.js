@@ -120,6 +120,9 @@ export class Editor {
     return serverJob;
   }
 
+  /**
+   * @param {import('./server-jobs').ServerJobExecutor} serverJob
+   */
   async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
@@ -1298,17 +1301,17 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  shouldEdit(callback) {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
     debug('origHash: ' + this.origHash);
     if (this.origHash === editHash) {
       debug('edit contents are the same as orig contents, so abort');
-      callback(null, false);
+      return false;
     } else {
       debug('edit contents are different from orig contents, so continue');
-      callback(null, true);
+      return true;
     }
   }
 
@@ -1373,31 +1376,21 @@ export class FileModifyEditor extends Editor {
   }
 }
 
-export class CourseInfoEditor extends Editor {
+export class CourseInfoCreateEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Create infoCourse.json`;
+    this.infoJson = params.infoJson;
   }
 
   async write() {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
-    let infoJson = {
-      uuid: uuidv4(),
-      name: path.basename(this.course.path),
-      title: path.basename(this.course.path),
-      options: {
-        useNewQuestionRenderer: true,
-      },
-      tags: [],
-      topics: [],
-    };
-
     // This will error if:
     // - this.course.path does not exist (use of writeJson)
-    // - infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, infoJson, { spaces: 4, flag: 'wx' });
+    // - Creating a new file and infoPath does exist (use of 'wx')
+    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
 
     this.pathsToAdd = [infoPath];
     this.commitMessage = `create infoCourse.json`;

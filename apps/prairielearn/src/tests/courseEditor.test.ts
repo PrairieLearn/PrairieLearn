@@ -37,7 +37,7 @@ const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
 const testEditData = [
   {
     url: questionsUrl,
-    form: 'add-question-form',
+    formSelector: 'form[name="add-question-form"]',
     action: 'add_question',
     info: 'questions/New_1/info.json',
     files: new Set([
@@ -55,7 +55,7 @@ const testEditData = [
   },
   {
     button: 'changeQidButton',
-    form: 'change-id-form',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newQuestion',
     },
@@ -75,7 +75,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-question-form',
+    formSelector: '#delete-question-form',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -90,7 +90,7 @@ const testEditData = [
   {
     url: `${courseInstanceUrl}/question/1/settings`,
     button: 'copyQuestionButton',
-    form: 'copy-question-form',
+    formSelector: 'form[name="copy-question-form"]',
     data: {
       to_course_id: 1,
     },
@@ -110,7 +110,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-question-form',
+    formSelector: '#delete-question-form',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -124,7 +124,7 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    form: 'add-assessment-form',
+    formSelector: 'form[name="add-assessment-form"]',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
     files: new Set([
@@ -140,7 +140,7 @@ const testEditData = [
   },
   {
     button: 'changeAidButton',
-    form: 'change-id-form',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessment/nested',
     },
@@ -163,7 +163,7 @@ const testEditData = [
   // assessment during sync.
   {
     button: 'changeAidButton',
-    form: 'change-id-form',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessmentNotNested',
     },
@@ -181,7 +181,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-assessment-form',
+    formSelector: 'form[name="delete-assessment-form"]',
     action: 'delete_assessment',
     files: new Set([
       'README.md',
@@ -195,7 +195,7 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/assessment/1/settings`,
-    form: 'copy-assessment-form',
+    formSelector: 'form[name="copy-assessment-form"]',
     action: 'copy_assessment',
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
     files: new Set([
@@ -210,7 +210,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-assessment-form',
+    formSelector: 'form[name="delete-assessment-form"]',
     action: 'delete_assessment',
     files: new Set([
       'README.md',
@@ -224,7 +224,7 @@ const testEditData = [
   },
   {
     url: courseInstancesUrl,
-    form: 'add-course-instance-form',
+    formSelector: 'form[name="add-course-instance-form"]',
     action: 'add_course_instance',
     info: `courseInstances/New_1/infoCourseInstance.json`,
     files: new Set([
@@ -240,7 +240,7 @@ const testEditData = [
   },
   {
     button: 'changeCiidButton',
-    form: 'change-id-form',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newCourseInstance',
     },
@@ -258,7 +258,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-course-instance-form',
+    formSelector: 'form[name="delete-course-instance-form"]',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',
@@ -272,7 +272,7 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/instance_admin/settings`,
-    form: 'copy-course-instance-form',
+    formSelector: 'form[name="copy-course-instance-form"]',
     action: 'copy_course_instance',
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
     files: new Set([
@@ -288,7 +288,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-course-instance-form',
+    formSelector: 'form[name="delete-course-instance-form"]',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',
@@ -398,13 +398,13 @@ function testEdit(params) {
         assert.lengthOf(elemList, 1);
 
         const $ = cheerio.load(elemList[0].attribs['data-content']);
-        elemList = $(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        const elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;

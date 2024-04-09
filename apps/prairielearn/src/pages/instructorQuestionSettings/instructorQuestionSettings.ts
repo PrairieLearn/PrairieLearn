@@ -1,5 +1,4 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 import { startTestQuestion } from '../../lib/question-testing';
@@ -16,24 +15,16 @@ import { copyQuestionBetweenCourses } from '../../lib/copy-question';
 import { flash } from '@prairielearn/flash';
 import { features } from '../../lib/features/index';
 import { getCanonicalHost } from '../../lib/url';
-import { isEnterprise } from '../../lib/license';
 import { selectCoursesWithEditAccess } from '../../models/course';
 import { IdSchema } from '../../lib/db-types';
+import {
+  InstructorQuestionSettings,
+  SelectedAssessmentsSchema,
+  SharingSetSchema,
+} from './instructorQuestionSettings.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const SelectedAssessmentsSchema = z.object({
-  title: z.string(),
-  course_instance_id: IdSchema,
-  assessments: z.array(
-    z.object({
-      assessment_id: IdSchema,
-      color: z.string(),
-      label: z.string(),
-    }),
-  ),
-});
 
 router.post(
   '/test',
@@ -222,56 +213,65 @@ router.get(
       config.secretKey,
     );
 
-    res.locals.questionTestPath = questionTestPath;
-    res.locals.questionTestCsrfToken = questionTestCsrfToken;
-
-    res.locals.isEnterprise = isEnterprise();
-
-    res.locals.questionGHLink = null;
+    let questionGHLink: string | null = null;
     if (res.locals.course.repository) {
       const githubRepoMatch = res.locals.course.repository.match(
         /^git@github.com:\/?(.+?)(\.git)?\/?$/,
       );
       if (githubRepoMatch) {
-        res.locals.questionGHLink =
+        questionGHLink =
           'https://github.com/' +
           githubRepoMatch[1] +
           `/tree/${res.locals.course.branch}/questions/` +
           res.locals.question.qid;
       }
     } else if (res.locals.course.example_course) {
-      res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
+      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     }
 
-    res.locals.qids = await sqldb.queryRows(
-      sql.qids,
-      { course_id: res.locals.course.id },
-      z.string().nullable(),
-    );
+    const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 
-    res.locals.a_with_q_for_all_ci = await sqldb.queryRows(
+    const assessmentsWithQuestion = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
-    res.locals.sharing_enabled = await features.enabledFromLocals('question-sharing', res.locals);
+    const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    if (res.locals.sharing_enabled) {
-      let result = await sqldb.queryAsync(sql.select_sharing_sets, {
-        question_id: res.locals.question.id,
-        course_id: res.locals.course.id,
-      });
-      res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
-      res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
+    let sharingSetsIn, sharingSetsOther;
+    if (sharingEnabled) {
+      const result = await sqldb.queryRows(
+        sql.select_sharing_sets,
+        {
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        },
+        SharingSetSchema,
+      );
+      sharingSetsIn = result.filter((row) => row.in_set);
+      sharingSetsOther = result.filter((row) => !row.in_set);
     }
-
-    res.locals.editable_courses = await selectCoursesWithEditAccess({
+    const editableCourses = await selectCoursesWithEditAccess({
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    res.locals.infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
+    const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorQuestionSettings({
+        resLocals: res.locals,
+        questionTestPath,
+        questionTestCsrfToken,
+        questionGHLink,
+        qids,
+        assessmentsWithQuestion,
+        sharingEnabled,
+        sharingSetsIn,
+        sharingSetsOther,
+        editableCourses,
+        infoPath,
+      }),
+    );
   }),
 );
 

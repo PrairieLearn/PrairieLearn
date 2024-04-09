@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.2.0
+
+### Minor Changes
+
+- 49a689e: Introduce `formatErrorStack` and `formatErrorStackSafe` functions
+
 ## 1.1.1
 
 ### Patch Changes

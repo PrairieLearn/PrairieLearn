@@ -1,5 +1,12 @@
 # @prairielearn/migrations
 
+## 2.0.20
+
+### Patch Changes
+
+- Updated dependencies [49a689e]
+  - @prairielearn/error@1.2.0
+
 ## 2.0.19
 
 ### Patch Changes

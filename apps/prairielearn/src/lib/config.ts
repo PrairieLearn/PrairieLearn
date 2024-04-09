@@ -68,8 +68,8 @@ const ConfigSchema = z.object({
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -522,11 +522,25 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
+
   if (config.questionRenderCacheType !== null) {
     logger.warn(
       'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
     );
     config.cacheType = config.questionRenderCacheType;
+  }
+
+  // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
+  // since we parse the schema to get defaults. Instead, we do the checks here
+  // after the config has been completely loaded.
+  if (process.env.NODE_ENV === 'production') {
+    if (!config.cookieDomain) {
+      throw new Error('cookieDomain must be set in production environments');
+    }
+
+    if (!config.cookieDomain.startsWith('.')) {
+      throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
+    }
   }
 }
 

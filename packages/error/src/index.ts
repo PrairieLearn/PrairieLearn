@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import { HtmlSafeString } from '@prairielearn/html';
 
+export { formatErrorStack, formatErrorStackSafe } from './format';
+
 interface ErrorWithData extends Error {
   data: any;
 }
