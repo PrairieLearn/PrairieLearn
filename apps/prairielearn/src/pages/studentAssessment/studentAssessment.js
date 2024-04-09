@@ -157,11 +157,14 @@ router.post(
         const groupConfig = await getGroupConfig(res.locals.assessment.id);
         const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
         if (groupId === null) {
-          throw error.make(403, 'Cannot create a new instance while not in a group.');
+          throw new error.HttpStatusError(
+            403,
+            'Cannot create a new instance while not in a group.',
+          );
         }
         const groupInfo = await getGroupInfo(groupId, groupConfig);
         if (!groupInfo.start) {
-          throw error.make(
+          throw new error.HttpStatusError(
             403,
             'Group has invalid composition or role assignment. Cannot start assessment.',
           );
@@ -214,7 +217,7 @@ router.post(
       // Check whether the user is currently in a group
       const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
       if (groupId == null) {
-        throw error.make(403, 'Cannot change group roles while not in a group.');
+        throw new error.HttpStatusError(403, 'Cannot change group roles while not in a group.');
       }
       await updateGroupRoles(
         req.body,

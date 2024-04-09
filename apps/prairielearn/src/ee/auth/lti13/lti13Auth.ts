@@ -42,7 +42,10 @@ router.post(
 
     // UID checking
     if (!lti13_instance.uid_attribute) {
-      throw error.make(500, 'LTI 1.3 instance configuration missing required UID attribute');
+      throw new error.HttpStatusError(
+        500,
+        'LTI 1.3 instance configuration missing required UID attribute',
+      );
     } else {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
@@ -55,13 +58,13 @@ router.post(
             'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
           )
         ) {
-          throw error.make(
+          throw new error.HttpStatusError(
             403,
             `Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.`,
           );
         } else {
           // Error about missing UID
-          throw error.make(
+          throw new error.HttpStatusError(
             500,
             `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
           );
@@ -76,7 +79,7 @@ router.post(
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
       uin = _get(lti13_claims, lti13_instance.uin_attribute);
       if (!uin) {
-        throw error.make(
+        throw new error.HttpStatusError(
           500,
           `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
         );
@@ -308,7 +311,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
-    throw error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    throw new error.HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
   await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds

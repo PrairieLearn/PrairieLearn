@@ -186,7 +186,7 @@ router.post(
   asyncHandler(async (req, res) => {
     debug('POST /');
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be a course Editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
     const paths = getPaths(req, res);
@@ -245,7 +245,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

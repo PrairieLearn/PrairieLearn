@@ -117,7 +117,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be course editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (req.body.__action === 'pull') {
@@ -137,7 +137,7 @@ router.post(
       const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -23,7 +23,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           !res.locals.question.shared_publicly ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
-          throw error.make(404, 'Not Found');
+          throw new error.HttpStatusError(404, 'Not Found');
         }
       }
 

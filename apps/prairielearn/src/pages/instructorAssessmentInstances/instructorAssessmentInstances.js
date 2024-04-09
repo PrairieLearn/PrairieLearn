@@ -53,7 +53,7 @@ router.get(
   '/raw_data.json',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
@@ -71,7 +71,7 @@ router.get(
   '/client.js',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.type('text/javascript');
     res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
@@ -82,7 +82,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
@@ -92,7 +92,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'close') {
@@ -197,7 +197,7 @@ router.post(
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

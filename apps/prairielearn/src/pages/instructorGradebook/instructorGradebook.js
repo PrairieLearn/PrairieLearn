@@ -80,7 +80,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     if (req.params.filename === csvFilename(res.locals)) {
@@ -104,7 +104,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(userScoresCursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
