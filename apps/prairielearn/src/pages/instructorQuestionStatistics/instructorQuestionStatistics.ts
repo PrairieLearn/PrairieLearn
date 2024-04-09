@@ -1,50 +1,61 @@
-//@ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as sanitizeName from '../../lib/sanitize-name';
+import { questionFilenamePrefix } from '../../lib/sanitize-name';
+import {
+  AssessmentQuestionStatsRowSchema,
+  InstructorQuestionStatistics,
+} from './instructorQuestionStatistics.html';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const setFilenames = function (locals) {
-  const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
-  locals.questionStatsCsvFilename = prefix + 'stats.csv';
-};
+function makeStatsCsvFilename(locals) {
+  const prefix = questionFilenamePrefix(locals.question, locals.course);
+  return prefix + 'stats.csv';
+}
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      return next(error.make(403, 'Access denied'));
+      throw error.make(403, 'Access denied');
     }
-    setFilenames(res.locals);
-    const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
-      question_id: res.locals.question.id,
-    });
-    res.locals.assessment_stats = statsResult.rows;
+    const rows = await sqldb.queryRows(
+      sql.assessment_question_stats,
+      {
+        question_id: res.locals.question.id,
+      },
+      AssessmentQuestionStatsRowSchema,
+    );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorQuestionStatistics({
+        questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        rows,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      return next(error.make(403, 'Access denied'));
+      throw error.make(403, 'Access denied');
     }
-    setFilenames(res.locals);
 
-    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+    if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.assessment_question_stats, {
         question_id: res.locals.question.id,
       });
@@ -58,7 +69,7 @@ router.get(
           'Question number',
           'QID',
           'Question title',
-          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+          ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
           return [
