@@ -840,7 +840,7 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // API ///////////////////////////////////////////////////////////////
 
-  app.use('/pl/api/v1', require('./api/v1'));
+  app.use('/pl/api/v1', require('./api/v1').default);
 
   if (isEnterprise()) {
     app.use(
