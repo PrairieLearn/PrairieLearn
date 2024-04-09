@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import * as pem from 'pem';
+// We import from this instead of `pem` directly because the latter includes
+// code that messes up the display of source maps in dev mode:
+// https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
+import * as pem from 'pem/lib/pem';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
