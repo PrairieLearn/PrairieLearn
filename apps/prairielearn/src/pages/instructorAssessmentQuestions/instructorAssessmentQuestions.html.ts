@@ -3,6 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
 import { AssessmentQuestionSchema, IdSchema, TopicSchema } from '../../lib/db-types';
+import { Modal } from '../../components/Modal.html';
 
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: z.number().nullable(),
@@ -85,47 +86,29 @@ export function InstructorAssessmentQuestions({
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          <div
-            class="modal fade"
-            id="resetQuestionVariantsModal"
-            tabindex="-1"
-            role="dialog"
-            aria-labelledby="resetQuestionVariantsModalLabel"
-          >
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h4 class="modal-title" id="resetQuestionVariantsModalLabel">
-                    Confirm reset question variants
-                  </h4>
-                </div>
-                <div class="modal-body">
-                  <p>
-                    Are your sure you want to reset all current variants of this question?
-                    <strong>All ungraded attempts will be lost.</strong>
-                  </p>
-                  <p>Students will receive a new variant the next time they view this question.</p>
-                </div>
-                <div class="modal-footer">
-                  <form name="reset-question-variants-form" method="POST">
-                    <input type="hidden" name="__action" value="reset_question_variants" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input
-                      type="hidden"
-                      name="unsafe_assessment_question_id"
-                      class="js-assessment-question-id"
-                      value=""
-                    />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                      Cancel
-                    </button>
-                    <button type="submit" class="btn btn-danger">Reset question variants</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          ${Modal({
+            id: 'resetQuestionVariantsModal',
+            title: 'Confirm reset question variants',
+            body: html`
+              <p>
+                Are your sure you want to reset all current variants of this question?
+                <strong>All ungraded attempts will be lost.</strong>
+              </p>
+              <p>Students will receive a new variant the next time they view this question.</p>
+            `,
+            footer: html`
+              <input type="hidden" name="__action" value="reset_question_variants" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <input
+                type="hidden"
+                name="unsafe_assessment_question_id"
+                class="js-assessment-question-id"
+                value=""
+              />
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Reset question variants</button>
+            `,
+          })}
           ${renderEjs(
             __filename,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -161,14 +144,11 @@ function AssessmentQuestionsTable({
   urlPrefix: string;
   hasCourseInstancePermissionEdit: boolean;
 }) {
-  let nTableCols = 11;
-
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
-    questions.filter((q) => {
-      return q.assessment_question_advance_score_perc !== 0;
-    }).length >= 1;
-  if (showAdvanceScorePercCol) nTableCols++;
+    questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
+
+  const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
   function maxPoints({ max_auto_points, max_manual_points, points_list, init_points }) {
     if (max_auto_points || !max_manual_points) {
@@ -177,9 +157,9 @@ function AssessmentQuestionsTable({
       }
       if (assessmentType === 'Homework') {
         return `${init_points - max_manual_points}/${max_auto_points}`;
-      } else {
-        return html`&mdash;`;
       }
+    } else {
+      return html`&mdash;`;
     }
   }
 
@@ -330,17 +310,28 @@ function AssessmentQuestionsTable({
                 </td>
                 <td class="text-center">
                   ${question.number_submissions_hist
-                    ? html` <div id="attemptsHist${iRow}" class="miniHist"></div> `
+                    ? html`
+                        <div
+                          id="attemptsHist${iRow}"
+                          class="miniHist"
+                          data-number-submissions="${JSON.stringify(
+                            question.number_submissions_hist,
+                          )}"
+                        ></div>
+                      `
                     : ''}
                 </td>
                 <script>
                   $(function () {
-                    var data = [${question.number_submissions_hist}];
                     var options = {
                       width: 60,
                       height: 20,
                     };
-                    histmini('#attemptsHist${iRow}', data, options);
+                    histmini(
+                      '#attemptsHist${iRow}',
+                      $('#attemptsHist${iRow}').data('number-submissions'),
+                      options,
+                    );
                   });
                 </script>
                 <td>
