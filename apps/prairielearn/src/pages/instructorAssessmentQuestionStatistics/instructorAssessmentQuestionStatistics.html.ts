@@ -389,7 +389,13 @@ export function InstructorAssessmentQuestionStatistics({
                               <td class="text-center">
                                 ${row.first_submission_score_hist !== null
                                   ? html`
-                                      <div id="firstSubmissionScoreHist${i}" class="miniHist"></div>
+                                      <div
+                                        id="firstSubmissionScoreHist${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.first_submission_score_hist,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
@@ -402,7 +408,13 @@ export function InstructorAssessmentQuestionStatistics({
                               <td class="text-center">
                                 ${row.last_submission_score_hist !== null
                                   ? html`
-                                      <div id="lastSubmissionScoreHist${i}" class="miniHist"></div>
+                                      <div
+                                        id="lastSubmissionScoreHist${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.last_submission_score_hist,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
@@ -415,7 +427,13 @@ export function InstructorAssessmentQuestionStatistics({
                               <td class="text-center">
                                 ${row.max_submission_score_hist !== null
                                   ? html`
-                                      <div id="maxSubmissionScoreHist${i}" class="miniHist"></div>
+                                      <div
+                                        id="maxSubmissionScoreHist${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.max_submission_score_hist,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
@@ -428,14 +446,26 @@ export function InstructorAssessmentQuestionStatistics({
                               <td class="text-center">
                                 ${row.average_submission_score_hist !== null
                                   ? html`
-                                      <div id="submissionScoreArray${i}" class="miniHist"></div>
+                                      <div
+                                        id="submissionScoreArray${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.average_submission_score_hist,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
                               <td class="text-center">
                                 ${row.submission_score_array_averages !== null
                                   ? html`
-                                      <div id="submissionScoreArray${i}" class="miniHist"></div>
+                                      <div
+                                        id="submissionScoreArray${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.submission_score_array_averages,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
@@ -445,6 +475,9 @@ export function InstructorAssessmentQuestionStatistics({
                                       <div
                                         id="incrementalSubmissionScoreArray${i}"
                                         class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.incremental_submission_score_array_averages,
+                                        )}"
                                       ></div>
                                     `
                                   : ''}
@@ -457,6 +490,9 @@ export function InstructorAssessmentQuestionStatistics({
                                             <div
                                               id="incrementalSubmissionPointsArray${i}"
                                               class="miniHist"
+                                              data-histmini-values="${JSON.stringify(
+                                                row.incremental_submission_points_array_averages,
+                                              )}"
                                             ></div>
                                           `
                                         : ''}
@@ -472,7 +508,13 @@ export function InstructorAssessmentQuestionStatistics({
                               <td class="text-center">
                                 ${row.number_submissions_hist !== null
                                   ? html`
-                                      <div id="numberSubmissionsHist${i}" class="miniHist"></div>
+                                      <div
+                                        id="numberSubmissionsHist${i}"
+                                        class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.number_submissions_hist,
+                                        )}"
+                                      ></div>
                                     `
                                   : ''}
                               </td>
@@ -482,71 +524,70 @@ export function InstructorAssessmentQuestionStatistics({
                                       <div
                                         id="quintileQuestionScoresHist${i}"
                                         class="miniHist"
+                                        data-histmini-values="${JSON.stringify(
+                                          row.quintile_question_scores,
+                                        )}"
                                       ></div>
                                     `
                                   : ''}
                               </td>
                               <script>
-                                    $(function () {
-                                      const options = {
-                                        width: 60,
-                                        height: 20,
-                                        ymax: 1,
-                                      };
-                                      // TODO: replace these all with 'data-' attributes
-                                histmini(
-                                  '#firstSubmissionScoreHist${i}',
-                                  [${(row.first_submission_score_hist ?? []).join(',')}],
-                                  _.defaults({ normalize: true }, options),
-                                );
-                                histmini(
-                                  '#lastSubmissionScoreHist${i}',
-                                  [${(row.last_submission_score_hist ?? []).join(',')}],
-                                  _.defaults({ normalize: true }, options),
-                                );
-                                histmini(
-                                  '#maxSubmissionScoreHist${i}',
-                                  [${(row.max_submission_score_hist ?? []).join(',')}],
-                                  _.defaults({ normalize: true }, options),
-                                );
-                                histmini(
-                                  '#averageSubmissionScoreHist${i}',
-                                  [${(row.average_submission_score_hist ?? []).join(',')}],
-                                  _.defaults({ normalize: true }, options),
-                                );
-                                histmini(
-                                  '#submissionScoreArray${i}',
-                                  [${(row.submission_score_array_averages ?? []).join(',')}],
-                                  options,
-                                );
-                                histmini(
-                                  '#incrementalSubmissionScoreArray${i}',
-                                  [
-                                    ${(row.incremental_submission_score_array_averages ?? []).join(
-                                  ',',
-                                )},
-                                  ],
-                                  options,
-                                );
-                                histmini(
-                                  '#incrementalSubmissionPointsArray${i}',
-                                  [
-                                    ${(row.incremental_submission_points_array_averages ?? []).join(
-                                  ',',
-                                )},
-                                  ],
-                                  _.defaults({ ymax: ${row.max_points} }, options),
-                                );
-                                histmini(
-                                  '#numberSubmissionsHist${i}',
-                                  [${(row.number_submissions_hist ?? []).join(',')}],
-                                  _.defaults({ normalize: true }, options),
-                                );
-                                histmini(
-                                  '#quintileQuestionScoresHist${i}',
-                                  [${(row.quintile_question_scores ?? []).join(',')}],
-                                  _.defaults({ ymax: 100 }, options),
-                                );
+                                $(function () {
+                                  const options = {
+                                    width: 60,
+                                    height: 20,
+                                    ymax: 1,
+                                  };
+                                  histmini(
+                                    '#firstSubmissionScoreHist${i}',
+                                    $('#firstSubmissionScoreHist${i}').data('histmini-values'),
+                                    _.defaults({ normalize: true }, options),
+                                  );
+                                  histmini(
+                                    '#lastSubmissionScoreHist${i}',
+                                    $('#lastSubmissionScoreHist${i}').data('histmini-values'),
+                                    _.defaults({ normalize: true }, options),
+                                  );
+                                  histmini(
+                                    '#maxSubmissionScoreHist${i}',
+                                    $('#maxSubmissionScoreHist${i}').data('histmini-values'),
+                                    _.defaults({ normalize: true }, options),
+                                  );
+                                  histmini(
+                                    '#averageSubmissionScoreHist${i}',
+                                    $('#averageSubmissionScoreHist${i}').data('histmini-values'),
+                                    _.defaults({ normalize: true }, options),
+                                  );
+                                  histmini(
+                                    '#submissionScoreArray${i}',
+                                    $('#submissionScoreArray${i}').data('histmini-values'),
+                                    options,
+                                  );
+                                  histmini(
+                                    '#incrementalSubmissionScoreArray${i}',
+                                    $('#incrementalSubmissionScoreArray${i}').data(
+                                      'histmini-values',
+                                    ),
+                                    options,
+                                  );
+                                  histmini(
+                                    '#incrementalSubmissionPointsArray${i}',
+                                    $('#incrementalSubmissionPointsArray${i}').data(
+                                      'histmini-values',
+                                    ),
+                                    _.defaults({ ymax: ${row.max_points} }, options),
+                                  );
+                                  histmini(
+                                    '#numberSubmissionsHist${i}',
+                                    $('#numberSubmissionsHist${i}').data('histmini-values'),
+                                    _.defaults({ normalize: true }, options),
+                                  );
+                                  histmini(
+                                    '#quintileQuestionScoresHist${i}',
+                                    $('#quintileQuestionScoresHist${i}').data('histmini-values'),
+                                    _.defaults({ ymax: 100 }, options),
+                                  );
+                                });
                               </script>
                             `
                           : html`
