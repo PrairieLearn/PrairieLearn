@@ -4,6 +4,7 @@ import { pipeline } from 'node:stream/promises';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
+import { z } from 'zod';
 
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import {
@@ -46,10 +47,11 @@ router.get(
     // different to assessments.statistics_last_updated_at (the time we last
     // updated the assessment instance statistics stored in the assessments
     // row itself).
-    const lastUpdateResult = await sqldb.queryOneRowAsync(sql.assessment_stats_last_updated, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.stats_last_updated = lastUpdateResult.rows[0].stats_last_updated;
+    const statsLastUpdated = await sqldb.queryRow(
+      sql.assessment_stats_last_updated,
+      { assessment_id: res.locals.assessment.id },
+      z.string(),
+    );
 
     const rows = await sqldb.queryRows(
       sql.questions,
@@ -63,6 +65,7 @@ router.get(
     res.send(
       InstructorAssessmentQuestionStatistics({
         questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
+        statsLastUpdated,
         rows,
         resLocals: res.locals,
       }),

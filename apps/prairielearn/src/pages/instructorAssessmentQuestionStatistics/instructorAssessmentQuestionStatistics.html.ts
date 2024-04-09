@@ -35,10 +35,12 @@ type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchem
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,
+  statsLastUpdated,
   rows,
   resLocals,
 }: {
   questionStatsCsvFilename: string;
+  statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
   resLocals: Record<string, any>;
 }) {
@@ -113,9 +115,7 @@ export function InstructorAssessmentQuestionStatistics({
               vs discrimination
               <div class="ml-auto">
                 <small>
-                  <span class="text-light mr-2">
-                    Last calculated: ${resLocals.stats_last_updated}
-                  </span>
+                  <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
                 </small>
                 <button
                   type="button"
@@ -189,9 +189,7 @@ export function InstructorAssessmentQuestionStatistics({
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
               <div class="ml-auto">
                 <small>
-                  <span class="text-light mr-2">
-                    Last calculated: ${resLocals.stats_last_updated}
-                  </span>
+                  <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
                 </small>
                 <button
                   type="button"
@@ -331,9 +329,7 @@ export function InstructorAssessmentQuestionStatistics({
               statistics
               <div class="ml-auto">
                 <small>
-                  <span class="text-light mr-2">
-                    Last calculated: ${resLocals.stats_last_updated}
-                  </span>
+                  <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
                 </small>
                 <button
                   type="button"
