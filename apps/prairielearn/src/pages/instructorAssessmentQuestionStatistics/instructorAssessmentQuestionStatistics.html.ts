@@ -15,6 +15,7 @@ import {
 } from '../../lib/db-types';
 import { formatFloat } from '../../lib/format';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
+import { Modal } from '../../components/Modal.html';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -68,45 +69,23 @@ export function InstructorAssessmentQuestionStatistics({
             resLocals,
           )}
           ${resLocals.authz_data.has_course_permission_edit
-            ? html`
-                <div
-                  class="modal fade"
-                  id="refreshAssessmentQuestionStatsModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="refreshAssessmentQuestionStatsModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="refreshAssessmentQuestionStatsModalLabel">
-                          Refresh statistics
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to refresh all statistics for
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number} </strong
-                        >? This cannot be undone.
-                      </div>
-                      <div class="modal-footer">
-                        <form name="refresh-stats-form" method="POST">
-                          <input type="hidden" name="__action" value="refresh_stats" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-danger">Submit</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `
+            ? Modal({
+                title: 'Refresh statistics',
+                id: 'refreshAssessmentQuestionStatsModal',
+                body: html`
+                  Are you sure you want to refresh all statistics for
+                  <strong>${resLocals.assessment_set.name} ${resLocals.assessment.number}</strong>?
+                  This cannot be undone.
+                `,
+                footer: html`
+                  <input type="hidden" name="__action" value="refresh_stats" />
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-danger">Submit</button>
+                `,
+              })
             : ''}
 
           <div class="card mb-4">
