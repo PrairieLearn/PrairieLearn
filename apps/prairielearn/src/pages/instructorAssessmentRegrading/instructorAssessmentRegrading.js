@@ -15,7 +15,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get('/', function (req, res, next) {
   debug('GET /');
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
   }
   var params = {
     assessment_id: res.locals.assessment.id,

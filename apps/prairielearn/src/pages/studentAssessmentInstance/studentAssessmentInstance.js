@@ -182,8 +182,9 @@ router.post(
         res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'leave_group') {
-      if (!res.locals.authz_result.active)
+      if (!res.locals.authz_result.active) {
         throw new error.HttpStatusError(400, 'Unauthorized request.');
+      }
       await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
@@ -203,7 +204,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(error.make(400, `unknown __action: ${req.body.__action}`));
+      next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

@@ -9,7 +9,7 @@ const { logger } = require('@prairielearn/logger');
 
 router.get('/:job_sequence_id', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
   }
 
   const job_sequence_id = req.params.job_sequence_id;
@@ -48,7 +48,7 @@ router.get('/:job_sequence_id', function (req, res, next) {
 
 router.post('/:job_sequence_id', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
   }
 
   if (req.body.__action === 'pull') {
@@ -59,7 +59,7 @@ router.post('/:job_sequence_id', (req, res, next) => {
       })
       .catch((err) => ERR(err, next));
   } else {
-    return next(error.make(400, `unknown __action: ${req.body.__action}`));
+    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

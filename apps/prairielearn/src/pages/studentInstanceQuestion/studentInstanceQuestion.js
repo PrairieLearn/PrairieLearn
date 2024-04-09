@@ -47,8 +47,9 @@ async function getValidVariantId(req, res) {
 }
 
 async function processFileUpload(req, res) {
-  if (!res.locals.assessment_instance.open)
+  if (!res.locals.assessment_instance.open) {
     throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
     throw new error.HttpStatusError(
       403,
@@ -72,8 +73,9 @@ async function processFileUpload(req, res) {
 }
 
 async function processTextUpload(req, res) {
-  if (!res.locals.assessment_instance.open)
+  if (!res.locals.assessment_instance.open) {
     throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
     throw new error.HttpStatusError(
       403,
@@ -94,8 +96,9 @@ async function processTextUpload(req, res) {
 }
 
 async function processDeleteFile(req, res) {
-  if (!res.locals.assessment_instance.open)
+  if (!res.locals.assessment_instance.open) {
     throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
     throw new error.HttpStatusError(
       403,
@@ -106,8 +109,9 @@ async function processDeleteFile(req, res) {
   // Check the requested file belongs to the current instance question
   const validFiles =
     res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
-  if (validFiles.length === 0)
+  if (validFiles.length === 0) {
     throw new error.HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
   const file = validFiles[0];
 
   if (file.type !== 'student_upload') {

@@ -48,7 +48,7 @@ router.get('/', function (req, res, next) {
 
 router.get('/raw_data.json', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
   }
   var params = {
     course_id: res.locals.course.id,
@@ -111,7 +111,7 @@ router.get(
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a student data editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a student data editor)'));
   }
 
   if (req.body.__action === 'edit_total_score_perc') {
@@ -139,7 +139,7 @@ router.post('/', function (req, res, next) {
       );
     });
   } else {
-    return next(error.make(400, `unknown __action: ${req.body.__action}`));
+    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

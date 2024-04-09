@@ -83,8 +83,9 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'change_id') {
-      if (!req.body.id)
+      if (!req.body.id) {
         throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.id}`);
+      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
         throw new error.HttpStatusError(
           400,

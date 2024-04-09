@@ -13,7 +13,7 @@ const router = Router();
  */
 function authzHasCourseInstanceView(req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Requires student data view access'));
+    return next(new error.HttpStatusError(403, 'Requires student data view access'));
   }
   next();
 }

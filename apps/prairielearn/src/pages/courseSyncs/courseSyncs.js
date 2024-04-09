@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
   }
   const params = { course_id: res.locals.course.id };
   sqldb.query(sql.select_sync_job_sequences, params, function (err, result) {
