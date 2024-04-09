@@ -165,7 +165,7 @@ describe('BatchedMigrationExecutor', () => {
       const jobData = job.data as any;
       assert.isObject(jobData);
       assert.isObject(jobData.error);
-      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data']);
+      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data', 'status']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
       assert.equal(jobData.error.data.start, job.min_value.toString());
