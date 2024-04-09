@@ -1345,16 +1345,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorAssessments/instructorAssessments').default,
   ]);
-  app.use(
-    '/pl/course_instanceeeeeee/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'gradebook';
-        next();
-      },
-      require('./pages/instructorGradebook/instructorGradebook').default,
-    ],
-  );
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'gradebook';
+      next();
+    },
+    require('./pages/instructorGradebook/instructorGradebook').default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti', [
     function (req, res, next) {
       res.locals.navSubPage = 'lti';
