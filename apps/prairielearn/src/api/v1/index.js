@@ -1,9 +1,10 @@
-const express = require('express');
+// @ts-check
+import { Router } from 'express';
 
-const error = require('@prairielearn/error');
-const Sentry = require('@prairielearn/sentry');
+import * as error from '@prairielearn/error';
+import * as Sentry from '@prairielearn/sentry';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * Used to prevent access to student data if the user doesn't have student data
@@ -18,7 +19,7 @@ function authzHasCourseInstanceView(req, res, next) {
 }
 
 // Pretty-print all JSON responses
-router.use(require('./prettyPrintJson'));
+router.use(require('./prettyPrintJson').default);
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id', [
@@ -28,41 +29,41 @@ router.use('/course_instances/:course_instance_id', [
   // include the `authzHasCourseInstanceView` middleware to ensure that access
   // to student data is properly limited.
   require('../../middlewares/authzHasCoursePreviewOrInstanceView').default,
-  require('./endpoints/courseInstanceInfo'),
+  require('./endpoints/courseInstanceInfo').default,
 ]);
 
 // ROUTES
 router.use(
   '/course_instances/:course_instance_id/assessments',
-  require('./endpoints/courseInstanceAssessments'),
+  require('./endpoints/courseInstanceAssessments').default,
 );
 router.use(
   '/course_instances/:course_instance_id/assessment_instances',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceAssessmentInstances'),
+  require('./endpoints/courseInstanceAssessmentInstances').default,
 );
 router.use(
   '/course_instances/:course_instance_id/submissions',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceSubmissions'),
+  require('./endpoints/courseInstanceSubmissions').default,
 );
 router.use(
   '/course_instances/:course_instance_id/gradebook',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceGradebook'),
+  require('./endpoints/courseInstanceGradebook').default,
 );
 router.use(
   '/course_instances/:course_instance_id/course_instance_access_rules',
-  require('./endpoints/courseInstanceAccessRules'),
+  require('./endpoints/courseInstanceAccessRules').default,
 );
 
 // If no earlier routes matched, 404 the route
-router.use(require('./notFound'));
+router.use(require('./notFound').default);
 
 // The Sentry error handler must come before our own.
 router.use(Sentry.Handlers.errorHandler());
 
 // Handle errors independently from the normal PL error handling
-router.use(require('./error'));
+router.use(require('./error').default);
 
-module.exports = router;
+export default router;
