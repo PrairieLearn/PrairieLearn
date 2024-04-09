@@ -9,6 +9,7 @@ import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types';
 import { selectCoursesWithEditAccess } from '../models/course';
+import { idsEqual } from './id';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -23,26 +24,34 @@ export async function setQuestionCopyTargets(res: Response) {
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
   });
-  res.locals.question_copy_targets = editableCourses.map((course) => {
-    const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+  res.locals.question_copy_targets = editableCourses
+    .filter(
+      (course) =>
+        // The example course cannot be updated in the web interface.
+        !course.example_course &&
+        // Question copying cannot be done within the same course.
+        !idsEqual(course.id, res.locals.course.id),
+    )
+    .map((course) => {
+      const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
 
-    // The question copy form will POST to a different URL for each course, so
-    // we need to generate a corresponding CSRF token for each one.
-    const csrfToken = generateSignedToken(
-      {
-        url: copyUrl,
-        authn_user_id: res.locals.authn_user.user_id,
-      },
-      config.secretKey,
-    );
+      // The question copy form will POST to a different URL for each course, so
+      // we need to generate a corresponding CSRF token for each one.
+      const csrfToken = generateSignedToken(
+        {
+          url: copyUrl,
+          authn_user_id: res.locals.authn_user.user_id,
+        },
+        config.secretKey,
+      );
 
-    return {
-      id: course.id,
-      short_name: course.short_name,
-      copy_url: copyUrl,
-      __csrf_token: csrfToken,
-    };
-  });
+      return {
+        id: course.id,
+        short_name: course.short_name,
+        copy_url: copyUrl,
+        __csrf_token: csrfToken,
+      };
+    });
 }
 
 export async function copyQuestionBetweenCourses(

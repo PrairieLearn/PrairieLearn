@@ -28,15 +28,7 @@ SELECT
     WHEN aar.password IS NULL THEN '—'
     ELSE aar.password
   END AS password,
-  CASE
-    WHEN aar.exam_uuid IS NULL THEN '—'
-    WHEN pt_x.id IS NOT NULL THEN '—'
-    WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_uuid
-    WHEN NOT $link_exam_id THEN ps_c.rubric || ': ' || e.exam_string
-    ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/' || ps_c.course_id || '/exam/' || e.exam_id || '">' || ps_c.rubric || ': ' || e.exam_string || '</a>'
-  END AS exam,
   aar.exam_uuid,
-  e.exam_id AS ps_exam_id,
   pt_c.id AS pt_course_id,
   pt_c.name AS pt_course_name,
   pt_x.id AS pt_exam_id,
@@ -49,12 +41,9 @@ FROM
   assessment_access_rules AS aar
   JOIN assessments AS a ON (a.id = aar.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN exams AS e ON (e.uuid = aar.exam_uuid)
-  LEFT JOIN courses AS ps_c ON (ps_c.course_id = e.course_id)
   LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = aar.exam_uuid)
   LEFT JOIN pt_courses AS pt_c ON (pt_c.id = pt_x.course_id)
 WHERE
   a.id = $assessment_id
-  AND ((aar.role > 'Student') IS NOT TRUE)
 ORDER BY
   aar.number;

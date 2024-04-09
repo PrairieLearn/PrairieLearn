@@ -1,6 +1,7 @@
 const express = require('express');
 
 const error = require('@prairielearn/error');
+const Sentry = require('@prairielearn/sentry');
 
 const router = express.Router();
 
@@ -21,12 +22,12 @@ router.use(require('./prettyPrintJson'));
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id(\\d+)', [
-  require('../../middlewares/authzCourseOrInstance'),
+  require('../../middlewares/authzCourseOrInstance').default,
   // Asserts that the user has either course preview or course instance student
   // data access. If a route provides access to student data, you should also
   // include the `authzHasCourseInstanceView` middleware to ensure that access
   // to student data is properly limited.
-  require('../../middlewares/authzHasCoursePreviewOrInstanceView'),
+  require('../../middlewares/authzHasCoursePreviewOrInstanceView').default,
   require('./endpoints/courseInstanceInfo'),
 ]);
 
@@ -58,7 +59,10 @@ router.use(
 // If no earlier routes matched, 404 the route
 router.use(require('./notFound'));
 
-// Handle errors independently from the normal PL eror handling
+// The Sentry error handler must come before our own.
+router.use(Sentry.Handlers.errorHandler());
+
+// Handle errors independently from the normal PL error handling
 router.use(require('./error'));
 
 module.exports = router;

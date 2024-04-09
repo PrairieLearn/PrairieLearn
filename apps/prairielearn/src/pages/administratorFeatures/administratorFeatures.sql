@@ -33,6 +33,7 @@ SELECT
 FROM
   institutions
 ORDER BY
+  short_name,
   long_name,
   id;
 
@@ -46,6 +47,7 @@ WHERE
   AND deleted_at IS NULL
 ORDER BY
   short_name,
+  title,
   id;
 
 -- BLOCK select_course_instances_for_course
@@ -57,5 +59,6 @@ WHERE
   course_id = $course_id
   AND deleted_at IS NULL
 ORDER BY
+  short_name,
   long_name,
   id;

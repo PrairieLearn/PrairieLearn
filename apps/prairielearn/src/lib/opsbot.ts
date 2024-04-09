@@ -51,7 +51,7 @@ export async function sendSlackMessage(
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       text: msg,
-      channel: channel,
+      channel,
       as_user: true,
     }),
   });

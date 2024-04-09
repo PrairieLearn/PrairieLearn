@@ -134,8 +134,8 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   sqlError.message = err.message;
 
   return addDataToError(err, {
-    sqlError: sqlError,
-    sql: sql,
+    sqlError,
+    sql,
     sqlParams: params,
   });
 }
@@ -1057,7 +1057,7 @@ export class PostgresPool {
 
     let iterateCalled = false;
     const iterator: CursorIterator<z.infer<Model>> = {
-      iterate: async function* (batchSize: number) {
+      async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
         // definitely doing something wrong.
         if (iterateCalled) {
@@ -1088,7 +1088,7 @@ export class PostgresPool {
           }
         }
       },
-      stream: function (batchSize: number) {
+      stream(batchSize: number) {
         const transform = new Transform({
           readableObjectMode: true,
           writableObjectMode: true,

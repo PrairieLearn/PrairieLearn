@@ -107,7 +107,7 @@ export interface createObservableValueGaugesOptions extends MetricOptions {
  * - `${name}.max`
  * - `${name}.avg`
  */
-export async function createObservableValueGauges(
+export function createObservableValueGauges(
   meter: Meter,
   name: string,
   options: createObservableValueGaugesOptions,

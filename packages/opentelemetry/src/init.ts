@@ -131,7 +131,7 @@ let tracerProvider: NodeTracerProvider | null;
 
 export interface OpenTelemetryConfigEnabled {
   openTelemetryEnabled: true;
-  openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
+  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
@@ -160,7 +160,9 @@ function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
+function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | null {
+  if (!config.openTelemetryExporter) return null;
+
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
@@ -213,12 +215,13 @@ function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExport
   }
 }
 
-function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor {
+function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor | null {
   if (typeof config.openTelemetrySpanProcessor === 'object') {
     return config.openTelemetrySpanProcessor;
   }
 
   const traceExporter = getTraceExporter(config);
+  if (!traceExporter) return null;
 
   switch (config.openTelemetrySpanProcessor ?? 'batch') {
     case 'batch': {
@@ -294,7 +297,9 @@ export async function init(config: OpenTelemetryConfig) {
     sampler,
     resource,
   });
-  nodeTracerProvider.addSpanProcessor(spanProcessor);
+  if (spanProcessor) {
+    nodeTracerProvider.addSpanProcessor(spanProcessor);
+  }
   nodeTracerProvider.register();
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 

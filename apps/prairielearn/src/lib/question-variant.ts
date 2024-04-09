@@ -66,7 +66,7 @@ async function makeVariant(
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
   const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
   let variant: VariantCreationData = {
-    variant_seed: variant_seed,
+    variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
     options: data.options || {},
@@ -95,7 +95,7 @@ async function makeVariant(
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
     variant = {
-      variant_seed: variant_seed,
+      variant_seed,
       params: data.params || {},
       true_answer: data.true_answer || {},
       options: data.options || {},
@@ -287,7 +287,7 @@ async function makeAndInsertVariant(
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
     }
 
-    const variant_id = await sqldb.queryRow(
+    return await sqldb.queryRow(
       sql.insert_variant,
       {
         ...variantData,
@@ -302,11 +302,6 @@ async function makeAndInsertVariant(
         course_id: variant_course.id,
         client_fingerprint_id,
       },
-      IdSchema,
-    );
-    return await sqldb.callRow(
-      'variants_select',
-      [variant_id, question_id, instance_question_id],
       VariantWithFormattedDateSchema,
     );
   });

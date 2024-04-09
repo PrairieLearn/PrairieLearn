@@ -22,8 +22,8 @@ const CJS_ONLY_MODULES = new Set([
   'express',
   'express-async-handler',
   'express-list-endpoints',
-  'fetch-cookie',
   'form-data',
+  'get-port',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
@@ -41,7 +41,6 @@ const CJS_ONLY_MODULES = new Set([
   'winston-transport',
   // Relative paths to PrairieLearn files.
   'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzCourseOrInstance',
   'apps/prairielearn/src/middlewares/authzIsAdministrator',
   'apps/prairielearn/src/middlewares/logPageView',
   'apps/prairielearn/src/middlewares/staticNodeModules',

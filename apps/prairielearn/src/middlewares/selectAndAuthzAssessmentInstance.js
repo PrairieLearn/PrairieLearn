@@ -1,22 +1,24 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
+// @ts-check
+import * as _ from 'lodash';
+const asyncHandler = require('express-async-handler');
 
-var sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = function (req, res, next) {
-  var params = {
+export async function selectAndAuthzAssessmentInstance(req, res) {
+  const result = await sqldb.queryAsync(sql.select_and_auth, {
     assessment_instance_id: req.params.assessment_instance_id,
     course_instance_id: res.locals.course_instance.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
-  };
-  sqldb.query(sql.select_and_auth, params, function (err, result) {
-    if (ERR(err, next)) return;
-    if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
-    _.assign(res.locals, result.rows[0]);
-    next();
   });
-};
+  if (result.rowCount === 0) throw error.make(403, 'Access denied');
+  _.assign(res.locals, result.rows[0]);
+}
+
+export default asyncHandler(async (req, res, next) => {
+  await selectAndAuthzAssessmentInstance(req, res);
+  next();
+});

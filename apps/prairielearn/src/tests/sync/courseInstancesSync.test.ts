@@ -247,7 +247,7 @@ describe('Course instance syncing', () => {
     const courseData = util.getCourseData();
     const courseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = courseInstance;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the course instance and re-sync
     courseInstance.courseInstance.uuid = '276eeddb-74e1-44e5-bfc5-3c39d79afa85';
@@ -265,7 +265,7 @@ describe('Course instance syncing', () => {
     const courseData = util.getCourseData();
     const originalCourseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and long name of the course instance and re-sync
     const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
@@ -285,7 +285,7 @@ describe('Course instance syncing', () => {
     const courseData = util.getCourseData();
     const originalCourseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the course instance, add an error and re-sync
     const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
@@ -321,7 +321,7 @@ describe('Course instance syncing', () => {
     const originalCourseInstance = makeCourseInstance();
     originalCourseInstance.courseInstance.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
     courseData.courseInstances['a'] = originalCourseInstance;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above course instance to a new directory AND add another with the
     // same UUID.

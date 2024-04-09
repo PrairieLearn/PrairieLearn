@@ -19,8 +19,7 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
 import { ensureCheckedEnrollment } from '../../models/enrollment';
-import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
-import { promisify } from 'node:util';
+import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -77,19 +76,14 @@ router.post(
     if (req.body.__action === 'enroll') {
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
-      await promisify(authzCourseOrInstance)(req, res);
+      await authzCourseOrInstance(req, res);
 
-      const didEnroll = await ensureCheckedEnrollment({
+      await ensureCheckedEnrollment({
         institution,
+        course,
         course_instance,
         authz_data: res.locals.authz_data,
-        redirect: res.redirect.bind(res),
       });
-
-      if (!didEnroll) {
-        // We've already been redirected to the appropriate page; do nothing.
-        return;
-      }
 
       flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);

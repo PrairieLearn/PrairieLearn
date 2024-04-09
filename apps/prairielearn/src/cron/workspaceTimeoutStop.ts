@@ -1,4 +1,3 @@
-import * as util from 'node:util';
 import { logger } from '@prairielearn/logger';
 import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
@@ -77,8 +76,8 @@ async function stopInLaunchingTimeoutWorkspaces() {
   }
 }
 
-export const run = util.callbackify(async () => {
+export async function run() {
   await stopLaunchedTimeoutWorkspaces();
   await stopHeartbeatTimeoutWorkspaces();
   await stopInLaunchingTimeoutWorkspaces();
-});
+}
