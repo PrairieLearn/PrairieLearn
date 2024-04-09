@@ -48,7 +48,9 @@ async function loadServer(questionServerPath, coursePath) {
         setTimeout(() => resolve(server), 0);
       },
       (err) => {
-        const e = error.makeWithData(`Error loading ${path.basename(questionServerPath)}`, err);
+        const e = new error.AugmentedError(`Error loading ${path.basename(questionServerPath)}`, {
+          data: err,
+        });
         if (err.originalError != null) {
           e.stack = err.originalError.stack + '\n\n' + err.stack;
         }

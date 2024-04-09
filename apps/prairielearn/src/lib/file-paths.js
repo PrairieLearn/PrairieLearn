@@ -113,7 +113,9 @@ export async function questionFilePathAsync(
         };
       } else {
         // No default file, give up
-        throw error.makeWithData('File not found', { fullPath, fullDefaultFilePath });
+        throw new error.AugmentedError('File not found', {
+          data: { fullPath, fullDefaultFilePath },
+        });
       }
     }
   }

@@ -33,8 +33,10 @@ router.get(
     if (res.locals.assessment.multiple_instance) {
       if (res.locals.assessment.type === 'Homework') {
         return next(
-          error.makeWithData('"Homework" assessments do not support multiple instances', {
-            assessment: res.locals.assessment,
+          new error.AugmentedError('"Homework" assessments do not support multiple instances', {
+            data: {
+              assessment: res.locals.assessment,
+            },
           }),
         );
       }
