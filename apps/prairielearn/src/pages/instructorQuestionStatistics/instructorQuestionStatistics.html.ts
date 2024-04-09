@@ -12,6 +12,7 @@ import {
   IdSchema,
   QuestionSchema,
 } from '../../lib/db-types';
+import { formatFloat } from '../../lib/format';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -101,30 +102,22 @@ export function InstructorQuestionStatistics({
                             ${row.assessment_label}
                           </a>
                         </td>
+                        <td class="text-center">${formatFloat(row.mean_question_score, 1)}</td>
+                        <td class="text-center">${formatFloat(row.median_question_score, 1)}</td>
+                        <td class="text-center">${formatFloat(row.question_score_variance, 1)}</td>
+                        <td class="text-center">${formatFloat(row.discrimination, 1)}</td>
+                        <td class="text-center">${formatFloat(row.some_submission_perc, 1)}</td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.mean_question_score, 1)}
+                          ${formatFloat(row.some_perfect_submission_perc, 1)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.median_question_score, 1)}
+                          ${formatFloat(row.some_nonzero_submission_perc, 1)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.question_score_variance, 1)}
-                        </td>
-                        <td class="text-center">${resLocals.formatFloat(row.discrimination, 1)}</td>
-                        <td class="text-center">
-                          ${resLocals.formatFloat(row.some_submission_perc, 1)}
+                          ${formatFloat(row.average_first_submission_score, 2)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.some_perfect_submission_perc, 1)}
-                        </td>
-                        <td class="text-center">
-                          ${resLocals.formatFloat(row.some_nonzero_submission_perc, 1)}
-                        </td>
-                        <td class="text-center">
-                          ${resLocals.formatFloat(row.average_first_submission_score, 2)}
-                        </td>
-                        <td class="text-center">
-                          ${resLocals.formatFloat(row.first_submission_score_variance, 2)}
+                          ${formatFloat(row.first_submission_score_variance, 2)}
                         </td>
                         <td class="text-center">
                           ${row.first_submission_score_hist !== null
@@ -132,10 +125,10 @@ export function InstructorQuestionStatistics({
                             : ''}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.average_last_submission_score, 2)}
+                          ${formatFloat(row.average_last_submission_score, 2)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.last_submission_score_variance, 2)}
+                          ${formatFloat(row.last_submission_score_variance, 2)}
                         </td>
                         <td class="text-center">
                           ${row.last_submission_score_hist !== null
@@ -143,10 +136,10 @@ export function InstructorQuestionStatistics({
                             : ''}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.average_max_submission_score, 2)}
+                          ${formatFloat(row.average_max_submission_score, 2)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.max_submission_score_variance, 2)}
+                          ${formatFloat(row.max_submission_score_variance, 2)}
                         </td>
                         <td class="text-center">
                           ${row.max_submission_score_hist !== null
@@ -154,10 +147,10 @@ export function InstructorQuestionStatistics({
                             : ''}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.average_average_submission_score, 2)}
+                          ${formatFloat(row.average_average_submission_score, 2)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.average_submission_score_variance, 2)}
+                          ${formatFloat(row.average_submission_score_variance, 2)}
                         </td>
                         <td class="text-center">
                           ${row.average_submission_score_hist !== null
@@ -194,10 +187,10 @@ export function InstructorQuestionStatistics({
                             : 'N/A'}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.average_number_submissions, 2)}
+                          ${formatFloat(row.average_number_submissions, 2)}
                         </td>
                         <td class="text-center">
-                          ${resLocals.formatFloat(row.number_submissions_variance, 2)}
+                          ${formatFloat(row.number_submissions_variance, 2)}
                         </td>
                         <td class="text-center">
                           ${row.number_submissions_hist !== null

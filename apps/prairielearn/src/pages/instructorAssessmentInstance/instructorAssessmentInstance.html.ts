@@ -6,6 +6,7 @@ import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
 import { Modal } from '../../components/Modal.html';
+import { formatFloat } from '../../lib/format';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -562,10 +563,10 @@ export function InstructorAssessmentInstance({
                       <td>${row.some_submission}</td>
                       <td>${row.some_perfect_submission}</td>
                       <td>${row.some_nonzero_submission}</td>
-                      <td>${resLocals.formatFloat(row.first_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.last_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.max_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.average_submission_score, 2)}</td>
+                      <td>${formatFloat(row.first_submission_score, 2)}</td>
+                      <td>${formatFloat(row.last_submission_score, 2)}</td>
+                      <td>${formatFloat(row.max_submission_score, 2)}</td>
+                      <td>${formatFloat(row.average_submission_score, 2)}</td>
                     </tr>
                   `;
                 })}
