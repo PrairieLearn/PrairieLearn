@@ -30,7 +30,6 @@ from typing import Any, Iterable, Sequence
 
 import orjson
 import question_phases
-import zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
@@ -125,15 +124,11 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
 # debug the problem.
 def try_dumps(obj: Any):
     try:
-        assert_start = time.time()
-        zu.assert_all_integers_within_limits(obj)
-        print(f"Asserted integers in {time.time() - assert_start:.3f}s")
-
         dump_start = time.time()
         dumped_json = orjson.dumps(
             obj, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_STRICT_INTEGER
         )
-        print(f"Dumped json in {time.time() - dump_start:.3f}s")
+        print(f"Dumped json in {time.time() - dump_start:f}s")
         return dumped_json
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")
@@ -158,7 +153,7 @@ def worker_loop() -> None:
             # unpack the input line as JSON
             load_start = time.time()
             inp = orjson.loads(json_inp)
-            print(f"Loaded json in {time.time() - load_start:.3f}s")
+            print(f"Loaded json in {time.time() - load_start:f}s")
 
             # get the contents of the JSON input
             file = inp.get("file", None)
