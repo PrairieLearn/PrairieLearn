@@ -848,6 +848,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     args = [phase, codeCaller, data, context, $];
   }
 
+  const start = Date.now();
   const {
     courseIssues,
     data: resultData,
@@ -855,6 +856,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
     fileData,
     renderedElementNames,
   } = await processFunction(...args);
+  console.log(`processQuestionHtml: ${phase} took ${Date.now() - start}ms`);
 
   if (phase === 'grade' || phase === 'test') {
     if (context.question.partial_credit) {

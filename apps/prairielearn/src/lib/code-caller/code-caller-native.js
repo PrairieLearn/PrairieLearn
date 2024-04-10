@@ -367,12 +367,13 @@ class CodeCallerNative {
   _handleStdoutData(data) {
     this.debug('enter _handleStdoutData()');
     this._checkState([IN_CALL, EXITING]);
-    if (this.state === IN_CALL) {
-      this.outputStdout.push(data);
-      this.outputBoth.push(data);
-    } else {
-      this._logError(`Unexpected STDOUT data: ${data}`);
-    }
+    console.log(data);
+    // if (this.state === IN_CALL) {
+    //   this.outputStdout.push(data);
+    //   this.outputBoth.push(data);
+    // } else {
+    //   this._logError(`Unexpected STDOUT data: ${data}`);
+    // }
     this.debug('exit _handleStdoutData()');
   }
 
@@ -380,12 +381,13 @@ class CodeCallerNative {
     this.debug('enter _handleStderrData()');
     this.debug(`_handleStderrData(), data: ${data}`);
     this._checkState([IN_CALL, EXITING, WAITING]);
-    if (this.state === IN_CALL) {
-      this.outputStderr.push(data);
-      this.outputBoth.push(data);
-    } else {
-      this._logError(`Unexpected STDERR data: ${data}`);
-    }
+    console.log(data);
+    // if (this.state === IN_CALL) {
+    //   this.outputStderr.push(data);
+    //   this.outputBoth.push(data);
+    // } else {
+    //   this._logError(`Unexpected STDERR data: ${data}`);
+    // }
     this.debug('exit _handleStderrData()');
   }
 

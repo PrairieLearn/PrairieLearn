@@ -28,6 +28,7 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any, Iterable, Sequence
 
+import orjson
 import question_phases
 import zygote_utils as zu
 
@@ -122,10 +123,18 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any):
     try:
+        assert_start = time.time()
         zu.assert_all_integers_within_limits(obj)
-        return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
+        print(f"Asserted integers in {time.time() - assert_start:.3f}s")
+
+        dump_start = time.time()
+        dumped_json = orjson.dumps(
+            obj, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_STRICT_INTEGER
+        )
+        print(f"Dumped json in {time.time() - dump_start:.3f}s")
+        return dumped_json
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")
         raise
@@ -147,7 +156,9 @@ def worker_loop() -> None:
             # wait for a single line of input
             json_inp = sys.stdin.readline()
             # unpack the input line as JSON
-            inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+            load_start = time.time()
+            inp = orjson.loads(json_inp)
+            print(f"Loaded json in {time.time() - load_start:.3f}s")
 
             # get the contents of the JSON input
             file = inp.get("file", None)
@@ -268,7 +279,7 @@ def worker_loop() -> None:
                 sys.stdout.flush()
 
                 # write the return value (JSON on a single line)
-                outf.write(try_dumps({"present": True, "val": val}))
+                outf.buffer.write(try_dumps({"present": True, "val": val}))
                 outf.write("\n")
                 outf.flush()
 
@@ -320,49 +331,23 @@ def worker_loop() -> None:
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
                 if (fcn != "file") and (fcn != "render"):
-                    if val is None:
-                        json_outp = try_dumps(
-                            {"present": True, "val": args[-1]}, allow_nan=False
-                        )
-                    else:
-                        json_outp_passed = try_dumps(
-                            {"present": True, "val": args[-1]},
-                            sort_keys=True,
-                            allow_nan=False,
-                        )
-                        json_outp = try_dumps(
-                            {"present": True, "val": val},
-                            sort_keys=True,
-                            allow_nan=False,
-                        )
-                        if json_outp_passed != json_outp:
-                            sys.stderr.write(
-                                'WARNING: Passed and returned value of "data" differ in the function '
-                                + str(fcn)
-                                + "() in the file "
-                                + str(cwd)
-                                + "/"
-                                + str(file)
-                                + ".py.\n\n passed:\n  "
-                                + str(args[-1])
-                                + "\n\n returned:\n  "
-                                + str(val)
-                                + '\n\nThere is no need to be returning "data" at all (it is mutable, i.e., passed by reference). In future, this code will throw a fatal error. For now, the returned value of "data" was used and the passed value was discarded.'
-                            )
+                    if val is not None:
+                        # TODO: is this an appropriate exception type?
+                        raise ValueError(f"Function {fcn} should not return a value.")
+
+                    json_outp = try_dumps({"present": True, "val": args[-1]})
                 else:
-                    json_outp = try_dumps(
-                        {"present": True, "val": val}, allow_nan=False
-                    )
+                    json_outp = try_dumps({"present": True, "val": val})
             else:
                 # the function wasn't present, so report this
-                json_outp = try_dumps({"present": False}, allow_nan=False)
+                json_outp = try_dumps({"present": False})
 
             # make sure all output streams are flushed
             sys.stderr.flush()
             sys.stdout.flush()
 
             # write the return value (JSON on a single line)
-            outf.write(json_outp)
+            outf.buffer.write(json_outp)
             outf.write("\n")
             outf.flush()
 
