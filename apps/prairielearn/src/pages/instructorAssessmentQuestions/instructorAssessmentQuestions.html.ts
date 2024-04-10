@@ -221,7 +221,7 @@ function AssessmentQuestionsTable({
                   <a href="${urlPrefix}/question/${question.question_id}/">
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
-                      : `&nbsp;&nbsp;&nbsp;&nbsp; ${question.alternative_group_number}.${question.number_in_alternative_group}.`}
+                      : html`<span class="ml-2">${question.alternative_group_number}.${question.number_in_alternative_group}.</span>`}
                     ${question.title}
                     ${renderEjs(__filename, "<%- include('../partials/issueBadge') %>", {
                       count: question.open_issue_count,
