@@ -870,7 +870,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     [
-      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/ansifySyncErrorsAndWarnings.js'),
       require('./middlewares/selectAssessments'),
     ],
@@ -1403,7 +1403,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
-      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/selectAndAuthzAssessment').default,
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
   );
@@ -1494,7 +1494,7 @@ module.exports.initExpress = function () {
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
-    require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/selectAndAuthzAssessment').default,
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
     require('./pages/studentAssessment/studentAssessment'),
@@ -1566,7 +1566,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
     [
-      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesCourse/clientFilesCourse'),
     ],
@@ -1574,7 +1574,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
     [
-      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
     ],
@@ -1582,7 +1582,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
-      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],

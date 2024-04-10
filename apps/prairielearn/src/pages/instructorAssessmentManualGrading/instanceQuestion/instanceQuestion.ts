@@ -116,6 +116,11 @@ const PostBodySchema = z.union([
     score_auto_points: z.coerce.number().nullish(),
     score_auto_percent: z.coerce.number().nullish(),
     submission_note: z.string().nullish(),
+    unsafe_issue_ids_close: IdSchema.or(z.record(z.string(), IdSchema))
+      .nullish()
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -202,6 +207,14 @@ router.post(
 
       if (modified_at_conflict) {
         return res.redirect(req.baseUrl + `?conflict_grading_job_id=${grading_job_id}`);
+      }
+      // Only close issues if the submission was successfully graded
+      if (body.unsafe_issue_ids_close.length > 0) {
+        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+          issue_ids: body.unsafe_issue_ids_close,
+          instance_question_id: res.locals.instance_question.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        });
       }
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
