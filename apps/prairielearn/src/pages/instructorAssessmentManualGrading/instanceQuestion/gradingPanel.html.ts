@@ -5,7 +5,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html';
-import { type User } from '../../../lib/db-types';
+import { type Issue, type User } from '../../../lib/db-types';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;
@@ -39,6 +39,7 @@ export function GradingPanel({
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
+  const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || (disable ? 'Next' : 'Skip');
 
@@ -117,6 +118,28 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
+        ${open_issues.length > 0 && context !== 'existing'
+          ? html`
+              <li class="form-group list-group-item">
+                <div class="form-check">
+                  ${open_issues.map(
+                    (issue) => html`
+                      <input
+                        type="checkbox"
+                        id="close-issue-checkbox-${issue.id}"
+                        class="form-check-input"
+                        name="unsafe_issue_ids_close"
+                        value="${issue.id}"
+                      />
+                      <label class="w-100 form-check-label" for="close-issue-checkbox-${issue.id}">
+                        Close issue #${issue.id}
+                      </label>
+                    `,
+                  )}
+                </div>
+              </li>
+            `
+          : ''}
         <li class="list-group-item d-flex align-items-center">
           ${!hide_back_to_question
             ? html`

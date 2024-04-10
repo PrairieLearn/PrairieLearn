@@ -476,10 +476,13 @@ export async function leaveGroup(
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
-      throw error.make(404, 'User is not part of a group in this assessment');
+      throw new error.HttpStatusError(404, 'User is not part of a group in this assessment');
     }
     if (checkGroupId != null && !idsEqual(groupId, checkGroupId)) {
-      throw error.make(403, 'Group ID does not match the user ID and assessment ID provided');
+      throw new error.HttpStatusError(
+        403,
+        'Group ID does not match the user ID and assessment ID provided',
+      );
     }
 
     const groupConfig = await getGroupConfig(assessmentId);
@@ -555,7 +558,7 @@ export async function updateGroupRoles(
     const groupInfo = await getGroupInfo(groupId, groupConfig);
 
     if (!hasStaffPermission && !canUserAssignGroupRoles(groupInfo, userId)) {
-      throw error.make(403, 'User does not have permission to assign roles');
+      throw new error.HttpStatusError(403, 'User does not have permission to assign roles');
     }
 
     // Convert form data to valid input format for a SQL function
@@ -563,10 +566,10 @@ export async function updateGroupRoles(
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
       if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
-        throw error.make(403, `User ${userId} is not a member of this group`);
+        throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
       }
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
-        throw error.make(403, `Role ${roleId} does not exist for this assessment`);
+        throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
         group_id: groupId,
@@ -610,7 +613,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
     IdSchema,
   );
   if (deleted_group_id == null) {
-    throw error.make(404, 'Group does not exist.');
+    throw new error.HttpStatusError(404, 'Group does not exist.');
   }
 }
 

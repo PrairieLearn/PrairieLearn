@@ -66,7 +66,7 @@ export async function questionFilePathAsync(
     };
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
     if (result.rowCount === 0) {
-      throw error.make(
+      throw new error.HttpStatusError(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
       );
@@ -113,7 +113,9 @@ export async function questionFilePathAsync(
         };
       } else {
         // No default file, give up
-        throw error.makeWithData('File not found', { fullPath, fullDefaultFilePath });
+        throw new error.AugmentedError('File not found', {
+          data: { fullPath, fullDefaultFilePath },
+        });
       }
     }
   }

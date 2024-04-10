@@ -25,7 +25,7 @@ const logPageView = promisify(LogPageView(path.basename(__filename, '.js')));
 async function processIssue(req, res) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    throw error.make(400, 'A description of the issue must be provided');
+    throw new error.HttpStatusError(400, 'A description of the issue must be provided');
   }
 
   const variantId = req.body.__variant_id;
@@ -57,15 +57,15 @@ router.post(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel } = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: null,
@@ -76,7 +76,7 @@ router.get(
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
