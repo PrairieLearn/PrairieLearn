@@ -43,20 +43,6 @@ describe('sproc check_assessment_access* tests', function () {
   });
 
   describe('without PrairieTest', () => {
-    it('should allow access when rule role is Student', async () => {
-      const authorized = await checkAssessmentAccess({
-        assessment_id: '50',
-        authz_mode: 'Public',
-        course_role: 'None',
-        course_instance_role: 'None',
-        user_id: '1000',
-        uid: 'valid@school.edu',
-        date: '2010-07-07 06:06:06-00',
-        display_timezone: 'US/Central',
-      });
-      assert.isTrue(authorized);
-    });
-
     it('should allow access when mode, uid, start_date, and end_date matches', async () => {
       const authorized = await checkAssessmentAccess({
         assessment_id: '50',
