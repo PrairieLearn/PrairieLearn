@@ -25,6 +25,7 @@ export const InstitutionAdminSaml = ({
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
   const assertionConsumerServiceUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/callback`;
   const testSamlUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test`;
+  const testSamlStrictUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test,strict`;
 
   return html`
     <!doctype html>
@@ -281,11 +282,19 @@ ${samlProvider?.certificate ?? ''}</textarea
           ${hasSamlProvider
             ? html`
                 <p>
-                  <a href="${testSamlUrl}" target="_blank"> Test SAML login </a>
+                  <a href="${testSamlUrl}" target="_blank">Test SAML login</a>: Shows all attributes
+                  from the SAML IdP without establishing a session.
                 </p>
 
                 <p>
-                  <a href="${metadataUrl}" target="_blank"> View SAML metadata </a>
+                  <a href="${testSamlStrictUrl}" target="_blank">Test SAML login (strict mode)</a>:
+                  Forces "validate audience", "require signed assertions", and "require signed
+                  response" to be enabled.
+                </p>
+
+                <p>
+                  <a href="${metadataUrl}" target="_blank">View SAML metadata</a>: Metadata can be
+                  provided to institutions to help them configure their SAML IdP.
                 </p>
 
                 <button
