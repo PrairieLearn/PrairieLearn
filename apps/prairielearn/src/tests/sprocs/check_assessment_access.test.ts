@@ -50,7 +50,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'valid@school.edu',
+        uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -64,7 +64,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'valid@school.edu',
+        uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -78,7 +78,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'invalid@school.edu',
+        uid: 'invalid@example.com',
         date: '2010-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -92,7 +92,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'valid@school.edu',
+        uid: 'valid@example.com',
         date: '2008-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -106,7 +106,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'valid@school.edu',
+        uid: 'valid@example.com',
         date: '2012-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -120,7 +120,7 @@ describe('sproc check_assessment_access* tests', function () {
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',
-        uid: 'valid@school.edu',
+        uid: 'valid@example.com',
         date: '2010-07-07 06:06:06-00',
         display_timezone: 'US/Central',
       });
@@ -137,7 +137,7 @@ describe('sproc check_assessment_access* tests', function () {
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
-          uid: 'valid@school.edu',
+          uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
           display_timezone: 'US/Central',
         });
@@ -151,7 +151,7 @@ describe('sproc check_assessment_access* tests', function () {
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
-          uid: 'valid@school.edu',
+          uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
           display_timezone: 'US/Central',
         });
@@ -171,7 +171,7 @@ describe('sproc check_assessment_access* tests', function () {
       //     course_role: 'None',
       //     course_instance_role: 'None',
       //     user_id: '1000',
-      //     uid: 'valid@school.edu',
+      //     uid: 'valid@example.com',
       //     date: '2010-07-07 06:06:06-00',
       //     display_timezone: 'US/Central',
       //   });
@@ -185,7 +185,7 @@ describe('sproc check_assessment_access* tests', function () {
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
-          uid: 'valid@school.edu',
+          uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
           display_timezone: 'US/Central',
         });
@@ -199,7 +199,7 @@ describe('sproc check_assessment_access* tests', function () {
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
-          uid: 'valid@school.edu',
+          uid: 'valid@example.com',
           date: '2010-07-07 06:06:06-00',
           display_timezone: 'US/Central',
         });

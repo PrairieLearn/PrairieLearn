@@ -4,7 +4,7 @@ WITH
     INSERT INTO
       users (user_id, uid)
     VALUES
-      (1000, 'student@school.edu')
+      (1000, 'student@example.com')
   ),
   setup_pt_courses AS (
     INSERT INTO
@@ -156,7 +156,7 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         null,
-        '{valid@school.edu}'
+        '{valid@example.com}'
       ),
       (
         52,
