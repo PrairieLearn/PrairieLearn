@@ -26,7 +26,7 @@ router.get(
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
     const rows = await sqldb.queryRows(
       sql.assessment_question_stats,
@@ -52,7 +52,7 @@ router.get(
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
 
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
@@ -112,7 +112,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );

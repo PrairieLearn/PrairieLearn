@@ -21,7 +21,12 @@ router.get('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
+    return next(
+      new error.HttpStatusError(
+        403,
+        'Access denied (must be course previewer or student data viewer)',
+      ),
+    );
   }
 
   debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
@@ -80,7 +85,12 @@ router.post('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
+    return next(
+      new error.HttpStatusError(
+        403,
+        'Access denied (must be course previewer or student data viewer)',
+      ),
+    );
   }
 
   if (req.body.__action === 'reset') {
@@ -128,7 +138,9 @@ router.post('/', function (req, res, next) {
   } else if (req.body.__action === 'changeDate') {
     let date = parseISO(req.body.pl_requested_date);
     if (!isValid(date)) {
-      return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
+      return next(
+        new error.HttpStatusError(400, `invalid requested date: ${req.body.pl_requested_date}`),
+      );
     }
     setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
       maxAge: 60 * 60 * 1000,
@@ -136,7 +148,7 @@ router.post('/', function (req, res, next) {
     setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else {
-    return next(error.make(400, 'unknown action: ' + res.locals.__action));
+    return next(new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action));
   }
 });
 

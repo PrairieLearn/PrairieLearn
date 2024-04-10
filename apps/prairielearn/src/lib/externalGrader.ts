@@ -172,11 +172,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
 export async function processGradingResult(content: any): Promise<void> {
   try {
     if (!_.isObject(content.grading)) {
-      throw error.makeWithData('invalid grading', { content });
+      throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
     if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
-      throw error.makeWithData('invalid grading.feedback', { content });
+      throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
     // There are two "succeeded" flags in the grading results. The first

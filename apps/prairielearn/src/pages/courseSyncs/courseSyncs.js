@@ -19,7 +19,7 @@ const router = express.Router();
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
   }
   const params = { course_id: res.locals.course.id };
   sqldb.query(sql.select_sync_job_sequences, params, function (err, result) {
@@ -117,7 +117,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be course editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (req.body.__action === 'pull') {
@@ -137,7 +137,7 @@ router.post(
       const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

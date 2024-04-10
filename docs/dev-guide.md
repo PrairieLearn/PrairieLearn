@@ -808,7 +808,7 @@ WHERE
         res.redirect(req.originalUrl);
       });
     } else {
-      return next(error.make(400, `unknown __action: ${req.body.__action}`));
+      return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   });
   ```

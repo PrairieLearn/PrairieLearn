@@ -22,7 +22,7 @@ const router = Router({ mergeParams: true });
 router.use(
   asyncHandler(async (req, res, next) => {
     if (!res.locals.lti13_enabled) {
-      throw error.make(403, 'Access denied (feature not available)');
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
     next();
   }),
@@ -81,7 +81,10 @@ router.get(
       paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
 
       if (!paramInstance) {
-        throw error.make(404, `LTI 1.3 instance ${req.params.unsafe_lti13_instance_id} not found`);
+        throw new error.HttpStatusError(
+          404,
+          `LTI 1.3 instance ${req.params.unsafe_lti13_instance_id} not found`,
+        );
       }
     }
 
@@ -154,7 +157,7 @@ router.post(
         flash('success', `Key ${key.kid} deleted.`);
         return res.redirect(req.originalUrl);
       } else {
-        throw error.make(500, 'error removing key');
+        throw new error.HttpStatusError(500, 'error removing key');
       }
     } else if (req.body.__action === 'update_platform') {
       const url = getCanonicalHost(req);
@@ -218,7 +221,7 @@ router.post(
       flash('success', `Instance deleted.`);
       return res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

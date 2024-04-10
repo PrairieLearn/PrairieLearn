@@ -230,7 +230,7 @@
     "axe-core": "^4.7.0",
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
-    "express-list-endpoints": "^6.0.0",
+    "express-list-endpoints": "^7.1.0",
     "form-data": "^4.0.0",
     "get-port": "^5.1.1",
     "jsdom": "^24.0.0",

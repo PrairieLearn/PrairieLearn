@@ -49,16 +49,16 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied. Must be course editor to make changes.');
+      throw new error.HttpStatusError(403, 'Access denied. Must be course editor to make changes.');
     }
 
     if (res.locals.course.example_course) {
-      throw error.make(403, 'Access denied. Cannot make changes to example course.');
+      throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
     if (req.body.__action === 'update_configuration') {
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
-        throw error.make(400, 'infoCourse.json does not exist');
+        throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
       const paths = getPaths(req, res);
 
@@ -123,7 +123,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
