@@ -10,7 +10,7 @@ const fileStore = require('../../lib/file-store');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
-  '/:unsafe_file_id/:unsafe_display_filename',
+  '/:unsafe_file_id(\\d+)/:unsafe_display_filename',
   asyncHandler(async (req, res, next) => {
     const params = {
       assessment_instance_id: res.locals.assessment_instance.id,
