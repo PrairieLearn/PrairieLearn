@@ -299,12 +299,12 @@ function AssessmentQuestionsTable({
                   : ''}
                 <td>
                   ${question.mean_question_score
-                    ? `${question.mean_question_score.toFixed(3)}`
+                    ? `${question.mean_question_score.toFixed(3)} %`
                     : ''}
                 </td>
                 <td>
                   ${question.avg_question_score_perc
-                    ? `${question.avg_question_score_perc.toFixed(3)}`
+                    ? `${question.avg_question_score_perc.toFixed(3)} %`
                     : ''}
                 </td>
                 <td class="text-center">
