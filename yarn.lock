@@ -3316,7 +3316,7 @@ __metadata:
     execa: ^5.1.1
     express: ^4.19.2
     express-async-handler: ^1.2.0
-    express-list-endpoints: ^6.0.0
+    express-list-endpoints: ^7.1.0
     express-session: ^1.18.0
     fabric: ^4.6.0
     fast-glob: ^3.3.2
@@ -8854,10 +8854,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express-list-endpoints@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "express-list-endpoints@npm:6.0.0"
-  checksum: 50ce3b8c3954fe62f27431938b2a9c200aa544455ef152082660c61d911f256903e4181f4dea94fbcbd59d4a271ea5bcf8149b4683748ac4ad54a1998a962e59
+"express-list-endpoints@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "express-list-endpoints@npm:7.1.0"
+  checksum: 2c9f72de4b946b4e32d0bec248ed3a2751d38b000ace7b305dd2a8f5e8efda478d4114d740c2df93e1b51ca9172f266386a9311dae831682fcb467392cf00756
   languageName: node
   linkType: hard
 
