@@ -71,6 +71,13 @@ def process(
     # Otherwise, this will remain `None`.
     result = None
 
+    # Copying data is potentially expensive, and most of it won't change as we
+    # process all the elements, so we'll make a deep copy of the data once and
+    # use that for future comparisons. For the few pieces of data that do
+    # change based on the element, we'll add and then delete them from
+    # `original_data` as needed.
+    original_data = copy.deepcopy(data)
+
     def process_element(
         element: lxml.html.HtmlElement,
     ) -> None | str | lxml.html.HtmlElement:
@@ -118,16 +125,17 @@ def process(
             # Make a deep copy of the data so that question/element code can't
             # modify the source data.
             data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
+            original_data["extensions"] = data["extensions"]
 
             # `base_url` and associated values are only present during the render phase.
             if phase == "render":
-                data["options"]["client_files_element_url"] = (
+                client_files_element_url = (
                     pathlib.Path(data["options"]["base_url"])
                     / "elements"
                     / element_info["name"]
                     / "clientFilesElement"
                 ).as_posix()
-                data["options"]["client_files_extensions_url"] = {
+                client_files_extensions_url = {
                     extension: (
                         pathlib.Path(data["options"]["base_url"])
                         / "elementExtensions"
@@ -138,7 +146,17 @@ def process(
                     for extension in data["extensions"]
                 }
 
-            old_data = copy.deepcopy(data)
+                data["options"]["client_files_element_url"] = client_files_element_url
+                data["options"][
+                    "client_files_extensions_url"
+                ] = client_files_extensions_url
+
+                original_data["options"][
+                    "client_files_element_url"
+                ] = client_files_element_url
+                original_data["options"][
+                    "client_files_extensions_url"
+                ] = client_files_extensions_url
 
             # Temporarily strip tail text from the element; the `parse_fragment`
             # function will choke on it.
@@ -150,7 +168,15 @@ def process(
             # Restore the tail text.
             element.tail = temp_tail
 
-            check_data(old_data, data, phase)
+            check_data(original_data, data, phase)
+
+            # Clean up changes to `data` and `original_data` for the next iteration.
+            data.pop("extensions", None)
+            data["options"].pop("client_files_element_url", None)
+            data["options"].pop("client_files_extensions_url", None)
+            original_data.pop("extensions", None)
+            original_data["options"].pop("client_files_element_url", None)
+            original_data["options"].pop("client_files_extensions_url", None)
 
             if phase == "render":
                 # TODO: validate that return value was a string?
@@ -172,9 +198,5 @@ def process(
 
     if phase == "file":
         result = filelike_to_string(result)
-
-    # We may have added an `extensions` property to the `data` object; remove it.
-    if "extensions" in data:
-        del data["extensions"]
 
     return result, processed_elements
