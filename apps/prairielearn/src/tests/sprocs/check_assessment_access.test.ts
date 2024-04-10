@@ -42,7 +42,7 @@ describe('sproc check_assessment_access* tests', function () {
     await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
   });
 
-  describe('check_assessment_access allowAccess parameter tests', () => {
+  describe('without PrairieTest', () => {
     it('should allow access when rule role is Student', async () => {
       const authorized = await checkAssessmentAccess({
         assessment_id: '50',
@@ -142,10 +142,8 @@ describe('sproc check_assessment_access* tests', function () {
     });
   });
 
-  /////////////////////////////////////////////////////////////////////////////
-
-  describe('check_assessment_access PrairieTest scheduler tests', function () {
-    describe('No checked in reservation', () => {
+  describe('with PrairieTest', function () {
+    describe('without checked-in reservation', () => {
       it('should allow access to an exam without exam_uuid', async () => {
         const authorized = await checkAssessmentAccess({
           assessment_id: '10',
@@ -175,7 +173,7 @@ describe('sproc check_assessment_access* tests', function () {
       });
     });
 
-    describe('Checked in reservation', () => {
+    describe('with checked-in reservation', () => {
       before(`create checked-in reservation for student`, async () => {
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
