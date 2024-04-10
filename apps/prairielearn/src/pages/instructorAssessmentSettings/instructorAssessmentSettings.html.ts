@@ -160,6 +160,7 @@ export function InstructorAssessmentSettings({
                                     .id}/file_edit/${infoAssessmentPath}"
                                 >
                                   <i class="fa fa-edit"></i>
+                                  <span>Edit</span>
                                 </a>
                               `
                             : ''}
