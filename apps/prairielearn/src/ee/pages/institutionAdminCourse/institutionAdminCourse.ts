@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
 import { CourseSchema } from '../../../lib/db-types';
@@ -89,7 +89,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `Unknown action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );

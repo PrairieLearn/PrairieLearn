@@ -18,13 +18,13 @@ router.get(
     });
 
     if (!questionSharingEnabled) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         showAddQuestionButton: false,
         resLocals: res.locals,
       }),

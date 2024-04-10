@@ -35,7 +35,7 @@ Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-fa
         "credit": 100
     },
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -64,7 +64,7 @@ This configuration is good when:
 ```json
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -73,7 +73,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "uids": ["student3@example.com", "student4@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",
@@ -121,7 +121,7 @@ This configuration is good when:
 ```json
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T06:00:00",
@@ -164,7 +164,7 @@ This configuration is good when:
 "allowRealTimeGrading": false,
 "allowAccess": [
     {
-        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "uids": ["student1@example.com", "student2@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -181,7 +181,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "uids": ["student3@example.com", "student4@example.com"],
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",

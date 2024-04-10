@@ -57,7 +57,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
       // If the repo is not ready yet, this will fail with "repo is empty"
       await client.repos.getContent({
         owner: config.githubCourseOwner,
-        repo: repo,
+        repo,
         path: 'infoCourse.json',
       });
       return;
@@ -87,8 +87,8 @@ async function createRepoFromTemplateAsync(client, repo, template) {
 async function getFileFromRepoAsync(client, repo, path) {
   const file = await client.repos.getContent({
     owner: config.githubCourseOwner,
-    repo: repo,
-    path: path,
+    repo,
+    path,
   });
   if (Array.isArray(file.data) || file.data.type !== 'file') {
     throw new Error('Unexpected array response from GitHub API');
@@ -113,12 +113,12 @@ async function getFileFromRepoAsync(client, repo, path) {
 async function putFileToRepoAsync(client, repo, path, contents, sha) {
   await client.repos.createOrUpdateFileContents({
     owner: config.githubCourseOwner,
-    repo: repo,
-    path: path,
+    repo,
+    path,
     message: `Update ${path}`,
     // Add a trailing newline to the contents.
     content: Buffer.from(contents + '\n', 'ascii').toString('base64'),
-    sha: sha,
+    sha,
   });
 }
 
@@ -133,9 +133,9 @@ async function addTeamToRepoAsync(client, repo, team, permission) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
     owner: config.githubCourseOwner,
     org: config.githubCourseOwner,
-    repo: repo,
+    repo,
     team_slug: team,
-    permission: permission,
+    permission,
   });
 }
 
@@ -149,9 +149,9 @@ async function addTeamToRepoAsync(client, repo, team, permission) {
 async function addUserToRepoAsync(client, repo, username, permission) {
   await client.repos.addCollaborator({
     owner: config.githubCourseOwner,
-    repo: repo,
-    username: username,
-    permission: permission,
+    repo,
+    username,
+    permission,
   });
 }
 

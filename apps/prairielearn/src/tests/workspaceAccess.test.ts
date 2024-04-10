@@ -19,17 +19,17 @@ interface UserConfig {
 }
 
 const studentOne: UserConfig = {
-  uid: 'student1@illinois.edu',
+  uid: 'student1@example.com',
   uin: '000000001',
   name: 'Student One',
 };
 const studentTwo: UserConfig = {
-  uid: 'student2@illinois.edu',
+  uid: 'student2@example.com',
   uin: '000000002',
   name: 'Student Two',
 };
 const studentNotEnrolled: UserConfig = {
-  uid: 'student_not_enrolled@illinois.edu',
+  uid: 'student_not_enrolled@example.com',
   uin: '000000003',
   name: 'Not Enrolled',
 };

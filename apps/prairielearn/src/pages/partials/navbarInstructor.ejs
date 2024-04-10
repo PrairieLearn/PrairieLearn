@@ -4,7 +4,6 @@
         <a
             class="nav-link <% if (navPage == 'course_admin' && !(typeof navSubPage !== 'undefined' && (navSubPage == 'issues' || navSubPage == 'questions' || navSubPage == 'syncs'))) { %> active <% } %> <% if (!authz_data.has_course_permission_view) { %> disabled <% } %>"
             href="<%= urlPrefix %>/course_admin"
-            role="button"
         >
             <%= course.short_name %>
         </a>
@@ -46,7 +45,7 @@
         <%# Instance admin %> 
         <li class="navbar-text mx-2 no-select">/</li>
         <li class="nav-item btn-group" id="navbar-course-instance-switcher">
-            <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
+            <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin">
                 <%= course_instance.short_name %>
             </a>
             <a
@@ -79,7 +78,7 @@
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
             <li class="navbar-text mx-2 no-select">/</li>
             <li class="nav-item btn-group">
-                <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
+                <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>">
                     <%= assessment_label %>
                 </a>
                 <% if (typeof assessments != 'undefined') { %>

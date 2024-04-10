@@ -72,7 +72,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const missingTagName = 'missing tag name';
     courseData.questions[util.QUESTION_ID].tags?.push(missingTagName);
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedTags = await util.dumpTable('tags');
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
@@ -99,7 +99,7 @@ describe('Question syncing', () => {
     const missingTopicName = 'missing topic name';
     const originalTopicName = courseData.questions[util.QUESTION_ID].topic;
     courseData.questions[util.QUESTION_ID].topic = missingTopicName;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
@@ -296,7 +296,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const question = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = question;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question and re-sync
     question.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
@@ -309,7 +309,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const originalQuestion = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and title of the question and re-sync
     const newQuestion = { ...originalQuestion };
@@ -329,7 +329,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const originalQuestion = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question, add an error and re-sync
     const newQuestion = { ...originalQuestion };
@@ -366,7 +366,7 @@ describe('Question syncing', () => {
     const originalQuestion = makeQuestion(courseData);
     originalQuestion.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
     courseData.questions['a'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above question to a new directory AND add another with the
     // same UUID.

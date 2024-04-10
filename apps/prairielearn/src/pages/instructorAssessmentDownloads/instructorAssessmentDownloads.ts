@@ -58,7 +58,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.send(
       InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
@@ -93,7 +93,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     //
     // NOTE: you could argue that some downloads should be restricted further to users with
@@ -385,7 +385,7 @@ router.get(
         group_work: true,
       });
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );

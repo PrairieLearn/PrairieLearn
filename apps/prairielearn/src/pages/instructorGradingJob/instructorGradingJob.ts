@@ -13,7 +13,7 @@ const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
-  '/:job_id',
+  '/:job_id(\\d+)',
   asyncHandler(async (req, res) => {
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
       sql.select_job,
@@ -27,7 +27,7 @@ router.get(
       GradingJobQueryResultSchema,
     );
     if (gradingJobQueryResult === null) {
-      throw error.make(404, 'Job not found');
+      throw new error.HttpStatusError(404, 'Job not found');
     }
 
     // If the grading job is associated with an assessment instance (through a
@@ -37,14 +37,14 @@ router.get(
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobQueryResult }));
   }),
 );
 
 router.get(
-  '/:job_id/file/:file',
+  '/:job_id(\\d+)/file/:file',
   asyncHandler(async (req, res) => {
     const file = req.params.file;
     const allowList = res.locals.authz_data.has_course_permission_view
@@ -52,7 +52,7 @@ router.get(
       : ['output.log', 'results.json'];
 
     if (allowList.indexOf(file) === -1) {
-      throw error.make(404, `Unknown file ${file}`);
+      throw new error.HttpStatusError(404, `Unknown file ${file}`);
     }
 
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
@@ -67,7 +67,7 @@ router.get(
       GradingJobQueryResultSchema,
     );
     if (gradingJobQueryResult === null) {
-      throw error.make(404, 'Job not found');
+      throw new error.HttpStatusError(404, 'Job not found');
     }
     // If the grading job is associated with an assessment instance (through a
     // submission, a variant, and an instance question), then we need to check
@@ -76,7 +76,7 @@ router.get(
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     const grading_job = gradingJobQueryResult.grading_job;

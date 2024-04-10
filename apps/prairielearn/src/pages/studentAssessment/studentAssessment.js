@@ -33,8 +33,10 @@ router.get(
     if (res.locals.assessment.multiple_instance) {
       if (res.locals.assessment.type === 'Homework') {
         return next(
-          error.makeWithData('"Homework" assessments do not support multiple instances', {
-            assessment: res.locals.assessment,
+          new error.AugmentedError('"Homework" assessments do not support multiple instances', {
+            data: {
+              assessment: res.locals.assessment,
+            },
           }),
         );
       }
@@ -157,11 +159,14 @@ router.post(
         const groupConfig = await getGroupConfig(res.locals.assessment.id);
         const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
         if (groupId === null) {
-          throw error.make(403, 'Cannot create a new instance while not in a group.');
+          throw new error.HttpStatusError(
+            403,
+            'Cannot create a new instance while not in a group.',
+          );
         }
         const groupInfo = await getGroupInfo(groupId, groupConfig);
         if (!groupInfo.start) {
-          throw error.make(
+          throw new error.HttpStatusError(
             403,
             'Group has invalid composition or role assignment. Cannot start assessment.',
           );
@@ -214,7 +219,7 @@ router.post(
       // Check whether the user is currently in a group
       const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
       if (groupId == null) {
-        throw error.make(403, 'Cannot change group roles while not in a group.');
+        throw new error.HttpStatusError(403, 'Cannot change group roles while not in a group.');
       }
       await updateGroupRoles(
         req.body,
@@ -233,7 +238,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      return next(error.make(400, `unknown __action: ${req.body.__action}`));
+      return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

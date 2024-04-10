@@ -1,5 +1,6 @@
 columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    disk_usage_bytes: bigint
     heartbeat_at: timestamp with time zone
     hostname: text
     id: bigint not null default nextval('workspaces_id_seq'::regclass)

@@ -56,7 +56,7 @@ router.get(
   asyncHandler(async (req, res) => {
     // This page is behind a feature flag for now.
     if (!res.locals.billing_enabled) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     const {
@@ -100,12 +100,12 @@ router.post(
   asyncHandler(async (req, res) => {
     // This page is behind a feature flag for now.
     if (!res.locals.billing_enabled) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     // Only course owners can manage billing.
     if (!res.locals.authz_data.has_course_permission_own) {
-      throw error.make(403, 'Access denied (must be course owner)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
 
     const pageData = await loadPageData(res);
@@ -124,12 +124,12 @@ router.post(
 
     if (!state.studentBillingCanChange && state.studentBillingDidChange) {
       const verb = desiredRequiredPlans.includes('basic') ? 'enabled' : 'disabled';
-      throw error.make(400, `Student billing cannot be ${verb}.`);
+      throw new error.HttpStatusError(400, `Student billing cannot be ${verb}.`);
     }
 
     if (!state.computeCanChange && state.computeDidChange) {
       const verb = desiredRequiredPlans.includes('compute') ? 'enabled' : 'disabled';
-      throw error.make(400, `Compute cannot be ${verb}.`);
+      throw new error.HttpStatusError(400, `Compute cannot be ${verb}.`);
     }
 
     await updateRequiredPlansForCourseInstance(

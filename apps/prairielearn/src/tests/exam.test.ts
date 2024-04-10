@@ -1184,9 +1184,9 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,score_perc,feedback\n' +
-          'dev@illinois.edu,1,addNumbers,40,feedback numbers\n' +
-          'dev@illinois.edu,1,addVectors,50,feedback vectors\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,,\n';
+          'dev@example.com,1,addNumbers,40,feedback numbers\n' +
+          'dev@example.com,1,addVectors,50,feedback vectors\n' +
+          'dev@example.com,1,fossilFuelsRadio,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1289,10 +1289,10 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,points,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,4.7,' +
+          'dev@example.com,1,addNumbers,4.7,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,1.2,,\n';
+          'dev@example.com,1,addVectors,1.2,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1408,7 +1408,7 @@ describe('Exam assessment', function () {
   describe('36. assessment instance score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,score_perc\n' + 'dev@illinois.edu,1,43.7\n';
+        locals.csvData = 'uid,instance,score_perc\n' + 'dev@example.com,1,43.7\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1464,7 +1464,7 @@ describe('Exam assessment', function () {
   describe('37. assessment instance points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,points\n' + 'dev@illinois.edu,1,29.6\n';
+        locals.csvData = 'uid,instance,points\n' + 'dev@example.com,1,29.6\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1537,11 +1537,11 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,manual_points,auto_points,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,1.3,2.2,' +
+          'dev@example.com,1,addNumbers,1.3,2.2,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,,10.7,,\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,2.9,,,\n';
+          'dev@example.com,1,addVectors,,10.7,,\n' +
+          'dev@example.com,1,fossilFuelsRadio,2.9,,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1674,11 +1674,11 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,manual_score_perc,auto_score_perc,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,60,44,' +
+          'dev@example.com,1,addNumbers,60,44,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,20,,,\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,,30,,\n';
+          'dev@example.com,1,addVectors,20,,,\n' +
+          'dev@example.com,1,fossilFuelsRadio,,30,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);

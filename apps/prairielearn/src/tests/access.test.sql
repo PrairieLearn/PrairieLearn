@@ -4,7 +4,7 @@ SELECT
 FROM
   users AS u
 WHERE
-  u.uid = 'student@illinois.edu';
+  u.uid = 'student@example.com';
 
 -- BLOCK select_e1
 SELECT
