@@ -1,20 +1,16 @@
+// @ts-check
 const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
-const { promisify } = require('util');
 
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
 
 const { isEnterprise } = require('../lib/license');
-const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
-const selectAndAuthzInstanceQuestion = promisify(
-  require('./selectAndAuthzInstanceQuestion').default,
-);
-const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
-const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
-const authzHasCoursePreviewOrInstanceView = promisify(
-  require('./authzHasCoursePreviewOrInstanceView'),
-);
+const { authzCourseOrInstance } = require('./authzCourseOrInstance');
+const { selectAndAuthzInstanceQuestion } = require('./selectAndAuthzInstanceQuestion');
+const { selectAndAuthzAssessmentInstance } = require('./selectAndAuthzAssessmentInstance');
+const { selectAndAuthzInstructorQuestion } = require('./selectAndAuthzInstructorQuestion');
+const { authzHasCoursePreviewOrInstanceView } = require('./authzHasCoursePreviewOrInstanceView');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -44,8 +40,13 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
-      const checkPlanGrants = promisify(require('../ee/middlewares/checkPlanGrants').default);
-      await checkPlanGrants(req, res);
+      const { checkPlanGrantsForLocals } = require('../ee/lib/billing/plan-grants');
+      const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
+      if (!hasPlanGrants) {
+        // TODO: Show a fancier error page explaining what happened and prompting
+        // the user to contact their instructor.
+        throw error.make(403, 'Access denied');
+      }
     }
 
     if (res.locals.instance_question_id) {

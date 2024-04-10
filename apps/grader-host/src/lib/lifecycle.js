@@ -1,9 +1,10 @@
-const assert = require('assert');
-const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
+// @ts-check
+import * as assert from 'node:assert';
+import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
-const logger = require('./logger');
-const { config } = require('./config');
-const { makeAwsClientConfig } = require('./aws');
+import logger from './logger';
+import { config } from './config';
+import { makeAwsClientConfig } from './aws';
 
 /**
  * Stores our current state. We do one-way transitions:
@@ -13,11 +14,11 @@ const { makeAwsClientConfig } = require('./aws');
  */
 let lifecycleState = null;
 
-module.exports.getState = () => {
+export function getState() {
   return lifecycleState;
-};
+}
 
-module.exports.init = async () => {
+export async function init() {
   if (config.autoScalingGroupName == null) {
     logger.info('lifecycle.init(): not running in AutoScalingGroup');
     return;
@@ -27,9 +28,9 @@ module.exports.init = async () => {
   lifecycleState = 'Launching';
   logger.info(`lifecycle.init(): changing to state ${lifecycleState}`);
   heartbeat();
-};
+}
 
-module.exports.inService = async () => {
+export async function inService() {
   if (config.autoScalingGroupName == null) {
     logger.info('lifecycle.inService(): not running in AutoScalingGroup');
     return;
@@ -51,11 +52,11 @@ module.exports.inService = async () => {
     logger.info('lifecycle.inService(): completed action', params);
   } catch (e) {
     // don't return the error, because there is nothing to be done about it
-    logger.error('lifecycle.inSerice(): error completing action', params);
+    logger.error('lifecycle.inService(): error completing action', params);
   }
-};
+}
 
-module.exports.abandonLaunch = async () => {
+export async function abandonLaunch() {
   if (config.autoScalingGroupName == null) {
     logger.info('lifecycle.abandonLaunch(): not running in AutoScalingGroup');
     return;
@@ -82,9 +83,11 @@ module.exports.abandonLaunch = async () => {
   } else {
     logger.info(`lifecycle.abandonLaunch(): in state ${lifecycleState}, taking no action`);
   }
-};
+}
 
 function heartbeat() {
+  if (config.autoScalingGroupName == null) return;
+
   if (lifecycleState === 'Launching') {
     logger.info('lifecycle.heartbeat(): sending heartbeat...');
     const autoscaling = new AutoScaling(makeAwsClientConfig());

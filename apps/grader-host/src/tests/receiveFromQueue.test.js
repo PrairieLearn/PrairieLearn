@@ -1,14 +1,14 @@
 // @ts-check
-const { assert } = require('chai');
-const sinon = require('sinon');
-const {
+import { assert } from 'chai';
+import * as sinon from 'sinon';
+import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
+} from '@aws-sdk/client-sqs';
 
-const { config } = require('../lib/config');
-const queueReceiver = require('../lib/receiveFromQueue');
+import { config } from '../lib/config';
+import queueReceiver from '../lib/receiveFromQueue';
 
 function randomString() {
   return Math.random().toString(36).slice(2);
@@ -28,7 +28,7 @@ function fakeSqs(options = {}) {
     };
   }
 
-  const receiveMessage = sinon.spy(() => {
+  const receiveMessage = sinon.spy((_command) => {
     if (callCount < timeoutCount) {
       callCount++;
       return {};
@@ -43,8 +43,8 @@ function fakeSqs(options = {}) {
       ],
     };
   });
-  const changeMessageVisibility = sinon.spy(() => null);
-  const deleteMessage = sinon.spy(() => null);
+  const changeMessageVisibility = sinon.spy((_command) => null);
+  const deleteMessage = sinon.spy((_command) => null);
 
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
@@ -183,6 +183,7 @@ describe('queueReceiver', () => {
     const sqs = fakeSqs();
 
     queueReceiver(
+      // ^?
       sqs,
       'goodbyeworld',
       (message, done) => done(),

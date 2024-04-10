@@ -882,6 +882,28 @@ export const CourseInstancePermissionSchema = z.object({
 });
 export type CourseInstancePermission = z.infer<typeof CourseInstancePermissionSchema>;
 
+export const AlternativeGroupSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  assessment_id: IdSchema,
+  id: IdSchema,
+  number: z.number().nullable(),
+  number_choose: z.number().nullable(),
+  zone_id: IdSchema,
+});
+export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
+
+export const ZoneSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  assessment_id: IdSchema,
+  best_questions: z.number().nullable(),
+  id: IdSchema,
+  max_points: z.number().nullable(),
+  number: z.number().nullable(),
+  number_choose: z.number().nullable(),
+  title: z.string().nullable(),
+});
+export type Zone = z.infer<typeof ZoneSchema>;
+
 // Result of grading_job_status sproc
 export const GradingJobStatusSchema = z.enum([
   'none',
