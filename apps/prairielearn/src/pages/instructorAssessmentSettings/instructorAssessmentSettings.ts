@@ -1,8 +1,7 @@
-// @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as path from 'path';
-const QR = require('qrcode-svg');
+import QR = require('qrcode-svg');
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -16,6 +15,7 @@ import {
 import { encodePath } from '../../lib/uri-util';
 import { getCanonicalHost } from '../../lib/url';
 import { IdSchema } from '../../lib/db-types';
+import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -23,14 +23,14 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.tids = await sqldb.queryRows(
+    const tids = await sqldb.queryRows(
       sql.tids,
       { course_instance_id: res.locals.course_instance.id },
       z.string(),
     );
 
     const host = getCanonicalHost(req);
-    res.locals.studentLink = new URL(
+    const studentLink = new URL(
       res.locals.plainUrlPrefix +
         '/course_instance/' +
         res.locals.course_instance.id +
@@ -38,12 +38,12 @@ router.get(
         res.locals.assessment.id,
       host,
     ).href;
-    res.locals.studentLinkQRCode = new QR({
-      content: res.locals.studentLink,
+    const studentLinkQRCode = new QR({
+      content: studentLink,
       width: 512,
       height: 512,
     }).svg();
-    res.locals.infoAssessmentPath = encodePath(
+    const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
         res.locals.course_instance.short_name,
@@ -52,7 +52,15 @@ router.get(
         'infoAssessment.json',
       ),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessmentSettings({
+        resLocals: res.locals,
+        tids,
+        studentLink,
+        studentLinkQRCode,
+        infoAssessmentPath,
+      }),
+    );
   }),
 );
 
