@@ -18,7 +18,6 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number: AlternativeGroupSchema.shape.number,
   alternative_group_size: z.number(),
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  avg_question_score_perc: AssessmentQuestionSchema.shape.mean_question_score,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
   open_issue_count: z.string().nullable(),
@@ -175,7 +174,6 @@ function AssessmentQuestionsTable({
             <th>Manual Points</th>
             ${showAdvanceScorePercCol ? html`<th>Advance Score</th>` : ''}
             <th width="100">Mean score</th>
-            <th width="100">Question score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
             <th class="text-right">Actions</th>
@@ -300,11 +298,6 @@ function AssessmentQuestionsTable({
                 <td>
                   ${question.mean_question_score
                     ? `${question.mean_question_score.toFixed(3)} %`
-                    : ''}
-                </td>
-                <td>
-                  ${question.avg_question_score_perc
-                    ? `${question.avg_question_score_perc.toFixed(3)} %`
                     : ''}
                 </td>
                 <td class="text-center">

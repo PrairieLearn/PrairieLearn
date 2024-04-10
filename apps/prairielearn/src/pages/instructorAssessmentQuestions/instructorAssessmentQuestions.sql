@@ -13,17 +13,6 @@ WITH
       AND i.open
     GROUP BY
       q.id
-  ),
-  question_scores AS (
-    SELECT
-      aq.question_id,
-      avg(aq.mean_question_score) AS question_score
-    FROM
-      assessment_questions AS aq
-    WHERE
-      aq.assessment_id = $assessment_id
-    GROUP BY
-      aq.question_id
   )
 SELECT
   aq.*,
@@ -62,7 +51,6 @@ SELECT
   ) AS start_new_alternative_group,
   assessments_format_for_question (q.id, ci.id, a.id) AS other_assessments,
   coalesce(ic.open_issue_count, 0) AS open_issue_count,
-  question_scores.question_score AS avg_question_score_perc,
   z.max_points AS zone_max_points,
   (z.max_points IS NOT NULL) AS zone_has_max_points,
   z.best_questions AS zone_best_questions,
@@ -83,7 +71,6 @@ FROM
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
-  LEFT JOIN question_scores ON (question_scores.question_id = q.id)
   LEFT JOIN pl_courses AS c ON (q.course_id = c.id)
 WHERE
   a.id = $assessment_id
