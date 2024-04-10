@@ -24,23 +24,23 @@ router.post(
 
     const ltiRedirectUrl = config.ltiRedirectUrl;
     if (!ltiRedirectUrl) {
-      throw error.make(404, 'LTI not configured');
+      throw new error.HttpStatusError(404, 'LTI not configured');
     }
 
     if (parameters.lti_message_type !== 'basic-lti-launch-request') {
-      throw error.make(400, 'Unsupported lti_message_type');
+      throw new error.HttpStatusError(400, 'Unsupported lti_message_type');
     }
 
     if (parameters.lti_version !== 'LTI-1p0') {
-      throw error.make(400, 'Unsupported lti_version');
+      throw new error.HttpStatusError(400, 'Unsupported lti_version');
     }
 
     if (!parameters.oauth_consumer_key) {
-      throw error.make(400, 'Badly formed oauth_consumer_key');
+      throw new error.HttpStatusError(400, 'Badly formed oauth_consumer_key');
     }
 
     if (!parameters.resource_link_id) {
-      throw error.make(400, 'Badly formed resource_link_id');
+      throw new error.HttpStatusError(400, 'Badly formed resource_link_id');
     }
 
     // FIXME: could warn or throw an error if parameters.roles exists (no longer used)
@@ -49,7 +49,7 @@ router.post(
     const result = await sqldb.queryZeroOrOneRowAsync(sql.lookup_credential, {
       consumer_key: parameters.oauth_consumer_key,
     });
-    if (result.rowCount === 0) throw error.make(403, 'Unknown consumer_key');
+    if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Unknown consumer_key');
 
     const ltiresult = result.rows[0];
 
@@ -62,13 +62,13 @@ router.post(
       { encodeSignature: false },
     );
     if (genSignature !== signature) {
-      throw error.make(403, 'Invalid signature');
+      throw new error.HttpStatusError(403, 'Invalid signature');
     }
 
     // Check oauth_timestamp within N seconds of now (3000 suggested)
     const timeDiff = Math.abs(Math.floor(Date.now() / 1000) - parameters.oauth_timestamp);
     if (timeDiff > TIME_TOLERANCE_SEC) {
-      throw error.make(403, 'Invalid timestamp');
+      throw new error.HttpStatusError(403, 'Invalid timestamp');
     }
 
     // Check nonce hasn't been used by that consumer_key in that timeframe
@@ -77,7 +77,7 @@ router.post(
     const nonceVal = await cache.get(nonceKey);
 
     if (nonceVal) {
-      throw error.make(403, 'Nonce reused');
+      throw new error.HttpStatusError(403, 'Nonce reused');
     }
 
     // Remember that this nonce was already used.
@@ -85,7 +85,10 @@ router.post(
 
     // OAuth validation succeeded, next look up and store user authn data
     if (!parameters.user_id) {
-      throw error.make(400, 'Authentication problem: UserID required. Anonymous access disabled.');
+      throw new error.HttpStatusError(
+        400,
+        'Authentication problem: UserID required. Anonymous access disabled.',
+      );
     }
 
     // Create unique UID from LTI parameters and CI id
@@ -110,7 +113,7 @@ router.post(
       res.locals.req_date,
     ]);
     if (!userResult.rows[0].has_access) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
 
     const tokenData = {
@@ -162,12 +165,15 @@ router.post(
       ]);
 
       if (instructorResult.rowCount === 0) {
-        throw error.make(403, 'Access denied (could not determine if user is instructor)');
+        throw new error.HttpStatusError(
+          403,
+          'Access denied (could not determine if user is instructor)',
+        );
       }
 
       if (!instructorResult.rows[0].is_instructor) {
         // Show an error that the assignment is unavailable
-        throw error.make(403, 'Assignment not available yet');
+        throw new error.HttpStatusError(403, 'Assignment not available yet');
       }
 
       res.redirect(

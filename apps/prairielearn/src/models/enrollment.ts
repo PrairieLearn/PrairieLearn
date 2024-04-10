@@ -50,7 +50,7 @@ export async function ensureCheckedEnrollment({
   // If they don't, throw an access denied error. In most cases, this should
   // have already been checked.
   if (!authz_data.has_student_access) {
-    throw error.make(403, 'Access denied');
+    throw new error.HttpStatusError(403, 'Access denied');
   }
 
   if (isEnterprise()) {

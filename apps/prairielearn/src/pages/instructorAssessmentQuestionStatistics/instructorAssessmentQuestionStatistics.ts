@@ -134,7 +134,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
@@ -150,7 +150,7 @@ router.post(
       await updateAssessmentQuestionStatsForAssessment(res.locals.assessment.id);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

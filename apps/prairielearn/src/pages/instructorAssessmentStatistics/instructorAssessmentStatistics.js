@@ -203,7 +203,7 @@ router.get(
         columns: ['Date', ...scoresByDay.map((day) => day.date_formatted)],
       }).pipe(res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );

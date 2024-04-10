@@ -28,7 +28,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
   // If student never loaded question or never submitted anything (submission is null)
   if (variant_with_submission_id == null) {
-    throw error.make(404, 'Instance question does not have a gradable submission.');
+    throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
   await getAndRenderVariant(variant_with_submission_id, null, resLocals);
@@ -60,7 +60,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
@@ -165,7 +165,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
@@ -262,7 +262,7 @@ router.post(
         ),
       );
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

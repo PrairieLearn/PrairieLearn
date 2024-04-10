@@ -90,7 +90,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

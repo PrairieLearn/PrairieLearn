@@ -22,7 +22,7 @@ router.get(
     // filename matches, and that the file is not deleted.
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
     if (result.rows.length === 0) {
-      return next(error.make(404, 'File not found'));
+      return next(new error.HttpStatusError(404, 'File not found'));
     }
 
     const { id: fileId, display_filename: displayFilename } = result.rows[0];

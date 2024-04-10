@@ -380,7 +380,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
       VariantSelectResultSchema,
     );
     if (locals.variant == null) {
-      throw error.make(404, 'Variant not found');
+      throw new error.HttpStatusError(404, 'Variant not found');
     }
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
@@ -612,7 +612,7 @@ export async function renderPanelsForSubmission({
     { submission_id, question_id, instance_question_id, variant_id },
     SubmissionInfoSchema,
   );
-  if (submissionInfo == null) throw error.make(404, 'Not found');
+  if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
 
   const {
     variant,

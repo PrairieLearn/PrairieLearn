@@ -47,12 +47,17 @@ async function getValidVariantId(req, res) {
 }
 
 async function processFileUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
   }
   if (!req.file) {
-    throw error.make(400, 'No file uploaded');
+    throw new error.HttpStatusError(400, 'No file uploaded');
   }
   await uploadFile({
     display_filename: req.file.originalname,
@@ -68,9 +73,14 @@ async function processFileUpload(req, res) {
 }
 
 async function processTextUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -86,19 +96,29 @@ async function processTextUpload(req, res) {
 }
 
 async function processDeleteFile(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
   }
 
   // Check the requested file belongs to the current instance question
   const validFiles =
     res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
-  if (validFiles.length === 0) throw error.make(404, `No such file_id: ${req.body.file_id}`);
+  if (validFiles.length === 0) {
+    throw new error.HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
   const file = validFiles[0];
 
   if (file.type !== 'student_upload') {
-    throw error.make(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
+    throw new error.HttpStatusError(
+      403,
+      `Cannot delete file type ${file.type} for file_id=${file.id}`,
+    );
   }
 
   await deleteFile(file.id, res.locals.authn_user.user_id);
@@ -108,11 +128,11 @@ async function processDeleteFile(req, res) {
 
 async function processIssue(req, res) {
   if (!res.locals.assessment.allow_issue_reporting) {
-    throw error.make(403, 'Issue reporting not permitted for this assessment');
+    throw new error.HttpStatusError(403, 'Issue reporting not permitted for this assessment');
   }
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    throw error.make(400, 'A description of the issue must be provided');
+    throw new error.HttpStatusError(400, 'A description of the issue must be provided');
   }
 
   const variantId = await getValidVariantId(req, res);
@@ -139,19 +159,22 @@ async function processIssue(req, res) {
 
 async function validateAndProcessSubmission(req, res) {
   if (!res.locals.assessment_instance.open) {
-    throw error.make(400, 'assessment_instance is closed');
+    throw new error.HttpStatusError(400, 'assessment_instance is closed');
   }
   if (!res.locals.instance_question.open) {
-    throw error.make(400, 'instance_question is closed');
+    throw new error.HttpStatusError(400, 'instance_question is closed');
   }
   if (!res.locals.authz_result.active) {
-    throw error.make(400, 'This assessment is not accepting submissions at this time.');
+    throw new error.HttpStatusError(
+      400,
+      'This assessment is not accepting submissions at this time.',
+    );
   }
   if (
     res.locals.assessment.group_config?.has_roles &&
     !res.locals.instance_question.group_role_permissions.can_submit
   ) {
-    throw error.make(
+    throw new error.HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
     );
@@ -163,16 +186,22 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_result.authorized_edit) {
-      throw error.make(403, 'Not authorized');
+      throw new error.HttpStatusError(403, 'Not authorized');
     }
 
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       if (res.locals.assessment.type === 'Exam') {
         if (res.locals.authz_result.time_limit_expired) {
-          throw error.make(403, 'Time limit is expired, please go back and finish your assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Time limit is expired, please go back and finish your assessment',
+          );
         }
         if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw error.make(403, 'Real-time grading is not allowed for this assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Real-time grading is not allowed for this assessment',
+          );
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -185,7 +214,7 @@ router.post(
       }
     } else if (req.body.__action === 'timeLimitFinish') {
       if (res.locals.assessment.type !== 'Exam') {
-        throw error.make(400, 'Only exams have a time limit');
+        throw new error.HttpStatusError(400, 'Only exams have a time limit');
       }
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
@@ -227,7 +256,7 @@ router.post(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

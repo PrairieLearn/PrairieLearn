@@ -9,7 +9,10 @@ module.exports = function (req, res, next) {
     !res.locals.authz_data.authn_has_course_instance_permission_view
   ) {
     return next(
-      error.make(403, 'Requires either course preview access or student data view access'),
+      new error.HttpStatusError(
+        403,
+        'Requires either course preview access or student data view access',
+      ),
     );
   }
   next();

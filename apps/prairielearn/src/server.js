@@ -373,7 +373,7 @@ module.exports.initExpress = function () {
       if (result.rows.length === 0) {
         // If updating this message, also update the message our Sentry
         // `beforeSend` handler.
-        throw error.make(404, 'Workspace is not running');
+        throw new error.HttpStatusError(404, 'Workspace is not running');
       }
 
       return `http://${result.rows[0].hostname}/`;

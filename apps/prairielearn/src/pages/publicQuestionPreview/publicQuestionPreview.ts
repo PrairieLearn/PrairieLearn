@@ -31,7 +31,7 @@ async function setLocals(req, res) {
     !res.locals.question.shared_publicly ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
-    throw error.make(404, 'Not Found');
+    throw new error.HttpStatusError(404, 'Not Found');
   }
   return;
 }
@@ -49,7 +49,7 @@ router.post(
       // we currently don't report issues for public facing previews
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
