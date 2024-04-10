@@ -107,6 +107,7 @@ const SubmissionInfoSchema = z.object({
  * @typedef {Object} SubmissionPanels
  * @property {string?} submissionPanel
  * @property {string?} scorePanel
+ * @property {string?} extraHeadersHtml
  * @property {string?} [answerPanel]
  * @property {string?} [questionScorePanel]
  * @property {string?} [assessmentScorePanel]
@@ -640,6 +641,7 @@ export async function renderPanelsForSubmission({
   const panels = {
     submissionPanel: null,
     scorePanel: null,
+    extraHeadersHtml: null,
   };
 
   // Fake locals. Yay!
@@ -680,6 +682,7 @@ export async function renderPanelsForSubmission({
       const grading_job_stats = buildGradingJobStats(grading_job);
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
+      panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);

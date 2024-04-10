@@ -65,7 +65,7 @@ router.post(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel } = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: null,
@@ -76,7 +76,7 @@ router.get(
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
