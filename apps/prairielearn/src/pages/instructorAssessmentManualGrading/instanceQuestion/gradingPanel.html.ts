@@ -118,7 +118,7 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
-        ${open_issues.length > 0
+        ${open_issues.length > 0 && context !== 'existing'
           ? html`
               <li class="form-group list-group-item">
                 <div class="form-check">
