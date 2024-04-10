@@ -296,11 +296,10 @@ function loadPendingSubmissionPanel(this: HTMLDivElement) {
   const { submissionId, dynamicRenderUrl } = this.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
-  const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
-  $(`#submissionInfoModal-${submissionId}`).modal('hide');
-
   fetch(dynamicRenderUrl)
     .then(async (response) => {
+      // If the response is not a 200, delegate to the error handler (catch block)
+      if (!response.ok) throw new Error('Failed to fetch submission');
       const msg = await response.json();
       updateDynamicPanels(msg, submissionId);
     })
@@ -309,12 +308,6 @@ function loadPendingSubmissionPanel(this: HTMLDivElement) {
       if (container != null) {
         container.innerHTML =
           '<div class="card-body submission-body">Error retrieving submission</div>';
-      }
-    })
-    .finally(() => {
-      // Restore modal state if need be
-      if (wasModalOpen) {
-        $(`#submissionInfoModal-${submissionId}`).modal('show');
       }
     });
 }
