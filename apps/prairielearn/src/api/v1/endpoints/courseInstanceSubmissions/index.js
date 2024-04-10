@@ -1,11 +1,12 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
-const path = require('path');
-const express = require('express');
-const router = express.Router({ mergeParams: true });
+import * as path from 'node:path';
+import { Router } from 'express';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
+const router = Router({ mergeParams: true });
 
 router.get(
   '/:unsafe_submission_id',
@@ -23,7 +24,7 @@ router.get(
     } else {
       res.status(200).send(data[0]);
     }
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

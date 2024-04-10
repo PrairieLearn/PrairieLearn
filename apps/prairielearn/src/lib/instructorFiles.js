@@ -1,13 +1,19 @@
-const path = require('path');
-const { contains } = require('@prairielearn/path-utils');
-const { encodePath, decodePath } = require('./uri-util');
+// @ts-check
+import * as path from 'path';
+import { contains } from '@prairielearn/path-utils';
+import { html } from '@prairielearn/html';
+import * as error from '@prairielearn/error';
+import { encodePath, decodePath } from './uri-util';
 
 /**
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
  * the navPage. Created for use in instructor file views.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
  */
-function getPaths(req, res, callback) {
+export function getPaths(req, res) {
   let paths = {
     coursePath: res.locals.course.path,
     courseId: res.locals.course.id,
@@ -27,7 +33,7 @@ function getPaths(req, res, callback) {
     paths.rootPath = path.join(
       res.locals.course.path,
       'courseInstances',
-      res.locals.course_instance.short_name
+      res.locals.course_instance.short_name,
     );
     paths.invalidRootPaths = [path.join(paths.rootPath, 'assessments')];
     paths.cannotMove = [path.join(paths.rootPath, 'infoCourseInstance.json')];
@@ -40,7 +46,7 @@ function getPaths(req, res, callback) {
       'courseInstances',
       res.locals.course_instance.short_name,
       'assessments',
-      res.locals.assessment.tid
+      res.locals.assessment.tid,
     );
     paths.invalidRootPaths = [];
     paths.cannotMove = [path.join(paths.rootPath, 'infoAssessment.json')];
@@ -56,19 +62,21 @@ function getPaths(req, res, callback) {
     paths.testsDir = path.join(paths.rootPath, 'tests');
     paths.urlPrefix = `${res.locals.urlPrefix}/question/${res.locals.question.id}`;
   } else {
-    return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
+    throw new Error(`Invalid navPage: ${res.locals.navPage}`);
   }
 
   if (req.params[0]) {
     try {
       paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
     } catch (err) {
-      return callback(new Error(`Invalid path: ${req.params[0]}`));
+      throw new Error(`Invalid path: ${req.params[0]}`);
     }
   } else {
     paths.workingPath = paths.rootPath;
   }
   paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
+  paths.workingDirectory = path.dirname(paths.workingPathRelativeToCourse);
+  paths.workingFilename = path.basename(paths.workingPathRelativeToCourse);
 
   if (paths.workingPath === paths.rootPath) {
     paths.specialDirs = [];
@@ -77,7 +85,7 @@ function getPaths(req, res, callback) {
         label: 'Client',
         path: paths.clientDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.clientDir
+          paths.clientDir,
         )}</code> and will be accessible from the student's webbrowser.`,
       });
     }
@@ -86,7 +94,7 @@ function getPaths(req, res, callback) {
         label: 'Server',
         path: paths.serverDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.serverDir
+          paths.serverDir,
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
       });
     }
@@ -95,35 +103,43 @@ function getPaths(req, res, callback) {
         label: 'Test',
         path: paths.testsDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.testsDir
+          paths.testsDir,
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
       });
     }
   }
 
   if (!contains(paths.rootPath, paths.workingPath)) {
-    let err = new Error('Invalid working directory');
-    err.info =
-      `<p>The working directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
-      `<p>must be inside the root directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre></div>` +
-      `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
-    return callback(err);
+    throw new error.AugmentedError('Invalid working directory', {
+      info: html`
+        <p>The working directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+        </div>
+        <p>must be inside the root directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre>
+        </div>
+        <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+      `,
+    });
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
-    contains(invalidRootPath, paths.workingPath)
+    contains(invalidRootPath, paths.workingPath),
   );
   if (found) {
-    let err = new Error('Invalid working directory');
-    err.info =
-      `<p>The working directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
-      `<p>must <em>not</em> be inside the directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>` +
-      `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
-    return callback(err);
+    throw new error.AugmentedError('Invalid working directory', {
+      info: html`
+        <p>The working directory</p>
+        <div class="container">
+          <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+        </div>
+        <p>must <em>not</em> be inside the directory</p>
+        <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+      `,
+    });
   }
 
   let curPath = res.locals.course.path;
@@ -150,9 +166,23 @@ function getPaths(req, res, callback) {
       }
     });
 
-  callback(null, paths);
+  return paths;
 }
 
-module.exports = {
-  getPaths,
-};
+/**
+ * Wrapper around {@link getPaths} to support callback-based usage.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {(err: Error | null | undefined, paths?: any) => void} callback
+ */
+export function getPathsCallback(req, res, callback) {
+  let paths;
+  try {
+    paths = getPaths(req, res);
+  } catch (err) {
+    callback(err);
+    return;
+  }
+  callback(null, paths);
+}

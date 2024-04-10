@@ -1,7 +1,7 @@
 columns
     hostname: text
     id: bigint not null default nextval('workspace_hosts_id_seq'::regclass)
-    instance_id: text
+    instance_id: text not null
     launched_at: timestamp with time zone
     load_count: integer default 0
     ready_at: timestamp with time zone
@@ -17,4 +17,5 @@ indexes
     workspace_hosts_state_terminated_at_key: USING btree (state, terminated_at)
 
 referenced by
+    workspace_host_logs: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
     workspaces: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -1,41 +1,47 @@
 {{#question}}
 
+{{#radio}}
 {{#inline}}
 <span>
 {{/inline}}
-{{#answers}}
-    <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1">
-        <input class="form-check-input mt-0" type="radio"
-               name="{{name}}" value="{{key}}" {{^editable}}disabled{{/editable}}
-               {{#checked}}checked{{/checked}} id="{{name}}-{{key}}">
+    {{#answers}}
+        <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1">
+            <input
+                class="form-check-input mt-0"
+                type="radio"
+                name="{{name}}"
+                value="{{key}}"
+                id="{{name}}-{{key}}"
+                {{^editable}}disabled{{/editable}}
+                {{#selected}}checked{{/selected}}
+            >
 
-        <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
-            {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
-            <div class="ml-1 mr-1">{{{html}}}</div>
-        </label>
+            <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
+                {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
+                <div class="ml-1 mr-1">{{{html}}}</div>
+            </label>
 
-        {{#display_feedback}}
-        <div class="pl-multiple-choice-feedback">
-            {{{feedback}}}
+            {{#display_feedback}}
+            <div class="pl-multiple-choice-feedback">
+                {{{feedback}}}
+            </div>
+            {{/display_feedback}}
+
+            {{#display_score_badge}}
+                {{#correct}}
+                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                {{/correct}}
+                {{#incorrect}}
+                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                {{/incorrect}}
+                {{#partial}}
+                    <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i></span>
+                {{/partial}}
+            {{/display_score_badge}}
         </div>
-        {{/display_feedback}}
-
-        {{#display_score_badge}}
-            {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-            {{/correct}}
-            {{#incorrect}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
-            {{/incorrect}}
-            {{#partial}}
-                <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i></span>
-            {{/partial}}
-        {{/display_score_badge}}
-    </div>
-{{/answers}}
+    {{/answers}}
 
 {{#display_score_badge}}
-    &nbsp;
     {{#correct}}
         <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
     {{/correct}}
@@ -50,6 +56,58 @@
 {{#inline}}
 </span>
 {{/inline}}
+{{/radio}}
+{{^radio}}
+<!-- Weirdly enough putting this in a div causes it to display without the inline -->
+<span class="py-1 d-inline align-items-center">
+    <script>
+        $(() => {
+            $('#pl-multiple-choice-select-{{uuid}}').selectpicker({})
+                .on('rendered.bs.select loaded.bs.select shown.bs.select', (e) => {
+                    // If any of the options has math, render the math as needed
+                    // Events: loaded (when the page opens), rendered (when the value changes),
+                    // shown (when the dropdown extends)
+                    MathJax.typesetPromise();
+                });
+        });
+    </script>
+    <select
+        name="{{name}}"
+        data-style="btn-light border border-secondary"
+        id="pl-multiple-choice-select-{{uuid}}"
+        title="Nothing selected"
+        class="d-inline-flex"
+        {{^editable}}disabled{{/editable}}
+    >
+        {{#answers}}
+            <option
+                value="{{key}}"
+                style="white-space:normal;"
+                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"
+                {{#selected}}selected{{/selected}}
+            ></option>
+        {{/answers}}
+    </select>
+
+    {{#feedback}}
+    <span class="d-inline pl-multiple-choice-feedback">
+        {{{feedback}}}
+    </span>
+    {{/feedback}}
+
+    {{#display_score_badge}}
+        {{#correct}}
+            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{#incorrect}}
+            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+        {{/incorrect}}
+        {{#partial}}
+            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        {{/partial}}
+    {{/display_score_badge}}
+</span>
+{{/radio}}
 
 {{/question}}
 {{#submission}}
@@ -65,46 +123,66 @@
 </script>
 
 <span id="pl-multiple-choice-submission-{{uuid}}">
-    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border ml-1" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+    <a
+        href="javascript:void(0);"
+        role="button"
+        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
+        data-placement="auto"
+        data-trigger="focus"
+        data-toggle="popover"
+        data-html="true"
+        title="Format Error"
+        tabindex="0"
+        data-content="{{parse_error}}"
+    > Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    </a>
 </span>
 {{/parse_error}}
 {{^parse_error}}
 
-<div class="d-inline-flex align-items-center">
-    <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{answer.html}}}</span>
+{{#inline}}<span class="py-1 d-inline align-items-center">{{/inline}}
+{{^inline}}<div class="py-1 d-inline-flex align-items-center">{{/inline}}
+
+    <span>{{^hide_letter_keys}}({{submitted_key}}){{/hide_letter_keys}} {{{submitted_answer.html}}}</span>
 
     {{#display_feedback}}
-        <div class="pl-multiple-choice-feedback">
+        <span class="d-inline pl-multiple-choice-feedback">
             {{{feedback}}}
-        </div>
+        </span>
     {{/display_feedback}}
 
     {{#display_score_badge}}
-        &nbsp;
         {{#correct}}
-            <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="ml-1 badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#incorrect}}
-            <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="ml-1 badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         {{#partial}}
-            <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+            <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
-</div>
+
+{{#inline}}</span>{{/inline}}
+{{^inline}}</div>{{/inline}}
 
 {{/parse_error}}
 {{/submission}}
-
 {{#answer}}
-    {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
-    {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
-    {{#answers}}
-        <li {{#inline}}class="list-inline-item"{{/inline}}>
-            {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
-        </li>
-    {{/answers}}
-    {{#inline}}</ul></span>{{/inline}}
-    {{^inline}}</ul></div>{{/inline}}
+    {{#radio}}
+        {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
+        {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
+        {{#answers}}
+            <li {{#inline}}class="list-inline-item"{{/inline}}>
+                {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
+            </li>
+        {{/answers}}
+        {{#inline}}</ul></span>{{/inline}}
+        {{^inline}}</ul></div>{{/inline}}
+    {{/radio}}
+    {{^radio}}
+        {{#answers}}
+        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+        {{/answers}}
+    {{/radio}}
 {{/answer}}

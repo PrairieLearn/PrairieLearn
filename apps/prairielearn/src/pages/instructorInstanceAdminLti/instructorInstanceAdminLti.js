@@ -1,13 +1,14 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+//@ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import * as express from 'express';
 
-const { getCourseOwners } = require('../../lib/course');
-const error = require('@prairielearn/error');
-var sqldb = require('@prairielearn/postgres');
+import { getCourseOwners } from '../../lib/course';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -33,7 +34,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
   }
   var params;
   if (req.body.__action === 'lti_new_cred') {
@@ -71,16 +72,11 @@ router.post('/', function (req, res, next) {
       res.redirect(req.originalUrl);
     });
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
+    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;
 
 function randomString() {
   var len = 10;

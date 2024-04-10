@@ -1,9 +1,10 @@
-const http = require('http');
+// @ts-check
+import * as http from 'node:http';
 const Docker = require('dockerode');
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
-const lifecycle = require('./lifecycle');
+import globalLogger from './logger';
+import { config } from './config';
+import * as lifecycle from './lifecycle';
 
 /**
  * Stores our current status. Once we transition to an unhealthy state, there's
@@ -20,7 +21,7 @@ let unhealthyReason = null;
  * 2) an internal checker that will ping docker at a certain interval and will
  *    kill our process if the daemon can't be reached.
  */
-module.exports.init = function (callback) {
+export function init(callback) {
   const docker = new Docker();
 
   const handler = (req, res) => {
@@ -36,7 +37,7 @@ module.exports.init = function (callback) {
   const doHealthCheck = () => {
     docker.ping((err) => {
       if (err) {
-        module.exports.flagUnhealthy('Docker unreachable');
+        flagUnhealthy('Docker unreachable');
       }
       setTimeout(doHealthCheck, config.healthCheckInterval);
     });
@@ -61,15 +62,15 @@ module.exports.init = function (callback) {
       }
     });
   });
-};
+}
 
-module.exports.flagUnhealthy = function (reason) {
+export function flagUnhealthy(reason) {
   globalLogger.error(`A health check failed: ${reason}`);
   healthy = false;
   unhealthyReason = reason;
   lifecycle.abandonLaunch();
-};
+}
 
-module.exports.isHealthy = function () {
+export function isHealthy() {
   return healthy;
-};
+}

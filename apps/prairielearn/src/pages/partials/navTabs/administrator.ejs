@@ -4,6 +4,11 @@
     iconClasses:    'fas fa-user-shield',
     tabLabel:       'Administrators'}); %>
 <%- include('navTab', {
+    activeSubPage:  'institutions',
+    urlSuffix:      '/administrator/institutions',
+    iconClasses:    'fa fa-building-columns',
+    tabLabel:       'Institutions'}); %>
+<%- include('navTab', {
     activeSubPage:  'courses',
     urlSuffix:      '/administrator/courses',
     iconClasses:    'fa fa-chalkboard',
@@ -23,6 +28,11 @@
     urlSuffix:      '/administrator/workspaces',
     iconClasses:    'fas fa-laptop-code',
     tabLabel:       'Workspaces'}); %>
+<%- include('navTab', {
+    activeSubPage:  'features',
+    urlSuffix:      '/administrator/features',
+    iconClasses:    'fas fa-toggle-on',
+    tabLabel:       'Features'}); %>
 <%- include('navTab', {
     activeSubPage:  'batchedMigrations',
     urlSuffix:      '/administrator/batchedMigrations',

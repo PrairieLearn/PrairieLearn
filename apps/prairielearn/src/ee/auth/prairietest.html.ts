@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}

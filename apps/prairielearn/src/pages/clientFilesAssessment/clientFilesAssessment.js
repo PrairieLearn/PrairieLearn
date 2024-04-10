@@ -10,10 +10,7 @@ router.get('/*', function (req, res, next) {
   const filename = req.params[0];
   if (!filename) {
     return next(
-      error.make(400, 'No filename provided within clientFilesAssessment directory', {
-        locals: res.locals,
-        body: req.body,
-      })
+      new error.HttpStatusError(400, 'No filename provided within clientFilesAssessment directory'),
     );
   }
   const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
@@ -31,7 +28,7 @@ router.get('/*', function (req, res, next) {
       res.locals.course_instance.short_name,
       'assessments',
       res.locals.assessment.tid,
-      'clientFilesAssessment'
+      'clientFilesAssessment',
     );
     res.sendFile(filename, { root: clientFilesDir });
   });

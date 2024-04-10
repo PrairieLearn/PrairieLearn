@@ -100,7 +100,7 @@ describe('BatchedMigrationsRunner', () => {
       runner.finalizeBatchedMigration('20230406184107_failing_migration', {
         logProgress: false,
       }),
-      "but it is 'failed'"
+      "but it is 'failed'",
     );
 
     const migrations = await selectAllBatchedMigrations('test');

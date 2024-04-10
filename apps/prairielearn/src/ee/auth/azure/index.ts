@@ -12,6 +12,7 @@ export function getAzureStrategy() {
       clientSecret: config.azureClientSecret,
       cookieEncryptionKeys: config.azureCookieEncryptionKeys,
       loggingLevel: config.azureLoggingLevel,
+      scope: ['openid', 'profile', 'email'],
       responseType: 'code id_token',
       responseMode: 'form_post',
       // We're using the common metadata endpoint, so we need to disable issuer validation.
@@ -22,6 +23,6 @@ export function getAzureStrategy() {
     },
     function (iss, sub, profile, accessToken, refreshToken, done) {
       return done(null, profile);
-    }
+    },
   );
 }

@@ -6,6 +6,7 @@ from io import StringIO
 import chevron
 import lxml.html
 import prairielearn as pl
+from colors import PLColor
 
 
 def get_file_names_as_array(raw_file_names: str) -> list[str]:
@@ -77,6 +78,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url", None),
         "submitted_file_names": submitted_file_names_json,
+        "check_icon_color": PLColor("correct_green"),
     }
 
     with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:

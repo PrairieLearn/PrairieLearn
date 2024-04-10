@@ -1,6 +1,4 @@
-const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
-const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {
   // Capture the path at the start of the request; it may have been rewritten
@@ -8,52 +6,36 @@ module.exports = function (req, res, next) {
   const path = req.path;
 
   if (req.method !== 'OPTIONS') {
-    res.once('finish', function () {
-      // Attach information to the Sentry scope so that we can more easily
-      // debug errors. No PII is added.
-      if (config.sentryDsn) {
-        enrichSentryScope(req, res);
-      }
-
+    res.once('close', function () {
       var access = {
         response_id: res.locals.response_id,
-        timestamp: new Date().toISOString(),
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],
         method: req.method,
         path,
         params: req.params,
         body: req.body,
-        authn_user_id: res.locals && res.locals.authn_user ? res.locals.authn_user.user_id : null,
-        authn_user_uid: res.locals && res.locals.authn_user ? res.locals.authn_user.uid : null,
-        user_id: res.locals && res.locals.user ? res.locals.user.user_id : null,
-        user_uid: res.locals && res.locals.user ? res.locals.user.uid : null,
-        course_id: res.locals && res.locals.course ? res.locals.course.id : null,
-        course_short_name: res.locals && res.locals.course ? res.locals.course.short_name : null,
-        course_instance_id:
-          res.locals && res.locals.course_instance ? res.locals.course_instance.id : null,
-        course_instance_short_name:
-          res.locals && res.locals.course_instance ? res.locals.course_instance.short_name : null,
-        assessment_id: res.locals && res.locals.assessment ? res.locals.assessment.id : null,
-        assessment_directory:
-          res.locals && res.locals.assessment ? res.locals.assessment.tid : null,
-        assessment_instance_id:
-          res.locals && res.locals.assessment_instance ? res.locals.assessment_instance.id : null,
-        question_id: res.locals && res.locals.question ? res.locals.question.id : null,
-        question_directory:
-          res.locals && res.locals.question ? res.locals.question.directory : null,
-        instance_question_id:
-          res.locals && res.locals.instance_question ? res.locals.instance_question.id : null,
+        finished: res.writableFinished,
+        authn_user_id: res.locals?.authn_user?.user_id ?? null,
+        authn_user_uid: res.locals?.authn_user?.uid ?? null,
+        user_id: res.locals?.user?.user_id ?? null,
+        user_uid: res.locals?.user?.uid ?? null,
+        course_id: res.locals?.course?.id ?? null,
+        course_short_name: res.locals?.course?.short_name ?? null,
+        course_instance_id: res.locals?.course_instance?.id ?? null,
+        course_instance_short_name: res.locals?.course_instance?.short_name ?? null,
+        assessment_id: res.locals?.assessment?.id ?? null,
+        assessment_directory: res.locals?.assessment?.tid ?? null,
+        assessment_instance_id: res.locals?.assessment_instance?.id ?? null,
+        question_id: res.locals?.question?.id ?? null,
+        question_directory: res.locals?.question?.directory ?? null,
+        instance_question_id: res.locals?.instance_question?.id ?? null,
       };
       logger.verbose('response', access);
-      res.locals.response_logged = true;
-    });
 
-    // install a handler that will always be called, so we can
-    // check whether we correctly logged the response
-    res.on('close', () => {
-      if (!res.locals.response_logged) {
-        logger.error('response was not logged', {
+      // Print additional message in this case to simplify grepping logs for this scenario
+      if (!res.writableFinished) {
+        logger.verbose('request aborted by client', {
           response_id: res.locals.response_id,
         });
       }

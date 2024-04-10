@@ -206,10 +206,12 @@ def generate(data):
         },
         # A question file can also be added by using its path in the question instead of its contents
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
+        # To make an empty file, set `contents` to None or an empty string
+        {"name": "empty.txt", "contents": None}
     ]
 ```
 
-By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Only one of `questionFile` and `contents` may be provided. If neither `questionFile` nor `contents` are provided, an empty file is created.
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Either `questionFile` or `contents` must be provided, but not both. If an empty file is expected, `contents` may be set to `None` or an empty string.
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
@@ -227,82 +229,13 @@ If you're using your own editor, you must ensure that it frequently autosaves an
 
 ## Running locally (on Docker)
 
-- First, create an empty directory to use to share job data between containers.
-
-  - This can live anywhere, but needs to be created first and referenced in the `docker run` command.
-  - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
-  - **If you already created an external grader jobs directory, you can reuse the same one.**
-
-```sh
-mkdir "$HOME/pl_ag_jobs"
-```
-
-- Then, use one of the following `docker run` commands based on your platform.
-
-In MacOS, `cd` to your course directory and copy-paste the following command:
-
-```sh
-docker run -it --rm -p 3000:3000 \
-  -v "$PWD":/course \
-  -v "$HOME/pl_ag_jobs:/jobs" \
-  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  prairielearn/prairielearn
-```
-
-In Linux, `cd` to your course directory and copy-paste the following command (same as the MacOS command but add the `--add-host` option):
-
-```sh
-docker run -it --rm -p 3000:3000 \
-  -v "$PWD":/course \
-  -v "$HOME/pl_ag_jobs:/jobs" \
-  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  --add-host=host.docker.internal:172.17.0.1 `# this line is new vs MacOS` \
-  prairielearn/prairielearn
-```
-
-In Windows 10/11 (PowerShell), `cd` to your course directory and copy the following command **but with your own username in `HOST_JOBS_DIR`**:
-
-```powershell
-docker run -it --rm -p 3000:3000 `
-  -v "$PWD":/course `
-  -v $HOME\pl_ag_jobs:/jobs `
-  -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
-  -v /var/run/docker.sock:/var/run/docker.sock `
-  prairielearn/prairielearn
-```
-
-- **Note** the following about `HOST_JOBS_DIR` in PowerShell:
-
-  - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
-  - Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
-
-- **Note** that `C:` must have shared access between Windows and Docker:
-
-  - Right-click the Docker "whale" icon in the taskbar
-  - Click "Settings"
-  - Ensure `C:` is checked
-
-If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
-
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$PWD":/course \
-    -v $HOME/pl_ag_jobs:/jobs \
-    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --add-host=host.docker.internal:172.17.0.1 \
-    prairielearn/prairielearn
-```
-
-Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 
 For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
 
-```
+```sh
 make dev-workspace-host
 make dev
 ```

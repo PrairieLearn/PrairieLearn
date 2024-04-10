@@ -1,8 +1,8 @@
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
-import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { doWithLock } from '@prairielearn/named-locks';
 
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
@@ -60,7 +60,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
     if (!this.migrationFiles) {
       this.migrationFiles = await readAndValidateMigrationsFromDirectories(
         this.options.directories,
-        EXTENSIONS
+        EXTENSIONS,
       );
     }
     return this.migrationFiles;
@@ -153,7 +153,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
     if (migration.status === 'succeeded') return;
 
     throw new Error(
-      `Expected batched migration with identifier ${identifier} to be marked as 'succeeded', but it is '${migration.status}'.`
+      `Expected batched migration with identifier ${identifier} to be marked as 'succeeded', but it is '${migration.status}'.`,
     );
   }
 
@@ -204,23 +204,30 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
-    return doWithLock(this.lockName, {}, async () => {
-      let migration = await queryValidatedZeroOrOneRow(
-        sql.select_running_migration,
-        { project: this.options.project },
-        BatchedMigrationRowSchema
-      );
-
-      if (!migration) {
-        migration = await queryValidatedZeroOrOneRow(
-          sql.start_next_pending_migration,
+    return doWithLock(
+      this.lockName,
+      {
+        // Don't fail if the lock couldn't be acquired immediately.
+        onNotAcquired: () => null,
+      },
+      async () => {
+        let migration = await queryOptionalRow(
+          sql.select_running_migration,
           { project: this.options.project },
-          BatchedMigrationRowSchema
+          BatchedMigrationRowSchema,
         );
-      }
 
-      return migration;
-    });
+        if (!migration) {
+          migration = await queryOptionalRow(
+            sql.start_next_pending_migration,
+            { project: this.options.project },
+            BatchedMigrationRowSchema,
+          );
+        }
+
+        return migration;
+      },
+    );
   }
 
   async maybePerformWork(durationMs: number): Promise<boolean> {
@@ -238,9 +245,13 @@ export class BatchedMigrationsRunner extends EventEmitter {
     }
 
     let didWork = false;
-    await tryWithLock(
+    await doWithLock(
       this.lockNameForTimestamp(migrationFile.timestamp),
-      { autoRenew: true },
+      {
+        autoRenew: true,
+        // Do nothing if the lock could not immediately be acquired.
+        onNotAcquired: () => null,
+      },
       async () => {
         didWork = true;
         const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
@@ -252,7 +263,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
         } catch (err) {
           this.emit('error', err);
         }
-      }
+      },
     );
 
     return didWork;
@@ -271,7 +282,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 let runner: BatchedMigrationsRunner | null = null;
 
 function assertRunner(
-  runner: BatchedMigrationsRunner | null
+  runner: BatchedMigrationsRunner | null,
 ): asserts runner is BatchedMigrationsRunner {
   if (!runner) throw new Error('Batched migrations not initialized');
 }
@@ -320,7 +331,7 @@ export async function enqueueBatchedMigration(identifier: string) {
  */
 export async function finalizeBatchedMigration(
   identifier: string,
-  options?: BatchedMigrationFinalizeOptions
+  options?: BatchedMigrationFinalizeOptions,
 ) {
   assertRunner(runner);
   await runner.finalizeBatchedMigration(identifier, options);

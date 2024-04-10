@@ -1,6 +1,6 @@
 import { MultiSamlStrategy } from 'passport-saml';
 
-import { getInstitutionSamlProvider } from '../../institution/utils';
+import { getInstitutionSamlProvider } from '../../lib/institution';
 
 export const strategy = new MultiSamlStrategy(
   {
@@ -29,6 +29,11 @@ export const strategy = new MultiSamlStrategy(
             // Service Provider's private key.
             privateKey: samlProvider.private_key,
             decryptionPvk: samlProvider.private_key,
+            // By default, `node-saml` will include a `RequestedAuthnContext`
+            // element that requests password-based authentication. However,
+            // some institutions use passwordless auth, so we disable this and
+            // allow any authentication context.
+            disableRequestedAuthnContext: true,
           });
         })
         .catch((err) => done(err));
@@ -36,5 +41,5 @@ export const strategy = new MultiSamlStrategy(
   },
   function (req, profile, done) {
     done(null, profile ?? undefined);
-  }
+  },
 );

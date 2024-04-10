@@ -6,6 +6,18 @@ import fs from 'fs-extra';
  */
 const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.[a-z]+/;
 
+/**
+ * Annotations are expressed via the following:
+ *
+ * -- prairielearn:migrations NO TRANSACTION
+ *
+ * Currently, `NO TRANSACTION` is the only supported annotation. This will run
+ * the migration without a transaction. This is useful for migrations that use
+ * features that can't be run in transactions, such as `CREATE INDEX CONCURRENTLY`.
+ */
+const ANNOTATION_PREFIX = '-- prairielearn:migrations';
+const ALLOWED_ANNOTATIONS = new Set(['NO TRANSACTION']);
+
 export interface MigrationFile {
   directory: string;
   filename: string;
@@ -14,10 +26,10 @@ export interface MigrationFile {
 
 export async function readAndValidateMigrationsFromDirectory(
   dir: string,
-  extensions: string[]
+  extensions: string[],
 ): Promise<MigrationFile[]> {
   const migrationFiles = (await fs.readdir(dir)).filter((m) =>
-    extensions.some((e) => m.endsWith(e))
+    extensions.some((e) => m.endsWith(e)),
   );
 
   const migrations = migrationFiles.map((mf) => {
@@ -59,7 +71,7 @@ export async function readAndValidateMigrationsFromDirectory(
 
 export async function readAndValidateMigrationsFromDirectories(
   directories: string[],
-  extensions: string[]
+  extensions: string[],
 ): Promise<MigrationFile[]> {
   const allMigrations: MigrationFile[] = [];
   for (const directory of directories) {
@@ -73,4 +85,21 @@ export function sortMigrationFiles(migrationFiles: MigrationFile[]): MigrationFi
   return migrationFiles.sort((a, b) => {
     return a.timestamp.localeCompare(b.timestamp);
   });
+}
+
+export function parseAnnotations(contents: string): Set<string> {
+  const lines = contents.split('\n');
+  const annotations = new Set<string>();
+
+  lines.forEach((line) => {
+    if (line.startsWith(ANNOTATION_PREFIX)) {
+      const annotation = line.slice(ANNOTATION_PREFIX.length).trim();
+      if (!ALLOWED_ANNOTATIONS.has(annotation)) {
+        throw new Error(`Invalid annotation: ${annotation}`);
+      }
+      annotations.add(annotation);
+    }
+  });
+
+  return annotations;
 }

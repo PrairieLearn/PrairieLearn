@@ -1,16 +1,26 @@
 #!/bin/bash
 
-# FIXME: temporary check until all developers have upgraded their docker images
-# FIXME: should be removed soon
-if ! command -v lsof > /dev/null ; then
-    echo "Docker image is outdated. Please run:"
-    echo -e "\tdocker pull prairielearn/prairielearn"
-    exit 1
-fi
-
 # exit if s3rver is already running
-if lsof -i :5000 > /dev/null ; then
-    exit
+PID=$(lsof -i :5000 -t)
+if [ -n "$PID" ]; then
+    # Check if this process is actually s3rver
+    PROCESS_NAME=$(ps -p $PID -o args=)
+    if grep -q "[s]3rver" <<< $PROCESS_NAME; then
+        exit
+    fi
+
+    # Warn the user that the port is already in use
+    echo "Cannot start s3rver since port 5000 is already in use by process $PID."
+    echo "Please stop the process and try again."
+
+    # If the user is on macOS, warn them that this might be caused by AirPlay
+    # Receiver.
+    if [ "$(uname)" == "Darwin" ] && grep -q "ControlCenter" <<< $PROCESS_NAME; then
+        echo "This might be caused by AirPlay Receiver."
+        echo "For more details, see the following:"
+        echo "https://apple.stackexchange.com/questions/431154/should-controlcenter-app-listen-to-port-5000-tcp-on-a-normal-macos-monterey-syst"
+    fi
+    exit 1
 fi
 
 mkdir -p ./s3rver

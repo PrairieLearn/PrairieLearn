@@ -17,6 +17,7 @@ columns
     grading_submitted_at: timestamp with time zone
     id: bigint not null default nextval('grading_jobs_id_seq'::regclass)
     manual_points: double precision
+    manual_rubric_grading_id: bigint
     output: text
     partial_scores: jsonb
     s3_bucket: text
@@ -34,6 +35,7 @@ foreign-key constraints
     grading_jobs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs_graded_by_fkey: FOREIGN KEY (graded_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs_grading_request_canceled_by_fkey: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_jobs_manual_rubric_grading_id_fkey: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     grading_jobs_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

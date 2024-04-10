@@ -13,10 +13,17 @@
     </p>
 
     <p>The setup code gives the following variables:</p>
-    <p><pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables></p>
+    <p>
+        <pl-external-grader-variables params-name="names_for_user">
+            <pl-variable name="x" type="floating point number">$x$</pl-variable>
+        </pl-external-grader-variables>
+    </p>
 
     <p>Your code snippet should define the following variables:</p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user">
+        <pl-variable name="y" type="floating point number">$y=x^2$</pl-variable>
+        <pl-variable name="z" type="floating point number">$z=\sqrt{y+1}$</pl-variable>
+    </pl-external-grader-variables>
     <pl-file-editor
         file-name="user_code.py"
         ace-mode="ace/mode/python"

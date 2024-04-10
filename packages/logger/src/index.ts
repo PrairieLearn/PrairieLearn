@@ -21,6 +21,6 @@ export function addFileLogging(options: AddFileLoggingOptions) {
       filename: options.filename,
       level: options.level ?? 'debug',
       format: format.combine(format.timestamp(), format.json()),
-    })
+    }),
   );
 }

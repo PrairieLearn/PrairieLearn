@@ -180,7 +180,7 @@
                   <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all instances
                 </a>
                 <% } else { %>
-                <a class="dropdown-item disabled" role="button" tabindex="0">
+                <button class="dropdown-item disabled" disabled>
                   Must have editor permission
                 </a>
                 <% } %>
@@ -295,24 +295,37 @@
                 </button>
               </th>
               <th data-field="time_remaining"
-                  data-sortable="true"
-                  data-sort-name="time_remaining_sec"
-                  data-sorter="timeRemainingLimitSorter"
-                  data-formatter="timeRemainingLimitFormatter"
-                  data-class="text-center align-middle text-nowrap"
-                  data-switchable="true"
-                  data-search-formatter="false">Remaining
-                <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help">
-                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button></th>
+              data-sortable="true"
+              data-sort-name="time_remaining_sec"
+              data-sorter="timeRemainingLimitSorter"
+              data-formatter="timeRemainingLimitFormatter"
+              data-class="text-center align-middle text-nowrap"
+              data-switchable="true"
+              data-search-formatter="false">Remaining
+              <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help">
+                <i class="bi-question-circle-fill" aria-hidden="true"></i>
+              </button></th>
               <th data-field="total_time"
-                  data-visible="false"
+              data-visible="false"
+              data-sortable="true"
+              data-sort-name="total_time_sec"
+              data-formatter="timeRemainingLimitFormatter"
+              data-class="text-center align-middle"
+              data-switchable="true"
+              data-search-formatter="false">Total Time Limit</th>
+              <% if (!assessment.group_work) { %>
+                <th
+                  data-field="client_fingerprint_id_change_count"
                   data-sortable="true"
-                  data-sort-name="total_time_sec"
-                  data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle"
                   data-switchable="true"
-                  data-search-formatter="false">Total Time Limit</th>
+                >
+                  Fingerprint Changes
+                  <button class="btn btn-xs" type="button" title="Show fingerprint changes help" data-toggle="modal" data-target="#fingerprint-changes-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </th>
+              <% } %>
               <th data-field="action_button"
                   data-sortable="false"
                   data-formatter="actionButtonFormatter"
@@ -342,6 +355,25 @@
                   <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
                   <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
                 </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="fingerprint-changes-help" tabindex="-1" role="dialog" aria-labelledby="fingerprint-help-title">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="fingerprint-help-title">Client Fingerprints</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment.
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>

@@ -1,3 +1,4 @@
+//@ts-check
 const ERR = require('async-stacktrace');
 const path = require('path');
 const fs = require('fs');
@@ -8,7 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/:news_item_id', function (req, res, next) {
+router.get('/:news_item_id(\\d+)', function (req, res, next) {
   const params = {
     news_item_id: req.params.news_item_id,
     user_id: res.locals.authn_user.user_id,
@@ -29,7 +30,7 @@ router.get('/:news_item_id', function (req, res, next) {
       '..',
       'news_items',
       res.locals.news_item.directory,
-      'index.html'
+      'index.html',
     );
     fs.readFile(indexFilename, (err, news_item_html) => {
       if (ERR(err, next)) return;
@@ -41,7 +42,7 @@ router.get('/:news_item_id', function (req, res, next) {
   });
 });
 
-router.get('/:news_item_id/*', function (req, res, next) {
+router.get('/:news_item_id(\\d+)/*', function (req, res, next) {
   const filename = req.params[0];
   const params = {
     news_item_id: req.params.news_item_id,
@@ -58,7 +59,7 @@ router.get('/:news_item_id/*', function (req, res, next) {
       '..',
       '..',
       'news_items',
-      res.locals.news_item.directory
+      res.locals.news_item.directory,
     );
 
     res.sendFile(filename, { root: news_item_dir });

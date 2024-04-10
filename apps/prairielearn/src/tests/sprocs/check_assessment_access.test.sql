@@ -14,9 +14,9 @@ WITH
   ),
   setup_pt_sessions AS (
     INSERT INTO
-      pt_sessions (id)
+      pt_sessions (id, date)
     VALUES
-      (1)
+      (1, NOW())
   ),
   setup_pt_enrollments AS (
     INSERT INTO
@@ -37,15 +37,20 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id)
+      pl_courses (id, display_timezone, path)
     VALUES
-      (1)
+      (1, 'UC', '/path/to/course/1')
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id)
+      course_instances (id, uuid, course_id, display_timezone)
     VALUES
-      (1, 'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d', 1)
+      (
+        1,
+        'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
+        1,
+        'UTC'
+      )
   ),
   setup_assessment_sets AS (
     INSERT INTO
@@ -97,14 +102,6 @@ WITH
         1
       ),
       (
-        51,
-        'f92f7657-30b4-4bcd-9ccf-a2b4a5022c64',
-        'accessExam',
-        'Access Exam',
-        1,
-        1
-      ),
-      (
         52,
         'a92f7657-30b4-4bcd-9ccf-a2b4a5022c64',
         'accessExam',
@@ -122,8 +119,7 @@ WITH
         end_date,
         credit,
         exam_uuid,
-        uids,
-        role
+        uids
       )
     VALUES
       (
@@ -132,7 +128,6 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        null,
         null,
         null
       ),
@@ -143,7 +138,6 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         '890884f9-aa9d-4fc0-b910-5229794906fb',
-        null,
         null
       ),
       (
@@ -153,7 +147,6 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3',
-        null,
         null
       ),
       (
@@ -163,18 +156,7 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         null,
-        '{valid@school.edu}',
-        null
-      ),
-      (
-        51,
-        'Public',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        null,
-        '{valid@school.edu}',
-        'Instructor'
+        '{valid@school.edu}'
       ),
       (
         52,
@@ -183,7 +165,6 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         'bf6df059-6760-4cf0-ac32-35a43e28a3e7',
-        null,
         null
       )
   )

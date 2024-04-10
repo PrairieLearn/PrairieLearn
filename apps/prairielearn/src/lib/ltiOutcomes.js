@@ -4,6 +4,7 @@ const xml2js = require('xml2js');
 const _ = require('lodash');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const util = require('util');
 
 var sqldb = require('@prairielearn/postgres');
 const { config } = require('./config');
@@ -49,7 +50,7 @@ function xmlReplaceResult(sourcedId, score, identifier) {
 /**
  * Check if LTI needs updating for this assessment.
  *
- * @param {number} ai_id - The assessment instance
+ * @param {string} ai_id - The assessment instance
  * @param {function} callback - A callback(err) function.
  */
 function updateScore(ai_id, callback) {
@@ -102,23 +103,23 @@ function updateScore(ai_id, callback) {
             'imsx_statusInfo',
             'imsx_codeMajor',
           ],
-          null
+          null,
         );
         if (imsx_codeMajor === 'success') {
           logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
           );
           debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
           );
         } else {
           logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
           );
           logger.info('post_params:', post_params);
           logger.info('body:', body);
           debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
           );
           debug('post_params', post_params);
           debug('body', body);
@@ -155,6 +156,7 @@ if (require.main === module) {
 
 module.exports = {
   updateScore,
+  updateScoreAsync: util.promisify(updateScore),
 };
 
 /*

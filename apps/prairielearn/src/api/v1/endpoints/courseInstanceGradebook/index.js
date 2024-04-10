@@ -1,11 +1,11 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router({ mergeParams: true });
+import { Router } from 'express';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',
@@ -14,7 +14,7 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     res.status(200).send(result.rows[0].item);
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

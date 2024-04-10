@@ -1,0 +1,18 @@
+<pl-question-panel>
+  <p>
+    This is a smoke test of external grading. Rather than using any official
+    grader image, we use a simple Alpine Linux image that just runs a shell
+    script. This lets us test that external grading is working without having
+    to pull a huge Docker image.
+  </p>
+  <p>
+    For full credit, type <code>correct</code> into the below file.
+  </p>
+
+  <pl-file-editor file-name="answer.txt"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

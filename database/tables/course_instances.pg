@@ -2,7 +2,8 @@ columns
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
     deleted_at: timestamp with time zone
-    display_timezone: text
+    display_timezone: text not null
+    enrollment_limit: integer
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
@@ -27,8 +28,10 @@ referenced by
     chunks: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_access_rules: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_permissions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_required_plans: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
     current_pages: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    feature_grants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_configs: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     groups: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -37,5 +40,6 @@ referenced by
     lti_credentials: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti_links: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    plan_grants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     users: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     variants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

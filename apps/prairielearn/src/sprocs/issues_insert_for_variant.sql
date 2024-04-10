@@ -25,7 +25,7 @@ BEGIN
     FROM
         variants AS v
         JOIN questions AS q ON (q.id = v.question_id)
-        JOIN pl_courses AS c ON (c.id = q.course_id)
+        JOIN pl_courses AS c ON (c.id = v.course_id)
         LEFT JOIN users AS u ON (CASE WHEN v.group_id IS NULL THEN u.user_id = v.user_id
                                       ELSE u.user_id = issues_insert_for_variant.authn_user_id
                                  END)

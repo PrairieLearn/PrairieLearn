@@ -1,6 +1,7 @@
 from enum import Enum
 
 import chevron
+import lxml.etree
 import lxml.html
 import numpy as np
 import prairielearn as pl
@@ -91,7 +92,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     r_data = ""
     sympy_data = "from sympy import *\n\n"
     for child in element:
-        if child.tag == "variable":
+        # Allowing "variable" for backward compatibility.
+        if child.tag in {"variable", "pl-variable"}:
             # Raise exception if variable does not have a name
             pl.check_attribs(
                 child,
@@ -180,6 +182,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             python_data += f"{var_name_disp} = {prefix}{var_python_data}{suffix}{var_python_comment}\n"
             r_data += f"{var_name_disp} = {var_r_data}{var_r_comment}\n"
             sympy_data += f"{var_name_disp} = {var_sympy_data}{var_sympy_comment}\n"
+
+        elif child.tag is lxml.etree.Comment:
+            continue
+
+        else:
+            raise ValueError(
+                f'Tags inside of pl-variable-output must be pl-variable, not "{child.tag}".'
+            )
 
     html_params = {
         active_tab_key: True,

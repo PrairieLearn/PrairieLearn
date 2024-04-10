@@ -3,6 +3,7 @@
 /**
  * Base element class.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
@@ -55,7 +56,7 @@ window.PLDrawingApi = {
    * Generates a new numeric ID for a submission object.
    * Each submitted object is uniquely identified by its ID.
    */
-  generateID: function () {
+  generateID() {
     return this._idCounter++;
   },
 
@@ -68,7 +69,7 @@ window.PLDrawingApi = {
    * @param extensionName Name of the extension/group of elements.
    * @param dictionary Dictionary of elements to register.
    */
-  registerElements: function (extensionName, dictionary) {
+  registerElements(extensionName, dictionary) {
     _.extend(this.elements, dictionary);
     Object.keys(dictionary).forEach((elem) => {
       this.elementModule[elem] = extensionName;
@@ -81,7 +82,7 @@ window.PLDrawingApi = {
    * @param options Element options.  Must contain a 'type' key.
    * @param submittedAnswer Answer state object.
    */
-  createElement: function (canvas, options, submittedAnswer) {
+  createElement(canvas, options, submittedAnswer) {
     const name = options.type;
     let added = null;
 
@@ -100,7 +101,7 @@ window.PLDrawingApi = {
    * @param name Name of the element to look up.
    * @returns The element, if found.  Silently fails with the base element otherwise.
    */
-  getElement: function (name) {
+  getElement(name) {
     let ret = PLDrawingBaseElement;
     if (name in this.elements) {
       let elem = this.elements[name];
@@ -116,9 +117,9 @@ window.PLDrawingApi = {
    * @param canvas Canvas to restore state onto.
    * @param submittedAnswer Answer state to restore from.
    */
-  restoreAnswer: function (canvas, submittedAnswer) {
+  restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(id + 1, this._idCounter);
+      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
       let newObj = JSON.parse(JSON.stringify(obj));
       this.createElement(canvas, newObj, submittedAnswer);
     }
@@ -131,7 +132,7 @@ window.PLDrawingApi = {
    * @param elem_options Any options to give to the element
    * @param existing_answer_submission Existing submission to place on the canvas.
    */
-  setupCanvas: function (root_elem, elem_options, existing_answer_submission) {
+  setupCanvas(root_elem, elem_options, existing_answer_submission) {
     let canvas_elem = $(root_elem).find('canvas')[0];
     let canvas_width = parseFloat(elem_options.width);
     let canvas_height = parseFloat(elem_options.height);
@@ -211,7 +212,7 @@ window.PLDrawingApi = {
         canvas,
         canvas_width,
         canvas_height,
-        elem_options.grid_size
+        elem_options.grid_size,
       );
     }
 
@@ -247,7 +248,7 @@ window.PLDrawingApi = {
     fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
       const target = canvas.findTarget(e);
       if (target !== undefined) {
-        target.fire('dblclick', { e: e });
+        target.fire('dblclick', { e });
       }
     });
 
@@ -292,7 +293,7 @@ class PLDrawingAnswerState {
         console.trace(
           `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${
             object.type
-          }`
+          }`,
         );
         console.warn('Existing', this._answerData[object.id]);
         console.warn('New', object);

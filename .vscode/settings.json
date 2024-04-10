@@ -1,0 +1,31 @@
+{
+  // If the following is ever addressed, we can update our config to use whatever
+  // the official shared config is:
+  // https://github.com/microsoft/vscode/issues/40233
+
+  // This is required to load extensions, which in turn is required to be able
+  // to format SQL files.
+  // https://github.com/prettier/prettier-vscode/issues/3235
+  "prettier.configPath": "./.prettierrc.json",
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  "[javascript][typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+
+  "[html][css][json][yaml][sql][markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
+}

@@ -4,13 +4,7 @@ SELECT
 FROM
   users AS u
 WHERE
-  u.uid = 'student@illinois.edu';
-
--- BLOCK insert_enrollment
-INSERT INTO
-  enrollments (user_id, course_instance_id)
-VALUES
-  ($user_id, 1);
+  u.uid = 'student@example.com';
 
 -- BLOCK select_e1
 SELECT

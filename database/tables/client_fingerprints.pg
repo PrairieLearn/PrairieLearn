@@ -1,0 +1,23 @@
+columns
+    accept_language: character varying(255)
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('client_fingerprints_id_seq'::regclass)
+    ip_address: inet not null
+    user_agent: character varying(255)
+    user_id: bigint
+    user_session_id: bigint not null
+
+indexes
+    client_fingerprints_pkey: PRIMARY KEY (id) USING btree (id)
+    client_fingerprints_user_id_user_session_id_ip_address_user_key: UNIQUE NULLS NOT DISTINCT (user_id, user_session_id, ip_address, user_agent, accept_language) USING btree (user_id, user_session_id, ip_address, user_agent, accept_language) NULLS NOT DISTINCT
+
+foreign-key constraints
+    client_fingerprints_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)
+    client_fingerprints_user_session_id_fkey: FOREIGN KEY (user_session_id) REFERENCES user_sessions(id)
+
+referenced by
+    assessment_instances: FOREIGN KEY (last_client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessment_state_logs: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
+    page_view_logs: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
+    submissions: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
+    variants: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL

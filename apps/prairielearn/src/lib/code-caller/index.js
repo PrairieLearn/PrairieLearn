@@ -5,14 +5,16 @@ const genericPool = require('generic-pool');
 const { v4: uuidv4 } = require('uuid');
 const Sentry = require('@prairielearn/sentry');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const { logger } = require('@prairielearn/logger');
 const { config } = require('../config');
+const chunks = require('../chunks');
+const { features } = require('../features');
 const load = require('../load');
 const { CodeCallerContainer, init: initCodeCallerDocker } = require('./code-caller-container');
 const { CodeCallerNative } = require('./code-caller-native');
 const { FunctionMissingError } = require('./code-caller-shared');
-const { sleep } = require('../sleep');
 
 /**
  * This module maintains a pool of CodeCaller workers, which are used any
@@ -110,7 +112,7 @@ module.exports = {
       {
         min: numWorkers,
         max: numWorkers,
-      }
+      },
     );
 
     pool.on('factoryCreateError', (err) => {
@@ -144,11 +146,17 @@ module.exports = {
     // Ensure that the workers are ready; this will ensure that we're ready to
     // execute code as soon as we start processing requests.
     //
+    // We skip this if we're running in dev mode, as we want to prioritize the
+    // speed of starting up the server to ensure running in watch mode is as
+    // fast as possible.
+    //
     // Note: if resource creation fails for any reason, this will never resolve
     // or reject. This is unfortunate, but we'll still log and report the error
     // above, so it won't fail totally silently. If we fail to create workers,
     // we have a bigger problem.
-    await pool.ready();
+    if (!config.devMode) {
+      await pool.ready();
+    }
   },
 
   async finish() {
@@ -164,11 +172,11 @@ module.exports = {
    * disposes of it once it has been used.
    *
    * @template T
-   * @param {string} coursePath
+   * @param {import('../db-types').Course} course
    * @param {(codeCaller: CodeCaller) => Promise<T>} fn
    * @returns {Promise<T>}
    */
-  async withCodeCaller(coursePath, fn) {
+  async withCodeCaller(course, fn) {
     if (config.workersExecutionMode === 'disabled') {
       throw new Error('Code execution is disabled');
     }
@@ -186,13 +194,23 @@ module.exports = {
       });
     }
 
+    // Determine if this course is allowed to use `rpy2`.
+    const allowRpy2 = await features.enabled('allow-rpy2', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
+
     const jobUuid = uuidv4();
     load.startJob('python_callback_waiting', jobUuid);
 
     const codeCaller = await getHealthyCodeCaller();
 
     try {
-      await codeCaller.prepareForCourse(coursePath);
+      const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+      });
     } catch (err) {
       // If we fail to prepare for a course, assume that the code caller is
       // broken and dispose of it.

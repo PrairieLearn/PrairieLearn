@@ -13,8 +13,7 @@ Regular migrations can be authored as either SQL or JavaScript. They should be l
 
 ```sql
 -- migrations/20230411002409_example_migration.sql
-CREATE TABLE IF NOT EXISTS
-  examples (id BIGSERIAL PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS examples (id BIGSERIAL PRIMARY KEY, value TEXT NOT NULL);
 ```
 
 ```ts
@@ -23,6 +22,17 @@ module.exports = async function () {
   console.log('something useful.');
 };
 ```
+
+`.sql` migrations are run inside a transaction by default. If your migration cannot run inside a transaction (for instance, if it uses `CREATE INDEX CONCURRENTLY`), you can add a special annotation comment to the file:
+
+```sql
+-- prairielearn:migrations NO TRANSACTION
+CREATE INDEX CONCURRENTLY ...;
+```
+
+When running without a transaction, it is recommended that the migration only consist of a single statement so that the database isn't left in an inconsistent state.
+
+`.js`/`.ts` migrations are not automatically run inside a transaction. If transactional DDL is required, a transaction should be manually wrapped in a transaction.
 
 ### Batched migrations
 

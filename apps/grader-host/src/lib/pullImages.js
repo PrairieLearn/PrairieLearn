@@ -1,14 +1,18 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const async = require('async');
+import * as async from 'async';
 const Docker = require('dockerode');
-const sqldb = require('@prairielearn/postgres');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import * as sqldb from '@prairielearn/postgres';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 
-const logger = require('./logger');
+import logger from './logger';
+import { config } from './config';
+import { makeAwsClientConfig } from './aws';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const { config } = require('./config');
 
-module.exports = function (callback) {
+export default function pullImages(callback) {
   const docker = new Docker();
   var dockerAuth = {};
 
@@ -21,16 +25,11 @@ module.exports = function (callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-            if (ERR(err, callback)) return;
-            dockerAuth = auth;
-            callback(null);
-          });
-        } else {
-          callback(null);
+          const ecr = new ECRClient(makeAwsClientConfig());
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       (callback) => {
@@ -52,7 +51,7 @@ module.exports = function (callback) {
               logger.info(
                 `Pulling latest version of "${image}" image from ${
                   config.cacheImageRegistry || 'default registry'
-                }`
+                }`,
               );
               var repository = new DockerName(image);
               if (config.cacheImageRegistry) {
@@ -66,6 +65,7 @@ module.exports = function (callback) {
 
               docker.createImage(ourAuth, params, (err, stream) => {
                 if (ERR(err, callback)) return;
+                if (!stream) throw new Error('Missing stream from createImage()');
 
                 docker.modem.followProgress(
                   stream,
@@ -75,7 +75,7 @@ module.exports = function (callback) {
                   },
                   (output) => {
                     logger.info('docker output:', output);
-                  }
+                  },
                 );
               });
             })((err) => {
@@ -87,13 +87,13 @@ module.exports = function (callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
-};
+}

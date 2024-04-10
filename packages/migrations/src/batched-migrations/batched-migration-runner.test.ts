@@ -1,10 +1,5 @@
 import { assert } from 'chai';
-import {
-  makePostgresTestUtils,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-} from '@prairielearn/postgres';
+import { makePostgresTestUtils, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as error from '@prairielearn/error';
 
@@ -41,7 +36,7 @@ function makeTestBatchMigration() {
         // Throw an error with some data to make sure it gets persisted. We
         // specifically use BigInt values here to make sure that they are
         // correctly serialized to strings.
-        throw error.makeWithData('Execution failure', { start, end });
+        throw new error.AugmentedError('Execution failure', { data: { start, end } });
       }
     },
     setFailingIds(ids: bigint[]) {
@@ -54,18 +49,18 @@ function makeTestBatchMigration() {
 }
 
 async function getBatchedMigration(migrationId: string) {
-  return queryValidatedOneRow(
+  return await queryRow(
     'SELECT * FROM batched_migrations WHERE id = $id;',
     { id: migrationId },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
 async function getBatchedMigrationJobs(migrationId: string) {
-  return queryValidatedRows(
+  return await queryRows(
     'SELECT * FROM batched_migration_jobs WHERE batched_migration_id = $batched_migration_id ORDER BY id ASC;',
     { batched_migration_id: migrationId },
-    BatchedMigrationJobRowSchema
+    BatchedMigrationJobRowSchema,
   );
 }
 
@@ -74,7 +69,7 @@ async function resetFailedBatchedMigrationJobs(migrationId: string) {
     "UPDATE batched_migration_jobs SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE batched_migration_id = $batched_migration_id AND status = 'failed'",
     {
       batched_migration_id: migrationId,
-    }
+    },
   );
 }
 
@@ -170,7 +165,7 @@ describe('BatchedMigrationExecutor', () => {
       const jobData = job.data as any;
       assert.isObject(jobData);
       assert.isObject(jobData.error);
-      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data']);
+      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data', 'status']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
       assert.equal(jobData.error.data.start, job.min_value.toString());

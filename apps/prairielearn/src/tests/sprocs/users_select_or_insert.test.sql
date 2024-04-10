@@ -1,4 +1,4 @@
--- BLOCK insert_host_com
+-- BLOCK insert_host_com_institution
 WITH
   institution_insert AS (
     INSERT INTO
@@ -10,9 +10,10 @@ INSERT INTO
   institution_authn_providers (institution_id, authn_provider_id)
 VALUES
   (100, 1),
-  (100, 3);
+  (100, 3),
+  (100, 5);
 
--- BLOCK insert_illinois_edu
+-- BLOCK insert_example_com_institution
 WITH
   institution_insert AS (
     INSERT INTO
@@ -20,13 +21,14 @@ WITH
     VALUES
       (
         200,
-        'UIUC',
-        'University of Illinois',
-        '@illinois.edu$'
+        'example.com',
+        'Example University',
+        '@example.com$'
       )
   )
 INSERT INTO
   institution_authn_providers (institution_id, authn_provider_id)
 VALUES
   (200, 1),
-  (200, 2);
+  (200, 2),
+  (200, 5);
