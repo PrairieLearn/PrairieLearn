@@ -93,17 +93,23 @@ export async function insertSubmission({
     );
 
     if (variant.broken_at != null) {
-      throw error.make(400, 'Variant is broken', { variant_id });
+      throw new error.AugmentedError('Variant is broken', { status: 400, data: { variant_id } });
     }
 
     if (!variant.open) {
-      throw error.make(403, 'Variant is not open', { variant_id });
+      throw new error.AugmentedError('Variant is not open', { status: 403, data: { variant_id } });
     }
     if (variant.instance_question_id != null && !variant.instance_question_open) {
-      throw error.make(403, 'Instance question is not open', { variant_id });
+      throw new error.AugmentedError('Instance question is not open', {
+        status: 403,
+        data: { variant_id },
+      });
     }
     if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
-      throw error.make(403, 'Assessment instance is not open', { variant_id });
+      throw new error.AugmentedError('Assessment instance is not open', {
+        status: 403,
+        data: { variant_id },
+      });
     }
 
     const delta = await sqldb.queryOptionalRow(
@@ -269,9 +275,12 @@ async function selectSubmissionForGrading(
     if (submission == null) return null;
 
     if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
-      throw error.make(400, 'Submission ID mismatch', {
-        submission_id: submission.id,
-        check_submission_id,
+      throw new error.AugmentedError('Submission ID mismatch', {
+        status: 400,
+        data: {
+          submission_id: submission.id,
+          check_submission_id,
+        },
       });
     }
 

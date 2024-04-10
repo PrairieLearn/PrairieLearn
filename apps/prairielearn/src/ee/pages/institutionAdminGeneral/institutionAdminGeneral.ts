@@ -90,7 +90,7 @@ router.post(
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `Unknown action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );

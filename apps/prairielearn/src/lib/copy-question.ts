@@ -71,7 +71,7 @@ export async function copyQuestionBetweenCourses(
   // Note that we *always* allow copying from a template course, even if the user
   // does not have explicit view permissions.
   if (!res.locals.authz_data.has_course_permission_view && !fromCourse.template_course) {
-    throw error.make(403, 'Access denied (must be a course Viewer)');
+    throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
   }
 
   if (!question.qid) {

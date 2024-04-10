@@ -114,7 +114,7 @@ router.post(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!config.devMode) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     if (req.body.__action === 'dev_login') {
@@ -132,7 +132,7 @@ router.post(
         pl_authn_cookie: true,
       });
     } else {
-      throw error.make(400, `Unknown action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );

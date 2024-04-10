@@ -18,6 +18,8 @@ onDocumentReady(() => {
 
   setupDynamicObjects();
   disableOnSubmit();
+
+  $('.js-submission-body.render-pending').on('show.bs.collapse', loadPendingSubmissionPanel);
 });
 
 function externalGradingLiveUpdate() {
@@ -83,7 +85,7 @@ function handleStatusChange(socket: Socket, msg: any) {
   });
 }
 
-function fetchResults(socket: Socket, submissionId: string | number) {
+function fetchResults(socket: Socket, submissionId: string) {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
 
   if (!questionContainer) return;
@@ -123,51 +125,112 @@ function fetchResults(socket: Socket, submissionId: string | number) {
     function (msg: any) {
       // We're done with the socket for this incarnation of the page
       socket.close();
-      if (msg.answerPanel) {
-        const answerContainer = document.querySelector('.answer-body');
-        if (answerContainer) {
-          answerContainer.innerHTML = msg.answerPanel;
-          answerContainer.closest('.grading-block')?.classList.remove('d-none');
-        }
+      updateDynamicPanels(msg, submissionId);
+      // Restore modal state if need be
+      if (wasModalOpen) {
+        $('#submissionInfoModal-' + submissionId).modal('show');
       }
-      if (msg.submissionPanel) {
-        // Using jQuery here because msg.submissionPanel may contain scripts
-        // that must be executed. Typical vanilla JS alternatives don't support
-        // this kind of script.
-        $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
-        mathjaxTypeset();
-        // Restore modal state if need be
-        if (wasModalOpen) {
-          $('#submissionInfoModal-' + submissionId).modal('show');
-        }
-      }
-      if (msg.questionScorePanel) {
-        const questionScorePanel = document.getElementById('question-score-panel');
-        if (questionScorePanel) {
-          questionScorePanel.outerHTML = msg.questionScorePanel;
-        }
-      }
-      if (msg.assessmentScorePanel) {
-        const assessmentScorePanel = document.getElementById('assessment-score-panel');
-        if (assessmentScorePanel) {
-          assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
-        }
-      }
-      if (msg.questionPanelFooter) {
-        const questionPanelFooter = document.getElementById('question-panel-footer');
-        if (questionPanelFooter) {
-          questionPanelFooter.outerHTML = msg.questionPanelFooter;
-        }
-      }
-      if (msg.questionNavNextButton) {
-        const questionNavNextButton = document.getElementById('question-nav-next');
-        if (questionNavNextButton) {
-          questionNavNextButton.outerHTML = msg.questionNavNextButton;
-        }
-      }
-      setupDynamicObjects();
     },
   );
+}
+
+function updateDynamicPanels(msg: any, submissionId: string) {
+  if (msg.extraHeadersHtml) {
+    const parser = new DOMParser();
+    const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
+
+    const newImportMap = headers.querySelector<HTMLScriptElement>('script[type="importmap"]');
+    if (newImportMap != null) {
+      const currentImportMap = document.head.querySelector<HTMLScriptElement>(
+        'script[type="importmap"]',
+      );
+      if (!currentImportMap) {
+        document.head.appendChild(newImportMap);
+      } else {
+        // This case is not currently possible with existing importmap
+        // functionality. Once an existing importmap has been created, the
+        // importmap cannot be modified. Once this functionality exists this
+        // code can be modified to update the importmap.
+        // https://html.spec.whatwg.org/multipage/webappapis.html#import-map-processing-model
+        const newImportMapJson = JSON.parse(newImportMap.textContent || '{}');
+        const currentImportMapJson = JSON.parse(currentImportMap.textContent || '{}');
+        const newImportMapKeys = Object.keys(newImportMapJson.imports || {}).filter(
+          (key) => !(key in currentImportMapJson.imports),
+        );
+        if (newImportMapKeys.length > 0) {
+          console.warn(
+            'Cannot update importmap. New importmap has imports not in current importmap: ',
+            newImportMapKeys,
+          );
+        }
+      }
+    }
+
+    const currentLinks = Array.from(
+      document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+    ).map((link) => link.href);
+    headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
+      if (!currentLinks.includes(header.href)) {
+        document.head.appendChild(header);
+      }
+    });
+
+    const currentScripts = Array.from(
+      document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+    ).map((script) => script.src);
+    headers
+      .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
+      .forEach((header) => {
+        if (!currentScripts.includes(header.src)) {
+          document.head.appendChild(header);
+        }
+      });
+  }
+
+  if (msg.answerPanel) {
+    const answerContainer = document.querySelector('.answer-body');
+    if (answerContainer) {
+      // Using jQuery here because msg.answerPanel may contain scripts that
+      // must be executed. Typical vanilla JS alternatives don't support
+      // this kind of script.
+      $(answerContainer).html(msg.answerPanel);
+      mathjaxTypeset();
+      answerContainer.closest('.grading-block')?.classList.remove('d-none');
+    }
+  }
+
+  if (msg.submissionPanel) {
+    // Using jQuery here because msg.submissionPanel may contain scripts
+    // that must be executed. Typical vanilla JS alternatives don't support
+    // this kind of script.
+    $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
+    mathjaxTypeset();
+  }
+  if (msg.questionScorePanel) {
+    const questionScorePanel = document.getElementById('question-score-panel');
+    if (questionScorePanel) {
+      questionScorePanel.outerHTML = msg.questionScorePanel;
+    }
+  }
+  if (msg.assessmentScorePanel) {
+    const assessmentScorePanel = document.getElementById('assessment-score-panel');
+    if (assessmentScorePanel) {
+      assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
+    }
+  }
+  if (msg.questionPanelFooter) {
+    const questionPanelFooter = document.getElementById('question-panel-footer');
+    if (questionPanelFooter) {
+      questionPanelFooter.outerHTML = msg.questionPanelFooter;
+    }
+  }
+  if (msg.questionNavNextButton) {
+    const questionNavNextButton = document.getElementById('question-nav-next');
+    if (questionNavNextButton) {
+      questionNavNextButton.outerHTML = msg.questionNavNextButton;
+    }
+  }
+  setupDynamicObjects();
 }
 
 function updateStatus(submission: any) {
@@ -227,6 +290,26 @@ function setupDynamicObjects() {
       },
     });
   }
+}
+
+function loadPendingSubmissionPanel(this: HTMLDivElement) {
+  const { submissionId, dynamicRenderUrl } = this.dataset;
+  if (submissionId == null || dynamicRenderUrl == null) return;
+
+  fetch(dynamicRenderUrl)
+    .then(async (response) => {
+      // If the response is not a 200, delegate to the error handler (catch block)
+      if (!response.ok) throw new Error('Failed to fetch submission');
+      const msg = await response.json();
+      updateDynamicPanels(msg, submissionId);
+    })
+    .catch(() => {
+      const container = document.querySelector(`#submission-${submissionId}-body`);
+      if (container != null) {
+        container.innerHTML =
+          '<div class="card-body submission-body">Error retrieving submission</div>';
+      }
+    });
 }
 
 function disableOnSubmit() {

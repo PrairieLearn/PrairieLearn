@@ -15,7 +15,6 @@
 
 const path = require('path');
 const readline = require('readline');
-const error = require('@prairielearn/error');
 
 const requireFrontend = require('../lib/require-frontend');
 
@@ -48,10 +47,9 @@ async function loadServer(questionServerPath, coursePath) {
         setTimeout(() => resolve(server), 0);
       },
       (err) => {
-        const e = error.makeWithData(`Error loading ${path.basename(questionServerPath)}`, err);
-        if (err.originalError != null) {
-          e.stack = err.originalError.stack + '\n\n' + err.stack;
-        }
+        const e = new Error(`Error loading ${path.basename(questionServerPath)}`, {
+          cause: err,
+        });
         reject(e);
       },
     );

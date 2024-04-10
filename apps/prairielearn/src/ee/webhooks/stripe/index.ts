@@ -29,7 +29,7 @@ function constructEvent(req: express.Request) {
       config.stripeWebhookSigningSecret,
     );
   } catch (err) {
-    throw error.make(400, `Webhook error: ${err.message}`);
+    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
   }
 }
 

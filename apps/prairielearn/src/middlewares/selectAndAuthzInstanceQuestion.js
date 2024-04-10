@@ -16,7 +16,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if ((result.rowCount ?? 0) === 0) throw error.make(403, 'Access denied');
+  if ((result.rowCount ?? 0) === 0) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, result.rows[0]);
   if (res.locals.assessment.group_work) {
@@ -30,7 +30,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
         !res.locals.assessment_instance.group_info.start &&
         !res.locals.authz_data.has_course_instance_permission_view
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
         );
@@ -51,7 +51,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
           res.locals.authz_data.user.user_id,
         );
         if (!res.locals.instance_question.group_role_permissions.can_view) {
-          throw error.make(
+          throw new error.HttpStatusError(
             400,
             'Your current group role does not give you permission to see this question.',
           );

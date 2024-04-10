@@ -169,7 +169,7 @@ async function lockAssessmentInstanceForInstanceQuestion(
     IdSchema,
   );
   if (assessment_instance_id == null) {
-    throw error.make(404, 'Instance question not found');
+    throw new error.HttpStatusError(404, 'Instance question not found');
   }
 }
 
@@ -231,7 +231,7 @@ async function makeAndInsertVariant(
         InstanceQuestionDataSchema,
       );
       if (instance_question == null) {
-        throw error.make(404, 'Instance question not found');
+        throw new error.HttpStatusError(404, 'Instance question not found');
       }
 
       // This handles the race condition where we simultaneously start
@@ -247,10 +247,10 @@ async function makeAndInsertVariant(
       }
 
       if (!instance_question.instance_question_open) {
-        throw error.make(403, 'Instance question is not open');
+        throw new error.HttpStatusError(403, 'Instance question is not open');
       }
       if (!instance_question.assessment_instance_open) {
-        throw error.make(403, 'Assessment instance is not open');
+        throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
       question_id = instance_question.question_id;
@@ -276,7 +276,7 @@ async function makeAndInsertVariant(
       if (course_instance_id != null) {
         const course_instance = await selectCourseInstanceById(course_instance_id);
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
-          throw error.make(403, 'Course instance not found in course');
+          throw new error.HttpStatusError(403, 'Course instance not found in course');
         }
       }
     }

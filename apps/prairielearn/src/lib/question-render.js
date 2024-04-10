@@ -107,6 +107,7 @@ const SubmissionInfoSchema = z.object({
  * @typedef {Object} SubmissionPanels
  * @property {string?} submissionPanel
  * @property {string?} scorePanel
+ * @property {string?} extraHeadersHtml
  * @property {string?} [answerPanel]
  * @property {string?} [questionScorePanel]
  * @property {string?} [assessmentScorePanel]
@@ -380,7 +381,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
       VariantSelectResultSchema,
     );
     if (locals.variant == null) {
-      throw error.make(404, 'Variant not found');
+      throw new error.HttpStatusError(404, 'Variant not found');
     }
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
@@ -612,7 +613,7 @@ export async function renderPanelsForSubmission({
     { submission_id, question_id, instance_question_id, variant_id },
     SubmissionInfoSchema,
   );
-  if (submissionInfo == null) throw error.make(404, 'Not found');
+  if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
 
   const {
     variant,
@@ -640,6 +641,7 @@ export async function renderPanelsForSubmission({
   const panels = {
     submissionPanel: null,
     scorePanel: null,
+    extraHeadersHtml: null,
   };
 
   // Fake locals. Yay!
@@ -680,6 +682,7 @@ export async function renderPanelsForSubmission({
       const grading_job_stats = buildGradingJobStats(grading_job);
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
+      panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);
