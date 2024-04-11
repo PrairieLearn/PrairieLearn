@@ -222,7 +222,7 @@ function AssessmentQuestionsTable({
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
                       : html`
-                          <span class="ml-2">
+                          <span class="ml-3">
                             ${question.alternative_group_number}.${question.number_in_alternative_group}.
                           </span>
                         `}
