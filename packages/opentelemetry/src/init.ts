@@ -179,7 +179,7 @@ function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | nu
       break;
     case 'jaeger':
       return new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'grpc://localhost:4317/',
+        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:4317/',
       });
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
