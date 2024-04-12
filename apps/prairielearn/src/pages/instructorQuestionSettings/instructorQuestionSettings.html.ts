@@ -6,6 +6,7 @@ import { Modal } from '../../components/Modal.html';
 import { IdSchema } from '../../lib/db-types';
 import { CourseWithPermissions } from '../../models/course';
 import { isEnterprise } from '../../lib/license';
+import { idsEqual } from '../../lib/id';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),
@@ -427,7 +428,7 @@ function CopyForm({
             : ''}
           ${editableCourses.map((c) => {
             return html`
-              <option value="${c.id}" ${c.id === courseId ? 'selected' : ''}>
+              <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
                 ${c.short_name}
               </option>
             `;
