@@ -4,12 +4,15 @@ const path = require('path');
 const child_process = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 const { createServer } = require('net');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
-const { FunctionMissingError } = require('./code-caller-shared');
 const { logger } = require('@prairielearn/logger');
+// TODO: is this safe to use in the subprocess version?
+const { trace } = require('@prairielearn/opentelemetry');
+
+const { FunctionMissingError, developmentSpanEvent } = require('./code-caller-shared');
 const { deferredPromise } = require('../deferred');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('../paths');
+
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const CREATED = Symbol('CREATED');
 const WAITING = Symbol('WAITING');
@@ -254,7 +257,18 @@ class CodeCallerNative {
 
     this.lastCallData = callData;
 
+    // Grab a reference to the current span so that we can use it when we get results.
+    this.span = trace.getActiveSpan();
+
+    developmentSpanEvent(this.span, 'write-data-start', {
+      file: file ?? undefined,
+      fcn: fcn ?? undefined,
+    });
     await writeDataToSocket(this.socket, callDataString);
+    developmentSpanEvent(this.span, 'write-data-end', {
+      file: file ?? undefined,
+      fcn: fcn ?? undefined,
+    });
 
     this.state = IN_CALL;
     this._checkState();
@@ -483,7 +497,10 @@ class CodeCallerNative {
     this.debug('enter _handleSocketData()');
     this._checkState([IN_CALL, EXITING]);
     if (this.socketDataLength === 0) {
-      this.start = Date.now();
+      developmentSpanEvent(this.span, 'read-data-start', {
+        file: this.lastCallData?.file ?? undefined,
+        fcn: this.lastCallData?.fcn ?? undefined,
+      });
     }
     if (this.state === IN_CALL) {
       this.last = Date.now();
@@ -496,11 +513,10 @@ class CodeCallerNative {
       if (this.socketDataLength >= 4) {
         const length = this.socketDataBuffers[0].readUInt32BE(0);
         if (this.socketDataLength >= length + 4) {
-          console.log(
-            `Got socket data with length ${this.socketDataLength} in ${
-              Date.now() - (this.start ?? 0)
-            }ms`,
-          );
+          developmentSpanEvent(this.span, 'read-data-end', {
+            file: this.lastCallData?.file ?? undefined,
+            fcn: this.lastCallData?.fcn ?? undefined,
+          });
           this._callIsFinished();
         }
       }

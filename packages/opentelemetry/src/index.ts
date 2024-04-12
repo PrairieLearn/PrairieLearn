@@ -2,6 +2,7 @@ export {
   trace,
   metrics,
   context,
+  Span,
   SpanStatusCode,
   ValueType,
   TraceFlags,
@@ -13,6 +14,8 @@ export {
   ObservableUpDownCounter,
   ObservableGauge,
   ObservableResult,
+  Attributes,
+  AttributeValue,
 } from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
 

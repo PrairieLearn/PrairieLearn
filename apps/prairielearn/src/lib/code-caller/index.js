@@ -8,6 +8,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const { setTimeout: sleep } = require('node:timers/promises');
 
 const { logger } = require('@prairielearn/logger');
+const { instrumented } = require('@prairielearn/opentelemetry');
 const { config } = require('../config');
 const chunks = require('../chunks');
 const { features } = require('../features');
@@ -203,13 +204,18 @@ module.exports = {
     const jobUuid = uuidv4();
     load.startJob('python_callback_waiting', jobUuid);
 
-    const codeCaller = await getHealthyCodeCaller();
+    const codeCaller = await instrumented(
+      'codeCaller.getHealthyCodeCaller()',
+      async () => await getHealthyCodeCaller(),
+    );
 
     try {
       const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-      await codeCaller.prepareForCourse({
-        coursePath,
-        forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+      await instrumented('codeCaller.prepareForCourse', async () => {
+        await codeCaller.prepareForCourse({
+          coursePath,
+          forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+        });
       });
     } catch (err) {
       // If we fail to prepare for a course, assume that the code caller is
