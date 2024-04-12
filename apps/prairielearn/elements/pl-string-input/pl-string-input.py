@@ -40,7 +40,6 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 MULTILINE_DEFAULT = False
-ESCAPE_UNICODE_DEFAULT = True
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -109,9 +108,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
-    escape_unicode = pl.get_boolean_attrib(
-        element, "escape-unicode", False if multiline else ESCAPE_UNICODE_DEFAULT
-    )
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -124,7 +120,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params = {
             "format": True,
             "space_hint": space_hint,
-            "escape_unicode": escape_unicode,
         }
         info = chevron.render(template, info_params).strip()
 
@@ -176,9 +171,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            if escape_unicode:
-                a_sub = pl.escape_unicode_string(a_sub)
-
+            html_params["escaped_submitted_answer"] = pl.escape_unicode_string(a_sub)
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -200,10 +193,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
             return ""
-
-        if escape_unicode:
-            a_tru = pl.escape_unicode_string(a_tru)
-
+        print(pl.escape_unicode_string(a_tru))
         html_params = {
             "answer": True,
             "label": label,
@@ -211,6 +201,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
+            "escaped_correct_answer": pl.escape_unicode_string(a_tru)
         }
 
         return chevron.render(template, html_params).strip()

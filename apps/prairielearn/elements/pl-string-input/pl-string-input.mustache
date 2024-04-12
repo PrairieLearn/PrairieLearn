@@ -182,6 +182,14 @@
     {{/suffix}}
 {{/multiline}}
 
+<!-- Show submitted answer submission was parsed from -->
+<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
+    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
+    title="Invisible or unprintable unicode characters are replaced with a text representation of their hex id &lt;U+xxxx&gt;" tabindex="0"
+    data-content="<samp class=user-output>{{escaped_submitted_answer}}</samp>">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</a>
+
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -215,14 +223,19 @@
     {{/suffix}}
 {{/multiline}}
 
+<!-- TODO figure out why it isn't printing what I expect -->
+<!-- Show correct answer submission was parsed from -->
+<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
+    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
+    title="Invisible or unprintable unicode characters are replaced with a text representation of their hex id &lt;U+xxxx&gt;" tabindex="0"
+    data-content="<samp class=user-output>{{{escaped_correct_answer}}}</samp>">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</a>
 {{/answer}}
 
 {{#format}}
 <p>
     Your answer must be a piece of text (sequence of letters, numbers, and characters). Any symbolic expressions or numbers will be intepreted as text.<br>
     {{space_hint}}
-    {{#escape_unicode}}
-    Invisible or unprintable unicode characters are replaced with a text representation of their hex id: <code class="user-output">&lt;U+xxxx&gt;</code>.
-    {{/escape_unicode}}
 </p>
 {{/format}}
