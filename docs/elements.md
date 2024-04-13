@@ -1003,7 +1003,7 @@ def generate(data):
 
 #### Using multiline inputs
 
-Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to use `remove-leading-trailing="true"` when using multiline inputs.
+Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to leave the default setting of `remove-leading-trailing="true"` unchanged when using multiline inputs.
 
 #### Example implementations
 
