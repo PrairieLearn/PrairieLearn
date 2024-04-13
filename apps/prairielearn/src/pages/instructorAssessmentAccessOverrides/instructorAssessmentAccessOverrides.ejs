@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <%- include('../partials/head'); %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
 </head>
 <body>
   <script>
@@ -11,6 +13,7 @@
       $('#add_new_override').on('submit', function (event) {
         var startDate = new Date($('#start_date').val());
         var endDate = new Date($('#end_date').val());
+      
         if (startDate >= endDate) {
           event.preventDefault();
           $('#end_date').addClass('is-invalid');
@@ -27,10 +30,13 @@
         editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
         editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
         editOverrideForm.find('#edit-credit').val(button.data('credit'));
-        var policy_start_date = new Date(button.data('start-date'))
+        
+        var timezone = "<%= timezone %>";
+        var policy_start_date = moment.utc(button.data('start-date')).tz(timezone);       
         var policy_start_date_string = policy_start_date.toISOString().slice(0, 16);
-        var policy_end_date = new Date(button.data('end-date'))
+        var policy_end_date = moment.utc(button.data('end-date')).tz(timezone);
         var policy_end_date_string = policy_end_date.toISOString().slice(0, 16);
+
         editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
         editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
         editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
@@ -229,6 +235,7 @@
                       <form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="edit_override">
+                        
                           <button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-group-name="<%= policy.group_name %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">	
                           <i class="fas fa-edit"></i> Edit
                         </button>
