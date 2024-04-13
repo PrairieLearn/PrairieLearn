@@ -1,3 +1,4 @@
+import html
 import random
 import re
 from enum import Enum
@@ -171,7 +172,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            html_params["escaped_submitted_answer"] = pl.escape_unicode_string(a_sub)
+            html_params["escaped_submitted_answer"] = html.escape(pl.escape_unicode_string(a_sub))
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -193,7 +194,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
             return ""
-        print(pl.escape_unicode_string(a_tru))
+
         html_params = {
             "answer": True,
             "label": label,
@@ -201,7 +202,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
-            "escaped_correct_answer": pl.escape_unicode_string(a_tru)
+            "escaped_correct_answer": html.escape(pl.escape_unicode_string(a_tru))
         }
 
         return chevron.render(template, html_params).strip()

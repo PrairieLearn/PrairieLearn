@@ -185,8 +185,10 @@
 <!-- Show submitted answer submission was parsed from -->
 <a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
     data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
-    title="Invisible or unprintable unicode characters are replaced with a text representation of their hex id &lt;U+xxxx&gt;" tabindex="0"
-    data-content="<samp class=user-output>{{escaped_submitted_answer}}</samp>">
+    title="Raw String" tabindex="0"
+    data-content="Invisible unicode characters are represented as
+    <code>&lt; U+xxxx &gt;</code>:<br>
+    <pre>{{escaped_submitted_answer}}</pre>">
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </a>
 
@@ -225,10 +227,13 @@
 
 <!-- TODO figure out why it isn't printing what I expect -->
 <!-- Show correct answer submission was parsed from -->
+<!-- Show submitted answer submission was parsed from -->
 <a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
     data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
-    title="Invisible or unprintable unicode characters are replaced with a text representation of their hex id &lt;U+xxxx&gt;" tabindex="0"
-    data-content="<samp class=user-output>{{{escaped_correct_answer}}}</samp>">
+    title="Raw String" tabindex="0"
+    data-content="Invisible unicode characters are represented as
+    <code>&lt; U+xxxx &gt;</code>:<br>
+    <pre>{{escaped_correct_answer}}</pre><br>">
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </a>
 {{/answer}}
