@@ -1,7 +1,6 @@
-//@ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-const QR = require('qrcode-svg');
+import QR = require('qrcode-svg');
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
@@ -16,6 +15,7 @@ import {
 import { encodePath } from '../../lib/uri-util';
 import { getCanonicalHost } from '../../lib/url';
 import { IdSchema } from '../../lib/db-types';
+import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -23,32 +23,40 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.short_names = await sqldb.queryRows(
+    const shortNames = await sqldb.queryRows(
       sql.short_names,
       { course_id: res.locals.course.id },
       z.string(),
     );
 
     const host = getCanonicalHost(req);
-    res.locals.studentLink = new URL(
+    const studentLink = new URL(
       res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id,
       host,
     ).href;
 
-    res.locals.studentLinkQRCode = new QR({
-      content: res.locals.studentLink,
+    const studentLinkQRCode = new QR({
+      content: studentLink,
       width: 512,
       height: 512,
     }).svg();
 
-    res.locals.infoCourseInstancePath = encodePath(
+    const infoCourseInstancePath = encodePath(
       path.join(
         'courseInstances',
         res.locals.course_instance.short_name,
         'infoCourseInstance.json',
       ),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorInstanceAdminSettings({
+        resLocals: res.locals,
+        shortNames,
+        studentLink,
+        studentLinkQRCode,
+        infoCourseInstancePath,
+      }),
+    );
   }),
 );
 

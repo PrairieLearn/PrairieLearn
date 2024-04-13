@@ -65,6 +65,10 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
+    if (!res.locals.assessment_access_overrides_enabled) {
+      throw error.make(403, 'Access denied (feature not available)');
+    }
+
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
     });
@@ -80,7 +84,10 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
-    
+    if (!res.locals.assessment_access_overrides_enabled) {
+      throw error.make(403, 'Access denied (feature not available)');
+    }
+
     if (req.body.__action === 'add_new_override') {
       const timezone = res.locals.course_instance.display_timezone;
       const { user_id, group_id } = await getUserOrGroupId({

@@ -840,7 +840,7 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // API ///////////////////////////////////////////////////////////////
 
-  app.use('/pl/api/v1', require('./api/v1'));
+  app.use('/pl/api/v1', require('./api/v1').default);
 
   if (isEnterprise()) {
     app.use(
@@ -921,8 +921,6 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'question_statistics';
         next();
       },
-      require('./pages/shared/assessmentStatDescriptions'),
-      require('./pages/shared/floatFormatters'),
       require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics')
         .default,
     ],
@@ -962,6 +960,17 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentInstances/instructorAssessmentInstances').default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access_overrides',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'access_overrides';
+        next();
+      },
+      require('./pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides')
+        .default,
     ],
   );
   app.use(
@@ -1072,7 +1081,6 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance').default,
-      require('./pages/shared/floatFormatters'),
       require('./pages/instructorAssessmentInstance/instructorAssessmentInstance').default,
     ],
   );
@@ -1113,7 +1121,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
@@ -1121,8 +1128,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'statistics';
       next();
     },
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_edit', [
@@ -1596,17 +1601,6 @@ module.exports.initExpress = function () {
     newUrlParts.query = req.query;
     res.redirect(url.format(newUrlParts));
   });
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access_overrides',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'access_overrides';
-        next();
-      },
-      require('./pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides')
-        .default,
-    ],
-  );
   app.use('/pl/course/:course_id/question/:question_id', function (req, res, next) {
     res.locals.navPage = 'question';
     next();
@@ -1623,7 +1617,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [
@@ -1631,8 +1624,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'statistics';
       next();
     },
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/file_edit', [
@@ -1846,7 +1837,6 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/shared/floatFormatters'),
     require('./pages/publicQuestionPreview/publicQuestionPreview'),
   ]);
   app.use('/pl/public/course/:course_id/questions', [

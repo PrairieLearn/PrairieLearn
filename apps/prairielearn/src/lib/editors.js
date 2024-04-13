@@ -120,6 +120,9 @@ export class Editor {
     return serverJob;
   }
 
+  /**
+   * @param {import('./server-jobs').ServerJobExecutor} serverJob
+   */
   async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
@@ -1298,17 +1301,17 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  shouldEdit(callback) {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
     debug('origHash: ' + this.origHash);
     if (this.origHash === editHash) {
       debug('edit contents are the same as orig contents, so abort');
-      callback(null, false);
+      return false;
     } else {
       debug('edit contents are different from orig contents, so continue');
-      callback(null, true);
+      return true;
     }
   }
 

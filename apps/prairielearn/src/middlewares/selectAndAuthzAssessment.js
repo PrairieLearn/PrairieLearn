@@ -1,22 +1,27 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import * as _ from 'lodash';
 
-var sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+import { features } from '../lib/features';
 
-module.exports = function (req, res, next) {
-  var params = {
+const sql = sqldb.loadSqlEquiv(__filename);
+
+module.exports = asyncHandler(async (req, res, next) => {
+  res.locals.assessment_access_overrides_enabled = await features.enabledFromLocals(
+    'assessment-access-overrides',
+    res.locals,
+  );
+
+  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth, {
     assessment_id: req.params.assessment_id,
     course_instance_id: res.locals.course_instance.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
-  };
-  sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
-    if (ERR(err, next)) return;
-    if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
-    _.assign(res.locals, result.rows[0]);
-    next();
   });
-};
+  if (result.rowCount === 0) throw error.make(403, 'Access denied');
+  _.assign(res.locals, result.rows[0]);
+  next();
+});
