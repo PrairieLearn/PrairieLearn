@@ -116,7 +116,7 @@ async function loadLogsForWorkspaceVersion(
 router.use((req, res, next) => {
   // TODO: is `authn_is_instructor` the right permission to check?
   if (!res.locals.authn_is_administrator && !res.locals.authn_is_instructor) {
-    next(error.make(403, 'Access denied'));
+    next(new error.HttpStatusError(403, 'Access denied'));
   } else {
     next();
   }

@@ -7,7 +7,7 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
-import logger = require('./logger');
+import logger from './logger';
 
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
@@ -41,14 +41,15 @@ const ConfigSchema = z.object({
   timeoutOverhead: z.number().default(300),
   postgresqlHost: z.string().default('localhost'),
   postgresqlDatabase: z.string().default('postgres'),
-  postgresqlUser: z.string().nullable().default(null),
+  postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlPoolSize: z.number().default(2),
   postgresqlIdleTimeoutMillis: z.number().default(30000),
   autoScalingGroupName: z.string().nullable().default(null),
-  instanceId: z.string().nullable().default(null),
+  // Will be automatically detected when running in EC2.
+  instanceId: z.string().default('server'),
   sentryDsn: z.string().nullable().default(null),
-  sentryEnvironment: z.string().nullable().default(null),
+  sentryEnvironment: z.string().default('development'),
   awsRegion: z.string().default('us-east-2'),
   visibilityTimeout: z.number().default(60),
   visibilityTimeoutHeartbeatIntervalSec: z.number().default(30),

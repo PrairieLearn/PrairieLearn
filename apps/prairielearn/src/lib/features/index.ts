@@ -9,6 +9,7 @@ const featureNames = [
   'allow-rpy2',
   // Can only be applied to institutions.
   'lti13',
+  'terms-clickthrough',
 ] as const;
 
 const features = new FeatureManager(featureNames);

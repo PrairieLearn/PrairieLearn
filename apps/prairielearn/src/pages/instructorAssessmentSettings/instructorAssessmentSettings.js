@@ -93,9 +93,11 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw error.make(400, `Invalid TID (was falsy): ${req.body.id}`);
+      if (!req.body.id) {
+        throw new error.HttpStatusError(400, `Invalid TID (was falsy): ${req.body.id}`);
+      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
@@ -104,7 +106,10 @@ router.post(
       try {
         tid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw error.make(400, `Invalid TID (could not be normalized): ${req.body.id}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid TID (could not be normalized): ${req.body.id}`,
+        );
       }
       if (res.locals.assessment.tid === tid_new) {
         res.redirect(req.originalUrl);
@@ -123,7 +128,7 @@ router.post(
         }
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

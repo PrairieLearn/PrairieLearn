@@ -7,6 +7,8 @@ import { config } from './config';
 import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
 import { InstitutionSchema, UserSchema } from './db-types';
 import { HttpRedirect } from './redirect';
+import { isEnterprise } from './license';
+import { redirectToTermsPageIfNeeded } from '../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -103,6 +105,12 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       redirUrl = req.cookies.preAuthUrl;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
+
+    // Potentially prompt the user to accept the terms before redirecting them.
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, selectedUser.user, req.ip, redirUrl);
+    }
+
     res.redirect(redirUrl);
     return;
   }

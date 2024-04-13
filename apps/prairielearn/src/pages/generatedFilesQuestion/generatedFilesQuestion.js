@@ -13,7 +13,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 module.exports = function (options = { publicEndpoint: false }) {
   const router = express.Router({ mergeParams: true });
   router.get(
-    '/variant/:variant_id/*',
+    '/variant/:variant_id(\\d+)/*',
     asyncHandler(async function (req, res) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
@@ -23,7 +23,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           !res.locals.question.shared_publicly ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
-          throw error.make(404, 'Not Found');
+          throw new error.HttpStatusError(404, 'Not Found');
         }
       }
 
