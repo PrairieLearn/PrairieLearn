@@ -1,7 +1,6 @@
-//@ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-const QR = require('qrcode-svg');
+import QR = require('qrcode-svg');
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
@@ -16,6 +15,7 @@ import {
 import { encodePath } from '../../lib/uri-util';
 import { getCanonicalHost } from '../../lib/url';
 import { IdSchema } from '../../lib/db-types';
+import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -23,32 +23,40 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.short_names = await sqldb.queryRows(
+    const shortNames = await sqldb.queryRows(
       sql.short_names,
       { course_id: res.locals.course.id },
       z.string(),
     );
 
     const host = getCanonicalHost(req);
-    res.locals.studentLink = new URL(
+    const studentLink = new URL(
       res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id,
       host,
     ).href;
 
-    res.locals.studentLinkQRCode = new QR({
-      content: res.locals.studentLink,
+    const studentLinkQRCode = new QR({
+      content: studentLink,
       width: 512,
       height: 512,
     }).svg();
 
-    res.locals.infoCourseInstancePath = encodePath(
+    const infoCourseInstancePath = encodePath(
       path.join(
         'courseInstances',
         res.locals.course_instance.short_name,
         'infoCourseInstance.json',
       ),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorInstanceAdminSettings({
+        resLocals: res.locals,
+        shortNames,
+        studentLink,
+        studentLinkQRCode,
+        infoCourseInstancePath,
+      }),
+    );
   }),
 );
 
@@ -97,9 +105,11 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw error.make(400, `Invalid CIID (was falsy): ${req.body.id}`);
+      if (!req.body.id) {
+        throw new error.HttpStatusError(400, `Invalid CIID (was falsy): ${req.body.id}`);
+      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
@@ -108,7 +118,10 @@ router.post(
       try {
         ciid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw error.make(400, `Invalid CIID (could not be normalized): ${req.body.id}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid CIID (could not be normalized): ${req.body.id}`,
+        );
       }
       if (res.locals.course_instance.short_name === ciid_new) {
         res.redirect(req.originalUrl);
@@ -127,7 +140,7 @@ router.post(
         }
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

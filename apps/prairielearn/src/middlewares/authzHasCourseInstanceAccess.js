@@ -11,6 +11,6 @@ module.exports = function (req, res, next) {
   ) {
     return next();
   } else {
-    return next(error.make(403, 'Access denied'));
+    return next(new error.HttpStatusError(403, 'Access denied'));
   }
 };

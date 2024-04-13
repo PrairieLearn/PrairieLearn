@@ -161,8 +161,7 @@ describe('Editing course settings', () => {
     }
   });
 
-  // try submitting without any changes
-  step('should not be able to submit without any changes', async () => {
+  step('should be able to submit without any changes', async () => {
     const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath, 'utf8'));
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
     const response = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`, {
@@ -177,7 +176,7 @@ describe('Editing course settings', () => {
       },
     });
     assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+    assert.match(response.url, /\/pl\/course\/1\/course_admin\/settings$/);
   });
 
   step('should not be able to submit if repo course info file has been changed', async () => {

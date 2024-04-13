@@ -113,7 +113,7 @@ async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
     IdSchema,
   );
   if (!result) {
-    throw error.make(
+    throw new error.HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
     );
@@ -259,7 +259,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be a course editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
     }
 
     if (req.body.__action === 'open') {
@@ -292,7 +292,7 @@ router.post(
       flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

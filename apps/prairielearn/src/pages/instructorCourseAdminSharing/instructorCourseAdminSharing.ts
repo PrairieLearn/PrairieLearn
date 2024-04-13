@@ -13,7 +13,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.question_sharing_enabled) {
-      throw error.make(403, 'Access denied (feature not available)');
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
     const sharingInfo = await sqldb.queryRow(
@@ -59,10 +59,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_own) {
-      throw error.make(403, 'Access denied (must be course owner)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
     if (!res.locals.question_sharing_enabled) {
-      throw error.make(403, 'Access denied (feature not available)');
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
@@ -85,7 +85,7 @@ router.post(
         z.string().nullable(),
       );
       if (consuming_course_id === null) {
-        throw error.make(400, 'Failed to Add Course to sharing set.');
+        throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
     } else if (req.body.__action === 'choose_sharing_name') {
       if (
@@ -93,7 +93,7 @@ router.post(
         req.body.course_sharing_name.includes('@') ||
         req.body.course_sharing_name === ''
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
@@ -103,7 +103,7 @@ router.post(
         course_id: res.locals.course.id,
       });
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
     res.redirect(req.originalUrl);
   }),

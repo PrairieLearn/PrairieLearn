@@ -13,7 +13,10 @@ router.get(
   asyncHandler(async function (req, res) {
     const filename = req.params[0];
     if (!filename) {
-      throw error.make(400, 'No filename provided within clientFilesCourse directory');
+      throw new error.HttpStatusError(
+        400,
+        'No filename provided within clientFilesCourse directory',
+      );
     }
     const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
     await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'clientFilesCourse' });

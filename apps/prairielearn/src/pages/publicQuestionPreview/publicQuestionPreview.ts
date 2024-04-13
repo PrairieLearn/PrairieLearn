@@ -31,7 +31,7 @@ async function setLocals(req, res) {
     !res.locals.question.shared_publicly ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
-    throw error.make(404, 'Not Found');
+    throw new error.HttpStatusError(404, 'Not Found');
   }
   return;
 }
@@ -49,16 +49,16 @@ router.post(
       // we currently don't report issues for public facing previews
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
-    const { submissionPanel } = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: null,
@@ -69,7 +69,7 @@ router.get(
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 

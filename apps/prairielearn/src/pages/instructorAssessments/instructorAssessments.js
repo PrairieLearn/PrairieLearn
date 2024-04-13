@@ -73,7 +73,7 @@ router.get(
     };
     const result = await sqldb.queryAsync(sql.select_assessment, params);
     if (result.rowCount === 0) {
-      throw error.make(404, `Assessment not found: ${req.params.assessment_id}`);
+      throw new error.HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
     res.locals.row = result.rows[0];
 
@@ -156,7 +156,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
@@ -194,7 +194,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(error.make(400, `unknown __action: ${req.body.__action}`));
+    next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

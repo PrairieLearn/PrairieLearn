@@ -130,7 +130,7 @@ async function loadQueueUrl(sqs) {
 async function processMessage(data) {
   const jobId = Number.parseInt(data.jobId);
   if (Number.isNaN(jobId)) {
-    throw error.makeWithData('Message does not contain a valid grading job id.', data);
+    throw new error.AugmentedError('Message does not contain a valid grading job id.', { data });
   }
 
   logger.verbose('Processing external grading job result message', {
@@ -173,7 +173,7 @@ async function processMessage(data) {
       return;
     }
   } else {
-    throw error.makeWithData(`Unknown grading event: ${data.event}`, data);
+    throw new error.AugmentedError(`Unknown grading event: ${data.event}`, { data });
   }
 }
 
