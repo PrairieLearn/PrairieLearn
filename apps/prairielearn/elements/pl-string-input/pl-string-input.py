@@ -109,7 +109,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
-
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
         template = f.read()
@@ -172,7 +171,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            html_params["escaped_submitted_answer"] = html.escape(pl.escape_unicode_string(a_sub))
+            html_params["escaped_submitted_answer"] = html.escape(
+                pl.escape_unicode_string(a_sub)
+            )
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -202,7 +203,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
-            "escaped_correct_answer": html.escape(pl.escape_unicode_string(a_tru))
+            "escaped_correct_answer": html.escape(pl.escape_unicode_string(a_tru)),
         }
 
         return chevron.render(template, html_params).strip()
