@@ -222,8 +222,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
+
+    multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
     # Get submitted answer or return parse_error if it does not exist
@@ -269,9 +271,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
 
+
+    multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     # Get remove-leading-trailing option
     remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
     # Get string case sensitivity option
