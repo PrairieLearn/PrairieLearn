@@ -271,7 +271,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
 
-
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     # Get remove-leading-trailing option
     remove_leading_trailing = pl.get_boolean_attrib(
