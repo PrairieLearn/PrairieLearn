@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import {
   InstitutionAdminGeneral,
   InstitutionStatisticsSchema,
-} from './institutionAdminGeneral.html';
+} from './administratiorInstitutionGeneral.html';
 import { getInstitution } from '../../lib/institution';
 import {
   getPlanGrantsForContext,

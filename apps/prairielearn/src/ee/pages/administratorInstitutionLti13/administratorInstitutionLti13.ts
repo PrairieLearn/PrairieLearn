@@ -9,11 +9,11 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
-import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
+import { InstitutionAdminLti13 } from './administratorInstitutionLti13.html';
 import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
-import { LTI13InstancePlatforms } from './institutionAdminLti13.types';
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

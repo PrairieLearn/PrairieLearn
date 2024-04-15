@@ -5,7 +5,10 @@ import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
 import { CourseSchema } from '../../../lib/db-types';
-import { CourseInstanceRowSchema, InstitutionAdminCourse } from './institutionAdminCourse.html';
+import {
+  CourseInstanceRowSchema,
+  InstitutionAdminCourse,
+} from './administratorInstitutionCourse.html';
 import { getInstitution } from '../../lib/institution';
 import { insertAuditLog } from '../../../models/audit-log';
 

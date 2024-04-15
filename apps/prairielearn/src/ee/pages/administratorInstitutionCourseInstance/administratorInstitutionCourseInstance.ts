@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { InstitutionAdminCourseInstance } from './institutionAdminCourseInstance.html';
+import { InstitutionAdminCourseInstance } from './administratorInstitutionCourseInstance.html';
 import {
   getPlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstance,

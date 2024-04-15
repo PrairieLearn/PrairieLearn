@@ -1978,7 +1978,7 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use(
       '/pl/administrator/institution/:institution_id(\\d+)',
-      require('./ee/routers/institutionAdmin').default,
+      require('./ee/routers/administratorInstitution').default,
     );
   }
 

@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdminSso } from './institutionAdminSso.html';
+import { InstitutionAdminSso } from './administratorInstitutionSso.html';
 import {
   getInstitution,
   getSupportedAuthenticationProviders,

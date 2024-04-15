@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types';
-import { LTI13InstancePlatforms } from './institutionAdminLti13.types';
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
 
 import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag } from '../../../lib/assets';

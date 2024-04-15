@@ -2,13 +2,13 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 
 import authzIsAdministrator = require('../../middlewares/authzIsAdministrator');
-import generalRouter from '../pages/institutionAdminGeneral/institutionAdminGeneral';
-import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses';
-import courseRouter from '../pages/institutionAdminCourse/institutionAdminCourse';
-import courseInstanceRouter from '../pages/institutionAdminCourseInstance/institutionAdminCourseInstance';
-import ssoRouter from '../pages/institutionAdminSso/institutionAdminSso';
-import samlRouter from '../pages/institutionAdminSaml/institutionAdminSaml';
-import lti13Router from '../pages/institutionAdminLti13/institutionAdminLti13';
+import generalRouter from '../pages/administratiorInstitutionGeneral/administratiorInstitutionGeneral';
+import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses';
+import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse';
+import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance';
+import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso';
+import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml';
+import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13';
 import { features } from '../../lib/features';
 
 const router = Router({ mergeParams: true });
