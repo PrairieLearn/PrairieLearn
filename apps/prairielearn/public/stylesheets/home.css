@@ -1,7 +1,7 @@
 :root {
   --flare-width-before: 8rem;
-  --flare-width: calc(2*var(--flare-width-before));
-  --flare-width-after: calc(3*var(--flare-width-before));
+  --flare-width: calc(2 * var(--flare-width-before));
+  --flare-width-after: calc(3 * var(--flare-width-before));
 }
 
 .tiny {
@@ -32,7 +32,7 @@
   content: '';
   width: var(--flare-width-before);
   height: var(--flare-width-before);
-  background-color: rgba(200, 200, 200, 0.10);
+  background-color: rgba(200, 200, 200, 0.1);
 }
 
 .flare-students:after {
@@ -76,19 +76,19 @@
   background-color: rgba(23, 162, 184, 0.03);
 }
 
-@media (min-width:576px) {
+@media (min-width: 576px) {
   .card-columns {
     column-count: 2;
   }
 }
 
-@media (min-width:768px) {
+@media (min-width: 768px) {
   .card-columns {
     column-count: 3;
   }
 }
 
-@media (min-width:992px) {
+@media (min-width: 992px) {
   .card-columns {
     column-count: 4;
   }

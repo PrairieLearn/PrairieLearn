@@ -12,7 +12,7 @@
  * @param {Buffer} buffer
  * @returns {Buffer}
  */
-function parseDockerLogs(buffer) {
+export function parseDockerLogs(buffer) {
   let outputChunks = [];
 
   while (buffer.length > 0) {
@@ -38,7 +38,3 @@ function parseDockerLogs(buffer) {
 
   return Buffer.concat(outputChunks);
 }
-
-module.exports = {
-  parseDockerLogs,
-};

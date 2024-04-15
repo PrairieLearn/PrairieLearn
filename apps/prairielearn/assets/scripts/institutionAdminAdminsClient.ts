@@ -1,7 +1,7 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  const removeAdminModal = document.getElementById('removeAdminModal');
+  const removeAdminModal = document.getElementById('removeAdminModal') as HTMLElement;
   document.querySelectorAll<HTMLButtonElement>('.js-remove-admin').forEach((el) => {
     el.addEventListener('click', () => {
       templateFromAttributes(el, removeAdminModal, {

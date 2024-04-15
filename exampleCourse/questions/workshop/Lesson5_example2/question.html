@@ -9,9 +9,9 @@ determine the website with the higher rank.</p>
 </pl-question-panel>
 
 <p>
-<pl-dropdown answers-name="sites" blank="true">
+<pl-multiple-choice display="dropdown" answers-name="best-site" allow-blank="true" hide-letter-keys="true">
     {{#params.sites}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.sites}}
-</pl-dropdown>
+</pl-multiple-choice>
 </p>

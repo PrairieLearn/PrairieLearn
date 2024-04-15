@@ -36,10 +36,16 @@ FROM
   course_instance_statistics,
   enrollment_statistics;
 
--- BLOCK update_enrollment_limits
+-- BLOCK update_institution
 UPDATE institutions
 SET
+  short_name = $short_name,
+  long_name = $long_name,
+  display_timezone = $display_timezone,
+  uid_regexp = $uid_regexp,
   yearly_enrollment_limit = $yearly_enrollment_limit,
   course_instance_enrollment_limit = $course_instance_enrollment_limit
 WHERE
-  id = $institution_id;
+  id = $institution_id
+RETURNING
+  institutions.*;

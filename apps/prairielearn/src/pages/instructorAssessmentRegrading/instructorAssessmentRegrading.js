@@ -1,19 +1,21 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const asyncHandler = require('express-async-handler');
 
-const error = require('@prairielearn/error');
-const regrading = require('../../lib/regrading');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import { regradeAllAssessmentInstances } from '../../lib/regrading';
+import * as sqldb from '@prairielearn/postgres';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
   }
   var params = {
     assessment_id: res.locals.assessment.id,
@@ -26,28 +28,24 @@ router.get('/', function (req, res, next) {
   });
 });
 
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a student data editor)'));
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
 
-  if (req.body.__action === 'regrade_all') {
-    regrading.regradeAllAssessmentInstances(
-      res.locals.assessment.id,
-      res.locals.user.user_id,
-      res.locals.authn_user.id,
-      function (err, job_sequence_id) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      },
-    );
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
-  }
-});
-module.exports = router;
+    if (req.body.__action === 'regrade_all') {
+      const job_sequence_id = await regradeAllAssessmentInstances(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id,
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
+
+export default router;

@@ -13,7 +13,7 @@
       });
       code = renderer.makeHtml(code);
     }
-    code = filterXSS(code);
+    code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
     element.html(code);
   });
 </script>

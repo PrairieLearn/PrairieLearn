@@ -1,16 +1,25 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Course, type CourseInstance, type Institution } from '../../../lib/db-types';
+import {
+  type Course,
+  type CourseInstance,
+  type Institution,
+  type PlanGrant,
+} from '../../../lib/db-types';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
+import { compiledScriptTag } from '../../../lib/assets';
 
 export function InstitutionAdminCourseInstance({
   institution,
   course,
   course_instance,
+  planGrants,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
+  planGrants: PlanGrant[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -22,6 +31,7 @@ export function InstitutionAdminCourseInstance({
           navPage: 'institution_admin',
           pageTitle: 'Courses',
         })}
+        ${compiledScriptTag('institutionAdminCourseInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
@@ -47,24 +57,40 @@ export function InstitutionAdminCourseInstance({
           </ol>
         </nav>
         <main class="container mb-4">
-          <h2 class="h4 mb-4">Limits</h2>
-          <form method="POST">
+          <h2 class="h4">Limits</h2>
+          <form method="POST" class="mb-3">
             <div class="form-group">
-              <label for="institution_course_instance_enrollment_limit">
-                Enrollment limit for institution
+              <label for="course_instance_enrollment_limit_from_institution">
+                Enrollment limit from institution
               </label>
               <input
                 type="number"
                 disabled
                 class="form-control"
-                id="institution_course_instance_enrollment_limit"
-                name="institution_course_instance_enrollment_limit"
+                id="course_instance_enrollment_limit_from_institution"
                 value="${institution.course_instance_enrollment_limit}"
               />
               <small class="form-text text-muted">
                 This limit applies to all course instances without a specific enrollment limit set.
               </small>
             </div>
+
+            <div class="form-group">
+              <label for="course_instance_enrollment_limit_from_course">
+                Enrollment limit from course
+              </label>
+              <input
+                type="number"
+                disabled
+                class="form-control"
+                id="course_instance_enrollment_limit_from_course"
+                value="${course.course_instance_enrollment_limit}"
+              />
+              <small class="form-text text-muted">
+                This limit applies to all course instances without a specific enrollment limit set.
+              </small>
+            </div>
+
             <div class="form-group">
               <label for="enrollment_limit">Enrollment limit override</label>
               <input
@@ -75,8 +101,9 @@ export function InstitutionAdminCourseInstance({
                 value="${course_instance.enrollment_limit}"
               />
               <small class="form-text text-muted">
-                This limit overrides the institution-wide limit. If no override is set, the
-                institution course instance enrollment limit (if any) will be used.
+                This limit overrides any course-wide or institution-wide limits. If no override is
+                set, the enrollment limit from either the course or the institution (if any) will be
+                used.
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -89,6 +116,15 @@ export function InstitutionAdminCourseInstance({
               Save
             </button>
           </form>
+
+          <h2 class="h4">Plans</h2>
+          ${PlanGrantsEditor({
+            planGrants,
+            // The basic plan is never available at the course instance level; it's only
+            // used for student billing for enrollments.
+            excludedPlanNames: ['basic'],
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>

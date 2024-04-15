@@ -10,7 +10,7 @@ FROM
   LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
   LEFT JOIN variants AS v ON (v.id = s.variant_id)
   LEFT JOIN questions AS q ON (q.id = v.question_id)
-  LEFT JOIN pl_courses AS c ON (c.id = v.course_id)
+  LEFT JOIN pl_courses AS c ON (c.id = q.course_id)
 WHERE
   gj.id = $grading_job_id;
 
@@ -25,5 +25,17 @@ WHERE
 UPDATE grading_jobs AS gj
 SET
   grading_received_at = $grading_received_at
+WHERE
+  gj.id = $grading_job_id;
+
+-- BLOCK select_assessment_for_grading_job
+SELECT
+  ai.id AS assessment_instance_id
+FROM
+  grading_jobs AS gj
+  JOIN submissions AS s ON (s.id = gj.submission_id)
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
   gj.id = $grading_job_id;

@@ -1,10 +1,4 @@
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedSingleColumnOneRow,
-  queryValidatedZeroOrOneRow,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
@@ -52,7 +46,7 @@ export class BatchedMigrationRunner {
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryValidatedSingleColumnOneRow(
+    return await queryRow(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
@@ -60,7 +54,7 @@ export class BatchedMigrationRunner {
   }
 
   private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryValidatedSingleColumnOneRow(
+    return await queryRow(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
@@ -68,7 +62,7 @@ export class BatchedMigrationRunner {
   }
 
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
-    this.migrationStatus = await queryValidatedSingleColumnOneRow(
+    this.migrationStatus = await queryRow(
       sql.get_migration_status,
       {
         id: migration.id,
@@ -94,7 +88,7 @@ export class BatchedMigrationRunner {
   private async getNextBatchBounds(
     migration: BatchedMigrationRow,
   ): Promise<null | [bigint, bigint]> {
-    const lastJob = await queryValidatedZeroOrOneRow(
+    const lastJob = await queryOptionalRow(
       sql.select_last_batched_migration_job,
       { batched_migration_id: migration.id },
       BatchedMigrationJobRowSchema,
@@ -144,7 +138,7 @@ export class BatchedMigrationRunner {
   ): Promise<BatchedMigrationJobRow | null> {
     const nextBatchBounds = await this.getNextBatchBounds(migration);
     if (nextBatchBounds) {
-      return queryValidatedOneRow(
+      return await queryRow(
         sql.insert_batched_migration_job,
         {
           batched_migration_id: migration.id,
@@ -157,7 +151,7 @@ export class BatchedMigrationRunner {
       // Pick up any old pending jobs from this migration. These will only exist if
       // an admin manually elected to retry all failed jobs; we'll never automatically
       // transition failed jobs back to pending.
-      return queryValidatedZeroOrOneRow(
+      return await queryOptionalRow(
         sql.select_first_pending_batched_migration_job,
         { batched_migration_id: migration.id },
         BatchedMigrationJobRowSchema,
@@ -183,6 +177,10 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
+        logger.error(
+          `Error running job ${nextJob.id} for batched migration ${migration.filename}`,
+          error,
+        );
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');

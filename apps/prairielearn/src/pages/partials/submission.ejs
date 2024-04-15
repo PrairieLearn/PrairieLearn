@@ -16,7 +16,9 @@
   <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
     <div class="card-body">
       <% if (submission.rubric_grading) { %>
-      <% (locals.rubric_data?.rubric_items || []).forEach((item) => { %>
+      <% (locals.rubric_data?.rubric_items || [])
+           .filter((item) => item.always_show_to_students || submission.rubric_grading?.rubric_items?.[item.id]?.score)
+           .forEach((item) => { %>
       <div>
         <label class="w-100" data-testid="rubric-item-container-<%= item.id %>">
           <input type="checkbox" disabled <%= submission.rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : '' %> >
@@ -73,7 +75,13 @@
           <% } %>
         </span>
       </div>
-      <small>Submitted at <%- submission.formatted_date %></small>
+      <span class="small">
+        <% if (!submission.user_uid) { %>
+          Submitted at <%= submission.formatted_date %> 
+        <% } else { %>
+          <%= submission.user_uid %> submitted at <%= submission.formatted_date %>
+        <% } %>
+      </span>
     </div>
     <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
@@ -84,7 +92,17 @@
     </button>
   </div>
 
-  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined && question.type === 'Freeform') { %>render-pending<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined && question.type === 'Freeform') { %>render-pending<% } %>"
+       data-submission-id="<%= submission.id %>"
+       id="submission-<%= submission.id %>-body"
+       <% if (submissionHtml === undefined && question.type === 'Freeform') { %>
+        data-dynamic-render-url="<%= (question_context === 'instructor' || question_context === 'public') ?
+                                     `${urlPrefix}/question/${question.id}/preview/variant/${variant.id}/submission/${submission.id}` :
+                                     question_context === 'manual_grading' ?
+                                     `${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}/variant/${variant.id}/submission/${submission.id}` :
+                                     `${urlPrefix}/instance_question/${instance_question.id}/variant/${variant.id}/submission/${submission.id}` %>"
+       <% } %>
+       >
     <div class="card-body submission-body" >
       <%- submissionHtml %>
       <% if (submissionHtml === undefined) { %>

@@ -1,9 +1,9 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
-import helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

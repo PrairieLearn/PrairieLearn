@@ -22,146 +22,6 @@ FROM
 WHERE
   js.id = $job_sequence_id;
 
--- BLOCK insert_job
-WITH
-  max_over_jobs_with_same_sequence AS (
-    SELECT
-      coalesce(max(j.number_in_sequence) + 1, 1) AS new_number_in_sequence
-    FROM
-      jobs AS j
-    WHERE
-      j.course_id IS NOT DISTINCT FROM $course_id
-      AND j.job_sequence_id = $job_sequence_id
-      AND j.job_sequence_id IS NOT NULL
-  )
-INSERT INTO
-  jobs (
-    course_id,
-    course_instance_id,
-    course_request_id,
-    assessment_id,
-    job_sequence_id,
-    number_in_sequence,
-    last_in_sequence,
-    no_job_sequence_update,
-    user_id,
-    authn_user_id,
-    type,
-    description,
-    status,
-    command,
-    arguments,
-    working_directory,
-    env
-  )
-SELECT
-  $course_id,
-  $course_instance_id,
-  $course_request_id,
-  $assessment_id,
-  $job_sequence_id,
-  new_number_in_sequence,
-  $last_in_sequence,
-  $no_job_sequence_update,
-  $user_id,
-  $authn_user_id,
-  $type,
-  $description,
-  'Running',
-  $command,
-  $arguments::TEXT[],
-  $working_directory,
-  $env
-FROM
-  max_over_jobs_with_same_sequence
-RETURNING
-  jobs.id;
-
--- BLOCK insert_job_sequence
-WITH
-  max_over_job_sequences_with_same_course AS (
-    SELECT
-      coalesce(max(js.number) + 1, 1) AS new_number
-    FROM
-      job_sequences AS js
-    WHERE
-      js.course_id IS NOT DISTINCT FROM $course_id
-  )
-INSERT INTO
-  job_sequences (
-    course_id,
-    course_instance_id,
-    course_request_id,
-    assessment_id,
-    number,
-    user_id,
-    authn_user_id,
-    type,
-    description
-  )
-SELECT
-  $course_id,
-  $course_instance_id,
-  $course_request_id,
-  $assessment_id,
-  new_number,
-  $user_id,
-  $authn_user_id,
-  $type,
-  $description
-FROM
-  max_over_job_sequences_with_same_course
-RETURNING
-  id;
-
--- BLOCK update_job_on_close
-WITH
-  updated_jobs AS (
-    UPDATE jobs AS j
-    SET
-      finish_date = CURRENT_TIMESTAMP,
-      status = CASE
-        WHEN $exit_code = 0 THEN 'Success'::enum_job_status
-        ELSE 'Error'::enum_job_status
-      END,
-      output = $output,
-      exit_code = $exit_code,
-      exit_signal = $exit_signal
-    WHERE
-      j.id = $job_id
-      -- Ensure we can't finish the same job multiple times.
-      AND status = 'Running'
-    RETURNING
-      j.*
-  ),
-  job_sequence_updates AS (
-    SELECT
-      j.*,
-      CASE
-        WHEN j.no_job_sequence_update THEN FALSE
-        WHEN j.status = 'Error' THEN TRUE
-        WHEN j.last_in_sequence THEN TRUE
-        ELSE FALSE
-      END AS update_job_sequence
-    FROM
-      updated_jobs AS j
-  ),
-  update_results AS (
-    UPDATE job_sequences AS js
-    SET
-      finish_date = j.finish_date,
-      status = j.status
-    FROM
-      job_sequence_updates AS j
-    WHERE
-      js.id = j.job_sequence_id
-      AND j.update_job_sequence
-  )
-SELECT
-  j.*
-FROM
-  updated_jobs AS j;
-
 -- BLOCK update_job_on_error
 WITH
   updated_jobs AS (
@@ -197,15 +57,6 @@ FROM
 WHERE
   js.id = j.job_sequence_id
   AND j.update_job_sequence;
-
--- BLOCK select_running_jobs
-SELECT
-  j.id,
-  j.job_sequence_id
-FROM
-  jobs AS j
-WHERE
-  j.status = 'Running';
 
 -- BLOCK select_abandoned_jobs
 SELECT
@@ -250,14 +101,6 @@ WHERE
   )
 RETURNING
   js.id;
-
--- BLOCK fail_job_sequence
-UPDATE job_sequences AS js
-SET
-  finish_date = CURRENT_TIMESTAMP,
-  status = 'Error'
-WHERE
-  js.id = $job_sequence_id;
 
 -- BLOCK select_job_sequence_with_course_id_as_json
 WITH

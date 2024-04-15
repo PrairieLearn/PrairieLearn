@@ -1,36 +1,40 @@
 <style>
- img {
-     display: block;
-     margin-left: auto;
-     margin-right: auto;
-     margin-top: 15px;
-     margin-bottom: 15px;
- }
- .code-block {
-     width: 90%;
-     margin-left: auto;
-     margin-right: auto;
-     overflow: hidden;
-     margin-bottom: 1rem;
-     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-     background: #f0f0f0;
-     padding: 1em;
-     padding-bottom: 0em;
- }
- .code-block div {
-     padding: 0.5rem;
-     display: block;
-     margin-bottom: -1em;
-     line-height: 125%;
- }
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .code-block {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+  .code-block div {
+    padding: 0.5rem;
+    display: block;
+    margin-bottom: -1em;
+    line-height: 125%;
+  }
 </style>
 
 <p>
-  Thanks to <a href="https://github.com/xinhexu2">Zander Xu</a> and <a href="https://github.com/zillesc">Craig Zilles</a>, PrairieLearn now supports <code class="user-output">"comment"</code> keys in JSON files for documentation (for example, listing learning objectives for a given question pool).  Here is an example of this key:
+  Thanks to <a href="https://github.com/xinhexu2">Zander Xu</a> and
+  <a href="https://github.com/zillesc">Craig Zilles</a>, PrairieLearn now supports
+  <code class="user-output">"comment"</code> keys in JSON files for documentation (for example,
+  listing learning objectives for a given question pool). Here is an example of this key:
 </p>
 
 <div class="mb-2 rounded code-block">
-<pre><code>{
+  <pre><code>{
     <span class="text-danger">"comment": "This assessment was first created for the workshop offered in Summer 2020",</span>
     "zones": [
         {
@@ -54,5 +58,11 @@
 </div>
 
 <p>
-  Comments can be used in any PrairieLearn JSON file, but only one comment is allowed in each JSON object.  (Things wrapped in curly braces {} are JSON objects.)  Comments can be strings, arrays, or objects. See <a href="https://prairielearn.readthedocs.io/en/latest/course/#comments-in-json-files">the comment documentation</a> for details.
+  Comments can be used in any PrairieLearn JSON file, but only one comment is allowed in each JSON
+  object. (Things wrapped in curly braces {} are JSON objects.) Comments can be strings, arrays, or
+  objects. See
+  <a href="https://prairielearn.readthedocs.io/en/latest/course/#comments-in-json-files"
+    >the comment documentation</a
+  >
+  for details.
 </p>

@@ -5,6 +5,7 @@ const _ = require('lodash');
 const { logger } = require('@prairielearn/logger');
 const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 const { config } = require('../lib/config');
+const { setCookie } = require('../lib/cookie');
 const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours
@@ -54,8 +55,7 @@ router.all('/', function (req, res, next) {
   // Password protect the assessment. Note that this only handles the general
   // case of an existing assessment instance. This middleware can't handle
   // the intricacies of creating a new assessment instance. We handle those
-  // cases on the `studentAssessmentExam` and `studentAssessmentHomework`
-  // pages.
+  // cases on the `studentAssessment` page.
   if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
     return;
   }
@@ -102,7 +102,7 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
-  res.cookie('pl_pw_origUrl', req.originalUrl);
+  setCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url'], req.originalUrl);
   res.redirect('/pl/password');
 }
 

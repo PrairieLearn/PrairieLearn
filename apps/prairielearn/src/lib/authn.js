@@ -1,10 +1,14 @@
 // @ts-check
-const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
-const { generateSignedToken } = require('@prairielearn/signed-token');
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
-const { config } = require('../lib/config');
-const { InstitutionSchema, UserSchema } = require('./db-types');
+import { config } from './config';
+import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
+import { InstitutionSchema, UserSchema } from './db-types';
+import { HttpRedirect } from './redirect';
+import { isEnterprise } from './license';
+import { redirectToTermsPageIfNeeded } from '../ee/lib/terms';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -20,6 +24,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
@@ -27,18 +32,30 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {LoadUserAuth} authnParams
  * @param {LoadUserOptions} [optionsParams]
  */
-module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
+export async function loadUser(req, res, authnParams, optionsParams = {}) {
   let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
 
   let user_id;
   if ('user_id' in authnParams) {
     user_id = authnParams.user_id;
   } else {
-    let params = [authnParams.uid, authnParams.name, authnParams.uin, authnParams.provider];
+    let params = [
+      authnParams.uid,
+      authnParams.name,
+      authnParams.uin,
+      authnParams.provider,
+      authnParams.institution_id,
+    ];
 
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
+    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    if (result === 'invalid_authn_provider') {
+      throw new HttpRedirect(
+        `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
+      );
+    }
   }
 
   const selectedUser = await sqldb.queryOptionalRow(
@@ -57,25 +74,43 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     throw new Error('user not found with user_id ' + user_id);
   }
 
+  // The session store will pick this up and store it in the `user_sessions.user_id` column.
+  req.session.user_id = user_id;
+
+  // Our authentication middleware will read this value.
+  req.session.authn_provider_name = authnParams.provider;
+
   if (options.pl_authn_cookie) {
     var tokenData = {
-      user_id: user_id,
+      user_id,
       authn_provider_name: authnParams.provider || null,
     };
     var pl_authn = generateSignedToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
+    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
-      secure: true,
+      secure: shouldSecureCookie(req),
     });
+
+    // After explicitly authenticating, clear the cookie that disables
+    // automatic authentication.
+    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+      clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
+    }
   }
 
   if (options.redirect) {
     let redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
+
+    // Potentially prompt the user to accept the terms before redirecting them.
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, selectedUser.user, req.ip, redirUrl);
+    }
+
     res.redirect(redirUrl);
     return;
   }
@@ -95,4 +130,4 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 
   res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
-};
+}

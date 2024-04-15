@@ -1,3 +1,4 @@
+//@ts-check
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -9,7 +10,7 @@ const fileStore = require('../../lib/file-store');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
-  '/:unsafe_file_id/:unsafe_display_filename',
+  '/:unsafe_file_id(\\d+)/:unsafe_display_filename',
   asyncHandler(async (req, res, next) => {
     const params = {
       assessment_instance_id: res.locals.assessment_instance.id,
@@ -21,7 +22,7 @@ router.get(
     // filename matches, and that the file is not deleted.
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
     if (result.rows.length === 0) {
-      return next(error.make(404, 'File not found'));
+      return next(new error.HttpStatusError(404, 'File not found'));
     }
 
     const { id: fileId, display_filename: displayFilename } = result.rows[0];

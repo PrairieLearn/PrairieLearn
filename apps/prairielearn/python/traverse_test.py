@@ -316,3 +316,24 @@ def test_traverse_and_replace_empty_paragraph() -> None:
 
     html = traverse_and_replace("<p></p>", replace)
     assert html == "<p></p>"
+
+
+def test_traverse_and_replace_script() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace('<script>""</script>', replace)
+    assert html == '<script>""</script>'
+
+
+def test_traverse_and_replace_script_complex() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    test_str = (
+        '<script>const test = "&quot;";</script>'
+        '<style>.class-a > .class-b::before { content: "a &gt; b"; }</style>'
+    )
+
+    html = traverse_and_replace(test_str, replace)
+    assert html == test_str

@@ -1,19 +1,70 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const Ajv = require('ajv').default;
-const {
+import * as async from 'async';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import Ajv from 'ajv';
+import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
+} from '@aws-sdk/client-sqs';
+import * as Sentry from '@prairielearn/sentry';
+import { setTimeout as sleep } from 'node:timers/promises';
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
+import globalLogger from './logger';
+import { config } from './config';
 
 let messageSchema = null;
+
+/**
+ * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
+ * @param {string} queueUrl
+ * @param {string} receiptHandle
+ * @param {number} timeout
+ * @returns {Promise<void>}
+ */
+async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
+  await sqs.send(
+    new ChangeMessageVisibilityCommand({
+      QueueUrl: queueUrl,
+      ReceiptHandle: receiptHandle,
+      VisibilityTimeout: timeout,
+    }),
+  );
+}
+
+/**
+ * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
+ * @param {string} queueUrl
+ * @param {string} receiptHandle
+ */
+async function startHeartbeat(sqs, queueUrl, receiptHandle) {
+  const abortController = new AbortController();
+
+  // Run the first extension immediately before we start processing the job.
+  await changeVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
+
+  // We want this process to run in the background, so we don't await it.
+  // `extendVisibilityTimeout` will handle errors.
+  // eslint-disable-next-line no-floating-promise/no-floating-promise
+  (async () => {
+    while (!abortController.signal.aborted) {
+      await sleep(config.visibilityTimeoutHeartbeatIntervalSec * 1000, null, { ref: false });
+
+      if (abortController.signal.aborted) return;
+
+      try {
+        await changeVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
+      } catch (err) {
+        globalLogger.error('Error extending visibility timeout', err);
+        Sentry.captureException(err);
+      }
+    }
+  })();
+
+  return abortController;
+}
 
 /**
  *
@@ -22,8 +73,12 @@ let messageSchema = null;
  * @param {Function} receiveCallback
  * @param {Function} doneCallback
  */
-module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
+export default function (sqs, queueUrl, receiveCallback, doneCallback) {
   let parsedMessage, receiptHandle;
+
+  /** @type {AbortController} */
+  let heartbeatAbortController;
+
   async.series(
     [
       (callback) => {
@@ -78,29 +133,19 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
         }
       },
       async () => {
-        const timeout = parsedMessage.timeout || config.defaultTimeout;
-        // Add additional time to account for pulling the image, downloading/uploading files, etc.
-        const newTimeout = timeout + config.timeoutOverhead;
-        await sqs.send(
-          new ChangeMessageVisibilityCommand({
-            QueueUrl: queueUrl,
-            ReceiptHandle: receiptHandle,
-            VisibilityTimeout: newTimeout,
-          }),
-        );
+        heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
       },
       (callback) => {
-        receiveCallback(
-          parsedMessage,
-          (err) => {
+        receiveCallback(parsedMessage, (err) => {
+          heartbeatAbortController.abort();
+          if (err) {
             globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
             callback(err);
-          },
-          () => {
+          } else {
             globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
             callback(null);
-          },
-        );
+          }
+        });
       },
       async () => {
         await sqs.send(
@@ -116,4 +161,4 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       doneCallback(null);
     },
   );
-};
+}

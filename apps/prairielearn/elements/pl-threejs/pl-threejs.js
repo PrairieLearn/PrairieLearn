@@ -252,7 +252,7 @@ function PLThreeJS(options) {
       }
     }
 
-    return { offsetX: glyph.ha * scale, path: path };
+    return { offsetX: glyph.ha * scale, path };
   }
 
   async.series(

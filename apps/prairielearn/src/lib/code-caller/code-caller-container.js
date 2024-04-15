@@ -9,14 +9,16 @@ const { Mutex } = require('async-mutex');
 const os = require('os');
 const fs = require('fs-extra');
 const execa = require('execa');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const bindMount = require('@prairielearn/bind-mount');
 const { instrumented } = require('@prairielearn/opentelemetry');
-const { setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { setupDockerAuth } = require('@prairielearn/docker-utils');
+const { logger } = require('@prairielearn/logger');
 
 const { config } = require('../config');
-const { logger } = require('@prairielearn/logger');
 const { FunctionMissingError } = require('./code-caller-shared');
 const { deferredPromise } = require('../deferred');
+const { makeAwsClientConfig } = require('../aws');
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -78,9 +80,8 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const dockerAuth = config.cacheImageRegistry
-        ? await setupDockerAuthAsync(config.awsRegion)
-        : null;
+      const ecr = new ECRClient(makeAwsClientConfig());
+      const dockerAuth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {
         docker.modem.followProgress(
@@ -141,6 +142,7 @@ class CodeCallerContainer {
     this.lastCallData = null;
 
     this.coursePath = null;
+    this.forbiddenModules = [];
 
     this._checkState();
 
@@ -193,9 +195,11 @@ class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {string} coursePath
+   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
    */
-  async prepareForCourse(coursePath) {
+  async prepareForCourse({ coursePath, forbiddenModules }) {
+    this.forbiddenModules = forbiddenModules;
+
     if (this.coursePath && this.coursePath === coursePath) {
       // Same course as before; we can reuse the existing setup
       return;
@@ -234,7 +238,7 @@ class CodeCallerContainer {
       throw new Error('not ready for call');
     }
 
-    const callData = { type, directory, file, fcn, args };
+    const callData = { type, directory, file, fcn, args, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
     // Reset output accumulators.
@@ -293,6 +297,7 @@ class CodeCallerContainer {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      this.forbiddenModules = [];
       this.coursePath = null;
       this.callCount = 0;
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);

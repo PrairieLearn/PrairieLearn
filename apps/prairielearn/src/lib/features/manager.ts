@@ -1,10 +1,15 @@
-import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { config } from '../config';
 
 const sql = loadSqlEquiv(__filename);
+
+const IsFeatureEnabledSchema = z.object({
+  has_feature_grant: z.boolean(),
+  course_dev_mode_features: z.unknown(),
+});
 
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
 const DEFAULT_CONTEXT = {
@@ -41,23 +46,12 @@ type FeatureContext =
   | CourseContext
   | CourseInstanceContext;
 
-function validateContext(context: FeatureContext) {
-  let hasAllParents = true;
-  CONTEXT_HIERARCHY.forEach((key, index) => {
-    const hasKey = !!context[key];
-    if (hasKey && !hasAllParents) {
-      const missingKeys = CONTEXT_HIERARCHY.slice(0, index - 1);
-      throw new Error(`Missing required context keys: ${missingKeys.join(', ')}`);
-    }
-    hasAllParents = hasKey;
-  });
-}
-
 export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
   als: AsyncLocalStorage<FeatureOverrides>;
+  globalOverrides: FeatureOverrides = {};
 
-  constructor(features: FeatureName[]) {
+  constructor(features: readonly FeatureName[]) {
     features.forEach((feature) => {
       if (!feature.match(/^[a-z0-9:_-]+$/)) {
         throw new Error(`Invalid feature name: ${feature}`);
@@ -71,11 +65,15 @@ export class FeatureManager<FeatureName extends string> {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
-    validateContext(context);
+    this.validateContext(context);
+  }
+
+  hasFeature(feature: string): feature is FeatureName {
+    return this.features.has(feature);
   }
 
   allFeatures() {
-    return [...this.features];
+    return [...this.features] as FeatureName[];
   }
 
   /**
@@ -89,27 +87,42 @@ export class FeatureManager<FeatureName extends string> {
     this.validateFeature(name, context);
 
     // Allow features to be overridden by `runWithOverrides`.
-    const featureOverrides = this.als.getStore();
-    const featureOverride = featureOverrides?.[name];
-    if (featureOverride !== undefined) {
-      return featureOverride;
-    }
+    const featureOverrides = this.als.getStore() ?? {};
+    if (name in featureOverrides) return featureOverrides[name];
+
+    // Allow global overrides, e.g. for tests.
+    if (name in this.globalOverrides) return this.globalOverrides[name];
 
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const featureIsEnabled = await queryValidatedSingleColumnOneRow(
+    const featureIsEnabled = await queryRow(
       sql.is_feature_enabled,
       {
         name,
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.boolean(),
+      IsFeatureEnabledSchema,
     );
-    if (featureIsEnabled) return true;
 
-    // Default to disabled if not explicitly enabled by a specific grant or config.
+    if (featureIsEnabled.has_feature_grant) return true;
+
+    // Allow features to be enabled in dev mode via `options.devModeFeatures`
+    // in `infoCourse.json`.
+    //
+    // We could check for the feature in the array in SQL, but it's easier to
+    // write this more defensively in JavaScript.
+    if (
+      config.devMode &&
+      Array.isArray(featureIsEnabled.course_dev_mode_features) &&
+      featureIsEnabled.course_dev_mode_features.includes(name)
+    ) {
+      return true;
+    }
+
+    // Default to disabled if not explicitly enabled by a specific grant, config,
+    // or course options.
     return false;
   }
 
@@ -177,7 +190,43 @@ export class FeatureManager<FeatureName extends string> {
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
+  /**
+   * Runs the given function with a set of feature overrides persisted in
+   * {@link AsyncLocalStorage}. This allows for a feature to be enabled or
+   * disabled in the context of a single request.
+   */
   runWithOverrides<T>(overrides: FeatureOverrides, fn: () => T): T {
     return this.als.run(overrides, fn);
+  }
+
+  /**
+   * Globally sets the given feature overrides and automatically cleans them up
+   * once the provided function has executed.
+   *
+   * Note that this should generally only be used in tests. If used while serving
+   * actual requests, this will have unintended behavior since the overrides will
+   * apply to all code that is running at the same time.
+   */
+  async runWithGlobalOverrides<T>(overrides: FeatureOverrides, fn: () => Promise<T>): Promise<T> {
+    const originalGlobalOverrides = this.globalOverrides;
+    this.globalOverrides = { ...originalGlobalOverrides, ...overrides };
+    try {
+      return await fn();
+    } finally {
+      this.globalOverrides = originalGlobalOverrides;
+    }
+  }
+
+  validateContext(context: object): FeatureContext {
+    let hasAllParents = true;
+    CONTEXT_HIERARCHY.forEach((key, index) => {
+      const hasKey = !!context[key];
+      if (hasKey && !hasAllParents) {
+        const missingKeys = CONTEXT_HIERARCHY.slice(0, index - 1);
+        throw new Error(`Missing required context keys: ${missingKeys.join(', ')}`);
+      }
+      hasAllParents = hasKey;
+    });
+    return context as FeatureContext;
   }
 }

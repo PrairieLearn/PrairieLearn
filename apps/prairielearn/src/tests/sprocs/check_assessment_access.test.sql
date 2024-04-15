@@ -8,53 +8,13 @@ WITH
       (1010, 'ta@school.edu'),
       (1020, 'instructor@school.edu')
   ),
-  setup_ps_courses AS (
-    INSERT INTO
-      courses (course_id, pl_course_id, rubric)
-    VALUES
-      (1, null, 'course not linked'),
-      (2, 2, 'course singlely linked'),
-      (3, 3, 'multiple PSC linked, previous semester'),
-      (4, 3, 'multiple PSC linked, current semester'),
-      (5, null, 'course not linked but exams are')
-  ),
-  setup_exams AS (
-    INSERT INTO
-      exams (exam_id, course_id, exam_string, uuid)
-    VALUES
-      (
-        1,
-        1,
-        'some exam',
-        '890884f9-aa9d-4fc0-b910-5229794906fb'
-      ),
-      (
-        2,
-        2,
-        'some exam',
-        'fa71b9cc-7717-4e84-9a1e-8d55b3d4fadd'
-      ),
-      (3, 3, 'some exam', null),
-      (
-        4,
-        4,
-        'some exam',
-        'adf9ce2d-dfca-4a7f-8c6b-1376715fd346'
-      ),
-      (
-        5,
-        5,
-        'some exam',
-        '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'
-      )
-  ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone)
+      pl_courses (id, display_timezone, path)
     VALUES
-      (1, 'UTC'),
-      (2, 'UTC'),
-      (3, 'UTC')
+      (1, 'UTC', '/path/to/course/1'),
+      (2, 'UTC', '/path/to/course/2'),
+      (3, 'UTC', '/path/to/course/3')
   ),
   setup_ci AS (
     INSERT INTO
@@ -331,25 +291,6 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         null
-      )
-  )
-SELECT
-  true;
-
--- BLOCK insert_ps_reservation
-WITH
-  remove_reservations AS (
-    DELETE FROM reservations
-  ),
-  insert_new_reservation AS (
-    INSERT INTO
-      reservations (exam_id, user_id, access_start, access_end)
-    VALUES
-      (
-        $exam_id,
-        1000,
-        '2010-07-01 00:00:00-00',
-        '2010-07-31 23:59:59-00'
       )
   )
 SELECT

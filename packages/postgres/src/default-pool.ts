@@ -1,7 +1,7 @@
-import { PostgresPool } from './pool';
+import { PostgresPool, type CursorIterator, type QueryParams } from './pool';
 
 const defaultPool = new PostgresPool();
-export { defaultPool };
+export { defaultPool, type CursorIterator, type QueryParams };
 
 // We re-expose all functions from the default pool here to account for the
 // default case of a shared global pool of clients. If someone want to create
@@ -65,6 +65,9 @@ export const callValidatedZeroOrOneRow = defaultPool.callValidatedZeroOrOneRow.b
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 export const queryRow = defaultPool.queryRow.bind(defaultPool);
 export const queryOptionalRow = defaultPool.queryOptionalRow.bind(defaultPool);
+export const callRows = defaultPool.callRows.bind(defaultPool);
+export const callRow = defaultPool.callRow.bind(defaultPool);
+export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
 export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
 export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import * as pem from 'pem';
+// We import from this instead of `pem` directly because the latter includes
+// code that messes up the display of source maps in dev mode:
+// https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
+import * as pem from 'pem/lib/pem';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
@@ -58,6 +61,9 @@ router.post(
           sso_login_url: req.body.sso_login_url,
           issuer: req.body.issuer,
           certificate: req.body.certificate,
+          validate_audience: req.body.validate_audience === '1',
+          want_assertions_signed: req.body.want_assertions_signed === '1',
+          want_authn_response_signed: req.body.want_authn_response_signed === '1',
           // Normalize empty strings to `null`.
           uin_attribute: req.body.uin_attribute || null,
           uid_attribute: req.body.uid_attribute || null,
@@ -76,10 +82,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
 
     res.redirect(req.originalUrl);
