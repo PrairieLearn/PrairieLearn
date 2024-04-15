@@ -1,7 +1,5 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { regradeAssessmentInstance } from '../../lib/regrading';
@@ -13,41 +11,13 @@ import {
   deleteAssessmentInstance,
 } from '../../lib/assessment';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '../../lib/db-types';
+import {
+  InstructorAssessmentInstances,
+  AssessmentInstanceRowSchema,
+} from './instructorAssessmentInstances.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const AssessmentInstanceRowSchema = z.object({
-  assessment_label: z.string(),
-  user_id: IdSchema.nullable(),
-  uid: z.string().nullable(),
-  name: z.string().nullable(),
-  role: z.string().nullable(),
-  group_id: IdSchema.nullable(),
-  group_name: z.string().nullable(),
-  uid_list: z.array(z.string()).nullable(),
-  user_name_list: z.array(z.string()).nullable(),
-  group_roles: z.array(z.string()).nullable(),
-  username: z.string().nullable(),
-  score_perc: z.number().nullable(),
-  points: z.number(),
-  max_points: z.number(),
-  number: z.number(),
-  assessment_instance_id: IdSchema,
-  open: z.boolean(),
-  time_remaining: z.string(),
-  time_remaining_sec: z.number().nullable(),
-  total_time: z.string(),
-  total_time_sec: z.number().nullable(),
-  date: z.date(),
-  date_formatted: z.string(),
-  duration: z.string(),
-  duration_secs: z.number(),
-  duration_mins: z.number(),
-  highest_score: z.boolean(),
-  client_fingerprint_id_change_count: z.number(),
-});
 
 router.get(
   '/raw_data.json',
@@ -68,23 +38,12 @@ router.get(
 );
 
 router.get(
-  '/client.js',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-    res.type('text/javascript');
-    res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
-  }),
-);
-
-router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
   }),
 );
 
