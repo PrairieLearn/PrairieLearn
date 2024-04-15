@@ -22,6 +22,11 @@ import { parseUidsString } from '../../lib/user';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
+/**
+ * The maximum number of UIDs that can be provided in a single request.
+ */
+const MAX_UIDS = 50;
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -105,23 +110,24 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_name = req.body.group_name;
 
-      const uids = parseUidsString(req.body.uids);
-      await createGroup(group_name, assessment_id, uids, res.locals.authn_user.user_id).catch(
-        (err) => {
-          if (err instanceof GroupOperationError) {
-            flash('error', err.message);
-          } else {
-            throw err;
-          }
-        },
-      );
+      await createGroup(
+        group_name,
+        assessment_id,
+        Array.from(parseUidsString(req.body.uids, MAX_UIDS)),
+        res.locals.authn_user.user_id,
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
-      const uids = parseUidsString(req.body.add_member_uids);
-      for (const uid of uids) {
+      for (const uid of parseUidsString(req.body.add_member_uids, MAX_UIDS)) {
         try {
           await addUserToGroup({
             assessment_id,
