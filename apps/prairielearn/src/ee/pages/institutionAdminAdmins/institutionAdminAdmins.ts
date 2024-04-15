@@ -14,7 +14,8 @@ import {
   InstitutionAdminAdminsRowSchema,
 } from './institutionAdminAdmins.html';
 import { getInstitution } from '../../lib/institution';
-import { parseUidsString, selectUserByUid } from '../../../lib/user';
+import { selectUserByUid } from '../../../models/user';
+import { parseUidsString } from '../../../lib/user';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);

@@ -8,7 +8,7 @@ import {
   InstitutionAdministratorSchema,
 } from '../../../lib/db-types';
 import { compiledScriptTag } from '../../../lib/assets';
-import { Modal } from '../../../components/Modal';
+import { Modal } from '../../../components/Modal.html';
 
 export const InstitutionAdminAdminsRowSchema = z.object({
   user: UserSchema,
