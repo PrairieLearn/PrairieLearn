@@ -74,6 +74,7 @@ router.get(
         groupConfigInfo,
         groups,
         notAssigned,
+        uidsLimit: MAX_UIDS,
       }),
     );
   }),

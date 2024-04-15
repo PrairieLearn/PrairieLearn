@@ -56,6 +56,8 @@ router.get(
     res.locals.course_users = course_users.rows;
     res.locals.course_instances = course_instances;
 
+    res.locals.uids_limit = MAX_UIDS;
+
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
