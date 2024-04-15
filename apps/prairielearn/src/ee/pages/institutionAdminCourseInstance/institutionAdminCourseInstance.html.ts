@@ -44,10 +44,10 @@ export function InstitutionAdminCourseInstance({
         <nav class="container" aria-label="Breadcrumbs">
           <ol class="breadcrumb">
             <li class="breadcrumb-item">
-              <a href="/pl/institution/${institution.id}/admin/courses">Courses</a>
+              <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
             </li>
             <li class="breadcrumb-item">
-              <a href="/pl/institution/${institution.id}/admin/course/${course.id}">
+              <a href="/pl/administrator/institution/${institution.id}/course/${course.id}">
                 ${course.title} (${course.short_name})
               </a>
             </li>

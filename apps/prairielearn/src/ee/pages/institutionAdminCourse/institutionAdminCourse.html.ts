@@ -42,7 +42,7 @@ export function InstitutionAdminCourse({
         <nav class="container" aria-label="Breadcrumbs">
           <ol class="breadcrumb">
             <li class="breadcrumb-item">
-              <a href="/pl/institution/${institution.id}/admin/courses">Courses</a>
+              <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
               ${course.title} (${course.short_name})
@@ -143,7 +143,7 @@ export function InstitutionAdminCourse({
                     <tr>
                       <td>
                         <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${course_instance.id}"
+                          href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >
                           ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
                         </a>
