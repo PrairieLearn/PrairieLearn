@@ -2,8 +2,8 @@ import random
 
 
 def generate(data):
-    # Sample a random decimal number in the tenths place between 1.1 and 5.
-    a = round(random.uniform(1.1, 5), 1)
+    # Sample a random decimal number in the tenths place between 2 and 5.
+    a = round(random.uniform(2, 5), 1)
 
     # Sample an integer number between 6 and 11.
     b = random.randint(6, 11)

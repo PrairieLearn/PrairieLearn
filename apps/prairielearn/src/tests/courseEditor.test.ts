@@ -181,7 +181,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: 'form[name="delete-assessment-form"]',
+    formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
       'README.md',
@@ -210,7 +210,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: 'form[name="delete-assessment-form"]',
+    formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
       'README.md',

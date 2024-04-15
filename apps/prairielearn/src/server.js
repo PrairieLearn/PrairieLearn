@@ -858,13 +858,6 @@ module.exports.initExpress = function () {
 
   app.use('/pl/api/v1', require('./api/v1').default);
 
-  if (isEnterprise()) {
-    app.use(
-      '/pl/institution/:institution_id(\\d+)/admin',
-      require('./ee/routers/institutionAdmin').default,
-    );
-  }
-
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1970,17 +1963,24 @@ module.exports.initExpress = function () {
     require('./pages/administratorQuery/administratorQuery').default,
   );
   app.use(
-    '/pl/administrator/jobSequence/',
+    '/pl/administrator/jobSequence',
     require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
-    '/pl/administrator/courseRequests/',
+    '/pl/administrator/courseRequests',
     require('./pages/administratorCourseRequests/administratorCourseRequests').default,
   );
   app.use(
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
+
+  if (isEnterprise()) {
+    app.use(
+      '/pl/administrator/institution/:institution_id(\\d+)',
+      require('./ee/routers/institutionAdmin').default,
+    );
+  }
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
