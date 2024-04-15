@@ -7,6 +7,7 @@ import { config } from '../../lib/config';
 import helperServer = require('../helperServer');
 import { UserSchema } from '../../lib/db-types';
 import { selectUserByUid } from '../../lib/user';
+import { withUser } from '../utils/auth';
 
 const SITE_URL = `http://localhost:${config.serverPort}`;
 const COURSE_URL = `${SITE_URL}/pl/course/1/course_admin/instances`;
@@ -50,24 +51,6 @@ async function insertUser(user: AuthUser) {
     await queryAsync(`INSERT INTO administrators (user_id) VALUES ($user_id);`, {
       user_id: newUser.user_id,
     });
-  }
-}
-
-async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
-  const originalName = config.authName;
-  const originalUid = config.authUid;
-  const originalUin = config.authUin;
-
-  try {
-    config.authName = user.name;
-    config.authUid = user.uid;
-    config.authUin = user.uin ?? user.uid;
-
-    return await fn();
-  } finally {
-    config.authName = originalName;
-    config.authUid = originalUid;
-    config.authUin = originalUin;
   }
 }
 

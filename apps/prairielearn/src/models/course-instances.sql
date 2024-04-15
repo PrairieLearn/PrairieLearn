@@ -25,6 +25,11 @@ SELECT
   ) AS has_course_instance_permission_view
 FROM
   pl_courses AS c
+  JOIN institutions AS i ON (i.id = c.institution_id)
+  LEFT JOIN institution_administrators AS ia ON (
+    ia.institution_id = i.id
+    AND ia.user_id = $user_id
+  )
   JOIN course_instances AS ci ON (
     ci.course_id = c.id
     AND ci.deleted_at IS NULL
@@ -45,12 +50,7 @@ FROM
       course_instance_access_rules AS ar
     WHERE
       ar.course_instance_id = ci.id
-  ) AS d,
-  JOIN institutions AS i ON (i.id = c.institution_id)
-  LEFT JOIN institution_administrators AS ia ON (
-    ia.institution_id = i.id
-    AND ia.user_id = $user_id
-  )
+  ) AS d
 WHERE
   c.id = $course_id
   AND c.deleted_at IS NULL
