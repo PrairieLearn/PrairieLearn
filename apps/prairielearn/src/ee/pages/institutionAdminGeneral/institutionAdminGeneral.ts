@@ -38,7 +38,6 @@ router.get(
         availableTimezones,
         statistics,
         planGrants,
-        canEditLimits: res.locals.is_administrator,
         resLocals: res.locals,
       }),
     );

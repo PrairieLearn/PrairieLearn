@@ -19,14 +19,12 @@ export function InstitutionAdminGeneral({
   availableTimezones,
   statistics,
   planGrants,
-  canEditLimits,
   resLocals,
 }: {
   institution: Institution;
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
-  canEditLimits: boolean;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -153,7 +151,6 @@ export function InstitutionAdminGeneral({
                 value="${institution.course_instance_enrollment_limit}"
                 required
                 aria-describedby="course_instance_enrollment_limit_help"
-                ${canEditLimits ? '' : 'disabled'}
               />
               <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
                 The maximum number of enrollments allowed for a single course instance. This value
@@ -170,7 +167,6 @@ export function InstitutionAdminGeneral({
                 value="${institution.yearly_enrollment_limit}"
                 required
                 aria-describedby="yearly_enrollment_limit_help"
-                ${canEditLimits ? '' : 'disabled'}
               />
               <small id="yearly_enrollment_limit_help" class="form-text text-muted">
                 The maximum number of enrollments allowed per year. The limit is applied on a
@@ -179,18 +175,14 @@ export function InstitutionAdminGeneral({
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            ${canEditLimits
-              ? html`
-                  <button
-                    type="submit"
-                    name="__action"
-                    value="update_enrollment_limits"
-                    class="btn btn-primary"
-                  >
-                    Save
-                  </button>
-                `
-              : null}
+            <button
+              type="submit"
+              name="__action"
+              value="update_enrollment_limits"
+              class="btn btn-primary"
+            >
+              Save
+            </button>
           </form>
 
           <h2 class="h4">Plans</h2>
