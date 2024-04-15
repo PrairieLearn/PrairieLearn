@@ -43,7 +43,9 @@ export function InstitutionAdminCourses({
                   return html`
                     <tr>
                       <td>
-                        <a href="/pl/institution/${institution.id}/admin/course/${course.id}">
+                        <a
+                          href="/pl/administrator/institution/${institution.id}/course/${course.id}"
+                        >
                           ${course.short_name ?? '—'}: ${course.title ?? '—'}
                         </a>
                       </td>
