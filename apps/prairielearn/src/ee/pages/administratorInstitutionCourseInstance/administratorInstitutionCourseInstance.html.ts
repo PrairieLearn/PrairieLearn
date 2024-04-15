@@ -9,7 +9,7 @@ import {
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
 import { compiledScriptTag } from '../../../lib/assets';
 
-export function InstitutionAdminCourseInstance({
+export function AdministratorInstitutionCourseInstance({
   institution,
   course,
   course_instance,
@@ -28,17 +28,17 @@ export function InstitutionAdminCourseInstance({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'Courses',
         })}
-        ${compiledScriptTag('institutionAdminCourseInstanceClient.ts')}
+        ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'institution',
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           navSubPage: 'courses',
         })}
         <nav class="container" aria-label="Breadcrumbs">

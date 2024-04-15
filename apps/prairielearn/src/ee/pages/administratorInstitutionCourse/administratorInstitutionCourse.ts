@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { CourseSchema } from '../../../lib/db-types';
 import {
   CourseInstanceRowSchema,
-  InstitutionAdminCourse,
+  AdministratorInstitutionCourse,
 } from './administratorInstitutionCourse.html';
 import { getInstitution } from '../../lib/institution';
 import { insertAuditLog } from '../../../models/audit-log';
@@ -33,7 +33,7 @@ router.get(
       CourseInstanceRowSchema,
     );
     res.send(
-      InstitutionAdminCourse({
+      AdministratorInstitutionCourse({
         institution,
         course,
         rows,

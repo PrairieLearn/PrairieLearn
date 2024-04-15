@@ -6,7 +6,7 @@ import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag } from '../../../lib/assets';
 
-export function InstitutionAdminLti13({
+export function AdministratorInstitutionLti13({
   institution,
   lti13Instances,
   instance,
@@ -27,17 +27,17 @@ export function InstitutionAdminLti13({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'LTI 1.3',
         })}
-        ${compiledScriptTag('institutionAdminLti13.ts')}
+        ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'institution',
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           navSubPage: 'lti13',
         })}
         <main class="container mb-4">

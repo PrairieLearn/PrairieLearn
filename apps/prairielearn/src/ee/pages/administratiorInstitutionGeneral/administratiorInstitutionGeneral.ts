@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import {
-  InstitutionAdminGeneral,
+  AdministratorInstitutionGeneral,
   InstitutionStatisticsSchema,
 } from './administratiorInstitutionGeneral.html';
 import { getInstitution } from '../../lib/institution';
@@ -33,7 +33,7 @@ router.get(
     );
     const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
     res.send(
-      InstitutionAdminGeneral({
+      AdministratorInstitutionGeneral({
         institution,
         availableTimezones,
         statistics,

@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
-import { InstitutionAdminLti13 } from './administratorInstitutionLti13.html';
+import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html';
 import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
@@ -89,7 +89,7 @@ router.get(
     }
 
     res.send(
-      InstitutionAdminLti13({
+      AdministratorInstitutionLti13({
         institution,
         lti13Instances,
         instance: paramInstance ?? null,
