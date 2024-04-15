@@ -17,6 +17,7 @@ import {
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema } from '../../lib/db-types';
 import { InstructorAssessmentGroups, GroupUsersRowSchema } from './instructorAssessmentGroups.html';
+import { parseUidsString } from '../../lib/user';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -104,9 +105,8 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_name = req.body.group_name;
 
-      const uids = req.body.uids;
-      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      await createGroup(group_name, assessment_id, uidlist, res.locals.authn_user.user_id).catch(
+      const uids = parseUidsString(req.body.uids);
+      await createGroup(group_name, assessment_id, uids, res.locals.authn_user.user_id).catch(
         (err) => {
           if (err instanceof GroupOperationError) {
             flash('error', err.message);
@@ -120,9 +120,8 @@ router.post(
     } else if (req.body.__action === 'add_member') {
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
-      const uids = req.body.add_member_uids;
-      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      for (const uid of uidlist) {
+      const uids = parseUidsString(req.body.add_member_uids);
+      for (const uid of uids) {
         try {
           await addUserToGroup({
             assessment_id,
