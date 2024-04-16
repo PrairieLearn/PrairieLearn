@@ -253,13 +253,8 @@ onDocumentReady(() => {
 
   table.on('renderComplete', () => {
     // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
-    $('[data-toggle="popover"]')
-      .popover({
-        sanitize: false,
-        container: 'body',
-        html: true,
-        trigger: 'hover',
-      })
+    $('.js-sync-popover[data-toggle="popover"]')
+      .popover({ sanitize: false })
       .on('show.bs.popover', function () {
         $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
       });
@@ -278,19 +273,25 @@ function qidFormatter(cell: CellComponent): string {
   let text = '';
   if (question.sync_errors) {
     text += html`<button
-      class="btn btn-xs mr-1"
+      class="btn btn-xs mr-1 js-sync-popover"
       data-toggle="popover"
+      data-trigger="hover"
+      data-container="body"
+      data-html="true"
       data-title="Sync Errors"
-      data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_errors_ansified}</pre>'
+      data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
     >
       <i class="fa fa-times text-danger" aria-hidden="true"></i>
     </button>`.toString();
   } else if (question.sync_warnings) {
     text += html`<button
-      class="btn btn-xs mr-1"
+      class="btn btn-xs mr-1 js-sync-popover"
+      data-trigger="hover"
+      data-container="body"
+      data-html="true"
       data-toggle="popover"
       data-title="Sync Warnings"
-      data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_warnings_ansified}</pre>'
+      data-content='<pre style="background-color: black" class="text-white rounded p-3 md-0">${question.sync_warnings_ansified}</pre>'
     >
       <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
     </button>`.toString();
