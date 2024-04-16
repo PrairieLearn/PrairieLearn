@@ -111,10 +111,17 @@ function AddAdminsModal({ csrfToken }: { csrfToken: string }) {
           name="uids"
           class="form-control"
           id="addAdminsModalUid"
-          placeholder="user1@example.org, user2@example.org"
+          placeholder="user1@example.com, user2@example.com"
           style="height: 10vh;"
           required
         ></textarea>
+      </div>
+
+      <div class="alert alert-warning mb-0" role="alert">
+        Institution administrators will have full read and write access to all content within this
+        institution. They will also be able to add and remove other administrators. Be careful and
+        deliberate with who you add as an administrator, and make sure that they know to use their
+        powers responsibly.
       </div>
     `,
     footer: html`
