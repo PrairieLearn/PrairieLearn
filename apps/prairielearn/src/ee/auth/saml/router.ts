@@ -68,10 +68,10 @@ router.post(
     const emailAttribute = institutionSamlProvider.email_attribute;
 
     // Read the appropriate attributes.
-    const authnUid = uidAttribute ? user.attributes[uidAttribute] : null;
-    const authnUin = uinAttribute ? user.attributes[uinAttribute] : null;
-    const authnName = nameAttribute ? user.attributes[nameAttribute] : null;
-    const authnEmail = emailAttribute ? user.attributes[emailAttribute] : null;
+    const authnUid = uidAttribute ? user.attributes[uidAttribute]?.trim() : null;
+    const authnUin = uinAttribute ? user.attributes[uinAttribute]?.trim() : null;
+    const authnName = nameAttribute ? user.attributes[nameAttribute]?.trim() : null;
+    const authnEmail = emailAttribute ? user.attributes[emailAttribute]?.trim() : null;
 
     if (req.body.RelayState === 'test') {
       res.send(
@@ -97,6 +97,7 @@ router.post(
     // attributes, so we can't yet require it to be present. In the future, once
     // we've specified such an attribute for all institutions, we can assert that
     // the email attribute mapping and the corresponding value are both present.
+    //
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
