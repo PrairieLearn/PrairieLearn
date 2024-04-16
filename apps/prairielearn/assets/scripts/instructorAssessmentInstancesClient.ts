@@ -3,7 +3,6 @@ import { BootstrapTableOptions } from 'bootstrap-table';
 
 declare global {
   interface Window {
-    refreshTable: () => void;
     popoverSubmitViaAjax: (e: any, popover: JQuery) => void;
     timeLimitEditPopoverContent: () => JQuery<HTMLElement>;
     scorebarFormatter: (score: number, row: any) => string;
@@ -14,7 +13,6 @@ declare global {
     detailsLinkSorter: (valueA: number, valueB: number, rowA: any, rowB: any) => number;
     timeRemainingLimitSorter: (valueA: number, valueB: number, rowA: any, rowB: any) => number;
     actionButtonFormatter: (_value: string, row: any, index: number) => string;
-    updateTotals: (data: any) => void;
   }
 }
 
@@ -109,7 +107,7 @@ onDocumentReady(() => {
     onResetView() {
       $('.spinning-wheel').hide();
 
-      window.updateTotals($('#usersTable').bootstrapTable('getData'));
+      updateTotals($('#usersTable').bootstrapTable('getData'));
 
       $('[data-toggle="popover"]').popover({
         sanitize: false,
@@ -147,7 +145,7 @@ onDocumentReady(() => {
       (event.ctrlKey || event.metaKey) &&
       String.fromCharCode(event.which).toLowerCase() === 'f'
     ) {
-      $('.fixed-table-toolbar .search input').focus();
+      $('.fixed-table-toolbar .search input').trigger('focus');
       event.preventDefault();
     }
   });
@@ -170,7 +168,7 @@ onDocumentReady(() => {
         $(e.target).attr('action') ?? '',
         $(e.target).serialize(),
         function () {
-          window.refreshTable();
+          refreshTable();
         },
         'json',
       );
@@ -196,7 +194,7 @@ onDocumentReady(() => {
         $(e.target).attr('action') ?? '',
         $(e.target).serialize(),
         function () {
-          window.refreshTable();
+          refreshTable();
         },
         'json',
       );
@@ -210,9 +208,9 @@ onDocumentReady(() => {
   });
 });
 
-window.refreshTable = function () {
+function refreshTable() {
   bsTable.bootstrapTable('refresh', { silent: true });
-};
+}
 
 window.popoverSubmitViaAjax = function (e: any, popover) {
   e.preventDefault();
@@ -220,7 +218,7 @@ window.popoverSubmitViaAjax = function (e: any, popover) {
     $(e.target).attr('action') ?? '',
     $(e.target).serialize(),
     function () {
-      window.refreshTable();
+      refreshTable();
     },
     'json',
   );
@@ -291,7 +289,7 @@ window.timeLimitEditPopoverContent = function () {
   }
   const buttons = $('<div class="btn-toolbar pull-right">');
   const cancel_button = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>');
-  cancel_button.click(function () {
+  cancel_button.on('click', function () {
     $(that).popover('hide');
   });
   buttons.append(cancel_button);
@@ -479,14 +477,14 @@ window.actionButtonFormatter = function (_value, row) {
   return container.html();
 };
 
-window.updateTotals = function (data) {
+function updateTotals(data: AssessmentInstanceRow[]) {
   let time_limit_list: Record<string, any> = new Object();
   let remaining_time_min = 0;
   let remaining_time_max = 0;
   let has_open_instance = false;
   let has_closed_instance = false;
 
-  data.forEach(function (row: AssessmentInstanceRow) {
+  data.forEach(function (row) {
     if (!row.open) {
       has_closed_instance = true;
     } else if (row.time_remaining_sec === null) {
@@ -537,4 +535,4 @@ window.updateTotals = function (data) {
   }
 
   $('.time-limit-edit-all-button').data('row', time_limit_totals);
-};
+}
