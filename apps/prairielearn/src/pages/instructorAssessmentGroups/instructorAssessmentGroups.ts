@@ -48,7 +48,7 @@ router.get(
     );
 
     if (!groupConfigInfo) {
-      res.send(InstructorAssessmentGroups({ resLocals: res.locals }));
+      res.send(InstructorAssessmentGroups({ uidsLimit: MAX_UIDS, resLocals: res.locals }));
       return;
     }
 
