@@ -126,7 +126,10 @@ def try_dumps(obj: Any):
     try:
         dump_start = time.time()
         dumped_json = orjson.dumps(
-            obj, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_STRICT_INTEGER
+            obj,
+            option=orjson.OPT_NON_STR_KEYS
+            | orjson.OPT_STRICT_INTEGER
+            | orjson.OPT_SERIALIZE_NUMPY,
         )
         print(f"Dumped json in {time.time() - dump_start:f}s")
         return dumped_json
