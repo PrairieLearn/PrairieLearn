@@ -1,8 +1,6 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { BootstrapTableOptions } from 'bootstrap-table';
 
-import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.html';
-
 declare global {
   interface Window {
     refreshTable: () => void;
@@ -25,6 +23,36 @@ declare global {
     bootstrapTable(options: BootstrapTableOptions): JQuery;
     bootstrapTable(method: string, ...parameters: any[]): JQuery | any;
   }
+}
+
+interface AssessmentInstanceRow {
+  assessment_label: string;
+  client_fingerprint_id_change_count: number;
+  date: Date;
+  date_formatted: string;
+  duration: string;
+  duration_mins: number;
+  duration_secs: number;
+  group_id: number | null;
+  group_name: string | null;
+  group_roles: string[] | null;
+  highest_score: boolean;
+  max_points: number;
+  name: string | null;
+  number: number;
+  open: boolean;
+  points: number;
+  role: string | null;
+  score_perc: number | null;
+  time_remaining: string;
+  time_remaining_sec: number | null;
+  total_time: string;
+  total_time_sec: number | null;
+  uid: string | null;
+  uid_list: string[] | null;
+  user_id: number | null;
+  user_name_list: string[] | null;
+  username: string | null;
 }
 
 let assessmentGroupWork: boolean;
@@ -136,7 +164,7 @@ onDocumentReady(() => {
     const assessment_instance_id = button.data('assessment-instance-id');
     const modal = $(this);
 
-    modal.find('form').submit((e) => {
+    modal.find('form').on('submit', (e) => {
       e.preventDefault();
       $.post(
         $(e.target).attr('action') ?? '',
@@ -162,7 +190,7 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').submit((e) => {
+    modal.find('form').on('submit', (e) => {
       e.preventDefault();
       $.post(
         $(e.target).attr('action') ?? '',
