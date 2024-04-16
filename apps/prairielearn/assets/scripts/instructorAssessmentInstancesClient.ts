@@ -239,7 +239,8 @@ function tableColumns(assessmentGroupWork: boolean) {
     },
     {
       field: 'duration',
-      title: 'Duration', // can we insert the duration help button here?
+      title:
+        'Duration <button class="btn btn-xs" type="button" title="Show duration help" data-toggle="modal" data-target="#duration-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
       sortable: true,
       sortName: 'duration_secs',
       class: 'text-center align-middle text-nowrap',
@@ -247,7 +248,8 @@ function tableColumns(assessmentGroupWork: boolean) {
     },
     {
       field: 'time_remaining',
-      title: 'Remaining', // can we insert the remaining time help button here?
+      title:
+        'Remaining <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
       sortable: true,
       sortName: 'time_remaining_sec',
       sorter: timeRemainingLimitSorter,
