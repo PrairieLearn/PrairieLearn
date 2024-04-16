@@ -1,16 +1,16 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const path = require('path');
-const express = require('express');
-const assessment = require('../../../../lib/assessment');
-const router = express.Router({ mergeParams: true });
+import * as path from 'node:path';
+import { Router } from 'express';
+import * as assessment from '../../../../lib/assessment';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
+const router = Router({ mergeParams: true });
 
 router.get(
-  '/:unsafe_assessment_instance_id',
+  '/:unsafe_assessment_instance_id(\\d+)',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryOneRowAsync(sql.select_assessment_instances, {
       course_instance_id: res.locals.course_instance.id,
@@ -29,7 +29,7 @@ router.get(
 );
 
 router.get(
-  '/:unsafe_assessment_instance_id/instance_questions',
+  '/:unsafe_assessment_instance_id(\\d+)/instance_questions',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryOneRowAsync(sql.select_instance_questions, {
       course_instance_id: res.locals.course_instance.id,
@@ -40,7 +40,7 @@ router.get(
 );
 
 router.get(
-  '/:unsafe_assessment_instance_id/submissions',
+  '/:unsafe_assessment_instance_id(\\d+)/submissions',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryOneRowAsync(sql.select_submissions, {
       course_instance_id: res.locals.course_instance.id,
@@ -52,7 +52,7 @@ router.get(
 );
 
 router.get(
-  '/:unsafe_assessment_instance_id/log',
+  '/:unsafe_assessment_instance_id(\\d+)/log',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_assessment_instance, {
       course_instance_id: res.locals.course_instance.id,
@@ -73,4 +73,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

@@ -242,14 +242,12 @@ export function AdministratorQuery({
                             </span>
                             <a
                               href="${`?query_run_id=${query_run_id}&format=json`}"
-                              role="button"
                               class="btn btn-sm btn-light"
                             >
                               <i class="fas fa-download" aria-hidden="true"></i> JSON
                             </a>
                             <a
                               href="${`?query_run_id=${query_run_id}&format=csv`}"
-                              role="button"
                               class="btn btn-sm btn-light"
                             >
                               <i class="fas fa-download" aria-hidden="true"></i> CSV

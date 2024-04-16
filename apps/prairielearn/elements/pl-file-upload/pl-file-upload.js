@@ -162,8 +162,8 @@
       var idx = this.files.findIndex((file) => file.name === name);
       if (idx === -1) {
         this.files.push({
-          name: name,
-          contents: contents,
+          name,
+          contents,
         });
       } else {
         this.files[idx].contents = contents;

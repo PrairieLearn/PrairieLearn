@@ -22,7 +22,7 @@ router.use(
     ) {
       next();
     } else {
-      throw error.make(403, 'Access denied. LTI 1.3 feature not enabled');
+      throw new error.HttpStatusError(403, 'Access denied. LTI 1.3 feature not enabled');
     }
   }),
 );

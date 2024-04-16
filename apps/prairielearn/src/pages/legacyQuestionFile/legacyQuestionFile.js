@@ -16,13 +16,13 @@ router.get('/:filename', function (req, res, next) {
   var filename = req.params.filename;
   var params = {
     question_id: question.id,
-    filename: filename,
+    filename,
     type: question.type,
   };
   sqldb.queryOneRow(sql.check_client_files, params, function (err, result) {
     if (ERR(err, next)) return;
     if (!result.rows[0].access_allowed) {
-      return next(error.make(403, 'Access denied'));
+      return next(new error.HttpStatusError(403, 'Access denied'));
     }
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);

@@ -16,8 +16,9 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  a.id = $assessment_id
-  -- BLOCK questions
+  a.id = $assessment_id;
+
+-- BLOCK questions
 SELECT
   c.short_name AS course_short_name,
   ci.short_name AS course_instance_short_name,
@@ -35,7 +36,7 @@ SELECT
       PARTITION BY
         ag.number
     )
-  ) AS alternative_group_size,
+  )::integer AS alternative_group_size,
   z.title AS zone_title,
   z.number AS zone_number,
   (

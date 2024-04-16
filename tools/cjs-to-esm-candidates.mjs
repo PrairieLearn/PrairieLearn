@@ -23,12 +23,15 @@ const CJS_ONLY_MODULES = new Set([
   'express-async-handler',
   'express-list-endpoints',
   'form-data',
+  'get-port',
+  'http-status',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
   'lodash',
   'loopbench',
   'oauth-signature',
+  'object-hash',
   'node:assert',
   'passport',
   'postgres-interval',
@@ -40,12 +43,13 @@ const CJS_ONLY_MODULES = new Set([
   'winston-transport',
   // Relative paths to PrairieLearn files.
   'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzCourseOrInstance',
   'apps/prairielearn/src/middlewares/authzIsAdministrator',
   'apps/prairielearn/src/middlewares/logPageView',
   'apps/prairielearn/src/middlewares/staticNodeModules',
   'apps/prairielearn/src/pages/elementFiles/elementFiles',
 ]);
+
+const candidatesPerFileCount = new Map();
 
 function maybeLogLocation(filePath, node, modulePath) {
   let resolvedModulePath = modulePath;
@@ -58,6 +62,7 @@ function maybeLogLocation(filePath, node, modulePath) {
   if (CJS_ONLY_MODULES.has(resolvedModulePath)) return;
 
   console.log(`${filePath}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
+  candidatesPerFileCount.set(filePath, (candidatesPerFileCount.get(filePath) ?? 0) + 1);
 }
 
 const importEqualsOnly = process.argv.includes('--import-equals-only');
@@ -107,5 +112,42 @@ for (const file of files.sort()) {
       const modulePath = node.moduleReference.expression.value;
       maybeLogLocation(file, node, modulePath);
     }
+
+    // Handle `module.exports = ...` and `module.exports.foo = ...` statements.
+    if (
+      node.type === 'ExpressionStatement' &&
+      node.expression.type === 'AssignmentExpression' &&
+      node.expression.left.type === 'MemberExpression'
+    ) {
+      if (
+        (node.expression.left.object.type === 'Identifier' &&
+          node.expression.left.object.name === 'module' &&
+          node.expression.left.property.type === 'Identifier' &&
+          node.expression.left.property.name === 'exports') ||
+        (node.expression.left.object.type === 'MemberExpression' &&
+          node.expression.left.object.object.type === 'Identifier' &&
+          node.expression.left.object.object.name === 'module' &&
+          node.expression.left.object.property.type === 'Identifier' &&
+          node.expression.left.object.property.name === 'exports')
+      ) {
+        const left = contents.substring(
+          node.expression.left.range[0],
+          node.expression.left.range[1],
+        );
+        maybeLogLocation(file, node, left);
+      }
+    }
   });
+}
+
+if (candidatesPerFileCount.size > 0) {
+  console.log('\n\n');
+  console.log(`Summary (${candidatesPerFileCount.size} files):`);
+
+  const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
+    (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
+  );
+  for (const [file, count] of sortedCandidates) {
+    console.log(`${file}: ${count}`);
+  }
 }

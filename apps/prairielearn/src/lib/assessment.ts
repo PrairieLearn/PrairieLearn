@@ -61,7 +61,7 @@ export async function checkBelongsAsync(
       IdSchema,
     )) == null
   ) {
-    throw error.make(403, 'access denied');
+    throw new error.HttpStatusError(403, 'access denied');
   }
 }
 export const checkBelongs = callbackify(checkBelongsAsync);
@@ -194,10 +194,10 @@ export async function gradeAssessmentInstance(
         AssessmentInstanceSchema,
       );
       if (assessmentInstance == null) {
-        throw error.make(404, 'Assessment instance not found');
+        throw new error.HttpStatusError(404, 'Assessment instance not found');
       }
       if (!assessmentInstance.open) {
-        throw error.make(403, 'Assessment instance is not open');
+        throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
       if (close) {
@@ -475,7 +475,10 @@ export async function deleteAssessmentInstance(
     IdSchema,
   );
   if (deleted_id == null) {
-    throw error.make(403, 'This assessment instance does not exist in this assessment.');
+    throw new error.HttpStatusError(
+      403,
+      'This assessment instance does not exist in this assessment.',
+    );
   }
 }
 

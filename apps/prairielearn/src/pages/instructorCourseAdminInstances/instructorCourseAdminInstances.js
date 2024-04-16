@@ -96,7 +96,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(error.make(400, `unknown __action: ${req.body.__action}`));
+    next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
