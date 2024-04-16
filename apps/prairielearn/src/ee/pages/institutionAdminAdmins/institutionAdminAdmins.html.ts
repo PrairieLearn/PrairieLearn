@@ -31,8 +31,7 @@ export function InstitutionAdminAdmins({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
-          pageTitle: 'Administrators',
+          pageTitle: `Admins — ${institution.short_name}`,
         })}
         ${compiledScriptTag('institutionAdminAdminsClient.ts')}
       </head>

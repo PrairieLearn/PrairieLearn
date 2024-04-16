@@ -13,9 +13,9 @@ import {
   InstitutionAdminAdmins,
   InstitutionAdminAdminsRowSchema,
 } from './institutionAdminAdmins.html';
-import { getInstitution } from '../../lib/institution';
 import { selectUserByUid } from '../../../models/user';
 import { parseUidsString } from '../../../lib/user';
+import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
@@ -23,16 +23,18 @@ const sql = loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // TODO: authenticate the the user can access this institution.
-    // TODO: do the same on other institution admin pages as well.
-    const institution = await getInstitution(req.params.institution_id);
+    const institution = await selectAndAuthzInstitutionAsAdmin({
+      institution_id: req.params.institution_id,
+      user_id: res.locals.authn_user.user_id,
+      access_as_administrator: res.locals.access_as_administrator,
+    });
+
     const rows = await queryValidatedRows(
       sql.select_admins,
-      {
-        institution_id: req.params.institution_id,
-      },
+      { institution_id: institution.id },
       InstitutionAdminAdminsRowSchema,
     );
+
     res.send(InstitutionAdminAdmins({ institution, rows, resLocals: res.locals }));
   }),
 );
@@ -40,8 +42,14 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const institution = await selectAndAuthzInstitutionAsAdmin({
+      institution_id: req.params.institution_id,
+      user_id: res.locals.authn_user.user_id,
+      access_as_administrator: res.locals.access_as_administrator,
+    });
+
     if (req.body.__action === 'addAdmins') {
-      const uids = parseUidsString(req.body.uids);
+      const uids = parseUidsString(req.body.uids, 10);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {
@@ -55,9 +63,9 @@ router.post(
           }
 
           // TODO: record audit event for this action.
-          console.log(req.params.institution_id, user.user_id);
+          console.log(institution.id, user.user_id);
           await queryAsync(sql.insert_institution_admin, {
-            institution_id: req.params.institution_id,
+            institution_id: institution.id,
             user_id: user.user_id,
           });
           validUids.push(uid);
@@ -68,6 +76,8 @@ router.post(
         flash('success', `Successfully added institution admins: ${validUids.join(', ')}`);
       }
 
+      // TODO: guard against user enumeration somehow? Maybe limit users to
+      // those within the institution?
       if (invalidUids.length > 0) {
         flash('error', `Could not add the following unknown users: ${invalidUids.join(', ')}`);
       }
@@ -76,7 +86,7 @@ router.post(
     } else if (req.body.__action === 'removeAdmin') {
       // TODO: record audit event for this action.
       await queryAsync(sql.delete_institution_admin, {
-        institution_id: req.params.institution_id,
+        institution_id: institution.id,
         institution_administrator_id: req.body.unsafe_institution_administrator_id,
       });
       flash('notice', 'Removed institution administrator.');

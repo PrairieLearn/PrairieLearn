@@ -6,7 +6,7 @@ import { queryAsync, queryRow } from '@prairielearn/postgres';
 import { config } from '../../lib/config';
 import helperServer = require('../helperServer');
 import { UserSchema } from '../../lib/db-types';
-import { selectUserByUid } from '../../lib/user';
+import { selectUserByUid } from '../../models/user';
 import { withUser } from '../utils/auth';
 
 const SITE_URL = `http://localhost:${config.serverPort}`;
@@ -24,17 +24,20 @@ interface AuthUser {
 const ADMIN_USER = {
   name: 'Admin',
   uid: 'admin@example.com',
+  uin: 'admin',
   isAdministrator: true,
 };
 
 const INSTITUTION_ADMIN_USER = {
   name: 'Institution Admin',
   uid: 'institution-admin@example.com',
+  uin: 'institution-admin',
 };
 
 const INSTRUCTOR_USER = {
   name: 'Instructor',
   uid: 'instructor@example.com',
+  uin: 'instructor',
 };
 
 async function insertUser(user: AuthUser) {

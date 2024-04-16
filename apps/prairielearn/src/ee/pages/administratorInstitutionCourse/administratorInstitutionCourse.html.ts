@@ -10,7 +10,7 @@ export const CourseInstanceRowSchema = z.object({
 });
 type CourseInstanceRow = z.infer<typeof CourseInstanceRowSchema>;
 
-export function InstitutionAdminCourse({
+export function AdministratorInstitutionCourse({
   institution,
   course,
   rows,
@@ -27,7 +27,7 @@ export function InstitutionAdminCourse({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'Courses',
         })}
       </head>
@@ -35,8 +35,8 @@ export function InstitutionAdminCourse({
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
-          navbarType: 'institution',
-          navPage: 'institution_admin',
+          navbarType: 'administrator_institution',
+          navPage: 'administrator_institution',
           navSubPage: 'courses',
         })}
         <nav class="container" aria-label="Breadcrumbs">

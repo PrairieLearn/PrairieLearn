@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { InstitutionAdminCourseInstance } from './institutionAdminCourseInstance.html';
+import { AdministratorInstitutionCourseInstance } from './administratorInstitutionCourseInstance.html';
 import {
   getPlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstance,
@@ -54,7 +54,7 @@ router.get(
       course_instance_id: course_instance.id,
     });
     res.send(
-      InstitutionAdminCourseInstance({
+      AdministratorInstitutionCourseInstance({
         institution,
         course,
         course_instance,

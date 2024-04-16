@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdminSso } from './institutionAdminSso.html';
+import { AdministratorInstitutionSso } from './administratorInstitutionSso.html';
 import {
   getInstitution,
   getSupportedAuthenticationProviders,
@@ -67,7 +67,7 @@ router.get(
     );
 
     res.send(
-      InstitutionAdminSso({
+      AdministratorInstitutionSso({
         supportedAuthenticationProviders,
         institution,
         institutionSamlProvider,

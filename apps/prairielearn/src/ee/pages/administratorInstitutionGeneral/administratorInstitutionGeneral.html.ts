@@ -14,7 +14,7 @@ export const InstitutionStatisticsSchema = z.object({
 });
 type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
 
-export function InstitutionAdminGeneral({
+export function AdministratorInstitutionGeneral({
   institution,
   availableTimezones,
   statistics,
@@ -33,10 +33,10 @@ export function InstitutionAdminGeneral({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'General',
         })}
-        ${compiledScriptTag('institutionAdminGeneralClient.ts')}
+        ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
         <style>
           .card-grid {
             display: grid;
@@ -55,8 +55,8 @@ export function InstitutionAdminGeneral({
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
-          navbarType: 'institution',
-          navPage: 'institution_admin',
+          navbarType: 'administrator_institution',
+          navPage: 'administrator_institution',
           navSubPage: 'general',
         })}
         <main class="container mb-4">
