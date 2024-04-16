@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
 
-export const InstitutionAdminSaml = ({
+export function AdministratorInstitutionSaml({
   institution,
   samlProvider,
   institutionAuthenticationProviders,
@@ -14,7 +14,7 @@ export const InstitutionAdminSaml = ({
   institutionAuthenticationProviders: AuthnProvider[];
   host: string;
   resLocals: Record<string, any>;
-}) => {
+}) {
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
@@ -33,7 +33,7 @@ export const InstitutionAdminSaml = ({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'SAML',
         })}
       </head>
@@ -42,7 +42,7 @@ export const InstitutionAdminSaml = ({
           ...resLocals,
           institution,
           navbarType: 'institution',
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           navSubPage: 'saml',
         })}
         <main class="container mb-4">
@@ -351,4 +351,4 @@ ${samlProvider?.certificate ?? ''}</textarea
       </body>
     </html>
   `.toString();
-};
+}

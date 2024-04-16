@@ -8,7 +8,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdminSaml } from './institutionAdminSaml.html';
+import { AdministratorInstitutionSaml } from './administratorInstitutionSaml.html';
 import {
   getInstitution,
   getInstitutionSamlProvider,
@@ -99,7 +99,7 @@ router.get(
     );
 
     res.send(
-      InstitutionAdminSaml({
+      AdministratorInstitutionSaml({
         institution,
         samlProvider,
         institutionAuthenticationProviders,

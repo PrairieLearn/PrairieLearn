@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Course, type Institution } from '../../../lib/db-types';
 
-export function InstitutionAdminCourses({
+export function AdministratorInstitutionCourses({
   institution,
   courses,
   resLocals,
@@ -17,7 +17,7 @@ export function InstitutionAdminCourses({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'Courses',
         })}
       </head>
@@ -26,7 +26,7 @@ export function InstitutionAdminCourses({
           ...resLocals,
           institution,
           navbarType: 'institution',
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           navSubPage: 'courses',
         })}
         <main class="container mb-4">

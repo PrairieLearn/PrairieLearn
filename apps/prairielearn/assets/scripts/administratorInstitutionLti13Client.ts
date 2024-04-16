@@ -1,5 +1,5 @@
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
-import { type LTI13InstancePlatforms } from '../../src/ee/pages/institutionAdminLti13/institutionAdminLti13.types';
+import { type LTI13InstancePlatforms } from '../../src/ee/pages/administratorInstitutionLti13/administratorInstitutionLti13.types';
 
 onDocumentReady(() => {
   const platformDefaults = decodeData<LTI13InstancePlatforms>('platform_defaults_data') || [];
