@@ -269,7 +269,7 @@ router.get('/*', function (req, res, next) {
 router.post('/*', function (req, res, next) {
   debug('POST /');
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
   }
   getPathsCallback(req, res, (err, paths) => {
     if (ERR(err, next)) return;
