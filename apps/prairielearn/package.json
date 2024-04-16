@@ -114,7 +114,6 @@
     "jquery": "^3.7.1",
     "jquery-ui-dist": "^1.13.2",
     "jquery-ui-touch-punch": "^0.2.3",
-    "js-base64": "^3.7.7",
     "js-cookie": "^3.0.5",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",

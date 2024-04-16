@@ -3,7 +3,6 @@ import { assert } from 'chai';
 import request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
-import { decode } from 'js-base64';
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
@@ -45,7 +44,7 @@ const differentiatePolynomial = {
 
 function decodeBrowserData(element) {
   const base64Data = element.text();
-  const jsonData = decode(base64Data);
+  const jsonData = Buffer.from(base64Data, 'base64').toString('utf8');
   const data = JSON.parse(jsonData);
   return data;
 }
