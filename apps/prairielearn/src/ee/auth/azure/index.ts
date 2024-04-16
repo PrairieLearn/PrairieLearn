@@ -5,8 +5,7 @@ import { config } from '../../../lib/config';
 export function getAzureStrategy() {
   return new OIDCStrategy(
     {
-      identityMetadata:
-        'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
+      identityMetadata: 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
       clientID: config.azureClientID,
       redirectUrl: config.azureRedirectUrl,
       allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
@@ -14,7 +13,14 @@ export function getAzureStrategy() {
       cookieEncryptionKeys: config.azureCookieEncryptionKeys,
       loggingLevel: config.azureLoggingLevel,
       scope: ['openid', 'profile', 'email'],
-      responseType: 'code id_token',
+      // This should only be `id_token`, which will force the implicit flow to
+      // be used. When we specific `code id_token` here, it will use the hybrid
+      // flow, which for whatever reason does not return user emails.
+      //
+      // The implicit flow isn't recommended for `response_type=token`, but it's
+      // safe for us to use here because we're using `response_type=id_token`. We
+      // don't ever need access/refresh tokens for our use case.
+      responseType: 'id_token',
       responseMode: 'form_post',
       // We're using the common metadata endpoint, so we need to disable issuer validation.
       validateIssuer: false,
