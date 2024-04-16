@@ -101,24 +101,34 @@ onDocumentReady(() => {
         ? [
             {
               field: 'sharing_sets',
-              title: 'Sharing Sets',
+              title: 'Sharing',
               formatter: (cell: CellComponent) =>
-                (cell.getValue() as SharingSet[] | null)
+                ((cell.getRow().getData() as QuestionsPageDataAnsified).shared_publicly
+                  ? html`<span class="badge color-green3">Public</span> `.toString()
+                  : '') +
+                ((cell.getValue() as SharingSet[] | null)
                   ?.map((sharing_set) =>
                     html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
                   )
-                  .join(' ') ?? '',
+                  .join(' ') ?? ''),
               headerSort: false,
               headerFilter: 'list' as Editor,
-              headerFilterPlaceholder: '(All Sharing Sets)',
-              headerFilterFunc: (headerValue: string, rowValue: SharingSet[] | null) =>
+              headerFilterPlaceholder: '(All)',
+              headerFilterFunc: (
+                headerValue: string,
+                rowValue: SharingSet[] | null,
+                rowData: Record<string, any>,
+              ) =>
                 headerValue === '0'
-                  ? !rowValue?.length
-                  : !!rowValue?.some((sharing_set) => headerValue === sharing_set.name),
+                  ? !rowValue?.length // TODO decide: should "None" include public questions?
+                  : headerValue === 'public'
+                    ? rowData.shared_publicly
+                    : !!rowValue?.some((sharing_set) => headerValue === sharing_set.name),
               headerFilterParams: {
                 values: [
-                  { label: '(All Sharing Sets)' },
+                  { label: '(All)' },
                   { label: '(None)', value: '0' },
+                  { label: 'Public', value: 'public' },
                   ...uniq(
                     questions
                       .map((q) => q.sharing_sets?.map((sharing_set) => sharing_set.name) ?? [])
