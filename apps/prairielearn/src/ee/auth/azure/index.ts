@@ -5,7 +5,8 @@ import { config } from '../../../lib/config';
 export function getAzureStrategy() {
   return new OIDCStrategy(
     {
-      identityMetadata: 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
+      identityMetadata:
+        'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
       clientID: config.azureClientID,
       redirectUrl: config.azureRedirectUrl,
       allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
