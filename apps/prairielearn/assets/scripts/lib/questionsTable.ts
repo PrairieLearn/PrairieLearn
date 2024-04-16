@@ -83,9 +83,9 @@ onDocumentReady(() => {
         field: 'topic',
         title: 'Topic',
         formatter: (cell) =>
-          html`<span class="badge color-${(cell.getValue() as Topic).color}"
-            >${(cell.getValue() as Topic).name}</span
-          >`.toString(),
+          html`<span class="badge color-${(cell.getValue() as Topic).color}">
+            ${(cell.getValue() as Topic).name}
+          </span>`.toString(),
         sorter: (a: Topic, b: Topic) => (a.name ?? '').localeCompare(b.name ?? ''),
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Topics)',
@@ -162,9 +162,9 @@ onDocumentReady(() => {
         title: 'Version',
         visible: questions.some((q) => q.display_type !== 'v3'),
         formatter: (cell) =>
-          html`<span class="badge color-${cell.getValue() === 'v3' ? 'green1' : 'red1'}"
-            >${cell.getValue()}</span
-          >`.toString(),
+          html`<span class="badge color-${cell.getValue() === 'v3' ? 'green1' : 'red1'}">
+            ${cell.getValue()}
+          </span>`.toString(),
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Versions)',
         headerFilterParams: {
@@ -216,8 +216,9 @@ onDocumentReady(() => {
                 href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${assessment.assessment_id}"
                 class="badge color-${assessment.color} color-hover"
                 onclick="event.stopPropagation();"
-                ><span>${assessment.label}</span></a
-              >`.toString(),
+              >
+                <span>${assessment.label}</span>
+              </a>`.toString(),
             )
             .join(' '),
         headerFilter: 'list' as Editor,
@@ -297,7 +298,7 @@ onDocumentReady(() => {
         $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
       });
 
-    // Resize columns to fill the table width
+    // Resize columns to fill the table width (since fitData does not support this)
     const columnsWidth = table
       .getColumns()
       .map((col) => col.getWidth())
@@ -355,12 +356,13 @@ function qidFormatter(cell: CellComponent): string {
   text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
     ${qidPrefix}${question.qid}
   </a>`.toString();
-  if (!idsEqual(question.open_issue_count, 0)) {
+  if (question.open_issue_count !== 0) {
     text += html`<a
       class="badge badge-pill badge-danger ml-1"
       href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}"
-      >${question.open_issue_count}</a
-    >`.toString();
+    >
+      ${question.open_issue_count}
+    </a>`.toString();
   }
   return text;
 }
