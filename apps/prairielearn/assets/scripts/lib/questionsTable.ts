@@ -273,7 +273,7 @@ onDocumentReady(() => {
 });
 
 function qidFormatter(cell: CellComponent): string {
-  const { urlPrefix } = decodeData<EncodedQuestionsData>('questions-table-data');
+  const { urlPrefix, qidPrefix } = decodeData<EncodedQuestionsData>('questions-table-data');
   const question = cell.getRow().getData() as QuestionsPageDataAnsified;
   let text = '';
   if (question.sync_errors) {
@@ -295,9 +295,9 @@ function qidFormatter(cell: CellComponent): string {
       <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
     </button>`.toString();
   }
-  text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
-    >${question.qid}</a
-  >`.toString();
+  text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
+    ${qidPrefix}${question.qid}
+  </a>`.toString();
   if (!idsEqual(question.open_issue_count, 0)) {
     text += html`<a
       class="badge badge-pill badge-danger ml-1"
