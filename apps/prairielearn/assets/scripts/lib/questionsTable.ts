@@ -138,7 +138,7 @@ onDocumentReady(() => {
                 rowData: Record<string, any>,
               ) =>
                 headerValue === '0'
-                  ? !rowValue?.length // TODO decide: should "None" include public questions?
+                  ? !rowValue?.length && !rowData.shared_publicly
                   : headerValue === 'public'
                     ? rowData.shared_publicly
                     : !!rowValue?.some((sharing_set) => headerValue === sharing_set.name),
