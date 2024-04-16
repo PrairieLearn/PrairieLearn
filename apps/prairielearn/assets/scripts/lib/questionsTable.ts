@@ -305,7 +305,6 @@ onDocumentReady(() => {
       .reduce((a, b) => a + (b ?? 0), 0);
     const tableWidth = table.element.clientWidth;
     const extraWidth = tableWidth - columnsWidth;
-    console.log({ columnsWidth, extraWidth });
     if (extraWidth > 0) {
       const ratio = 1 + extraWidth / columnsWidth;
       table
