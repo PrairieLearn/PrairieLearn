@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 
 import authzIsAdministrator = require('../../middlewares/authzIsAdministrator');
-import generalRouter from '../pages/administratiorInstitutionGeneral/administratiorInstitutionGeneral';
+import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral';
 import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses';
 import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse';
 import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance';
