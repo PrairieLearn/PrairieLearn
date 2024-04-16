@@ -33,9 +33,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const user = await authenticate(req, res);
 
-    // TODO: Remove temporary logging before merging
-    logger.info('Azure login successful', { user });
-
     const authnParams = {
       uid: user.upn,
       name: user.displayName,
