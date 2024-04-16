@@ -3,6 +3,7 @@ import { assert } from 'chai';
 import request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
+import { decode } from 'js-base64';
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';

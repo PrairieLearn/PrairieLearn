@@ -68,7 +68,7 @@ onDocumentReady(() => {
           html`<span class="badge color-${(cell.getValue() as Topic).color}"
             >${(cell.getValue() as Topic).name}</span
           >`.toString(),
-        sorter: (a: Topic, b: Topic) => a.name.localeCompare(b.name),
+        sorter: (a: Topic, b: Topic) => (a.name ?? '').localeCompare(b.name ?? ''),
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Topics)',
         headerFilterFunc: (headerValue: string, rowValue: Topic) => headerValue === rowValue.name,
@@ -84,12 +84,12 @@ onDocumentReady(() => {
             ?.map((tag) =>
               html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
             )
-            .join(' '),
+            .join(' ') ?? '',
         headerSort: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Tags)',
         headerFilterFunc: (headerValue: string, rowValue: Tag[] | null) =>
-          rowValue?.some((tag) => headerValue === tag.name),
+          rowValue?.some((tag) => headerValue === tag.name) ?? false,
         headerFilterParams: {
           values: [
             { label: '(All Tags)' },
@@ -102,19 +102,19 @@ onDocumentReady(() => {
             {
               field: 'sharing_sets',
               title: 'Sharing Sets',
-              formatter: (cell) =>
+              formatter: (cell: CellComponent) =>
                 (cell.getValue() as SharingSet[] | null)
                   ?.map((sharing_set) =>
                     html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
                   )
-                  .join(' '),
+                  .join(' ') ?? '',
               headerSort: false,
               headerFilter: 'list' as Editor,
               headerFilterPlaceholder: '(All Sharing Sets)',
               headerFilterFunc: (headerValue: string, rowValue: SharingSet[] | null) =>
                 headerValue === '0'
                   ? !rowValue?.length
-                  : rowValue?.some((sharing_set) => headerValue === sharing_set.name),
+                  : !!rowValue?.some((sharing_set) => headerValue === sharing_set.name),
               headerFilterParams: {
                 values: [
                   { label: '(All Sharing Sets)' },
@@ -177,11 +177,11 @@ onDocumentReady(() => {
       ...course_instances.map((ci) => ({
         field: `assessments_${ci.id}`,
         title: `${ci.short_name} Assessments`,
-        mutator: (_value, data: QuestionsPageDataAnsified): AssessmentsFormatForQuestion =>
+        mutator: (_value: any, data: QuestionsPageDataAnsified): AssessmentsFormatForQuestion =>
           data.assessments?.filter((a) => idsEqual(a.course_instance_id, ci.id)) ?? [],
         visible: ci.current,
         headerSort: false,
-        formatter: (cell) =>
+        formatter: (cell: CellComponent) =>
           (cell.getValue() as AssessmentsFormatForQuestion)
             ?.map((assessment) =>
               html`<a
@@ -221,8 +221,11 @@ onDocumentReady(() => {
   document.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
       // Set focus to filter of first visible column
-      table.setHeaderFilterFocus(table.getColumns().find((c) => c.isVisible()));
-      event.preventDefault();
+      const firstVisibleColumn = table.getColumns().find((c) => c.isVisible());
+      if (firstVisibleColumn != null) {
+        table.setHeaderFilterFocus(firstVisibleColumn);
+        event.preventDefault();
+      }
     }
   });
 
@@ -236,13 +239,15 @@ onDocumentReady(() => {
           </label>
         </div>`,
       );
-      document.querySelector('.js-column-visibility').appendChild(dropdownItem);
+      document.querySelector('.js-column-visibility')?.appendChild(dropdownItem);
       const input = dropdownItem.querySelector<HTMLInputElement>('input');
-      input.checked = col.isVisible();
-      input.addEventListener('change', () => {
-        input.checked ? col.show() : col.hide();
-        table.redraw();
-      });
+      if (input != null) {
+        input.checked = col.isVisible();
+        input.addEventListener('change', () => {
+          input.checked ? col.show() : col.hide();
+          table.redraw();
+        });
+      }
     });
   });
 
@@ -262,14 +267,14 @@ onDocumentReady(() => {
 
   document
     .querySelector<HTMLButtonElement>('.js-clear-filters-btn')
-    .addEventListener('click', () => {
+    ?.addEventListener('click', () => {
       table.clearFilter(true);
     });
 });
 
 function qidFormatter(cell: CellComponent): string {
   const { urlPrefix } = decodeData<EncodedQuestionsData>('questions-table-data');
-  const question: QuestionsPageDataAnsified = cell.getRow().getData();
+  const question = cell.getRow().getData() as QuestionsPageDataAnsified;
   let text = '';
   if (question.sync_errors) {
     text += html`<button
