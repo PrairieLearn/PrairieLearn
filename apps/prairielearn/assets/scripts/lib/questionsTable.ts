@@ -14,9 +14,14 @@ import {
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
-import { Topic, Tag, SharingSet, AssessmentsFormatForQuestion } from '../../../src/lib/db-types';
-import { QuestionsPageDataAnsified } from '../../../src/models/questions';
-import { EncodedQuestionsData } from '../../../src/components/QuestionsTable.html';
+import type {
+  Topic,
+  Tag,
+  SharingSet,
+  AssessmentsFormatForQuestion,
+} from '../../../src/lib/db-types';
+import type { QuestionsPageDataAnsified } from '../../../src/models/questions';
+import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.html';
 import { idsEqual } from '../../../src/lib/id';
 
 Tabulator.registerModule([
@@ -270,6 +275,7 @@ onDocumentReady(() => {
         col.setWidth(true);
       });
   });
+
   table.on('renderComplete', () => {
     // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
     $('.js-sync-popover[data-toggle="popover"]')
@@ -283,7 +289,8 @@ onDocumentReady(() => {
       .getColumns()
       .map((col) => col.getWidth())
       .reduce((a, b) => a + (b ?? 0), 0);
-    const extraWidth = table.tableWidth - columnsWidth;
+    const tableWidth = table.element.clientWidth;
+    const extraWidth = tableWidth - columnsWidth;
     console.log({ columnsWidth, extraWidth });
     if (extraWidth > 0) {
       const ratio = 1 + extraWidth / columnsWidth;
