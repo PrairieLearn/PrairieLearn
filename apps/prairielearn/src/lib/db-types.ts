@@ -908,6 +908,12 @@ export const ZoneSchema = z.object({
 });
 export type Zone = z.infer<typeof ZoneSchema>;
 
+export const AdministratorSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type Administrator = z.infer<typeof AdministratorSchema>;
+
 // Result of grading_job_status sproc
 export const GradingJobStatusSchema = z.enum([
   'none',
