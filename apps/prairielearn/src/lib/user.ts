@@ -16,7 +16,7 @@ export function parseUidsString(uidsString: string, limit: number): string[] {
   );
 
   if (limit != null && uids.size > limit) {
-    throw new HttpStatusError(400, `Cannot provide more than ${limit} UIDs`);
+    throw new HttpStatusError(400, `Cannot provide more than ${limit} UIDs at a time`);
   }
 
   return Array.from(uids);
