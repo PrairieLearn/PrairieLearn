@@ -41,7 +41,7 @@ export function AdministratorInstitutionSaml({
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
-          navbarType: 'institution',
+          navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'saml',
         })}
