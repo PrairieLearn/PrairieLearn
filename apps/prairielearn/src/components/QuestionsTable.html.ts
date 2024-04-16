@@ -15,7 +15,7 @@ export interface EncodedQuestionsData {
     current: boolean;
   }[];
   showSharingSets: boolean;
-  qidPrefix: string;
+  qidPrefix: string | undefined;
 }
 
 export function QuestionsTableHead() {
