@@ -43,7 +43,7 @@ export function QuestionsTable({
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
-  qidPrefix: string;
+  qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
