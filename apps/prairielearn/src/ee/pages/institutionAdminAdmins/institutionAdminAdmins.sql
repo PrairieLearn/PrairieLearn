@@ -23,4 +23,6 @@ RETURNING
 DELETE FROM institution_administrators
 WHERE
   institution_id = $institution_id
-  AND id = $institution_administrator_id;
+  AND id = $institution_administrator_id
+RETURNING
+  *;

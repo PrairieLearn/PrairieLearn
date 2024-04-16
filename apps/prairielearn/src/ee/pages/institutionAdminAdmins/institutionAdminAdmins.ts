@@ -4,7 +4,7 @@ import error = require('@prairielearn/error');
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryAsync,
+  queryRow,
   queryValidatedRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -16,6 +16,8 @@ import {
 import { selectUserByUid } from '../../../models/user';
 import { parseUidsString } from '../../../lib/user';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
+import { insertAuditLog } from '../../../models/audit-log';
+import { InstitutionAdministratorSchema } from '../../../lib/db-types';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
@@ -74,13 +76,25 @@ router.post(
             continue;
           }
 
-          // TODO: record audit event for this action.
-          console.log(institution.id, user.user_id);
-          await queryAsync(sql.insert_institution_admin, {
-            institution_id: institution.id,
-            user_id: user.user_id,
-          });
+          const admin = await queryRow(
+            sql.insert_institution_admin,
+            {
+              institution_id: institution.id,
+              user_id: user.user_id,
+            },
+            InstitutionAdministratorSchema,
+          );
           validUids.push(uid);
+
+          await insertAuditLog({
+            authn_user_id: res.locals.authn_user.user_id,
+            table_name: 'institution_administrators',
+            action: 'insert',
+            institution_id: admin.institution_id,
+            user_id: admin.user_id,
+            row_id: admin.id,
+            new_state: admin,
+          });
         }
       });
 
@@ -96,10 +110,25 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'removeAdmin') {
-      // TODO: record audit event for this action.
-      await queryAsync(sql.delete_institution_admin, {
-        institution_id: institution.id,
-        institution_administrator_id: req.body.unsafe_institution_administrator_id,
+      await runInTransactionAsync(async () => {
+        const admin = await queryRow(
+          sql.delete_institution_admin,
+          {
+            institution_id: institution.id,
+            institution_administrator_id: req.body.unsafe_institution_administrator_id,
+          },
+          InstitutionAdministratorSchema,
+        );
+
+        await insertAuditLog({
+          authn_user_id: res.locals.authn_user.user_id,
+          table_name: 'institution_administrators',
+          action: 'delete',
+          institution_id: admin.institution_id,
+          user_id: admin.user_id,
+          row_id: admin.id,
+          old_state: admin,
+        });
       });
       flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);
