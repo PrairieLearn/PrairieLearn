@@ -1,6 +1,7 @@
 import passport = require('passport');
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import { logger } from '@prairielearn/logger';
 
 import * as authnLib from '../../../lib/authn';
 
@@ -31,6 +32,9 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const user = await authenticate(req, res);
+
+    // TODO: Remove temporary logging before merging
+    logger.info('Azure login successful', { user });
 
     const authnParams = {
       uid: user.upn,
