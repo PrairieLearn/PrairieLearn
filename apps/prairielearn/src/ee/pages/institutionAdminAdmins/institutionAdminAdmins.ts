@@ -20,6 +20,11 @@ import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
 
+/**
+ * The maximum number of UIDs that can be provided in a single request.
+ */
+const MAX_UIDS = 10;
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -35,7 +40,14 @@ router.get(
       InstitutionAdminAdminsRowSchema,
     );
 
-    res.send(InstitutionAdminAdmins({ institution, rows, resLocals: res.locals }));
+    res.send(
+      InstitutionAdminAdmins({
+        institution,
+        rows,
+        uidsLimit: MAX_UIDS,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
@@ -49,7 +61,7 @@ router.post(
     });
 
     if (req.body.__action === 'addAdmins') {
-      const uids = parseUidsString(req.body.uids, 10);
+      const uids = parseUidsString(req.body.uids, MAX_UIDS);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {

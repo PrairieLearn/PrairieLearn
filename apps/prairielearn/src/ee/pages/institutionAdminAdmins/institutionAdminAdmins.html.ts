@@ -19,10 +19,12 @@ type InstitutionAdminAdminsRow = z.infer<typeof InstitutionAdminAdminsRowSchema>
 export function InstitutionAdminAdmins({
   institution,
   rows,
+  uidsLimit,
   resLocals,
 }: {
   institution: Institution;
   rows: InstitutionAdminAdminsRow[];
+  uidsLimit: number;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -91,30 +93,32 @@ export function InstitutionAdminAdmins({
                 `}
           </div>
         </main>
-        ${AddAdminsModal({ csrfToken: resLocals.__csrf_token })}
+        ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
         ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
       </body>
     </html>
   `.toString();
 }
 
-function AddAdminsModal({ csrfToken }: { csrfToken: string }) {
+function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken: string }) {
   return Modal({
     id: 'addAdminsModal',
     title: 'Add administrators',
     body: html`
       <div class="form-group">
-        <label for="addAdminsModalUid" class="form-label">
-          List of UIDs separated by commas, whitespace, line breaks, or semicolons
-        </label>
+        <label for="addAdminsModalUid" class="form-label"> UIDs </label>
         <textarea
           name="uids"
           class="form-control"
           id="addAdminsModalUid"
+          aria-describedby="addAdminsModalUidHelp"
           placeholder="user1@example.com, user2@example.com"
           style="height: 10vh;"
           required
         ></textarea>
+        <small class="form-text text-muted" id="addAdminsModalUidHelp">
+          Enter up to ${uidsLimit} UIDs separated by commas, semicolons, or whitespace.
+        </small>
       </div>
 
       <div class="alert alert-warning mb-0" role="alert">
