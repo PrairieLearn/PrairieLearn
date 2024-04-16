@@ -9,7 +9,6 @@ import {
   MutatorModule,
   FrozenColumnsModule,
   CellComponent,
-  Editor,
 } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
@@ -130,7 +129,7 @@ onDocumentReady(() => {
                   )
                   .join(' ') ?? ''),
               headerSort: false,
-              headerFilter: 'list' as Editor,
+              headerFilter: 'list' as const,
               headerFilterPlaceholder: '(All)',
               headerFilterFunc: (
                 headerValue: string,
@@ -221,7 +220,7 @@ onDocumentReady(() => {
               </a>`.toString(),
             )
             .join(' '),
-        headerFilter: 'list' as Editor,
+        headerFilter: 'list' as const,
         headerFilterPlaceholder: '(All Assessments)',
         headerFilterFunc: (headerValue: string, rowValue: AssessmentsFormatForQuestion) =>
           headerValue === '0'
