@@ -14,7 +14,7 @@ export const AssessmentInstanceRowSchema = z.object({
   date: AssessmentInstanceSchema.shape.date,
   duration_mins: z.number(),
   duration_secs: z.number(),
-  duration: AssessmentInstanceSchema.shape.duration,
+  duration: z.string(),
   group_id: AssessmentInstanceSchema.shape.group_id,
   group_name: GroupSchema.shape.name.nullable(),
   group_roles: z.array(z.string()).nullable(),
