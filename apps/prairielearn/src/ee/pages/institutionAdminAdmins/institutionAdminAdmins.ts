@@ -70,8 +70,9 @@ router.post(
         for (const uid of uids) {
           const user = await selectUserByUid(uid);
 
-          if (!user) {
-            // TODO: should we use an invitation system here instead?
+          // Specifically check that the user is in the institution to prevent
+          // someone from enumerating users in other institutions.
+          if (!user || user.institution_id !== institution.id) {
             invalidUids.push(uid);
             continue;
           }
@@ -102,10 +103,11 @@ router.post(
         flash('success', `Successfully added institution admins: ${validUids.join(', ')}`);
       }
 
-      // TODO: guard against user enumeration somehow? Maybe limit users to
-      // those within the institution?
       if (invalidUids.length > 0) {
-        flash('error', `Could not add the following unknown users: ${invalidUids.join(', ')}`);
+        flash(
+          'error',
+          `The following users either don't exist or aren't in this institution: ${invalidUids.join(', ')}`,
+        );
       }
 
       res.redirect(req.originalUrl);
