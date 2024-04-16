@@ -5,14 +5,6 @@ declare global {
   interface Window {
     popoverSubmitViaAjax: (e: any, popover: JQuery) => void;
     timeLimitEditPopoverContent: () => JQuery<HTMLElement>;
-    scorebarFormatter: (score: number, row: any) => string;
-    listFormatter: (list: string[], row: any) => string;
-    uniqueListFormatter: (list: string[], row: any) => string;
-    timeRemainingLimitFormatter: (value: string, row: any) => string;
-    detailsLinkFormatter: (value: string, row: any) => string;
-    detailsLinkSorter: (valueA: number, valueB: number, rowA: any, rowB: any) => number;
-    timeRemainingLimitSorter: (valueA: number, valueB: number, rowA: any, rowB: any) => number;
-    actionButtonFormatter: (_value: string, row: any, index: number) => string;
   }
 }
 
@@ -24,6 +16,7 @@ declare global {
 }
 
 interface AssessmentInstanceRow {
+  assessment_instance_id: number;
   assessment_label: string;
   client_fingerprint_id_change_count: number;
   date: Date;
@@ -62,7 +55,7 @@ let urlPrefix: string;
 let bsTable: JQuery<HTMLElement>;
 
 onDocumentReady(() => {
-  assessmentGroupWork = $('#usersTable').data('group-work');
+  assessmentGroupWork = $('#usersTable').data('assessment-group-work');
   assessmentMultipleInstance = $('#usersTable').data('assessment-multiple-instance');
   assessmentNumber = $('#usersTable').data('assessment-number');
   assessmentSetAbbr = $('#usersTable').data('assessment-set-abbr');
@@ -138,8 +131,8 @@ onDocumentReady(() => {
           $(this).find('.select-time-limit').change();
         });
     },
+    columns: tableColumns(assessmentGroupWork),
   });
-
   $(document).on('keydown', (event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
@@ -207,6 +200,160 @@ onDocumentReady(() => {
     $($(e.currentTarget).data('target')).modal('show');
   });
 });
+
+function tableColumns(assessmentGroupWork: boolean) {
+  const assessmentInstanceIdColumn = {
+    field: 'assessment_instance_id',
+    title: '<span class="sr-only">Assessment Instance</span>',
+    sortable: true,
+    sorter: detailsLinkSorter,
+    formatter: detailsLinkFormatter,
+    class: 'align-middle sticky-column text-nowrap',
+    switchable: false,
+  };
+  const nonspecificColumns = [
+    {
+      field: 'number',
+      title: 'Instance',
+      visible: false,
+      sortable: true,
+      class: 'text-center align-middle',
+      switchable: true,
+    },
+    {
+      field: 'score_perc',
+      title: 'Score',
+      sortable: true,
+      class: 'text-center align-middle',
+      formatter: scorebarFormatter,
+      switchable: true,
+      searchFormatter: false,
+    },
+    {
+      field: 'date_formatted',
+      title: 'Date started',
+      sortable: true,
+      sortName: 'date',
+      class: 'text-center align-middle text-nowrap',
+      switchable: true,
+    },
+    {
+      field: 'duration',
+      title: 'Duration', // can we insert the duration help button here?
+      sortable: true,
+      sortName: 'duration_secs',
+      class: 'text-center align-middle text-nowrap',
+      switchable: true,
+    },
+    {
+      field: 'time_remaining',
+      title: 'Remaining', // can we insert the remaining time help button here?
+      sortable: true,
+      sortName: 'time_remaining_sec',
+      sorter: timeRemainingLimitSorter,
+      formatter: timeRemainingLimitFormatter,
+      class: 'text-center align-middle text-nowrap',
+      switchable: true,
+      searchFormatter: false,
+    },
+    {
+      field: 'total_time',
+      title: 'Total Time Limit',
+      visible: false,
+      sortable: true,
+      sortName: 'total_time_sec',
+      formatter: timeRemainingLimitFormatter,
+      class: 'text-center align-middle',
+      switchable: true,
+      searchFormatter: false,
+    },
+  ];
+  const actionButton = {
+    field: 'action_button',
+    title: 'Actions',
+    formatter: actionButtonFormatter,
+    class: 'text-center align-middle',
+    switchable: false,
+    searchFormatter: false,
+  };
+
+  if (assessmentGroupWork) {
+    return [
+      assessmentInstanceIdColumn,
+      {
+        field: 'group_name',
+        title: 'Name',
+        visible: false,
+        sortable: true,
+        class: 'align-middle',
+        switchable: true,
+      },
+      {
+        field: 'uid_list',
+        title: 'Group Members',
+        sortable: true,
+        class: 'text-center align-middle text-wrap',
+        formatter: listFormatter,
+        switchable: true,
+      },
+      {
+        field: 'user_name_list',
+        title: 'Group Member Name',
+        sortable: true,
+        visible: false,
+        class: 'text-center align-middle text-wrap',
+        formatter: listFormatter,
+        switchable: true,
+      },
+      {
+        field: 'group_roles',
+        title: `Roles <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>`,
+        sortable: true,
+        class: 'text-center align-middle text-wrap',
+        formatter: uniqueListFormatter,
+        switchable: true,
+      },
+      ...nonspecificColumns,
+      actionButton,
+    ];
+  } else {
+    return [
+      assessmentInstanceIdColumn,
+      {
+        field: 'uid',
+        title: 'UID',
+        visible: false,
+        sortable: true,
+        class: 'align-middle text-nowrap',
+        switchable: true,
+      },
+      {
+        field: 'name',
+        title: 'Name',
+        sortable: true,
+        class: 'align-middle text-nowrap',
+        switchable: true,
+      },
+      {
+        field: 'role',
+        title:
+          'Role <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+        sortable: true,
+        class: 'text-center align-middle text-nowrap',
+        switchable: true,
+      },
+      ...nonspecificColumns,
+      {
+        field: 'client_fingerprint_id_change_count',
+        title:
+          'Fingerprint Changes <button class="btn btn-xs", type="button" title="Show figerprint changes help" data-toggle="modal" data-target="#fingerprint-changes-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+        class: 'text-center align-middle',
+        switchable: true,
+      },
+      actionButton,
+    ];
+  }
+}
 
 function refreshTable() {
   bsTable.bootstrapTable('refresh', { silent: true });
@@ -301,7 +448,7 @@ window.timeLimitEditPopoverContent = function () {
   return form;
 };
 
-window.scorebarFormatter = function (score) {
+function scorebarFormatter(score: number) {
   if (score != null) {
     let bar = '<div class="progress bg" style="min-width: 5em; max-width: 20em;">';
     let left = '',
@@ -318,20 +465,20 @@ window.scorebarFormatter = function (score) {
   } else {
     return '';
   }
-};
+}
 
-window.listFormatter = function (list) {
+function listFormatter(list: string[]) {
   if (!list || !list[0]) list = ['(empty)'];
   return '<small>' + list.join(', ') + '</small>';
-};
+}
 
-window.uniqueListFormatter = function (list) {
+function uniqueListFormatter(list: string[]) {
   if (!list || !list[0]) list = ['(empty)'];
   const uniq = Array.from(new Set(list));
   return '<small>' + uniq.join(', ') + '</small>';
-};
+}
 
-window.timeRemainingLimitFormatter = function (value, row) {
+function timeRemainingLimitFormatter(value: string, row: any) {
   const container = $('<span>');
   $('<a>')
     .addClass('btn btn-secondary btn-xs ml-1 time-limit-edit-button')
@@ -343,9 +490,9 @@ window.timeRemainingLimitFormatter = function (value, row) {
     .appendTo(container);
   value += container.html();
   return value;
-};
+}
 
-window.detailsLinkFormatter = function (value, row) {
+function detailsLinkFormatter(value: string, row: any) {
   const name = assessmentGroupWork ? row.group_name : row.uid;
 
   let number;
@@ -353,10 +500,15 @@ window.detailsLinkFormatter = function (value, row) {
     number = row.number === 1 ? '' : `#${row.number}`;
   }
   return `<a href="${urlPrefix}/assessment_instance/${value}">${assessmentSetAbbr}${assessmentNumber}${number} for ${name}</a>`;
-};
+}
 
-window.detailsLinkSorter = function (valueA, valueB, rowA, rowB) {
-  let nameA, nameB, idA, idB;
+function detailsLinkSorter(
+  valueA: number,
+  valueB: number,
+  rowA: AssessmentInstanceRow,
+  rowB: AssessmentInstanceRow,
+) {
+  let nameA: string | null, nameB: string | null, idA, idB;
   if (assessmentGroupWork) {
     (nameA = rowA.group_name), (nameB = rowB.group_name);
     (idA = rowA.group_id), (idB = rowB.group_id);
@@ -367,20 +519,25 @@ window.detailsLinkSorter = function (valueA, valueB, rowA, rowB) {
 
   // Compare first by UID/group name, then user/group ID, then
   // instance number, then by instance ID.
-  let compare = nameA.localeCompare(nameB);
-  if (!compare) compare = idA - idB;
+  let compare = nameA?.localeCompare(nameB ?? '');
+  if (!compare) compare = (idA ?? 0) - (idB ?? 0);
   if (!compare) compare = rowA.number - rowB.number;
   if (!compare) compare = valueA - valueB;
   return compare;
-};
+}
 
-window.timeRemainingLimitSorter = function (valueA, valueB, rowA, rowB) {
+function timeRemainingLimitSorter(
+  valueA: number,
+  valueB: number,
+  rowA: AssessmentInstanceRow,
+  rowB: AssessmentInstanceRow,
+) {
   // Closed assessments are listed first, followed by time limits
   // ascending, followed by open without a time limit
   return Number(rowA.open) - Number(rowB.open) || (valueA ?? Infinity) - (valueB ?? Infinity);
-};
+}
 
-window.actionButtonFormatter = function (_value, row) {
+function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
   const ai_id = row.assessment_instance_id;
   const container = $('<div>');
   const dropdown = $('<div class="dropdown">').appendTo(container);
@@ -439,7 +596,7 @@ window.actionButtonFormatter = function (_value, row) {
     .attr('data-date-formatted', row.date_formatted)
     .attr('data-group-name', row.group_name)
     .attr('data-uid-list', row.uid_list?.join(', ') || 'empty')
-    .attr('data-score-perc', Math.floor(row.score_perc))
+    .attr('data-score-perc', Math.floor(row.score_perc ?? 0))
     .attr('data-assessment-instance-id', row.assessment_instance_id)
     .append($('<i>').addClass('fas fa-times mr-2').attr('aria-hidden', 'true'))
     .append('Delete')
@@ -475,7 +632,7 @@ window.actionButtonFormatter = function (_value, row) {
   //<% } %>
 
   return container.html();
-};
+}
 
 function updateTotals(data: AssessmentInstanceRow[]) {
   let time_limit_list: Record<string, any> = new Object();
