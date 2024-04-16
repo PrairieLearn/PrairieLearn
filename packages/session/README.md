@@ -21,19 +21,32 @@ app.use(
 );
 ```
 
-### Controlling when cookies are set
+### Rotate session cookies
 
-You can pass a `canSetCookie` function to `createSessionMiddleware` to provide control over when session cookies will be returned to the client.
+It can be useful to rotate to a new session cookie name. For instance, this can be used to provide an explicit subdomain when none was set before.
+
+To do this, you can use a combination of `cookie.writeNames` and `cookie.writeOverrides`:
 
 ```ts
 createSessionMiddleware({
-  canSetCookie: (req) => {
-    return req.hostname === 'us.prairielearn.com';
+  // ...
+  cookie: {
+    name: 'legacy_session',
+    writeNames: ['legacy_session', 'session'],
+    writeOverrides: [{ domain: undefined }, { domain: '.example.com' }],
   },
 });
 ```
 
-This can be useful to enforce that a session cookie is only ever set from a root domain and not subdomains.
+In this example, the session will be loaded from and persisted to the `legacy_session` cookie. However, when the session is persisted, it will also be written to a new cookie named `session`. The `domain` attribute of the `legacy_session` cookie will not be set, while the `domain` attribute of the `session` cookie will be set to `.example.com`.
 
-- If a request is received that does not have a valid session cookie, a temporary session will be created at `req.session`, but it won't be persisted since the client won't know about the session ID.
-- If a request is received that already has a valid session cookie, modifications to the session will be persisted, but the cookie itself won't be updated.
+After this code has been running in production for a while, it will be safe to switch to reading from and writing to the new `session` cookie exclusively:
+
+```ts
+createSessionMiddleware({
+  cookie: {
+    name: 'session',
+    domain: '.example.com',
+  },
+});
+```

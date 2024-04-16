@@ -10,6 +10,27 @@
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
+    "groupRoles": [
+        {
+            "name": "Manager",
+            "minimum": 1,
+            "maximum": 1,
+            "canAssignRoles": true
+        },
+        {
+            "name": "Recorder",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Reflector",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Contributor"
+        }
+    ],
     "allowAccess": [
         {
             "mode": "Public",
@@ -18,6 +39,8 @@
             "showClosedAssessment": false
        }
     ],
+    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+    "canSubmit": ["Recorder"],
     "zones": [
         {
             "title": "Fundamental questions",
@@ -68,12 +91,14 @@
                     "points": [5, 4, 3, 2, 1],
                     "alternatives": [
                         {"id": "demo/randomDataFrame"},
-                        {"id": "demo/randomSymbolic"}
+                        {"id": "template/symbolic-input/random"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
+                    "canView": ["Reflector"],
+                    "canSubmit": ["Reflector"],
                     "alternatives": [
                         {"id": "demo/custom/element"},
                         {"id": "demo/custom/gradeFunction"}

@@ -134,8 +134,8 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   sqlError.message = err.message;
 
   return addDataToError(err, {
-    sqlError: sqlError,
-    sql: sql,
+    sqlError,
+    sql,
     sqlParams: params,
   });
 }
@@ -350,7 +350,7 @@ export class PostgresPool {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryWithClientAsync(client, sql, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
         sql,
         sqlParams: params,
@@ -557,7 +557,7 @@ export class PostgresPool {
     debug('queryZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
         sql,
         sqlParams: params,
@@ -623,7 +623,7 @@ export class PostgresPool {
     debug('callZeroOrOneRow()', 'function:', functionName);
     debug('callZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.callAsync(functionName, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError('Incorrect rowCount: ' + result.rowCount, {
         functionName,
         sqlParams: params,
@@ -701,7 +701,7 @@ export class PostgresPool {
     debug('callWithClientZeroOrOneRow()', 'function:', functionName);
     debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.callWithClientAsync(client, functionName, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError('Incorrect rowCount: ' + result.rowCount, {
         functionName,
         sqlParams: params,
@@ -934,6 +934,78 @@ export class PostgresPool {
     }
   }
 
+  async callRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      const rawData = results.rows.map((row) => row[columnName]);
+      return z.array(model).parse(rawData);
+    } else {
+      return z.array(model).parse(results.rows);
+    }
+  }
+
+  async callRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callOneRowAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callZeroOrOneRowAsync(sql, params);
+    if (results.rows.length === 0) {
+      return null;
+    } else if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
   /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
@@ -985,7 +1057,7 @@ export class PostgresPool {
 
     let iterateCalled = false;
     const iterator: CursorIterator<z.infer<Model>> = {
-      iterate: async function* (batchSize: number) {
+      async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
         // definitely doing something wrong.
         if (iterateCalled) {
@@ -1016,7 +1088,7 @@ export class PostgresPool {
           }
         }
       },
-      stream: function (batchSize: number) {
+      stream(batchSize: number) {
         const transform = new Transform({
           readableObjectMode: true,
           writableObjectMode: true,

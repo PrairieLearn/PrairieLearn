@@ -1,5 +1,59 @@
 # @prairielearn/opentelemetry
 
+## 1.11.2
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 1.11.1
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
+## 1.11.0
+
+### Minor Changes
+
+- bd4cff1: Allow trace exporting to be disabled; export more types
+
+## 1.10.7
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+
+## 1.10.6
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+
+## 1.10.5
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
+## 1.10.4
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
+## 1.10.3
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
+## 1.10.2
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
 ## 1.10.1
 
 ### Patch Changes

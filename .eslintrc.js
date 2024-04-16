@@ -44,6 +44,7 @@ module.exports = {
         message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
       },
     ],
+    'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',
@@ -56,6 +57,12 @@ module.exports = {
         commonjs: true,
       },
     ],
+
+    // This gives false positives for `fs-extra`, which re-exports everything
+    // from `fs`. We'll disable it for now.
+    //
+    // TODO: file an issue upstream with `eslint-plugin-import`.
+    'import/namespace': 'off',
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.

@@ -1,12 +1,15 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const express = require('express');
+import * as express from 'express';
 const debug = require('debug')('prairielearn:instructorAssessment');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const scoreUpload = require('../../lib/score-upload');
+import {
+  uploadInstanceQuestionScores,
+  uploadAssessmentInstanceScores,
+} from '../../lib/score-upload';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -14,7 +17,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get('/', function (req, res, next) {
   debug('GET /');
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
   }
   var params = {
     assessment_id: res.locals.assessment.id,
@@ -31,11 +34,11 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'upload_instance_question_scores') {
-      const jobSequenceId = await scoreUpload.uploadInstanceQuestionScores(
+      const jobSequenceId = await uploadInstanceQuestionScores(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -43,7 +46,7 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
-      const jobSequenceId = await scoreUpload.uploadAssessmentInstanceScores(
+      const jobSequenceId = await uploadAssessmentInstanceScores(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -51,12 +54,9 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`, {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
 import { type Response } from 'express';
-import fs = require('fs-extra');
-import path = require('node:path');
+import * as fs from 'fs-extra';
+import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -8,30 +8,50 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types';
+import { selectCoursesWithEditAccess } from '../models/course';
+import { idsEqual } from './id';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function setQuestionCopyTargets(res: Response) {
-  res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
-    const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+export async function setQuestionCopyTargets(res: Response) {
+  // Avoid querying for editable courses if we won't be able to copy this
+  // question anyways.
+  if (!res.locals.course.template_course) {
+    return;
+  }
 
-    // The question copy form will POST to a different URL for each course, so
-    // we need to generate a corresponding CSRF token for each one.
-    const csrfToken = generateSignedToken(
-      {
-        url: copyUrl,
-        authn_user_id: res.locals.authn_user.user_id,
-      },
-      config.secretKey,
-    );
-
-    return {
-      id: course.id,
-      short_name: course.short_name,
-      copy_url: copyUrl,
-      __csrf_token: csrfToken,
-    };
+  const editableCourses = await selectCoursesWithEditAccess({
+    user_id: res.locals.user.user_id,
+    is_administrator: res.locals.is_administrator,
   });
+  res.locals.question_copy_targets = editableCourses
+    .filter(
+      (course) =>
+        // The example course cannot be updated in the web interface.
+        !course.example_course &&
+        // Question copying cannot be done within the same course.
+        !idsEqual(course.id, res.locals.course.id),
+    )
+    .map((course) => {
+      const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+
+      // The question copy form will POST to a different URL for each course, so
+      // we need to generate a corresponding CSRF token for each one.
+      const csrfToken = generateSignedToken(
+        {
+          url: copyUrl,
+          authn_user_id: res.locals.authn_user.user_id,
+        },
+        config.secretKey,
+      );
+
+      return {
+        id: course.id,
+        short_name: course.short_name,
+        copy_url: copyUrl,
+        __csrf_token: csrfToken,
+      };
+    });
 }
 
 export async function copyQuestionBetweenCourses(
@@ -51,11 +71,7 @@ export async function copyQuestionBetweenCourses(
   // Note that we *always* allow copying from a template course, even if the user
   // does not have explicit view permissions.
   if (!res.locals.authz_data.has_course_permission_view && !fromCourse.template_course) {
-    throw error.make(403, 'Access denied (must be a course Viewer)');
-  }
-
-  if (!fromCourse.path) {
-    throw new Error(`Course ${fromCourse.id} does not have a path`);
+    throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
   }
 
   if (!question.qid) {

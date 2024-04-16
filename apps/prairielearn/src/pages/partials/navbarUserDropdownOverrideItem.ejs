@@ -7,19 +7,10 @@
             </ul>
         </div>
         <div>
-            <button class="btn btn-xs btn-warning" type="button" id="navbar-user-remove-<%= override.cookie %>-button">
+            <button class="btn btn-xs btn-warning js-remove-override" type="button" data-override-cookie="<%= override.cookie %>">
                 <i class="fas fa-times mr-1"></i>
                 Remove
             </button>
         </div>
     </div>
 </div>
-
-<script>
-  $(function() {
-    $('#navbar-user-remove-<%= override.cookie %>-button').click(function() {
-      Cookies.remove('<%= override.cookie %>', { path: '/' });
-      location.reload();
-    });
-  });
-</script>

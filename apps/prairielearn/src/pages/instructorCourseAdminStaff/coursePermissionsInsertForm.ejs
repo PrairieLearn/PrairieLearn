@@ -23,13 +23,13 @@
     </select>
   </div>
 
-  <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
+  <% if (course_instances && course_instances.length > 0) { %>
     <div class="form-group">
       <label for="addUsersInputCourseInstance">Student data access for all new users:</label>
       <div class="input-group">
         <select class="form-control form-control-sm" id="addUsersInputCourseInstance" name="course_instance_id">
           <option selected value>None</option>
-          <% authz_data.course_instances.forEach(function(ci) { %>
+          <% course_instances.forEach(function(ci) { %>
           <option value="<%= ci.id %>"><%= ci.short_name %></option>
           <% }); %>
         </select>

@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 
-import helperServer = require('../../../tests/helperServer');
-import helperDb = require('../../../tests/helperDb');
+import * as helperServer from '../../../tests/helperServer';
+import * as helperDb from '../../../tests/helperDb';
 import {
   getPlanGrantsForContext,
   getPlanGrantsForPartialContexts,

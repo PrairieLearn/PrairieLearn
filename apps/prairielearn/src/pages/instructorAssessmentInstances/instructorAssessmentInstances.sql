@@ -83,7 +83,8 @@ SELECT
         ai.number DESC,
         ai.id DESC
     )
-  ) = 1 AS highest_score
+  ) = 1 AS highest_score,
+  ai.client_fingerprint_id_change_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

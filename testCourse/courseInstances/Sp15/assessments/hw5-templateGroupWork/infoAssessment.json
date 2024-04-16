@@ -16,8 +16,7 @@
             "name": "Manager",
             "minimum": 1,
             "maximum": 1,
-            "canAssignRolesAtStart": true,
-            "canAssignRolesDuringAssessment": true
+            "canAssignRoles": true
         },
         {
             "name": "Recorder",
@@ -52,13 +51,16 @@
             "startDate": "2019-01-30T00:00:01"
         }
     ],
+    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
     "zones": [
         {
+            "canSubmit": ["Recorder"],
             "title": "Fundamental questions",
             "bestQuestions": 3,
             "questions": [
                 {"id": "demo/demoNewton-page1",          "points": 1, "maxPoints": 5},
-                {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5}
+                {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5, "canView": ["Recorder"]},
+                {"id": "addNumbers",        "points": 1, "maxPoints": 5, "canView": ["Reflector"], "canSubmit": ["Reflector"]}
             ]
         }
     ],

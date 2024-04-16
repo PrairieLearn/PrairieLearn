@@ -3,6 +3,7 @@ columns
     data: jsonb not null
     expires_at: timestamp with time zone not null
     id: bigint not null default nextval('user_sessions_id_seq'::regclass)
+    revoked_at: timestamp with time zone
     session_id: text not null
     updated_at: timestamp with time zone not null default now()
     user_id: bigint
@@ -14,3 +15,6 @@ indexes
 
 foreign-key constraints
     user_sessions_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    client_fingerprints: FOREIGN KEY (user_session_id) REFERENCES user_sessions(id)

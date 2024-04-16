@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 
-import { config, Config } from '../lib/config';
+import { config, type Config } from '../lib/config';
 import * as helperServer from './helperServer';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -22,7 +22,7 @@ describe('Test student auto-enrollment', function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    config.authUid = 'student@illinois.edu';
+    config.authUid = 'student@example.com';
     config.authName = 'Student User';
     config.authUin = '00000001';
   });

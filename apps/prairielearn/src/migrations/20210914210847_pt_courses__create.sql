@@ -1,5 +1,4 @@
-CREATE TABLE IF NOT EXISTS
-  pt_courses (id bigserial PRIMARY KEY, name TEXT);
+CREATE TABLE IF NOT EXISTS pt_courses (id bigserial PRIMARY KEY, name TEXT);
 
 ALTER TABLE IF EXISTS pt_exams
 ADD COLUMN IF NOT EXISTS name TEXT;

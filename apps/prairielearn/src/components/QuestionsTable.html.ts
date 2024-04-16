@@ -15,6 +15,7 @@ export interface EncodedQuestionsData {
     current: boolean;
   }[];
   showSharingSets: boolean;
+  qidPrefix: string;
 }
 
 export function QuestionsTableHead() {
@@ -28,19 +29,21 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  showAddQuestionButton,
-  showSharingSets,
+  showAddQuestionButton = false,
+  showSharingSets = false,
   current_course_instance,
-  course_instances,
+  course_instances = [],
+  qidPrefix,
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
 }: {
   questions: QuestionsPageDataAnsified[];
-  showAddQuestionButton: boolean;
-  showSharingSets: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstance[];
+  showAddQuestionButton?: boolean;
+  showSharingSets?: boolean;
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstance[];
+  qidPrefix: string;
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
@@ -48,7 +51,8 @@ export function QuestionsTable({
   const course_instances_client_data = (course_instances || []).map((course_instance) => ({
     id: course_instance.id.toString(),
     short_name: course_instance.short_name,
-    current: idsEqual(current_course_instance?.id, course_instance.id),
+    current:
+      current_course_instance != null && idsEqual(current_course_instance.id, course_instance.id),
   }));
   return html`
     ${EncodedData<EncodedQuestionsData>(
@@ -58,6 +62,7 @@ export function QuestionsTable({
         plainUrlPrefix,
         questions,
         showSharingSets,
+        qidPrefix,
       },
       'questions-table-data',
     )}

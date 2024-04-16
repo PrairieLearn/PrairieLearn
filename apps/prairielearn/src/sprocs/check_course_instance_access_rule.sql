@@ -10,11 +10,6 @@ DECLARE
     available boolean := TRUE;
     user_result record;
 BEGIN
-    IF course_instance_access_rule.role > 'Student' THEN
-        available := FALSE;
-        RETURN available;
-    END IF;
-
     IF course_instance_access_rule.uids IS NOT NULL THEN
         IF uid != ALL (course_instance_access_rule.uids) THEN
             available := FALSE;

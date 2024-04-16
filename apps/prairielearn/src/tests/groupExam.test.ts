@@ -1,14 +1,14 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import fetchCookie = require('fetch-cookie');
+import fetchCookie from 'fetch-cookie';
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
 
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 const sql = loadSqlEquiv(__filename);
 
-import helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 import { TEST_COURSE_PATH } from '../lib/paths';
 import { UserSchema } from '../lib/db-types';
 
@@ -86,7 +86,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName: groupName,
+      groupName,
     }),
   });
   assert.isOk(res.ok);
@@ -277,7 +277,7 @@ describe('Group based exam assessments', function () {
         'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
-      const elemList = $('.alert:contains(It is already full)');
+      const elemList = $('.alert:contains(Group is already full)');
       assert.lengthOf(elemList, 1, 'Page should show that group is already full');
 
       // Switch to second user and start assessment
@@ -509,7 +509,7 @@ describe('cross exam assessment access', function () {
     $ = cheerio.load(await crossAssessmentJoinResponse.text());
 
     // Error message should show
-    const elemList = $('.alert:contains(It is already full or does not exist)');
+    const elemList = $('.alert:contains(Group does not exist)');
     assert.lengthOf(elemList, 1);
   });
 });

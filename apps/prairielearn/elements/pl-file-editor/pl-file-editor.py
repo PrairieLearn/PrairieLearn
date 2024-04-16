@@ -19,21 +19,22 @@ PREVIEW_DEFAULT = None
 FOCUS_DEFAULT = False
 DIRECTORY_DEFAULT = "."
 NORMALIZE_TO_ASCII_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
 
 
-def get_answer_name(file_name):
+def get_answer_name(file_name: str) -> str:
     return "_file_editor_{0}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def add_format_error(data, error_string):
+def add_format_error(data: pl.QuestionData, error_string: str) -> None:
     if "_files" not in data["format_errors"]:
         data["format_errors"]["_files"] = []
     data["format_errors"]["_files"].append(error_string)
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
     optional_attribs = [
@@ -49,6 +50,7 @@ def prepare(element_html, data):
         "focus",
         "directory",
         "normalize-to-ascii",
+        "allow-blank",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
@@ -69,7 +71,7 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
@@ -118,6 +120,7 @@ def render(element_html, data):
         "read_only": "false" if data["editable"] else "true",
         "uuid": uuid,
         "focus": focus,
+        "question": True,
     }
 
     if source_file_name is not None:
@@ -128,12 +131,10 @@ def render(element_html, data):
         else:
             directory = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(directory, source_file_name)
-        text_display = open(file_path).read()
+        with open(file_path, "r", encoding="utf-8") as f:
+            text_display = f.read()
     else:
-        if element.text is not None:
-            text_display = str(element.text)
-        else:
-            text_display = ""
+        text_display = "" if element.text is None else str(element.text)
 
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8").strip()
@@ -150,27 +151,22 @@ def render(element_html, data):
     else:
         html_params["current_file_contents"] = html_params["original_file_contents"]
 
-    if data["panel"] == "question":
-        html_params["question"] = True
-        with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
-    else:
-        html = ""
-
-    return html
+    with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
+        return chevron.render(f, html_params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
     normalize_to_ascii = pl.get_boolean_attrib(
         element, "normalize-to-ascii", NORMALIZE_TO_ASCII_DEFAULT
     )
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
-    file_contents = data["submitted_answers"].get(answer_name, None)
-    if not file_contents:
+    file_contents = data["submitted_answers"].get(answer_name, "")
+    if not file_contents and not allow_blank:
         add_format_error(data, "No submitted answer for {0}".format(file_name))
         return
 

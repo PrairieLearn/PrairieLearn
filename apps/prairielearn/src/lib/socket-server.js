@@ -1,12 +1,12 @@
 // @ts-check
-const { Server } = require('socket.io');
-const { createAdapter } = require('@socket.io/redis-adapter');
-const { Redis } = require('ioredis');
-const { logger } = require('@prairielearn/logger');
-const path = require('path');
+import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
+import { logger } from '@prairielearn/logger';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { config } = require('./config');
+import { config } from './config';
 
 /**
  * @param {Redis} client
@@ -41,26 +41,38 @@ function attachEventListeners(client, type) {
   });
 }
 
-module.exports.init = async function (server) {
+/** @type {Server} */
+export let io;
+
+/** @type {Redis} */
+let pub;
+
+/** @type {Redis} */
+let sub;
+
+/**
+ * @param {import('http').Server} server
+ */
+export async function init(server) {
   debug('init(): creating socket server');
-  module.exports.io = new Server(server);
+  io = new Server(server);
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers
     debug('init(): initializing redis pub/sub clients');
-    module.exports.pub = new Redis(config.redisUrl);
-    module.exports.sub = new Redis(config.redisUrl);
+    pub = new Redis(config.redisUrl);
+    sub = new Redis(config.redisUrl);
 
-    attachEventListeners(module.exports.pub, 'pub');
-    attachEventListeners(module.exports.sub, 'sub');
+    attachEventListeners(pub, 'pub');
+    attachEventListeners(sub, 'sub');
 
     debug('init(): initializing redis socket adapter');
-    module.exports.io.adapter(createAdapter(module.exports.pub, module.exports.sub));
+    io.adapter(createAdapter(pub, sub));
   }
-};
+}
 
-module.exports.close = async function () {
-  await module.exports.pub?.quit();
-  await module.exports.sub?.quit();
+export async function close() {
+  await pub?.quit();
+  await sub?.quit();
 
   // Note that we don't use `io.close()` here, as that actually tries to close
   // the underlying HTTP server. In our desired shutdown sequence, we first
@@ -70,5 +82,5 @@ module.exports.close = async function () {
   //
   // Note the use of `io.local`, which prevents the server from attempting to
   // broadcast the disconnect to other servers via Redis.
-  module.exports.io.local.disconnectSockets(true);
-};
+  io.local.disconnectSockets(true);
+}

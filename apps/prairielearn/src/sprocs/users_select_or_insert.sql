@@ -5,7 +5,9 @@ CREATE FUNCTION
         IN uin text,
         IN authn_provider_name text,
         IN institution_id bigint DEFAULT NULL,
-        OUT user_id bigint
+        OUT result text,
+        OUT user_id bigint,
+        OUT user_institution_id bigint
     )
 AS $$
 DECLARE
@@ -50,6 +52,8 @@ BEGIN
         LIMIT 1;
     END IF;
 
+    user_institution_id := institution.id;
+
     -- If we've matched an institution and an `institution_id` was provided,
     -- check that they match each other. This is mostly useful for SAML authn
     -- providers, as we want to ensure that any identity they return is scoped
@@ -76,7 +80,8 @@ BEGIN
             AND ap.name = authn_provider_name;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
+            result := 'invalid_authn_provider';
+            RETURN;
         END IF;
     END IF;
 
@@ -179,5 +184,8 @@ BEGIN
     if user_id < 1 OR user_id > 1000000000 THEN
         RAISE EXCEPTION 'user_id out of bounds';
     END IF;
+
+    -- If we get here, we succeeded; make sure the caller knows.
+    result := 'success';
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -2,11 +2,18 @@ import type { Request, Response, NextFunction } from 'express';
 import onHeaders from 'on-headers';
 import signature from 'cookie-signature';
 import asyncHandler from 'express-async-handler';
+import cookie from 'cookie';
 
 import { SessionStore } from './store';
 import { beforeEnd } from './before-end';
-import { getSessionIdFromCookie, type CookieSecure, shouldSecureCookie } from './cookie';
-import { type Session, generateSessionId, loadSession, hashSession } from './session';
+import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie';
+import {
+  type Session,
+  generateSessionId,
+  loadSession,
+  hashSession,
+  truncateExpirationDate,
+} from './session';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -17,16 +24,34 @@ declare global {
   }
 }
 
+interface CookieOptions {
+  secure?: CookieSecure;
+  httpOnly?: boolean;
+  domain?: string;
+  sameSite?: boolean | 'none' | 'lax' | 'strict';
+  maxAge?: number;
+}
+
 export interface SessionOptions {
   secret: string | string[];
   store: SessionStore;
-  canSetCookie?: (req: Request) => boolean;
-  cookie?: {
+  cookie?: CookieOptions & {
+    /**
+     * The name of the session cookie. The session is always read from this
+     * named cookie, but it may be written to multiple cookies if `writeNames`
+     * is provided.
+     */
     name?: string;
-    secure?: CookieSecure;
-    httpOnly?: boolean;
-    sameSite?: boolean | 'none' | 'lax' | 'strict';
-    maxAge?: number;
+    /**
+     * Multiple write names can be provided to allow for a session cookie to be
+     * written to multiple names. This can be useful for a migration of a cookie
+     * to an explicit subdomain, for example.
+     */
+    writeNames?: string[];
+    /**
+     * Used with `writeNames` to provide additional options for each written cookie.
+     */
+    writeOverrides?: Omit<CookieOptions, 'secure'>[];
   };
 }
 
@@ -41,26 +66,54 @@ export function createSessionMiddleware(options: SessionOptions) {
   const cookieMaxAge = options.cookie?.maxAge ?? DEFAULT_COOKIE_MAX_AGE;
   const store = options.store;
 
+  // Ensure that the session cookie that we're reading from will be written to.
+  const writeCookieNames = options.cookie?.writeNames ?? [cookieName];
+  if (!writeCookieNames.includes(cookieName)) {
+    throw new Error('cookie.name must be included in cookie.writeNames');
+  }
+
+  // Validate write overrides.
+  if (options.cookie?.writeOverrides && !options.cookie.writeNames) {
+    throw new Error('cookie.writeOverrides must be used with cookie.writeNames');
+  }
+  if (
+    options.cookie?.writeOverrides &&
+    options.cookie.writeOverrides.length !== writeCookieNames.length
+  ) {
+    throw new Error('cookie.writeOverrides must have the same length as cookie.writeNames');
+  }
+
   return asyncHandler(async function sessionMiddleware(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
-    const cookieSessionId = getSessionIdFromCookie(req, cookieName, secrets);
+    const cookies = cookie.parse(req.headers.cookie ?? '');
+    const sessionCookie = cookies[cookieName];
+    const cookieSessionId = getSessionIdFromCookie(sessionCookie, secrets);
     const sessionId = cookieSessionId ?? (await generateSessionId());
     req.session = await loadSession(sessionId, req, store, cookieMaxAge);
 
     const originalHash = hashSession(req.session);
     const originalExpirationDate = req.session.getExpirationDate();
 
-    const canSetCookie = options.canSetCookie?.(req) ?? true;
-
     onHeaders(res, () => {
       if (!req.session) {
         if (cookieSessionId) {
           // If the request arrived with a session cookie but the session was
           // destroyed, clear the cookie.
-          res.clearCookie(cookieName);
+          //
+          // To cover all our bases, we'll clear *all* known session cookies to
+          // ensure that state sessions aren't left behind. We'll also send commands
+          // to clear the cookies both on and off the explicit domain, to handle
+          // the case where the application has moved from one domain to another.
+          writeCookieNames.forEach((cookieName, i) => {
+            res.clearCookie(cookieName);
+            const domain = options.cookie?.writeOverrides?.[i]?.domain ?? options.cookie?.domain;
+            if (domain) {
+              res.clearCookie(cookieName, { domain: options.cookie?.domain });
+            }
+          });
           return;
         }
 
@@ -74,50 +127,77 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
+      // Ensure that all known session cookies are set to the same value.
+      const hasAllCookies = writeCookieNames.every((cookieName) => !!cookies[cookieName]);
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (canSetCookie && (isNewSession || didExpirationChange)) {
+      if (isNewSession || didExpirationChange || !hasAllCookies) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
-        res.cookie(cookieName, signedSessionId, {
-          secure: secureCookie,
-          httpOnly: options.cookie?.httpOnly ?? true,
-          sameSite: options.cookie?.sameSite ?? false,
-          expires: req.session.getExpirationDate(),
+        writeCookieNames.forEach((cookieName, i) => {
+          res.cookie(cookieName, signedSessionId, {
+            secure: secureCookie,
+            httpOnly: options.cookie?.httpOnly ?? true,
+            domain: options.cookie?.domain,
+            sameSite: options.cookie?.sameSite ?? false,
+            expires: req.session.getExpirationDate(),
+            ...(options.cookie?.writeOverrides?.[i] ?? {}),
+          });
         });
       }
     });
 
-    beforeEnd(res, next, async () => {
-      if (!req.session) {
+    let sessionPersisted = false;
+
+    async function persistSession(req: Request) {
+      if (!req.session || sessionPersisted) {
         // There is no session to do anything with.
         return;
       }
 
-      const isExistingSession = cookieSessionId && cookieSessionId === req.session.id;
-      const hashChanged = hashSession(req.session) !== originalHash;
-      const didExpirationChange =
-        originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (
-        (hashChanged && isExistingSession) ||
-        (canSetCookie && (!isExistingSession || didExpirationChange))
-      ) {
-        // Only update the expiration date in the store if we were actually
-        // able to update the cookie too.
-        const expirationDate = canSetCookie
-          ? req.session.getExpirationDate()
-          : originalExpirationDate;
+      sessionPersisted = true;
 
+      // If this is a new session, we would have already persisted it to the
+      // store, so we don't need to take that into consideration here.
+      //
+      // If the hash of the session data changed, we'll unconditionally persist
+      // the updated data to the store. However, if the hash didn't change, we
+      // only want to persist it if the expiration changed *and* if we can set
+      // a cookie to reflect the updated expiration date.
+      const hashChanged = hashSession(req.session) !== originalHash;
+      const expirationChanged =
+        originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
+      if (hashChanged || expirationChanged) {
         await store.set(
           req.session.id,
           req.session,
           // Cookies only support second-level resolution. To ensure consistency
           // between the cookie and the store, truncate the expiration date to
           // the nearest second.
-          truncateExpirationDate(expirationDate),
+          truncateExpirationDate(req.session.getExpirationDate()),
         );
       }
+    }
+
+    // We'll attempt to persist the session at the end of the request. This
+    // hacky strategy is borrowed from `express-session`.
+    beforeEnd(res, next, async () => {
+      await persistSession(req);
     });
+
+    // We'll also attempt to persist the session before performing a redirect.
+    // This is necessary because browsers and `fetch()` implementations aren't
+    // required to wait for a response body to be received before following a
+    // redirect. So, we need to make sure that the session is persisted before
+    // we send the redirect response. This way, the subsequent GET will be able
+    // to load the latest session data.
+    const originalRedirect = res.redirect as any;
+    res.redirect = function redirect(...args: any[]) {
+      persistSession(req).then(
+        () => originalRedirect.apply(res, args),
+        (err) => next(err),
+      );
+    };
 
     next();
   });
@@ -125,10 +205,4 @@ export function createSessionMiddleware(options: SessionOptions) {
 
 function signSessionId(sessionId: string, secret: string): string {
   return signature.sign(sessionId, secret);
-}
-
-function truncateExpirationDate(date: Date) {
-  const time = date.getTime();
-  const truncatedTime = Math.floor(time / 1000) * 1000;
-  return new Date(truncatedTime);
 }

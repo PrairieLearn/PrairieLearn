@@ -1,7 +1,7 @@
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import { loadSqlEquiv, queryValidatedRows, queryRows } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
 import { FeatureName, features } from '../../lib/features';
@@ -24,7 +24,7 @@ const sql = loadSqlEquiv(__filename);
 
 function validateFeature(feature: string): FeatureName {
   if (!features.hasFeature(feature)) {
-    throw error.make(404, `Unknown feature: ${feature}`);
+    throw new error.HttpStatusError(404, `Unknown feature: ${feature}`);
   }
   return feature;
 }
@@ -78,16 +78,16 @@ const AddFeatureGrantModalParamsSchema = z.object({
 type AddFeatureGrantModalParams = z.infer<typeof AddFeatureGrantModalParamsSchema>;
 
 async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
-  const institutions = await queryValidatedRows(sql.select_institutions, {}, InstitutionSchema);
+  const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
   const courses = params.institution_id
-    ? await queryValidatedRows(
+    ? await queryRows(
         sql.select_courses_for_institution,
         { institution_id: params.institution_id },
         CourseSchema,
       )
     : [];
   const course_instances = params.course_id
-    ? await queryValidatedRows(
+    ? await queryRows(
         sql.select_course_instances_for_course,
         { course_id: params.course_id },
         CourseInstanceSchema,

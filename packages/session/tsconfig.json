@@ -4,8 +4,5 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["mocha", "node"]
-  },
-  "ts-node": {
-    "transpileOnly": true
   }
 }

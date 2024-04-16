@@ -83,7 +83,7 @@ export async function findTerminableWorkspaceHosts(
   unhealthy_timeout_sec: number,
   launch_timeout_sec: number,
 ): Promise<WorkspaceHost[]> {
-  return queryRows(
+  return await queryRows(
     sql.find_terminable_hosts,
     {
       unhealthy_timeout_sec,
@@ -104,7 +104,7 @@ export async function findTerminableWorkspaceHosts(
 export async function terminateWorkspaceHostsIfNotLaunching(
   instanceIds: string[],
 ): Promise<WorkspaceLog[]> {
-  return queryRows(
+  return await queryRows(
     sql.terminate_hosts_if_not_launching,
     { instance_ids: instanceIds },
     WorkspaceLogSchema,
