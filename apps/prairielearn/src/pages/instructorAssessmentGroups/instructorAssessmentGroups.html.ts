@@ -18,14 +18,12 @@ export function InstructorAssessmentGroups({
   groupConfigInfo,
   groups,
   notAssigned,
-  uidsLimit,
   resLocals,
 }: {
   groupsCsvFilename?: string;
   groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  uidsLimit: number;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -102,7 +100,7 @@ export function InstructorAssessmentGroups({
                         groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
                         csrfToken: resLocals.__csrf_token,
                       })}
-                      ${AddGroupModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
+                      ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
                       ${DeleteAllGroupsModal({
                         assessmentSetName: resLocals.assessment_set.name,
                         assessmentNumber: resLocals.assessment.number,
@@ -215,7 +213,6 @@ export function InstructorAssessmentGroups({
                                           data-content="${escapeHtml(
                                             AddMembersForm({
                                               row,
-                                              uidsLimit,
                                               csrfToken: resLocals.__csrf_token,
                                             }),
                                           )}"
@@ -324,15 +321,7 @@ export function InstructorAssessmentGroups({
   `.toString();
 }
 
-function AddMembersForm({
-  row,
-  uidsLimit,
-  csrfToken,
-}: {
-  row: GroupUsersRow;
-  uidsLimit: number;
-  csrfToken: string;
-}) {
+function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="add-member-form" method="POST">
       <div class="form-group">
@@ -345,7 +334,7 @@ function AddMembersForm({
           aria-describedby="add_member_uids_help"
         />
         <small id="add_member_uids_help" class="form-text text-muted">
-          Enter up to ${uidsLimit} comma-separated UIDs.
+          Separate multiple UIDs with commas.
         </small>
       </div>
       <input type="hidden" name="__action" value="add_member" />
@@ -496,7 +485,7 @@ function AutoAssessmentGroupsModal({
   });
 }
 
-function AddGroupModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken: string }) {
+function AddGroupModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'addGroupModal',
     title: 'Add a group',
@@ -516,7 +505,7 @@ function AddGroupModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken:
           aria-describedby="addGroupUidsHelp"
         />
         <small id="addGroupUidsHelp" class="form-text text-muted">
-          Enter up to ${uidsLimit} comma-separated UIDs.
+          Separate multiple UIDs with commas.
         </small>
       </div>
     `,
