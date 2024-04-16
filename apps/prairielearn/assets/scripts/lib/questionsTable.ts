@@ -261,6 +261,15 @@ onDocumentReady(() => {
     });
   });
 
+  table.on('renderStarted', () => {
+    // Reset column widths to fit content
+    table
+      .getColumns()
+      .filter((col) => col.getWidth() != null)
+      .forEach((col) => {
+        col.setWidth(true);
+      });
+  });
   table.on('renderComplete', () => {
     // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
     $('.js-sync-popover[data-toggle="popover"]')
@@ -268,6 +277,23 @@ onDocumentReady(() => {
       .on('show.bs.popover', function () {
         $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
       });
+
+    // Resize columns to fill the table width
+    const columnsWidth = table
+      .getColumns()
+      .map((col) => col.getWidth())
+      .reduce((a, b) => a + (b ?? 0), 0);
+    const extraWidth = table.tableWidth - columnsWidth;
+    console.log({ columnsWidth, extraWidth });
+    if (extraWidth > 0) {
+      const ratio = 1 + extraWidth / columnsWidth;
+      table
+        .getColumns()
+        .filter((col) => col.getWidth() != null)
+        .forEach((col) => {
+          col.setWidth(col.getWidth() * ratio);
+        });
+    }
   });
 
   document
