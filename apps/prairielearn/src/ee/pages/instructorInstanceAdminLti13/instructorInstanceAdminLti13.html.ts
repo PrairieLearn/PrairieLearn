@@ -19,7 +19,6 @@ export function InstructorInstanceAdminLti13({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navSubPage: 'lti13',
         })}
       </head>
       <body>
@@ -35,6 +34,7 @@ export function InstructorInstanceAdminLti13({
         </script>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
+          navSubPage: 'lti13',
         })}
         <main class="container-fluid mb-4">
           <div class="card mb-4">
