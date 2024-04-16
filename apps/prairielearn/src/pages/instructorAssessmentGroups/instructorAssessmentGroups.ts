@@ -114,7 +114,7 @@ router.post(
       await createGroup(
         group_name,
         assessment_id,
-        Array.from(parseUidsString(req.body.uids, MAX_UIDS)),
+        parseUidsString(req.body.uids, MAX_UIDS),
         res.locals.authn_user.user_id,
       ).catch((err) => {
         if (err instanceof GroupOperationError) {

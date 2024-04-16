@@ -7,7 +7,7 @@ import { HttpStatusError } from '@prairielearn/error';
  * @param uidsString The string of UIDs to parse.
  * @param limit The maximum number of UIDs to accept without throwing an error.
  */
-export function parseUidsString(uidsString: string, limit: number): Set<string> {
+export function parseUidsString(uidsString: string, limit: number): string[] {
   const uids = new Set(
     uidsString
       .split(/[\s,;]+/)
@@ -19,5 +19,5 @@ export function parseUidsString(uidsString: string, limit: number): Set<string> 
     throw new HttpStatusError(400, `Cannot provide more than ${limit} UIDs`);
   }
 
-  return uids;
+  return Array.from(uids);
 }

@@ -4,33 +4,33 @@ import { parseUidsString } from './user';
 describe('user utilities', () => {
   describe('parseUidsString', () => {
     it('handles empty string', () => {
-      assert.deepEqual(parseUidsString('', 10), new Set());
+      assert.deepEqual(parseUidsString('', 10), []);
     });
 
     it('handles whitespace string', () => {
-      assert.deepEqual(parseUidsString(' \n\t', 10), new Set());
+      assert.deepEqual(parseUidsString(' \n\t', 10), []);
     });
 
     it('handled empty items', () => {
-      assert.deepEqual(parseUidsString(' , ; ', 10), new Set());
+      assert.deepEqual(parseUidsString(' , ; ', 10), []);
     });
 
     it('handles single item', () => {
-      assert.deepEqual(parseUidsString('a@example.com', 10), new Set(['a@example.com']));
+      assert.deepEqual(parseUidsString('a@example.com', 10), ['a@example.com']);
     });
 
     it('handles multiple items', () => {
-      assert.deepEqual(
-        parseUidsString('a@example.com, b@example.com', 10),
-        new Set(['a@example.com', 'b@example.com']),
-      );
+      assert.deepEqual(parseUidsString('a@example.com, b@example.com', 10), [
+        'a@example.com',
+        'b@example.com',
+      ]);
     });
 
     it('handles duplicate items', () => {
-      assert.deepEqual(
-        parseUidsString('a@example.com, b@example.com, a@example.com', 10),
-        new Set(['a@example.com', 'b@example.com']),
-      );
+      assert.deepEqual(parseUidsString('a@example.com, b@example.com, a@example.com', 10), [
+        'a@example.com',
+        'b@example.com',
+      ]);
     });
 
     it('throws an error if too many UIDs are provided', () => {

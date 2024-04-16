@@ -73,7 +73,7 @@ router.post(
       const uids = parseUidsString(req.body.uid, MAX_UIDS);
 
       // Verify there is at least one UID
-      if (uids.size === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
+      if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
       // Verify the requested course role is valid - we choose to disallow Owner
       // because we want to discourage the assignment of this role to many users
@@ -115,7 +115,7 @@ router.post(
       }
       // Iterate through UIDs
       const result = await async.reduce(
-        Array.from(uids),
+        uids,
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
         /**
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
