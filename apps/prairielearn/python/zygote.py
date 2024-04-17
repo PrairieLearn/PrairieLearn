@@ -324,31 +324,15 @@ def worker_loop() -> None:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False
                         )
-                    else:
-                        json_outp_passed = try_dumps(
-                            {"present": True, "val": args[-1]},
-                            sort_keys=True,
-                            allow_nan=False,
+                    elif args[-1] is not val:
+                        # We'll only actually complain if the function returned
+                        # a completely different object than the one passed in.
+                        # Otherwise, we'll just silently ignore the return value
+                        # and use the passed-in object (which should in fact be
+                        # the same object).
+                        raise Exception(
+                            f"Function {str(fcn)} in file {str(file)} returned a data object other than the one that was passed in"
                         )
-                        json_outp = try_dumps(
-                            {"present": True, "val": val},
-                            sort_keys=True,
-                            allow_nan=False,
-                        )
-                        if json_outp_passed != json_outp:
-                            sys.stderr.write(
-                                'WARNING: Passed and returned value of "data" differ in the function '
-                                + str(fcn)
-                                + "() in the file "
-                                + str(cwd)
-                                + "/"
-                                + str(file)
-                                + ".py.\n\n passed:\n  "
-                                + str(args[-1])
-                                + "\n\n returned:\n  "
-                                + str(val)
-                                + '\n\nThere is no need to be returning "data" at all (it is mutable, i.e., passed by reference). In future, this code will throw a fatal error. For now, the returned value of "data" was used and the passed value was discarded.'
-                            )
                 else:
                     json_outp = try_dumps(
                         {"present": True, "val": val}, allow_nan=False
