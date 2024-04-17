@@ -90,7 +90,7 @@ export function QuestionsTable({
             : ''}
         </div>
       </div>
-      <div id="questionsTable" class="table table-sm table-bordered">
+      <div id="questionsTable" class="table table-sm table-bordered mb-0">
         <div class="spinner-border" role="status">
           <span class="sr-only">Loading...</span>
         </div>
