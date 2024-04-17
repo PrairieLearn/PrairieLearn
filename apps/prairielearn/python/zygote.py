@@ -325,13 +325,23 @@ def worker_loop() -> None:
                             {"present": True, "val": args[-1]}, allow_nan=False
                         )
                     else:
+                        json_outp = try_dumps(
+                            {"present": True, "val": val}, allow_nan=False
+                        )
+
                         # We'll only actually complain if the function returned
                         # a completely different object than the one passed in.
                         # Otherwise, we'll just silently ignore the return value
                         # and use the passed-in object (which should in fact be
                         # the same object).
-                        raise Exception(
-                            f"Function {str(fcn)} in file {str(file)} returned a data object other than the one that was passed in"
+                        #
+                        # TODO: Once this has been running in production for a while,
+                        # change this to raise an exception.
+                        sys.stderr.write(
+                            f"Function {str(fcn)} in file {str(file)} returned a data object other than the one that was passed in.\n\n"
+                            + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                            + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                            + "In the future, returning a different object will trigger a fatal error."
                         )
                 else:
                     json_outp = try_dumps(
