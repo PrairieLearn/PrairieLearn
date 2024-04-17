@@ -14,16 +14,23 @@ import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', asyncHandler(async (req, res) => {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-  }
-  res.locals.upload_job_sequences = await sqldb.queryRows(sql.select_upload_job_sequences, { assessment_id: res.locals.assessment.id }, JobSequenceSchema.extend({
-    start_date_formatted: z.string(),
-    user_uid: UserSchema.shape.uid,
-  }));
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-}));
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    res.locals.upload_job_sequences = await sqldb.queryRows(
+      sql.select_upload_job_sequences,
+      { assessment_id: res.locals.assessment.id },
+      JobSequenceSchema.extend({
+        start_date_formatted: z.string(),
+        user_uid: UserSchema.shape.uid,
+      }),
+    );
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 router.post(
   '/',
