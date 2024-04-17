@@ -1,5 +1,5 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
-import { CellComponent } from 'tabulator-tables';
+import { type CellComponent, type FormatterParams } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
@@ -15,7 +15,7 @@ import { idsEqual } from '../../../src/lib/id';
 import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types';
 
 onDocumentReady(() => {
-  const { plainUrlPrefix, questions, course_instances, showSharingSets } =
+  const { plainUrlPrefix, questions, course_instances, showSharingSets, urlPrefix, qidPrefix } =
     decodeData<EncodedQuestionsData>('questions-table-data');
 
   const table = defaultTabulator('#questionsTable', {
@@ -27,6 +27,7 @@ onDocumentReady(() => {
         title: 'QID',
         cssClass: 'sticky-column',
         formatter: qidFormatter,
+        formatterParams: { urlPrefix, qidPrefix },
         headerFilter: 'input',
         frozen: true,
       },
@@ -221,8 +222,8 @@ onDocumentReady(() => {
     });
 });
 
-function qidFormatter(cell: CellComponent): string {
-  const { urlPrefix, qidPrefix } = decodeData<EncodedQuestionsData>('questions-table-data');
+function qidFormatter(cell: CellComponent, params: FormatterParams): string {
+  const { urlPrefix, qidPrefix } = params as { urlPrefix: string; qidPrefix: string };
   const question = cell.getRow().getData() as QuestionsPageDataAnsified;
   let text = '';
   if (question.sync_errors) {
