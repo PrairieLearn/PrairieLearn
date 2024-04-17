@@ -236,10 +236,10 @@ WITH
       aq.max_points AS assessment_question_max_points,
       aq.max_auto_points AS assessment_question_max_auto_points,
       aq.max_manual_points AS assessment_question_max_manual_points,
-      -- This will be replaced with COALESCE(aq.manual_perc, q.manual_perc) once
-      -- aq.max_manual_points is deprecated
       COALESCE(
         aq.manual_perc,
+        q.manual_perc,
+        -- This is a fallback for questions where manual percentage is not populated
         100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_auto_points, 0), 1)
       ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
@@ -297,10 +297,10 @@ WITH
       aq.max_points AS assessment_question_max_points,
       aq.max_auto_points AS assessment_question_max_auto_points,
       aq.max_manual_points AS assessment_question_max_manual_points,
-      -- This will be replaced with COALESCE(aq.manual_perc, q.manual_perc) once
-      -- aq.max_manual_points is deprecated
       COALESCE(
         aq.manual_perc,
+        q.manual_perc,
+        -- This is a fallback for questions where manual percentage is not populated
         100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_auto_points, 0), 1)
       ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
