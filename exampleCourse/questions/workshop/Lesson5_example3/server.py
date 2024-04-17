@@ -25,5 +25,3 @@ def generate(data):
     else:
         data["params"]["alpha"] = -alpha
         data["params"]["direction"] = "counter-clockwise"
-
-    return data

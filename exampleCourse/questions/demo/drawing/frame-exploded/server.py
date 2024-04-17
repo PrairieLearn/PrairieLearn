@@ -37,5 +37,3 @@ def generate(data):
     # shift over x coordinates to fit all exploded FBDs
     for key in ["x" + str(i) for i in range(1, 11)]:
         x[key + "exp"] = x[key] - 75
-
-    return data

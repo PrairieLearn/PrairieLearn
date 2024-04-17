@@ -20,4 +20,3 @@ def generate(data):
         data["params"]["b"] = "R_{\\frac{\\pi}{" + str(a) + "}}"
     M = np.around(M, 5)
     data["correct_answers"]["M"] = pl.to_json(M)
-    return data
