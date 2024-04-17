@@ -16,7 +16,10 @@ module.exports = function (options = { publicEndpoint: false }) {
     asyncHandler(async function (req, res) {
       const filename = req.params[0];
       if (!filename) {
-        throw error.make(400, 'No filename provided within clientFilesQuestion directory');
+        throw new error.HttpStatusError(
+          400,
+          'No filename provided within clientFilesQuestion directory',
+        );
       }
 
       if (options.publicEndpoint) {
@@ -27,7 +30,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           !res.locals.question.shared_publicly ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
-          throw error.make(404, 'Not Found');
+          throw new error.HttpStatusError(404, 'Not Found');
         }
       }
 

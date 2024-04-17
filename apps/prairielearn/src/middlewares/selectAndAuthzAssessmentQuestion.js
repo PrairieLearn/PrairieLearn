@@ -15,6 +15,6 @@ module.exports = util.callbackify(async (req, res) => {
     req_date: res.locals.req_date,
   };
   const result = await sqldb.queryAsync(sql.select_and_auth, params);
-  if (result.rowCount === 0) throw error.make(403, 'Access denied');
+  if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
   _.assign(res.locals, result.rows[0]);
 });

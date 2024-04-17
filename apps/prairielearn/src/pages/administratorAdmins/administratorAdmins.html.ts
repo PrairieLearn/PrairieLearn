@@ -34,7 +34,6 @@ export function AdministratorAdmins({
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
                 id="administratorInsertButton"
-                tabindex="0"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
@@ -73,7 +72,6 @@ export function AdministratorAdmins({
                             type="button"
                             class="btn btn-sm btn-danger float-right"
                             id="administratorDeleteButton${i}"
-                            tabindex="0"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -124,7 +122,7 @@ function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: str
           class="form-control"
           id="administratorInsertFormUid"
           name="uid"
-          placeholder="username@domain.org"
+          placeholder="username@example.com"
         />
       </div>
       <div class="text-right">

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS stripe_checkout_sessions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
   data JSONB NOT NULL,
-  plan_names TEXT [] NOT NULL,
+  plan_names TEXT[] NOT NULL,
   plan_grants_created BOOLEAN NOT NULL DEFAULT FALSE
 );
 

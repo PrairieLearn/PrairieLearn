@@ -187,8 +187,8 @@ describe('Instructor questions', function () {
 
   describe('Test Question Previews', function () {
     const previewPageInfo = {
-      siteUrl: siteUrl,
-      baseUrl: baseUrl,
+      siteUrl,
+      baseUrl,
       questionBaseUrl: courseInstanceBaseUrl + '/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,

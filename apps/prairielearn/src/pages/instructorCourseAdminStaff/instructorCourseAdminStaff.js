@@ -22,17 +22,23 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
+import { parseUidsString } from '../../lib/user';
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();
 
+/**
+ * The maximum number of UIDs that can be provided in a single request.
+ */
+const MAX_UIDS = 100;
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_own) {
-      throw error.make(403, 'Access denied (must be course owner)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
 
     const course_instances = await selectCourseInstancesWithStaffAccess({
@@ -50,6 +56,8 @@ router.get(
     res.locals.course_users = course_users.rows;
     res.locals.course_instances = course_instances;
 
+    res.locals.uids_limit = MAX_UIDS;
+
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -58,25 +66,22 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_own) {
-      throw error.make(403, 'Access denied (must be course owner)');
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
 
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
-      // Get set of unique, non-empty UIDs with no leading or trailing whitespace.
-      let uids = new Set(
-        req.body.uid
-          .split(/[\s,;]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid),
-      );
+      const uids = parseUidsString(req.body.uid, MAX_UIDS);
 
       // Verify there is at least one UID
-      if (uids.size === 0) throw error.make(400, 'Empty list of UIDs');
+      if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
       // Verify the requested course role is valid - we choose to disallow Owner
       // because we want to discourage the assignment of this role to many users
       if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
-        throw error.make(400, `Invalid requested course role: ${req.body.course_role}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid requested course role: ${req.body.course_role}`,
+        );
       }
 
       // Verify the course instance id associated with the requested course instance
@@ -94,7 +99,7 @@ router.post(
           idsEqual(ci.id, req.body.course_instance_id),
         );
         if (!course_instance) {
-          throw error.make(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
         }
       }
 
@@ -103,14 +108,14 @@ router.post(
         course_instance &&
         !['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `Invalid requested course instance role: ${req.body.course_instance_role}`,
         );
       }
       // Iterate through UIDs
       const result = await async.reduce(
-        [...uids],
+        uids,
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
         /**
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
@@ -155,11 +160,8 @@ router.post(
       );
 
       if (result.errors.length > 0) {
-        /**
-         * @type {Error & { info?: string }}
-         */
-        const err = error.make(409, 'Failed to grant access to some users');
-        err.info = '';
+        /** @type {import('@prairielearn/html').HtmlSafeString[]} */
+        const info = [];
         const given_cp_and_cip = result.given_cp.filter(
           (uid) => !result.not_given_cip.includes(uid),
         );
@@ -168,7 +170,7 @@ router.post(
         debug(`given_cp_and_cip: ${given_cp_and_cip}`);
         if (given_cp_and_cip.length > 0) {
           if (course_instance) {
-            err.info += html`
+            info.push(html`
               <hr />
               <p>
                 The following users were added to the course staff, were given course content access
@@ -178,9 +180,9 @@ router.post(
               <div class="container">
                 <pre class="bg-dark text-white rounded p-2">${given_cp_and_cip.join(',\n')}</pre>
               </div>
-            `.toString();
+            `);
           } else {
-            err.info += html`
+            info.push(html`
               <hr />
               <p>
                 The following users were added to the course staff and were given course content
@@ -192,11 +194,11 @@ ${given_cp_and_cip.join(',\n')}
                 </pre
                 >
               </div>
-            `.toString();
+            `);
           }
         }
         if (course_instance && result.not_given_cip.length > 0) {
-          err.info += html`
+          info.push(html`
             <hr />
             <p>
               The following users were added to the course staff and were given course content
@@ -210,10 +212,10 @@ ${given_cp_and_cip.join(',\n')}
               If you return to the <a href="${req.originalUrl}">access page</a>, you will find these
               users in the list of course staff and can add student data access to each of them.
             </p>
-          `.toString();
+          `);
         }
         if (result.not_given_cp.length > 0) {
-          err.info += html`
+          info.push(html`
             <hr />
             <p>The following users were <strong>not</strong> added to the course staff:</p>
             <div class="container">
@@ -226,16 +228,19 @@ ${given_cp_and_cip.join(',\n')}
               member of the course staff, in which case you will find them in the list and can
               update their course content access as appropriate.
             </p>
-          `.toString();
+          `);
         }
-        err.info += html`
+        info.push(html`
           <hr />
           <p>Here is the reason for each failure to grant access:</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${result.errors.join('\n\n')}</pre>
           </div>
-        `.toString();
-        throw err;
+        `);
+        throw new error.AugmentedError('Failed to grant access to some users', {
+          status: 409,
+          info: html`${info}`,
+        });
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {
@@ -243,14 +248,17 @@ ${given_cp_and_cip.join(',\n')}
         idsEqual(req.body.user_id, res.locals.user.user_id) &&
         !res.locals.authz_data.is_administrator
       ) {
-        throw error.make(403, 'Owners cannot change their own course content access');
+        throw new error.HttpStatusError(
+          403,
+          'Owners cannot change their own course content access',
+        );
       }
 
       if (
         idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
         !res.locals.authz_data.is_administrator
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           403,
           'Owners cannot change their own course content access even if they are emulating another user',
         );
@@ -279,14 +287,17 @@ ${given_cp_and_cip.join(',\n')}
         idsEqual(req.body.user_id, res.locals.user.user_id) &&
         !res.locals.authz_data.is_administrator
       ) {
-        throw error.make(403, 'Owners cannot remove themselves from the course staff');
+        throw new error.HttpStatusError(
+          403,
+          'Owners cannot remove themselves from the course staff',
+        );
       }
 
       if (
         idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
         !res.locals.authz_data.is_administrator
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           403,
           'Owners cannot remove themselves from the course staff even if they are emulating another user',
         );
@@ -314,10 +325,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw error.make(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
         }
       } else {
-        throw error.make(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, `Undefined course instance id`);
       }
 
       if (req.body.course_instance_role) {
@@ -355,10 +366,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw error.make(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
         }
       } else {
-        throw error.make(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, `Undefined course instance id`);
       }
 
       await insertCourseInstancePermissions({
@@ -391,7 +402,7 @@ ${given_cp_and_cip.join(',\n')}
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

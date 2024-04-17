@@ -6,6 +6,7 @@ import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
 import { InstanceLogEntry } from '../../lib/assessment';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
 import { Modal } from '../../components/Modal.html';
+import { formatFloat } from '../../lib/format';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -167,7 +168,7 @@ export function InstructorAssessmentInstance({
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
-                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
+                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                             ><i class="fa fa-question-circle"></i
                           ></a>
                         </td>
@@ -439,7 +440,7 @@ export function InstructorAssessmentInstance({
                                   {
                                     ...resLocals,
                                     id: 'editQuestionPoints' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
                               >
@@ -471,7 +472,7 @@ export function InstructorAssessmentInstance({
                                   {
                                     ...resLocals,
                                     id: 'editQuestionScorePerc' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
                               >
@@ -516,7 +517,11 @@ export function InstructorAssessmentInstance({
                                     Reset question variants
                                   </button>
                                 `
-                              : ''}
+                              : html`
+                                  <button class="dropdown-item disabled" disabled>
+                                    Must have editor permission
+                                  </button>
+                                `}
                           </div>
                         </div>
                       </td>
@@ -558,10 +563,10 @@ export function InstructorAssessmentInstance({
                       <td>${row.some_submission}</td>
                       <td>${row.some_perfect_submission}</td>
                       <td>${row.some_nonzero_submission}</td>
-                      <td>${resLocals.formatFloat(row.first_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.last_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.max_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.average_submission_score, 2)}</td>
+                      <td>${formatFloat(row.first_submission_score, 2)}</td>
+                      <td>${formatFloat(row.last_submission_score, 2)}</td>
+                      <td>${formatFloat(row.max_submission_score, 2)}</td>
+                      <td>${formatFloat(row.average_submission_score, 2)}</td>
                     </tr>
                   `;
                 })}

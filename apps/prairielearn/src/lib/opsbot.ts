@@ -20,9 +20,11 @@ export async function sendMessage(msg: string): Promise<null | Response> {
   });
 
   if (!response.ok) {
-    throw error.makeWithData('Error sending message', {
-      responseCode: response.status,
-      responseText: await response.text(),
+    throw new error.AugmentedError('Error sending message', {
+      data: {
+        responseCode: response.status,
+        responseText: await response.text(),
+      },
     });
   }
 
@@ -51,15 +53,17 @@ export async function sendSlackMessage(
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       text: msg,
-      channel: channel,
+      channel,
       as_user: true,
     }),
   });
 
   if (!response.ok) {
-    throw error.makeWithData(`Error sending message to ${channel}`, {
-      responseCode: response.status,
-      responseText: await response.text(),
+    throw new error.AugmentedError(`Error sending message to ${channel}`, {
+      data: {
+        responseCode: response.status,
+        responseText: await response.text(),
+      },
     });
   }
   return response;
