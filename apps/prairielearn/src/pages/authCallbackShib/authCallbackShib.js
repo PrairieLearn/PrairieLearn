@@ -12,7 +12,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!config.hasShib) {
-      throw error.make(404, 'Shibboleth login is not enabled');
+      throw new error.HttpStatusError(404, 'Shibboleth login is not enabled');
     }
 
     var uid = req.get('x-trust-auth-uid') ?? null;

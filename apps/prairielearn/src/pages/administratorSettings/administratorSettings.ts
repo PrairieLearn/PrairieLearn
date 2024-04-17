@@ -32,7 +32,7 @@ router.post(
       try {
         course_ids = course_ids_string.split(',').map((x) => IdSchema.parse(x));
       } catch (err) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `could not split course_ids into an array of integers: ${course_ids_string}`,
         );
@@ -40,7 +40,7 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

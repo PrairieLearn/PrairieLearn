@@ -16,7 +16,7 @@ router.get('/', function (req, res, next) {
     !config.googleClientSecret ||
     !config.googleRedirectUrl
   ) {
-    return next(error.make(404, 'Google login is not enabled'));
+    return next(new error.HttpStatusError(404, 'Google login is not enabled'));
   }
 
   let url;

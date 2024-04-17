@@ -34,7 +34,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
   }
   var params;
   if (req.body.__action === 'lti_new_cred') {
@@ -72,7 +72,7 @@ router.post('/', function (req, res, next) {
       res.redirect(req.originalUrl);
     });
   } else {
-    return next(error.make(400, `unknown __action: ${req.body.__action}`));
+    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

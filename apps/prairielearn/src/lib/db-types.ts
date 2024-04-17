@@ -153,6 +153,9 @@ export const SamlProviderSchema = z.object({
   sso_login_url: z.string(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
+  validate_audience: z.boolean(),
+  want_assertions_signed: z.boolean(),
+  want_authn_response_signed: z.boolean(),
 });
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
@@ -186,6 +189,7 @@ export const UserSchema = z.object({
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
   stripe_customer_id: z.string().nullable(),
+  terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,
@@ -881,6 +885,34 @@ export const CourseInstancePermissionSchema = z.object({
   id: IdSchema,
 });
 export type CourseInstancePermission = z.infer<typeof CourseInstancePermissionSchema>;
+
+export const AlternativeGroupSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  assessment_id: IdSchema,
+  id: IdSchema,
+  number: z.number().nullable(),
+  number_choose: z.number().nullable(),
+  zone_id: IdSchema,
+});
+export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
+
+export const ZoneSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  assessment_id: IdSchema,
+  best_questions: z.number().nullable(),
+  id: IdSchema,
+  max_points: z.number().nullable(),
+  number: z.number().nullable(),
+  number_choose: z.number().nullable(),
+  title: z.string().nullable(),
+});
+export type Zone = z.infer<typeof ZoneSchema>;
+
+export const AdministratorSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type Administrator = z.infer<typeof AdministratorSchema>;
 
 // Result of grading_job_status sproc
 export const GradingJobStatusSchema = z.enum([

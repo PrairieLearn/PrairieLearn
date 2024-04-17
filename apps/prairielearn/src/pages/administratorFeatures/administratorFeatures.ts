@@ -24,7 +24,7 @@ const sql = loadSqlEquiv(__filename);
 
 function validateFeature(feature: string): FeatureName {
   if (!features.hasFeature(feature)) {
-    throw error.make(404, `Unknown feature: ${feature}`);
+    throw new error.HttpStatusError(404, `Unknown feature: ${feature}`);
   }
   return feature;
 }

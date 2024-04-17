@@ -19,8 +19,7 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
 import { ensureCheckedEnrollment } from '../../models/enrollment';
-import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
-import { promisify } from 'node:util';
+import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -59,7 +58,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (res.locals.authn_provider_name === 'LTI') {
-      throw error.make(400, 'Enrollment unavailable, managed via LTI');
+      throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
     }
 
     const { institution, course, course_instance } = await queryRow(
@@ -77,7 +76,7 @@ router.post(
     if (req.body.__action === 'enroll') {
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
-      await promisify(authzCourseOrInstance)(req, res);
+      await authzCourseOrInstance(req, res);
 
       await ensureCheckedEnrollment({
         institution,
@@ -97,7 +96,7 @@ router.post(
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown action: ' + res.locals.__action);
+      throw new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action);
     }
   }),
 );
