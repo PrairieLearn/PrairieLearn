@@ -666,6 +666,8 @@ export const ClientFingerprintSchema = z.object({
   created_at: DateFromISOString,
 });
 
+export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
+
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
@@ -689,7 +691,7 @@ export const JobSchema = z.object({
   number_in_sequence: z.number().nullable(),
   output: z.string().nullable(),
   start_date: DateFromISOString.nullable(),
-  status: z.enum(['Running', 'Success', 'Error']).nullable(),
+  status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
   working_directory: z.string().nullable(),
@@ -937,7 +939,7 @@ export const JobSequenceSchema = z.object({
   legacy: z.boolean(),
   number: z.number().nullable(),
   start_date: DateFromISOString.nullable(),
-  status: z.string().nullable(),
+  status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });
