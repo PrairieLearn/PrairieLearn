@@ -55,27 +55,34 @@ describe('LTI 1.3', () => {
 
   step('create an LTI instance', async () => {
     // Load the LTI admin page.
-    const ltiInstancesResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/lti13`);
+    const ltiInstancesResponse = await fetchCheerio(
+      `${siteUrl}/pl/administrator/institution/1/lti13`,
+    );
     assert.equal(ltiInstancesResponse.status, 200);
 
     const newInstanceButton = ltiInstancesResponse.$('button:contains(Add a new LTI 1.3 instance)');
     const newInstanceForm = newInstanceButton.closest('form');
 
     // Create a new LTI instance.
-    const createInstanceResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/lti13`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
-        __action: newInstanceButton.attr('value') as string,
-      }),
-    });
+    const createInstanceResponse = await fetchCheerio(
+      `${siteUrl}/pl/administrator/institution/1/lti13`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
+          __action: newInstanceButton.attr('value') as string,
+        }),
+      },
+    );
     assert.equal(createInstanceResponse.status, 200);
 
     // Let's see how far we can get without customizing anything in the instance...
   });
 
   step('configure an LTI instance', async () => {
-    const ltiInstanceResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/lti13/1`);
+    const ltiInstanceResponse = await fetchCheerio(
+      `${siteUrl}/pl/administrator/institution/1/lti13/1`,
+    );
     assert.equal(ltiInstanceResponse.status, 200);
 
     const savePlatformOptionsButton = ltiInstanceResponse.$(
@@ -85,7 +92,7 @@ describe('LTI 1.3', () => {
 
     // Update the platform options.
     const updatePlatformOptionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/institution/1/admin/lti13/1`,
+      `${siteUrl}/pl/administrator/institution/1/lti13/1`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -108,18 +115,21 @@ describe('LTI 1.3', () => {
     const keystoreForm = addKeyButton.closest('form');
 
     // Create a key
-    const createKeyResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/lti13/1`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
-        __action: addKeyButton.attr('value') as string,
-      }),
-    });
+    const createKeyResponse = await fetchCheerio(
+      `${siteUrl}/pl/administrator/institution/1/lti13/1`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
+          __action: addKeyButton.attr('value') as string,
+        }),
+      },
+    );
     assert.equal(createKeyResponse.status, 200);
   });
 
   step('enable LTI 1.3 as an authentication provider', async () => {
-    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/sso`);
+    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
     assert.equal(ssoResponse.status, 200);
 
     const saveButton = ssoResponse.$('button:contains(Save)');
@@ -127,7 +137,7 @@ describe('LTI 1.3', () => {
     const lti13Label = form.find('label:contains(LTI 1.3)');
     const lti13Input = lti13Label.closest('div').find('input');
 
-    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/sso`, {
+    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: form.find('input[name=__csrf_token]').val() as string,

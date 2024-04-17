@@ -22,11 +22,17 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
+import { parseUidsString } from '../../lib/user';
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();
+
+/**
+ * The maximum number of UIDs that can be provided in a single request.
+ */
+const MAX_UIDS = 100;
 
 router.get(
   '/',
@@ -50,6 +56,8 @@ router.get(
     res.locals.course_users = course_users.rows;
     res.locals.course_instances = course_instances;
 
+    res.locals.uids_limit = MAX_UIDS;
+
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -62,16 +70,10 @@ router.post(
     }
 
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
-      // Get set of unique, non-empty UIDs with no leading or trailing whitespace.
-      let uids = new Set(
-        req.body.uid
-          .split(/[\s,;]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid),
-      );
+      const uids = parseUidsString(req.body.uid, MAX_UIDS);
 
       // Verify there is at least one UID
-      if (uids.size === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
+      if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
       // Verify the requested course role is valid - we choose to disallow Owner
       // because we want to discourage the assignment of this role to many users
@@ -113,7 +115,7 @@ router.post(
       }
       // Iterate through UIDs
       const result = await async.reduce(
-        [...uids],
+        uids,
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
         /**
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo

@@ -1,15 +1,13 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { type Course, type Institution } from '../../../lib/db-types';
+import { type Institution } from '../../../lib/db-types';
 
-export function InstitutionAdminCourses({
+export function InstitutionAdminAdmins({
   institution,
-  courses,
   resLocals,
 }: {
   institution: Institution;
-  courses: Course[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -18,7 +16,7 @@ export function InstitutionAdminCourses({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          pageTitle: `Courses — ${institution.short_name}`,
+          pageTitle: `Admins — ${institution.short_name}`,
         })}
       </head>
       <body>
@@ -27,20 +25,12 @@ export function InstitutionAdminCourses({
           institution,
           navbarType: 'institution',
           navPage: 'institution_admin',
-          navSubPage: 'courses',
+          navSubPage: 'admins',
         })}
         <main class="container mb-4">
-          <ul class="list-group">
-            ${courses.map(
-              (course) => html`
-                <li class="list-group-item">
-                  <a href="/pl/course/${course.id}/course_admin">
-                    ${course.short_name}: ${course.title}
-                  </a>
-                </li>
-              `,
-            )}
-          </ul>
+          <div class="alert alert-primary" role="alert">
+            Institution administrators are coming soon!
+          </div>
         </main>
       </body>
     </html>

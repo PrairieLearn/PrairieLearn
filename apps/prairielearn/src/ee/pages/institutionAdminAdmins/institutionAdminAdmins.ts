@@ -1,12 +1,9 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
-import { InstitutionAdminCourses } from './institutionAdminCourses.html';
-import { CourseSchema } from '../../../lib/db-types';
+import { InstitutionAdminAdmins } from './institutionAdminAdmins.html';
 
-const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 router.get(
@@ -18,13 +15,7 @@ router.get(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    const courses = await queryRows(
-      sql.select_courses,
-      { institution_id: institution.id },
-      CourseSchema,
-    );
-
-    res.send(InstitutionAdminCourses({ institution, courses, resLocals: res.locals }));
+    res.send(InstitutionAdminAdmins({ institution, resLocals: res.locals }));
   }),
 );
 

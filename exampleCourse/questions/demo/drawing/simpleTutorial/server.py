@@ -141,5 +141,3 @@ def generate(data):
         data["params"]["visible0"] = "true"
 
     data["params"]["text"] = text
-
-    return data

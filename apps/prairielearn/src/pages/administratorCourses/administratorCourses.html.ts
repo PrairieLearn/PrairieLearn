@@ -95,7 +95,7 @@ export function AdministratorCourses({
                     return html`
                       <tr>
                         <td>
-                          <a href="/pl/institution/${course.institution.id}/admin">
+                          <a href="/pl/administrator/institution/${course.institution.id}">
                             ${course.institution.short_name}
                           </a>
                         </td>

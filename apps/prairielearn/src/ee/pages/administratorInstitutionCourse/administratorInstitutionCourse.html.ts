@@ -10,7 +10,7 @@ export const CourseInstanceRowSchema = z.object({
 });
 type CourseInstanceRow = z.infer<typeof CourseInstanceRowSchema>;
 
-export function InstitutionAdminCourse({
+export function AdministratorInstitutionCourse({
   institution,
   course,
   rows,
@@ -27,7 +27,7 @@ export function InstitutionAdminCourse({
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
+          navPage: 'administrator_institution',
           pageTitle: 'Courses',
         })}
       </head>
@@ -35,14 +35,14 @@ export function InstitutionAdminCourse({
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
-          navbarType: 'institution',
-          navPage: 'institution_admin',
+          navbarType: 'administrator_institution',
+          navPage: 'administrator_institution',
           navSubPage: 'courses',
         })}
         <nav class="container" aria-label="Breadcrumbs">
           <ol class="breadcrumb">
             <li class="breadcrumb-item">
-              <a href="/pl/institution/${institution.id}/admin/courses">Courses</a>
+              <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
               ${course.title} (${course.short_name})
@@ -143,7 +143,7 @@ export function InstitutionAdminCourse({
                     <tr>
                       <td>
                         <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${course_instance.id}"
+                          href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >
                           ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
                         </a>
