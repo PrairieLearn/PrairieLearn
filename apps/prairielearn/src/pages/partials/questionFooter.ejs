@@ -76,10 +76,20 @@
           <% if (question_context == 'student_exam' && instance_question.points_list) { %>
           <% const rounded_points = instance_question.points_list.map((p) => Math.round(p * 100) / 100); %>
           <small class="font-italic align-self-center text-right">
-              <% if (rounded_points[0] == 1) { %>
-              1 point available for this attempt
+              <% if (instance_question.points == 0) { %> 
+                <% if (rounded_points[0] == 1) { %>
+                1 point available for this attempt
+                <% } else { %>
+                <%= rounded_points[0] %> points available for this attempt
+                <% } %>
               <% } else { %>
-              <%= rounded_points[0] %> points available for this attempt
+                <% if (assessment_instance.points != 0) { %>
+                  <% if (rounded_points[0] == 1) { %>
+                  1 additional point available for this attempt
+                  <% } else { %>
+                  <%= rounded_points[0] %> additional points available for this attempt
+                  <% } %>
+                <% } %>
               <% } %>
               <% if (assessment_question?.max_manual_points > 0) { %>
                 <% if (rounded_points[0] > assessment_question?.max_manual_points) { %>
