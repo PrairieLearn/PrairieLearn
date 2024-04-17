@@ -320,11 +320,11 @@ def worker_loop() -> None:
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
                 if (fcn != "file") and (fcn != "render"):
-                    if val is None:
+                    if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False
                         )
-                    elif args[-1] is not val:
+                    else:
                         # We'll only actually complain if the function returned
                         # a completely different object than the one passed in.
                         # Otherwise, we'll just silently ignore the return value
