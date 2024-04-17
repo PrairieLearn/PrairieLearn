@@ -255,3 +255,15 @@ For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/c
 ```
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab
 ```
+
+## What to Tell Students
+
+Before any real quizzes or exams it is recommended that instructors run through Prarielearn basics with their students to give students a chance to get used to the Prarielearn environment.
+
+The following are the most important instructions to give:
+
+- How to save/submit so that students do not lose any work e.g. the difference between save only vs. save and submit buttons.
+
+- Advise on workspace-specific instructions, e.g. how to interrupt/restart the kernel in Jupyter workspaces.
+
+- Set expectations about workspace start times (in the worst case, a workspace may take several minutes as new machines are started and as images are pulled)
