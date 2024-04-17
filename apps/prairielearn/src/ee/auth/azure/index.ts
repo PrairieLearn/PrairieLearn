@@ -14,7 +14,7 @@ export function getAzureStrategy() {
       loggingLevel: config.azureLoggingLevel,
       scope: ['openid', 'profile', 'email'],
       // This should only be `id_token`, which will force the implicit flow to
-      // be used. When we specific `code id_token` here, it will use the hybrid
+      // be used. When we specify `code id_token` here, it will use the hybrid
       // flow, which for whatever reason does not return user emails.
       //
       // The implicit flow isn't recommended for `response_type=token`, but it's
