@@ -48,11 +48,6 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'update_enrollment_limits') {
-      // Only global administrators can modify enrollment limits.
-      if (!res.locals.is_administrator) {
-        throw error.make(403, 'Access denied');
-      }
-
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
         const updatedInstitution = await queryRow(

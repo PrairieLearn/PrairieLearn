@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import { Terms } from './terms.html';
@@ -26,7 +26,7 @@ router.post(
       clearCookie(res, ['pl_pre_terms_url', 'pl2_pre_terms_url']);
       res.redirect(req.cookies.pl_pre_terms_url || '/');
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

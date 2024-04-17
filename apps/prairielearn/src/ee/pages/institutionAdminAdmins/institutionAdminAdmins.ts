@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import error = require('@prairielearn/error');
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
@@ -135,7 +135,7 @@ router.post(
       flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );
