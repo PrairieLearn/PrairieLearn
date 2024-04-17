@@ -1,19 +1,9 @@
-import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
-import {
-  Tabulator,
-  FormatModule,
-  EditModule,
-  FilterModule,
-  SortModule,
-  PageModule,
-  MutatorModule,
-  FrozenColumnsModule,
-  ResizeTableModule,
-  CellComponent,
-} from 'tabulator-tables';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
+import { CellComponent } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
+import { defaultTabulator } from './tabulator';
 import type {
   Topic,
   Tag,
@@ -37,35 +27,13 @@ interface EncodedQuestionsData {
   qidPrefix: string | undefined;
 }
 
-Tabulator.registerModule([
-  FormatModule, // custom formatters
-  EditModule, // editors, required for header filters
-  FilterModule, // column heder filters
-  SortModule, // sorting by clicking on headers
-  PageModule, // pagination
-  MutatorModule, // calculate derived data (used in the assessments columns)
-  FrozenColumnsModule, // freeze first column
-  ResizeTableModule, // recalculate column widths on page resize
-]);
-
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances, showSharingSets } =
     decodeData<EncodedQuestionsData>('questions-table-data');
-  const table = new Tabulator('#questionsTable', {
+
+  const table = defaultTabulator('#questionsTable', {
     data: questions,
-    layout: 'fitData',
-    pagination: true,
-    paginationCounter: (pageSize, currentRow, _currentPage, totalRows) =>
-      `Showing ${currentRow}-${currentRow + pageSize - 1} of ${totalRows} question${
-        totalRows === 1 ? '' : 's'
-      }` +
-      (totalRows === questions.length
-        ? ''
-        : ` (filtered from ${questions.length} total question${
-            questions.length === 1 ? '' : 's'
-          })`),
-    paginationSize: 50,
-    paginationSizeSelector: [10, 20, 50, 100, 200, 500, true],
+    columnVisibilityDropdown: document.querySelector('.js-column-visibility'),
     columns: [
       {
         field: 'qid',
@@ -259,38 +227,6 @@ onDocumentReady(() => {
     }
   });
 
-  table.on('tableBuilt', () => {
-    table.getColumns().forEach((col) => {
-      const dropdownItem = parseHTMLElement(
-        document,
-        html`<div class="dropdown-item form-check">
-          <label class="form-check-label">
-            <input class="form-check-input" type="checkbox" />${col.getDefinition().title}
-          </label>
-        </div>`,
-      );
-      document.querySelector('.js-column-visibility')?.appendChild(dropdownItem);
-      const input = dropdownItem.querySelector<HTMLInputElement>('input');
-      if (input != null) {
-        input.checked = col.isVisible();
-        input.addEventListener('change', () => {
-          input.checked ? col.show() : col.hide();
-          table.redraw();
-        });
-      }
-    });
-  });
-
-  table.on('renderStarted', () => {
-    // Reset column widths to fit content
-    table
-      .getColumns()
-      .filter((col) => col.getWidth() != null)
-      .forEach((col) => {
-        col.setWidth(true);
-      });
-  });
-
   table.on('renderComplete', () => {
     // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
     $('.js-sync-popover[data-toggle="popover"]')
@@ -298,23 +234,6 @@ onDocumentReady(() => {
       .on('show.bs.popover', function () {
         $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
       });
-
-    // Resize columns to fill the table width (since fitData does not support this)
-    const columnsWidth = table
-      .getColumns()
-      .map((col) => col.getWidth())
-      .reduce((a, b) => a + (b ?? 0), 0);
-    const tableWidth = table.element.clientWidth;
-    const extraWidth = tableWidth - columnsWidth;
-    if (extraWidth > 0) {
-      const ratio = 1 + extraWidth / columnsWidth;
-      table
-        .getColumns()
-        .filter((col) => col.getWidth() != null)
-        .forEach((col) => {
-          col.setWidth(col.getWidth() * ratio);
-        });
-    }
   });
 
   document
