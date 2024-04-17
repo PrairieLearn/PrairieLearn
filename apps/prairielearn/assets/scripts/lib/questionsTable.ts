@@ -38,14 +38,14 @@ interface EncodedQuestionsData {
 }
 
 Tabulator.registerModule([
-  FormatModule,
-  EditModule,
-  FilterModule,
-  SortModule,
-  PageModule,
-  MutatorModule,
-  FrozenColumnsModule,
-  ResizeTableModule,
+  FormatModule, // custom formatters
+  EditModule, // editors, required for header filters
+  FilterModule, // column heder filters
+  SortModule, // sorting by clicking on headers
+  PageModule, // pagination
+  MutatorModule, // calculate derived data (used in the assessments columns)
+  FrozenColumnsModule, // freeze first column
+  ResizeTableModule, // recalculate column widths on page resize
 ]);
 
 onDocumentReady(() => {
