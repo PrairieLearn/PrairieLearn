@@ -924,3 +924,20 @@ export const GradingJobStatusSchema = z.enum([
   'requested',
 ]);
 export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
+
+export const JobSequenceSchema = z.object({
+  assessment_id: IdSchema,
+  authn_user_id: IdSchema,
+  course_id: IdSchema,
+  course_instance_id: IdSchema,
+  course_request_id: IdSchema.nullable(),
+  description: z.string().nullable(),
+  finish_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  legacy: z.boolean(),
+  number: z.number(),
+  start_date: DateFromISOString,
+  status: z.string(),
+  type: z.string(),
+  user_id: IdSchema,
+});
