@@ -8,6 +8,7 @@ import {
   PageModule,
   MutatorModule,
   FrozenColumnsModule,
+  ResizeTableModule,
   CellComponent,
 } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
@@ -44,6 +45,7 @@ Tabulator.registerModule([
   PageModule,
   MutatorModule,
   FrozenColumnsModule,
+  ResizeTableModule,
 ]);
 
 onDocumentReady(() => {
