@@ -108,3 +108,18 @@ export function defaultTabulator(
 
   return table;
 }
+
+export function selectFilterOnSearch(table: Tabulator): void {
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+      // Set focus to filter of first visible column with a filter
+      const firstVisibleColumn = table
+        .getColumns()
+        .find((c) => c.isVisible() && c.getDefinition().headerFilter != null);
+      if (firstVisibleColumn != null) {
+        table.setHeaderFilterFocus(firstVisibleColumn);
+        event.preventDefault();
+      }
+    }
+  });
+}

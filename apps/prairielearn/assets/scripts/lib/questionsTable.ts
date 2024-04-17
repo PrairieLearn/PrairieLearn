@@ -3,7 +3,7 @@ import { CellComponent } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
-import { defaultTabulator } from './tabulator';
+import { defaultTabulator, selectFilterOnSearch } from './tabulator';
 import type {
   Topic,
   Tag,
@@ -216,16 +216,7 @@ onDocumentReady(() => {
     ],
   });
 
-  document.addEventListener('keydown', (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
-      // Set focus to filter of first visible column
-      const firstVisibleColumn = table.getColumns().find((c) => c.isVisible());
-      if (firstVisibleColumn != null) {
-        table.setHeaderFilterFocus(firstVisibleColumn);
-        event.preventDefault();
-      }
-    }
-  });
+  selectFilterOnSearch(table);
 
   table.on('renderComplete', () => {
     // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
