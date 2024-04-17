@@ -4,19 +4,7 @@ import { CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
 import { idsEqual } from '../lib/id';
-
-export interface EncodedQuestionsData {
-  plainUrlPrefix: string;
-  urlPrefix: string;
-  questions: QuestionsPageDataAnsified[];
-  course_instances: {
-    id: string;
-    short_name: string | null;
-    current: boolean;
-  }[];
-  showSharingSets: boolean;
-  qidPrefix: string | undefined;
-}
+import { EncodedQuestionsData } from './QuestionsTable.types';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

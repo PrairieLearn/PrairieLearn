@@ -12,20 +12,7 @@ import type {
 } from '../../../src/lib/db-types';
 import type { QuestionsPageDataAnsified } from '../../../src/models/questions';
 import { idsEqual } from '../../../src/lib/id';
-
-// Copied from QuestionTable.html.ts component. Not importing because the import process creates dependencies of files that are not compatible with tsc.
-interface EncodedQuestionsData {
-  plainUrlPrefix: string;
-  urlPrefix: string;
-  questions: QuestionsPageDataAnsified[];
-  course_instances: {
-    id: string;
-    short_name: string | null;
-    current: boolean;
-  }[];
-  showSharingSets: boolean;
-  qidPrefix: string | undefined;
-}
+import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types';
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances, showSharingSets } =
