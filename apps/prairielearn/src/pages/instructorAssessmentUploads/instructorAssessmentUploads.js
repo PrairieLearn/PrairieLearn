@@ -14,7 +14,7 @@ import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', asyncHandler(async (req, res, next) => {
+router.get('/', asyncHandler(async (req, res) => {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
     throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
   }
