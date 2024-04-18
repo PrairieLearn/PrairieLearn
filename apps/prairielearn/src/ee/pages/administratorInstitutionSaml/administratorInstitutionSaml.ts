@@ -4,16 +4,22 @@ import asyncHandler = require('express-async-handler');
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
 import * as pem from 'pem/lib/pem';
+import { SAML } from '@node-saml/passport-saml';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import formatXml from 'xml-formatter';
 
-import { AdministratorInstitutionSaml } from './administratorInstitutionSaml.html';
+import {
+  AdministratorInstitutionSaml,
+  DecodedAssertion,
+} from './administratorInstitutionSaml.html';
 import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
 } from '../../lib/institution';
+import { getSamlOptions } from '../../auth/saml';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -28,6 +34,27 @@ function createCertificate(
     });
   });
 }
+
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const institution = await getInstitution(req.params.institution_id);
+    const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
+    const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
+      req.params.institution_id,
+    );
+
+    res.send(
+      AdministratorInstitutionSaml({
+        institution,
+        samlProvider,
+        institutionAuthenticationProviders,
+        host: z.string().parse(req.headers.host),
+        resLocals: res.locals,
+      }),
+    );
+  }),
+);
 
 router.post(
   '/',
@@ -75,38 +102,40 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
         });
       });
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete') {
       await queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
         // For audit logs
         authn_user_id: res.locals.authn_user.user_id,
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'decodeAssertion') {
+      const samlConfig = await getSamlOptions({
+        institution_id: req.params.institution_id,
+        host: req.headers.host,
+        // TODO: make this configurable?
+        strictMode: false,
+      });
+      const saml = new SAML({ ...samlConfig, acceptedClockSkewMs: -1 });
+
+      const xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
+
+      const profile = await saml
+        .validatePostResponseAsync({
+          SAMLResponse: req.body.encoded_assertion,
+        })
+        .catch((err) => {
+          console.error(err);
+          return {
+            error: err.message,
+          };
+        });
+
+      res.send(DecodedAssertion({ xml, profile: JSON.stringify(profile, null, 2) }));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
-
-    res.redirect(req.originalUrl);
-  }),
-);
-
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    const institution = await getInstitution(req.params.institution_id);
-    const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
-    const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
-      req.params.institution_id,
-    );
-
-    res.send(
-      AdministratorInstitutionSaml({
-        institution,
-        samlProvider,
-        institutionAuthenticationProviders,
-        host: z.string().parse(req.headers.host),
-        resLocals: res.locals,
-      }),
-    );
   }),
 );
 

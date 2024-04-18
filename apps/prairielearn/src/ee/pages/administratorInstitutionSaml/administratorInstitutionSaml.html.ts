@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
+import { Modal } from '../../../components/Modal.html';
 
 export function AdministratorInstitutionSaml({
   institution,
@@ -297,6 +298,16 @@ ${samlProvider?.certificate ?? ''}</textarea
                   provided to institutions to help them configure their SAML IdP.
                 </p>
 
+                <p>
+                  <button
+                    data-toggle="modal"
+                    data-target="#decodeAssertionModal"
+                    class="btn btn-link"
+                  >
+                    Decode SAML assertion</button
+                  >: Decode/decrypt a SAML assertion to see the attributes
+                </p>
+
                 <button
                   class="btn btn-danger"
                   type="button"
@@ -309,33 +320,29 @@ ${samlProvider?.certificate ?? ''}</textarea
             : ''}
         </main>
 
-        <div class="modal" tabindex="-1" id="deleteModal">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Confirm deletion</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <p>
-                  Are you sure you want to delete the SAML configuration? Users in your institution,
-                  including yourself, may be unable to log in to PrairieLearn.
-                </p>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button class="btn btn-danger" type="submit" name="__action" value="delete">
-                    Delete SAML configuration
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${DecodeAssertionModal({
+          urlPrefix: resLocals.urlPrefix,
+          csrfToken: resLocals.__csrf_token,
+        })}
+        ${Modal({
+          id: 'deleteModal',
+          title: 'Confirm deletion',
+          body: html`
+            <p>
+              Are you sure you want to delete the SAML configuration? Users in your institution,
+              including yourself, may be unable to log in to PrairieLearn.
+            </p>
+          `,
+          footer: html`
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <form method="POST">
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <button class="btn btn-danger" type="submit" name="__action" value="delete">
+                Delete SAML configuration
+              </button>
+            </form>
+          `,
+        })}
 
         <script>
           (function () {
@@ -350,5 +357,57 @@ ${samlProvider?.certificate ?? ''}</textarea
         </script>
       </body>
     </html>
+  `.toString();
+}
+
+export function DecodeAssertionModal({
+  urlPrefix,
+  csrfToken,
+}: {
+  urlPrefix: string;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'decodeAssertionModal',
+    title: 'Decode SAML assertion',
+    body: html`
+      <div class="form-group">
+        <label for="encodedAssertion">Encoded assertion</label>
+        <textarea
+          class="form-control"
+          id="encodedAssertion"
+          rows="10"
+          name="encoded_assertion"
+          aria-describedby="encodedAssertionHelp"
+        ></textarea>
+        <small class="form-text text-muted">
+          This should be raw base64-encoded data from the <code>SAMLResponse</code> parameter in the
+          POST request from the IdP.
+        </small>
+      </div>
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button
+        class="btn btn-primary"
+        id="decodeAssertionButton"
+        type="button"
+        name="__action"
+        value="decodeAssertion"
+        hx-post="${urlPrefix}/saml"
+        hx-target="#decodedAssertion"
+      >
+        Decode
+      </button>
+      <div id="decodedAssertion"></div>
+    `,
+  });
+}
+
+export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
+  return html`
+    <h2 class="mt-3">Decoded XML</h2>
+    <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${xml}</pre>
+
+    <h2 class="mt-3">Profile</h2>
+    <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${profile}</pre>
   `.toString();
 }
