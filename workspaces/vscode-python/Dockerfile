@@ -1,4 +1,4 @@
-FROM codercom/code-server:4.22.0-ubuntu
+FROM codercom/code-server:4.23.1-ubuntu
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
