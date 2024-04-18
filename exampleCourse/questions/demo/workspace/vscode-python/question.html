@@ -1,7 +1,14 @@
 <pl-question-panel>
-  <p>This is a workspace question with an in-browser VS Code (<a href="https://github.com/cdr/code-server">code-server</a>). Use the "Open workspace" button below to open VS Code.</p>
+  <p>This is a workspace question that launches a version of VS Code directly in the browser. Use the "Open workspace" button below to open VS Code.</p>
 
-  <p><strong>Note to course developers:</strong> The code-server image is pinned to version 3.4.1 because 3.5.0 is currently affected by an intermittent "could not reconnect" bug. See <a href="https://github.com/cdr/code-server/issues/2144">cdr/code-server#2144</a></p>
+  <p class="alert alert-info" role="alert">
+    <strong>Note to course developers:</strong> We use an open-source, web-based version of VS Code
+    (<a href="https://github.com/coder/code-server" target="_blank">code-server</a>).
+    To comply with Microsoft's license terms, code-server installs extensions from the independent
+    marketplace <a href="https://open-vsx.org" target="_blank">Open VSX</a> instead of using Microsoft's
+    official VS Code marketplace. Many extensions are available from Open VSX by the same names,
+    but some extensions might not be compatible.
+  </p>
 
   <p>
     The Fibonacci numbers are 1, 1, 2, 3, 5, 8, ..., where each
