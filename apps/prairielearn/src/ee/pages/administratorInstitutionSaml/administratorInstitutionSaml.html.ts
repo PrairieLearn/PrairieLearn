@@ -46,6 +46,8 @@ export function AdministratorInstitutionSaml({
           navPage: 'administrator_institution',
           navSubPage: 'saml',
         })}
+        ${DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })}
+
         <main class="container mb-4">
           ${hasSamlProvider && !hasEnabledSaml
             ? html`
@@ -362,26 +364,6 @@ ${samlProvider?.certificate ?? ''}</textarea
             : ''}
         </main>
 
-        ${Modal({
-          id: 'deleteModal',
-          title: 'Confirm deletion',
-          body: html`
-            <p>
-              Are you sure you want to delete the SAML configuration? Users in your institution,
-              including yourself, may be unable to log in to PrairieLearn.
-            </p>
-          `,
-          footer: html`
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <form method="POST">
-              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button class="btn btn-danger" type="submit" name="__action" value="delete">
-                Delete SAML configuration
-              </button>
-            </form>
-          `,
-        })}
-
         <script>
           (function () {
             // Show the configuration form when the button is clicked.
@@ -396,6 +378,28 @@ ${samlProvider?.certificate ?? ''}</textarea
       </body>
     </html>
   `.toString();
+}
+
+function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'deleteModal',
+    title: 'Confirm deletion',
+    body: html`
+      <p>
+        Are you sure you want to delete the SAML configuration? Users in your institution, including
+        yourself, may be unable to log in to PrairieLearn.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <form method="POST">
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button class="btn btn-danger" type="submit" name="__action" value="delete">
+          Delete SAML configuration
+        </button>
+      </form>
+    `,
+  });
 }
 
 export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
