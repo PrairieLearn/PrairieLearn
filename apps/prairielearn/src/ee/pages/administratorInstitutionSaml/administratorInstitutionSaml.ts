@@ -110,7 +110,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'decodeAssertion') {
+    } else if (req.body.__action === 'decode_assertion') {
       const samlConfig = await getSamlOptions({
         institution_id: req.params.institution_id,
         host: req.headers.host,

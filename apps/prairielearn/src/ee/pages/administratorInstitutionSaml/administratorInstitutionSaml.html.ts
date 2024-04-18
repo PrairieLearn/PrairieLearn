@@ -348,10 +348,9 @@ ${samlProvider?.certificate ?? ''}</textarea
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
                     class="btn btn-primary"
-                    id="decodeAssertionButton"
                     type="button"
                     name="__action"
-                    value="decodeAssertion"
+                    value="decode_assertion"
                     hx-post="${resLocals.urlPrefix}/saml"
                     hx-target="#decodedAssertion"
                     hx-swap="innerHTML show:top"
