@@ -43,6 +43,17 @@ BEGIN
 
     << prairietest_access >>
     BEGIN
+        -- If we're in Exam mode because of PrairieTest and the access rule
+        -- does not have an `exam_uuid`, we'll deny access.
+        IF (
+            assessment_access_rule.mode = 'Exam'
+            AND assessment_access_rule.exam_uuid IS NULL
+            AND check_assessment_access_rule.mode_reason = 'PrairieTest'
+        ) THEN
+            authorized := FALSE;
+            EXIT prairietest_access;
+        END IF;
+
         -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_uuid IS NOT NULL THEN
 
