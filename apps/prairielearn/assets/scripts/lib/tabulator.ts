@@ -116,8 +116,12 @@ export function selectFilterOnSearch(table: Tabulator): void {
       const firstVisibleColumn = table
         .getColumns()
         .find((c) => c.isVisible() && c.getDefinition().headerFilter != null);
-      if (firstVisibleColumn != null) {
-        table.setHeaderFilterFocus(firstVisibleColumn);
+      // If the filter is already in focus, fallback to the default behaviour of Ctrl-F in the browser
+      if (
+        firstVisibleColumn != null &&
+        !firstVisibleColumn.getElement().contains(document.activeElement)
+      ) {
+        firstVisibleColumn.headerFilterFocus();
         event.preventDefault();
       }
     }
