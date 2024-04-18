@@ -385,6 +385,23 @@ export function DecodeAssertionModal({
           POST request from the IdP.
         </small>
       </div>
+
+      <div class="form-group form-check">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="strictMode"
+          name="strict_mode"
+          value="1"
+          aria-describedBy="strictModeHelp"
+        />
+        <label class="form-check-label" for="strictMode">Strict mode</label>
+        <small id="strictModeHelp" class="form-text text-muted mt-0">
+          Forces "validate audience", "require signed assertions", and "require signed response" to
+          be enabled.
+        </small>
+      </div>
+
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button
         class="btn btn-primary"

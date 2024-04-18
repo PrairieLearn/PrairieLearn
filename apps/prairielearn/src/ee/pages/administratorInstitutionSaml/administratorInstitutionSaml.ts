@@ -114,12 +114,21 @@ router.post(
       const samlConfig = await getSamlOptions({
         institution_id: req.params.institution_id,
         host: req.headers.host,
-        // TODO: make this configurable?
-        strictMode: false,
+        strictMode: req.body.strict_mode === '1',
       });
-      const saml = new SAML({ ...samlConfig, acceptedClockSkewMs: -1 });
+      const saml = new SAML({
+        ...samlConfig,
+        // Disable clock skew checking; we might be testing with a very old SAML response.
+        acceptedClockSkewMs: -1,
+      });
 
-      const xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
+      let xml: string;
+      try {
+        xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
+      } catch (err) {
+        res.send(DecodedAssertion({ xml: err.message, profile: '' }));
+        return;
+      }
 
       const profile = await saml
         .validatePostResponseAsync({
