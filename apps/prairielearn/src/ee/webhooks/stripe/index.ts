@@ -29,7 +29,7 @@ function constructEvent(req: express.Request) {
       config.stripeWebhookSigningSecret,
     );
   } catch (err) {
-    throw error.make(400, `Webhook error: ${err.message}`);
+    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
   }
 }
 
@@ -71,7 +71,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
             plan_name: planName,
             type: 'stripe',
             institution_id: institution.id,
-            course_instance_id: course_instance_id,
+            course_instance_id,
             user_id: subject_user_id,
           },
           authn_user_id: localSession.agent_user_id,

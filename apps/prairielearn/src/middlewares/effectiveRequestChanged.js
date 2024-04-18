@@ -1,3 +1,6 @@
+// @ts-check
+const { clearCookie } = require('../lib/cookie');
+
 module.exports = function (req, res, next) {
   // We use the pl_requested_data_changed cookie to detect when we
   // have attempted to change the effective user (or other emulation
@@ -16,7 +19,7 @@ module.exports = function (req, res, next) {
   // will receive an error page as expected.
 
   if (req.cookies.pl_requested_data_changed) {
-    res.clearCookie('pl_requested_data_changed');
+    clearCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed']);
     res.locals.pl_requested_data_changed = true;
   }
   next();

@@ -158,8 +158,16 @@ async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
   let size = 0;
 
   for (const file of await getWorkspaceFiles(dir)) {
-    const stats = await fs.lstat(path.join(file.path, file.name));
-    size += stats.size;
+    try {
+      const stats = await fs.lstat(path.join(file.path, file.name));
+      size += stats.size;
+    } catch (err: any) {
+      // This code is susceptible to TOCTOU issues, but we're ok with that.
+      // We'll just silently ignore any files that can't be read. This would
+      // most frequently occur when we're reading files from an active
+      // workspace and a student deletes a file before we can read it.
+      if (err.code !== 'ENOENT') throw err;
+    }
   }
 
   return size;

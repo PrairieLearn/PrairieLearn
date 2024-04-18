@@ -25,7 +25,7 @@ describe('Exam and homework assessment with active access restriction', function
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    config.authUid = 'student@illinois.edu';
+    config.authUid = 'student@example.com';
     config.authName = 'Student User';
     config.authUin = '00000001';
     callback(null);

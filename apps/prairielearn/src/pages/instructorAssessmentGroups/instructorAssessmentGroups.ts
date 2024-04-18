@@ -17,15 +17,21 @@ import {
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema } from '../../lib/db-types';
 import { InstructorAssessmentGroups, GroupUsersRowSchema } from './instructorAssessmentGroups.html';
+import { parseUidsString } from '../../lib/user';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * The maximum number of UIDs that can be provided in a single request.
+ */
+const MAX_UIDS = 50;
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const prefix = assessmentFilenamePrefix(
       res.locals.assessment,
@@ -77,7 +83,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
@@ -104,25 +110,24 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_name = req.body.group_name;
 
-      const uids = req.body.uids;
-      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      await createGroup(group_name, assessment_id, uidlist, res.locals.authn_user.user_id).catch(
-        (err) => {
-          if (err instanceof GroupOperationError) {
-            flash('error', err.message);
-          } else {
-            throw err;
-          }
-        },
-      );
+      await createGroup(
+        group_name,
+        assessment_id,
+        parseUidsString(req.body.uids, MAX_UIDS),
+        res.locals.authn_user.user_id,
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
-      const uids = req.body.add_member_uids;
-      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      for (const uid of uidlist) {
+      for (const uid of parseUidsString(req.body.add_member_uids, MAX_UIDS)) {
         try {
           await addUserToGroup({
             assessment_id,
@@ -150,7 +155,7 @@ router.post(
       await deleteGroup(res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -55,3 +55,42 @@ WHERE
         )
     )
   );
+
+-- BLOCK close_issues_for_instance_question
+WITH
+  updated_issues AS (
+    UPDATE issues AS i
+    SET
+      open = FALSE
+    WHERE
+      i.instance_question_id = $instance_question_id
+      AND i.course_caused
+      AND i.open IS TRUE
+      AND i.id = ANY ($issue_ids::BIGINT[])
+    RETURNING
+      i.id,
+      i.course_id,
+      i.open
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    table_name,
+    column_name,
+    row_id,
+    action,
+    parameters,
+    new_state
+  )
+SELECT
+  $authn_user_id,
+  i.course_id,
+  'issues',
+  'open',
+  i.id,
+  'update',
+  jsonb_build_object('instance_question_id', $instance_question_id),
+  jsonb_build_object('open', i.open)
+FROM
+  updated_issues AS i;

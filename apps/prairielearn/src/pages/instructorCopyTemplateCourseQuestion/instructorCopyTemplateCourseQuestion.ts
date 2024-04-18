@@ -17,7 +17,10 @@ router.post(
     // It doesn't make much sense to transfer a template course question to
     // the same template course, so we'll explicitly forbid that.
     if (idsEqual(req.body.course_id, res.locals.course.id)) {
-      throw error.make(400, 'Template course questions cannot be copied to the same course.');
+      throw new error.HttpStatusError(
+        400,
+        'Template course questions cannot be copied to the same course.',
+      );
     }
 
     // This query will implicitly check that the question belongs to the given
@@ -37,7 +40,7 @@ router.post(
     );
 
     if (result.course.template_course === false) {
-      throw error.make(400, 'The given course is not a template course.');
+      throw new error.HttpStatusError(400, 'The given course is not a template course.');
     }
 
     await copyQuestionBetweenCourses(res, {
