@@ -2,6 +2,7 @@ CREATE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
+        IN mode_reason text,
         IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,

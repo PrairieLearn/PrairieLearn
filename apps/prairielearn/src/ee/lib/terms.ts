@@ -1,4 +1,5 @@
 import { type Response } from 'express';
+import { z } from 'zod';
 import { callRow } from '@prairielearn/postgres';
 
 import { ModeSchema, type User } from '../../lib/db-types';
@@ -35,7 +36,11 @@ export async function shouldRedirectToTermsPage(user: User, ip: string) {
   });
   if (!featureEnabled) return false;
 
-  const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], ModeSchema);
+  const { mode } = await callRow(
+    'ip_to_mode',
+    [ip, new Date(), user.user_id],
+    z.object({ mode: ModeSchema }),
+  );
   return mode === 'Public';
 }
 

@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { z } from 'zod';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html';
 import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types';
@@ -45,10 +46,10 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
 
-    const mode = await sqldb.callRow(
+    const { mode } = await sqldb.callRow(
       'ip_to_mode',
       [req.ip, res.locals.req_date, authn_user.user_id],
-      ModeSchema,
+      z.object({ mode: ModeSchema }),
     );
 
     res.send(
@@ -70,10 +71,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'token_generate') {
-      const mode = await sqldb.callRow(
+      const { mode } = await sqldb.callRow(
         'ip_to_mode',
         [req.ip, res.locals.req_date, res.locals.authn_user.user_id],
-        ModeSchema,
+        z.object({ mode: ModeSchema }),
       );
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');

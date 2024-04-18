@@ -2,6 +2,7 @@ CREATE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
         IN authz_mode enum_mode,
+        IN authz_mode_reason text,
         IN course_role enum_course_role,
         IN course_instance_role enum_course_instance_role,
         IN user_id bigint,
@@ -71,8 +72,15 @@ BEGIN
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-            check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
+        JOIN LATERAL check_assessment_access_rule(
+            aar,
+            check_assessment_access.authz_mode,
+            check_assessment_access.authz_mode_reason,
+            check_assessment_access.user_id,
+            check_assessment_access.uid,
+            check_assessment_access.date,
+            TRUE
+        ) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
@@ -105,8 +113,15 @@ BEGIN
             next_active_credit
         FROM
             assessment_access_rules AS aar
-            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-                check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+            JOIN LATERAL check_assessment_access_rule(
+                aar,
+                check_assessment_access.authz_mode,
+                check_assessment_access.authz_mode_reason,
+                check_assessment_access.user_id,
+                check_assessment_access.uid,
+                NULL,
+                FALSE
+            ) AS caar ON TRUE
         WHERE
             aar.assessment_id = check_assessment_access.assessment_id
             AND aar.start_date IS NOT NULL
@@ -162,8 +177,15 @@ BEGIN
         access_rules
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
-            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+        JOIN LATERAL check_assessment_access_rule(
+            aar,
+            check_assessment_access.authz_mode,
+            check_assessment_access.authz_mode_reason,
+            check_assessment_access.user_id,
+            check_assessment_access.uid,
+            NULL,
+            FALSE
+        ) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND (
