@@ -21,4 +21,9 @@
     urlSuffix:      '/question/'+question.id+'/statistics',
     iconClasses:    'fas fa-chart-bar',
     tabLabel:       'Statistics'}) %>
+<%- include('navTab', {
+    activeSubPage:  'issues',
+    urlSuffix:      '/course_admin/issues?q=qid%3A'+question.qid,
+    iconClasses:    'fas fa-bug',
+    tabLabel:       'Issues'}) %>
 <% } %>

@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
 import { Modal } from '../../components/Modal.html';
-import { IdSchema } from '../../lib/db-types';
+import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types';
 import { CourseWithPermissions } from '../../models/course';
 import { isEnterprise } from '../../lib/license';
 import { idsEqual } from '../../lib/id';
@@ -14,8 +14,10 @@ export const SelectedAssessmentsSchema = z.object({
   assessments: z.array(
     z.object({
       assessment_id: IdSchema,
-      color: z.string(),
-      label: z.string(),
+      color: AssessmentSetSchema.shape.color,
+      label: AssessmentSetSchema.shape.abbreviation,
+      title: AssessmentSchema.shape.title,
+      type: AssessmentSchema.shape.type,
     }),
   ),
 });
@@ -84,32 +86,31 @@ export function InstructorQuestionSettings({
             resLocals,
           )}
           <div class="card mb-4">
-          <form>
             <div class="card-header bg-primary text-white d-flex">Question Settings</div>
             <div class="card-body">
-              <div class="form-group">
-                <label for="title">Title</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="title"
-                  name="title"
-                  value="${resLocals.question.title}"
-                  disabled
-                />
-                <small class="form-text text-muted">
-                  The title of the question (e.g., "Add two numbers").
-                </small>
-              </div>
-              <div class="form-group">
-                <label for="qid">QID</label>
-                ${
-                  resLocals.authz_data.has_course_permission_edit &&
+              <form>
+                <div class="form-group">
+                  <label for="title" class="h5">Title</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="title"
+                    name="title"
+                    value="${resLocals.question.title}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    The title of the question (e.g., "Add two numbers").
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label class="h5" for="qid">QID</label>
+                  ${resLocals.authz_data.has_course_permission_edit &&
                   !resLocals.course.example_course
                     ? html`
                         <button
                           type="button"
-                          class="btn btn-xs btn-secondary mr-2"
+                          class="btn btn-xs btn-secondary align-top ml-1"
                           id="changeQidButton"
                           data-toggle="popover"
                           data-container="body"
@@ -133,210 +134,170 @@ export function InstructorQuestionSettings({
                           <span>Change QID</span>
                         </button>
                       `
-                    : ''
-                }
-                ${
-                  questionGHLink
+                    : ''}
+                  ${questionGHLink
                     ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
-                    : ''
-                }
-                <input
-                  type="text"
-                  class="form-control"
-                  id="qid"
-                  name="qid"
-                  value="${resLocals.question.qid}"
-                  disabled
-                />
-                <small class="form-text text-muted">
-                  This is a unique identifier for the question. (e.g., "addNumbers")
-                </small>
-              </div>
-              <div class="form-group">
-                <label for="type">Type</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="type"
-                  name="type"
-                  value="${resLocals.question.type}"
-                  disabled
-                />
-                <small class="form-text text-muted"> This is the type of question. </small>
-              </div>
-              <div class="form-group">
-                <div>Topic</div>
-                <div name="topic">
-                  ${renderEjs(__filename, "<%- include('../partials/topic') %>", {
-                    topic: resLocals.topic,
-                  })}
+                    : ''}
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="qid"
+                    name="qid"
+                    value="${resLocals.question.qid}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    This is a unique identifier for the question. (e.g., "addNumbers")
+                  </small>
                 </div>
-              </div>
-              <hr />
-              <div class="form-group">
-                <div>Tags</div>
-                <div name="tags">
-                  ${renderEjs(__filename, "<%- include('../partials/tags') %>", {
-                    tags: resLocals.tags,
-                  })}
-                </div>
-              </div>
-              <hr />
-              <div class="form-group">
                 <div>
-                  Issues
-                  ${renderEjs(__filename, "<%- include('../partials/issueBadge') %>", {
-                    count: resLocals.open_issue_count,
-                    issueQid: resLocals.question.qid,
-                    suppressLink: resLocals.suppressLink,
-                    urlPrefix: resLocals.urlPrefix,
-                  })}
+                  <h2 class="h5">Topic</h2>
+                  <div class="row px-3">
+                    <div class="col-1">
+                      ${renderEjs(__filename, "<%- include('../partials/topic') %>", {
+                        topic: resLocals.topic,
+                      })}
+                    </div>
+                    <div class="col-auto">${resLocals.topic.description}</div>
+                  </div>
                 </div>
-              </div>
-              <hr />
-              <div class="form-group">
-                <div>Assessments</div>
+                <hr />
                 <div>
-                  ${
-                    resLocals.assessments
-                      ? renderEjs(__filename, "<%- include('../partials/assessments') %>", {
-                          assessments: resLocals.assessments,
-                          urlPrefix: resLocals.urlPrefix,
-                        })
-                      : ''
-                  }
+                  <h2 class="h5">Tags</h2>
+                  ${TagRows({ tags: resLocals.tags })}
                 </div>
-              </div>
+                <hr />
+                <div>
+                  <h2 class="h5">Assessments</h2>
+                  <div>
+                    ${AssessmentRows({
+                      assessmentsWithQuestion,
+                    })}
+                  </div>
+                </div>
               </form>
-              ${
-                sharingEnabled
-                  ? html`
-                      <hr />
-                      <div class="form-group">
-                        <div class="align-middle">Sharing</div>
-                        <div data-testid="shared-with">
-                          ${questionSharing({
-                            questionSharedPublicly: resLocals.question.shared_publicly,
-                            sharingSetsIn,
-                            hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
-                            sharingSetsOther,
-                            csrfToken: resLocals.__csrf_token,
-                            qid: resLocals.question.qid,
-                          })}
-                        </div>
-                      </div>
-                    `
-                  : ''
-              }
-              <hr />
-              ${
-                resLocals.question.type === 'Freeform' &&
-                resLocals.question.grading_method !== 'External' &&
-                resLocals.authz_data.has_course_permission_view
-                  ? html`
-                      <div class="form-group">
-                        <th class="align-middle">Tests</th>
-                        <td>
-                          ${questionTestsForm({
-                            questionTestPath,
-                            questionTestCsrfToken,
-                          })}
-                        </td>
-                      </div>
-                    `
-                  : ''
-              }
-              ${
-                resLocals.authz_data.has_course_permission_view
-                  ? resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                    ? html`
-                        <a
-                          data-testid="edit-question-configuration-link"
-                          href="${resLocals.urlPrefix}/question/${resLocals.question
-                            .id}/file_edit/${infoPath}"
-                        >
-                          Edit question configuration
-                        </a>
-                        in <code>info.json</code>
-                      `
-                    : html`
-                        <a
-                          href="${resLocals.urlPrefix}/question/${resLocals.question
-                            .id}/file_view/${infoPath}"
-                        >
-                          View course configuration
-                        </a>
-                        in <code>info.json</code>
-                      `
-                  : ''
-              }
-            </div>
-            ${
-              (editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
-              (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
+              ${sharingEnabled
                 ? html`
-                    <div class="card-footer">
-                      <div class="row">
-                        ${editableCourses.length > 0 &&
-                        resLocals.authz_data.has_course_permission_view &&
-                        resLocals.question.course_id === resLocals.course.id
-                          ? html`
-                              <div class="col-auto">
-                                <button
-                                  type="button"
-                                  class="btn btn-sm btn-primary"
-                                  id="copyQuestionButton"
-                                  data-toggle="popover"
-                                  data-container="body"
-                                  data-html="true"
-                                  data-placement="auto"
-                                  title="Copy this question"
-                                  data-content="${escapeHtml(
-                                    CopyForm({
-                                      csrfToken: resLocals.__csrf_token,
-                                      exampleCourse: resLocals.course.example_course,
-                                      editableCourses,
-                                      courseId: resLocals.course.id,
-                                      buttonId: 'copyQuestionButton',
-                                    }),
-                                  )}"
-                                  data-trigger="manual"
-                                  onclick="$(this).popover('show')"
-                                >
-                                  <i class="fa fa-clone"></i>
-                                  <span>Make a copy of this question</span>
-                                </button>
-                              </div>
-                            `
-                          : ''}
-                        ${resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
-                          ? html`
-                              <div class="col-auto">
-                                <button
-                                  class="btn btn-sm btn-primary"
-                                  id
-                                  href="#"
-                                  data-toggle="modal"
-                                  data-target="#deleteQuestionModal"
-                                >
-                                  <i class="fa fa-times" aria-hidden="true"></i> Delete this
-                                  question
-                                </button>
-                              </div>
-                              ${DeleteQuestionModal({
-                                qid: resLocals.question.qid,
-                                assessmentsWithQuestion,
-                                csrfToken: resLocals.__csrf_token,
-                              })}
-                            `
-                          : ''}
+                    <hr />
+                    <div>
+                      <h2 class="h5">Sharing</h2>
+                      <div data-testid="shared-with">
+                        ${QuestionSharing({
+                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          sharingSetsIn,
+                          hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
+                          sharingSetsOther,
+                          csrfToken: resLocals.__csrf_token,
+                          qid: resLocals.question.qid,
+                        })}
                       </div>
                     </div>
                   `
-                : ''
-            }
+                : ''}
+              <hr />
+              ${resLocals.question.type === 'Freeform' &&
+              resLocals.question.grading_method !== 'External' &&
+              resLocals.authz_data.has_course_permission_view
+                ? html`
+                    <div>
+                      <h2 class="h5">Tests</h5>
+                      <div class="pl-3">
+                        ${questionTestsForm({
+                          questionTestPath,
+                          questionTestCsrfToken,
+                        })}
+                      </div>
+                    </div>
+                  `
+                : ''}
+              ${resLocals.authz_data.has_course_permission_view
+                ? resLocals.authz_data.has_course_permission_edit &&
+                  !resLocals.course.example_course
+                  ? html`
+                      <hr />
+                      <a
+                        data-testid="edit-question-configuration-link"
+                        href="${resLocals.urlPrefix}/question/${resLocals.question
+                          .id}/file_edit/${infoPath}"
+                      >
+                        Edit question configuration
+                      </a>
+                      in <code>info.json</code>
+                    `
+                  : html`
+                      <hr />
+                      <a
+                        href="${resLocals.urlPrefix}/question/${resLocals.question
+                          .id}/file_view/${infoPath}"
+                      >
+                        View course configuration
+                      </a>
+                      in <code>info.json</code>
+                    `
+                : ''}
+            </div>
+            ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
+            (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
+              ? html`
+                  <div class="card-footer">
+                    <div class="row">
+                      ${editableCourses.length > 0 &&
+                      resLocals.authz_data.has_course_permission_view &&
+                      resLocals.question.course_id === resLocals.course.id
+                        ? html`
+                            <div class="col-auto">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-primary"
+                                id="copyQuestionButton"
+                                data-toggle="popover"
+                                data-container="body"
+                                data-html="true"
+                                data-placement="auto"
+                                title="Copy this question"
+                                data-content="${escapeHtml(
+                                  CopyForm({
+                                    csrfToken: resLocals.__csrf_token,
+                                    exampleCourse: resLocals.course.example_course,
+                                    editableCourses,
+                                    courseId: resLocals.course.id,
+                                    buttonId: 'copyQuestionButton',
+                                  }),
+                                )}"
+                                data-trigger="manual"
+                                onclick="$(this).popover('show')"
+                              >
+                                <i class="fa fa-clone"></i>
+                                <span>Make a copy of this question</span>
+                              </button>
+                            </div>
+                          `
+                        : ''}
+                      ${resLocals.authz_data.has_course_permission_edit &&
+                      !resLocals.course.example_course
+                        ? html`
+                            <div class="col-auto">
+                              <button
+                                class="btn btn-sm btn-primary"
+                                id
+                                href="#"
+                                data-toggle="modal"
+                                data-target="#deleteQuestionModal"
+                              >
+                                <i class="fa fa-times" aria-hidden="true"></i> Delete this question
+                              </button>
+                            </div>
+                            ${DeleteQuestionModal({
+                              qid: resLocals.question.qid,
+                              assessmentsWithQuestion,
+                              csrfToken: resLocals.__csrf_token,
+                            })}
+                          `
+                        : ''}
+                    </div>
+                  </div>
+                `
+              : ''}
           </div>
         </main>
       </body>
@@ -528,7 +489,7 @@ function questionTestsForm({
   `;
 }
 
-function questionSharing({
+function QuestionSharing({
   questionSharedPublicly,
   sharingSetsIn,
   hasCoursePermissionOwn,
@@ -544,18 +505,26 @@ function questionSharing({
   qid: string;
 }) {
   if (questionSharedPublicly) {
-    return html`<div class="badge color-green3">Public</div>
-      This question is publicly shared.`;
+    return html`
+      <div class="row px-3">
+        <div class="col-1">
+          <div class="badge color-green3">Public</div>
+        </div>
+        <div class="col-auto">This question is publicly shared.</div>
+      </div>
+    `;
   }
 
   return html`
     ${sharingSetsIn.length === 0
-      ? html`Not Shared`
+      ? html`<small class="text-muted px-3">This question is not being shared</small>`
       : html`
-          Shared With:
-          ${sharingSetsIn.map(function (sharing_set) {
-            return html` <span class="badge color-gray1"> ${sharing_set?.name} </span> `;
-          })}
+          <small class="text-muted"
+            >Shared With:
+            ${sharingSetsIn.map(function (sharing_set) {
+              return html` <span class="badge color-gray1"> ${sharing_set?.name} </span> `;
+            })}
+          </small>
         `}
     ${hasCoursePermissionOwn
       ? html`
@@ -607,4 +576,48 @@ function questionSharing({
         `
       : ''}
   `;
+}
+
+function TagRows({ tags }) {
+  return tags.map((tag) => {
+    return html`
+      <div class="row px-3">
+        <div class="col-1">
+          <span class="badge color-${tag.color}"> ${tag.name} </span>
+        </div>
+        <div class="col-auto">${tag.description}</div>
+      </div>
+    `;
+  });
+}
+
+function AssessmentRows({ assessmentsWithQuestion }) {
+  if (assessmentsWithQuestion.length === 0) {
+    return html`<small class="text-muted text-center pl-3"
+      >This question is not included in any assessments.</small
+    >`;
+  } else {
+    return assessmentsWithQuestion.map((courseInstance) => {
+      return html`
+        <div class="card pb-2 mb-2">
+          <div class="h6 card-header">${courseInstance.title}</div>
+          ${courseInstance.assessments.map((assessment) => {
+            return html`
+              <div class="row px-3">
+                <div class="col-1">
+                  <a
+                    href="/pl/course_instance/${courseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}/questions"
+                  >
+                    <span class="badge color-${assessment.color}"> ${assessment.label} </span>
+                  </a>
+                </div>
+                <div class="col-2">${assessment.type}</div>
+                <div class="col-auto">${assessment.title}</div>
+              </div>
+            `;
+          })}
+        </div>
+      `;
+    });
+  }
 }

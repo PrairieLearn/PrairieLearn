@@ -39,7 +39,11 @@ FROM
           'assessment_id',
           a.id,
           'color',
-          aset.color
+          aset.color,
+          'title',
+          a.title,
+          'type',
+          a.type
         )
         ORDER BY
           admin_assessment_question_number (aq.id)
