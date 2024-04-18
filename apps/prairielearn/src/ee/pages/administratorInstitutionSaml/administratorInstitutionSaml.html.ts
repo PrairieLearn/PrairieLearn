@@ -300,30 +300,68 @@ ${samlProvider?.certificate ?? ''}</textarea
 
                 <p>
                   <button
+                    class="btn btn-danger"
+                    type="button"
                     data-toggle="modal"
-                    data-target="#decodeAssertionModal"
-                    class="btn btn-link"
+                    data-target="#deleteModal"
                   >
-                    Decode SAML assertion</button
-                  >: Decode/decrypt a SAML assertion to see the attributes
+                    Delete SAML configuration
+                  </button>
                 </p>
 
-                <button
-                  class="btn btn-danger"
-                  type="button"
-                  data-toggle="modal"
-                  data-target="#deleteModal"
-                >
-                  Delete SAML configuration
-                </button>
+                <h2 class="h4">Decode SAML assertion</h2>
+
+                <form method="POST">
+                  <div class="form-group">
+                    <label for="encodedAssertion">Encoded assertion</label>
+                    <textarea
+                      class="form-control"
+                      id="encodedAssertion"
+                      rows="10"
+                      name="encoded_assertion"
+                      aria-describedby="encodedAssertionHelp"
+                    ></textarea>
+                    <small class="form-text text-muted">
+                      This should be raw base64-encoded data from the
+                      <code>SAMLResponse</code> parameter in the POST request from the IdP.
+                    </small>
+                  </div>
+
+                  <div class="form-group form-check">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="strictMode"
+                      name="strict_mode"
+                      value="1"
+                      aria-describedBy="strictModeHelp"
+                    />
+                    <label class="form-check-label" for="strictMode">Strict mode</label>
+                    <small id="strictModeHelp" class="form-text text-muted mt-0">
+                      Forces "validate audience", "require signed assertions", and "require signed
+                      response" to be enabled.
+                    </small>
+                  </div>
+
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button
+                    class="btn btn-primary"
+                    id="decodeAssertionButton"
+                    type="button"
+                    name="__action"
+                    value="decodeAssertion"
+                    hx-post="${resLocals.urlPrefix}/saml"
+                    hx-target="#decodedAssertion"
+                    hx-swap="innerHTML show:top"
+                  >
+                    Decode
+                  </button>
+                  <div id="decodedAssertion"></div>
+                </form>
               `
             : ''}
         </main>
 
-        ${DecodeAssertionModal({
-          urlPrefix: resLocals.urlPrefix,
-          csrfToken: resLocals.__csrf_token,
-        })}
         ${Modal({
           id: 'deleteModal',
           title: 'Confirm deletion',
@@ -360,71 +398,12 @@ ${samlProvider?.certificate ?? ''}</textarea
   `.toString();
 }
 
-export function DecodeAssertionModal({
-  urlPrefix,
-  csrfToken,
-}: {
-  urlPrefix: string;
-  csrfToken: string;
-}) {
-  return Modal({
-    id: 'decodeAssertionModal',
-    title: 'Decode SAML assertion',
-    body: html`
-      <div class="form-group">
-        <label for="encodedAssertion">Encoded assertion</label>
-        <textarea
-          class="form-control"
-          id="encodedAssertion"
-          rows="10"
-          name="encoded_assertion"
-          aria-describedby="encodedAssertionHelp"
-        ></textarea>
-        <small class="form-text text-muted">
-          This should be raw base64-encoded data from the <code>SAMLResponse</code> parameter in the
-          POST request from the IdP.
-        </small>
-      </div>
-
-      <div class="form-group form-check">
-        <input
-          type="checkbox"
-          class="form-check-input"
-          id="strictMode"
-          name="strict_mode"
-          value="1"
-          aria-describedBy="strictModeHelp"
-        />
-        <label class="form-check-label" for="strictMode">Strict mode</label>
-        <small id="strictModeHelp" class="form-text text-muted mt-0">
-          Forces "validate audience", "require signed assertions", and "require signed response" to
-          be enabled.
-        </small>
-      </div>
-
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button
-        class="btn btn-primary"
-        id="decodeAssertionButton"
-        type="button"
-        name="__action"
-        value="decodeAssertion"
-        hx-post="${urlPrefix}/saml"
-        hx-target="#decodedAssertion"
-      >
-        Decode
-      </button>
-      <div id="decodedAssertion"></div>
-    `,
-  });
-}
-
 export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
   return html`
-    <h2 class="mt-3">Decoded XML</h2>
+    <h3 class="h5 mt-3">Decoded XML</h2>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${xml}</pre>
 
-    <h2 class="mt-3">Profile</h2>
+    <h3 class="h5 mt-3">Profile</h2>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${profile}</pre>
   `.toString();
 }
