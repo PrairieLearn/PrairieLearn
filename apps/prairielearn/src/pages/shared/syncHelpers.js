@@ -10,7 +10,6 @@ import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
 import { createServerJob } from '../../lib/server-jobs';
 import { pullAndUpdateCourse } from '../../lib/course';
-import * as util from 'node:util';
 
 const docker = new Docker();
 
@@ -215,7 +214,7 @@ export async function ecrUpdate(images, locals) {
   serverJob.executeInBackground(async (job) => {
     await async.eachOfSeries(images ?? [], async (image) => {
       job.info(`Pull image from Docker Hub and push to PL registry: ${image.image}`);
-      await util.promisify(pullAndPushToECR)(image.image, auth, job);
+      await pullAndPushToECR(image.image, auth, job);
     });
   });
 
