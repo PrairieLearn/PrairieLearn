@@ -5,13 +5,13 @@ import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types';
 export function InstructorInstanceAdminLti13({
   resLocals,
   lti13Instance,
-  lti13Instances,
   lti13CourseInstance,
+  lti13CourseInstances,
 }: {
   resLocals: Record<string, any>;
   lti13Instance: Lti13Instance;
-  lti13Instances: Lti13Instance[];
   lti13CourseInstance: Lti13CourseInstance;
+  lti13CourseInstances: Lti13CourseInstance[];
 }): string {
   return html`
     <!doctype html>
@@ -43,10 +43,13 @@ export function InstructorInstanceAdminLti13({
               <div class="row">
                 <div class="col-3">
                   <select class="custom-select mb-2" id="selectLti13Instance">
-                    ${lti13Instances.map((li) => {
+                    ${lti13CourseInstances.map((lci) => {
                       return html`
-                        <option value="${li.id}" ${lti13Instance.id === li.id ? 'selected' : ''}>
-                          ${li.name}
+                        <option
+                          value="${lci.id}"
+                          ${lti13CourseInstance.id === lci.id ? 'selected' : ''}
+                        >
+                          ${lti13Instance.name} (${lci.id})
                         </option>
                       `;
                     })}
@@ -57,6 +60,8 @@ export function InstructorInstanceAdminLti13({
                   </ul>
                 </div>
                 <div class="col-9">
+                  Created at: ${lti13CourseInstance.created_at.toDateString()}
+                  <br />
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
                     <input type="hidden" name="__action" value="delete_lti13_course_instance" />
