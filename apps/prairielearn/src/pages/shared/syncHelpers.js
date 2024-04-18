@@ -171,11 +171,13 @@ async function pullAndPushToECR(image, dockerAuth, job) {
   const pushImage = docker.getImage(pushImageName);
 
   job.info(`Pushing image: ${repository.getCombined()}`);
+  // @ts-expect-error -- https://github.com/DefinitelyTyped/DefinitelyTyped/pull/69385
   const pushStream = await pushImage.push({ authconfig: dockerAuth });
 
   await new Promise((resolve, reject) => {
     const printedInfos = new Set();
     docker.modem.followProgress(
+      // @ts-expect-error -- https://github.com/DefinitelyTyped/DefinitelyTyped/pull/69385
       pushStream,
       (err) => {
         if (err) reject(err);
