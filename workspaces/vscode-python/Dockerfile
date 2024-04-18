@@ -28,10 +28,12 @@ RUN apt-get update && \
     find /tmp -not -path /tmp -delete
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    curl git htop less nano unzip vim wget zip && \
+    gosu curl git htop less nano unzip vim wget zip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    find /tmp -not -path /tmp -delete
+    find /tmp -not -path /tmp -delete && \
+    # Test the gosu installation:
+    gosu nobody true
 
 # Install Python and required packages via miniconda
 USER coder
@@ -72,6 +74,9 @@ RUN mkdir -p "/home/coder/workspace" "/home/coder/.local/share/code-server/User"
 WORKDIR "/home/coder/workspace"
 COPY --chmod=0644 --chown=coder:coder settings.json tasks.json /home/coder/.local/share/code-server/User/
 
+# Prepare the entrypoint helper that steps down to a limited user in local dev mode
+COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
+
 # Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
 USER root
 RUN mkdir -p /run /var/run && \
@@ -79,6 +84,6 @@ RUN mkdir -p /run /var/run && \
 
 USER coder
 EXPOSE 8080
-ENTRYPOINT ["/usr/bin/entrypoint.sh", "--auth", "none", \
+ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "/usr/bin/entrypoint.sh", "--auth", "none", \
     "--disable-update-check", "--disable-telemetry", \
     "--bind-addr", "0.0.0.0:8080", "."]
