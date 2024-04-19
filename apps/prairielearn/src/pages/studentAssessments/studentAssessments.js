@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 import { Router } from 'express';
 const asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';

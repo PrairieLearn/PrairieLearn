@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const unified = require('unified');
 const markdown = require('remark-parse');
 const raw = require('rehype-raw');

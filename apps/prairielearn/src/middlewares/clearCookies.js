@@ -1,6 +1,4 @@
 // @ts-check
-import * as _ from 'lodash';
-
 import { clearCookie } from '../lib/cookie';
 
 const cookies_to_ignore = [

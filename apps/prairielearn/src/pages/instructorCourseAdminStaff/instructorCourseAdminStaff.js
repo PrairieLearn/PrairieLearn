@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as async from 'async';
