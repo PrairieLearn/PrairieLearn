@@ -1,5 +1,6 @@
 import { parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { v4 as uuid } from 'uuid';
 import {
   Tabulator,
   FormatModule,
@@ -53,12 +54,16 @@ export function defaultTabulator(
     const dropdown = options.columnVisibilityDropdown;
     table.on('tableBuilt', () => {
       table.getColumns().forEach((col) => {
+        const dropdownItemId = uuid();
         const dropdownItem = parseHTMLElement(
           document,
-          html`<div class="dropdown-item form-check">
-            <label class="form-check-label">
-              <input class="form-check-input" type="checkbox" />${col.getDefinition().title}
-            </label>
+          html`<div class="dropdown-item">
+            <div class="form-check">
+              <input id="${dropdownItemId}" class="form-check-input" type="checkbox" />
+              <label class="form-check-label" for="${dropdownItemId}">
+                ${col.getDefinition().title}
+              </label>
+            </div>
           </div>`,
         );
         dropdown.appendChild(dropdownItem);
