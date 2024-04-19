@@ -579,6 +579,9 @@ function QuestionSharing({
 }
 
 function TagRows({ tags }) {
+  if (!tags || tags.length === 0) {
+    return html` <small class="text-muted px-3"> This question does not have any tags. </small>`;
+  }
   return tags.map((tag) => {
     return html`
       <div class="row px-3">
