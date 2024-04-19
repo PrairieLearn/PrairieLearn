@@ -16,7 +16,7 @@ router.get('/', function (req, res, next) {
     !config.googleClientSecret ||
     !config.googleRedirectUrl
   ) {
-    return next(error.make(404, 'Google login is not enabled'));
+    return next(new error.HttpStatusError(404, 'Google login is not enabled'));
   }
 
   let url;
@@ -26,10 +26,9 @@ router.get('/', function (req, res, next) {
       config.googleClientSecret,
       config.googleRedirectUrl,
     );
-    const scopes = ['openid', 'profile', 'email'];
     url = oauth2Client.generateAuthUrl({
       access_type: 'online',
-      scope: scopes,
+      scope: ['openid', 'profile', 'email'],
       prompt: 'select_account',
       // FIXME: should add some state here to avoid CSRF
     });

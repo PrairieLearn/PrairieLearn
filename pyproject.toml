@@ -77,6 +77,7 @@ include = [
     "./apps/prairielearn/elements/pl-integer-input",
     "./apps/prairielearn/elements/pl-manual-grading-only",
     "./apps/prairielearn/elements/pl-matrix-latex",
+    "./apps/prairielearn/elements/pl-multiple-choice",
     "./apps/prairielearn/elements/pl-number-input",
     "./apps/prairielearn/elements/pl-overlay",
     "./apps/prairielearn/elements/pl-order-blocks",
@@ -102,9 +103,17 @@ include = [
     "./apps/prairielearn/python/question_phases.py",
     "./apps/prairielearn/python/traverse_test.py",
     "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
+
+[tool.pytest.ini_options]
+addopts = "--cov=apps"
+testpaths = [
+    "apps/prairielearn/elements",
+    "apps/prairielearn/python",
+]

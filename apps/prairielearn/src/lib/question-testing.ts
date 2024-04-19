@@ -5,13 +5,12 @@ import jsonStringifySafe = require('json-stringify-safe');
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { type ServerJob, createServerJob } from './server-jobs';
-import { saveSubmissionAsync, gradeVariantAsync } from './grading';
+import { saveSubmission, gradeVariant, insertSubmission } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
 import {
   GradingJobSchema,
-  IdSchema,
   SubmissionSchema,
   type Variant,
   type Submission,
@@ -76,28 +75,22 @@ async function createTestSubmission(
 
   if (hasFatalIssue) data.gradable = false;
 
-  const submission_id = await sqldb.callRow(
-    'submissions_insert',
-    [
-      {}, // submitted_answer
-      data.raw_submitted_answer,
-      data.format_errors,
-      data.gradable,
-      hasFatalIssue,
-      // The `test` phase is not allowed to mutate `correct_answers`
-      // (aliased here to `true_answer`), so we just pick the original
-      // `true_answer` so we can use our standard `submissions_insert`
-      // sproc.
-      variant.true_answer,
-      null, // feedback
-      null, // credit
-      null, // mode
-      variant.id,
-      authn_user_id,
-      null, // client_fingerprint_id
-    ],
-    IdSchema,
-  );
+  const submission_id = await insertSubmission({
+    submitted_answer: {},
+    raw_submitted_answer: data.raw_submitted_answer,
+    format_errors: data.format_errors,
+    gradable: data.gradable,
+    broken: hasFatalIssue,
+    // The `test` phase is not allowed to mutate `true_answers`, so we just pick
+    // the original `true_answer` so we can use our standard `insertSubmission`.
+    true_answer: variant.true_answer,
+    feedback: null,
+    credit: null,
+    mode: null,
+    variant_id: variant.id,
+    auth_user_id: authn_user_id,
+    client_fingerprint_id: null,
+  });
 
   const grading_job = await sqldb.callRow(
     'grading_jobs_insert',
@@ -198,8 +191,8 @@ async function testVariant(
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
-  const test_submission_id = await saveSubmissionAsync(submission_data, variant, question, course);
-  await gradeVariantAsync(variant, test_submission_id, question, course, authn_user_id, true);
+  const test_submission_id = await saveSubmission(submission_data, variant, question, course);
+  await gradeVariant(variant, test_submission_id, question, course, authn_user_id, true);
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -219,7 +212,6 @@ async function testVariant(
  * Test a question. Issues will be inserted into the issues table.
  *
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work.
  * @param variant_course - The course for the variant.
  * @param authn_user_id - The currently authenticated user.
  * @param test_type - The type of test to run.
@@ -227,7 +219,6 @@ async function testVariant(
  */
 async function testQuestion(
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   variant_course: Course,
   test_type: TestType,
@@ -254,7 +245,6 @@ async function testQuestion(
       instance_question_id,
       authn_user_id,
       authn_user_id,
-      group_work,
       course_instance_id,
       variant_course,
       question_course,
@@ -308,7 +298,6 @@ async function testQuestion(
  * @param logger - The server job to run within.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
  * @param authn_user_id - The currently authenticated user.
@@ -317,7 +306,6 @@ async function runTest(
   logger: ServerJob,
   showDetails: boolean,
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   course: Course,
   test_type: TestType,
@@ -326,7 +314,6 @@ async function runTest(
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
     question,
-    group_work,
     course_instance,
     course,
     test_type,
@@ -384,7 +371,6 @@ async function runTest(
  * @param count - The number of times to test, will run each possible test ('correct, 'incorrect,' invalid') this many times.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
- * @param group_work - If the assessment will support group work
  * @param course_instance - The course instance for the variant; may be null for instructor questions
  * @param course - The course for the variant.
  * @param authn_user_id - The currently authenticated user.
@@ -394,7 +380,6 @@ export async function startTestQuestion(
   count: number,
   showDetails: boolean,
   question: Question,
-  group_work: boolean,
   course_instance: CourseInstance | null,
   course: Course,
   authn_user_id: string,
@@ -420,7 +405,6 @@ export async function startTestQuestion(
         job,
         showDetails,
         question,
-        group_work,
         course_instance,
         course,
         type,

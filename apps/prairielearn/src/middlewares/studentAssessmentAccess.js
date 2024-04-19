@@ -5,6 +5,7 @@ const _ = require('lodash');
 const { logger } = require('@prairielearn/logger');
 const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 const { config } = require('../lib/config');
+const { setCookie } = require('../lib/cookie');
 const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours
@@ -101,7 +102,7 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
-  res.cookie('pl_pw_origUrl', req.originalUrl);
+  setCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url'], req.originalUrl);
   res.redirect('/pl/password');
 }
 

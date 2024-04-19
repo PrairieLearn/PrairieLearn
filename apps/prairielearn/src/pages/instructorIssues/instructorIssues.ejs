@@ -14,22 +14,25 @@
     <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <% if (authz_data.has_course_permission_edit) { %>
-      <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
+      <div class="modal fade" id="closeMatchingIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeMatchingIssuesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="closeAllIssuesModalLabel">Close all issues</h4>
+              <h4 class="modal-title" id="closeMatchingIssuesModalLabel">Close matching issues</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to close all issues? This cannot
-              be undone.
+              <p>
+                Are you sure you want to close the <strong><%= openFilteredIssuesCount %></strong> open
+                <%= openFilteredIssuesCount === 1 ? 'issue' : 'issues' %> visible on the current page?
+              </p>
             </div>
             <div class="modal-footer">
-              <form name="close-all-form" method="POST">
-                <input type="hidden" name="__action" value="close_all">
+              <form name="close-matching-form" method="POST">
+                <input type="hidden" name="__action" value="close_matching">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="unsafe_issue_ids" value="<%= rows.map(row => row.issue_id).join(',') %>">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger">Close all</button>
+                <button type="submit" class="btn btn-danger">Close issues</button>
               </form>
             </div>
           </div>
@@ -83,7 +86,7 @@
                     <td>
                       Shows all issues that were reported by a user ID like <code>USER</code>.
                       <br>
-                      <strong>Example:</strong> <code>user:nwalter2@illinois.edu</code> shows all issues that were reported by <code>nwalter2@illinois.edu</code>.</td>
+                      <strong>Example:</strong> <code>user:student@example.com</code> shows all issues that were reported by <code>student@example.com</code>.</td>
                   </tr>
                 </tbody>
               </table>
@@ -91,7 +94,7 @@
               <p>You can also search the issue message by simply entering text. For example, <code>no picture</code> would return any issues that contain text like "no picture".</p>
 
               <h4>Qualifier negation</h4>
-              <p>Any qualifier can be negagted with the a hyphen (<code>-</code>). For example, <code>-is:manually-reported</code> would return all issues that were <strong>not</strong> manually reported.</p>
+              <p>Any qualifier can be negated with the a hyphen (<code>-</code>). For example, <code>-is:manually-reported</code> would return all issues that were <strong>not</strong> manually reported.</p>
 
               <h4>Combining qualifiers</h4>
               <p>These can be combined to form complex searches. An example:</p>
@@ -119,9 +122,9 @@
                 </a>
               </small>
             </div>
-            <% if (authz_data.has_course_permission_edit) { %>
-            <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeAllIssuesModal">
-              <i class="fa fa-times" aria-hidden="true"></i> Close all issues
+            <% if (authz_data.has_course_permission_edit && openFilteredIssuesCount > 0) { %>
+            <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeMatchingIssuesModal">
+              <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
             </button>
             <% } %>
           </div>

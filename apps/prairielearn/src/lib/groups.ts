@@ -255,7 +255,7 @@ export async function addUserToGroup({
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
-      authn_user_id: authn_user_id,
+      authn_user_id,
       group_role_id: groupRoleId,
     });
   });
@@ -471,14 +471,20 @@ export async function leaveGroup(
   assessmentId: string,
   userId: string,
   authnUserId: string,
+  checkGroupId: string | null = null,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
-      throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs",
+      throw new error.HttpStatusError(404, 'User is not part of a group in this assessment');
+    }
+    if (checkGroupId != null && !idsEqual(groupId, checkGroupId)) {
+      throw new error.HttpStatusError(
+        403,
+        'Group ID does not match the user ID and assessment ID provided',
       );
     }
+
     const groupConfig = await getGroupConfig(assessmentId);
 
     if (groupConfig.has_roles) {
@@ -552,7 +558,7 @@ export async function updateGroupRoles(
     const groupInfo = await getGroupInfo(groupId, groupConfig);
 
     if (!hasStaffPermission && !canUserAssignGroupRoles(groupInfo, userId)) {
-      throw error.make(403, 'User does not have permission to assign roles');
+      throw new error.HttpStatusError(403, 'User does not have permission to assign roles');
     }
 
     // Convert form data to valid input format for a SQL function
@@ -560,10 +566,10 @@ export async function updateGroupRoles(
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
       if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
-        throw error.make(403, `User ${userId} is not a member of this group`);
+        throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
       }
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
-        throw error.make(403, `Role ${roleId} does not exist for this assessment`);
+        throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
         group_id: groupId,
@@ -598,6 +604,17 @@ export async function updateGroupRoles(
       authn_user_id: authnUserId,
     });
   });
+}
+
+export async function deleteGroup(assessment_id: string, group_id: string, authn_user_id: string) {
+  const deleted_group_id = await sqldb.queryOptionalRow(
+    sql.delete_group,
+    { assessment_id, group_id, authn_user_id },
+    IdSchema,
+  );
+  if (deleted_group_id == null) {
+    throw new error.HttpStatusError(404, 'Group does not exist.');
+  }
 }
 
 /**

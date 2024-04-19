@@ -2,11 +2,11 @@ import express = require('express');
 import asyncHandler = require('express-async-handler');
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html';
-import { InstitutionSchema, UserSchema } from '../../lib/db-types';
+import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types';
 import { isEnterprise } from '../../lib/license';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases';
 
@@ -45,6 +45,12 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
 
+    const mode = await sqldb.callRow(
+      'ip_to_mode',
+      [req.ip, res.locals.req_date, authn_user.user_id],
+      ModeSchema,
+    );
+
     res.send(
       UserSettings({
         authn_user,
@@ -53,6 +59,7 @@ router.get(
         accessTokens,
         newAccessTokens,
         purchases,
+        isExamMode: mode !== 'Public',
         resLocals: res.locals,
       }),
     );
@@ -63,30 +70,36 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'token_generate') {
+      const mode = await sqldb.callRow(
+        'ip_to_mode',
+        [req.ip, res.locals.req_date, res.locals.authn_user.user_id],
+        ModeSchema,
+      );
+      if (mode !== 'Public') {
+        throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
+      }
+
       const name = req.body.token_name;
       const token = uuidv4();
-      const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+      const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-      await sqldb.callAsync('access_tokens_insert', [
-        res.locals.authn_user.user_id,
+      await sqldb.queryAsync(sql.insert_access_token, {
+        user_id: res.locals.authn_user.user_id,
         name,
         // The token will only be persisted until the next page render.
         // After that, we'll remove it from the database.
         token,
-        tokenHash,
-      ]);
+        token_hash,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
-      await sqldb.callAsync('access_tokens_delete', [
-        req.body.token_id,
-        res.locals.authn_user.user_id,
-      ]);
+      await sqldb.queryAsync(sql.delete_access_token, {
+        token_id: req.body.token_id,
+        user_id: res.locals.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -69,34 +69,32 @@ export function connection(socket) {
       return callback(null);
     }
 
-    renderPanelsForSubmission(
-      msg.submission_id,
-      msg.question_id,
-      msg.instance_question_id,
-      msg.variant_id,
-      msg.url_prefix,
-      msg.question_context,
-      msg.csrf_token,
-      msg.authorized_edit,
-      true, // renderScorePanels
-      (err, panels) => {
-        if (
-          ERR(err, (err) => {
-            logger.error('Error rendering panels for submission', err);
-            Sentry.captureException(err);
-          })
-        ) {
-          return;
-        }
+    renderPanelsForSubmission({
+      submission_id: msg.submission_id,
+      question_id: msg.question_id,
+      instance_question_id: msg.instance_question_id,
+      variant_id: msg.variant_id,
+      urlPrefix: msg.url_prefix,
+      questionContext: msg.question_context,
+      csrfToken: msg.csrf_token,
+      authorizedEdit: msg.authorized_edit,
+      renderScorePanels: true,
+    }).then(
+      (panels) => {
         callback({
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
+          extraHeadersHtml: panels.extraHeadersHtml,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
           questionPanelFooter: panels.questionPanelFooter,
           questionNavNextButton: panels.questionNavNextButton,
         });
+      },
+      (err) => {
+        logger.error('Error rendering panels for submission', err);
+        Sentry.captureException(err);
       },
     );
   });

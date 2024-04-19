@@ -23,7 +23,7 @@ router.get('/*', function (req, res, next) {
     pathSpl[2] === CLIENT_FOLDER ||
     _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
   if (!valid) {
-    next(error.make(404, 'Unable to serve that file'));
+    next(new error.HttpStatusError(404, 'Unable to serve that file'));
     return;
   }
 

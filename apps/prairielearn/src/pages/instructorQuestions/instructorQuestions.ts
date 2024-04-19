@@ -32,7 +32,7 @@ router.get(
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
@@ -69,12 +69,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 

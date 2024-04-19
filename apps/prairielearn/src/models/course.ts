@@ -17,6 +17,7 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
     has_course_permission_preview: z.boolean(),
   }),
 });
+export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(
@@ -40,9 +41,11 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
     });
     return stdout.trim();
   } catch (err) {
-    throw error.makeWithData(`Could not get git status; exited with code ${err.code}`, {
-      stdout: err.stdout,
-      stderr: err.stderr,
+    throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
+      data: {
+        stdout: err.stdout,
+        stderr: err.stderr,
+      },
     });
   }
 }
@@ -121,4 +124,8 @@ export async function selectCoursesWithEditAccess({
     is_administrator,
   });
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
+}
+
+export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
+  return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
 }

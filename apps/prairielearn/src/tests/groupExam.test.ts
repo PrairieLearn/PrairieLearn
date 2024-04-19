@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import fetchCookie = require('fetch-cookie');
+import fetchCookie from 'fetch-cookie';
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
 
@@ -86,7 +86,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName: groupName,
+      groupName,
     }),
   });
   assert.isOk(res.ok);

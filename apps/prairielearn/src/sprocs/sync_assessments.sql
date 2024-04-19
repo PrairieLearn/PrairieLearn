@@ -222,20 +222,13 @@ BEGIN
                     assessment_id,
                     minimum,
                     maximum,
-                    can_assign_roles,
-                    -- These two columns are deprecated, but are maintained
-                    -- until we are able to remove code that uses them. For now,
-                    -- they receive the same value as can_assign_roles.
-                    can_assign_roles_at_start,
-                    can_assign_roles_during_assessment
+                    can_assign_roles
                 ) VALUES (
                     (group_role->>'role_name'),
                     new_assessment_id,
                     -- Insert default values where necessary
                     CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
                     (group_role->>'maximum')::integer,
-                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END,
-                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END,
                     CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
                 DO UPDATE
@@ -243,9 +236,7 @@ BEGIN
                     role_name = EXCLUDED.role_name,
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
-                    can_assign_roles = EXCLUDED.can_assign_roles,
-                    can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
-                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment
+                    can_assign_roles = EXCLUDED.can_assign_roles
                 RETURNING group_roles.role_name INTO new_group_role_name;
                 new_group_role_names := array_append(new_group_role_names, new_group_role_name);
             END LOOP;
@@ -268,7 +259,6 @@ BEGIN
                 assessment_id,
                 number,
                 mode,
-                role,
                 credit,
                 uids,
                 time_limit_min,
@@ -285,7 +275,6 @@ BEGIN
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    'Student'::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -306,7 +295,6 @@ BEGIN
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 mode = EXCLUDED.mode,
-                role = EXCLUDED.role,
                 credit = EXCLUDED.credit,
                 time_limit_min = EXCLUDED.time_limit_min,
                 password = EXCLUDED.password,

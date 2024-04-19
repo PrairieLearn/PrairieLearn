@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler = require('express-async-handler');
-import * as util from 'util';
 import * as qs from 'qs';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
@@ -8,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render';
 import * as manualGrading from '../../../lib/manualGrading';
-import { features } from '../../../lib/features/index';
 import { IdSchema, UserSchema } from '../../../lib/db-types';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
 import { GradingPanel } from './gradingPanel.html';
@@ -30,15 +28,10 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
   // If student never loaded question or never submitted anything (submission is null)
   if (variant_with_submission_id == null) {
-    throw error.make(404, 'Instance question does not have a gradable submission.');
+    throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
   await getAndRenderVariant(variant_with_submission_id, null, resLocals);
-
-  const rubric_settings_visible = await features.enabledFromLocals(
-    'manual-grading-rubrics',
-    resLocals,
-  );
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -60,14 +53,14 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     { course_instance_id: resLocals.course_instance.id },
     UserSchema.array().nullable(),
   );
-  return { resLocals, rubric_settings_visible, conflict_grading_job, graders };
+  return { resLocals, conflict_grading_job, graders };
 }
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
@@ -75,20 +68,20 @@ router.get(
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const results = await util.promisify(renderPanelsForSubmission)(
-      req.params.submission_id,
-      res.locals.question.id,
-      res.locals.instance_question.id,
-      req.params.variant_id,
-      res.locals.urlPrefix,
-      null, // questionContext
-      null, // csrfToken
-      null, // authorizedEdit
-      false, // renderScorePanels
-    );
-    res.send({ submissionPanel: results.submissionPanel });
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: res.locals.instance_question.id,
+      variant_id: req.params.variant_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: null,
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
@@ -111,9 +104,11 @@ const PostBodySchema = z.union([
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
     modified_at: z.string(),
-    rubric_item_selected_manual: IdSchema.or(IdSchema.array())
+    rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
-      .transform((val) => (val == null ? [] : Array.isArray(val) ? val : [val])),
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
     score_manual_adjust_points: z.coerce.number().nullish(),
     use_score_perc: z.literal('on').optional(),
     score_manual_points: z.coerce.number().nullish(),
@@ -121,6 +116,11 @@ const PostBodySchema = z.union([
     score_auto_points: z.coerce.number().nullish(),
     score_auto_percent: z.coerce.number().nullish(),
     submission_note: z.string().nullish(),
+    unsafe_issue_ids_close: IdSchema.or(z.record(z.string(), IdSchema))
+      .nullish()
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -139,18 +139,20 @@ const PostBodySchema = z.union([
       .literal('true')
       .optional()
       .transform((val) => val === 'true'),
-    rubric_item: z.record(
-      z.string(),
-      z.object({
-        id: z.string().optional(),
-        order: z.coerce.number(),
-        points: z.coerce.number(),
-        description: z.string(),
-        explanation: z.string().optional(),
-        grader_note: z.string().optional(),
-        always_show_to_students: z.string().transform((val) => val === 'true'),
-      }),
-    ),
+    rubric_item: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string().optional(),
+          order: z.coerce.number(),
+          points: z.coerce.number(),
+          description: z.string(),
+          explanation: z.string().optional(),
+          grader_note: z.string().optional(),
+          always_show_to_students: z.string().transform((val) => val === 'true'),
+        }),
+      )
+      .default({}),
   }),
   z.object({
     __action: z.custom<`reassign_${string}`>(
@@ -163,12 +165,17 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      qs.parse(qs.stringify(req.body)),
+      // Array parsing is disabled, as it has special cases for 22+ items that
+      // we don't want to double-handle, so we always receive an object and
+      // convert it to an array if necessary
+      // (https://github.com/ljharb/qs#parsing-arrays).
+      // The order of the items in arrays is never important, so using Object.values is fine.
+      qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
@@ -201,6 +208,14 @@ router.post(
       if (modified_at_conflict) {
         return res.redirect(req.baseUrl + `?conflict_grading_job_id=${grading_job_id}`);
       }
+      // Only close issues if the submission was successfully graded
+      if (body.unsafe_issue_ids_close.length > 0) {
+        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+          issue_ids: body.unsafe_issue_ids_close,
+          instance_question_id: res.locals.instance_question.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        });
+      }
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
@@ -219,7 +234,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item || {}), // rubric items
+          Object.values(body.rubric_item), // rubric items
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
@@ -247,10 +262,7 @@ router.post(
         ),
       );
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body,
-      });
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

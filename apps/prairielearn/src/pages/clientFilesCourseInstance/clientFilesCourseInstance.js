@@ -10,10 +10,10 @@ router.get('/*', function (req, res, next) {
   const filename = req.params[0];
   if (!filename) {
     return next(
-      error.make(400, 'No filename provided within clientFilesCourseInstance directory', {
-        locals: res.locals,
-        body: req.body,
-      }),
+      new error.HttpStatusError(
+        400,
+        'No filename provided within clientFilesCourseInstance directory',
+      ),
     );
   }
   const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);

@@ -1,15 +1,15 @@
 import { FeatureManager } from './manager';
 
 const featureNames = [
-  'manual-grading-rubrics',
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
   // Can only be applied to courses/institutions.
-  'allow-rpy2',
   'process-questions-in-worker',
   'question-sharing',
+  'allow-rpy2',
   // Can only be applied to institutions.
   'lti13',
+  'terms-clickthrough',
 ] as const;
 
 const features = new FeatureManager(featureNames);

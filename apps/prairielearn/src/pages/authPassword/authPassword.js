@@ -2,7 +2,8 @@
 const express = require('express');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
-const { shouldSecureCookie } = require('../../lib/cookie');
+const { shouldSecureCookie, setCookie } = require('../../lib/cookie');
+const { clearCookie } = require('../../lib/cookie');
 
 const router = express.Router();
 
@@ -16,12 +17,12 @@ router.post('/', function (req, res) {
   var maxAge = 1000 * 60 * 60 * 12; // 12 hours
 
   var pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);
-  res.cookie('pl_assessmentpw', pwCookie, {
+  setCookie(res, ['pl_assessmentpw', 'pl2_assessmentpw'], pwCookie, {
     maxAge,
     httpOnly: true,
     secure: shouldSecureCookie(req),
   });
-  res.clearCookie('pl_pw_origUrl');
+  clearCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url']);
   return res.redirect(redirectUrl);
 });
 module.exports = router;

@@ -71,7 +71,3 @@ def generate(data):
     data["params"]["off2"] = hbox / 2
 
     data["params"]["height_canvas"] = height_canvas
-
-    # data["correct_answers"]["Mx"] = 10
-
-    return data

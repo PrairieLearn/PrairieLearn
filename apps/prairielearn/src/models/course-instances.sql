@@ -1,3 +1,11 @@
+-- BLOCK select_course_instance_by_id
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.id = $course_instance_id;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
@@ -36,7 +44,6 @@ FROM
       course_instance_access_rules AS ar
     WHERE
       ar.course_instance_id = ci.id
-      AND ((ar.role > 'Student') IS NOT TRUE)
   ) AS d
 WHERE
   c.id = $course_id

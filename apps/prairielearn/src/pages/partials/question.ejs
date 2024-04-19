@@ -107,7 +107,7 @@
         <% } %>
         <% // Show even when question_copy_targets is empty. %>
         <% // We'll show a CTA to request a course if the user isn't an editor of any course. %>
-        <% if (course.template_course && question_context != 'manual_grading') { %>
+        <% if (typeof question_copy_targets !== 'undefined' && course.template_course && question_context != 'manual_grading') { %>
           <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
             <i class="fa fa-clone"></i>
             Copy question
@@ -177,37 +177,6 @@
           <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
         <% }); %>
       </div>
-
-      <script>
-        $(function() {
-          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
-            const submissionId = $(this).data('submission-id');
-            // <% if (question_context === 'instructor' || question_context === 'public') { %>
-            const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } else if (question_context === 'manual_grading') { %>
-            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } else { %>
-            const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } %>
-            const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
-            $(`#submissionInfoModal-${submissionId}`).modal('hide');
-            $.get(submissionContentUrl, 'json')
-              .done((data) => {
-                $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
-                MathJax.typesetPromise();
-              })
-              .fail(() => {
-                $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
-              })
-              .always(() => {
-                // Restore modal state if need be
-                if (wasModalOpen) {
-                  $(`#submissionInfoModal-${submissionId}`).modal('show');
-                }
-              });
-          });
-        });
-        </script>
     <% } %>
 
   <% } %> <%# endif showSubmissions %>

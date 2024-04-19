@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 
-FROM prairielearn/plbase:${PRAIRIELEARN_IMAGE_TAG:-latest}
+FROM prairielearn/plbase:latest
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
@@ -33,7 +33,7 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \
     && /PrairieLearn/docker/gen_ssl.sh \
-    && git config --global user.email "dev@illinois.edu" \
+    && git config --global user.email "dev@example.com" \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
 

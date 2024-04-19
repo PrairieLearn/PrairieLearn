@@ -27,7 +27,7 @@ export function AdministratorJobSequence({
         <main id="content" class="container-fluid">
           <div class="row">
             <div class="col-12">
-              <a class="btn btn-primary mb-4" href="javascript:history.back();" role="button">
+              <a class="btn btn-primary mb-4" href="javascript:history.back();">
                 <i class="fa fa-arrow-left" aria-hidden="true"></i>
                 Back to previous page
               </a>

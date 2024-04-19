@@ -139,14 +139,14 @@ window.PLOrderBlocks = function (uuid, options) {
     cancel: 'input,textarea,button,select,option,a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
-    create: function () {
+    create() {
       placePairingIndicators();
       setAnswer();
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
       }
     },
-    sort: function (event, ui) {
+    sort(event, ui) {
       // update the location of the placeholder as the item is dragged
       let placeholder = ui.placeholder;
       let leftDiff = calculateIndent(ui, placeholder.parent());
@@ -158,7 +158,7 @@ window.PLOrderBlocks = function (uuid, options) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
     },
-    stop: function (event, ui) {
+    stop(event, ui) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
