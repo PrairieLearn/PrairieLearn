@@ -54,7 +54,7 @@ export function defaultTabulator(
     const dropdown = options.columnVisibilityDropdown;
     table.on('tableBuilt', () => {
       table.getColumns().forEach((col) => {
-        const dropdownItemId = uuid();
+        const dropdownItemId = `column-visible-${uuid()}`;
         const dropdownItem = parseHTMLElement(
           document,
           html`<div class="dropdown-item">
