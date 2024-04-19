@@ -274,9 +274,9 @@ def is_name_of_function(node: ast.AST) -> bool:
     # 3) it is not in the list of parent's args
     return (
         isinstance(node, ast.Name)
-        and isinstance(node.parent, ast.Call)
-        and (node not in node.parent.args)
-    )  # type: ignore
+        and isinstance(node.parent, ast.Call)  # type: ignore
+        and (node not in node.parent.args)  # type: ignore
+    )
 
 
 def get_parent_with_location(node: ast.AST) -> Any:
