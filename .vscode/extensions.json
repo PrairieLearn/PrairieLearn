@@ -3,6 +3,7 @@
     "Tobermory.es6-string-html",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
+    "ms-python.python",
     "charliermarsh.ruff",
     "ms-python.vscode-pylance"
   ]
