@@ -53,7 +53,7 @@ const news_items = require('./news_items');
 const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs-legacy');
-const freeformServer = require('./question-servers/freeform.js');
+const freeformServer = require('./question-servers/freeform');
 const { cache } = require('@prairielearn/cache');
 const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
@@ -64,7 +64,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
-const staticNodeModules = require('./middlewares/staticNodeModules');
+const staticNodeModules = require('./middlewares/staticNodeModules').default;
 const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features } = require('./lib/features');
 const { featuresMiddleware } = require('./lib/features/middleware');
@@ -530,7 +530,7 @@ module.exports.initExpress = function () {
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
-    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
+    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev').default);
   }
   app.use('/pl/logout', [
     function (req, res, next) {
@@ -603,7 +603,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'news';
       next();
     },
-    require('./pages/news_items/news_items.js'),
+    require('./pages/news_items/news_items').default,
   ]);
   app.use('/pl/news_item', [
     function (req, res, next) {
@@ -614,7 +614,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    require('./pages/news_item/news_item.js'),
+    require('./pages/news_item/news_item'),
   ]);
   app.use(
     '/pl/request_course',
@@ -726,23 +726,23 @@ module.exports.initExpress = function () {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    require('./pages/news_items/news_items.js'),
+    require('./pages/news_items/news_items').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    require('./pages/news_item/news_item.js'),
+    require('./pages/news_item/news_item'),
   );
 
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/effectiveUser', [
-    require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'),
+    require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView').default,
     require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
   ]);
 
   // All course instance instructor pages require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
-    require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'),
-    require('./middlewares/selectOpenIssueCount'),
+    require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView').default,
+    require('./middlewares/selectOpenIssueCount').default,
     function (req, res, next) {
       res.locals.navbarType = 'instructor';
       next();
@@ -760,11 +760,11 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    require('./pages/news_items/news_items.js'),
+    require('./pages/news_items/news_items').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    require('./pages/news_item/news_item.js'),
+    require('./pages/news_item/news_item'),
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -783,7 +783,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course/:course_id(\\d+)', [
     require('./middlewares/authzCourseOrInstance').default, // set res.locals.course
     require('./middlewares/ansifySyncErrorsAndWarnings').default,
-    require('./middlewares/selectOpenIssueCount'),
+    require('./middlewares/selectOpenIssueCount').default,
     function (req, res, next) {
       res.locals.navbarType = 'instructor';
       next();
@@ -1477,32 +1477,32 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'gradebook';
       next();
     },
-    require('./middlewares/logPageView')('studentGradebook'),
-    require('./pages/studentGradebook/studentGradebook'),
+    require('./middlewares/logPageView').default('studentGradebook'),
+    require('./pages/studentGradebook/studentGradebook').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessments', [
     function (req, res, next) {
       res.locals.navSubPage = 'assessments';
       next();
     },
-    require('./middlewares/logPageView')('studentAssessments'),
-    require('./pages/studentAssessments/studentAssessments'),
+    require('./middlewares/logPageView').default('studentAssessments'),
+    require('./pages/studentAssessments/studentAssessments').default,
   ]);
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     require('./middlewares/selectAndAuthzAssessment').default,
-    require('./middlewares/studentAssessmentAccess'),
-    require('./middlewares/logPageView')('studentAssessment'),
+    require('./middlewares/studentAssessmentAccess').default,
+    require('./middlewares/logPageView').default('studentAssessment'),
     require('./pages/studentAssessment/studentAssessment').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./middlewares/clientFingerprint').default,
-      require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
+      require('./middlewares/logPageView').default('studentAssessmentInstanceFile'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ],
   );
@@ -1510,7 +1510,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining')
         .default,
     ],
@@ -1519,9 +1519,9 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./middlewares/clientFingerprint').default,
-      require('./middlewares/logPageView')('studentAssessmentInstance'),
+      require('./middlewares/logPageView').default('studentAssessmentInstance'),
       require('./pages/studentAssessmentInstance/studentAssessmentInstance').default,
     ],
   );
@@ -1530,7 +1530,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./middlewares/clientFingerprint').default,
       // don't use logPageView here, we load it inside the page so it can get the variant_id
       enterpriseOnlyMiddleware(
@@ -1565,7 +1565,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
     [
       require('./middlewares/selectAndAuthzAssessment').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./pages/clientFilesCourse/clientFilesCourse'),
     ],
   );
@@ -1573,7 +1573,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
     [
       require('./middlewares/selectAndAuthzAssessment').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
     ],
   );
@@ -1581,7 +1581,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment').default,
-      require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/studentAssessmentAccess').default,
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
   );
@@ -1632,8 +1632,11 @@ module.exports.initExpress = function () {
     '/pl/course/:course_id(\\d+)/effectiveUser',
     require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
   );
-  app.use('/pl/course/:course_id(\\d+)/news_items', require('./pages/news_items/news_items.js'));
-  app.use('/pl/course/:course_id(\\d+)/news_item', require('./pages/news_item/news_item.js'));
+  app.use(
+    '/pl/course/:course_id(\\d+)/news_items',
+    require('./pages/news_items/news_items').default,
+  );
+  app.use('/pl/course/:course_id(\\d+)/news_item', require('./pages/news_item/news_item'));
 
   // All other course pages require the effective user to have permission
   app.use('/pl/course/:course_id(\\d+)', require('./middlewares/authzHasCoursePreview').default);
@@ -1956,7 +1959,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/networks',
-    require('./pages/administratorNetworks/administratorNetworks'),
+    require('./pages/administratorNetworks/administratorNetworks').default,
   );
   app.use(
     '/pl/administrator/workspaces',
