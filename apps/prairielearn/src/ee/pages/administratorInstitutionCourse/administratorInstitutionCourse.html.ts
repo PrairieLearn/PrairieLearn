@@ -145,7 +145,7 @@ export function AdministratorInstitutionCourse({
                         <a
                           href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >
-                          ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
+                          ${course_instance.long_name ?? '—'}: ${course_instance.short_name ?? '—'}
                         </a>
                       </td>
                       <td>${enrollment_count}</td>
