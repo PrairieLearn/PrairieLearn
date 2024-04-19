@@ -6,6 +6,8 @@ var jsonStringifySafe = require('json-stringify-safe');
 const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 
+const { config } = require('../../lib/config');
+
 /** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
   const errorId = res.locals.error_id;
@@ -62,7 +64,7 @@ module.exports = function (err, req, res, _next) {
     id: errorId,
     referrer,
   };
-  if (req.app.get('env') === 'development') {
+  if (config.devMode) {
     // development error handler
     // will print stacktrace
     res.render(path.join(__dirname, 'error'), templateData);

@@ -35,5 +35,3 @@ def generate(data):
             "type": "1d array",
         },
     ]
-
-    return data
