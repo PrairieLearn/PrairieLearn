@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import debugFactory from 'debug';
+import debugfn from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
@@ -15,7 +15,7 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
-const debug = debugFactory('@prairielearn/postgres');
+const debug = debugfn('@prairielearn/postgres');
 const lastQueryMap = new WeakMap<pg.PoolClient, string>();
 const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 

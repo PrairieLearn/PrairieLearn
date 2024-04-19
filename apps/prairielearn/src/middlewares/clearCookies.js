@@ -1,6 +1,7 @@
-const _ = require('lodash');
+// @ts-check
+import * as _ from 'lodash';
 
-const { clearCookie } = require('../lib/cookie');
+import { clearCookie } from '../lib/cookie';
 
 const cookies_to_ignore = [
   'pl_authn',
@@ -15,8 +16,13 @@ const cookies_to_ignore = [
   'pl2_session',
 ];
 
-module.exports = function (req, res, next) {
-  _(req.cookies).each(function (value, key) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
+  Object.keys(req.cookies).forEach((key) => {
     if (/^pl2?_/.test(key)) {
       if (cookies_to_ignore.includes(key)) {
         return;
@@ -25,4 +31,4 @@ module.exports = function (req, res, next) {
     }
   });
   next();
-};
+}

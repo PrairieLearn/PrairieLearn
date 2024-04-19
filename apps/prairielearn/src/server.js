@@ -414,7 +414,7 @@ module.exports.initExpress = function () {
     // authn/authz.
 
     require('./middlewares/authzWorkspaceCookieCheck'), // short-circuits if we have the workspace-authz cookie
-    require('./middlewares/date'),
+    require('./middlewares/date').default,
     require('./middlewares/authn'), // jumps to error handler if authn fails
     require('./middlewares/authzWorkspace'), // jumps to error handler if authz fails
     require('./middlewares/authzWorkspaceCookieSet'), // sets the workspace-authz cookie
@@ -504,11 +504,11 @@ module.exports.initExpress = function () {
     res.locals.flash = flash;
     next();
   });
-  app.use(require('./middlewares/logResponse')); // defers to end of response
-  app.use(require('./middlewares/cors'));
+  app.use(require('./middlewares/logResponse').default); // defers to end of response
+  app.use(require('./middlewares/cors').default);
   app.use(require('./middlewares/content-security-policy').default);
-  app.use(require('./middlewares/date'));
-  app.use(require('./middlewares/effectiveRequestChanged'));
+  app.use(require('./middlewares/date').default);
+  app.use(require('./middlewares/effectiveRequestChanged').default);
 
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
@@ -563,7 +563,7 @@ module.exports.initExpress = function () {
   );
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
-  app.use(require('./middlewares/logRequest'));
+  app.use(require('./middlewares/logRequest').default);
 
   // load accounting for authenticated accesses
   app.use(function (req, res, next) {
@@ -584,11 +584,11 @@ module.exports.initExpress = function () {
   });
 
   // clear cookies on the homepage to reset any stale session state
-  app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
+  app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies').default);
 
   // some pages don't need authorization
-  app.use('/', require('./pages/home/home'));
-  app.use('/pl', require('./pages/home/home'));
+  app.use('/', require('./pages/home/home').default);
+  app.use('/pl', require('./pages/home/home').default);
   app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/password', [
@@ -720,7 +720,7 @@ module.exports.initExpress = function () {
       res.locals.navbarType = 'student';
       next();
     },
-    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+    require('./middlewares/ansifySyncErrorsAndWarnings').default,
   ]);
 
   // Some course instance student pages only require course instance authorization (already checked)
@@ -770,7 +770,7 @@ module.exports.initExpress = function () {
   // All other course instance student pages require the effective user to have permissions
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)',
-    require('./middlewares/authzHasCourseInstanceAccess'),
+    require('./middlewares/authzHasCourseInstanceAccess').default,
   );
 
   // All other course instance instructor pages require the effective user to have permissions
@@ -782,7 +782,7 @@ module.exports.initExpress = function () {
   // all pages under /pl/course require authorization
   app.use('/pl/course/:course_id(\\d+)', [
     require('./middlewares/authzCourseOrInstance').default, // set res.locals.course
-    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+    require('./middlewares/ansifySyncErrorsAndWarnings').default,
     require('./middlewares/selectOpenIssueCount'),
     function (req, res, next) {
       res.locals.navbarType = 'instructor';
@@ -868,8 +868,8 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     [
       require('./middlewares/selectAndAuthzAssessment').default,
-      require('./middlewares/ansifySyncErrorsAndWarnings.js'),
-      require('./middlewares/selectAssessments'),
+      require('./middlewares/ansifySyncErrorsAndWarnings').default,
+      require('./middlewares/selectAssessments').default,
     ],
   );
   app.use(
@@ -1101,7 +1101,7 @@ module.exports.initExpress = function () {
   // single question
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+    require('./middlewares/ansifySyncErrorsAndWarnings').default,
   ]);
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
@@ -1139,7 +1139,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'preview';
         next();
       },
-      require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
+      require('./pages/instructorQuestionPreview/instructorQuestionPreview').default,
     ],
   );
   app.use(
@@ -1494,7 +1494,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzAssessment').default,
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./pages/studentAssessment/studentAssessment'),
+    require('./pages/studentAssessment/studentAssessment').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/file',
@@ -1511,7 +1511,8 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessmentInstance').default,
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
+      require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining')
+        .default,
     ],
   );
   app.use(
@@ -1635,13 +1636,13 @@ module.exports.initExpress = function () {
   app.use('/pl/course/:course_id(\\d+)/news_item', require('./pages/news_item/news_item.js'));
 
   // All other course pages require the effective user to have permission
-  app.use('/pl/course/:course_id(\\d+)', require('./middlewares/authzHasCoursePreview'));
+  app.use('/pl/course/:course_id(\\d+)', require('./middlewares/authzHasCoursePreview').default);
 
   // single question
 
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+    require('./middlewares/ansifySyncErrorsAndWarnings').default,
   ]);
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -1668,7 +1669,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
+    require('./pages/instructorQuestionPreview/instructorQuestionPreview').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics', [
     function (req, res, next) {
@@ -1936,7 +1937,7 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Administrator pages ///////////////////////////////////////////////
 
-  app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator', require('./middlewares/authzIsAdministrator').default);
   app.use(
     '/pl/administrator/admins',
     require('./pages/administratorAdmins/administratorAdmins').default,
@@ -1999,9 +2000,9 @@ module.exports.initExpress = function () {
   // Error handling ////////////////////////////////////////////////////
 
   // if no earlier routes matched, this will match and generate a 404 error
-  app.use(require('./middlewares/notFound'));
+  app.use(require('./middlewares/notFound').default);
 
-  app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+  app.use(require('./middlewares/redirectEffectiveAccessDenied').default);
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.
