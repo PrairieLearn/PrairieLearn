@@ -278,7 +278,6 @@ class CheckAST(ast.NodeVisitor):
 
         return isinstance(parent, ast.Call) and (node not in parent.args)
 
-
     def get_parent_with_location(self, node: ast.AST) -> Any:
         while id(node) in self.__parents:
             if hasattr(node, "col_offset"):
