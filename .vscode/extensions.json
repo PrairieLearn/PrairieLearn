@@ -3,10 +3,7 @@
     "Tobermory.es6-string-html",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
-    "ms-python.black-formatter",
-    "ms-python.flake8",
-    "ms-python.isort",
-    "ms-python.python",
+    "charliermarsh.ruff",
     "ms-python.vscode-pylance"
   ]
 }
