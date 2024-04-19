@@ -26,7 +26,9 @@ router.get('/:job_sequence_id', function (req, res, next) {
         // something to do with code.
 
         if (!res.locals.authz_data.has_course_permission_view) {
-          return next(error.make(403, 'Access denied (must be a Viewer in the course)'));
+          return next(
+            new error.HttpStatusError(403, 'Access denied (must be a Viewer in the course)'),
+          );
         }
       } else {
         // If course_instance_id is not null, then this job sequence likely
@@ -43,7 +45,10 @@ router.get('/:job_sequence_id', function (req, res, next) {
 
         if (!res.locals.authz_data.has_course_instance_permission_view) {
           return next(
-            error.make(403, 'Access denied (must be a Student Data Viewer in the course instance)'),
+            new error.HttpStatusError(
+              403,
+              'Access denied (must be a Student Data Viewer in the course instance)',
+            ),
           );
         }
       }

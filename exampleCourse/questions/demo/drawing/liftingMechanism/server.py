@@ -93,5 +93,3 @@ def generate(data):
     data["params"]["wbox"] = wbox
     data["params"]["xbox"] = xbox
     data["params"]["ybox"] = ybox
-
-    return data

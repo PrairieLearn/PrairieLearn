@@ -23,15 +23,30 @@ app.use(
 
 ### Rotate session cookies
 
-If you want to rotate to a new session cookie name, you can provide an array of cookie names to `createSessionMiddleware`.
+It can be useful to rotate to a new session cookie name. For instance, this can be used to provide an explicit subdomain when none was set before.
+
+To do this, you can use a combination of `cookie.writeNames` and `cookie.writeOverrides`:
 
 ```ts
 createSessionMiddleware({
   // ...
   cookie: {
-    name: ['session', 'legacy_session', 'ancient_session'],
+    name: 'legacy_session',
+    writeNames: ['legacy_session', 'session'],
+    writeOverrides: [{ domain: undefined }, { domain: '.example.com' }],
   },
 });
 ```
 
-If a request is received with a `legacy_session` or an `ancient_session` cookie, the session will be loaded from the store and then persisted as a new cookie named `session`. For all other requests, the session will be loaded from and persisted to the `session` cookie.
+In this example, the session will be loaded from and persisted to the `legacy_session` cookie. However, when the session is persisted, it will also be written to a new cookie named `session`. The `domain` attribute of the `legacy_session` cookie will not be set, while the `domain` attribute of the `session` cookie will be set to `.example.com`.
+
+After this code has been running in production for a while, it will be safe to switch to reading from and writing to the new `session` cookie exclusively:
+
+```ts
+createSessionMiddleware({
+  cookie: {
+    name: 'session',
+    domain: '.example.com',
+  },
+});
+```

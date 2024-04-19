@@ -182,7 +182,12 @@ async
     async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of running containers
+      // Set up a periodic pruning of containers that shouldn't exist.
+      //
+      // Note that this updates the load count. The cron job that kills workspace
+      // hosts will only kill hosts that have a load count of 0. This should ensure
+      // that we never kill a host before its had a chance to spin down all its
+      // containers (and flush their logs and record their disk usage).
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
@@ -229,7 +234,7 @@ async
           });
           try {
             const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-            await dockerAttemptKillAndRemove(container);
+            await killAndRemoveWorkspace(ws.id, container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
           }
@@ -240,7 +245,7 @@ async
       // don't correspond to any known workspace. Clean them up.
       const allContainers = await docker.listContainers({
         all: true,
-        filters: { label: ['prairielearn.workspace-id'] },
+        filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
@@ -249,7 +254,7 @@ async
         logger.info(
           `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`,
         );
-        await dockerAttemptKillAndRemove(docker.getContainer(container.Id));
+        await killAndRemoveWorkspace(containerWorkspaceId, docker.getContainer(container.Id));
       }
     },
     async () => {
@@ -296,7 +301,7 @@ async function pruneStoppedContainers() {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
-    await dockerAttemptKillAndRemove(container);
+    await killAndRemoveWorkspace(ws.id, container);
   });
 }
 
@@ -325,7 +330,9 @@ async function pruneRunawayContainers() {
     const name = container_info.Names[0].substring(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
-    await dockerAttemptKillAndRemove(container);
+    const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
+
+    await killAndRemoveWorkspace(containerWorkspaceId, container);
   });
 }
 
@@ -349,41 +356,50 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 }
 
 /**
- * Attempts to kill and remove a container.  Will fail silently if the container
- * is already stopped or does not exist.  Also removes the container's home directory.
+ * Attempts to kill and remove a container. Will fail silently if the container
+ * is already stopped or does not exist.
  *
+ * After the container is removed, the workspace's disk usage will be updated.
+ *
+ * @param {string} workspace_id
  * @param {import('dockerode').Container} container
  */
-async function dockerAttemptKillAndRemove(container) {
+async function killAndRemoveWorkspace(workspace_id, container) {
   try {
     await container.inspect();
+
+    try {
+      await container.kill();
+    } catch (err) {
+      logger.error('Error killing container', err);
+    }
+
+    // Flush all logs from this container to S3. We must do this before the
+    // container is removed, otherwise any remaining logs will be lost.
+    try {
+      await flushLogsToS3(container);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error flushing container logs to S3', err);
+    }
+
+    try {
+      await container.remove();
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error removing stopped container', err);
+    }
   } catch (err) {
     // This container doesn't exist on this machine.
     logger.error('Could not inspect container', err);
     Sentry.captureException(err);
-    return;
   }
 
   try {
-    await container.kill();
+    await workspaceUtils.updateWorkspaceDiskUsage(workspace_id, config.workspaceHostHomeDirRoot);
   } catch (err) {
-    logger.error('Error killing container', err);
-  }
-
-  // Flush all logs from this container to S3. We must do this before the
-  // container is removed, otherwise any remaining logs will be lost.
-  try {
-    await flushLogsToS3(container);
-  } catch (err) {
+    logger.error('Error updating workspace disk usage', err);
     Sentry.captureException(err);
-    logger.error('Error flushing container logs to S3', err);
-  }
-
-  try {
-    await container.remove();
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error('Error removing stopped container', err);
   }
 }
 
@@ -962,7 +978,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       // We don't have to explicitly kill the container here - our usual
       // background maintenance processes will soon notice that this container
       // should not be running on this host and kill it.
-      await sqldb.runInTransactionAsync(async () => {
+      const hostname = await sqldb.runInTransactionAsync(async () => {
         const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
           workspace_id: workspace.id,
         });
@@ -971,7 +987,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           logger.info(
             `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
           );
-          return;
+          return null;
         }
 
         const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
@@ -979,8 +995,18 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           workspace_id,
           hostname,
         });
-        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+        return hostname;
       });
+
+      // If we successfully updated the workspace's hostname, we can transition
+      // it to running. Note that this MUST be done outside of the above transaction,
+      // since this send a websocket message to the client to make it load the
+      // workspace. If we do this inside the transaction, there's a chance that the
+      // websocket message will reach the client before the state change is committed,
+      // which would cause the client to try to load the workspace before it's ready.
+      if (hostname) {
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
@@ -991,7 +1017,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
       // Immediately kill and remove the container, which will flush any
       // logs to S3 for better debugging.
-      await dockerAttemptKillAndRemove(workspace.container);
+      await killAndRemoveWorkspace(workspace.id, workspace.container);
 
       // Don't set host to unhealthy.
       return;

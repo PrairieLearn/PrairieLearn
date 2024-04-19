@@ -131,7 +131,7 @@ router.post(
       !res.locals.authz_result.authorized_edit &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      throw error.make(403, 'Not authorized');
+      throw new error.HttpStatusError(403, 'Not authorized');
     }
     if (
       !res.locals.authz_result.authorized_edit &&
@@ -139,7 +139,7 @@ router.post(
         req.body.__action,
       )
     ) {
-      throw error.make(403, 'Action is only permitted to students, not staff');
+      throw new error.HttpStatusError(403, 'Action is only permitted to students, not staff');
     }
 
     if (req.body.__action === 'attach_file') {
@@ -156,7 +156,10 @@ router.post(
       var closeExam;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
-          throw error.make(403, 'Real-time grading is not allowed for this assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Real-time grading is not allowed for this assessment',
+          );
         }
         closeExam = false;
       } else if (req.body.__action === 'finish') {
@@ -168,7 +171,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw error.make(400, `unknown __action: ${req.body.__action}`);
+        throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstance(
@@ -185,7 +188,9 @@ router.post(
         res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'leave_group') {
-      if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
+      if (!res.locals.authz_result.active) {
+        throw new error.HttpStatusError(400, 'Unauthorized request.');
+      }
       await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
@@ -205,7 +210,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(error.make(400, `unknown __action: ${req.body.__action}`));
+      next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

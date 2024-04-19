@@ -3,7 +3,10 @@ var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
+const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
+
+const { config } = require('../../lib/config');
 
 /** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
@@ -17,9 +20,11 @@ module.exports = function (err, req, res, _next) {
     msg: err.message,
     id: errorId,
     status: err.status,
-    stack: err.stack,
+    // Use the "safe" version when logging so that we don't error out while
+    // trying to log the actual error.
+    stack: formatErrorStackSafe(err),
     data: jsonStringifySafe(err.data),
-    referrer: referrer,
+    referrer,
     response_id: res.locals.response_id,
   });
 
@@ -47,6 +52,7 @@ module.exports = function (err, req, res, _next) {
 
   const templateData = {
     error: err,
+    errorStack: err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
@@ -56,9 +62,9 @@ module.exports = function (err, req, res, _next) {
     error_data_sqlParams: jsonStringifySafe(_.get(err, ['data', 'sqlParams'], null), null, '    '),
     error_data_sqlQuery: sqlQuery,
     id: errorId,
-    referrer: referrer,
+    referrer,
   };
-  if (req.app.get('env') === 'development') {
+  if (config.devMode) {
     // development error handler
     // will print stacktrace
     res.render(path.join(__dirname, 'error'), templateData);

@@ -12,6 +12,10 @@ export const QuestionsPage = ({
   showAddQuestionButton: boolean;
   resLocals;
 }) => {
+  // Example course questions can be publicly shared, but we don't allow them to
+  // be imported into courses, so we won't show the sharing name in the QID.
+  const qidPrefix = resLocals.course.example_course ? '' : `@${resLocals.course.sharing_name}/`;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -27,7 +31,7 @@ export const QuestionsPage = ({
             ? QuestionsTable({
                 questions,
                 showAddQuestionButton,
-                qidPrefix: `@${resLocals.course.sharing_name}/`,
+                qidPrefix,
                 urlPrefix: resLocals.urlPrefix,
                 plainUrlPrefix: resLocals.plainUrlPrefix,
                 __csrf_token: resLocals.__csrf_token,

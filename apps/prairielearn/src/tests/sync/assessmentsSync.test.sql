@@ -55,7 +55,7 @@ WITH
         jsonb_agg(
           jsonb_set(
             to_jsonb(assessment_questions),
-            '{question}'::text [],
+            '{question}'::text[],
             to_jsonb(questions)
           )
           ORDER BY
@@ -81,3 +81,9 @@ FROM
   zones_data,
   alternative_groups_data,
   assessment_questions_data;
+
+-- BLOCK insert_pt_exam
+INSERT INTO
+  pt_exams (uuid)
+VALUES
+  ($uuid);

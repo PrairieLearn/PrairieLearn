@@ -95,7 +95,7 @@ export function AdministratorCourses({
                     return html`
                       <tr>
                         <td>
-                          <a href="/pl/institution/${course.institution.id}/admin">
+                          <a href="/pl/administrator/institution/${course.institution.id}">
                             ${course.institution.short_name}
                           </a>
                         </td>
@@ -326,7 +326,6 @@ function CourseUpdateColumn({
         type="button"
         class="btn btn-xs btn-secondary"
         id="courseButton${course.id}-${column_name}"
-        tabindex="0"
         data-toggle="popover"
         data-container="body"
         data-html="true"
