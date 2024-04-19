@@ -59,7 +59,10 @@ lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
-	@python3 -m flake8 ./
+# TODO double check these two commands together are exactly what we want
+# https://docs.astral.sh/ruff/linter/
+	@python3 -m ruff check ./
+	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
@@ -69,9 +72,11 @@ format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+
+# https://docs.astral.sh/ruff/formatter/#sorting-imports
 format-python:
-	@python3 -m isort ./
-	@python3 -m black ./
+	@python3 -m ruff check --select I --fix ./
+	@python3 -m ruff format ./
 
 typecheck: typecheck-js typecheck-python
 # This is just an alias to our build script, which will perform typechecking
