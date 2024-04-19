@@ -216,7 +216,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
     questions
   WHERE
     id = $question_id;
-
+  
   -- BLOCK insert_submission
   INSERT INTO
     submissions (submitted_answer)
