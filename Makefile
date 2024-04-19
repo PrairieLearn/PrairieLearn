@@ -75,7 +75,7 @@ format-js:
 
 # https://docs.astral.sh/ruff/formatter/#sorting-imports
 format-python:
-	@python3 -m ruff check --select I --fix ./
+	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
 typecheck: typecheck-js typecheck-python
