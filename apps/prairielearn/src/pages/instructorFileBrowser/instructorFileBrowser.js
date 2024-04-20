@@ -18,7 +18,7 @@ const { encodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-const { getPathsCallback, getPaths } = require('../../lib/instructorFiles');
+const { getPaths } = require('../../lib/instructorFiles');
 
 function isHidden(item) {
   return item[0] === '.';
@@ -216,13 +216,9 @@ router.get('/*', function (req, res, next) {
   };
   async.waterfall(
     [
-      (callback) => {
+      async () => {
         debug('get paths');
-        getPathsCallback(req, res, (err, paths) => {
-          if (ERR(err, callback)) return;
-          file_browser.paths = paths;
-          callback(null);
-        });
+        file_browser.paths = getPaths(req, res);
       },
       (callback) => {
         fs.lstat(file_browser.paths.workingPath, (err, stats) => {
