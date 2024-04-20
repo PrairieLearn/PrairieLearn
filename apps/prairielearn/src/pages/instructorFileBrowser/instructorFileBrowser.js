@@ -388,6 +388,12 @@ router.post(
         filePath,
         fileContents: req.file.buffer,
       });
+
+      if (!(await editor.shouldEdit())) {
+        res.redirect(req.originalUrl);
+        return;
+      }
+
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
