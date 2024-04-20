@@ -219,12 +219,8 @@ router.get('/*', function (req, res, next) {
       async () => {
         debug('get paths');
         file_browser.paths = getPaths(req, res);
-      },
-      (callback) => {
-        fs.lstat(file_browser.paths.workingPath, (err, stats) => {
-          if (ERR(err, callback)) return;
-          callback(null, stats);
-        });
+
+        return await fs.lstat(file_browser.paths.workingPath);
       },
       (stats, callback) => {
         if (stats.isDirectory()) {
