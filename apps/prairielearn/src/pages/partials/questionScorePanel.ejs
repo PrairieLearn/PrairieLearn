@@ -14,8 +14,10 @@
       <% } %>
       <% if (assessment.type == 'Homework') { %>
       <tr>
-        <td>Previous variants:</td>
-        <td><%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %></td>
+        <td colspan="2" style="white-space: normal;">
+          Previous variants:
+          <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %>
+        </td>
       </tr>
       <% } else if (assessment_question.max_auto_points) { %>
       <tr>
