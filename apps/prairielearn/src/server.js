@@ -1046,7 +1046,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./pages/clientFilesQuestion/clientFilesQuestion')(),
+      require('./pages/clientFilesQuestion/clientFilesQuestion').default(),
     ],
   );
 
@@ -1417,7 +1417,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/clientFilesQuestion/clientFilesQuestion')(),
+      require('./pages/clientFilesQuestion/clientFilesQuestion').default(),
     ],
   );
 
@@ -1596,7 +1596,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
-    require('./pages/clientFilesQuestion/clientFilesQuestion')(),
+    require('./pages/clientFilesQuestion/clientFilesQuestion').default(),
   );
 
   // generatedFiles
@@ -1843,7 +1843,7 @@ module.exports.initExpress = function () {
   );
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/clientFilesQuestion/clientFilesQuestion')(),
+    require('./pages/clientFilesQuestion/clientFilesQuestion').default(),
   ]);
 
   // generatedFiles
@@ -1912,7 +1912,7 @@ module.exports.initExpress = function () {
   // Client files for questions
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/clientFilesQuestion',
-    require('./pages/clientFilesQuestion/clientFilesQuestion')({ publicEndpoint: true }),
+    require('./pages/clientFilesQuestion/clientFilesQuestion').default({ publicEndpoint: true }),
   );
 
   // generatedFiles
