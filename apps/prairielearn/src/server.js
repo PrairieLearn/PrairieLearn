@@ -413,7 +413,7 @@ module.exports.initExpress = function () {
     // sub-router by finding the cookie, or by running regular
     // authn/authz.
 
-    require('./middlewares/authzWorkspaceCookieCheck'), // short-circuits if we have the workspace-authz cookie
+    require('./middlewares/authzWorkspaceCookieCheck').default, // short-circuits if we have the workspace-authz cookie
     require('./middlewares/date').default,
     require('./middlewares/authn'), // jumps to error handler if authn fails
     require('./middlewares/authzWorkspace'), // jumps to error handler if authz fails
