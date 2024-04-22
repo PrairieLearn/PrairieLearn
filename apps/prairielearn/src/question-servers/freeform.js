@@ -974,7 +974,6 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
  * @param {import('../lib/code-caller').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
- * @returns
  */
 async function processQuestion(phase, codeCaller, data, context) {
   const meter = metrics.getMeter('prairielearn');

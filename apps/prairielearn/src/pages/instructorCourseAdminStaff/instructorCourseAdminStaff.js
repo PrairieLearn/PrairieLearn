@@ -1,7 +1,7 @@
-//@ts-check
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
-const async = require('async');
+import * as async from 'async';
 import * as path from 'path';
 
 import { html } from '@prairielearn/html';

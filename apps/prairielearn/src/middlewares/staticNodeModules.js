@@ -1,8 +1,8 @@
 // @ts-check
-const express = require('express');
-const path = require('node:path');
+import * as express from 'express';
+import * as path from 'node:path';
 
-const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('../lib/paths');
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths';
 
 const NODE_MODULES_PATHS = [
   path.resolve(APP_ROOT_PATH, 'node_modules'),
@@ -21,7 +21,7 @@ const NODE_MODULES_PATHS = [
  * @param {string} servePath
  * @param {import('serve-static').ServeStaticOptions} options
  */
-module.exports = function (servePath, options) {
+export default function (servePath, options) {
   const router = express.Router();
 
   NODE_MODULES_PATHS.forEach((p) => {
@@ -30,4 +30,4 @@ module.exports = function (servePath, options) {
   });
 
   return router;
-};
+}
