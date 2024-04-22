@@ -978,7 +978,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       // We don't have to explicitly kill the container here - our usual
       // background maintenance processes will soon notice that this container
       // should not be running on this host and kill it.
-      await sqldb.runInTransactionAsync(async () => {
+      const hostname = await sqldb.runInTransactionAsync(async () => {
         const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
           workspace_id: workspace.id,
         });
@@ -987,7 +987,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           logger.info(
             `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
           );
-          return;
+          return null;
         }
 
         const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
@@ -995,8 +995,18 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           workspace_id,
           hostname,
         });
-        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+        return hostname;
       });
+
+      // If we successfully updated the workspace's hostname, we can transition
+      // it to running. Note that this MUST be done outside of the above transaction,
+      // since this send a websocket message to the client to make it load the
+      // workspace. If we do this inside the transaction, there's a chance that the
+      // websocket message will reach the client before the state change is committed,
+      // which would cause the client to try to load the workspace before it's ready.
+      if (hostname) {
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
