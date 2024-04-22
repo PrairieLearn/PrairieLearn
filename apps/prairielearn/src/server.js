@@ -1054,7 +1054,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion').default(),
     ],
   );
 
@@ -1426,7 +1426,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion').default(),
     ],
   );
 
@@ -1602,7 +1602,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/generatedFilesQuestion',
-    require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion').default(),
   );
 
   // Submission files
@@ -1849,7 +1849,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion').default(),
   ]);
 
   // Submission files
@@ -1918,7 +1918,9 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/generatedFilesQuestion',
-    require('./pages/generatedFilesQuestion/generatedFilesQuestion')({ publicEndpoint: true }),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion').default({
+      publicEndpoint: true,
+    }),
   );
 
   // Submission files
