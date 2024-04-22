@@ -186,7 +186,7 @@
     "@types/archiver": "^6.0.2",
     "@types/async": "^3.2.24",
     "@types/body-parser": "^1.19.5",
-    "@types/bootstrap": "^5.2.10",
+    "@types/bootstrap": "^4.6.6",
     "@types/byline": "^4.2.36",
     "@types/chai": "^4.3.14",
     "@types/chai-as-promised": "^7.1.8",
