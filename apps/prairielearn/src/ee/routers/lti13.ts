@@ -6,7 +6,7 @@ import lti13Auth from '../auth/lti13/lti13Auth';
 import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
 import { features } from '../../lib/features';
 import middlewareAuthn = require('../../middlewares/authn');
-import csrfToken = require('../../middlewares/csrfToken');
+import csrfToken from '../../middlewares/csrfToken';
 import { selectLti13Instance } from '../models/lti13Instance';
 
 const router = Router({ mergeParams: true });
