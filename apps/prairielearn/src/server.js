@@ -1078,7 +1078,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./pages/submissionFile/submissionFile')(),
+      require('./pages/submissionFile/submissionFile').default(),
     ],
   );
 
@@ -1435,7 +1435,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/submissionFile/submissionFile')(),
+      require('./pages/submissionFile/submissionFile').default(),
     ],
   );
 
@@ -1608,7 +1608,7 @@ module.exports.initExpress = function () {
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/submission/:submission_id(\\d+)/file',
-    require('./pages/submissionFile/submissionFile')(),
+    require('./pages/submissionFile/submissionFile').default(),
   );
 
   // legacy client file paths
@@ -1857,7 +1857,7 @@ module.exports.initExpress = function () {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/submissionFile/submissionFile')(),
+      require('./pages/submissionFile/submissionFile').default(),
     ],
   );
 
@@ -1926,7 +1926,7 @@ module.exports.initExpress = function () {
   // Submission files
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:submission_id(\\d+)/file',
-    [require('./pages/submissionFile/submissionFile')({ publicEndpoint: true })],
+    [require('./pages/submissionFile/submissionFile').default({ publicEndpoint: true })],
   );
 
   //////////////////////////////////////////////////////////////////////
