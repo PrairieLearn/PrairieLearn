@@ -1018,7 +1018,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./middlewares/selectAndAuthzAssessmentQuestion'),
+      require('./middlewares/selectAndAuthzAssessmentQuestion').default,
       require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion')
         .default,
     ],
