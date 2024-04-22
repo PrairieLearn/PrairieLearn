@@ -316,7 +316,7 @@ class Feedback:
         """
         Feedback.check_dict(name, ref, data)
 
-        Checks that a student dict has all correct key-value mappings with respect to a reference dict. Can also check that a student dict has correct length of keys with respect to a reference dict's length of keys.  Can also check for a homogeneous data type for either the dict's key, dict's value, or both. Can also check if only some particular keys present in the student dict or not. Can also check student dict with respect to a reference dict only based on either keys, values, or both.
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`). It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally, enforces homogeneous data types for keys (using `entry_type_key`), values (using `entry_type_value`), or both. Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
 
         - ``name``: Name of the dictionary that is being checked. This will be used to give feedback.
         - ``ref``: Reference dictionary.
