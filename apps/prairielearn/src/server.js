@@ -1006,7 +1006,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1172,7 +1172,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1290,7 +1290,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_download',
@@ -1365,7 +1365,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_download',
@@ -1696,7 +1696,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
@@ -1798,7 +1798,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_download',
