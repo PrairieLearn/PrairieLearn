@@ -3,7 +3,6 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
-import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
 import { gradeVariant } from './grading';
