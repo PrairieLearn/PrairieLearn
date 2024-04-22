@@ -542,7 +542,7 @@ module.exports.initExpress = function () {
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
-  app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+  app.use('/pl/api', require('./middlewares/authnToken').default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
