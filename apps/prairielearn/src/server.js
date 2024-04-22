@@ -614,7 +614,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    require('./pages/news_item/news_item'),
+    require('./pages/news_item/news_item').default,
   ]);
   app.use(
     '/pl/request_course',
@@ -730,7 +730,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    require('./pages/news_item/news_item'),
+    require('./pages/news_item/news_item').default,
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -764,7 +764,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    require('./pages/news_item/news_item'),
+    require('./pages/news_item/news_item').default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1627,7 +1627,7 @@ module.exports.initExpress = function () {
     res.redirect(res.locals.urlPrefix + '/course_admin');
   }); // redirect plain course URL to overview page
 
-  // Some course pages only require the authn user to have permission (aleady checked)
+  // Some course pages only require the authn user to have permission (already checked)
   app.use(
     '/pl/course/:course_id(\\d+)/effectiveUser',
     require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
@@ -1636,7 +1636,7 @@ module.exports.initExpress = function () {
     '/pl/course/:course_id(\\d+)/news_items',
     require('./pages/news_items/news_items').default,
   );
-  app.use('/pl/course/:course_id(\\d+)/news_item', require('./pages/news_item/news_item'));
+  app.use('/pl/course/:course_id(\\d+)/news_item', require('./pages/news_item/news_item').default);
 
   // All other course pages require the effective user to have permission
   app.use('/pl/course/:course_id(\\d+)', require('./middlewares/authzHasCoursePreview').default);
