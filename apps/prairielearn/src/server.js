@@ -1059,7 +1059,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile').default,
     ],
   );
   app.use(
@@ -1442,14 +1442,14 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile').default,
     ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/preview/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile').default,
     ],
   );
   app.use(
@@ -1611,7 +1611,7 @@ module.exports.initExpress = function () {
   // legacy client file paths
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/file',
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
@@ -1862,11 +1862,11 @@ module.exports.initExpress = function () {
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/text', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,

@@ -15,7 +15,7 @@ router.get(
     const filename = 'text/' + req.params.filename;
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
-    const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
+    const questionIds = await chunks.getTemplateQuestionIds(question);
 
     /** @type {chunks.Chunk[]} */
     const templateQuestionChunks = questionIds.map((id) => ({
@@ -32,7 +32,7 @@ router.get(
       ]).concat(templateQuestionChunks);
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
-    const { rootPath, effectiveFilename } = await filePaths.questionFilePathAsync(
+    const { rootPath, effectiveFilename } = await filePaths.questionFilePath(
       filename,
       question.directory,
       coursePath,
