@@ -42,6 +42,16 @@ const CJS_ONLY_MODULES = new Set([
   'strip-ansi',
   'winston',
   'winston-transport',
+  // Unified ecosystem and related packages.
+  'unified',
+  'remark-parse',
+  'rehype-raw',
+  'remark-gfm',
+  'remark-rehype',
+  'remark-math',
+  'rehype-stringify',
+  'rehype-sanitize',
+  'unist-util-visit',
   // Relative paths to PrairieLearn files.
   'apps/grader-host/src/lib/logger',
   'apps/prairielearn/src/middlewares/authzIsAdministrator',
