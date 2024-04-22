@@ -228,6 +228,7 @@ function AssessmentQuestionsTable({
                         `}
                     ${question.title}
                     ${renderEjs(__filename, "<%- include('../partials/issueBadge') %>", {
+                      urlPrefix,
                       count: question.open_issue_count,
                       issueQid: question.qid,
                     })}
