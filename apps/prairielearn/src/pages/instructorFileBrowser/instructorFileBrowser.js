@@ -294,8 +294,8 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
-       res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-       return;
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'rename_file') {
