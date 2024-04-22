@@ -8,7 +8,7 @@ import * as compiledAssets from '@prairielearn/compiled-assets';
 import { config } from './config';
 import { APP_ROOT_PATH } from './paths';
 import staticNodeModules from '../middlewares/staticNodeModules';
-import elementFiles = require('../pages/elementFiles/elementFiles');
+import elementFiles from '../pages/elementFiles/elementFiles';
 import { HtmlSafeString } from '@prairielearn/html';
 
 let assetsPrefix: string | null = null;

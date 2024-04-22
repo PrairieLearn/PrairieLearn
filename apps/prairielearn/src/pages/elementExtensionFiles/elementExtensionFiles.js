@@ -1,12 +1,13 @@
-const path = require('path');
-const express = require('express');
-const router = express.Router({ mergeParams: true });
-const _ = require('lodash');
-const ERR = require('async-stacktrace');
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import * as path from 'node:path';
+import { Router } from 'express';
 
-const error = require('@prairielearn/error');
-const { config } = require('../../lib/config');
-const chunks = require('../../lib/chunks');
+import { config } from '../../lib/config';
+import * as chunks from '../../lib/chunks';
+import { HttpStatusError } from '@prairielearn/error';
+
+const router = Router({ mergeParams: true });
 
 /**
  * Serves scripts and styles for element extensions. Only serves .js and .css files, or any
@@ -16,36 +17,36 @@ const chunks = require('../../lib/chunks');
 const FILE_TYPE_EXTENSION_WHITELIST = ['.js', '.css'];
 const CLIENT_FOLDER = 'clientFilesExtension';
 
-router.get('/*', function (req, res, next) {
-  const filename = req.params[0];
-  let pathSpl = path.normalize(filename).split('/');
-  const valid =
-    pathSpl[2] === CLIENT_FOLDER ||
-    _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
-  if (!valid) {
-    next(new error.HttpStatusError(404, 'Unable to serve that file'));
-    return;
-  }
+router.get(
+  '/*',
+  asyncHandler(async (req, res) => {
+    const filename = req.params[0];
+    let pathSpl = path.normalize(filename).split('/');
+    const valid =
+      pathSpl[2] === CLIENT_FOLDER ||
+      FILE_TYPE_EXTENSION_WHITELIST.some((extension) => filename.endsWith(extension));
+    if (!valid) {
+      throw new HttpStatusError(404, 'Unable to serve that file');
+    }
 
-  // If the route includes a `cachebuster` param, we'll set the `immutable`
-  // and `maxAge` options on the `Cache-Control` header. This router is
-  // mounted twice - one with the cachebuster in the URL, and once without it
-  // for backwards compatibility. See `server.js` for more details.
-  //
-  // As with `/assets/`, we assume that element files are likely to change
-  // when running in dev mode, so we skip caching entirely in that case.
-  const isCached = !!req.params.cachebuster && !config.devMode;
+    // If the route includes a `cachebuster` param, we'll set the `immutable`
+    // and `maxAge` options on the `Cache-Control` header. This router is
+    // mounted twice - one with the cachebuster in the URL, and once without it
+    // for backwards compatibility. See `server.js` for more details.
+    //
+    // As with `/assets/`, we assume that element files are likely to change
+    // when running in dev mode, so we skip caching entirely in that case.
+    const isCached = !!req.params.cachebuster && !config.devMode;
 
-  if (isCached) {
-    // `middlewares/cors.js` disables caching for all routes by default.
-    // We need to remove this header so that `res.sendFile` can set it
-    // correctly.
-    res.removeHeader('Cache-Control');
-  }
+    if (isCached) {
+      // `middlewares/cors.js` disables caching for all routes by default.
+      // We need to remove this header so that `res.sendFile` can set it
+      // correctly.
+      res.removeHeader('Cache-Control');
+    }
 
-  const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-  chunks.ensureChunksForCourse(res.locals.course.id, { type: 'elementExtensions' }, (err) => {
-    if (ERR(err, next)) return;
+    const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
+    await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'elementExtensions' });
 
     const elementFilesDir = path.join(coursePath, 'elementExtensions');
     res.sendFile(filename, {
@@ -53,7 +54,7 @@ router.get('/*', function (req, res, next) {
       immutable: isCached,
       maxAge: isCached ? '31536000s' : 0,
     });
-  });
-});
+  }),
+);
 
-module.exports = router;
+export default router;

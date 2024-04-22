@@ -1,29 +1,34 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const error = require('@prairielearn/error');
-const serverJobs = require('../../lib/server-jobs-legacy');
-const syncHelpers = require('../shared/syncHelpers');
-const { logger } = require('@prairielearn/logger');
+const asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import { HttpStatusError } from '@prairielearn/error';
+import * as serverJobs from '../../lib/server-jobs-legacy';
+import * as syncHelpers from '../shared/syncHelpers';
+import { logger } from '@prairielearn/logger';
 
-router.get('/:job_sequence_id', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
-  }
+const router = Router();
 
-  const job_sequence_id = req.params.job_sequence_id;
-  const course_id = res.locals.course ? res.locals.course.id : null;
-  serverJobs.getJobSequenceWithFormattedOutput(job_sequence_id, course_id, (err, job_sequence) => {
-    if (ERR(err, next)) return;
+router.get(
+  '/:job_sequence_id',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
+    }
+
+    const job_sequence_id = req.params.job_sequence_id;
+    const course_id = res.locals.course ? res.locals.course.id : null;
+    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+      job_sequence_id,
+      course_id,
+    );
 
     if (job_sequence.status === 'Running') {
       // All edits wait for the corresponding job sequence to finish before
       // proceeding, so something bad must have happened to get to this page
       // with a sequence that is still running.
-      return next(new Error('Edit is still in progress (job sequence is still running)'));
+      throw new Error('Edit is still in progress (job sequence is still running)');
     } else if (job_sequence.status !== 'Error') {
-      return next(new Error('Edit did not fail'));
+      throw new Error('Edit did not fail');
     }
 
     res.locals.failedSync = false;
@@ -43,24 +48,23 @@ router.get('/:job_sequence_id', function (req, res, next) {
 
     res.locals.job_sequence = job_sequence;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+  }),
+);
 
-router.post('/:job_sequence_id', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be course editor)'));
-  }
+router.post(
+  '/:job_sequence_id',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
+    }
 
-  if (req.body.__action === 'pull') {
-    syncHelpers
-      .pullAndUpdate(res.locals)
-      .then((job_sequence_id) => {
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      })
-      .catch((err) => ERR(err, next));
-  } else {
-    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
-  }
-});
+    if (req.body.__action === 'pull') {
+      const job_sequence_id = await syncHelpers.pullAndUpdate(res.locals);
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+    } else {
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
-module.exports = router;
+export default router;

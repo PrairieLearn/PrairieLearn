@@ -1050,7 +1050,6 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
     }),
   );
 }
-export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
 
 interface QuestionWithTemplateDirectory {
   id: string;
@@ -1063,7 +1062,7 @@ interface QuestionWithTemplateDirectory {
  * @param question A question object.
  * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
-export async function getTemplateQuestionIdsAsync(
+export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
@@ -1073,7 +1072,6 @@ export async function getTemplateQuestionIdsAsync(
   const questionIds = result.rows.map((r) => r.id);
   return questionIds;
 }
-export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsync);
 
 /**
  * Logs the changes to chunks for a given job.
