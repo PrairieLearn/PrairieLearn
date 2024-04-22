@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 import { Octokit } from '@octokit/rest';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@prairielearn/sentry';

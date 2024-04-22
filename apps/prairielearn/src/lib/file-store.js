@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-const debugfn = require('debug');
+import debugfn from 'debug';
 
 import * as sqldb from '@prairielearn/postgres';
 

@@ -1,15 +1,13 @@
 import { Router } from 'express';
-import * as path from 'path';
 import * as error from '@prairielearn/error';
 import { z } from 'zod';
-import { promisify } from 'util';
 import asyncHandler = require('express-async-handler');
 
 import { selectQuestionById } from '../../models/question';
 import { selectCourseById } from '../../models/course';
 import { processSubmission } from '../../lib/question-submission';
 import { IdSchema, UserSchema } from '../../lib/db-types';
-import LogPageView = require('../../middlewares/logPageView');
+import { logPageView } from '../../middlewares/logPageView';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -17,8 +15,6 @@ import {
 } from '../../lib/question-render';
 import { PublicQuestionPreview } from './publicQuestionPreview.html';
 import { setQuestionCopyTargets } from '../../lib/copy-question';
-
-const logPageView = promisify(LogPageView(path.basename(__filename, '.ts')));
 
 const router = Router({ mergeParams: true });
 
@@ -80,7 +76,7 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
-    await logPageView(req, res);
+    await logPageView('publicQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
     setRendererHeader(res);
     res.send(PublicQuestionPreview({ resLocals: res.locals }));

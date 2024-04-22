@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
@@ -83,17 +82,6 @@ export class Editor {
 
   async write() {
     throw new Error('write must be defined in a subclass');
-  }
-
-  canEdit(callback) {
-    try {
-      this.assertCanEdit();
-    } catch (err) {
-      callback(err);
-      return;
-    }
-
-    callback(null);
   }
 
   assertCanEdit() {
@@ -249,20 +237,6 @@ export class Editor {
         }
       });
     });
-  }
-
-  doEdit(callback) {
-    this.prepareServerJob().then(
-      (serverJob) => {
-        this.executeWithServerJob(serverJob).then(
-          () => callback(null, serverJob.jobSequenceId),
-          (err) => callback(err, serverJob.jobSequenceId),
-        );
-      },
-      (err) => {
-        callback(err);
-      },
-    );
   }
 
   /**
@@ -523,13 +497,6 @@ export class AssessmentRenameEditor extends Editor {
     this.description = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid}`;
   }
 
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  }
-
   async write() {
     debug('AssessmentRenameEditor: write()');
     const basePath = path.join(
@@ -682,13 +649,6 @@ export class CourseInstanceRenameEditor extends Editor {
     this.description = `Rename course instance ${this.course_instance.short_name}`;
   }
 
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  }
-
   async write() {
     debug('CourseInstanceRenameEditor: write()');
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
@@ -821,13 +781,6 @@ export class QuestionRenameEditor extends Editor {
     super(params);
     this.qid_new = params.qid_new;
     this.description = `Rename question ${this.question.qid}`;
-  }
-
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
   }
 
   async write() {
@@ -1010,9 +963,9 @@ export class FileDeleteEditor extends Editor {
     )}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.deletePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The path of the file to delete</p>
           <div class="container">
@@ -1024,14 +977,13 @@ export class FileDeleteEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.deletePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The path of the file to delete</p>
           <div class="container">
@@ -1041,13 +993,9 @@ export class FileDeleteEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1076,10 +1024,10 @@ export class FileRenameEditor extends Editor {
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     debug('FileRenameEditor: canEdit()');
     if (!contains(this.container.rootPath, this.oldPath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's old path</p>
           <div class="container">
@@ -1091,11 +1039,10 @@ export class FileRenameEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     if (!contains(this.container.rootPath, this.newPath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's new path</p>
           <div class="container">
@@ -1107,7 +1054,6 @@ export class FileRenameEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     let found;
@@ -1116,7 +1062,7 @@ export class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.oldPath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's old path</p>
           <div class="container">
@@ -1126,14 +1072,13 @@ export class FileRenameEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.newPath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's new path</p>
           <div class="container">
@@ -1143,13 +1088,9 @@ export class FileRenameEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1186,36 +1127,37 @@ export class FileUploadEditor extends Editor {
     return sha256(buffer.toString('utf8')).toString();
   }
 
-  shouldEdit(callback) {
+  async shouldEdit() {
     debug('look for old contents');
-    fs.readFile(this.filePath, (err, contents) => {
-      if (err) {
-        if (err.code === 'ENOENT') {
-          debug('no old contents, so continue with upload');
-          callback(null, true);
-        } else {
-          ERR(err, callback);
-        }
-      } else {
-        debug('get hash of old contents and of new contents');
-        const oldHash = this.getHashFromBuffer(contents);
-        const newHash = this.getHashFromBuffer(this.fileContents);
-        debug('oldHash: ' + oldHash);
-        debug('newHash: ' + newHash);
-        if (oldHash === newHash) {
-          debug('new contents are the same as old contents, so abort upload');
-          callback(null, false);
-        } else {
-          debug('new contents are different from old contents, so continue with upload');
-          callback(null, true);
-        }
+    let contents;
+    try {
+      contents = await fs.readFile(this.filePath);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        debug('no old contents, so continue with upload');
+        return true;
       }
-    });
+
+      throw err;
+    }
+
+    debug('get hash of old contents and of new contents');
+    const oldHash = this.getHashFromBuffer(contents);
+    const newHash = this.getHashFromBuffer(this.fileContents);
+    debug('oldHash: ' + oldHash);
+    debug('newHash: ' + newHash);
+    if (oldHash === newHash) {
+      debug('new contents are the same as old contents, so abort upload');
+      return false;
+    } else {
+      debug('new contents are different from old contents, so continue with upload');
+      return true;
+    }
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1227,14 +1169,13 @@ export class FileUploadEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1244,13 +1185,9 @@ export class FileUploadEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1315,9 +1252,9 @@ export class FileModifyEditor extends Editor {
     }
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1329,14 +1266,13 @@ export class FileModifyEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1346,13 +1282,9 @@ export class FileModifyEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {

@@ -1,32 +1,33 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const asyncHandler = require('express-async-handler');
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { regradeAllAssessmentInstances } from '../../lib/regrading';
 import * as sqldb from '@prairielearn/postgres';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
-  }
-  var params = {
-    assessment_id: res.locals.assessment.id,
-  };
-  sqldb.query(sql.select_regrading_job_sequences, params, function (err, result) {
-    if (ERR(err, next)) return;
-    res.locals.regrading_job_sequences = result.rows;
-    debug('render page');
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    res.locals.regrading_job_sequences = await sqldb.queryRows(
+      sql.select_regrading_job_sequences,
+      { assessment_id: res.locals.assessment.id },
+      JobSequenceSchema.extend({
+        start_date_formatted: z.string(),
+        user_uid: UserSchema.shape.uid,
+      }),
+    );
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+  }),
+);
 
 router.post(
   '/',

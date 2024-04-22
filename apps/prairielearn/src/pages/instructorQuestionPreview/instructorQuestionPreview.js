@@ -1,8 +1,6 @@
 // @ts-check
 import * as _ from 'lodash';
 import * as express from 'express';
-import * as path from 'path';
-import { promisify } from 'util';
 import { z } from 'zod';
 const asyncHandler = require('express-async-handler');
 
@@ -14,13 +12,12 @@ import {
   setRendererHeader,
 } from '../../lib/question-render';
 import * as issues from '../../lib/issues';
-const LogPageView = require('../../middlewares/logPageView');
+import { logPageView } from '../../middlewares/logPageView';
 import { setQuestionCopyTargets } from '../../lib/copy-question';
 import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
 import { IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
-const logPageView = promisify(LogPageView(path.basename(__filename, '.js')));
 
 async function processIssue(req, res) {
   const description = req.body.description;
@@ -87,7 +84,7 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
-    await logPageView(req, res);
+    await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
     setRendererHeader(res);
@@ -95,4 +92,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

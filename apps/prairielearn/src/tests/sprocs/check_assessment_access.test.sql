@@ -4,17 +4,42 @@ WITH
     INSERT INTO
       users (user_id, uid)
     VALUES
-      (1000, 'student@school.edu'),
-      (1010, 'ta@school.edu'),
-      (1020, 'instructor@school.edu')
+      (1000, 'student@example.com')
+  ),
+  setup_pt_courses AS (
+    INSERT INTO
+      pt_courses (id, name)
+    VALUES
+      (1, 'Course 1')
+  ),
+  setup_pt_sessions AS (
+    INSERT INTO
+      pt_sessions (id, date)
+    VALUES
+      (1, NOW())
+  ),
+  setup_pt_enrollments AS (
+    INSERT INTO
+      pt_enrollments (id, user_id)
+    VALUES
+      (1, 1000)
+  ),
+  setup_pt_exams AS (
+    INSERT INTO
+      pt_exams (id, uuid, name, course_id)
+    VALUES
+      (
+        1,
+        '890884f9-aa9d-4fc0-b910-5229794906fb',
+        'Exam 1',
+        1
+      )
   ),
   setup_pl_course AS (
     INSERT INTO
       pl_courses (id, display_timezone, path)
     VALUES
-      (1, 'UTC', '/path/to/course/1'),
-      (2, 'UTC', '/path/to/course/2'),
-      (3, 'UTC', '/path/to/course/3')
+      (1, 'UC', '/path/to/course/1')
   ),
   setup_ci AS (
     INSERT INTO
@@ -25,33 +50,13 @@ WITH
         'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
         1,
         'UTC'
-      ),
-      (
-        2,
-        '5756a615-cdc4-48e6-9836-79fb708a2f55',
-        2,
-        'UTC'
-      ),
-      (
-        3,
-        '335c2f78-f8d3-4a14-99da-53af231b0428',
-        3,
-        'UTC'
-      ),
-      (
-        4,
-        '2256b06e-c00a-4596-a3b2-510f159d36d5',
-        3,
-        'UTC'
       )
   ),
   setup_assessment_sets AS (
     INSERT INTO
       assessment_sets (id, course_id)
     VALUES
-      (1, 1),
-      (2, 2),
-      (3, 3)
+      (1, 1)
   ),
   setup_assessments AS (
     INSERT INTO
@@ -89,100 +94,20 @@ WITH
         1
       ),
       (
-        13,
-        '794666e4-bbf9-47c1-9613-6bf2057dbd1c',
-        'someExam',
-        'Some Exam',
+        50,
+        'd92f7657-30b4-4bcd-9ccf-a2b4a5022c64',
+        'accessExam',
+        'Access Exam',
         1,
         1
       ),
       (
-        20,
-        '71b1cf06-6494-4491-bc05-cba7f93dacfd',
-        'someExam',
-        'Some Exam',
-        2,
-        2
-      ),
-      (
-        21,
-        '5fe78f9c-bfeb-4065-a9f3-20ec0c00140f',
-        'someExam',
-        'Some Exam',
-        2,
-        2
-      ),
-      (
-        22,
-        'd803d2df-000c-4949-b25b-d7781c31d726',
-        'someExam',
-        'Some Exam',
-        2,
-        2
-      ),
-      (
-        23,
-        '0727036e-43a2-467c-a0ee-b1df8ffe7096',
-        'someExam',
-        'Some Exam',
-        2,
-        2
-      ),
-      (
-        30,
-        '3538dfb4-c0e4-4be6-80e1-a7f294904fc7',
-        'someExam',
-        'Some Exam',
-        3,
-        3
-      ),
-      (
-        31,
-        '2cf82007-d760-4f29-8755-42e7089c5352',
-        'someExam',
-        'Some Exam',
-        3,
-        3
-      ),
-      (
-        32,
-        '5f2e00b7-6ec4-4422-a8c4-dce04f6b6b05',
-        'someExam',
-        'Some Exam',
-        3,
-        3
-      ),
-      (
-        40,
-        '24fc184d-656b-44e5-979a-33e4d41abebd',
-        'someExam',
-        'Some Exam',
-        4,
-        3
-      ),
-      (
-        41,
-        '6a4eba13-930d-4e1b-99db-0a5b4205cf83',
-        'someExam',
-        'Some Exam',
-        4,
-        3
-      ),
-      (
-        42,
-        '85830431-0317-4a75-84d6-d9baf68e33a7',
-        'someExam',
-        'Some Exam',
-        4,
-        3
-      ),
-      (
-        43,
-        '494ec9c0-4599-4539-92b4-ad0ed1c08b4f',
-        'someExam',
-        'Some Exam',
-        4,
-        3
+        52,
+        'a92f7657-30b4-4bcd-9ccf-a2b4a5022c64',
+        'accessExam',
+        'Access Exam',
+        1,
+        1
       )
   ),
   setup_assessment_access_rule AS (
@@ -193,7 +118,8 @@ WITH
         start_date,
         end_date,
         credit,
-        exam_uuid
+        exam_uuid,
+        uids
       )
     VALUES
       (
@@ -202,6 +128,7 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
+        null,
         null
       ),
       (
@@ -210,7 +137,8 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        '890884f9-aa9d-4fc0-b910-5229794906fb'
+        '890884f9-aa9d-4fc0-b910-5229794906fb',
+        null
       ),
       (
         12,
@@ -218,79 +146,52 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'
-      ),
-      (
-        13,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
+        '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3',
         null
       ),
       (
-        20,
-        'Exam',
+        50,
+        'Public',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
+        null,
+        '{valid@example.com}'
+      ),
+      (
+        52,
+        'Public',
+        '2010-01-01 00:00:01-00',
+        '2010-12-31 23:59:59-00',
+        100,
+        'bf6df059-6760-4cf0-ac32-35a43e28a3e7',
         null
-      ),
+      )
+  )
+SELECT
+  true;
+
+-- BLOCK insert_pt_reservation
+WITH
+  remove_reservations AS (
+    DELETE FROM pt_reservations
+  ),
+  insert_new_reservation AS (
+    INSERT INTO
+      pt_reservations (
+        exam_id,
+        enrollment_id,
+        session_id,
+        access_start,
+        access_end
+      )
+    VALUES
       (
-        21,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        'fa71b9cc-7717-4e84-9a1e-8d55b3d4fadd'
-      ),
-      (
-        22,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'
-      ),
-      (
-        23,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        null
-      ),
-      (
-        40,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        null
-      ),
-      (
-        41,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        'adf9ce2d-dfca-4a7f-8c6b-1376715fd346'
-      ),
-      (
-        42,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'
-      ),
-      (
-        43,
-        'Exam',
-        '2010-01-01 00:00:01-00',
-        '2010-12-31 23:59:59-00',
-        100,
-        null
+        $exam_id,
+        1,
+        1,
+        '2010-07-01 00:00:00-00',
+        '2010-07-31 23:59:59-00'
       )
   )
 SELECT

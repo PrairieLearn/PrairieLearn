@@ -42,9 +42,9 @@ The following tables are potentially modified during a sync:
   - The assessment set should be added to the `assessment_sets` table
 - An assessment set is modified
   - The assessment set should be updated in the `assessment_sets` table
-- An assesment set is removed
+- An assessment set is removed
 
-  - The assesment set should be deleted from the `assessment_sets` table
+  - The assessment set should be deleted from the `assessment_sets` table
   - Sync should error if any assessments still reference this assessment set
 
 - A topic is added

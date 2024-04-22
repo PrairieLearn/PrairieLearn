@@ -19,5 +19,3 @@ def generate(data):
     data["params"]["shape_c"] = shape_c
     data["params"]["shape_x1"] = shape_x1
     data["params"]["shape_x2"] = shape_x2
-
-    return data
