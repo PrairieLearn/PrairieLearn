@@ -1262,7 +1262,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics', [
     function (req, res, next) {
@@ -1770,7 +1770,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/topics', [
     function (req, res, next) {
