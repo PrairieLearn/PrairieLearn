@@ -1050,7 +1050,6 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
     }),
   );
 }
-export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
 
 interface QuestionWithTemplateDirectory {
   id: string;
