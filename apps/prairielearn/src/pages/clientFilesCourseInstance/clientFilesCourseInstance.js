@@ -10,7 +10,7 @@ const router = Router();
 
 router.get(
   '/*',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     const filename = req.params[0];
     if (!filename) {
       throw new error.HttpStatusError(

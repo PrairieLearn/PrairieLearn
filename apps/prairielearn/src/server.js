@@ -1503,7 +1503,7 @@ module.exports.initExpress = function () {
       require('./middlewares/studentAssessmentAccess').default,
       require('./middlewares/clientFingerprint').default,
       require('./middlewares/logPageView').default('studentAssessmentInstanceFile'),
-      require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
+      require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile').default,
     ],
   );
   app.use(
