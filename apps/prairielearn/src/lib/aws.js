@@ -128,7 +128,7 @@ export async function downloadFromS3(s3Bucket, s3Path, localPath, options = {}) 
  * @param {string} s3Path - The S3 target path.
  * @param {boolean=} isDirectory - Whether the deletion target is a directory (defaults to false).
  */
-export async function deleteFromS3Async(s3Bucket, s3Path, isDirectory = false) {
+export async function deleteFromS3(s3Bucket, s3Path, isDirectory = false) {
   const s3 = new S3(makeS3ClientConfig());
 
   if (isDirectory) {
