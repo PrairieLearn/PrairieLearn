@@ -1066,7 +1066,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/text',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion').default,
-      require('./pages/legacyQuestionText/legacyQuestionText'),
+      require('./pages/legacyQuestionText/legacyQuestionText').default,
     ],
   );
 
@@ -1456,14 +1456,14 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/text',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/legacyQuestionText/legacyQuestionText'),
+      require('./pages/legacyQuestionText/legacyQuestionText').default,
     ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/preview/text',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion').default,
-      require('./pages/legacyQuestionText/legacyQuestionText'),
+      require('./pages/legacyQuestionText/legacyQuestionText').default,
     ],
   );
 
@@ -1615,7 +1615,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
-    require('./pages/legacyQuestionText/legacyQuestionText'),
+    require('./pages/legacyQuestionText/legacyQuestionText').default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1870,11 +1870,11 @@ module.exports.initExpress = function () {
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/text', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/legacyQuestionText/legacyQuestionText'),
+    require('./pages/legacyQuestionText/legacyQuestionText').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview/text', [
     require('./middlewares/selectAndAuthzInstructorQuestion').default,
-    require('./pages/legacyQuestionText/legacyQuestionText'),
+    require('./pages/legacyQuestionText/legacyQuestionText').default,
   ]);
 
   //////////////////////////////////////////////////////////////////////
