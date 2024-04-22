@@ -54,6 +54,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
 
       const result = await sqldb.queryOneRowAsync(sql.select_question_id_from_uuid, {

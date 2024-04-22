@@ -75,7 +75,8 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
 
       debug(
