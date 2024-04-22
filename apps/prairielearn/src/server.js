@@ -562,7 +562,7 @@ module.exports.initExpress = function () {
     enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
   );
 
-  app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
+  app.use(require('./middlewares/csrfToken').default); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest').default);
 
   // load accounting for authenticated accesses
