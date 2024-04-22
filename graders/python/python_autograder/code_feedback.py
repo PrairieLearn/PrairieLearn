@@ -323,7 +323,7 @@ class Feedback:
         - ``data``: Student dictionary to be checked.
         - ``partial_keys``: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
         - ``check_only_keys``: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
-        - ``check_only_values``: If true, grading will be done only based on checking all valeus in student's dict and reference's dict match or not.
+        - ``check_only_values``: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
         - ``entry_type_key``: If not None, requires that each key in the student's dictionary in solution be of this type.
         - ``entry_type_value``: If not None, requires that each value in the student's dictionary in solution be of this type.
         - ``accuracy_critical``: If true, grading will halt on failure.
@@ -344,18 +344,18 @@ class Feedback:
         if not isinstance(data, dict):
             return bad(f"{name} is not a dict")
 
-        if len(ref) != len(data):
+        if partial_keys is not None and len(ref) != len(data):
             return bad(
-                f"{name} has the wrong length for keys--expected {len(ref)}, got {len(data)}"
+                f"{name} has the wrong number of entries, expected {len(ref)}, got {len(data)}"
             )
 
         if entry_type_value is not None:
-            for _, value in data.items():
+            for value in data.values():
                 if not isinstance(value, entry_type_value):
                     return bad(f"{name} has the wrong type for value {value}")
 
         if entry_type_key is not None:
-            for key, _ in data.items():
+            for key in data.keys():
                 if not isinstance(key, entry_type_key):
                     return bad(f"{name} has the wrong type for key {key}")
 
@@ -391,10 +391,10 @@ class Feedback:
             ref == data
         ):  # will check equality of both keys and values between reference dict and student's dict
             return True
-        else:
-            return bad(
-                f"{name} is incorrect as one (or more) key-value pairs do not match"
-            )
+        
+        return bad(
+            f"{name} is incorrect as one (or more) key-value pairs do not match"
+        )
 
     @classmethod
     def check_tuple(
