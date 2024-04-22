@@ -73,7 +73,7 @@ export async function questionFilePath(
     }
 
     const templateQuestion = result.rows[0];
-    return questionFilePath(
+    return await questionFilePath(
       filename,
       templateQuestion.directory,
       coursePath,

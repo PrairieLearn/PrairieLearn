@@ -6,7 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-export default asyncHandler(async (req, res) => {
+export default asyncHandler(async (req, res, next) => {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     assessment_question_id: req.params.assessment_question_id,
     assessment_id: res.locals.assessment.id,
@@ -16,4 +16,5 @@ export default asyncHandler(async (req, res) => {
   });
   if (result.rowCount === 0) throw new HttpStatusError(403, 'Access denied');
   _.assign(res.locals, result.rows[0]);
+  next();
 });
