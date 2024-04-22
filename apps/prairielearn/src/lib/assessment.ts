@@ -3,7 +3,6 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
-import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
 import { gradeVariant } from './grading';
@@ -50,7 +49,7 @@ export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
  * @param assessment_id - The assessment it should belong to.
  * @returns Throws an error if the assessment instance doesn't belong to the assessment.
  */
-export async function checkBelongsAsync(
+export async function checkBelongs(
   assessment_instance_id: string,
   assessment_id: string,
 ): Promise<void> {
@@ -64,7 +63,6 @@ export async function checkBelongsAsync(
     throw new error.HttpStatusError(403, 'access denied');
   }
 }
-export const checkBelongs = callbackify(checkBelongsAsync);
 
 /**
  * Render the "text" property of an assessment.
@@ -157,7 +155,7 @@ export async function update(
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
-    await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    await ltiOutcomes.updateScoreAsync(assessment_instance_id);
   }
   return updated;
 }
