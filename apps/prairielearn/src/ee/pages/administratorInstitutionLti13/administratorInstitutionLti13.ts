@@ -9,11 +9,11 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
-import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
+import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html';
 import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
-import { LTI13InstancePlatforms } from './institutionAdminLti13.types';
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -72,7 +72,7 @@ router.get(
     if (typeof req.params.unsafe_lti13_instance_id === 'undefined') {
       if (lti13Instances.length > 0) {
         return res.redirect(
-          `/pl/institution/${institution.id}/admin/lti13/${lti13Instances[0].id}`,
+          `/pl/administrator/institution/${institution.id}/lti13/${lti13Instances[0].id}`,
         );
       }
       // else continue through, the html.ts page handles the 0 instances case
@@ -89,7 +89,7 @@ router.get(
     }
 
     res.send(
-      InstitutionAdminLti13({
+      AdministratorInstitutionLti13({
         institution,
         lti13Instances,
         instance: paramInstance ?? null,
@@ -194,7 +194,9 @@ router.post(
       );
       flash('success', `Instance #${new_li} added.`);
 
-      return res.redirect(`/pl/institution/${req.params.institution_id}/admin/lti13/${new_li}`);
+      return res.redirect(
+        `/pl/administrator/institution/${req.params.institution_id}/lti13/${new_li}`,
+      );
     } else if (req.body.__action === 'update_name') {
       await queryAsync(sql.update_name, {
         name: req.body.name,

@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const _ = require('lodash');
 
 export function pages(chosenPage, count, pageSize) {

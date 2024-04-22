@@ -1,4 +1,6 @@
+// @ts-check
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
 const error = require('@prairielearn/error');
@@ -6,18 +8,17 @@ const error = require('@prairielearn/error');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../../lib/editors');
-const { logger } = require('@prairielearn/logger');
 const { contains } = require('@prairielearn/path-utils');
 const fs = require('fs-extra');
 const async = require('async');
-const hljs = require('highlight.js');
+const hljs = require('highlight.js').default;
 const FileType = require('file-type');
 const { isBinaryFile } = require('isbinaryfile');
 const { encodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-const { getPathsCallback } = require('../../lib/instructorFiles');
+const { getPaths } = require('../../lib/instructorFiles');
 
 function isHidden(item) {
   return item[0] === '.';
@@ -77,9 +78,9 @@ function browseDirectory(file_browser, callback) {
                   contains(invalidRootPath, filepath),
                 ),
                 sync_errors: sync_data.errors,
-                sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors),
+                sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors ?? ''),
                 sync_warnings: sync_data.warnings,
-                sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings),
+                sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings ?? ''),
               };
             } else if (stats.isDirectory()) {
               return {
@@ -215,19 +216,11 @@ router.get('/*', function (req, res, next) {
   };
   async.waterfall(
     [
-      (callback) => {
+      async () => {
         debug('get paths');
-        getPathsCallback(req, res, (err, paths) => {
-          if (ERR(err, callback)) return;
-          file_browser.paths = paths;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.lstat(file_browser.paths.workingPath, (err, stats) => {
-          if (ERR(err, callback)) return;
-          callback(null, stats);
-        });
+        file_browser.paths = getPaths(req, res);
+
+        return await fs.lstat(file_browser.paths.workingPath);
       },
       (stats, callback) => {
         if (stats.isDirectory()) {
@@ -253,7 +246,7 @@ router.get('/*', function (req, res, next) {
     ],
     (err) => {
       if (err) {
-        if (err.code === 'ENOENT' && file_browser.paths.branch.length > 1) {
+        if (/** @type {any} */ (err).code === 'ENOENT' && file_browser.paths.branch.length > 1) {
           res.redirect(`${req.baseUrl}/${encodePath(file_browser.paths.branch.slice(-2)[0].path)}`);
           return;
         } else {
@@ -266,13 +259,15 @@ router.get('/*', function (req, res, next) {
   );
 });
 
-router.post('/*', function (req, res, next) {
-  debug('POST /');
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
-  }
-  getPathsCallback(req, res, (err, paths) => {
-    if (ERR(err, next)) return;
+router.post(
+  '/*',
+  asyncHandler(async (req, res) => {
+    debug('POST /');
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
+    }
+
+    const paths = getPaths(req, res);
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
@@ -288,53 +283,49 @@ router.post('/*', function (req, res, next) {
       try {
         deletePath = path.join(res.locals.course.path, req.body.file_path);
       } catch (err) {
-        return next(new Error(`Invalid file path: ${req.body.file_path}`));
+        throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
         locals: res.locals,
         container,
         deletePath,
       });
-      editor.canEdit((err) => {
-        if (ERR(err, next)) return;
-        editor.doEdit((err, job_sequence_id) => {
-          if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-          } else {
-            res.redirect(req.originalUrl);
-          }
-        });
-      });
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'rename_file') {
       debug('Rename file');
       let oldPath;
       try {
         oldPath = path.join(req.body.working_path, req.body.old_file_name);
       } catch (err) {
-        return next(
-          new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`),
+        throw new Error(
+          `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
         );
       }
       if (!req.body.new_file_name) {
-        return next(new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`));
+        throw new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`);
       }
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
           req.body.new_file_name,
         )
       ) {
-        return next(
-          new Error(
-            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
-          ),
+        throw new Error(
+          `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
         );
       }
       let newPath;
       try {
         newPath = path.join(req.body.working_path, req.body.new_file_name);
       } catch (err) {
-        return next(
-          new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`),
+        throw new Error(
+          `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
         );
       }
       if (oldPath === newPath) {
@@ -347,43 +338,42 @@ router.post('/*', function (req, res, next) {
           oldPath,
           newPath,
         });
-        editor.canEdit((err) => {
-          if (ERR(err, next)) return;
-          editor.doEdit((err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
-              if (req.body.was_viewing_file) {
-                res.redirect(
-                  `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-                    path.relative(res.locals.course.path, newPath),
-                  )}`,
-                );
-              } else {
-                res.redirect(req.originalUrl);
-              }
-            }
-          });
-        });
+        const serverJob = await editor.prepareServerJob();
+        try {
+          await editor.executeWithServerJob(serverJob);
+        } catch (err) {
+          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          return;
+        }
+        if (req.body.was_viewing_file) {
+          res.redirect(
+            `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
+              path.relative(res.locals.course.path, newPath),
+            )}`,
+          );
+        } else {
+          res.redirect(req.originalUrl);
+        }
       }
     } else if (req.body.__action === 'upload_file') {
       debug('Upload file');
+
+      if (!req.file) throw new Error('No file uploaded');
+
       let filePath;
       if (req.body.file_path) {
         debug('should replace old file');
         try {
           filePath = path.join(res.locals.course.path, req.body.file_path);
         } catch (err) {
-          return next(new Error(`Invalid file path: ${req.body.file_path}`));
+          throw new Error(`Invalid file path: ${req.body.file_path}`);
         }
       } else {
         debug('should add a new file');
         try {
           filePath = path.join(req.body.working_path, req.file.originalname);
         } catch (err) {
-          return next(
-            new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`),
-          );
+          throw new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`);
         }
       }
       const editor = new FileUploadEditor({
@@ -392,24 +382,24 @@ router.post('/*', function (req, res, next) {
         filePath,
         fileContents: req.file.buffer,
       });
-      editor.shouldEdit((err, yes) => {
-        if (ERR(err, next)) return;
-        if (!yes) return res.redirect(req.originalUrl);
-        editor.canEdit((err) => {
-          if (ERR(err, next)) return;
-          editor.doEdit((err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
-              res.redirect(req.originalUrl);
-            }
-          });
-        });
-      });
+
+      if (!(await editor.shouldEdit())) {
+        res.redirect(req.originalUrl);
+        return;
+      }
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+      res.redirect(req.originalUrl);
     } else {
-      return next(new Error('unknown __action: ' + req.body.__action));
+      throw new Error('unknown __action: ' + req.body.__action);
     }
-  });
-});
+  }),
+);
 
 module.exports = router;
