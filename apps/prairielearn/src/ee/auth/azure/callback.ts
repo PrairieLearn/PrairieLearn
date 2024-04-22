@@ -1,7 +1,6 @@
 import passport = require('passport');
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { logger } from '@prairielearn/logger';
 
 import * as authnLib from '../../../lib/authn';
 
