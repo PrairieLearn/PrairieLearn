@@ -23,6 +23,7 @@
             class="form-control pl-string-input-input"
             size="{{size}}"
             autocomplete="off"
+            autocorrect="off"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
