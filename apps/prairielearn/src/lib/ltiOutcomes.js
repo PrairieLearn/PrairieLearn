@@ -155,7 +155,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  updateScore,
   updateScoreAsync: util.promisify(updateScore),
 };
 

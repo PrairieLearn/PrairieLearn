@@ -694,5 +694,3 @@ export async function checkNoIssuesForLastVariantAsync() {
       JSON.stringify(result.rows, null, '    '),
   );
 }
-
-export const checkNoIssuesForLastVariant = util.callbackify(checkNoIssuesForLastVariantAsync);

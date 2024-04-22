@@ -39,7 +39,7 @@ function getGithubClient() {
  * @param {string} repo Name of the new repo to create
  * @param {string} template Name of the template to use
  */
-async function createRepoFromTemplateAsync(client, repo, template) {
+async function createRepoFromTemplate(client, repo, template) {
   await client.repos.createUsingTemplate({
     template_owner: config.githubCourseOwner,
     template_repo: template,
@@ -84,7 +84,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
  * @returns An object representing the file data.  Raw contents are stored in the 'contents' key,
  * while the file's SHA is stored in 'sha' (this is needed if you want to update the contents later)
  */
-async function getFileFromRepoAsync(client, repo, path) {
+async function getFileFromRepo(client, repo, path) {
   const file = await client.repos.getContent({
     owner: config.githubCourseOwner,
     repo,
@@ -110,7 +110,7 @@ async function getFileFromRepoAsync(client, repo, path) {
  * @param {string} contents Raw contents of the file, stored as a string.
  * @param {string} sha The file's SHA that is being updated (this is returned in getFileFromRepoAsync).
  */
-async function putFileToRepoAsync(client, repo, path, contents, sha) {
+async function putFileToRepo(client, repo, path, contents, sha) {
   await client.repos.createOrUpdateFileContents({
     owner: config.githubCourseOwner,
     repo,
@@ -129,7 +129,7 @@ async function putFileToRepoAsync(client, repo, path, contents, sha) {
  * @param {string} team Team to add
  * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the team
  */
-async function addTeamToRepoAsync(client, repo, team, permission) {
+async function addTeamToRepo(client, repo, team, permission) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
     owner: config.githubCourseOwner,
     org: config.githubCourseOwner,
@@ -146,7 +146,7 @@ async function addTeamToRepoAsync(client, repo, team, permission) {
  * @param {string} username Username to add
  * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the user
  */
-async function addUserToRepoAsync(client, repo, username, permission) {
+async function addUserToRepo(client, repo, username, permission) {
   await client.repos.addCollaborator({
     owner: config.githubCourseOwner,
     repo,
@@ -188,7 +188,7 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Create base github repo from template
     job.info('Creating repository from template');
-    await createRepoFromTemplateAsync(client, options.repo_short_name, config.githubCourseTemplate);
+    await createRepoFromTemplate(client, options.repo_short_name, config.githubCourseTemplate);
     job.info(`Created repository ${options.repo_short_name}`);
 
     // Find main branch (which is the only branch in the new repo).
@@ -208,7 +208,7 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Update the infoCourse.json file by grabbing the original and JSON editing it.
     job.info('Updating infoCourse.json');
-    let { sha: sha, contents } = await getFileFromRepoAsync(
+    let { sha: sha, contents } = await getFileFromRepo(
       client,
       options.repo_short_name,
       'infoCourse.json',
@@ -225,12 +225,12 @@ export async function createCourseRepoJob(options, authn_user) {
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
-    await putFileToRepoAsync(client, options.repo_short_name, 'infoCourse.json', newContents, sha);
+    await putFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents, sha);
     job.info('Uploaded new infoCourse.json file');
 
     // Add machine and instructor to the repo
     job.info('Adding machine team to repo');
-    await addTeamToRepoAsync(client, options.repo_short_name, config.githubMachineTeam, 'admin');
+    await addTeamToRepo(client, options.repo_short_name, config.githubMachineTeam, 'admin');
     job.info(
       `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
     );
@@ -238,7 +238,7 @@ export async function createCourseRepoJob(options, authn_user) {
     if (options.github_user) {
       job.info('Adding instructor to repo');
       try {
-        await addUserToRepoAsync(client, options.repo_short_name, options.github_user, 'admin');
+        await addUserToRepo(client, options.repo_short_name, options.github_user, 'admin');
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );
