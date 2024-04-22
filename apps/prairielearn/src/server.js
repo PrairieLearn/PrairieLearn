@@ -1385,7 +1385,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/clientFilesCourseInstance',
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance').default,
   );
 
   // Client files for assessments
@@ -1395,7 +1395,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesAssessment',
@@ -1557,7 +1557,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance').default,
   );
 
   // Client files for assessments
@@ -1574,7 +1574,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/studentAssessmentAccess').default,
-      require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+      require('./pages/clientFilesCourseInstance/clientFilesCourseInstance').default,
     ],
   );
   app.use(
