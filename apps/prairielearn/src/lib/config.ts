@@ -6,6 +6,8 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
+// @ts-expect-error -- The TypeScript resolver thinks this is a pure-ESM module
+import { filesize } from 'filesize';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
 
@@ -24,9 +26,21 @@ const ConfigSchema = z.object({
       // https://node-postgres.com/features/ssl
       z.object({
         rejectUnauthorized: z.boolean().default(true),
-        ca: z.string().nullable().default(null),
-        key: z.string().nullable().default(null),
-        cert: z.string().nullable().default(null),
+        ca: z
+          .string()
+          .nullish()
+          .default(null)
+          .transform((x) => x ?? undefined),
+        key: z
+          .string()
+          .nullish()
+          .default(null)
+          .transform((x) => x ?? undefined),
+        cert: z
+          .string()
+          .nullish()
+          .default(null)
+          .transform((x) => x ?? undefined),
       }),
     ])
     .default(false),
@@ -68,7 +82,9 @@ const ConfigSchema = z.object({
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  sessionCookieSameSite: z
+    .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
+    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -101,6 +117,7 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -529,6 +546,8 @@ export async function loadConfig(paths: string[]) {
     );
     config.cacheType = config.questionRenderCacheType;
   }
+
+  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here
