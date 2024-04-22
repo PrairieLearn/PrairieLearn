@@ -415,7 +415,7 @@ module.exports.initExpress = function () {
 
     require('./middlewares/authzWorkspaceCookieCheck').default, // short-circuits if we have the workspace-authz cookie
     require('./middlewares/date').default,
-    require('./middlewares/authn'), // jumps to error handler if authn fails
+    require('./middlewares/authn').default, // jumps to error handler if authn fails
     require('./middlewares/authzWorkspace'), // jumps to error handler if authz fails
     require('./middlewares/authzWorkspaceCookieSet').default, // sets the workspace-authz cookie
   ]);
@@ -541,7 +541,7 @@ module.exports.initExpress = function () {
   ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
-  app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
+  app.use(require('./middlewares/authn').default); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken').default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
