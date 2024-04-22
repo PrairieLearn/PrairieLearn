@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const express = require('express');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');

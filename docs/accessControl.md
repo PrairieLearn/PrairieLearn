@@ -152,7 +152,7 @@ Note that in this case the `startDate` and `endDate` should _NOT_ be specified. 
 
 ## Showing/hiding closed assessments
 
-When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assesment closes it automatially grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
+When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assessment closes it automatially grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
 
 To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
 

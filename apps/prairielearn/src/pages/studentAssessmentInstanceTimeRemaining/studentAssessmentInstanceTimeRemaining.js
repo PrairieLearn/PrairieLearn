@@ -1,6 +1,7 @@
-//@ts-check
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import { Router } from 'express';
+
+const router = Router();
 
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
@@ -12,4 +13,4 @@ router.get('/', function (req, res, next) {
   res.send(JSON.stringify(retval));
 });
 
-module.exports = router;
+export default router;
