@@ -417,7 +417,7 @@ module.exports.initExpress = function () {
     require('./middlewares/date').default,
     require('./middlewares/authn'), // jumps to error handler if authn fails
     require('./middlewares/authzWorkspace'), // jumps to error handler if authz fails
-    require('./middlewares/authzWorkspaceCookieSet'), // sets the workspace-authz cookie
+    require('./middlewares/authzWorkspaceCookieSet').default, // sets the workspace-authz cookie
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)/container', [
     cookieParser(),
