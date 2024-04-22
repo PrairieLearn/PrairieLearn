@@ -511,7 +511,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged').default);
 
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2').default);
-  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
+  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2').default);
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib').default);
 
   if (isEnterprise()) {
