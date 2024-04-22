@@ -547,6 +547,8 @@ export async function loadConfig(paths: string[]) {
     config.cacheType = config.questionRenderCacheType;
   }
 
+  // TODO: once the usages of this are no longer EJS, we should format the
+  // size on the fly instead of setting it on the global config.
   config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
