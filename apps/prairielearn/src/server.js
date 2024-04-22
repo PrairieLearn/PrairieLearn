@@ -596,7 +596,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'password';
       next();
     },
-    require('./pages/authPassword/authPassword'),
+    require('./pages/authPassword/authPassword').default,
   ]);
   app.use('/pl/news_items', [
     function (req, res, next) {
