@@ -33,6 +33,7 @@ const CJS_ONLY_MODULES = new Set([
   'loopbench',
   'oauth-signature',
   'object-hash',
+  'memorystream',
   'node:assert',
   'passport',
   'postgres-interval',
