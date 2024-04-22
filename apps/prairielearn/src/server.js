@@ -811,15 +811,15 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
 
   // For backwards compatibility, we continue to serve the non-cached element
@@ -840,15 +840,15 @@ module.exports.initExpress = function () {
   app.use('/pl/course/:course_id(\\d+)/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles'),
+    require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
 
   //////////////////////////////////////////////////////////////////////
