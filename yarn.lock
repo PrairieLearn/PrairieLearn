@@ -2779,13 +2779,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@popperjs/core@npm:^2.9.2":
-  version: 2.11.7
-  resolution: "@popperjs/core@npm:2.11.7"
-  checksum: 5b6553747899683452a1d28898c1b39173a4efd780e74360bfcda8eb42f1c5e819602769c81a10920fc68c881d07fb40429604517d499567eac079cfa6470f19
-  languageName: node
-  linkType: hard
-
 "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes":
   version: 0.0.0-use.local
   resolution: "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes"
@@ -3266,7 +3259,7 @@ __metadata:
     "@types/archiver": ^6.0.2
     "@types/async": ^3.2.24
     "@types/body-parser": ^1.19.5
-    "@types/bootstrap": ^5.2.10
+    "@types/bootstrap": ^4.6.6
     "@types/byline": ^4.2.36
     "@types/chai": ^4.3.14
     "@types/chai-as-promised": ^7.1.8
@@ -4561,12 +4554,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/bootstrap@npm:^5.2.10":
-  version: 5.2.10
-  resolution: "@types/bootstrap@npm:5.2.10"
+"@types/bootstrap@npm:^4.6.6":
+  version: 4.6.6
+  resolution: "@types/bootstrap@npm:4.6.6"
   dependencies:
-    "@popperjs/core": ^2.9.2
-  checksum: d1253a2f19c96d667e280c07eb29cca00529f31fc3b799d5feef928476735994411a1a2643e3f1581855250d031f120e628396b79bade491ea956a99192eaeea
+    "@types/jquery": "*"
+    popper.js: ^1.14.1
+  checksum: 8363fab7ab37db8859779ad33baa65d56d7bd23017827ee6487671d2e69977dd79baabbc47264edbec5afe46ef163025035ac848eca186dfd38021e1eba4bb2d
   languageName: node
   linkType: hard
 
@@ -4784,7 +4778,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jquery@npm:^3.5.29":
+"@types/jquery@npm:*, @types/jquery@npm:^3.5.29":
   version: 3.5.29
   resolution: "@types/jquery@npm:3.5.29"
   dependencies:
@@ -13609,7 +13603,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"popper.js@npm:^1.16.1":
+"popper.js@npm:^1.14.1, popper.js@npm:^1.16.1":
   version: 1.16.1
   resolution: "popper.js@npm:1.16.1"
   checksum: c56ae5001ec50a77ee297a8061a0221d99d25c7348d2e6bcd3e45a0d0f32a1fd81bca29d46cb0d4bdf13efb77685bd6a0ce93f9eb3c608311a461f945fffedbe
