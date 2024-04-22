@@ -1401,7 +1401,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment').default,
-      require('./pages/clientFilesAssessment/clientFilesAssessment'),
+      require('./pages/clientFilesAssessment/clientFilesAssessment').default,
     ],
   );
 
@@ -1582,7 +1582,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessment').default,
       require('./middlewares/studentAssessmentAccess').default,
-      require('./pages/clientFilesAssessment/clientFilesAssessment'),
+      require('./pages/clientFilesAssessment/clientFilesAssessment').default,
     ],
   );
 
