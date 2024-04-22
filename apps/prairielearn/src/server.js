@@ -416,7 +416,7 @@ module.exports.initExpress = function () {
     require('./middlewares/authzWorkspaceCookieCheck').default, // short-circuits if we have the workspace-authz cookie
     require('./middlewares/date').default,
     require('./middlewares/authn').default, // jumps to error handler if authn fails
-    require('./middlewares/authzWorkspace'), // jumps to error handler if authz fails
+    require('./middlewares/authzWorkspace').default, // jumps to error handler if authz fails
     require('./middlewares/authzWorkspaceCookieSet').default, // sets the workspace-authz cookie
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)/container', [
@@ -646,7 +646,7 @@ module.exports.initExpress = function () {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    require('./middlewares/authzWorkspace'),
+    require('./middlewares/authzWorkspace').default,
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)', require('./pages/workspace/workspace').default);
   app.use(
