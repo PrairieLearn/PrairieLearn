@@ -1,5 +1,5 @@
 ---
-"@prairielearn/opentelemetry": patch
+'@prairielearn/opentelemetry': patch
 ---
 
 Refine configuration types
