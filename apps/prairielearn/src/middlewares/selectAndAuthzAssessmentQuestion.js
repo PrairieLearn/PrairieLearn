@@ -1,3 +1,4 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import * as _ from 'lodash';
 import * as sqldb from '@prairielearn/postgres';
