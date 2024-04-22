@@ -1191,7 +1191,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/edit_error',
-    require('./pages/editError/editError'),
+    require('./pages/editError/editError').default,
   );
 
   // course instance - course admin pages
@@ -1704,7 +1704,7 @@ module.exports.initExpress = function () {
     require('./pages/instructorFileTransfer/instructorFileTransfer').default,
   ]);
 
-  app.use('/pl/course/:course_id(\\d+)/edit_error', require('./pages/editError/editError'));
+  app.use('/pl/course/:course_id(\\d+)/edit_error', require('./pages/editError/editError').default);
 
   app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);
