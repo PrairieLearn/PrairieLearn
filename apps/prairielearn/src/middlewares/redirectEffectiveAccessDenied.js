@@ -1,3 +1,4 @@
+// @ts-check
 import { idsEqual } from '../lib/id';
 
 /**
