@@ -2143,7 +2143,7 @@ export async function stopServer() {
   // PrairieLearn is stopped.
   server.closeAllConnections();
 
-  await util.promisify(server.close)();
+  await util.promisify(server.close.bind(server))();
 }
 
 export async function insertDevUser() {
