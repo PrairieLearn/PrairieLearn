@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 

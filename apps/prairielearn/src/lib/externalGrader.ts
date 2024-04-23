@@ -6,7 +6,6 @@ import * as error from '@prairielearn/error';
 import assert = require('node:assert');
 import _ = require('lodash');
 import type { EventEmitter } from 'node:events';
-import { promisify } from 'node:util';
 
 import * as ltiOutcomes from './ltiOutcomes';
 import { config } from './config';
@@ -252,7 +251,7 @@ export async function processGradingResult(content: any): Promise<void> {
       IdSchema,
     );
     if (assessment_instance_id != null) {
-      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+      await ltiOutcomes.updateScoreAsync(assessment_instance_id);
     }
   } finally {
     externalGradingSocket.gradingJobStatusUpdated(content.gradingId);

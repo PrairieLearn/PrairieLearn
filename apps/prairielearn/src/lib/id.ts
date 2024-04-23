@@ -1,4 +1,3 @@
-//@ts-check
 /**
  * This is a semantic layer on top of the `==` operator that should only
  * be used when comparing IDs.
@@ -20,11 +19,8 @@
  *
  * In the future, the existence of this function could make it easier to start
  * parsing IDs as `BigInt` objects as they come out of the database.
- *
- * @param {string | number} id1
- * @param {string | number} id2
  */
-export function idsEqual(id1, id2) {
+export function idsEqual(id1: string | number, id2: string | number): boolean {
   // eslint-disable-next-line eqeqeq
   return id1 == id2;
 }

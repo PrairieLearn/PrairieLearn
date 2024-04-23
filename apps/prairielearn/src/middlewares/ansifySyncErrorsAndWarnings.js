@@ -1,6 +1,12 @@
-const { default: AnsiUp } = require('ansi_up');
+// @ts-check
+import AnsiUp from 'ansi_up';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   const ansiUp = new AnsiUp();
   if (res.locals.course) {
     if (res.locals.course.sync_errors) {
@@ -49,4 +55,4 @@ module.exports = function (req, res, next) {
     }
   }
   next();
-};
+}

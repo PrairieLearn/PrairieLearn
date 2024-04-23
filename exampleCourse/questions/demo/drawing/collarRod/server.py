@@ -50,5 +50,3 @@ def generate(data):
 
     width_arrow = 60
     data["params"]["width_arrow"] = width_arrow
-
-    return data
