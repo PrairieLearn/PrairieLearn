@@ -1,13 +1,13 @@
 // @ts-check
-const _ = require('lodash');
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as _ from 'lodash';
+import debugfn from 'debug';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:load');
 
 class LoadEstimator {
   constructor(jobType, maxJobCount, warnOnOldJobs) {

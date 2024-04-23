@@ -1,6 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as async from 'async';
 import * as fs from 'fs-extra';
 import * as path from 'path';
