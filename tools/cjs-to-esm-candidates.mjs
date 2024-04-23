@@ -39,6 +39,7 @@ const CJS_ONLY_MODULES = new Set([
   'postgres-interval',
   'qrcode-svg',
   'request',
+  'requirejs',
   'search-string',
   'strip-ansi',
   'winston',
