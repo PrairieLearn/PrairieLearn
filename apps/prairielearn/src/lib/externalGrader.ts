@@ -174,7 +174,7 @@ export async function processGradingResult(content: any): Promise<void> {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_.has(content.grading, 'feedback') && !_(content.grading.feedback).isObject()) {
+    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -209,7 +209,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_(content.grading.score).isFinite()) {
+      if (!_.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',
