@@ -14,7 +14,7 @@ const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 const favicon = require('serve-favicon');
 const async = require('async');
 const express = require('express');
@@ -75,6 +75,8 @@ const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 const { SocketActivityMetrics } = require('./lib/telemetry/socket-activity-metrics');
+
+const debug = debugfn('prairielearn:server');
 
 process.on('warning', (e) => console.warn(e));
 

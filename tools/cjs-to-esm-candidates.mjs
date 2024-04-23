@@ -104,6 +104,7 @@ for (const file of files.sort()) {
     // Handle `require()` calls.
     if (node.type === 'VariableDeclaration' && !importEqualsOnly) {
       node.declarations.forEach((declaration) => {
+        // Handle `const foo = require(...)` statements.
         if (
           declaration.init?.type === 'CallExpression' &&
           declaration.init.callee?.type === 'Identifier' &&
@@ -111,6 +112,18 @@ for (const file of files.sort()) {
           declaration.init.arguments[0].type === 'Literal'
         ) {
           const modulePath = declaration.init.arguments[0].value;
+          maybeLogLocation(file, node, modulePath);
+        }
+
+        // Handle `const foo = require(...)()` statements.
+        if (
+          declaration.init?.type === 'CallExpression' &&
+          declaration.init.callee?.type === 'CallExpression' &&
+          declaration.init.callee.callee?.type === 'Identifier' &&
+          declaration.init.callee.callee.name === 'require' &&
+          declaration.init.callee.arguments[0].type === 'Literal'
+        ) {
+          const modulePath = declaration.init.callee.arguments[0].value;
           maybeLogLocation(file, node, modulePath);
         }
       });

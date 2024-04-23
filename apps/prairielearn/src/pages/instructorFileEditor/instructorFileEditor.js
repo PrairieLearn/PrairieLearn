@@ -6,7 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-const debug = require('debug')('prairielearn:instructorFileEditor');
+import debugfn from 'debug';
 import * as serverJobs from '../../lib/server-jobs-legacy';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 import AnsiUp from 'ansi_up';
@@ -23,6 +23,7 @@ import { FileModifyEditor } from '../../lib/editors';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorFileEditor');
 
 router.get(
   '/*',

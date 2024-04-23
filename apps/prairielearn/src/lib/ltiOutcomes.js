@@ -2,8 +2,7 @@ const ERR = require('async-stacktrace');
 const request = require('request');
 const xml2js = require('xml2js');
 const _ = require('lodash');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 const util = require('util');
 
 var sqldb = require('@prairielearn/postgres');
@@ -11,6 +10,7 @@ const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
 
 var sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:ltiOutcomes');
 var parser = new xml2js.Parser({ explicitArray: false });
 var builder = new xml2js.Builder();
 

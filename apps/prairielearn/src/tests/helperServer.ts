@@ -28,7 +28,7 @@ import * as server from '../server';
 import * as helperDb from './helperDb';
 import * as helperCourse from './helperCourse';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:helperServer');
 
 config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.

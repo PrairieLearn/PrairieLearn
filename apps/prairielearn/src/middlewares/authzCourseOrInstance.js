@@ -1,7 +1,6 @@
 // @ts-check
 import * as _ from 'lodash';
 const asyncHandler = require('express-async-handler');
-import * as path from 'path';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { config } from '../lib/config';
@@ -13,7 +12,7 @@ import { features } from '../lib/features/index';
 import { clearCookie } from '../lib/cookie';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:authzCourseOrInstance');
 
 /**
  * Removes all override cookies from the response.

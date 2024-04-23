@@ -18,7 +18,7 @@ import {
   AssessmentInstanceSchema,
 } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export const InstanceLogSchema = z.object({
