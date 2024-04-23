@@ -251,7 +251,7 @@ export async function processGradingResult(content: any): Promise<void> {
       IdSchema,
     );
     if (assessment_instance_id != null) {
-      await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+      await ltiOutcomes.updateScore(assessment_instance_id);
     }
   } finally {
     externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
