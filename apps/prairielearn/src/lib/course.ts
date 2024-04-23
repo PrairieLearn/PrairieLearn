@@ -1,4 +1,3 @@
-import { callbackify } from 'util';
 import * as fs from 'fs-extra';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
@@ -24,7 +23,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param assessment_instance_id - The assessment instance to check.
  * @param course_instance_id - The course instance it should belong to.
  */
-export async function checkBelongsAsync(
+export async function checkAssessmentInstanceBelongsToCourseInstance(
   assessment_instance_id: string,
   course_instance_id: string,
 ): Promise<void> {
@@ -38,7 +37,6 @@ export async function checkBelongsAsync(
     throw new Error('access denied');
   }
 }
-export const checkBelongs = callbackify(checkBelongsAsync);
 
 /**
  * Return the name and UID (email) for every owner of the specified course.
