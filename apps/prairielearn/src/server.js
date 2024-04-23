@@ -511,7 +511,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged').default);
 
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2').default);
-  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
+  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2').default);
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib').default);
 
   if (isEnterprise()) {
@@ -527,7 +527,7 @@ module.exports.initExpress = function () {
     );
   }
 
-  app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
+  app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti').default);
   app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev').default);
@@ -1006,7 +1006,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1172,7 +1172,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1262,7 +1262,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics', [
     function (req, res, next) {
@@ -1290,7 +1290,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_download',
@@ -1365,7 +1365,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_download',
@@ -1696,7 +1696,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
@@ -1770,7 +1770,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/topics', [
     function (req, res, next) {
@@ -1798,7 +1798,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_download',

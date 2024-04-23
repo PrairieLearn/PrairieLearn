@@ -1,24 +1,24 @@
 // @ts-check
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { v4: uuidv4 } = require('uuid');
+import * as path from 'node:path';
+import debugfn from 'debug';
+import { v4 as uuidv4 } from 'uuid';
 const Docker = require('dockerode');
 const MemoryStream = require('memorystream');
-const tmp = require('tmp-promise');
-const { Mutex } = require('async-mutex');
-const os = require('os');
-const fs = require('fs-extra');
+import * as tmp from 'tmp-promise';
+import { Mutex } from 'async-mutex';
+import * as os from 'node:os';
+import * as fs from 'fs-extra';
 const execa = require('execa');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const bindMount = require('@prairielearn/bind-mount');
-const { instrumented } = require('@prairielearn/opentelemetry');
-const { setupDockerAuth } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import * as bindMount from '@prairielearn/bind-mount';
+import { instrumented } from '@prairielearn/opentelemetry';
+import { setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
 
-const { config } = require('../config');
-const { FunctionMissingError } = require('./code-caller-shared');
-const { deferredPromise } = require('../deferred');
-const { makeAwsClientConfig } = require('../aws');
+import { config } from '../config';
+import { FunctionMissingError } from './code-caller-shared';
+import { deferredPromise } from '../deferred';
+import { makeAwsClientConfig } from '../aws';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -29,6 +29,7 @@ const EXITED = Symbol('EXITED');
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
+const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
@@ -113,7 +114,7 @@ async function ensureImage() {
 /**
  * @implements {CodeCaller}
  */
-class CodeCallerContainer {
+export class CodeCallerContainer {
   constructor(options = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 }) {
     /** @type {CallerState} */
     this.state = CREATED;
@@ -724,8 +725,6 @@ class CodeCallerContainer {
   }
 }
 
-module.exports.CodeCallerContainer = CodeCallerContainer;
-
 /**
  * If PrairieLearn dies unexpectedly, we may leave around temporary directories
  * that should have been removed. This function will perform a best-effort
@@ -767,10 +766,10 @@ async function cleanupMountDirectories() {
   }
 }
 
-module.exports.init = async function init() {
+export async function init() {
   await cleanupMountDirectories();
   await updateExecutorImageTag();
   if (config.ensureExecutorImageAtStartup) {
     await ensureImage();
   }
-};
+}

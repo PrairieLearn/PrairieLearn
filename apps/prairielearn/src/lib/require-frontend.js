@@ -5,12 +5,12 @@
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-var requirejs = require('requirejs');
-var path = require('node:path');
+const requirejs = require('requirejs');
+import * as path from 'node:path';
 
-const { logger } = require('@prairielearn/logger');
+import { logger } from '@prairielearn/logger';
 
-const { APP_ROOT_PATH } = require('./paths');
+import { APP_ROOT_PATH } from './paths';
 
 requirejs.config({
   nodeRequire: require,
@@ -30,4 +30,4 @@ requirejs.onError = function (err) {
   logger.error('requirejs load error', data);
 };
 
-module.exports = requirejs;
+export default requirejs;
