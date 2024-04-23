@@ -59,12 +59,6 @@ const CJS_ONLY_MODULES = new Set([
   'rehype-stringify',
   'rehype-sanitize',
   'unist-util-visit',
-  // Relative paths to PrairieLearn files.
-  'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzIsAdministrator',
-  'apps/prairielearn/src/middlewares/logPageView',
-  'apps/prairielearn/src/middlewares/staticNodeModules',
-  'apps/prairielearn/src/pages/elementFiles/elementFiles',
 ]);
 
 const candidatesPerFileCount = new Map();
