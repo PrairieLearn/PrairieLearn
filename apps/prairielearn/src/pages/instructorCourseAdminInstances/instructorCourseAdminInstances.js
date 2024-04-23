@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as fs from 'fs-extra';
 import * as async from 'async';
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 

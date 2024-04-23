@@ -1,5 +1,5 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 import debugfn from 'debug';
 
 import { logger } from '@prairielearn/logger';

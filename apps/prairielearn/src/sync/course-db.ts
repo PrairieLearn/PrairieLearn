@@ -1,5 +1,5 @@
 import * as path from 'path';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import * as jju from 'jju';

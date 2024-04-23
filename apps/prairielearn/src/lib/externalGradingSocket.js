@@ -1,6 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';

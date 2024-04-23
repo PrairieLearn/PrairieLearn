@@ -1,5 +1,5 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 import { createServerJob } from './server-jobs';

@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as error from '@prairielearn/error';
 import assert = require('node:assert');
-import _ = require('lodash');
+import * as _ from 'lodash';
 import type { EventEmitter } from 'node:events';
 
 import * as ltiOutcomes from './ltiOutcomes';

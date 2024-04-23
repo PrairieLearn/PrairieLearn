@@ -14,7 +14,7 @@ const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
-import debugfn from 'debug';
+const debugfn = require('debug');
 const favicon = require('serve-favicon');
 const async = require('async');
 const express = require('express');

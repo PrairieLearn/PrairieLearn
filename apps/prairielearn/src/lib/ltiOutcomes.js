@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const request = require('request');
 const xml2js = require('xml2js');
 const _ = require('lodash');
-import debugfn from 'debug';
+const debugfn = require('debug');
 const util = require('util');
 
 var sqldb = require('@prairielearn/postgres');

@@ -29,7 +29,6 @@ const CJS_ONLY_MODULES = new Set([
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
-  'lodash',
   'loopbench',
   'oauth-signature',
   'object-hash',
