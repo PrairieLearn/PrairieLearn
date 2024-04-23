@@ -1,6 +1,6 @@
 import * as async from 'async';
 import * as mustache from 'mustache';
-import { sum, sumBy } from 'lodash';
+import * as _ from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -369,7 +369,7 @@ async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = sum(
+    const sum_rubric_item_points = _.sum(
       rubric_items?.map(
         (item) =>
           (item.score ?? 1) *
@@ -473,11 +473,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          sumBy(
+          _.sumBy(
             Object.values(score.partial_scores),
             (value) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
-        sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
