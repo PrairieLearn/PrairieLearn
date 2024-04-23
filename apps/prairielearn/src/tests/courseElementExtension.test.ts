@@ -5,7 +5,7 @@ import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
 import _ = require('lodash');
 import * as path from 'path';
-import * as freeform from '../question-servers/freeform.js';
+import * as freeform from '../question-servers/freeform';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 import { promisify } from 'util';
 

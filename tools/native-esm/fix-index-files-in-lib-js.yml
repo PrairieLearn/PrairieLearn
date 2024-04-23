@@ -1,9 +1,9 @@
-id: fix-index-files-js
+id: fix-index-files-in-lib-js
 language: JavaScript
 rule:
   any:
     - pattern: import $IMPORT from '$LOCATION';
 constraints:
   LOCATION:
-    regex: '\..*((/load)|(/externalGrader))$'
+    regex: '\./(code-caller|features)$'
 fix: import $IMPORT from '$LOCATION/index';

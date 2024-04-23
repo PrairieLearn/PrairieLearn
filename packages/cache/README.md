@@ -8,7 +8,7 @@ First, you will need to initialize the library with the cache type that you are 
 
 ```ts
 import { cache } from '@prairielearn/cache';
-import { config } from 'lib/config.js';
+import { config } from 'lib/config';
 
 await cache.init({
   type: config.cacheType,
