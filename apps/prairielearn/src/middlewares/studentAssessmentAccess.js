@@ -6,7 +6,6 @@ import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { config } from '../lib/config';
 import { setCookie } from '../lib/cookie';
-import { idsEqual } from '../lib/id';
 
 const router = Router();
 
