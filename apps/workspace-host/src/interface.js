@@ -14,7 +14,7 @@ import * as fs from 'node:fs';
 import * as async from 'async';
 import * as fsPromises from 'node:fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-const argv = require('yargs-parser')(process.argv.slice(2));
+const yargsParser = require('yargs-parser');
 import debugfn from 'debug';
 const archiver = require('archiver');
 import * as net from 'node:net';
@@ -120,6 +120,8 @@ async
 
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }

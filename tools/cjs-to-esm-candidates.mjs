@@ -48,6 +48,7 @@ const CJS_ONLY_MODULES = new Set([
   'strip-ansi',
   'winston',
   'winston-transport',
+  'yargs-parser',
   // Unified ecosystem and related packages.
   'unified',
   'remark-parse',
@@ -171,8 +172,7 @@ for (const file of files.sort()) {
 }
 
 if (candidatesPerFileCount.size > 0) {
-  console.log('\n\n');
-  console.log(`Summary (${candidatesPerFileCount.size} files):`);
+  console.log(`\n\nSummary (${candidatesPerFileCount.size} files):`);
 
   const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
     (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
@@ -180,4 +180,12 @@ if (candidatesPerFileCount.size > 0) {
   for (const [file, count] of sortedCandidates) {
     console.log(`${file}: ${count}`);
   }
+}
+
+if (candidatesPerFileCount.size > 0 && process.argv.includes('--check')) {
+  console.log('\n\nOne or more files contain CJS requires which could be written as ESM imports.');
+  console.log(
+    'Please convert them to ESM or add the module to the CJS_ONLY_MODULES set in tools/cjs-to-esm-candidates.mjs.',
+  );
+  process.exitCode = 1;
 }
