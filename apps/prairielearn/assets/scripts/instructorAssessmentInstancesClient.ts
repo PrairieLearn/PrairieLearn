@@ -1,16 +1,9 @@
-import { onDocumentReady } from '@prairielearn/browser-utils';
-import { BootstrapTableOptions } from 'bootstrap-table';
+import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
+import { escapeHtml, html } from '@prairielearn/html';
 
 declare global {
   interface Window {
     popoverSubmitViaAjax: (e: any, popover: JQuery) => void;
-  }
-}
-
-declare global {
-  interface JQuery {
-    bootstrapTable(options: BootstrapTableOptions): JQuery;
-    bootstrapTable(method: string, ...parameters: any[]): JQuery | any;
   }
 }
 
@@ -51,6 +44,9 @@ onDocumentReady(() => {
   const assessmentNumber = $('#usersTable').data('assessment-number');
   const assessmentSetAbbr = $('#usersTable').data('assessment-set-abbr');
   const csrfToken = $('#usersTable').data('csrf-token');
+  const has_course_instance_permission_edit = $('#usersTable').data(
+    'has-course-instance-permission-edit',
+  );
   const urlPrefix = $('#usersTable').data('url-prefix');
   const bsTable = $('#usersTable').bootstrapTable({
     buttons: {
@@ -135,15 +131,6 @@ onDocumentReady(() => {
   });
 
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event: any) {
-    const button = $(event.relatedTarget); // Button that triggered the modal
-    const uid = button.data('uid'); // Extract info from data-* attributes
-    const name = button.data('name');
-    const number = button.data('number');
-    const group_name = button.data('group-name');
-    const uid_list = button.data('uid-list');
-    const date_formatted = button.data('date-formatted');
-    const score_perc = button.data('score-perc');
-    const assessment_instance_id = button.data('assessment-instance-id');
     const modal = $(this);
 
     modal.find('form').on('submit', (e) => {
@@ -159,14 +146,16 @@ onDocumentReady(() => {
       modal.modal('hide');
     });
 
-    modal.find('.modal-uid').text(uid);
-    modal.find('.modal-name').text(name);
-    modal.find('.modal-group-name').text(group_name);
-    modal.find('.modal-uid-list').text(uid_list);
-    modal.find('.modal-number').text(number);
-    modal.find('.modal-date').text(date_formatted);
-    modal.find('.modal-score-perc').text(score_perc);
-    modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
+    templateFromAttributes(event.relatedTarget, modal[0], {
+      'data-uid': '.modal-uid',
+      'data-name': '.modal-name',
+      'data-group-name': '.modal-group-name',
+      'data-uid-list': '.modal-uid-list',
+      'data-number': '.modal-number',
+      'data-date-formatted': '.modal-date',
+      'data-score-perc': '.modal-score-perc',
+      'data-assessment-instance-id': '.modal-assessment-instance-id',
+    });
   });
 
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
@@ -229,8 +218,16 @@ onDocumentReady(() => {
       },
       {
         field: 'duration',
-        title:
-          'Duration <button class="btn btn-xs" type="button" title="Show duration help" data-toggle="modal" data-target="#duration-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+        title: html` Duration
+          <button
+            class="btn btn-xs"
+            type="button"
+            title="Show duration help"
+            data-toggle="modal"
+            data-target="#duration-help"
+          >
+            <i class="bi-question-circle-fill" aria-hidden="true"></i>
+          </button>`,
         sortable: true,
         sortName: 'duration_secs',
         class: 'text-center align-middle text-nowrap',
@@ -238,8 +235,16 @@ onDocumentReady(() => {
       },
       {
         field: 'time_remaining',
-        title:
-          'Remaining <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+        title: html` Remaining
+          <button
+            class="btn btn-xs"
+            type="button"
+            title="Show remaining time help"
+            data-toggle="modal"
+            data-target="#time-remaining-help"
+          >
+            <i class="bi-question-circle-fill" aria-hidden="true"></i>
+          </button>`,
         sortable: true,
         sortName: 'time_remaining_sec',
         sorter: timeRemainingLimitSorter,
@@ -299,7 +304,16 @@ onDocumentReady(() => {
         },
         {
           field: 'group_roles',
-          title: `Roles <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>`,
+          title: html` Roles
+            <button
+              class="btn btn-xs"
+              type="button"
+              title="Show roles help"
+              data-toggle="modal"
+              data-target="#role-help"
+            >
+              <i class="bi-question-circle-fill" aria-hidden="true"></i>
+            </button>`,
           sortable: true,
           class: 'text-center align-middle text-wrap',
           formatter: uniqueListFormatter,
@@ -328,8 +342,16 @@ onDocumentReady(() => {
         },
         {
           field: 'role',
-          title:
-            'Role <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+          title: html` Role
+            <button
+              class="btn btn-xs"
+              type="button"
+              title="Show roles help"
+              data-toggle="modal"
+              data-target="#role-help"
+            >
+              <i class="bi-question-circle-fill" aria-hidden="true"></i>
+            </button>`,
           sortable: true,
           class: 'text-center align-middle text-nowrap',
           switchable: true,
@@ -337,8 +359,17 @@ onDocumentReady(() => {
         ...nonspecificColumns,
         {
           field: 'client_fingerprint_id_change_count',
-          title:
-            'Fingerprint Changes <button class="btn btn-xs", type="button" title="Show figerprint changes help" data-toggle="modal" data-target="#fingerprint-changes-help"><i class="bi-question-circle-fill" aria-hidden="true"></i></button>',
+          title: html` Fingerprint Changes
+            <button
+              class="btn btn-xs"
+              ,
+              type="button"
+              title="Show figerprint changes help"
+              data-toggle="modal"
+              data-target="#fingerprint-changes-help"
+            >
+              <i class="bi-question-circle-fill" aria-hidden="true"></i>
+            </button>`,
           class: 'text-center align-middle',
           switchable: true,
         },
@@ -354,7 +385,7 @@ onDocumentReady(() => {
   window.popoverSubmitViaAjax = function (e: any, popover) {
     e.preventDefault();
     $.post(
-      $(e.target).attr('action') ?? '',
+      '/',
       $(e.target).serialize(),
       function () {
         refreshTable();
@@ -364,96 +395,118 @@ onDocumentReady(() => {
     $(popover).popover('hide');
   };
 
-  function timeLimitEditPopoverContent(this: HTMLElement) {
-    const that = $(this);
+  function timeLimitEditPopoverContent(this: any) {
     const row = $(this).data('row');
-    const form = $('<form name="set-time-limit-form" method="POST">');
     const action = row.action ? row.action : 'set_time_limit';
-    form.append(`<p>Total time limit: ${row.total_time}<br/>
-                    Remaining time: ${row.time_remaining}
-                 </p>`);
-    form.append(`<input type="hidden" name="__action" value="${action}">`);
-    form.append(`<input type="hidden" name="__csrf_token" value="${csrfToken}">`);
-    if (row.assessment_instance_id) {
-      form.append(
-        `<input type="hidden" name="assessment_instance_id" value="${row.assessment_instance_id}">`,
-      );
-    }
-    const select = $('<select class="form-control select-time-limit" name="plus_minus">');
-    if (row.time_remaining_sec !== null) {
-      if (row.has_open_instance) {
-        select.append('<option value="+1">Add to instances with time limit</option>');
-        select.append('<option value="-1">Subtract from instances with time limit</option>');
-      } else {
-        select.append('<option value="+1">Add</option>');
-        select.append('<option value="-1">Subtract</option>');
-      }
-    }
-    select.append('<option value="set_total">Set total time limit to</option>');
-    select.append('<option value="set_rem">Set remaining time to</option>');
-    if (!row.open || row.time_remaining_sec !== null) {
-      select.append('<option value="unlimited">Remove time limit</option>');
-    }
-    if (row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)) {
-      select.append('<option value="expire">Expire time limit</option>');
-    }
-    select.on('change', function () {
-      $(this)
-        .parents('form')
-        .find('.time-limit-field')
-        .toggle($(this).val() !== 'unlimited' && $(this).val() !== 'expire');
-      $(this)
-        .parents('form')
-        .find('.reopen-closed-field')
-        .toggle($(this).val() !== '+1' && $(this).val() !== '-1' && $(this).val() !== 'expire');
-    });
-    form.append(select);
-    const new_time = $('<p class="form-inline">');
-    new_time.append(
-      '<input class="form-control time-limit-field" type="number" name="time_add" style="width: 5em" value="5">',
-    );
-    const time_ref_select = $('<select class="form-control time-limit-field" name="time_ref">');
-    time_ref_select.append('<option value="minutes">minutes</option>');
-    if (row.time_remaining_sec !== null) {
-      time_ref_select.append('<option value="percent">% total limit</option>');
-    }
-    new_time.append(time_ref_select);
-    form.append(new_time);
-    if (row.has_closed_instance) {
-      const checkbox = $(
-        '<div class="form-check mb-2 reopen-closed-field"><input class="form-check-input" type="checkbox" name="reopen_closed" value="true" id="reopen-closed"><label class="form-check-label" for="reopen-closed">Also re-open closed instances</label></div>',
-      );
-      checkbox.toggle(row.time_remaining_sec === null);
-      form.append(checkbox);
-    }
-    const buttons = $('<div class="btn-toolbar pull-right">');
-    const cancel_button = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>');
-    cancel_button.on('click', function () {
-      $(that).popover('hide');
-    });
-    buttons.append(cancel_button);
-    buttons.append('<button type="submit" class="btn btn-success">Set</button>');
-    form.append(buttons);
-    form.on('submit', (e) => {
-      window.popoverSubmitViaAjax(e, that as any);
-    });
-    return form;
+    const checkbox = $('#reopen-closed');
+    checkbox.toggle(row.time_remaining_sec === null);
+    return html`
+      <form
+        name="set-time-limit-form"
+        method="POST"
+        onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover') as any);"
+      >
+        <p>
+          Total time limit: ${row.total_time}<br />
+          Remaining time: ${row.time_remaining}
+        </p>
+        <input type="hidden" name="__action" value="${action}" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        ${row.assessment_instance_id
+          ? html`<input
+              type="hidden"
+              name="assessment_instance_id"
+              value="${row.assessment_instance_id}"
+            />`
+          : ''}
+        <select
+          class="form-control select-time-limit"
+          name="plus_minus"
+          onchange="
+            this.parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
+            this.parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
+            "
+        >
+          ${row.time_remaining_sec !== null
+            ? row.has_open_instance
+              ? html`
+                  <option value="+1">Add to instances with time limit</option>
+                  <option value="-1">Subtract from instances with time limit</option>
+                `
+              : html`
+                  <option value="+1">Add</option>
+                  <option value="-1">Subtract</option>
+                `
+            : ''}
+          <option value="set_total">Set total time limit to</option>
+          <option value="set_rem">Set remaining time to</option>
+          ${row.open || row.time_remaining_sec !== null
+            ? html`<option value="unlimited">Remove time limit</option>`
+            : ''}
+          ${row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)
+            ? html`<option value="expire">Expire time limit</option>`
+            : ''}
+        </select>
+        <p class="form-inline">
+          <input
+            class="form-control time-limit-field"
+            type="number"
+            name="time_add"
+            style="width: 5em"
+            value="5"
+          />
+          <select class="form-control time-limit-field" name="time_ref">
+            <option value="minutes">minutes</option>
+            ${row.time_remaining_sec !== null
+              ? html`<option value="percent">% total limit</option>`
+              : ''}
+          </select>
+        </p>
+        ${row.has_closed_instance
+          ? html`
+              <div class="form-check mb-2 reopen-closed-field">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="reopen_closed"
+                  value="true"
+                  id="reopen-closed"
+                />
+                <label class="form-check-label" for="reopen-closed">
+                  Also re-open closed instances
+                </label>
+              </div>
+            `
+          : ''}
+        <div class="btn-toolbar pull-right">
+          <button
+            type="button"
+            class="btn btn-secondary mr-2"
+            onclick="$(this).parents('form').parents('.popover').popover('hide')"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-success">Set</button>
+        </div>
+      </form>
+    `.toString();
   }
 
   function scorebarFormatter(score: number) {
     if (score != null) {
-      let bar = '<div class="progress bg" style="min-width: 5em; max-width: 20em;">';
-      let left = '',
-        right = '';
-      if (score >= 50) {
-        left = `${Math.floor(score)}%`;
-      } else {
-        right = `${Math.floor(score)}%`;
-      }
-      bar += `<div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">${left}</div>`;
-      bar += `<div class="progress-bar bg-danger" style="width: ${100 - Math.floor(Math.min(100, score))}%">${right}</div>`;
-      bar += '</div>';
-      return bar;
+      return html`
+        <div class="progress bg" style="min-width: 5em; max-width: 20em;">
+          <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
+            ${score >= 50 ? `${Math.floor(score)}%` : ''}
+          </div>
+          <div
+            class="progress-bar bg-danger"
+            style="width: ${100 - Math.floor(Math.min(100, score))}%"
+          >
+            ${score < 50 ? `${Math.floor(score)}%` : ''}
+          </div>
+        </div>
+      `;
     } else {
       return '';
     }
@@ -461,27 +514,30 @@ onDocumentReady(() => {
 
   function listFormatter(list: string[]) {
     if (!list || !list[0]) list = ['(empty)'];
-    return '<small>' + list.join(', ') + '</small>';
+    return html`<small>${list.join(', ')}</small>`;
   }
 
   function uniqueListFormatter(list: string[]) {
     if (!list || !list[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
-    return '<small>' + uniq.join(', ') + '</small>';
+    return html`<small>${uniq.join(', ')}</small>`;
   }
 
   function timeRemainingLimitFormatter(value: string, row: AssessmentInstanceRow) {
-    const container = $('<span>');
-    $('<a>')
-      .addClass('btn btn-secondary btn-xs ml-1 time-limit-edit-button')
-      .attr('role', 'button')
-      .attr('id', `row${row.assessment_instance_id}PopoverTimeLimit`)
-      .attr('tabindex', 0)
-      .attr('data-row', JSON.stringify(row))
-      .append($('<i class="bi-pencil-square" aria-hidden="true">'))
-      .appendTo(container);
-    value += container.html();
-    return value;
+    return html`
+      ${value}
+      <span>
+        <a
+          class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
+          role="button"
+          id="row${row.assessment_instance_id}PopoverTimeLimit"
+          tabindex="0"
+          data-row="${JSON.stringify(row)}"
+        >
+          <i class="bi-pencil-square" aria-hidden="true"></i>
+        </a>
+      </span>
+    `.toString();
   }
 
   function detailsLinkFormatter(value: string, row: AssessmentInstanceRow) {
@@ -531,99 +587,93 @@ onDocumentReady(() => {
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
     const ai_id = row.assessment_instance_id;
-    const container = $('<div>');
-    const dropdown = $('<div class="dropdown">').appendTo(container);
-    $('<button type="button">')
-      .addClass('btn btn-secondary btn-xs dropdown-toggle')
-      .attr('data-toggle', 'dropdown')
-      .attr('aria-haspopup', 'true')
-      .attr('aria-expanded', 'false')
-      .attr('data-boundary', 'window')
-      .text('Action')
-      .appendTo(dropdown);
-    $('<div>')
-      .attr('id', `row${ai_id}PopoverClose`)
-      .attr('tabindex', 0)
-      .attr('data-toggle', 'popover')
-      .attr('title', 'Confirm close')
-      .attr(
-        'data-content',
-        `<form name="close-form" method="POST" onsubmit="popoverSubmitViaAjax(event, '#row${ai_id}PopoverClose')">
-                 <input type="hidden" name="__action" value="close">
-                 <input type="hidden" name="__csrf_token" value="${csrfToken}">
-                 <input type="hidden" name="assessment_instance_id" value="${ai_id}">
-                 <button type="button" class="btn btn-secondary" onclick="$('#row${ai_id}PopoverClose').popover('hide')">Cancel</button>
-                 <button type="submit" class="btn btn-danger">Grade and close</button>
-               </form>`,
-      )
-      .appendTo(dropdown);
-    $('<div>')
-      .attr('id', `row${ai_id}PopoverRegrade`)
-      .attr('tabindex', 0)
-      .attr('data-toggle', 'popover')
-      .attr('title', 'Confirm regrade')
-      .attr(
-        'data-content',
-        `<form name="regrade-form" method="POST">
-                 <input type="hidden" name="__action" value="regrade">
-                 <input type="hidden" name="__csrf_token" value="${csrfToken}">
-                 <input type="hidden" name="assessment_instance_id" value="${ai_id}">
-                 <button type="button" class="btn btn-secondary" onclick="$('#row${ai_id}PopoverRegrade').popover('hide')">Cancel</button>
-                 <button type="submit" class="btn btn-primary">Regrade</button>
-               </form>`,
-      )
-      .appendTo(dropdown);
-    const menu = $('<div>')
-      .addClass('dropdown-menu')
-      .attr('onclick', 'window.event.preventDefault()')
-      .appendTo(dropdown);
-    //<% if (authz_data.has_course_instance_permission_edit) { %>
-    $('<button>')
-      .addClass('dropdown-item')
-      .attr('data-toggle', 'modal')
-      .attr('data-target', '#deleteAssessmentInstanceModal')
-      .attr('data-uid', row.uid)
-      .attr('data-name', row.name)
-      .attr('data-number', row.number)
-      .attr('data-date-formatted', row.date_formatted)
-      .attr('data-group-name', row.group_name)
-      .attr('data-uid-list', row.uid_list?.join(', ') || 'empty')
-      .attr('data-score-perc', Math.floor(row.score_perc ?? 0))
-      .attr('data-assessment-instance-id', row.assessment_instance_id)
-      .append($('<i>').addClass('fas fa-times mr-2').attr('aria-hidden', 'true'))
-      .append('Delete')
-      .appendTo(menu);
-
-    $('<button>')
-      .addClass('dropdown-item' + (row.open ? '' : ' disabled'))
-      .attr('onclick', `$("#row${ai_id}PopoverClose").popover("show")`)
-      .append($('<i>').addClass('fas fa-ban mr-2').attr('aria-hidden', 'true'))
-      .append('Grade &amp; Close')
-      .appendTo(menu);
-
-    $('<button>')
-      .addClass('dropdown-item' + (!row.open ? '' : ' disabled'))
-      .attr('onclick', `$("#row${ai_id}PopoverTimeLimit").popover("show")`)
-      .append($('<i>').addClass('fas fa-lock-open mr-2').attr('aria-hidden', 'true'))
-      .append('Re-open')
-      .appendTo(menu);
-
-    $('<button>')
-      .addClass('dropdown-item')
-      .attr('onclick', `$("#row${ai_id}PopoverRegrade").popover("show")`)
-      .append($('<i>').addClass('fas fa-sync mr-2').attr('aria-hidden', 'true'))
-      .append('Regrade')
-      .appendTo(menu);
-
-    //<% } else { %>
-    $('<button>')
-      .addClass('dropdown-item disabled')
-      .append('Must have editor permission')
-      .appendTo(menu);
-
-    //<% } %>
-
-    return container.html();
+    return html`
+      <div>
+        <div class="dropdown">
+          <button
+            type="button"
+            class="btn btn-secondary btn-xs dropdown-toggle"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-boundary="window"
+          >
+            Action
+          </button>
+          <div
+            id="row${ai_id}PopoverClose"
+            tabindex="0"
+            data-toggle="popover"
+            title="Confirm close"
+            data-content="<form name='close-form' method='POST' onsubmit='popoverSubmitViaAjax(event, '#row${ai_id}PopoverClose')'><input type='hidden' name='__action' value='close'><input type='hidden' name='__csrf_token' value='${csrfToken}'><input type='hidden' name='assessment_instance_id' value='${ai_id}'><button type='button' class='btn btn-secondary' onclick='$('#row${ai_id}PopoverClose').popover('hide')'>Cancel</button><button type='submit' class='btn btn-danger'>Grade and close</button></form>"
+          ></div>
+          <div
+            id="row${ai_id}PopoverTimeLimit"
+            tabindex="0"
+            data-toggle="popover"
+            title="Change Time Limit"
+            data-content="${escapeHtml(
+              html`<form name="regrade-form" method="POST">
+                <input type="hidden" name="__action" value="regrade" />
+                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="$('#row${ai_id}PopoverRegrade').popover('hide')"
+                >
+                  Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">Regrade</button>
+              </form>`,
+            )}"
+          ></div>
+          <div class="dropdown-menu" onclick="window.event.preventDefault()">
+            ${has_course_instance_permission_edit
+              ? html`
+                  <button
+                    class="dropdown-item"
+                    data-toggle="modal"
+                    data-target="#deleteAssessmentInstanceModal"
+                    data-uid="${row.uid}"
+                    data-name="${row.name}"
+                    data-number="${row.number}"
+                    data-date-formatted="${row.date_formatted}"
+                    data-group-name="${row.group_name}"
+                    data-uid-list="${row.uid_list?.join(', ') || 'empty'}"
+                    data-score-perc="${Math.floor(row.score_perc ?? 0)}"
+                    data-assessment-instance-id="${row.assessment_instance_id}"
+                  >
+                    <i class="fas fa-times mr-2" aria-hidden="true"></i>
+                    Delete
+                  </button>
+                  <button
+                    class="dropdown-item ${row.open ? '' : 'disabled'}"
+                    onclick="$('#row${ai_id}PopoverClose').popover('show')"
+                  >
+                    <i class="fas fa-ban mr-2" aria-hidden="true"></i>
+                    Grade &amp; Close
+                  </button>
+                  <button
+                    class="dropdown-item ${!row.open ? '' : 'disabled'}"
+                    onclick="$('#row${ai_id}PopoverTimeLimit').popover('show')"
+                  >
+                    <i class="fas fa-clock mr-2" aria-hidden="true"></i>
+                    Re-open
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    onclick="$('#row${ai_id}PopoverRegrade').popover('show')"
+                  >
+                    <i class="fas fa-sync mr-2" aria-hidden="true"></i>
+                    Regrade
+                  </button>
+                `
+              : html` <button class="dropdown-item disabled">Must have editor permission</button> `}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {

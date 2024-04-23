@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
 import { AssessmentInstanceSchema, GroupSchema, IdSchema, UserSchema } from '../../lib/db-types';
+import { Modal } from '../../components/Modal.html';
 
 export const AssessmentInstanceRowSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -380,204 +381,152 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
               data-url-prefix="${resLocals.urlPrefix}"
               data-assessment-set-abbr="${resLocals.assessment_set.abbreviation}"
               data-csrf-token="${resLocals.__csrf_token}"
+              data-has-course-instance-permission-edit="${resLocals.authz_data
+                .has_course_instance_permission_edit}"
             ></table>
 
             <div class="spinning-wheel card-body spinner-border">
               <span class="sr-only">Loading...</span>
             </div>
 
-            <div
-              class="modal fade"
-              id="role-help"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="role-help-title"
-            >
-              <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h4 class="modal-title" id="role-help-title">Roles</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <ul>
-                      <li>
-                        <strong>Staff</strong> is a member of the course staff. They can see the
-                        data of all users, and depending on course settings may have permission to
-                        edit the information of other users.
-                      </li>
-                      <li>
-                        <strong>Student</strong> is a student participating in the class. They can
-                        only see their own information, and can do assessments.
-                      </li>
-                      <li>
-                        <strong>None</strong> is a user who at one point added the course and later
-                        removed themselves. They can no longer access the course but their work done
-                        within the course has been retained.
-                      </li>
-                    </ul>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="modal fade"
-              id="fingerprint-changes-help"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="fingerprint-help-title"
-            >
-              <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h4 class="modal-title" id="fingerprint-help-title">Client Fingerprints</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    Client fingerprints are a record of a user's IP address, user agent and
-                    sesssion. These attributes are tracked while a user is accessing an assessment.
-                    This value indicates the amount of times that those attributes changed as the
-                    student accessed the assessment, while the assessment was active. Some changes
-                    may naturally occur during an assessment, such as if a student changes network
-                    connections or browsers. However, a high number of changes in an exam-like
-                    environment could be an indication of multiple people accessing the same
-                    assessment simultaneously, which may suggest an academic integrity issue.
-                    Accesses taking place after the assessment has been closed are not counted, as
-                    they typically indicate scenarios where a student is reviewing their results,
-                    which may happen outside of a controlled environment.
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="modal fade"
-              id="duration-help"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="duration-help-title"
-            >
-              <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h4 class="modal-title" id="duration-help-title">Duration</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <p>
-                      The "Duration" is the amount of time that a student has spent actively working
-                      on the assessment. The duration time measurement begins when the student
-                      starts the assessment and continues until the most recent answer submission.
-                    </p>
-                    <p>
-                      <strong>For Homework assessments</strong>, a student is considered to be
-                      actively working if they have at least one answer submission per hour, so the
-                      duration measurement is paused if there is a gap of more than one hour between
-                      answer submissions. For example:
-                    </p>
-                    <ul>
-                      <li>08:00 - student starts assessment;</li>
-                      <li>08:30 - student submits answer;</li>
-                      <li>09:00 - student submits answer;</li>
-                      <li>(gap of more than one hour)</li>
-                      <li>11:00 - student submits answer;</li>
-                      <li>11:30 - student submits answer;</li>
-                      <li>12:00 - student submits answer.</li>
-                    </ul>
-                    <p>
-                      In the above example, the "duration" would be 2 hours: one hour from 08:00 to
-                      09:00, and another hour from 11:00 to 12:00. The two-hour gap between 09:00 to
-                      11:00 is not counted as part of the duration.
-                    </p>
-                    <p>
-                      <strong>For Exam assessments</strong>, a student is considered to be actively
-                      working between the start of the assessment and the last submission,
-                      regardless of any potential inactivity. For the same example above, the
-                      "duration" would be 4 hours, from 08:00 to 12:00. The two-hour gap is not
-                      considered inactivity, since it is assumed that this kind of assessment
-                      requires students to be active for the duration of the assesment.
-                    </p>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="modal fade"
-              id="time-remaining-help"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="time-remaining-help-title"
-            >
-              <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h4 class="modal-title" id="time-remaining-help-title">Time Remaining</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <p>
-                      For open assessments with a time limit, this column will indicate the number
-                      of minutes (rounded down) the student has left to complete the assessment. If
-                      the value is <strong>&lt; 1 min</strong>, the student has less than one minute
-                      to complete it. This column may also contain one of the following special
-                      values.
-                    </p>
-                    <ul>
-                      <li>
-                        <strong>Expired</strong> indicates the assessment time limit has expired,
-                        and will be automatically closed as soon as possible. If an assessment is
-                        Expired for a prolonged period of time, this typically means the student has
-                        closed their browser or lost connectivity, and the assessment will be closed
-                        as soon as the student opens the assessment. No further submissions are
-                        accepted at this point.
-                      </li>
-                      <li>
-                        <strong>Closed</strong> indicates the assessment has been closed, and no
-                        further submissions are accepted.
-                      </li>
-                      <li>
-                        <strong>Open (no time limit)</strong> indicates that the assessment is still
-                        open and accepting submissions, and there is no time limit to submit the
-                        assessment (other than those indicated by access rules).
-                      </li>
-                    </ul>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ${RoleHelpModal()} ${FingerprintChangesHelpModal()} ${DurationHelpModal()}
+            ${TimeRemainingHelpModal()}
           </div>
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function RoleHelpModal() {
+  return Modal({
+    id: 'role-help',
+    title: 'Roles',
+    body: html`
+      <ul>
+        <li>
+          <strong>Staff</strong> is a member of the course staff. They can see the data of all
+          users, and depending on course settings may have permission to edit the information of
+          other users.
+        </li>
+        <li>
+          <strong>Student</strong> is a student participating in the class. They can only see their
+          own information, and can do assessments.
+        </li>
+        <li>
+          <strong>None</strong> is a user who at one point added the course and later removed
+          themselves. They can no longer access the course but their work done within the course has
+          been retained.
+        </li>
+      </ul>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+    `,
+  });
+}
+
+function FingerprintChangesHelpModal() {
+  return Modal({
+    id: 'fingerprint-changes-help',
+    title: 'Client Fingerprints',
+    body: html`
+      <p>
+        Client fingerprints are a record of a user's IP address, user agent and sesssion. These
+        attributes are tracked while a user is accessing an assessment. This value indicates the
+        amount of times that those attributes changed as the student accessed the assessment, while
+        the assessment was active. Some changes may naturally occur during an assessment, such as if
+        a student changes network connections or browsers. However, a high number of changes in an
+        exam-like environment could be an indication of multiple people accessing the same
+        assessment simultaneously, which may suggest an academic integrity issue. Accesses taking
+        place after the assessment has been closed are not counted, as they typically indicate
+        scenarios where a student is reviewing their results, which may happen outside of a
+        controlled environment.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+    `,
+  });
+}
+
+function DurationHelpModal() {
+  return Modal({
+    id: 'duration-help',
+    title: 'Duration',
+    body: html`
+      <p>
+        The "Duration" is the amount of time that a student has spent actively working on the
+        assessment. The duration time measurement begins when the student starts the assessment and
+        continues until the most recent answer submission.
+      </p>
+      <p>
+        <strong>For Homework assessments</strong>, a student is considered to be actively working if
+        they have at least one answer submission per hour, so the duration measurement is paused if
+        there is a gap of more than one hour between answer submissions. For example:
+      </p>
+      <ul>
+        <li>08:00 - student starts assessment;</li>
+        <li>08:30 - student submits answer;</li>
+        <li>09:00 - student submits answer;</li>
+        <li>(gap of more than one hour)</li>
+        <li>11:00 - student submits answer;</li>
+        <li>11:30 - student submits answer;</li>
+        <li>12:00 - student submits answer.</li>
+      </ul>
+      <p>
+        In the above example, the "duration" would be 2 hours: one hour from 08:00 to 09:00, and
+        another hour from 11:00 to 12:00. The two-hour gap between 09:00 to 11:00 is not counted as
+        part of the duration.
+      </p>
+      <p>
+        <strong>For Exam assessments</strong>, a student is considered to be actively working
+        between the start of the assessment and the last submission, regardless of any potential
+        inactivity. For the same example above, the "duration" would be 4 hours, from 08:00 to
+        12:00. The two-hour gap is not considered inactivity, since it is assumed that this kind of
+        assessment requires students to be active for the duration of the assesment.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+    `,
+  });
+}
+
+function TimeRemainingHelpModal() {
+  return Modal({
+    id: 'time-remaining-help',
+    title: 'Time Remaining',
+    body: html`
+      <div class="modal-body">
+        <p>
+          For open assessments with a time limit, this column will indicate the number of minutes
+          (rounded down) the student has left to complete the assessment. If the value is
+          <strong>&lt; 1 min</strong>, the student has less than one minute to complete it. This
+          column may also contain one of the following special values.
+        </p>
+        <ul>
+          <li>
+            <strong>Expired</strong> indicates the assessment time limit has expired, and will be
+            automatically closed as soon as possible. If an assessment is Expired for a prolonged
+            period of time, this typically means the student has closed their browser or lost
+            connectivity, and the assessment will be closed as soon as the student opens the
+            assessment. No further submissions are accepted at this point.
+          </li>
+          <li>
+            <strong>Closed</strong> indicates the assessment has been closed, and no further
+            submissions are accepted.
+          </li>
+          <li>
+            <strong>Open (no time limit)</strong> indicates that the assessment is still open and
+            accepting submissions, and there is no time limit to submit the assessment (other than
+            those indicated by access rules).
+          </li>
+        </ul>
+      </div>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+    `,
+  });
 }
