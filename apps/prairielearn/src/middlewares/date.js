@@ -1,3 +1,4 @@
+// @ts-check
 import { config } from '../lib/config';
 
 /**
