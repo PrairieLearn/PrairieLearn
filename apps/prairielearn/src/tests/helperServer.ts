@@ -1,4 +1,3 @@
-import { callbackify } from 'util';
 import * as tmp from 'tmp-promise';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { assert } from 'chai';
@@ -131,18 +130,7 @@ export async function after(): Promise<void> {
   }
 }
 
-export async function getLastJobSequenceIdAsync() {
-  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_last_job_sequence, []);
-  if (result.rowCount === 0) {
-    throw new Error('Could not find last job_sequence_id: did the job start?');
-  }
-  const job_sequence_id = result.rows[0].id;
-  return job_sequence_id;
-}
-
-export const getLastJobSequenceId = callbackify(getLastJobSequenceIdAsync);
-
-export async function waitForJobSequenceAsync(job_sequence_id) {
+export async function waitForJobSequence(job_sequence_id) {
   let job_sequence;
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -156,10 +144,8 @@ export async function waitForJobSequenceAsync(job_sequence_id) {
   return job_sequence;
 }
 
-export const waitForJobSequence = callbackify(waitForJobSequenceAsync);
-
-export async function waitForJobSequenceSuccessAsync(job_sequence_id) {
-  const job_sequence = await waitForJobSequenceAsync(job_sequence_id);
+export async function waitForJobSequenceSuccess(job_sequence_id) {
+  const job_sequence = await waitForJobSequence(job_sequence_id);
 
   // In the case of a failure, print more information to aid debugging.
   if (job_sequence.status !== 'Success') {
@@ -170,5 +156,3 @@ export async function waitForJobSequenceSuccessAsync(job_sequence_id) {
 
   assert.equal(job_sequence.status, 'Success');
 }
-
-export const waitForJobSequenceSuccess = callbackify(waitForJobSequenceSuccessAsync);
