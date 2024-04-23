@@ -1,3 +1,5 @@
+// @ts-check
+
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
@@ -28,7 +30,6 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const {
@@ -204,10 +205,6 @@ module.exports.initExpress = function () {
       parts: config.fileUploadMaxParts,
     },
   });
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {
-    base: 10,
-    round: 0,
-  });
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
     upload.single('file'),
@@ -323,6 +320,7 @@ module.exports.initExpress = function () {
 
   // proxy workspaces to remote machines
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
+  /** @type {import('http-proxy-middleware').Options} */
   const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -393,14 +391,14 @@ module.exports.initExpress = function () {
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
       if (res && !res.headersSent) {
-        if (res.status && res.send) {
-          res.status(err.status ?? 500).send('Error proxying workspace request');
-        }
+        res
+          .status?.(/** @type {any} */ (err).status ?? 500)
+          ?.send?.('Error proxying workspace request');
       }
     },
   };
   const workspaceProxy = createProxyMiddleware((pathname) => {
-    return pathname.match('/pl/workspace/([0-9])+/container/');
+    return !!pathname.match('/pl/workspace/([0-9])+/container/');
   }, workspaceProxyOptions);
   const workspaceAuthRouter = express.Router();
   workspaceAuthRouter.use([
@@ -1112,10 +1110,12 @@ module.exports.initExpress = function () {
       // Redirect legacy question URLs to their preview page.
       // We need to maintain query parameters like `variant_id` so that the
       // preview page can render the correct variant.
-      const newUrl = `${req.params[0]}/preview`;
-      const newUrlParts = url.parse(newUrl);
-      newUrlParts.query = req.query;
-      res.redirect(url.format(newUrlParts));
+      res.redirect(
+        url.format({
+          pathname: `${req.params[0]}/preview`,
+          search: url.parse(req.originalUrl).search,
+        }),
+      );
     },
   );
   app.use(
@@ -1654,10 +1654,12 @@ module.exports.initExpress = function () {
     // Redirect legacy question URLs to their preview page.
     // We need to maintain query parameters like `variant_id` so that the
     // preview page can render the correct variant.
-    const newUrl = `${req.params[0]}/preview`;
-    const newUrlParts = url.parse(newUrl);
-    newUrlParts.query = req.query;
-    res.redirect(url.format(newUrlParts));
+    res.redirect(
+      url.format({
+        pathname: `${req.params[0]}/preview`,
+        search: url.parse(req.originalUrl).search,
+      }),
+    );
   });
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', function (req, res, next) {
     res.locals.navPage = 'question';
@@ -2127,7 +2129,7 @@ module.exports.startServer = async () => {
     server.on('listening', () => {
       if (!done) {
         done = true;
-        resolve();
+        resolve(null);
       }
     });
   });
@@ -2221,9 +2223,9 @@ if (require.main === module && config.startServer) {
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
             integrations,
-            tracesSampleRate: config.sentryTracesSampleRate,
+            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
             // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate,
+            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -2289,7 +2291,7 @@ if (require.main === module && config.startServer) {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
-          password: config.postgresqlPassword,
+          password: config.postgresqlPassword ?? undefined,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
           ssl: config.postgresqlSsl,
@@ -2323,7 +2325,7 @@ if (require.main === module && config.startServer) {
         if (argv['refresh-workspace-hosts-and-exit']) {
           logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
 
-          const hosts = await markAllWorkspaceHostsUnhealthy();
+          const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
 
           const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
           logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);

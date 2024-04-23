@@ -59,8 +59,8 @@ export async function pullAndUpdateCourse({
   commit_hash,
 }: {
   courseId: string;
-  userId: string;
-  authnUserId: string;
+  userId: string | null;
+  authnUserId: string | null;
   path?: string | null;
   branch?: string | null;
   repository?: string | null;
@@ -68,8 +68,8 @@ export async function pullAndUpdateCourse({
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<void> }> {
   const serverJob = await createServerJob({
     courseId,
-    userId,
-    authnUserId,
+    userId: userId ?? undefined,
+    authnUserId: authnUserId ?? undefined,
     type: 'sync',
     description: 'Pull from remote git repository',
   });

@@ -19,7 +19,7 @@ const NODE_MODULES_PATHS = [
  * to serve all files, or a subdirectory like `mathjax/es5`.
  *
  * @param {string} servePath
- * @param {import('serve-static').ServeStaticOptions} options
+ * @param {import('serve-static').ServeStaticOptions} [options]
  */
 export default function (servePath, options) {
   const router = express.Router();
