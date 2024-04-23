@@ -1,5 +1,5 @@
 // @ts-check
-const _ = require('lodash');
+import _ from 'lodash';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 

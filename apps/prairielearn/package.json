@@ -2,6 +2,7 @@
   "name": "@prairielearn/prairielearn",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "tsc --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
     "dev:no-watch": "tsx src/server.js",

@@ -2,7 +2,11 @@
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "../dist"
+    "outDir": "../dist",
+    // TODO: Move this into the root config once everything is using 
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "NodeNext"
   },
   "include": ["**/*"]
 }
