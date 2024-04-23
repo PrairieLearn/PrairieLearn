@@ -5,7 +5,6 @@ import * as path from 'node:path';
 /**
  * Reads a JSON file from the schemas directory.
  * @param {string} filePath
- * @returns {string}
  */
 function readSchema(filePath) {
   return JSON.parse(fs.readFileSync(path.resolve(__dirname, 'schemas', filePath), 'utf8'));
