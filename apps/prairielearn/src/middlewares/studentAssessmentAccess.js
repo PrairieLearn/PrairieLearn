@@ -1,12 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const _ = require('lodash');
+// @ts-check
+import { Router } from 'express';
+import * as _ from 'lodash';
 
-const { logger } = require('@prairielearn/logger');
-const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
-const { config } = require('../lib/config');
-const { setCookie } = require('../lib/cookie');
-const { idsEqual } = require('../lib/id');
+import { logger } from '@prairielearn/logger';
+import { generateSignedToken, getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { config } from '../lib/config';
+import { setCookie } from '../lib/cookie';
+import { idsEqual } from '../lib/id';
+
+const router = Router();
 
 var timeout = 24; // hours
 
@@ -39,7 +41,7 @@ router.all('/', function (req, res, next) {
     return;
   }
 
-  // SafeExamBrowser protect the assesment
+  // SafeExamBrowser protect the assessment
   if ('authz_result' in res.locals && res.locals.authz_result.mode === 'SEB') {
     // If the assessment is complete, use this middleware to show the logout page
     if ('assessment_instance' in res.locals && res.locals.assessment_instance.open === false) {
@@ -56,7 +58,7 @@ router.all('/', function (req, res, next) {
   // case of an existing assessment instance. This middleware can't handle
   // the intricacies of creating a new assessment instance. We handle those
   // cases on the `studentAssessment` page.
-  if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
+  if (res.locals?.assessment_instance?.open && !checkPasswordOrRedirect(req, res)) {
     return;
   }
 
@@ -64,7 +66,7 @@ router.all('/', function (req, res, next) {
   next();
 });
 
-module.exports = router;
+export default router;
 
 /**
  * Checks if the given request has the correct password. If not, redirects to
@@ -73,9 +75,11 @@ module.exports = router;
  * Returns `true` if the password is correct, `false` otherwise. If this
  * function returns `false`, the caller should not continue with the request.
  *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
  * @returns {boolean}
  */
-module.exports.checkPasswordOrRedirect = function (req, res) {
+export function checkPasswordOrRedirect(req, res) {
   if (!res.locals.authz_result?.password) {
     // No password is required.
     return true;
@@ -98,7 +102,7 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
 
   // The password is correct and not expired!
   return true;
-};
+}
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);

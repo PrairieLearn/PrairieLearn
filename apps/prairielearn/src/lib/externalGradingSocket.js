@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { checkSignedToken } from '@prairielearn/signed-token';

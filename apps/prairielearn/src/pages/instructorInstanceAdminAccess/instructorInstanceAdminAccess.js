@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 const ERR = require('async-stacktrace');
 import * as express from 'express';
 

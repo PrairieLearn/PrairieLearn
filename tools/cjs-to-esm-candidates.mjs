@@ -13,6 +13,7 @@ const CJS_ONLY_MODULES = new Set([
   'axe-core',
   'body-parser',
   'byline',
+  'chalk',
   'cookie-parser',
   'crypto-js/sha256',
   'csvtojson',
