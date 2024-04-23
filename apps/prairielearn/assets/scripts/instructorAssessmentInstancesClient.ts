@@ -608,10 +608,10 @@ onDocumentReady(() => {
             data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
           ></div>
           <div
-            id="#row${ai_id}PopoverRegrade"
+            id="row${ai_id}PopoverRegrade"
             tabindex="0"
             data-toggle="popover"
-            title="Confrim regrade"
+            title="Confirm regrade"
             data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
           ></div>
           <div class="dropdown-menu" onclick="window.event.preventDefault()">
