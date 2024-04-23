@@ -1,4 +1,4 @@
-import { promisify, callbackify } from 'util';
+import { callbackify } from 'util';
 import * as tmp from 'tmp-promise';
 import * as path from 'path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -53,7 +53,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       cron.init();
 
       debug('before(): inserting dev user');
-      await promisify(server.insertDevUser)();
+      await server.insertDevUser();
 
       debug('before(): sync from disk');
       await helperCourse.syncCourse(courseDir);
@@ -87,7 +87,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       await freeformServer.init();
 
       externalGrader.init();
-      await promisify(externalGradingSocket.init)();
+      externalGradingSocket.init();
     } finally {
       debug('before(): completed');
     }
@@ -105,7 +105,7 @@ export async function after(): Promise<void> {
     await codeCaller.finish();
 
     debug('after(): stop server');
-    await promisify(server.stopServer)();
+    await server.stopServer();
 
     debug('after(): close socket server');
     await socketServer.close();

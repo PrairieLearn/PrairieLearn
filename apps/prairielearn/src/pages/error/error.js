@@ -1,15 +1,15 @@
 // @ts-check
-var _ = require('lodash');
-var path = require('path');
-var jsonStringifySafe = require('json-stringify-safe');
+import * as _ from 'lodash';
+import * as path from 'path';
+const jsonStringifySafe = require('json-stringify-safe');
 
-const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
+import { formatErrorStack, formatErrorStackSafe } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 
-const { config } = require('../../lib/config');
+import { config } from '../../lib/config';
 
 /** @type {import('express').ErrorRequestHandler} */
-module.exports = function (err, req, res, _next) {
+export default function (err, req, res, _next) {
   const errorId = res.locals.error_id;
 
   err.status = err.status ?? 500;
@@ -52,7 +52,6 @@ module.exports = function (err, req, res, _next) {
 
   const templateData = {
     error: err,
-    errorStack: err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
@@ -67,6 +66,7 @@ module.exports = function (err, req, res, _next) {
   if (config.devMode) {
     // development error handler
     // will print stacktrace
+    templateData.errorStack = err.stack ? formatErrorStack(err) : null;
     res.render(path.join(__dirname, 'error'), templateData);
   } else {
     // production error handler
@@ -74,4 +74,4 @@ module.exports = function (err, req, res, _next) {
     templateData.error = { message: err.message, info: err.info };
     res.render(path.join(__dirname, 'error'), templateData);
   }
-};
+}

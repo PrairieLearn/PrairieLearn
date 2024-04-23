@@ -16,11 +16,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
 let namespace;
 
 // This module MUST be initialized after socket-server
-export function init(callback) {
+export function init() {
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
-
-  callback(null);
 }
 
 /**
