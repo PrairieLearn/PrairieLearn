@@ -244,14 +244,8 @@ export interface CourseInstance {
   groupAssessmentsBy: 'Set' | 'Module';
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
 export interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam' | 'SEB';
+  mode: 'Public' | 'Exam';
   examUuid: string;
   role: string; // Role is only allowed in legacy questions
   uids: string[];
@@ -261,7 +255,6 @@ export interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
-  SEBConfig: SEBConfig;
 }
 
 interface QuestionAlternative {
