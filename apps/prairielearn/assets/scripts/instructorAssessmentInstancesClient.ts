@@ -385,7 +385,7 @@ onDocumentReady(() => {
   window.popoverSubmitViaAjax = function (e: any, popover) {
     e.preventDefault();
     $.post(
-      '/',
+      window.location.pathname,
       $(e.target).serialize(),
       function () {
         refreshTable();
@@ -404,7 +404,7 @@ onDocumentReady(() => {
       <form
         name="set-time-limit-form"
         method="POST"
-        onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover') as any);"
+        onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover'));"
       >
         <p>
           Total time limit: ${row.total_time}<br />
@@ -423,8 +423,8 @@ onDocumentReady(() => {
           class="form-control select-time-limit"
           name="plus_minus"
           onchange="
-            this.parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
-            this.parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
+            $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
+            $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
             "
         >
           ${row.time_remaining_sec !== null
@@ -605,28 +605,14 @@ onDocumentReady(() => {
             tabindex="0"
             data-toggle="popover"
             title="Confirm close"
-            data-content="<form name='close-form' method='POST' onsubmit='popoverSubmitViaAjax(event, '#row${ai_id}PopoverClose')'><input type='hidden' name='__action' value='close'><input type='hidden' name='__csrf_token' value='${csrfToken}'><input type='hidden' name='assessment_instance_id' value='${ai_id}'><button type='button' class='btn btn-secondary' onclick='$('#row${ai_id}PopoverClose').popover('hide')'>Cancel</button><button type='submit' class='btn btn-danger'>Grade and close</button></form>"
+            data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
           ></div>
           <div
-            id="row${ai_id}PopoverTimeLimit"
+            id="#row${ai_id}PopoverRegrade"
             tabindex="0"
             data-toggle="popover"
-            title="Change Time Limit"
-            data-content="${escapeHtml(
-              html`<form name="regrade-form" method="POST">
-                <input type="hidden" name="__action" value="regrade" />
-                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  onclick="$('#row${ai_id}PopoverRegrade').popover('hide')"
-                >
-                  Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">Regrade</button>
-              </form>`,
-            )}"
+            title="Confrim regrade"
+            data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
           ></div>
           <div class="dropdown-menu" onclick="window.event.preventDefault()">
             ${has_course_instance_permission_edit
@@ -736,3 +722,41 @@ onDocumentReady(() => {
     $('.time-limit-edit-all-button').data('row', time_limit_totals);
   }
 });
+
+function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
+  return html`
+    <form
+      name="close-form"
+      method="POST"
+      onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover'))"
+    >
+      <input type="hidden" name="__action" value="close" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
+      <button
+        type="button"
+        class="btn btn-secondary"
+        onclick="$(this).parents('form').parents('.popover').popover('hide')"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger">Grade and close</button>
+    </form>
+  `;
+}
+
+function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
+  return html` <form name="regrade-form" method="POST">
+    <input type="hidden" name="__action" value="regrade" />
+    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+    <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
+    <button
+      type="button"
+      class="btn btn-secondary"
+      onclick="$('#row${ai_id}PopoverRegrade').popover('hide')"
+    >
+      Cancel
+    </button>
+    <button type="submit" class="btn btn-primary">Regrade</button>
+  </form>`;
+}
