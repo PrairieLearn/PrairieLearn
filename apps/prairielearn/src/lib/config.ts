@@ -234,9 +234,6 @@ const ConfigSchema = z.object({
   blockedWarnEnable: z.boolean().default(false),
   blockedAtWarnEnable: z.boolean().default(false),
   blockedWarnThresholdMS: z.number().default(100),
-  SEBServerUrl: z.string().nullable().default(null),
-  SEBServerFilter: z.string().nullable().default(null),
-  SEBDownloadUrl: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),
   /**
    * This is populated by `lib/aws.js` later.

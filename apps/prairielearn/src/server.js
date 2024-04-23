@@ -537,8 +537,6 @@ module.exports.initExpress = function () {
     },
     require('./pages/authLogout/authLogout').default,
   ]);
-  // disable SEB until we can fix the mcrypt issues
-  // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn').default); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken').default); // authn for the API, set res.locals.authn_user
 
