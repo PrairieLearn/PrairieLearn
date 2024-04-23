@@ -5,5 +5,5 @@ rule:
     - pattern: import $IMPORT from '$LOCATION';
 constraints:
   LOCATION:
-    regex: '\..*'
+    regex: '^\.'
 fix: import $IMPORT from '$LOCATION.js';
