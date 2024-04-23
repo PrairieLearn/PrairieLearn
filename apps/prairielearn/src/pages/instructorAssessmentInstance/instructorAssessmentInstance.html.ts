@@ -159,17 +159,18 @@ export function InstructorAssessmentInstance({
                         <th>Fingerprint Changes</th>
                         <td colspan="2">
                           ${resLocals.assessment_instance.client_fingerprint_id_change_count}
-                          <button
+                          <a
+                            tabindex="0"
                             class="btn btn-xs"
+                            role="button"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
                             data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
-                          >
-                            <i class="fa fa-question-circle"></i>
-                          </button>
+                            ><i class="fa fa-question-circle"></i
+                          ></a>
                         </td>
                       </tr>
                     `
@@ -249,8 +250,10 @@ export function InstructorAssessmentInstance({
                     ${resLocals.assessment_instance.include_in_statistics
                       ? html`
                           Included
-                          <button
+                          <a
+                            tabindex="0"
                             class="btn btn-xs"
+                            role="button"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -261,8 +264,10 @@ export function InstructorAssessmentInstance({
                         `
                       : html`
                           Not included
-                          <button
+                          <a
+                            tabindex="0"
                             class="btn btn-xs"
+                            role="button"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -625,10 +630,12 @@ export function InstructorAssessmentInstance({
                         ? row.client_fingerprint && row.client_fingerprint_number !== null
                           ? html`
                               <td>
-                                <button
+                                <a
+                                  tabindex="0"
                                   class="badge color-${FINGERPRINT_COLORS[
                                     row.client_fingerprint_number % 6
                                   ]} color-hover"
+                                  role="button"
                                   id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
                                   data-toggle="popover"
                                   data-container="body"
@@ -651,7 +658,7 @@ export function InstructorAssessmentInstance({
                                   `)}"
                                 >
                                   ${row.client_fingerprint_number}
-                                </button>
+                                </a>
                               </td>
                             `
                           : html`<td>&mdash;</td>`

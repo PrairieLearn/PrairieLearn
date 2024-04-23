@@ -299,38 +299,30 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         >
                           ${resLocals.authz_data.has_course_instance_permission_edit
                             ? html`
-                                <a
+                                <button
                                   class="dropdown-item"
-                                  role="button"
-                                  tabindex="0"
                                   data-toggle="modal"
                                   data-target="#deleteAllAssessmentInstancesModal"
                                 >
                                   <i class="fas fa-times" aria-hidden="true"></i> Delete all
                                   instances
                                 </a>
-                                <a
-                                  role="button"
-                                  tabindex="0"
+                                <button
                                   class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
                                 >
                                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit
                                   for all instances
-                                </a>
-                                <a
+                                </button>
+                                <button
                                   class="dropdown-item"
-                                  role="button"
-                                  tabindex="0"
                                   data-toggle="modal"
                                   data-target="#gradeAllAssessmentInstancesModal"
                                 >
                                   <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade
                                   all instances
                                 </a>
-                                <a
+                                <button
                                   class="dropdown-item"
-                                  role="button"
-                                  tabindex="0"
                                   data-toggle="modal"
                                   data-target="#closeAllAssessmentInstancesModal"
                                 >
