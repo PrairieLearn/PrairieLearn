@@ -1,6 +1,5 @@
 import { callbackify } from 'util';
 import * as tmp from 'tmp-promise';
-import * as path from 'path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { assert } from 'chai';
 import * as opentelemetry from '@prairielearn/opentelemetry';

@@ -2,7 +2,6 @@
 const ERR = require('async-stacktrace');
 import * as _ from 'lodash';
 import * as express from 'express';
-import * as path from 'path';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
