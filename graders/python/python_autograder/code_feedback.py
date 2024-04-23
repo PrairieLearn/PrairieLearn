@@ -391,10 +391,8 @@ class Feedback:
             ref == data
         ):  # will check equality of both keys and values between reference dict and student's dict
             return True
-        
-        return bad(
-            f"{name} is incorrect as one (or more) key-value pairs do not match"
-        )
+
+        return bad(f"{name} is incorrect as one (or more) key-value pairs do not match")
 
     @classmethod
     def check_tuple(
