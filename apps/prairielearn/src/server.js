@@ -2056,7 +2056,7 @@ module.exports.initExpress = function () {
   // The Sentry error handler must come before our own.
   app.use(Sentry.Handlers.errorHandler());
 
-  app.use(require('./pages/error/error'));
+  app.use(require('./pages/error/error').default);
 
   return app;
 };
