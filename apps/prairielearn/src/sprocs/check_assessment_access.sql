@@ -15,7 +15,6 @@ CREATE FUNCTION
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
-        OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,     -- If the assessment is visible but not active
@@ -51,7 +50,6 @@ BEGIN
         END AS time_limit_min,
         aar.password,
         aar.mode,
-        aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
         aar.active,
@@ -64,7 +62,6 @@ BEGIN
         time_limit_min,
         password,
         mode,
-        seb_config,
         show_closed_assessment,
         show_closed_assessment_score,
         active,
@@ -89,7 +86,6 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = FALSE;
@@ -141,7 +137,6 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;

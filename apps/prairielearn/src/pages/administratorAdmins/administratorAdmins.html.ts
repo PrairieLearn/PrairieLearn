@@ -122,7 +122,7 @@ function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: str
           class="form-control"
           id="administratorInsertFormUid"
           name="uid"
-          placeholder="username@domain.org"
+          placeholder="username@example.com"
         />
       </div>
       <div class="text-right">

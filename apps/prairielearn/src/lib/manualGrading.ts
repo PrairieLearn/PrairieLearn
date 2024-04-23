@@ -639,7 +639,7 @@ export async function updateInstanceQuestionScore(
         true, // allow_decrease
       ]);
 
-      await ltiOutcomes.updateScoreAsync(current_submission.assessment_instance_id);
+      await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 
     return {

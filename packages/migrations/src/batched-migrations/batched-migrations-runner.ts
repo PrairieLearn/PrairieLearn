@@ -1,4 +1,4 @@
-import EventEmitter from 'node:events';
+import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';

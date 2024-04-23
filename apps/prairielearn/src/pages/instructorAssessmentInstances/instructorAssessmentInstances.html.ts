@@ -476,7 +476,7 @@ function DurationHelpModal() {
         between the start of the assessment and the last submission, regardless of any potential
         inactivity. For the same example above, the "duration" would be 4 hours, from 08:00 to
         12:00. The two-hour gap is not considered inactivity, since it is assumed that this kind of
-        assessment requires students to be active for the duration of the assesment.
+        assessment requires students to be active for the duration of the assessment.
       </p>
     `,
     footer: html`
