@@ -88,13 +88,11 @@ router.get(
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
-    console.log(sql.select_is_shared);
     res.locals.question_is_shared = await sqldb.queryRow(
       sql.select_is_shared,
       { question_id: res.locals.question.id },
       z.boolean(),
     );
-    console.log(res.locals.question_is_shared);
 
     setRendererHeader(res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
