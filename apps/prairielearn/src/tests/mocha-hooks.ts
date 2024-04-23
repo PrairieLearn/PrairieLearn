@@ -31,16 +31,13 @@ export const mochaHooks: RootHookObject = {
     // We can't use `import` here because this is a TS file and our tooling
     // isn't yet set up to do dynamic imports of `.ts` files.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { config } = require('../lib/config');
+    const { config } = await import('../lib/config');
     config.workersCount = 2; // explicitly use 2 workers to test parallelism
     config.fileEditorUseGit = true; // test use of git in file editor
 
     // Allow using `chai-as-promised` in all tests.
     const chai = await import('chai');
     const chaiAsPromised = await import('chai-as-promised');
-    // @ts-expect-error -- Dynamic imports do have a `.default` property, but
-    // `allowSyntheticDefaultImports` is disabled at the time of writing, so
-    // TypeScript doesn't know about it.
     chai.use(chaiAsPromised.default);
   },
 };

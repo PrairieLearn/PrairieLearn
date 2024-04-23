@@ -2259,13 +2259,13 @@ if (require.main === module && config.startServer) {
       },
       async () => {
         if (isEnterprise() && config.hasAzure) {
-          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          const { getAzureStrategy } = await import('./ee/auth/azure/index');
           passport.use(getAzureStrategy());
         }
       },
       async () => {
         if (isEnterprise()) {
-          const { strategy } = require('./ee/auth/saml/index');
+          const { strategy } = await import('./ee/auth/saml/index');
           passport.use(strategy);
         }
       },
