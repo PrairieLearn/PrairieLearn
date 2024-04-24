@@ -31,8 +31,8 @@ const debug = debugfn('prairielearn:freeform');
 
 /**
  * @typedef {Object} QuestionProcessingContext
- * @property {import('../lib/db-types').Course} course
- * @property {import('../lib/db-types').Question} question
+ * @property {import('../lib/db-types.js').Course} course
+ * @property {import('../lib/db-types.js').Question} question
  * @property {string} course_dir
  * @property {string} course_dir_host
  * @property {string} question_dir
