@@ -50,3 +50,6 @@ ast-grep scan --rule $SCRIPT_DIR/rewrite-typescript-cjs-import.yml -U $ROOT_DIR/
 
 # Convert require statements in `server.js` and friends to dynamic imports
 ast-grep -p 'require('"'"'$PATH'"'"').default' -r '(await import('"'"'$PATH.js'"'"')).default' -U $ROOT_DIR/apps/prairielearn/src/server.js
+
+# Convert `__dirname` to `import.meta.dirname`
+ast-grep -p '__dirname' -r 'import.meta.dirname' -U $ROOT_DIR/apps/*/src
