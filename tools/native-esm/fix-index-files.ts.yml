@@ -1,9 +1,9 @@
-id: fix-index-files-in-lib
-language: JavaScript
+id: fix-index-files
+language: TypeScript
 rule:
   any:
     - pattern: import $IMPORT from '$LOCATION';
 constraints:
   LOCATION:
-    regex: '\./(code-caller|features)$'
+    regex: '\./(cron|sprocs|news_items)$'
 fix: import $IMPORT from '$LOCATION/index';
