@@ -9,7 +9,7 @@ const router = express.Router();
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
-    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutput(
       req.params.job_sequence_id,
       null,
     );
