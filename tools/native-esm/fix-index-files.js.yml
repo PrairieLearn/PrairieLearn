@@ -5,5 +5,5 @@ rule:
     - pattern: import $IMPORT from '$LOCATION';
 constraints:
   LOCATION:
-    regex: '\./(cron|news_items|sprocs)$'
+    regex: '^\..*/(cron|news_items|question-servers|schemas|sprocs)$'
 fix: import $IMPORT from '$LOCATION/index';
