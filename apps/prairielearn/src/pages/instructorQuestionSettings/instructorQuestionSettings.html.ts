@@ -90,7 +90,8 @@ export function InstructorQuestionSettings({
             <div class="card-body">
               <form>
                 <div class="form-group">
-                  <label for="title" class="h5">Title</label>
+                  <h2 class="h4">General</h2>
+                  <label for="title">Title</label>
                   <input
                     type="text"
                     class="form-control"
@@ -104,7 +105,7 @@ export function InstructorQuestionSettings({
                   </small>
                 </div>
                 <div class="form-group">
-                  <label class="h5" for="qid">QID</label>
+                  <label for="qid">QID</label>
                   ${resLocals.authz_data.has_course_permission_edit &&
                   !resLocals.course.example_course
                     ? html`
@@ -151,24 +152,24 @@ export function InstructorQuestionSettings({
                   </small>
                 </div>
                 <div>
-                  <h2 class="h5">Topic</h2>
-                  <div class="row px-3">
-                    <div class="col-1">
+                  <h2 class="h4">Topic</h2>
+                  <div class="list-group">
+                    <div class="list-group-item d-flex align-items-center">
                       ${renderEjs(__filename, "<%- include('../partials/topic') %>", {
                         topic: resLocals.topic,
                       })}
+                      <span class="ml-3">${resLocals.topic.description}</span>
                     </div>
-                    <div class="col-auto">${resLocals.topic.description}</div>
                   </div>
                 </div>
                 <hr />
                 <div>
-                  <h2 class="h5">Tags</h2>
-                  ${TagRows({ tags: resLocals.tags })}
+                  <h2 class="h4">Tags</h2>
+                  <div class="list-group">${TagRows({ tags: resLocals.tags })}</div>
                 </div>
                 <hr />
                 <div>
-                  <h2 class="h5">Assessments</h2>
+                  <h2 class="h4">Assessments</h2>
                   <div>
                     ${AssessmentRows({
                       assessmentsWithQuestion,
@@ -180,7 +181,7 @@ export function InstructorQuestionSettings({
                 ? html`
                     <hr />
                     <div>
-                      <h2 class="h5">Sharing</h2>
+                      <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
@@ -192,17 +193,17 @@ export function InstructorQuestionSettings({
                         })}
                       </div>
                     </div>
+                    <hr />
                   `
                 : ''}
-              <hr />
               ${resLocals.question.type === 'Freeform' &&
               resLocals.question.grading_method !== 'External' &&
               resLocals.authz_data.has_course_permission_view
                 ? html`
                     <div>
-                      <h2 class="h5">Tests</h5>
-                      <div class="pl-3">
-                        ${questionTestsForm({
+                      <h2 class="h4">Tests</h2>
+                      <div>
+                        ${QuestionTestsForm({
                           questionTestPath,
                           questionTestCsrfToken,
                         })}
@@ -469,7 +470,7 @@ function DeleteQuestionModal({
   });
 }
 
-function questionTestsForm({
+function QuestionTestsForm({
   questionTestPath,
   questionTestCsrfToken,
 }: {
@@ -506,7 +507,7 @@ function QuestionSharing({
 }) {
   if (questionSharedPublicly) {
     return html`
-      <div class="row px-3">
+      <div class="row">
         <div class="col-1">
           <div class="badge color-green3">Public</div>
         </div>
@@ -580,15 +581,15 @@ function QuestionSharing({
 
 function TagRows({ tags }) {
   if (!tags || tags.length === 0) {
-    return html` <small class="text-muted px-3"> This question does not have any tags. </small>`;
+    return html` <small class="text-muted"> This question does not have any tags. </small>`;
   }
   return tags.map((tag) => {
     return html`
-      <div class="row px-3">
-        <div class="col-1">
+      <div class="list-group-item d-flex align-items-center">
+        <div class="col-1 px-0">
           <span class="badge color-${tag.color}"> ${tag.name} </span>
         </div>
-        <div class="col-auto">${tag.description}</div>
+        <span class="col-auto px-0">${tag.description}</span>
       </div>
     `;
   });
@@ -596,7 +597,7 @@ function TagRows({ tags }) {
 
 function AssessmentRows({ assessmentsWithQuestion }) {
   if (assessmentsWithQuestion.length === 0) {
-    return html`<small class="text-muted text-center pl-3"
+    return html`<small class="text-muted text-center"
       >This question is not included in any assessments.</small
     >`;
   } else {
@@ -604,21 +605,13 @@ function AssessmentRows({ assessmentsWithQuestion }) {
       return html`
         <div class="card pb-2 mb-2">
           <div class="h6 card-header">${courseInstance.title}</div>
-          ${courseInstance.assessments.map((assessment) => {
-            return html`
-              <div class="row px-3">
-                <div class="col-1">
-                  <a
-                    href="/pl/course_instance/${courseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}/questions"
-                  >
-                    <span class="badge color-${assessment.color}"> ${assessment.label} </span>
-                  </a>
-                </div>
-                <div class="col-2">${assessment.type}</div>
-                <div class="col-auto">${assessment.title}</div>
-              </div>
-            `;
-          })}
+          <div class="card-body">
+            ${courseInstance.assessments.map((assessment) => {
+              return html`
+                <span class="badge color-${assessment.color}"> ${assessment.label} </span>
+              `;
+            })}
+          </div>
         </div>
       `;
     });
