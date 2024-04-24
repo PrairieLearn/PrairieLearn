@@ -36,6 +36,7 @@ import {
   startBatchedMigrations,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
+import _ from 'lodash';
 
 import { logger, addFileLogging } from '@prairielearn/logger';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config';
@@ -2037,7 +2038,6 @@ export function initExpress() {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err, req, res, next) => {
-    const _ = require('lodash');
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
