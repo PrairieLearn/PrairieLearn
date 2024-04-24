@@ -26,7 +26,7 @@ const blocked = require('blocked');
 const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
 import { v4 as uuidv4 } from 'uuid';
-const argv = require('yargs-parser')(process.argv.slice(2));
+const yargsParser = require('yargs-parser');
 const multer = require('multer');
 import * as url from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -75,6 +75,8 @@ import { selectJobsByJobSequenceId } from './lib/server-jobs';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
+
+const argv = yargsParser(process.argv.slice(2));
 
 // If there is only one argument and `server.js` is being executed directly,
 // legacy it into the config option.

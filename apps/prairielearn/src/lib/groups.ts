@@ -1,6 +1,6 @@
 import * as error from '@prairielearn/error';
 import { z } from 'zod';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';

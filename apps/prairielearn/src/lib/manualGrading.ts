@@ -1,6 +1,6 @@
 import * as async from 'async';
 import * as mustache from 'mustache';
-import _ from 'lodash';
+import * as _ from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 

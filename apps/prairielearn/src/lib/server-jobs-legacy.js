@@ -1,5 +1,5 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as util from 'util';
 import * as async from 'async';
 import AnsiUp from 'ansi_up';
