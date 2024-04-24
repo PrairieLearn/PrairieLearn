@@ -30,8 +30,7 @@ export const mochaHooks: RootHookObject = {
 
     // We can't use `import` here because this is a TS file and our tooling
     // isn't yet set up to do dynamic imports of `.ts` files.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { config } = await import('../lib/config');
+    const { config } = await import('../lib/config.js');
     config.workersCount = 2; // explicitly use 2 workers to test parallelism
     config.fileEditorUseGit = true; // test use of git in file editor
 

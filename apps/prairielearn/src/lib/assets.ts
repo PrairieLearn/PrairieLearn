@@ -10,6 +10,7 @@ import { APP_ROOT_PATH } from './paths';
 import staticNodeModules from '../middlewares/staticNodeModules';
 import elementFiles from '../pages/elementFiles/elementFiles';
 import { HtmlSafeString } from '@prairielearn/html';
+import { createRequire } from 'node:module';
 
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;
@@ -65,7 +66,7 @@ function getPackageNameForAssetPath(assetPath: string): string {
  */
 function getPackageVersion(packageName: string): string {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const require = createRequire(import.meta.url);
     return require(`${packageName}/package.json`).version;
   } catch (e) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
