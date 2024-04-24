@@ -61,7 +61,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
-  ) => QuestionServerReturnValue<GenerateResultData>;
+  ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
     course: Course,
@@ -96,7 +96,7 @@ export interface QuestionServer {
     variant: Variant,
     question: Question,
     course: Course,
-  ) => QuestionServerReturnValue<GradeResultData>;
+  ) => QuestionServerReturnValue<Partial<GradeResultData>>;
   file?: (
     filename: string,
     variant: Variant,
@@ -112,8 +112,8 @@ export interface QuestionServer {
 }
 
 const questionModules: Record<EffectiveQuestionType, QuestionServer> = {
-  Calculation: require('./calculation-subprocess'),
-  Freeform: require('./freeform'),
+  Calculation: await import('./calculation-subprocess'),
+  Freeform: await import('./freeform'),
 };
 
 const effectiveQuestionTypes: Record<QuestionType, EffectiveQuestionType> = {
