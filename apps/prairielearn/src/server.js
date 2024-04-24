@@ -51,7 +51,7 @@ import * as sprocs from './sprocs';
 import * as news_items from './news_items';
 import * as cron from './cron';
 import * as socketServer from './lib/socket-server';
-import * as serverJobs from './lib/server-jobs-legacy';
+import * as serverJobs from './lib/server-jobs';
 import * as freeformServer from './question-servers/freeform';
 import { cache } from '@prairielearn/cache';
 import { LocalCache } from './lib/local-cache';
