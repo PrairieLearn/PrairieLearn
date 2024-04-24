@@ -3,10 +3,6 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "../dist",
-    // TODO: Move this into the root config once everything is using 
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "NodeNext"
   },
   "include": ["**/*"]
 }
