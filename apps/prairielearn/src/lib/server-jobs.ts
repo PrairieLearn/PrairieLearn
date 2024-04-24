@@ -1,4 +1,4 @@
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';

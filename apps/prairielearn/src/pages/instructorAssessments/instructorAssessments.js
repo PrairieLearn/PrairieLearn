@@ -1,7 +1,7 @@
 // @ts-check
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import * as error from '@prairielearn/error';
 import debugfn from 'debug';
 import { stringifyStream } from '@prairielearn/csv';

@@ -13,7 +13,7 @@ import * as FileType from 'file-type';
 import { isBinaryFile } from 'isbinaryfile';
 import { encodePath } from '../../lib/uri-util';
 import * as editorUtil from '../../lib/editorUtil';
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import { getCourseOwners } from '../../lib/course';
 import { getPaths } from '../../lib/instructorFiles';
 

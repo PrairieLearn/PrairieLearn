@@ -1,5 +1,5 @@
 import * as sqldb from '@prairielearn/postgres';
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import {
   TopicSchema,
   SharingSetSchema,

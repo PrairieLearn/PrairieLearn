@@ -1,6 +1,6 @@
 import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 
 import * as error from '@prairielearn/error';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';

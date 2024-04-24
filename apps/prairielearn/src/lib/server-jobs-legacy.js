@@ -2,7 +2,7 @@
 import * as _ from 'lodash';
 import * as util from 'util';
 import * as async from 'async';
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { logger } from '@prairielearn/logger';
