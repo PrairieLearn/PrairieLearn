@@ -1,4 +1,4 @@
-id: fix-index-files-outside-lib-ts
+id: fix-index-files-outside-lib
 language: TypeScript
 rule:
   any:

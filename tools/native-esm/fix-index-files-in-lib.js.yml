@@ -1,4 +1,4 @@
-id: fix-index-files-in-lib-js
+id: fix-index-files-in-lib
 language: JavaScript
 rule:
   any:
