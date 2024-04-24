@@ -79,13 +79,6 @@ process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
 
-// If there is only one argument and `server.js` is being executed directly,
-// legacy it into the config option.
-if (require.main === module && argv['_'].length === 1) {
-  argv['config'] = argv['_'][0];
-  argv['_'] = [];
-}
-
 if ('h' in argv || 'help' in argv) {
   var msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
@@ -2170,7 +2163,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (require.main === module && config.startServer) {
+if (config.startServer) {
   async.series(
     [
       async () => {

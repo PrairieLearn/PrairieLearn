@@ -125,10 +125,6 @@ function getLineOnce(rl) {
   });
 }
 
-if (require.main !== module) {
-  throw new Error('This script is designed to be run as the main process');
-}
-
 // Redirect `stdout` to `stderr` so that we can ensure that no
 // user code can write to `stdout`; we need to use `stdout` to send results
 // instead.
