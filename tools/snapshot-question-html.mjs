@@ -11,7 +11,7 @@ async function loadQuestions() {
   const response = await fetch(QUESTIONS_URL);
   const text = await response.text();
   const $ = cheerio.load(text);
-  const questionData = $('#questionsTable').attr('data-data');
+  const questionData = $('#questionsTable').attr('data-data') ?? '[]';
   return JSON.parse(questionData);
 }
 
