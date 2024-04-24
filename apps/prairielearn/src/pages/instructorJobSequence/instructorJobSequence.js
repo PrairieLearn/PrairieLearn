@@ -1,21 +1,18 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import * as error from '@prairielearn/error';
+import { Router } from 'express';
+import { HttpStatusError } from '@prairielearn/error';
 
-import * as serverJobs from '../../lib/server-jobs-legacy';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs-legacy';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;
-    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutput(
-      job_sequence_id,
-      course_id,
-    );
+    const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
 
     // Verify existence of authz_data, which means that we are accessing the
     // job sequence through a course or a course instance. (The only way for
@@ -30,7 +27,7 @@ router.get(
         // something to do with code.
 
         if (!res.locals.authz_data.has_course_permission_view) {
-          throw new error.HttpStatusError(403, 'Access denied (must be a Viewer in the course)');
+          throw new HttpStatusError(403, 'Access denied (must be a Viewer in the course)');
         }
       } else {
         // If course_instance_id is not null, then this job sequence likely
@@ -46,7 +43,7 @@ router.get(
         }
 
         if (!res.locals.authz_data.has_course_instance_permission_view) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             403,
             'Access denied (must be a Student Data Viewer in the course instance)',
           );
