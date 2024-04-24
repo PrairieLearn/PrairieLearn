@@ -90,7 +90,7 @@ router.get(
 
     if (fileEdit.jobSequenceId != null) {
       debug('Read job sequence');
-      fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+      fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutput(
         fileEdit.jobSequenceId,
         res.locals.course.id,
       );

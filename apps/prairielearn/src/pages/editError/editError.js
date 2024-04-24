@@ -17,7 +17,7 @@ router.get(
 
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;
-    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutput(
       job_sequence_id,
       course_id,
     );
