@@ -45,11 +45,11 @@ ast-grep -p "import * as _ from 'lodash'" -r "import _ from 'lodash'" -U $ROOT_D
 # Convert requires to default imports
 ast-grep -p 'const $VAR = require($MODULE)' -r 'import $VAR from $MODULE' -U $ROOT_DIR/apps/*/src $ROOT_DIR/packages/*/src
 
-# Convert TS-stype requires to default imports
+# Convert TS-type requires to default imports
 ast-grep scan --rule $SCRIPT_DIR/rewrite-typescript-cjs-import.yml -U $ROOT_DIR/apps/*/src $ROOT_DIR/apps/prairielearn/assets
 
 # Convert require statements in `server.js` and friends to dynamic imports
-ast-grep -p 'require('"'"'$PATH'"'"').default' -r '(await import('"'"'$PATH.js'"'"')).default' -U $ROOT_DIR/apps/prairielearn/src/server.js
+ast-grep -p 'require('"'"'$PATH'"'"').default' -r '(await import('"'"'$PATH.js'"'"')).default' -U $ROOT_DIR/apps/prairielearn/src/server.js $ROOT_DIR/apps/prairielearn/src/api/v1/index.js
 
 # Convert `__dirname` to `import.meta.dirname`
 ast-grep -p '__dirname' -r 'import.meta.dirname' -U $ROOT_DIR/apps/*/src
