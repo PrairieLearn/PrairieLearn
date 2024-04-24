@@ -1,7 +1,7 @@
 // @ts-check
-const { makeBatchedMigration } = require('../batched-migration');
+import { makeBatchedMigration } from '../batched-migration';
 
-module.exports = makeBatchedMigration({
+export default makeBatchedMigration({
   async getParameters() {
     return {
       min: 2n,
