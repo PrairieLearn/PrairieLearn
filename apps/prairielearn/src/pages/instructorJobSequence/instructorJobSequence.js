@@ -11,7 +11,7 @@ router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
     const job_sequence_id = req.params.job_sequence_id;
-    const course_id = res.locals.course ? res.locals.course.id : null;
+    const course_id = res.locals.course?.id ?? null;
     const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
 
     // Verify existence of authz_data, which means that we are accessing the
