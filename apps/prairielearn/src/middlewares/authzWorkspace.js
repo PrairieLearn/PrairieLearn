@@ -1,20 +1,20 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 const asyncHandler = require('express-async-handler');
 
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
 
-const { isEnterprise } = require('../lib/license');
-const { authzCourseOrInstance } = require('./authzCourseOrInstance');
-const { selectAndAuthzInstanceQuestion } = require('./selectAndAuthzInstanceQuestion');
-const { selectAndAuthzAssessmentInstance } = require('./selectAndAuthzAssessmentInstance');
-const { selectAndAuthzInstructorQuestion } = require('./selectAndAuthzInstructorQuestion');
-const { authzHasCoursePreviewOrInstanceView } = require('./authzHasCoursePreviewOrInstanceView');
+import { isEnterprise } from '../lib/license';
+import { authzCourseOrInstance } from './authzCourseOrInstance';
+import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion';
+import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance';
+import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion';
+import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView';
+import { HttpStatusError } from '@prairielearn/error';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = asyncHandler(async (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   // We rely on having res.locals.workspace_id already set to the correct value here
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_auth_data_from_workspace, {
     workspace_id: res.locals.workspace_id,
@@ -27,7 +27,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     //
     // We use a 403 instead of a 404 to avoid leaking information about the existence
     // of particular workspace IDs.
-    throw new error.HttpStatusError(403, 'Access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 
   _.assign(res.locals, result.rows[0]);
@@ -45,7 +45,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       if (!hasPlanGrants) {
         // TODO: Show a fancier error page explaining what happened and prompting
         // the user to contact their instructor.
-        throw new error.HttpStatusError(403, 'Access denied');
+        throw new HttpStatusError(403, 'Access denied');
       }
     }
 

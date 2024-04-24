@@ -47,7 +47,7 @@ describe('Generate chunks and use them for a student homework', function () {
     const course_ids = ['1'];
     const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
-    await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
+    await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
   step('start the homework', async () => {

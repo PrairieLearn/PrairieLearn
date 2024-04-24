@@ -38,7 +38,7 @@ import {
   WorkspaceSchema,
 } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:workspace');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const WorkspaceDataSchema = z.object({

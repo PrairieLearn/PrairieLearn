@@ -1,9 +1,8 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
 import * as error from '@prairielearn/error';
@@ -13,6 +12,7 @@ import { clearCookie, setCookie } from '../../lib/cookie';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorEffectiveUser');
 
 router.get('/', function (req, res, next) {
   if (

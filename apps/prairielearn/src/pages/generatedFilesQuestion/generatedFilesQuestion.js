@@ -1,17 +1,17 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const error = require('@prairielearn/error');
-var express = require('express');
+import { Router } from 'express';
+import * as sqldb from '@prairielearn/postgres';
 
-const { getDynamicFile } = require('../../lib/question-variant');
-const { selectCourseById } = require('../../models/course');
-const { selectQuestionById } = require('../../models/question');
-var sqldb = require('@prairielearn/postgres');
+import { getDynamicFile } from '../../lib/question-variant';
+import { selectCourseById } from '../../models/course';
+import { selectQuestionById } from '../../models/question';
+import { HttpStatusError } from '@prairielearn/error';
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = function (options = { publicEndpoint: false }) {
-  const router = express.Router({ mergeParams: true });
+export default function (options = { publicEndpoint: false }) {
+  const router = Router({ mergeParams: true });
   router.get(
     '/variant/:variant_id(\\d+)/*',
     asyncHandler(async function (req, res) {
@@ -23,7 +23,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           !res.locals.question.shared_publicly ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
-          throw new error.HttpStatusError(404, 'Not Found');
+          throw new HttpStatusError(404, 'Not Found');
         }
       }
 
@@ -51,4 +51,4 @@ module.exports = function (options = { publicEndpoint: false }) {
     }),
   );
   return router;
-};
+}

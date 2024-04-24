@@ -1,19 +1,20 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
-const _ = require('lodash');
-const oauthSignature = require('oauth-signature');
-const { cache } = require('@prairielearn/cache');
+import { Router } from 'express';
+import * as _ from 'lodash';
+import * as oauthSignature from 'oauth-signature';
+import { cache } from '@prairielearn/cache';
 
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
-const error = require('@prairielearn/error');
-const { generateSignedToken } = require('@prairielearn/signed-token');
-const { config } = require('../../lib/config');
-const { shouldSecureCookie, setCookie } = require('../../lib/cookie');
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+import { config } from '../../lib/config';
+import { shouldSecureCookie, setCookie } from '../../lib/cookie';
+import { HttpStatusError } from '@prairielearn/error';
 
 const TIME_TOLERANCE_SEC = 3000;
+
+const router = Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.post(
   '/',
@@ -24,23 +25,23 @@ router.post(
 
     const ltiRedirectUrl = config.ltiRedirectUrl;
     if (!ltiRedirectUrl) {
-      throw new error.HttpStatusError(404, 'LTI not configured');
+      throw new HttpStatusError(404, 'LTI not configured');
     }
 
     if (parameters.lti_message_type !== 'basic-lti-launch-request') {
-      throw new error.HttpStatusError(400, 'Unsupported lti_message_type');
+      throw new HttpStatusError(400, 'Unsupported lti_message_type');
     }
 
     if (parameters.lti_version !== 'LTI-1p0') {
-      throw new error.HttpStatusError(400, 'Unsupported lti_version');
+      throw new HttpStatusError(400, 'Unsupported lti_version');
     }
 
     if (!parameters.oauth_consumer_key) {
-      throw new error.HttpStatusError(400, 'Badly formed oauth_consumer_key');
+      throw new HttpStatusError(400, 'Badly formed oauth_consumer_key');
     }
 
     if (!parameters.resource_link_id) {
-      throw new error.HttpStatusError(400, 'Badly formed resource_link_id');
+      throw new HttpStatusError(400, 'Badly formed resource_link_id');
     }
 
     // FIXME: could warn or throw an error if parameters.roles exists (no longer used)
@@ -49,7 +50,7 @@ router.post(
     const result = await sqldb.queryZeroOrOneRowAsync(sql.lookup_credential, {
       consumer_key: parameters.oauth_consumer_key,
     });
-    if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Unknown consumer_key');
+    if (result.rowCount === 0) throw new HttpStatusError(403, 'Unknown consumer_key');
 
     const ltiresult = result.rows[0];
 
@@ -62,13 +63,13 @@ router.post(
       { encodeSignature: false },
     );
     if (genSignature !== signature) {
-      throw new error.HttpStatusError(403, 'Invalid signature');
+      throw new HttpStatusError(403, 'Invalid signature');
     }
 
     // Check oauth_timestamp within N seconds of now (3000 suggested)
     const timeDiff = Math.abs(Math.floor(Date.now() / 1000) - parameters.oauth_timestamp);
     if (timeDiff > TIME_TOLERANCE_SEC) {
-      throw new error.HttpStatusError(403, 'Invalid timestamp');
+      throw new HttpStatusError(403, 'Invalid timestamp');
     }
 
     // Check nonce hasn't been used by that consumer_key in that timeframe
@@ -77,7 +78,7 @@ router.post(
     const nonceVal = await cache.get(nonceKey);
 
     if (nonceVal) {
-      throw new error.HttpStatusError(403, 'Nonce reused');
+      throw new HttpStatusError(403, 'Nonce reused');
     }
 
     // Remember that this nonce was already used.
@@ -85,7 +86,7 @@ router.post(
 
     // OAuth validation succeeded, next look up and store user authn data
     if (!parameters.user_id) {
-      throw new error.HttpStatusError(
+      throw new HttpStatusError(
         400,
         'Authentication problem: UserID required. Anonymous access disabled.',
       );
@@ -113,7 +114,7 @@ router.post(
       res.locals.req_date,
     ]);
     if (!userResult.rows[0].has_access) {
-      throw new error.HttpStatusError(403, 'Access denied');
+      throw new HttpStatusError(403, 'Access denied');
     }
 
     const tokenData = {
@@ -165,15 +166,12 @@ router.post(
       ]);
 
       if (instructorResult.rowCount === 0) {
-        throw new error.HttpStatusError(
-          403,
-          'Access denied (could not determine if user is instructor)',
-        );
+        throw new HttpStatusError(403, 'Access denied (could not determine if user is instructor)');
       }
 
       if (!instructorResult.rows[0].is_instructor) {
         // Show an error that the assignment is unavailable
-        throw new error.HttpStatusError(403, 'Assignment not available yet');
+        throw new HttpStatusError(403, 'Assignment not available yet');
       }
 
       res.redirect(
@@ -183,4 +181,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;
