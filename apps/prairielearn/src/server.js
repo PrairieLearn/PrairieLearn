@@ -2158,7 +2158,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (config.startServer) {
+if (require.main === module && config.startServer) {
   async.series(
     [
       async () => {
