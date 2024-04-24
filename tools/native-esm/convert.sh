@@ -44,6 +44,7 @@ ast-grep -p "import * as _ from 'lodash'" -r "import _ from 'lodash'" -U $ROOT_D
 
 # Convert requires to default imports
 ast-grep -p 'const $VAR = require($MODULE)' -r 'import $VAR from $MODULE' -U $ROOT_DIR/apps/*/src $ROOT_DIR/packages/*/src
+ast-grep -p 'var $VAR = require($MODULE)' -r 'import $VAR from $MODULE' -U $ROOT_DIR/apps/*/src $ROOT_DIR/packages/*/src
 
 # Convert TS-type requires to default imports
 ast-grep scan --rule $SCRIPT_DIR/rewrite-typescript-cjs-import.yml -U $ROOT_DIR/apps/*/src $ROOT_DIR/apps/prairielearn/assets

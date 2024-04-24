@@ -123,7 +123,7 @@ export async function initExpress() {
       app.use(Sentry.Handlers.tracingHandler());
     }
 
-    app.use(require('./lib/sentry').enrichSentryEventMiddleware);
+    app.use((await import('./lib/sentry.js')).enrichSentryEventMiddleware);
   }
 
   // This should come before the session middleware so that we don't
@@ -2009,7 +2009,7 @@ export async function initExpress() {
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.
-  app.use(require('./lib/redirect').thrownRedirectMiddleware);
+  app.use((await import('./lib/redirect.js')).thrownRedirectMiddleware);
 
   /**
    * Attempts to extract a numeric status code from a Postgres error object.
@@ -2259,13 +2259,13 @@ if (config.startServer) {
       },
       async () => {
         if (isEnterprise() && config.hasAzure) {
-          const { getAzureStrategy } = await import('./ee/auth/azure/index');
+          const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
           passport.use(getAzureStrategy());
         }
       },
       async () => {
         if (isEnterprise()) {
-          const { strategy } = await import('./ee/auth/saml/index');
+          const { strategy } = await import('./ee/auth/saml/index.js');
           passport.use(strategy);
         }
       },
