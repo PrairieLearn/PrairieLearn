@@ -47,3 +47,6 @@ ast-grep -p 'const $VAR = require($MODULE)' -r 'import $VAR from $MODULE' -U $RO
 
 # Convert TS-stype requires to default imports
 ast-grep scan --rule $SCRIPT_DIR/rewrite-typescript-cjs-import.yml -U $ROOT_DIR/apps/*/src $ROOT_DIR/apps/prairielearn/assets
+
+# Convert require statements in `server.js` and friends to dynamic imports
+ast-grep -p 'require($PATH).default' -r '(await import($PATH)).default' -U $ROOT_DIR/apps/prairielearn/src/server.js
