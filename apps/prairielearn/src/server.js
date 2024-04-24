@@ -51,7 +51,6 @@ import * as sprocs from './sprocs';
 import * as news_items from './news_items';
 import * as cron from './cron';
 import * as socketServer from './lib/socket-server';
-import * as serverJobs from './lib/server-jobs';
 import * as freeformServer from './question-servers/freeform';
 import { cache } from '@prairielearn/cache';
 import { LocalCache } from './lib/local-cache';
@@ -71,7 +70,11 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { PostgresSessionStore } from './lib/session-store';
 import { pullAndUpdateCourse } from './lib/course';
-import { selectJobsByJobSequenceId } from './lib/server-jobs';
+import {
+  init as serverJobsInit,
+  stop as serverJobsStop,
+  selectJobsByJobSequenceId,
+} from './lib/server-jobs';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
@@ -2505,7 +2508,7 @@ if (require.main === module && config.startServer) {
       async () => externalGradingSocket.init(),
       async () => externalGrader.init(),
       async () => workspace.init(),
-      async () => serverJobs.init(),
+      async () => serverJobsInit(),
       async () => nodeMetrics.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
@@ -2541,7 +2544,7 @@ if (require.main === module && config.startServer) {
           const results = await Promise.allSettled([
             externalGraderResults.stop(),
             cron.stop(),
-            serverJobs.stop(),
+            serverJobsStop(),
             stopBatchedMigrations(),
           ]);
           results.forEach((r) => {
