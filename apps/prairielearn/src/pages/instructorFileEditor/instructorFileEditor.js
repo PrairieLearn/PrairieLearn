@@ -14,7 +14,7 @@ const sha256 = require('crypto-js/sha256.js');
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
 import { isBinaryFile } from 'isbinaryfile';
-import * as modelist from 'ace-code/src/ext/modelist';
+import * as modelist from 'ace-code/src/ext/modelist.js';
 import { idsEqual } from '../../lib/id';
 import { getPaths } from '../../lib/instructorFiles';
 import { getCourseOwners } from '../../lib/course';

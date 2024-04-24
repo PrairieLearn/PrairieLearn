@@ -40,7 +40,7 @@ export default asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
-      const { checkPlanGrantsForLocals } = await import('../ee/lib/billing/plan-grants');
+      const { checkPlanGrantsForLocals } = await import('../ee/lib/billing/plan-grants.js');
       const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
       if (!hasPlanGrants) {
         // TODO: Show a fancier error page explaining what happened and prompting

@@ -112,8 +112,8 @@ export interface QuestionServer {
 }
 
 const questionModules: Record<EffectiveQuestionType, QuestionServer> = {
-  Calculation: await import('./calculation-subprocess'),
-  Freeform: await import('./freeform'),
+  Calculation: await import('./calculation-subprocess.js'),
+  Freeform: await import('./freeform.js'),
 };
 
 const effectiveQuestionTypes: Record<QuestionType, EffectiveQuestionType> = {
