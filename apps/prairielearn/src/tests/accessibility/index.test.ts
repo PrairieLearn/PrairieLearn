@@ -256,7 +256,7 @@ describe('accessibility', () => {
       errorIfLockNotAcquired: true,
     });
 
-    const app = server.initExpress();
+    const app = await server.initExpress();
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 

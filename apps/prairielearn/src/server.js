@@ -109,9 +109,9 @@ function enterpriseOnlyMiddleware(load) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {import('express').Express} The express "app" object that was created.
+ * @return {Promise<import('express').Express>} The express "app" object that was created.
  */
-export function initExpress() {
+export async function initExpress() {
   const app = express();
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
@@ -2064,7 +2064,7 @@ export function initExpress() {
 var server;
 
 export async function startServer() {
-  const app = initExpress();
+  const app = await initExpress();
 
   if (config.serverType === 'https') {
     const key = await fs.promises.readFile(config.sslKeyFile);
