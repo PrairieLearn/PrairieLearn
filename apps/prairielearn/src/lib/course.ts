@@ -1,6 +1,7 @@
 import * as fs from 'fs-extra';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
 
 import { createServerJob } from './server-jobs';
 import { config } from './config';
@@ -34,7 +35,7 @@ export async function checkAssessmentInstanceBelongsToCourseInstance(
       IdSchema,
     )) == null
   ) {
-    throw new Error('access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 }
 
