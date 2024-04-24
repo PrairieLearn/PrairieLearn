@@ -1,5 +1,5 @@
 import { isFuture, isValid, parseISO } from 'date-fns';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -60,18 +60,18 @@ function getParamsForAssessment(
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const allowAccess = (assessment.allowAccess ?? [])
-    .filter((accessRule) => !_(accessRule).has('role') || accessRule.role === 'Student')
+    .filter((accessRule) => !_.has(accessRule, 'role') || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
         number: index + 1,
-        mode: _(accessRule).has('mode') ? accessRule.mode : null,
-        uids: _(accessRule).has('uids') ? accessRule.uids : null,
-        start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-        end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-        credit: _(accessRule).has('credit') ? accessRule.credit : null,
-        time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
-        password: _(accessRule).has('password') ? accessRule.password : null,
-        exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+        mode: _.has(accessRule, 'mode') ? accessRule.mode : null,
+        uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
+        start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
+        end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
+        credit: _.has(accessRule, 'credit') ? accessRule.credit : null,
+        time_limit_min: _.has(accessRule, 'timeLimitMin') ? accessRule.timeLimitMin : null,
+        password: _.has(accessRule, 'password') ? accessRule.password : null,
+        exam_uuid: _.has(accessRule, 'examUuid') ? accessRule.examUuid : null,
         show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
         show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
         active: !!_.get(accessRule, 'active', true),

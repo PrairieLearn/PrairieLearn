@@ -1,5 +1,5 @@
 import * as path from 'path';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import * as jju from 'jju';
@@ -1295,7 +1295,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_(courseInstance).has('allowIssueReporting')) {
+  if (_.has(courseInstance, 'allowIssueReporting')) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1322,7 +1322,7 @@ async function validateCourseInstance(
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_(courseInstance).has('userRoles')) {
+    if (_.has(courseInstance, 'userRoles')) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );

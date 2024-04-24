@@ -116,7 +116,7 @@ describe('server-jobs', () => {
         }),
       );
 
-      await helperServer.waitForJobSequenceAsync(serverJob.jobSequenceId);
+      await helperServer.waitForJobSequence(serverJob.jobSequenceId);
 
       const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
 
