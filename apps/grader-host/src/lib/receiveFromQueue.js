@@ -115,7 +115,8 @@ export default function (sqs, queueUrl, receiveCallback, doneCallback) {
               globalLogger.error('Failed to read message schema; exiting process.');
               process.exit(1);
             }
-            const ajv = new Ajv();
+            // https://github.com/ajv-validator/ajv/issues/2132
+            const ajv = new Ajv.default();
             messageSchema = ajv.compile(data);
             return callback(null);
           });

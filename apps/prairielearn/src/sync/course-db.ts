@@ -19,7 +19,8 @@ import { features } from '../lib/features';
 const perf = makePerformance('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true });
+// https://github.com/ajv-validator/ajv/issues/2132
+const ajv = new Ajv.default({ allErrors: true });
 
 const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
