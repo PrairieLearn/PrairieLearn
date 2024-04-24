@@ -51,18 +51,7 @@ module.exports = {
 
     // By default, eslint-plugin-import only validates ESM syntax. We're still
     // using CommonJS, so we need to explicitly enable support for that.
-    'import/no-unresolved': [
-      2,
-      {
-        commonjs: true,
-      },
-    ],
-
-    // This gives false positives for `fs-extra`, which re-exports everything
-    // from `fs`. We'll disable it for now.
-    //
-    // TODO: file an issue upstream with `eslint-plugin-import`.
-    'import/namespace': 'off',
+    'import/no-unresolved': [2],
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
@@ -93,12 +82,6 @@ module.exports = {
     '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
-    {
-      files: ['*.js'],
-      rules: {
-        '@typescript-eslint/no-var-requires': 'off',
-      },
-    },
     {
       files: ['*.ts'],
       rules: {

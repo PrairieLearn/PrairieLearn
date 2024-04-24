@@ -2,7 +2,7 @@
 const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import * as _ from 'lodash';
-import * as oauthSignature from 'oauth-signature';
+import oauthSignature from 'oauth-signature';
 import { cache } from '@prairielearn/cache';
 
 import * as sqldb from '@prairielearn/postgres';

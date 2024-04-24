@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-import * as sinon from 'sinon';
+import sinon from 'sinon';
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
