@@ -4,9 +4,8 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as error from '@prairielearn/error';
 import assert = require('node:assert');
-import _ = require('lodash');
+import * as _ from 'lodash';
 import type { EventEmitter } from 'node:events';
-import { promisify } from 'node:util';
 
 import * as ltiOutcomes from './ltiOutcomes';
 import { config } from './config';
@@ -172,11 +171,11 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
 export async function processGradingResult(content: any): Promise<void> {
   try {
     if (!_.isObject(content.grading)) {
-      throw error.makeWithData('invalid grading', { content });
+      throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
-      throw error.makeWithData('invalid grading.feedback', { content });
+    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
+      throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
     // There are two "succeeded" flags in the grading results. The first
@@ -210,7 +209,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_(content.grading.score).isFinite()) {
+      if (!_.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',
@@ -252,7 +251,7 @@ export async function processGradingResult(content: any): Promise<void> {
       IdSchema,
     );
     if (assessment_instance_id != null) {
-      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+      await ltiOutcomes.updateScore(assessment_instance_id);
     }
   } finally {
     externalGradingSocket.gradingJobStatusUpdated(content.gradingId);

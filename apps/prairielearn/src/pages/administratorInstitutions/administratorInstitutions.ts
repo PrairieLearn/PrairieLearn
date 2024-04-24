@@ -1,7 +1,7 @@
 import asyncHandler = require('express-async-handler');
 import express = require('express');
 import * as sqldb from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 
 import { AdministratorInstitutions, InstitutionRowSchema } from './administratorInstitutions.html';
 import { getAvailableTimezones } from '../../lib/timezones';
@@ -31,7 +31,7 @@ router.post(
         uid_regexp: req.body.uid_regexp.trim() || null,
       });
     } else {
-      throw error.make(400, 'Unknown action');
+      throw new error.HttpStatusError(400, 'Unknown action');
     }
 
     res.redirect(req.originalUrl);

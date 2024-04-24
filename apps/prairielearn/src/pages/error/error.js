@@ -1,13 +1,15 @@
 // @ts-check
-var _ = require('lodash');
-var path = require('path');
-var jsonStringifySafe = require('json-stringify-safe');
+import * as _ from 'lodash';
+import * as path from 'path';
+const jsonStringifySafe = require('json-stringify-safe');
 
-const { formatErrorStack, formatErrorStackSafe } = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
+import { formatErrorStack, formatErrorStackSafe } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import { config } from '../../lib/config';
 
 /** @type {import('express').ErrorRequestHandler} */
-module.exports = function (err, req, res, _next) {
+export default function (err, req, res, _next) {
   const errorId = res.locals.error_id;
 
   err.status = err.status ?? 500;
@@ -20,7 +22,7 @@ module.exports = function (err, req, res, _next) {
     status: err.status,
     // Use the "safe" version when logging so that we don't error out while
     // trying to log the actual error.
-    stack: formatErrorStackSafe(err.stack),
+    stack: formatErrorStackSafe(err),
     data: jsonStringifySafe(err.data),
     referrer,
     response_id: res.locals.response_id,
@@ -50,7 +52,6 @@ module.exports = function (err, req, res, _next) {
 
   const templateData = {
     error: err,
-    errorStack: err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
@@ -62,9 +63,10 @@ module.exports = function (err, req, res, _next) {
     id: errorId,
     referrer,
   };
-  if (req.app.get('env') === 'development') {
+  if (config.devMode) {
     // development error handler
     // will print stacktrace
+    templateData.errorStack = err.stack ? formatErrorStack(err) : null;
     res.render(path.join(__dirname, 'error'), templateData);
   } else {
     // production error handler
@@ -72,4 +74,4 @@ module.exports = function (err, req, res, _next) {
     templateData.error = { message: err.message, info: err.info };
     res.render(path.join(__dirname, 'error'), templateData);
   }
-};
+}

@@ -1,4 +1,4 @@
-import { omit } from 'lodash';
+import * as _ from 'lodash';
 import { type Request, type Response } from 'express';
 
 import * as error from '@prairielearn/error';
@@ -15,7 +15,7 @@ export async function validateVariantAgainstQuestion(
 ): Promise<Variant> {
   const variant = await selectVariantById(unsafe_variant_id);
   if (variant == null || !idsEqual(variant.question_id, question_id)) {
-    throw error.make(
+    throw new error.HttpStatusError(
       400,
       `Client-provided variant ID ${unsafe_variant_id} is not valid for question ID ${question_id}.`,
     );
@@ -24,7 +24,7 @@ export async function validateVariantAgainstQuestion(
     instance_question_id != null &&
     (!variant.instance_question_id || !idsEqual(variant.instance_question_id, instance_question_id))
   ) {
-    throw error.make(
+    throw new error.HttpStatusError(
       400,
       `Client-provided variant ID ${unsafe_variant_id} is not valid for instance question ID ${instance_question_id}.`,
     );
@@ -40,16 +40,16 @@ export async function processSubmission(
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
-      throw error.make(400, 'No postData');
+      throw new error.HttpStatusError(400, 'No postData');
     }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
     } catch (e) {
-      throw error.make(400, 'JSON parse failed on body.postData');
+      throw new error.HttpStatusError(400, 'JSON parse failed on body.postData');
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -81,7 +81,7 @@ export async function processSubmission(
   // force-breaks variants, as we could be in a case where the variant wasn't
   // broken when the user loaded the page but it is broken when they submit.
   if (variant.broken_at) {
-    throw error.make(403, 'Cannot submit to a broken variant');
+    throw new error.HttpStatusError(403, 'Cannot submit to a broken variant');
   }
 
   if (req.body.__action === 'grade') {
@@ -98,6 +98,6 @@ export async function processSubmission(
     await saveSubmission(submission, variant, res.locals.question, res.locals.course);
     return submission.variant_id;
   } else {
-    throw error.make(400, `unknown __action: ${req.body.__action}`);
+    throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
   }
 }

@@ -1,6 +1,6 @@
-//@ts-check
+// @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -16,11 +16,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
 let namespace;
 
 // This module MUST be initialized after socket-server
-export function init(callback) {
+export function init() {
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
-
-  callback(null);
 }
 
 /**
@@ -85,6 +83,7 @@ export function connection(socket) {
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
+          extraHeadersHtml: panels.extraHeadersHtml,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
           questionPanelFooter: panels.questionPanelFooter,

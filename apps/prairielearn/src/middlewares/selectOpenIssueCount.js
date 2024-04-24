@@ -1,16 +1,13 @@
-var ERR = require('async-stacktrace');
-
-var sqldb = require('@prairielearn/postgres');
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import * as sqldb from '@prairielearn/postgres';
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = function (req, res, next) {
-  var params = {
+export default asyncHandler(async (req, res, next) => {
+  const result = await sqldb.queryOneRowAsync(sql.select_open_issue_count, {
     course_id: res.locals.course.id,
-  };
-  sqldb.queryOneRow(sql.select_open_issue_count, params, function (err, result) {
-    if (ERR(err, next)) return;
-    res.locals.navbarOpenIssueCount = result.rows[0].count;
-    next();
   });
-};
+  res.locals.navbarOpenIssueCount = result.rows[0].count;
+  next();
+});

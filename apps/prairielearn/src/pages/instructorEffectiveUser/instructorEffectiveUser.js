@@ -1,9 +1,8 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
 import * as error from '@prairielearn/error';
@@ -13,6 +12,7 @@ import { clearCookie, setCookie } from '../../lib/cookie';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorEffectiveUser');
 
 router.get('/', function (req, res, next) {
   if (
@@ -21,7 +21,12 @@ router.get('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
+    return next(
+      new error.HttpStatusError(
+        403,
+        'Access denied (must be course previewer or student data viewer)',
+      ),
+    );
   }
 
   debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
@@ -80,7 +85,12 @@ router.post('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
+    return next(
+      new error.HttpStatusError(
+        403,
+        'Access denied (must be course previewer or student data viewer)',
+      ),
+    );
   }
 
   if (req.body.__action === 'reset') {
@@ -128,7 +138,9 @@ router.post('/', function (req, res, next) {
   } else if (req.body.__action === 'changeDate') {
     let date = parseISO(req.body.pl_requested_date);
     if (!isValid(date)) {
-      return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
+      return next(
+        new error.HttpStatusError(400, `invalid requested date: ${req.body.pl_requested_date}`),
+      );
     }
     setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
       maxAge: 60 * 60 * 1000,
@@ -136,7 +148,7 @@ router.post('/', function (req, res, next) {
     setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     res.redirect(req.originalUrl);
   } else {
-    return next(error.make(400, 'unknown action: ' + res.locals.__action));
+    return next(new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action));
   }
 });
 

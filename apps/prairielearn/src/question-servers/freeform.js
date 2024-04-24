@@ -27,7 +27,7 @@ import * as assets from '../lib/assets';
 import { APP_ROOT_PATH } from '../lib/paths';
 import { features } from '../lib/features';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:freeform');
 
 /**
  * @typedef {Object} QuestionProcessingContext
@@ -974,7 +974,6 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
  * @param {import('../lib/code-caller').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
- * @returns
  */
 async function processQuestion(phase, codeCaller, data, context) {
   const meter = metrics.getMeter('prairielearn');

@@ -50,7 +50,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
@@ -103,7 +103,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
@@ -153,7 +153,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
@@ -162,7 +162,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'edit_total_points') {
@@ -171,7 +171,7 @@ router.post(
         req.body.points,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
       await updateAssessmentInstanceScore(
@@ -179,7 +179,7 @@ router.post(
         req.body.score_perc,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
@@ -223,7 +223,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -4,7 +4,7 @@ import * as jose from 'node-jose';
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
 import { selectLti13Instance } from '../../models/lti13Instance';
-import { cloneDeep } from 'lodash';
+import * as _ from 'lodash';
 
 const router = Router({ mergeParams: true });
 
@@ -67,7 +67,7 @@ router.get(
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lmsConfig = cloneDeep(ltiConfig);
+    const lmsConfig = _.cloneDeep(ltiConfig);
     const host = getCanonicalHost(req);
     const url = new URL(host);
 

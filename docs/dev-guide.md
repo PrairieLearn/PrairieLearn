@@ -80,8 +80,9 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 - To insert more debugging output, import `debug` and use it like this:
 
   ```javascript
-  var path = require('path');
-  var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+  import debugfn from 'debug';
+
+  const debug = debugfn('prairielearn:my-file');
 
   // in some function later
   debug('func()', 'param:', param);
@@ -808,7 +809,7 @@ WHERE
         res.redirect(req.originalUrl);
       });
     } else {
-      return next(error.make(400, `unknown __action: ${req.body.__action}`));
+      return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   });
   ```

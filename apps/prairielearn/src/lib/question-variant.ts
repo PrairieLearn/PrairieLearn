@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as fg from 'fast-glob';
 import { z } from 'zod';
 
@@ -56,7 +56,7 @@ async function makeVariant(
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (_(options).has('variant_seed') && options.variant_seed != null) {
+  if (_.has(options, 'variant_seed') && options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
@@ -169,7 +169,7 @@ async function lockAssessmentInstanceForInstanceQuestion(
     IdSchema,
   );
   if (assessment_instance_id == null) {
-    throw error.make(404, 'Instance question not found');
+    throw new error.HttpStatusError(404, 'Instance question not found');
   }
 }
 
@@ -231,7 +231,7 @@ async function makeAndInsertVariant(
         InstanceQuestionDataSchema,
       );
       if (instance_question == null) {
-        throw error.make(404, 'Instance question not found');
+        throw new error.HttpStatusError(404, 'Instance question not found');
       }
 
       // This handles the race condition where we simultaneously start
@@ -247,10 +247,10 @@ async function makeAndInsertVariant(
       }
 
       if (!instance_question.instance_question_open) {
-        throw error.make(403, 'Instance question is not open');
+        throw new error.HttpStatusError(403, 'Instance question is not open');
       }
       if (!instance_question.assessment_instance_open) {
-        throw error.make(403, 'Assessment instance is not open');
+        throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
       question_id = instance_question.question_id;
@@ -276,7 +276,7 @@ async function makeAndInsertVariant(
       if (course_instance_id != null) {
         const course_instance = await selectCourseInstanceById(course_instance_id);
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
-          throw error.make(403, 'Course instance not found in course');
+          throw new error.HttpStatusError(403, 'Course instance not found in course');
         }
       }
     }

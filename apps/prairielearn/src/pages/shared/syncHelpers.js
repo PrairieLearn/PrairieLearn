@@ -1,22 +1,21 @@
 // @ts-check
 
-const { ECR, ECRClient } = require('@aws-sdk/client-ecr');
-const _ = require('lodash');
+import { ECR, ECRClient } from '@aws-sdk/client-ecr';
+import * as _ from 'lodash';
 const ERR = require('async-stacktrace');
-const async = require('async');
+import * as async from 'async';
 const Docker = require('dockerode');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 
-const { makeAwsClientConfig } = require('../../lib/aws');
-const { config } = require('../../lib/config');
-const { createServerJob } = require('../../lib/server-jobs');
-const { pullAndUpdateCourse } = require('../../lib/course');
-const util = require('util');
-const debug = require('debug')('prairielearn:syncHelpers');
+import { makeAwsClientConfig } from '../../lib/aws';
+import { config } from '../../lib/config';
+import { createServerJob } from '../../lib/server-jobs';
+import { pullAndUpdateCourse } from '../../lib/course';
+import * as util from 'node:util';
 
 const docker = new Docker();
 
-module.exports.pullAndUpdate = async function (locals) {
+export async function pullAndUpdate(locals) {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -24,9 +23,9 @@ module.exports.pullAndUpdate = async function (locals) {
     ...locals.course,
   });
   return jobSequenceId;
-};
+}
 
-module.exports.gitStatus = async function (locals) {
+export async function gitStatus(locals) {
   const serverJob = await createServerJob({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -52,14 +51,12 @@ module.exports.gitStatus = async function (locals) {
   });
 
   return serverJob.jobSequenceId;
-};
+}
 
 function locateImage(image, callback) {
-  debug('locateImage');
   docker.listImages(function (err, list = []) {
     if (ERR(err, callback)) return;
-    debug(`locateImage: list=${list}`);
-    for (var i = 0, len = list.length; i < len; i++) {
+    for (let i = 0, len = list.length; i < len; i++) {
       if (list[i].RepoTags && list[i].RepoTags?.indexOf(image) !== -1) {
         return callback(null, docker.getImage(list[i].Id));
       }
@@ -84,7 +81,7 @@ function confirmOrCreateECRRepo(repo, job, callback) {
       job.info('Repository not found');
 
       job.info(`Creating repository: ${repo}`);
-      var params = {
+      const params = {
         repositoryName: repo,
       };
       ecr.createRepository(params, (err) => {
@@ -128,8 +125,6 @@ function logProgressOutput(output, job, printedInfos, prefix) {
  * @param {Function} callback
  */
 function pullAndPushToECR(image, dockerAuth, job, callback) {
-  debug(`pullAndPushtoECR for ${image}`);
-
   const { cacheImageRegistry } = config;
   if (!cacheImageRegistry) {
     return callback(new Error('cacheImageRegistry not defined'));
@@ -163,7 +158,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
           // Tag the image to add the new registry
           repository.setRegistry(cacheImageRegistry);
 
-          var options = {
+          const options = {
             repo: repository.getCombined(),
           };
           job.info(`Tagging image: ${options.repo}`);
@@ -180,7 +175,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
               // Create a new docker image instance with the new registry name
               // localImage isn't specific enough to the ECR repo
               const pushImageName = repository.getCombined();
-              var pushImage = new Docker.Image(docker.modem, pushImageName);
+              const pushImage = new Docker.Image(docker.modem, pushImageName);
 
               job.info(`Pushing image: ${repository.getCombined()}`);
               pushImage.push(
@@ -222,7 +217,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
  * @param {{ image: string }[]} images
  * @param {any} locals
  */
-module.exports.ecrUpdate = async function (images, locals) {
+export async function ecrUpdate(images, locals) {
   if (!config.cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
   }
@@ -246,4 +241,4 @@ module.exports.ecrUpdate = async function (images, locals) {
   });
 
   return serverJob.jobSequenceId;
-};
+}

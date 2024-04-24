@@ -1,16 +1,16 @@
-//@ts-check
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import { Router } from 'express';
 const asyncHandler = require('express-async-handler');
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const fileStore = require('../../lib/file-store');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import * as fileStore from '../../lib/file-store';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = Router();
 
 router.get(
-  '/:unsafe_file_id/:unsafe_display_filename',
+  '/:unsafe_file_id(\\d+)/:unsafe_display_filename',
   asyncHandler(async (req, res, next) => {
     const params = {
       assessment_instance_id: res.locals.assessment_instance.id,
@@ -22,7 +22,7 @@ router.get(
     // filename matches, and that the file is not deleted.
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
     if (result.rows.length === 0) {
-      return next(error.make(404, 'File not found'));
+      throw new error.HttpStatusError(404, 'File not found');
     }
 
     const { id: fileId, display_filename: displayFilename } = result.rows[0];
@@ -34,4 +34,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

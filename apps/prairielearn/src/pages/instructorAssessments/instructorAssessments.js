@@ -1,11 +1,9 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 import AnsiUp from 'ansi_up';
 import * as error from '@prairielearn/error';
-const debug = require('debug')('prairielearn:instructorAssessments');
-import { logger } from '@prairielearn/logger';
+import debugfn from 'debug';
 import { stringifyStream } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
@@ -20,6 +18,7 @@ import {
 const router = express.Router();
 const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorAssessments');
 
 const csvFilename = (locals) => {
   return (
@@ -73,7 +72,7 @@ router.get(
     };
     const result = await sqldb.queryAsync(sql.select_assessment, params);
     if (result.rowCount === 0) {
-      throw error.make(404, `Assessment not found: ${req.params.assessment_id}`);
+      throw new error.HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
     res.locals.row = result.rows[0];
 
@@ -156,46 +155,42 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
 
-router.post('/', (req, res, next) => {
-  debug(`Responding to post with action ${req.body.__action}`);
-  if (req.body.__action === 'add_assessment') {
-    debug(`Responding to action add_assessment`);
-    const editor = new AssessmentAddEditor({
-      locals: res.locals,
-    });
-    editor.canEdit((err) => {
-      if (ERR(err, next)) return;
-      editor.doEdit((err, job_sequence_id) => {
-        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-        } else {
-          debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
-          );
-          sqldb.queryOneRow(
-            sql.select_assessment_id_from_uuid,
-            {
-              uuid: editor.uuid,
-              course_instance_id: res.locals.course_instance.id,
-            },
-            (err, result) => {
-              if (ERR(err, next)) return;
-              res.redirect(
-                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
-              );
-            },
-          );
-        }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    debug(`Responding to post with action ${req.body.__action}`);
+    if (req.body.__action === 'add_assessment') {
+      debug(`Responding to action add_assessment`);
+      const editor = new AssessmentAddEditor({
+        locals: res.locals,
       });
-    });
-  } else {
-    next(error.make(400, `unknown __action: ${req.body.__action}`));
-  }
-});
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+
+      debug(
+        `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
+      );
+      const result = await sqldb.queryOneRowAsync(sql.select_assessment_id_from_uuid, {
+        uuid: editor.uuid,
+        course_instance_id: res.locals.course_instance.id,
+      });
+      res.redirect(
+        res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
+      );
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
 export default router;

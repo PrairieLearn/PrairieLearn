@@ -6,7 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { regradeAssessmentInstance } from '../../lib/regrading';
 import {
-  checkBelongsAsync,
+  checkBelongs,
   gradeAssessmentInstance,
   gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
@@ -53,7 +53,7 @@ router.get(
   '/raw_data.json',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
@@ -71,7 +71,7 @@ router.get(
   '/client.js',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.type('text/javascript');
     res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
@@ -82,7 +82,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
@@ -92,13 +92,13 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'close') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      await checkBelongs(assessment_instance_id, assessment_id);
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
@@ -141,7 +141,7 @@ router.post(
     } else if (req.body.__action === 'regrade') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      await checkBelongs(assessment_instance_id, assessment_id);
       const job_sequence_id = await regradeAssessmentInstance(
         assessment_instance_id,
         res.locals.user.user_id,
@@ -197,7 +197,7 @@ router.post(
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

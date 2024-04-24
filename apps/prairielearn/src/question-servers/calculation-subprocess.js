@@ -12,7 +12,7 @@ import { withCodeCaller } from '../lib/code-caller';
 /** @typedef {import('../lib/chunks').Chunk} Chunk */
 
 async function prepareChunksIfNeeded(question, course) {
-  const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
+  const questionIds = await chunks.getTemplateQuestionIds(question);
 
   /** @type {Chunk[]} */
   const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
@@ -53,7 +53,7 @@ async function callFunction(func, question_course, question, inputData) {
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
   const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
-  const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
+  const { fullPath: questionServerPath } = await filePaths.questionFilePath(
     'server.js',
     question.directory,
     courseHostPath,

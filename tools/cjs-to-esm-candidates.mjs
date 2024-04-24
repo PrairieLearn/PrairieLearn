@@ -11,8 +11,11 @@ const CJS_ONLY_MODULES = new Set([
   'assert',
   'async-stacktrace',
   'axe-core',
+  'blocked',
+  'blocked-at',
   'body-parser',
   'byline',
+  'chalk',
   'cookie-parser',
   'crypto-js/sha256',
   'csvtojson',
@@ -24,28 +27,41 @@ const CJS_ONLY_MODULES = new Set([
   'express-list-endpoints',
   'form-data',
   'get-port',
+  'http-status',
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
-  'lodash',
   'loopbench',
+  'multer',
   'oauth-signature',
+  'object-hash',
+  'on-finished',
+  'memorystream',
   'node:assert',
   'passport',
   'postgres-interval',
   'qrcode-svg',
   'request',
+  'requirejs',
   'search-string',
+  'serve-favicon',
   'strip-ansi',
   'winston',
   'winston-transport',
-  // Relative paths to PrairieLearn files.
-  'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzIsAdministrator',
-  'apps/prairielearn/src/middlewares/logPageView',
-  'apps/prairielearn/src/middlewares/staticNodeModules',
-  'apps/prairielearn/src/pages/elementFiles/elementFiles',
+  'yargs-parser',
+  // Unified ecosystem and related packages.
+  'unified',
+  'remark-parse',
+  'rehype-raw',
+  'remark-gfm',
+  'remark-rehype',
+  'remark-math',
+  'rehype-stringify',
+  'rehype-sanitize',
+  'unist-util-visit',
 ]);
+
+const candidatesPerFileCount = new Map();
 
 function maybeLogLocation(filePath, node, modulePath) {
   let resolvedModulePath = modulePath;
@@ -58,6 +74,7 @@ function maybeLogLocation(filePath, node, modulePath) {
   if (CJS_ONLY_MODULES.has(resolvedModulePath)) return;
 
   console.log(`${filePath}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
+  candidatesPerFileCount.set(filePath, (candidatesPerFileCount.get(filePath) ?? 0) + 1);
 }
 
 const importEqualsOnly = process.argv.includes('--import-equals-only');
@@ -86,6 +103,7 @@ for (const file of files.sort()) {
     // Handle `require()` calls.
     if (node.type === 'VariableDeclaration' && !importEqualsOnly) {
       node.declarations.forEach((declaration) => {
+        // Handle `const foo = require(...)` statements.
         if (
           declaration.init?.type === 'CallExpression' &&
           declaration.init.callee?.type === 'Identifier' &&
@@ -93,6 +111,18 @@ for (const file of files.sort()) {
           declaration.init.arguments[0].type === 'Literal'
         ) {
           const modulePath = declaration.init.arguments[0].value;
+          maybeLogLocation(file, node, modulePath);
+        }
+
+        // Handle `const foo = require(...)()` statements.
+        if (
+          declaration.init?.type === 'CallExpression' &&
+          declaration.init.callee?.type === 'CallExpression' &&
+          declaration.init.callee.callee?.type === 'Identifier' &&
+          declaration.init.callee.callee.name === 'require' &&
+          declaration.init.callee.arguments[0].type === 'Literal'
+        ) {
+          const modulePath = declaration.init.callee.arguments[0].value;
           maybeLogLocation(file, node, modulePath);
         }
       });
@@ -107,5 +137,49 @@ for (const file of files.sort()) {
       const modulePath = node.moduleReference.expression.value;
       maybeLogLocation(file, node, modulePath);
     }
+
+    // Handle `module.exports = ...` and `module.exports.foo = ...` statements.
+    if (
+      node.type === 'ExpressionStatement' &&
+      node.expression.type === 'AssignmentExpression' &&
+      node.expression.left.type === 'MemberExpression'
+    ) {
+      if (
+        (node.expression.left.object.type === 'Identifier' &&
+          node.expression.left.object.name === 'module' &&
+          node.expression.left.property.type === 'Identifier' &&
+          node.expression.left.property.name === 'exports') ||
+        (node.expression.left.object.type === 'MemberExpression' &&
+          node.expression.left.object.object.type === 'Identifier' &&
+          node.expression.left.object.object.name === 'module' &&
+          node.expression.left.object.property.type === 'Identifier' &&
+          node.expression.left.object.property.name === 'exports')
+      ) {
+        const left = contents.substring(
+          node.expression.left.range[0],
+          node.expression.left.range[1],
+        );
+        maybeLogLocation(file, node, left);
+      }
+    }
   });
+}
+
+if (candidatesPerFileCount.size > 0) {
+  console.log(`\n\nSummary (${candidatesPerFileCount.size} files):`);
+
+  const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
+    (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
+  );
+  for (const [file, count] of sortedCandidates) {
+    console.log(`${file}: ${count}`);
+  }
+}
+
+if (candidatesPerFileCount.size > 0 && process.argv.includes('--check')) {
+  console.log('\n\nOne or more files contain CJS requires which could be written as ESM imports.');
+  console.log(
+    'Please convert them to ESM or add the module to the CJS_ONLY_MODULES set in tools/cjs-to-esm-candidates.mjs.',
+  );
+  process.exitCode = 1;
 }

@@ -1,9 +1,7 @@
 import * as async from 'async';
 import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
-import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
 import { gradeVariant } from './grading';
@@ -19,7 +17,7 @@ import {
   AssessmentInstanceSchema,
 } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export const InstanceLogSchema = z.object({
@@ -50,7 +48,7 @@ export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
  * @param assessment_id - The assessment it should belong to.
  * @returns Throws an error if the assessment instance doesn't belong to the assessment.
  */
-export async function checkBelongsAsync(
+export async function checkBelongs(
   assessment_instance_id: string,
   assessment_id: string,
 ): Promise<void> {
@@ -61,10 +59,9 @@ export async function checkBelongsAsync(
       IdSchema,
     )) == null
   ) {
-    throw error.make(403, 'access denied');
+    throw new error.HttpStatusError(403, 'access denied');
   }
 }
-export const checkBelongs = callbackify(checkBelongsAsync);
 
 /**
  * Render the "text" property of an assessment.
@@ -157,7 +154,7 @@ export async function update(
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
-    await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   }
   return updated;
 }
@@ -194,10 +191,10 @@ export async function gradeAssessmentInstance(
         AssessmentInstanceSchema,
       );
       if (assessmentInstance == null) {
-        throw error.make(404, 'Assessment instance not found');
+        throw new error.HttpStatusError(404, 'Assessment instance not found');
       }
       if (!assessmentInstance.open) {
-        throw error.make(403, 'Assessment instance is not open');
+        throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
       if (close) {
@@ -475,7 +472,10 @@ export async function deleteAssessmentInstance(
     IdSchema,
   );
   if (deleted_id == null) {
-    throw error.make(403, 'This assessment instance does not exist in this assessment.');
+    throw new error.HttpStatusError(
+      403,
+      'This assessment instance does not exist in this assessment.',
+    );
   }
 }
 

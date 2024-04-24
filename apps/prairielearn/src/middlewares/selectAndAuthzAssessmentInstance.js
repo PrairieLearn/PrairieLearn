@@ -14,7 +14,7 @@ export async function selectAndAuthzAssessmentInstance(req, res) {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if (result.rowCount === 0) throw error.make(403, 'Access denied');
+  if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
   _.assign(res.locals, result.rows[0]);
 }
 

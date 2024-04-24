@@ -1,9 +1,9 @@
 import base64url from 'base64url';
-import debugModule from 'debug';
+import debugfn from 'debug';
 import _ from 'lodash';
 import crypto from 'node:crypto';
 
-const debug = debugModule('prairielearn:csrf');
+const debug = debugfn('prairielearn:csrf');
 const sep = '.';
 
 interface CheckOptions {
