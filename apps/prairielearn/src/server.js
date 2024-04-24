@@ -557,7 +557,7 @@ export async function initExpress() {
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
   app.use(
     '/pl/webhooks/stripe',
-    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe/index').default),
+    await enterpriseOnlyMiddleware(async () => require('./ee/webhooks/stripe/index').default),
   );
 
   app.use(require('./middlewares/csrfToken').default); // sets and checks res.locals.__csrf_token
@@ -708,7 +708,7 @@ export async function initExpress() {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
-    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrants').default),
+    await enterpriseOnlyMiddleware(async () => require('./ee/middlewares/checkPlanGrants').default),
     require('./middlewares/autoEnroll').default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
@@ -1536,8 +1536,8 @@ export async function initExpress() {
       require('./middlewares/studentAssessmentAccess').default,
       require('./middlewares/clientFingerprint').default,
       // don't use logPageView here, we load it inside the page so it can get the variant_id
-      enterpriseOnlyMiddleware(
-        () => require('./ee/middlewares/checkPlanGrantsForQuestion').default,
+      await enterpriseOnlyMiddleware(
+        async () => require('./ee/middlewares/checkPlanGrantsForQuestion').default,
       ),
       require('./pages/studentInstanceQuestion/studentInstanceQuestion').default,
     ],
