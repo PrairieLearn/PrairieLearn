@@ -18,7 +18,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import { v4 as uuidv4 } from 'uuid';
-const sha256 = require('crypto-js/sha256');
+const sha256 = require('crypto-js/sha256.js');
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';

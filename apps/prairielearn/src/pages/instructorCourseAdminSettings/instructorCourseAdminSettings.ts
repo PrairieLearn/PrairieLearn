@@ -5,7 +5,7 @@ import * as fs from 'fs-extra';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import sha256 = require('crypto-js/sha256');
+import sha256 = require('crypto-js/sha256.js');
 import { v4 as uuidv4 } from 'uuid';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';

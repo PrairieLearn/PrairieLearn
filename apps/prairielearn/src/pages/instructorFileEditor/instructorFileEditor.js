@@ -10,7 +10,7 @@ import debugfn from 'debug';
 import * as serverJobs from '../../lib/server-jobs-legacy';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 import { AnsiUp } from 'ansi_up';
-const sha256 = require('crypto-js/sha256');
+const sha256 = require('crypto-js/sha256.js');
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
 import { isBinaryFile } from 'isbinaryfile';
