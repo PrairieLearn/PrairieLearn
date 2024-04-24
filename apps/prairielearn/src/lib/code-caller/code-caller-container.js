@@ -196,7 +196,7 @@ export class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.forbiddenModules = forbiddenModules;

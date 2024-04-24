@@ -176,9 +176,9 @@ async function render(
  * question panels.
  *
  * @param  {String} urlPrefix The prefix of the generated URLs.
- * @param  {import('./db-types').Variant} variant The variant object for this question.
- * @param  {import('./db-types').Question} question The question.
- * @param  {import('./db-types').InstanceQuestion?} instance_question The instance question.
+ * @param  {import('./db-types.js').Variant} variant The variant object for this question.
+ * @param  {import('./db-types.js').Question} question The question.
+ * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
 function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
@@ -546,7 +546,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 }
 
 /**
- * @param {import('./db-types').GradingJob | null} job
+ * @param {import('./db-types.js').GradingJob | null} job
  */
 function buildGradingJobStats(job) {
   if (job) {

@@ -145,7 +145,7 @@ export class CodeCallerNative {
   }
 
   /**
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.debug('enter prepareForCourse()');

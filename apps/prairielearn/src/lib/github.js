@@ -171,7 +171,7 @@ async function addUserToRepo(client, repo, username, permission) {
  */
 export async function createCourseRepoJob(options, authn_user) {
   /**
-   * @param {import('./server-jobs').ServerJob} job
+   * @param {import('./server-jobs.js').ServerJob} job
    */
   const createCourseRepo = async (job) => {
     const client = getGithubClient();

@@ -172,7 +172,7 @@ export async function finish() {
  * disposes of it once it has been used.
  *
  * @template T
- * @param {import('../db-types').Course} course
+ * @param {import('../db-types.js').Course} course
  * @param {(codeCaller: CodeCaller) => Promise<T>} fn
  * @returns {Promise<T>}
  */

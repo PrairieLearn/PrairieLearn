@@ -497,7 +497,7 @@ function checkData(data, origData, phase) {
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {any} context
  * @param {string} html
@@ -800,7 +800,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
 /**
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -971,7 +971,7 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -1103,10 +1103,10 @@ export async function prepare(question, course, variant) {
 
 /**
  * @param {'question' | 'answer' | 'submission'} panel
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
- * @param {import('../lib/db-types').Variant} variant
- * @param {import('../lib/db-types').Submission?} submission
- * @param {import('../lib/db-types').Course} course
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Submission?} submission
+ * @param {import('../lib/db-types.js').Course} course
  * @param {Record<string, any>} locals
  * @param {QuestionProcessingContext} context
  * @returns {Promise<RenderPanelResult>}

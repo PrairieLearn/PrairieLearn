@@ -32,7 +32,7 @@ const debug = debugfn('prairielearn:editors');
 /**
  * @param {any} course
  * @param {string} startGitHash
- * @param {import('./server-jobs').ServerJob} job
+ * @param {import('./server-jobs.js').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
   const endGitHash = await getCourseCommitHash(course.path);
@@ -110,7 +110,7 @@ export class Editor {
   }
 
   /**
-   * @param {import('./server-jobs').ServerJobExecutor} serverJob
+   * @param {import('./server-jobs.js').ServerJobExecutor} serverJob
    */
   async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait

@@ -121,7 +121,7 @@ function logProgressOutput(output, job, printedInfos, prefix) {
  *
  * @param {string} image
  * @param {import('@prairielearn/docker-utils').DockerAuth} dockerAuth
- * @param {Pick<import('../../lib/server-jobs').ServerJob, 'info'>} job
+ * @param {Pick<import('../../lib/server-jobs.js').ServerJob, 'info'>} job
  * @param {Function} callback
  */
 function pullAndPushToECR(image, dockerAuth, job, callback) {
