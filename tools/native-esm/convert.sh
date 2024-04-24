@@ -61,3 +61,4 @@ ast-grep -p '__filename' -r 'import.meta.filename' -U $ROOT_DIR/apps/*/src
 # Use default import for modules where appropriate
 ast-grep -p "import * as fs from 'fs-extra'" -r "import fs from 'fs-extra'" -U $ROOT_DIR/apps/*/src
 ast-grep -p "import * as jju from 'jju'" -r "import jju from 'jju'" -U $ROOT_DIR/apps/*/src
+ast-grep -p "import * as mustache from 'mustache'" -r "import mustache from 'mustache'" -U $ROOT_DIR/apps/*/src
