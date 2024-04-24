@@ -19,7 +19,7 @@ import {
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
 } from '../../lib/institution';
-import { getSamlOptions } from '../../auth/saml';
+import { getSamlOptions } from '../../auth/saml/index';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
