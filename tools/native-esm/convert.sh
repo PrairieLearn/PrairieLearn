@@ -53,3 +53,7 @@ ast-grep -p 'require('"'"'$PATH'"'"').default' -r '(await import('"'"'$PATH.js'"
 
 # Convert `__dirname` to `import.meta.dirname`
 ast-grep -p '__dirname' -r 'import.meta.dirname' -U $ROOT_DIR/apps/*/src
+
+# Use default import for modules where appropriate
+ast-grep -p "import * as fs from 'fs-extra'" -r "import fs from 'fs-extra'" -U $ROOT_DIR/apps/*/src
+ast-grep -p "import * as jju from 'jju'" -r "import jju from 'jju'" -U $ROOT_DIR/apps/*/src
