@@ -1214,7 +1214,7 @@ export function initExpress() {
       res.locals.navSubPage = 'sharing';
       next();
     },
-    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
     function (req, res, next) {
