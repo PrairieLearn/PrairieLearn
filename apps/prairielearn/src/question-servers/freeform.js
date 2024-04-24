@@ -835,7 +835,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   }
 
   let processFunction;
-  /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, any]} */
+  /** @type {[string, import('../lib/code-caller/index.js').CodeCaller, any, any, any]} */
   let args;
   if (context.renderer === 'experimental') {
     processFunction = experimentalProcess;

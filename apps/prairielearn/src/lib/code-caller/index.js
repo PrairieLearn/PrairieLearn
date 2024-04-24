@@ -27,7 +27,7 @@ const debug = debugfn('prairielearn:code-caller');
  * - python_callback_waiting: number of queued jobs/callbacks waiting for an available worker
  */
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
 
 /** @type {import('generic-pool').Pool<CodeCaller> | null} */
 let pool = null;

@@ -108,8 +108,8 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}

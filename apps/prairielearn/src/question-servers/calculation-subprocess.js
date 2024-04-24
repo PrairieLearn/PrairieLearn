@@ -9,7 +9,7 @@ import * as filePaths from '../lib/file-paths';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths';
 import { withCodeCaller } from '../lib/code-caller';
 
-/** @typedef {import('../lib/chunks').Chunk} Chunk */
+/** @typedef {import('../lib/chunks.js').Chunk} Chunk */
 
 async function prepareChunksIfNeeded(question, course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);
