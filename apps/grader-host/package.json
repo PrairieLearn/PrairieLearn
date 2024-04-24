@@ -2,6 +2,7 @@
   "name": "@prairielearn/grader-host",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "tsc && tscp",
     "dev:no-watch": "tsx src/index.js",
