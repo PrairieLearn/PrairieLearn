@@ -100,6 +100,11 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
+/**
+ * @template T
+ * @param {() => T} load
+ * @returns {T | import('express').RequestHandler}
+ */
 function enterpriseOnlyMiddleware(load) {
   if (isEnterprise()) {
     return load();
@@ -552,7 +557,7 @@ export async function initExpress() {
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
   app.use(
     '/pl/webhooks/stripe',
-    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
+    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe/index').default),
   );
 
   app.use(require('./middlewares/csrfToken').default); // sets and checks res.locals.__csrf_token
