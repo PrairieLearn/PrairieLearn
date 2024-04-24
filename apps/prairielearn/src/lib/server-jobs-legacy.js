@@ -1,6 +1,5 @@
 // @ts-check
 import * as _ from 'lodash';
-import * as util from 'util';
 import * as async from 'async';
 import AnsiUp from 'ansi_up';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -222,7 +221,7 @@ export async function getJobSequence(job_sequence_id, course_id) {
  * @param {any} job_sequence_id
  * @param {any} course_id
  */
-export async function getJobSequenceWithFormattedOutputAsync(job_sequence_id, course_id) {
+export async function getJobSequenceWithFormattedOutput(job_sequence_id, course_id) {
   const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
   jobSequence.jobs?.forEach((job) => {
@@ -235,6 +234,3 @@ export async function getJobSequenceWithFormattedOutputAsync(job_sequence_id, co
 
   return jobSequence;
 }
-export const getJobSequenceWithFormattedOutput = util.callbackify(
-  getJobSequenceWithFormattedOutputAsync,
-);
