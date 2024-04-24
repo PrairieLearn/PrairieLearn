@@ -48,7 +48,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       config.filesRoot = tmpDir.path;
 
       debug('before(): initializing cron');
-      cron.init();
+      await cron.init();
 
       debug('before(): inserting dev user');
       await server.insertDevUser();

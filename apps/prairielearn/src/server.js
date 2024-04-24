@@ -2511,7 +2511,7 @@ if (config.startServer) {
         if (!config.externalGradingEnableResults) return;
         await externalGraderResults.init();
       },
-      async () => cron.init(),
+      async () => await cron.init(),
       async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
