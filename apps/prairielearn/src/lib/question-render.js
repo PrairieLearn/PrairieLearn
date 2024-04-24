@@ -139,7 +139,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param submissions - The full list of submissions to the variant.
  * @param question_course - The course for the question.
  * @param locals - The current locals for the page response.
- * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers').QuestionServer['render']>) => Promise<import('../question-servers').RenderResultData>}
+ * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
  */
 async function render(
   variant_course,

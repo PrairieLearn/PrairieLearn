@@ -2,7 +2,7 @@
 import { Router } from 'express';
 const asyncHandler = require('express-async-handler');
 import { isBinaryFile } from 'isbinaryfile';
-import * as mime from 'mime';
+import mime from 'mime';
 import * as sqldb from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course';
