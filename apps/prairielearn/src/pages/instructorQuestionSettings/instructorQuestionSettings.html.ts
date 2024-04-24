@@ -7,6 +7,7 @@ import { IdSchema } from '../../lib/db-types';
 import { CourseWithPermissions } from '../../models/course';
 import { isEnterprise } from '../../lib/license';
 import { idsEqual } from '../../lib/id';
+import type { SharingSet } from '../../lib/db-types';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),
@@ -20,13 +21,6 @@ export const SelectedAssessmentsSchema = z.object({
   ),
 });
 type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
-
-export const SharingSetSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  in_set: z.boolean(),
-});
-type SharingSet = z.infer<typeof SharingSetSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
