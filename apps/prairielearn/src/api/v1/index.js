@@ -29,32 +29,32 @@ router.use('/course_instances/:course_instance_id(\\d+)', [
   // include the `authzHasCourseInstanceView` middleware to ensure that access
   // to student data is properly limited.
   require('../../middlewares/authzHasCoursePreviewOrInstanceView').default,
-  require('./endpoints/courseInstanceInfo').default,
+  require('./endpoints/courseInstanceInfo/index').default,
 ]);
 
 // ROUTES
 router.use(
   '/course_instances/:course_instance_id(\\d+)/assessments',
-  require('./endpoints/courseInstanceAssessments').default,
+  require('./endpoints/courseInstanceAssessments/index').default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/assessment_instances',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceAssessmentInstances').default,
+  require('./endpoints/courseInstanceAssessmentInstances/index').default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/submissions',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceSubmissions').default,
+  require('./endpoints/courseInstanceSubmissions/index').default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/gradebook',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceGradebook').default,
+  require('./endpoints/courseInstanceGradebook/index').default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
-  require('./endpoints/courseInstanceAccessRules').default,
+  require('./endpoints/courseInstanceAccessRules/index').default,
 );
 
 // If no earlier routes matched, 404 the route
