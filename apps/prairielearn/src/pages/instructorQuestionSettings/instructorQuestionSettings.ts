@@ -16,11 +16,10 @@ import { flash } from '@prairielearn/flash';
 import { features } from '../../lib/features/index';
 import { getCanonicalHost } from '../../lib/url';
 import { selectCoursesWithEditAccess } from '../../models/course';
-import { IdSchema } from '../../lib/db-types';
+import { IdSchema, SharingSetSchema } from '../../lib/db-types';
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
-  SharingSetSchema,
 } from './instructorQuestionSettings.html';
 
 const router = express.Router();
