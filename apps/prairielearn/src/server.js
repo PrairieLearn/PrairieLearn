@@ -19,7 +19,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-import * as Bowser from 'bowser';
+import Bowser from 'bowser';
 import * as http from 'node:http';
 import * as https from 'node:https';
 const blocked = require('blocked');
