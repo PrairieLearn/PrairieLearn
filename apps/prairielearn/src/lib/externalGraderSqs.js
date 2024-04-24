@@ -31,8 +31,8 @@ export class ExternalGraderSqs {
 
     async.series(
       [
-        (callback) => {
-          buildDirectory(dir, submission, variant, question, course, callback);
+        async () => {
+          await buildDirectory(dir, submission, variant, question, course);
         },
         async () => {
           // Now that we've built up our directory, let's zip it up and send
