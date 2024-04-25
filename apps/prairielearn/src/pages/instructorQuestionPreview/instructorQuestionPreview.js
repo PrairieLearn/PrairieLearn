@@ -5,7 +5,6 @@ import { z } from 'zod';
 const asyncHandler = require('express-async-handler');
 
 import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
 
 import {
   getAndRenderVariant,
@@ -19,7 +18,6 @@ import { processSubmission, validateVariantAgainstQuestion } from '../../lib/que
 import { IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
 
 async function processIssue(req, res) {
   const description = req.body.description;
@@ -88,11 +86,6 @@ router.get(
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
-    res.locals.question_is_shared = await sqldb.queryRow(
-      sql.select_is_shared,
-      { question_id: res.locals.question.id },
-      z.boolean(),
-    );
 
     setRendererHeader(res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
