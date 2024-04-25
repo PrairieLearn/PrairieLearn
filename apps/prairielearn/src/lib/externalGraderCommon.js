@@ -50,16 +50,10 @@ export async function buildDirectory(dir, submission, variant, question, course)
     await fsExtra.copy(src, dest);
 
     if (question.directory != null) {
-      // Tests might not be specified, only copy them if they exist
       const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
       await fsExtra.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
-        if (err.code === 'ENOENT') {
-          logger.warn(
-            `No tests directory found for ${question.qid}; maybe you meant to specify some?`,
-          );
-        } else {
-          throw err;
-        }
+        // Tests might not be specified, only copy them if they exist
+        if (err.code !== 'ENOENT') throw err;
       });
     }
 
