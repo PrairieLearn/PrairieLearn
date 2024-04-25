@@ -791,15 +791,15 @@ export function initExpress() {
   // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
@@ -823,15 +823,15 @@ export function initExpress() {
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles').default);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default,
+    require('./pages/elementFiles/elementFiles').default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
@@ -1904,6 +1904,10 @@ export function initExpress() {
     },
     require('./pages/publicQuestions/publicQuestions').default,
   ]);
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/elements',
+    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true }),
+  );
 
   // Client files for questions
   app.use(
