@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import * as jose from 'node-jose';
+import jose from 'node-jose';
 import { z } from 'zod';
 import * as _ from 'lodash';
 

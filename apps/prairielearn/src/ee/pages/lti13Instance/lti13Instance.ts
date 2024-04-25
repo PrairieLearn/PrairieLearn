@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import * as jose from 'node-jose';
+import jose from 'node-jose';
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
 import { selectLti13Instance } from '../../models/lti13Instance';
