@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as fg from 'fast-glob';
+import fg from 'fast-glob';
 
 import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
