@@ -65,8 +65,9 @@ function getPackageNameForAssetPath(assetPath: string): string {
  * Returns the version of the given package within `node_modules`.
  */
 function getPackageVersion(packageName: string): string {
+  const require = createRequire(import.meta.url);
+
   try {
-    const require = createRequire(import.meta.url);
     return require(`${packageName}/package.json`).version;
   } catch (e) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
