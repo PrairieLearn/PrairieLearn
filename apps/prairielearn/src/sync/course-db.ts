@@ -1,5 +1,5 @@
 import * as path from 'path';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as fs from 'fs-extra';
 import * as async from 'async';
 import * as jju from 'jju';
@@ -244,14 +244,8 @@ export interface CourseInstance {
   groupAssessmentsBy: 'Set' | 'Module';
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
 export interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam' | 'SEB';
+  mode: 'Public' | 'Exam';
   examUuid: string;
   role: string; // Role is only allowed in legacy questions
   uids: string[];
@@ -261,7 +255,6 @@ export interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
-  SEBConfig: SEBConfig;
 }
 
 interface QuestionAlternative {
@@ -1303,7 +1296,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_(courseInstance).has('allowIssueReporting')) {
+  if (_.has(courseInstance, 'allowIssueReporting')) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1330,7 +1323,7 @@ async function validateCourseInstance(
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_(courseInstance).has('userRoles')) {
+    if (_.has(courseInstance, 'userRoles')) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );

@@ -1,3 +1,4 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 
@@ -66,7 +67,7 @@ router.get(
           res.locals.start = groupInfo.start;
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
-          if (groupConfig.hasRoles) {
+          if (groupConfig.has_roles) {
             res.locals.userCanAssignRoles = canUserAssignGroupRoles(
               groupInfo,
               res.locals.user.user_id,

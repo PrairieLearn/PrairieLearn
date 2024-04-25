@@ -11,6 +11,8 @@ const CJS_ONLY_MODULES = new Set([
   'assert',
   'async-stacktrace',
   'axe-core',
+  'blocked',
+  'blocked-at',
   'body-parser',
   'byline',
   'chalk',
@@ -29,25 +31,34 @@ const CJS_ONLY_MODULES = new Set([
   'json-stable-stringify',
   'json-stringify-safe',
   'klaw',
-  'lodash',
   'loopbench',
+  'multer',
   'oauth-signature',
   'object-hash',
+  'on-finished',
+  'memorystream',
   'node:assert',
   'passport',
   'postgres-interval',
   'qrcode-svg',
   'request',
+  'requirejs',
   'search-string',
+  'serve-favicon',
   'strip-ansi',
   'winston',
   'winston-transport',
-  // Relative paths to PrairieLearn files.
-  'apps/grader-host/src/lib/logger',
-  'apps/prairielearn/src/middlewares/authzIsAdministrator',
-  'apps/prairielearn/src/middlewares/logPageView',
-  'apps/prairielearn/src/middlewares/staticNodeModules',
-  'apps/prairielearn/src/pages/elementFiles/elementFiles',
+  'yargs-parser',
+  // Unified ecosystem and related packages.
+  'unified',
+  'remark-parse',
+  'rehype-raw',
+  'remark-gfm',
+  'remark-rehype',
+  'remark-math',
+  'rehype-stringify',
+  'rehype-sanitize',
+  'unist-util-visit',
 ]);
 
 const candidatesPerFileCount = new Map();
@@ -92,6 +103,7 @@ for (const file of files.sort()) {
     // Handle `require()` calls.
     if (node.type === 'VariableDeclaration' && !importEqualsOnly) {
       node.declarations.forEach((declaration) => {
+        // Handle `const foo = require(...)` statements.
         if (
           declaration.init?.type === 'CallExpression' &&
           declaration.init.callee?.type === 'Identifier' &&
@@ -99,6 +111,18 @@ for (const file of files.sort()) {
           declaration.init.arguments[0].type === 'Literal'
         ) {
           const modulePath = declaration.init.arguments[0].value;
+          maybeLogLocation(file, node, modulePath);
+        }
+
+        // Handle `const foo = require(...)()` statements.
+        if (
+          declaration.init?.type === 'CallExpression' &&
+          declaration.init.callee?.type === 'CallExpression' &&
+          declaration.init.callee.callee?.type === 'Identifier' &&
+          declaration.init.callee.callee.name === 'require' &&
+          declaration.init.callee.arguments[0].type === 'Literal'
+        ) {
+          const modulePath = declaration.init.callee.arguments[0].value;
           maybeLogLocation(file, node, modulePath);
         }
       });
@@ -142,8 +166,7 @@ for (const file of files.sort()) {
 }
 
 if (candidatesPerFileCount.size > 0) {
-  console.log('\n\n');
-  console.log(`Summary (${candidatesPerFileCount.size} files):`);
+  console.log(`\n\nSummary (${candidatesPerFileCount.size} files):`);
 
   const sortedCandidates = [...candidatesPerFileCount.entries()].sort(
     (a, b) => a[1] - b[1] || a[0].localeCompare(b[0]),
@@ -151,4 +174,12 @@ if (candidatesPerFileCount.size > 0) {
   for (const [file, count] of sortedCandidates) {
     console.log(`${file}: ${count}`);
   }
+}
+
+if (candidatesPerFileCount.size > 0 && process.argv.includes('--check')) {
+  console.log('\n\nOne or more files contain CJS requires which could be written as ESM imports.');
+  console.log(
+    'Please convert them to ESM or add the module to the CJS_ONLY_MODULES set in tools/cjs-to-esm-candidates.mjs.',
+  );
+  process.exitCode = 1;
 }

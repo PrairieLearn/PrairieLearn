@@ -194,7 +194,7 @@
         },
         "mode": {
           "description": "The server mode required for access.",
-          "enum": ["Public", "Exam", "SEB"]
+          "enum": ["Public", "Exam"]
         },
         "examUuid": {
           "description": "The PrairieTest exam UUID for which a student must be registered.",
@@ -234,32 +234,6 @@
         "password": {
           "description": "Password to begin the assessment (only for Exams).",
           "type": "string"
-        },
-        "SEBConfig": {
-          "description": "Configuration related to Safe Exam Browser",
-          "type": "object",
-          "properties": {
-            "comment": {
-              "description": "Arbitrary comment for reference purposes.",
-              "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
-            },
-            "password": {
-              "description": "Password protect the SEB exam and config file",
-              "type": "string"
-            },
-            "quitPassword": {
-              "description": "If set, requires password to quit SEB other than visiting the quitURL page",
-              "type": "string"
-            },
-            "allowPrograms": {
-              "description": "Keyword array for allowed programs in SEB",
-              "type": "array",
-              "minItems": 0,
-              "items": {
-                "type": "string"
-              }
-            }
-          }
         },
         "showClosedAssessment": {
           "description": "Whether the student can view the assessment after it has been closed",

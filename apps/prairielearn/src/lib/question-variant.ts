@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as fg from 'fast-glob';
 import { z } from 'zod';
 
@@ -56,7 +56,7 @@ async function makeVariant(
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (_(options).has('variant_seed') && options.variant_seed != null) {
+  if (_.has(options, 'variant_seed') && options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
