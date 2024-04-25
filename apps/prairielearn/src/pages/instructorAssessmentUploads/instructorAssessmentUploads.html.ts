@@ -51,7 +51,7 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-toggle="modal"
-                            data-target="#uploadInstanceQuestionScoresModal"
+                            data-target="#upload-instance-question-scores-form"
                           >
                             <i class="fas fa-upload"></i> Upload new question scores
                           </button>
@@ -74,7 +74,7 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-toggle="modal"
-                            data-target="#uploadAssessmentInstanceScoresModal"
+                            data-target="#upload-assessment-instance-scores-form"
                           >
                             <i class="fas fa-upload"></i> Upload new total scores
                           </button>
@@ -217,7 +217,7 @@ greatgroup,1,85</pre
 
 function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'uploadInstanceQuestionScoresModal',
+    id: 'upload-instance-question-scores-form',
     title: 'Upload new question scores',
     formEncType: 'multipart/form-data',
     body: html`
@@ -249,7 +249,7 @@ function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
 
 function uploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'uploadAssessmentInstanceScoresModal',
+    id: 'upload-assessment-instance-scores-form',
     title: 'Upload new total scores',
     formEncType: 'multipart/form-data',
     body: html`
