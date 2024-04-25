@@ -15,10 +15,14 @@ const isRunningOnDist = process.argv
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
 module.exports = {
-  require: [
-    isRunningOnDist ? null : 'tsx',
-    isRunningOnDist ? './dist/tests/mocha-hooks.js' : './src/tests/mocha-hooks.ts',
-  ].filter(Boolean),
+  'node-option': [
+    'import=tsx/esm',
+    // Silence the warning that we get from using the above option.
+    'no-warnings',
+  ],
+  require: [isRunningOnDist ? './dist/tests/mocha-hooks.js' : './src/tests/mocha-hooks.ts'].filter(
+    Boolean,
+  ),
   timeout: '30000', // in milliseconds
   'watch-files': ['.'],
 };
