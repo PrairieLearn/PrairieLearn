@@ -3,6 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
+import { Modal } from '../../components/Modal.html';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -39,44 +40,11 @@ export function InstructorAssessmentRegrading({
           )}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                <div
-                  class="modal fade"
-                  id="regradeAllAssessmentInstancesModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="regradeAllAssessmentInstancesModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="regradeAllAssessmentInstancesModalLabel">
-                          Regrade all assessment instances
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to regrade all assessment instances for
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </strong>
-                        ? This cannot be undone.
-                      </div>
-                      <div class="modal-footer">
-                        <form name="regrade-all-form" method="POST">
-                          <input type="hidden" name="__action" value="regrade_all" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-primary">Regrade all</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ${regradeAllAssessmentInstancesModal({
+                  assessmentSetName: resLocals.assessment_set.name,
+                  assessmentNumber: resLocals.assessment.number,
+                  csrfToken: resLocals.__csrf_token,
+                })}
               `
             : ''}
 
@@ -93,7 +61,7 @@ export function InstructorAssessmentRegrading({
                         type="button"
                         class="btn btn-primary"
                         data-toggle="modal"
-                        data-target="#regradeAllAssessmentInstancesModal"
+                        data-target="#regrade-all-form"
                       >
                         <i class="fa fa-sync" aria-hidden="true"></i>
                         Regrade all assessment instances
@@ -162,4 +130,30 @@ export function InstructorAssessmentRegrading({
       </body>
     </html>
   `.toString();
+}
+
+function regradeAllAssessmentInstancesModal({
+  assessmentSetName,
+  assessmentNumber,
+  csrfToken,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: string;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'regrade-all-form',
+    title: 'Regrade all assessment instances',
+    body: html`
+      Are you sure you want to regrade all assessment instances for
+      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
+      ? This cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="regrade_all" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Regrade all</button>
+    `,
+  });
 }
