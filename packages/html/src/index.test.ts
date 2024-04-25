@@ -11,12 +11,25 @@ describe('html', () => {
     assert.equal(html`<p>${'cats'} and ${'dogs'}</p>`.toString(), '<p>cats and dogs</p>');
   });
 
+  it('interpolates a number', () => {
+    assert.equal(html`<p>${123}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a bigint', () => {
+    assert.equal(html`<p>${123n}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a boolean', () => {
+    assert.equal(html`<p>${true}</p>`.toString(), '<p>true</p>');
+    assert.equal(html`<p>${false}</p>`.toString(), '<p>false</p>');
+  });
+
   it('escapes values when rendering array', () => {
     const arr = ['cats>', '<dogs'];
     assert.equal(
       // prettier-ignore
       html`<ul>${arr}</ul>`.toString(),
-      '<ul>cats&gt;&lt;dogs</ul>'
+      '<ul>cats&gt;&lt;dogs</ul>',
     );
   });
 
@@ -25,20 +38,16 @@ describe('html', () => {
     assert.equal(
       // prettier-ignore
       html`<ul>${arr.map((e) => html`<li>${e}</li>`)}</ul>`.toString(),
-      '<ul><li>cats</li><li>dogs</li></ul>'
+      '<ul><li>cats</li><li>dogs</li></ul>',
     );
   });
 
   it('errors when interpolating object', () => {
     assert.throws(
-      // @ts-expect-error
+      // @ts-expect-error -- Testing runtime behavior of bad input.
       () => html`<p>${{ foo: 'bar' }}</p>`.toString(),
-      'Cannot interpolate object in template'
+      'Cannot interpolate object in template',
     );
-  });
-
-  it('omits boolean values from template', () => {
-    assert.equal(html`<p>${true}${false}</p>`.toString(), '<p></p>');
   });
 
   it('omits nullish values from template', () => {

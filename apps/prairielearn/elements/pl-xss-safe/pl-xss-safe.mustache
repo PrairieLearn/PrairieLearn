@@ -1,0 +1,20 @@
+<script>
+  $(function() {
+    const element = $('#xss-{{uuid}}');
+    const language = element.attr("data-language");
+    let code = element.attr("data-code");
+    // Uses the same JS library as the pl-file-editor for markdown
+    // conversion and xss filter for compatibility and to avoid
+    // confusion
+    if (language == "markdown") {
+      let renderer = new showdown.Converter({
+        'literalMidWordUnderscores':true,
+        'literalMidWordAsterisks':true,
+      });
+      code = renderer.makeHtml(code);
+    }
+    code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
+    element.html(code);
+  });
+</script>
+<div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>

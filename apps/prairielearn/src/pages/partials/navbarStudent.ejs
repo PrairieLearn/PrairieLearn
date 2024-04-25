@@ -1,0 +1,11 @@
+      <%# Course title %> 
+      <%# course and course_instance are undefined if we do not have access to the current page %>
+      <li class="nav-item mr-4"><span class="navbar-text"><%= (typeof course !== 'undefined') ? course.short_name : '' %>, <%= (typeof course !== 'undefined' ) ? course_instance.short_name : '' %></span></li>
+
+      <%# Main pages %> 
+      <li class="nav item <% if (navPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a></li>
+      <li class="nav item <% if (navPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+
+      <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
+      <li class="nav item <% if (navPage == "assessment_instance") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
+      <% } %>

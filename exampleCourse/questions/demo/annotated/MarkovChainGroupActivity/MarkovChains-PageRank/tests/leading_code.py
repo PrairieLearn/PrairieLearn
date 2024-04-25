@@ -1,10 +1,7 @@
-import numpy.linalg as la
 import numpy as np
+import numpy.linalg as la
 
-A = np.array([[0,  2,  0,  5],
-              [1,  0,  5,  6],
-              [2,  4,  0,  3],
-              [1,  0, 10,  2]])
+A = np.array([[0, 2, 0, 5], [1, 0, 5, 6], [2, 4, 0, 3], [1, 0, 10, 2]])
 
 num_pages = 20
 edges = np.loadtxt("pagerank_large.txt").astype(np.int64)

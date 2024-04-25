@@ -9,17 +9,36 @@ columns
     constant_question_value: boolean default false
     course_instance_id: bigint not null
     deleted_at: timestamp with time zone
+    duration_stat_hist: integer[] not null default ARRAY[]::integer[]
+    duration_stat_max: interval not null default '00:00:00'::interval
+    duration_stat_mean: interval not null default '00:00:00'::interval
+    duration_stat_median: interval not null default '00:00:00'::interval
+    duration_stat_min: interval not null default '00:00:00'::interval
+    duration_stat_threshold_labels: text[] not null default ARRAY[]::text[]
+    duration_stat_threshold_seconds: double precision[] not null default ARRAY[]::double precision[]
+    duration_stat_thresholds: interval[] not null default ARRAY[]::interval[]
     group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_bonus_points: double precision
     max_points: double precision
-    mode: enum_mode
     multiple_instance: boolean
     number: text not null default '0'::text
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
+    score_stat_hist: integer[] not null default ARRAY[]::integer[]
+    score_stat_max: double precision not null default 0
+    score_stat_mean: double precision not null default 0
+    score_stat_median: double precision not null default 0
+    score_stat_min: double precision not null default 0
+    score_stat_n_hundred: integer not null default 0
+    score_stat_n_hundred_perc: double precision not null default 0
+    score_stat_n_zero: integer not null default 0
+    score_stat_n_zero_perc: double precision not null default 0
+    score_stat_number: integer not null default 0
+    score_stat_std: double precision not null default 0
     shuffle_questions: boolean default false
+    statistics_last_updated_at: timestamp with time zone not null default (now() - '100 years'::interval)
     stats_last_updated: timestamp with time zone
     sync_errors: text
     sync_job_sequence_id: bigint

@@ -1,20 +1,37 @@
 build:
 	@yarn turbo run build
+build-sequential:
+	@yarn turbo run --concurrency 1 build
+python-deps:
+	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+deps:
+	@yarn
+	@make python-deps build
 
-dev:
-	@yarn turbo run dev
+migrate:
+	@yarn migrate
+migrate-dev:
+	@yarn migrate-dev
+
+refresh-workspace-hosts:
+	@yarn refresh-workspace-hosts
+refresh-workspace-hosts-dev:
+	@yarn refresh-workspace-hosts-dev
+
+dev: start-support
+	@yarn dev
+dev-workspace-host: start-support
+	@yarn dev-workspace-host
 
 start: start-support
-	@node server.js
-start-nodemon: start-support
-	@yarn nodemon -L server.js
-start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js
+	@yarn start
+start-workspace-host: start-support
+	@yarn start-workspace-host
 start-executor:
-	@node executor.js
+	@node apps/prairielearn/dist/executor.js
 
-kill-running-workspaces:
-	@docker/kill_running_workspaces.sh
+update-database-description:
+	@yarn workspace @prairielearn/prairielearn pg-describe postgres -o ../../database
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
@@ -25,27 +42,22 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host test-packages
-test-prairielearn: start-support
-	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
-test-prairielearn-serial: start-support
-	@yarn mocha "tests/**/*.test.{js,mjs}"
-test-prairielib:
-	@yarn jest prairielib/
-test-grader-host:
-	@yarn jest grader_host/
-test-packages:
+test-js: start-support
 	@yarn turbo run test
+test-js-dist: start-support
+	@yarn turbo run test:dist
 test-python:
-# `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
-# pytest uses to discover tests, but it isn't actually a test file itself. We
-# explicitly exclude it here.
-	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
-	
+	@python3 -m pytest
+test-prairielearn: start-support
+	@yarn workspace @prairielearn/prairielearn run test
+
+check-dependencies:
+	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
-	@yarn prettier --check "**/*.{js,ts,md}"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
@@ -53,16 +65,27 @@ lint-html:
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
-	@yarn eslint --ext js --fix "**/*.js"
-	@yarn prettier --write "**/*.{js,ts,md}"
+	@yarn eslint --ext js --fix "**/*.{js,ts}"
+	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
-typecheck-js:
+# This is just an alias to our build script, which will perform typechecking
+# as a side-effect.
+# TODO: Do we want to have a separate typecheck command for all packages/apps?
+# Maybe using TypeScript project references?
+typecheck-tools:
 	@yarn tsc
+typecheck-js:
+	@yarn turbo run build
 typecheck-python:
-	@yarn pyright
+	@yarn pyright --skipunannotated
 
 changeset:
 	@yarn changeset
+
+ci: lint typecheck check-dependencies test

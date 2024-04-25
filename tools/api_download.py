@@ -7,7 +7,7 @@ def main():
     parser.add_argument('-t', '--token', required=True, help='the API token from PrairieLearn')
     parser.add_argument('-i', '--course-instance-id', required=True, help='the course instance ID to download')
     parser.add_argument('-o', '--output-dir', required=True, help='the output directory to store JSON into (will be created if necessary)')
-    parser.add_argument('-s', '--server', help='the server API address', default='https://www.prairielearn.org/pl/api/v1')
+    parser.add_argument('-s', '--server', help='the server API address', default='https://us.prairielearn.com/pl/api/v1')
     args = parser.parse_args()
 
     print(f'ensure that {args.output_dir} directory exists...')
@@ -71,7 +71,6 @@ def get_and_save_json(endpoint, filename, args, logfile):
     headers = {'Private-Token': args.token}
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
-    r = requests.get(url, headers=headers)
     retry_502_max = 30
     retry_502_i = 0
     while True:

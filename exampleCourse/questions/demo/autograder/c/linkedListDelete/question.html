@@ -1,0 +1,48 @@
+<pl-question-panel>
+<markdown>
+
+Assume that a linked list data structure has been defined in `list.h` as follows:
+
+```c
+struct node {
+  int value;
+  struct node *next;
+};
+
+struct list {
+  struct node *head;
+};
+```
+
+Assume that for a list `l`, the element `l->head` points to the first
+element of the list.
+
+Implement the following function that deletes the first element of the
+list. All other elements of the list should remain in the list in
+their original order. The function must return the value of the
+element that was deleted. The element deleted from the list must be
+properly de-allocated. If the list is originally empty, the function
+should return -1, and should not change the list (i.e., it must remain
+empty).
+
+**Caution**: be extra careful not to use values after they have been freed.
+
+Note: you **don't** need to write the main function.
+
+<pl-file-editor source-file-name="source.c" file-name="deletefirst.c" ace-mode="ace/mode/c_cpp">
+</pl-file-editor>
+
+</markdown>
+</pl-question-panel>
+
+<pl-answer-panel>
+<details class="card">
+<summary class="card-header">Click to reveal</summary>
+<pl-code language="c" source-file-name="solution.c"></pl-code>
+</details>
+</pl-answer-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

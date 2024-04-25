@@ -100,7 +100,7 @@ This file specifies basic information about the course:
 
 - Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
 
-- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourse.json)
+- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourse.json)
 
 ## Course-wide options
 
@@ -320,11 +320,11 @@ The following list of standardized tags is automatically included in every cours
 | `secret`         | Only use this question on exams or quizzes that won't be released to students, so the question can be kept secret.    |
 | `nontest`        | This question is not appropriate for use in a restricted testing environment, so only use it on homeworks or similar. |
 
-| Tracking tag | Meaning                                                                                                                                              |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<course>`   | The course for which the question was originally written. E.g., `TAM212`, `CS233`.                                                                   |
-| `<email>`    | The email of the person who wrote the question, E.g., `mwest@illinois.edu`. Multiple emails can be tagged when several people had significant input. |
-| `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.                                                                            |
+| Tracking tag | Meaning                                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<course>`   | The course for which the question was originally written. E.g., `TAM212`, `CS233`.                                                                       |
+| `<email>`    | The email of the person who wrote the question, E.g., `instructor@example.com`. Multiple emails can be tagged when several people had significant input. |
+| `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.                                                                                |
 
 ### Adding your own tags
 

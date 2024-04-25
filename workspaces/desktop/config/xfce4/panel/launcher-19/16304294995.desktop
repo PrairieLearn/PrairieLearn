@@ -4,21 +4,21 @@ Name=Firefox Web Browser
 Comment=Browse the World Wide Web
 GenericName=Web Browser
 Keywords=Internet;WWW;Browser;Web;Explorer
-Exec=firefox %u
+Exec=firefox-esr %u
 Terminal=false
 X-MultipleArgs=false
 Type=Application
-Icon=firefox
+Icon=firefox-esr
 Categories=GNOME;GTK;Network;WebBrowser;
 MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;x-scheme-handler/chrome;video/webm;application/x-xpinstall;
 StartupNotify=true
 Actions=new-window;new-private-window;
-X-XFCE-Source=file:///usr/share/applications/firefox.desktop
+X-XFCE-Source=file:///usr/share/applications/firefox-esr.desktop
 
 [Desktop Action new-window]
 Name=Open a New Window
-Exec=firefox -new-window
+Exec=firefox-esr -new-window
 
 [Desktop Action new-private-window]
 Name=Open a New Private Window
-Exec=firefox -private-window
+Exec=firefox-esr -private-window

@@ -1,0 +1,48 @@
+[id^='file-upload'] .upload-dropzone {
+  min-height: 15ex;
+  background-color: #fafdff;
+  border: 2px dashed #0087f7;
+}
+[id^='file-upload'] .upload-dropzone.dz-clickable {
+  cursor: pointer;
+}
+[id^='file-upload'] .upload-dropzone.dz-drag-hover {
+  background-color: #d9edf7;
+  border-style: solid;
+}
+
+[id^='file-upload'] .file-status-container.has-preview {
+  cursor: pointer;
+}
+
+[id^='file-upload'] .file-status-icon {
+  margin-right: 10px;
+  transition: all 400ms;
+}
+
+[id^='file-upload'] .file-status {
+  margin-bottom: 0px;
+  font-size: 0.8em;
+  color: #999;
+}
+
+[id^='file-upload'] .file-preview-button::before {
+  content: 'Show preview';
+}
+
+[id^='file-upload'] .file-status-container:not(.collapsed) .file-preview-button::before {
+  content: 'Hide preview';
+}
+
+[id^='file-upload'] .file-preview-icon {
+  margin-left: 10px;
+  transition: transform 400ms;
+}
+
+[id^='file-upload'] .file-status-container:not(.collapsed) .file-preview-icon {
+  transform: rotateX(180deg);
+}
+
+[id^='file-upload'] .file-preview pre {
+  max-height: 200px;
+}

@@ -108,7 +108,44 @@ import org.prairielearn.autograder.AutograderInfo;
 
 To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
+To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection). Calling [the `publishEntry` method for the test reporter](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
+
+```java
+@Test
+@DisplayName("Test addition of values 1 and 1")
+void addition(TestReporter reporter) {
+    // Produce a single line of output
+    reporter.publishEntry("Calculating the addition of 1 and 1, which should result in 2");
+    // Alternatively, multiple key-value entries may be provided instead
+    reporter.publishEntry("TEST", "Adding 1 plus 1");
+    reporter.publishEntry("EXPECTED", "2");
+    reporter.publishEntry("RESULT", calculator.add(1, 1).toString());
+    assertEquals(2, calculator.add(1, 1));
+}
+```
+
 The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be compiled with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
+
+### Dynamic, parameterized and repeated tests
+
+JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests) and [test factories](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dynamic-tests).
+
+While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different than other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
+
+To avoid these issues, if a particular test class includes any dynamic test (i.e., tests using annotations like `@ParameterizedTest`, `@RepeatedTest` or `@TestFactory`), instructors are encouraged to define the maximum number of expected points as a class annotation, as demonstrated below. Classes that only use regular method tests (i.e., tests using annotations like `@Test`) are not required to use such a tag, as the total number of points can be easily retrieved from the static tests themselves at the start of the testing process.
+
+```java
+@Tag("maxpoints=16")
+public class ExampleJUnit5Test {
+
+    @ParameterizedTest(name = "Test with input {0}")
+    @ValueSource(ints = {0, 1, 2, 4, 10, -1, -10, -100})
+    @Tag("points=2")
+    public void testWithInput(int i) {
+        // ...
+    }
+}
+```
 
 ### Changing compilation options
 

@@ -1,0 +1,2 @@
+ALTER TABLE assessment_instances
+ADD COLUMN IF NOT EXISTS grading_needed BOOLEAN NOT NULL DEFAULT FALSE

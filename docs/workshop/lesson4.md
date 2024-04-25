@@ -12,7 +12,7 @@ Since there is more than one solution that satisfies this problem, you will need
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson4_example1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211634/preview)
+- [workshop/Lesson4_example1](https://us.prairielearn.com/pl/course/108/question/8211634/preview)
 
 #### Example 2:
 
@@ -24,7 +24,7 @@ Now ask students to enter three input values and one output that makes this logi
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson4_example2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211635/preview)
+- [workshop/Lesson4_example2](https://us.prairielearn.com/pl/course/108/question/8211635/preview)
 
 #### Example 3:
 
@@ -41,7 +41,7 @@ Students will calculate the convective heat transfer based on the data described
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson4_example3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211637/preview)
+- [workshop/Lesson4_example3](https://us.prairielearn.com/pl/course/108/question/8211637/preview)
 
 ## Auto grader
 
@@ -60,7 +60,7 @@ Write a question that provides students with a matrix $A$, and asks them to comp
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson4_example4](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211636/preview)
+- [workshop/Lesson4_example4](https://us.prairielearn.com/pl/course/108/question/8211636/preview)
 
 ## Homework 4
 

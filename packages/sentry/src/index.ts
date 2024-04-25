@@ -42,7 +42,7 @@ export {
   Thread,
   User,
   AddRequestDataToEventOptions,
-  CrossPlatformRequest,
+  PolymorphicRequest,
   NodeOptions,
 } from '@sentry/node';
 
@@ -81,4 +81,6 @@ export {
   deepReadDirSync,
   Integrations,
   Handlers,
+  runWithAsyncContext,
+  getCurrentScope,
 } from '@sentry/node';

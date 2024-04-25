@@ -22,9 +22,9 @@ $A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1_example1_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211618/preview)
+- [workshop/Lesson1_example1_v1](https://us.prairielearn.com/pl/course/108/question/8211618/preview)
 
-- [workshop/Lesson1_example1_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211620/preview)
+- [workshop/Lesson1_example1_v2](https://us.prairielearn.com/pl/course/108/question/8211620/preview)
 
 ## Example 2:
 
@@ -53,7 +53,7 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1_example2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211621/preview)
+- [workshop/Lesson1_example2](https://us.prairielearn.com/pl/course/108/question/8211621/preview)
 
 ## Example 3:
 
@@ -84,24 +84,24 @@ $I_T = V_T/R_T = 0.735 A$
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1_example3_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211622/preview)
+- [workshop/Lesson1_example3_v1](https://us.prairielearn.com/pl/course/108/question/8211622/preview)
 
-- [workshop/Lesson1_example3_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211624/preview)
+- [workshop/Lesson1_example3_v2](https://us.prairielearn.com/pl/course/108/question/8211624/preview)
 
-- [workshop/Lesson1_example3_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211623/preview)
+- [workshop/Lesson1_example3_v3](https://us.prairielearn.com/pl/course/108/question/8211623/preview)
 
 ## Homework 1
 
 Create one or two questions using some of these basic elements:
 
-`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/6312319/preview)
+`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://us.prairielearn.com/pl/course/108/question/6312319/preview)
 
-`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1420145/preview)
+`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://us.prairielearn.com/pl/course/108/question/1420145/preview)
 
-`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911603/preview)
+`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://us.prairielearn.com/pl/course/108/question/7911603/preview)
 
-`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637014/preview)
+`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/3637014/preview)
 
-`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3131525/preview)
+`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/3131525/preview)
 
-`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611923/preview)
+`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://us.prairielearn.com/pl/course/108/question/611923/preview)

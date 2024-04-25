@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Course instance information",
+  "description": "The specification file for a course instance.",
+  "type": "object",
+  "required": ["uuid", "longName"],
+  "properties": {
+    "comment": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+    },
+    "uuid": {
+      "description": "Unique identifier (UUID v4).",
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "longName": {
+      "description": "The long name of this course instance (e.g., 'Spring 2015').",
+      "type": "string"
+    },
+    "timezone": {
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
+      "type": "string",
+      "default": "America/Chicago"
+    },
+    "allowIssueReporting": {
+      "description": "DEPRECATED -- do not use.",
+      "type": "boolean",
+      "default": true
+    },
+    "hideInEnrollPage": {
+      "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
+      "type": "boolean",
+      "default": false
+    },
+    "userRoles": {
+      "description": "DEPRECATED -- do not use.",
+      "deprecated": true,
+      "type": "object",
+      "patternProperties": {
+        ".+": {
+          "description": "The role for a given UID.",
+          "enum": ["Student", "TA", "Instructor"]
+        }
+      }
+    },
+    "allowAccess": {
+      "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
+      "type": "array",
+      "items": {
+        "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
+        "type": "object",
+        "properties": {
+          "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          },
+          "role": {
+            "description": "DEPRECATED -- do not use.",
+            "deprecated": true,
+            "enum": ["Student", "TA", "Instructor", "Superuser"]
+          },
+          "uids": {
+            "description": "A list of UIDs, one of which is required for access",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "startDate": {
+            "description": "The earliest date on which access is permitted.",
+            "type": "string"
+          },
+          "endDate": {
+            "description": "The latest date on which access is permitted.",
+            "type": "string"
+          },
+          "institution": {
+            "description": "The institution from which access is permitted.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "groupAssessmentsBy": {
+      "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
+      "type": "string",
+      "default": "Set",
+      "enum": ["Set", "Module"]
+    }
+  }
+}

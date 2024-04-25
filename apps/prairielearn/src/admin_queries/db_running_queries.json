@@ -1,0 +1,6 @@
+{
+  "description": "Queries currently running in the DB.",
+  "resultFormats": {
+    "query": "pre"
+  }
+}

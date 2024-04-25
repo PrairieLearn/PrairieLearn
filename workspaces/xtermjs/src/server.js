@@ -101,6 +101,8 @@ app.ws('/', (ws, req) => {
       term.write(val.value);
     } else if (val.event === 'resize') {
       term.resize(val.value.cols, val.value.rows);
+    } else if (val.event === 'heartbeat') {
+      // do nothing
     }
   });
   ws.on('close', (msg) => {
@@ -109,5 +111,5 @@ app.ws('/', (ws, req) => {
 });
 
 app.listen(options.port, () =>
-  console.log(`XTerm server listening at http://localhost:${options.port}`)
+  console.log(`XTerm server listening at http://localhost:${options.port}`),
 );

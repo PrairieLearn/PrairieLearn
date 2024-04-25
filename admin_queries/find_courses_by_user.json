@@ -1,9 +1,0 @@
-{
-    "description": "Finds users and their courses.",
-    "params": [
-        {
-            "name": "user_regexp",
-            "description": "Regexp to match against UID or user name."
-        }
-    ]
-}

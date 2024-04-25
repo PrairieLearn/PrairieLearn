@@ -1,7 +1,7 @@
 ---
 title: Homework
 summary: Mastery-based homework assessments
-prairielearn_url: https://www.prairielearn.org/pl/course_instance/4970/assessment/2316937
+prairielearn_url: https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937
 ---
 
 ## Mastery-based homework assessments
@@ -21,7 +21,7 @@ In this configuration, the question generator creates unlimited question variant
 Instructors can define the number of times a student needs to correctly answer a question variant to earn full credit. Since question variants present a different version of the question, this repetition provides students with the needed practice to achieve mastery. Even after students reach full credit for a given question, they can continue to work on other question variants for additional practice. We see students coming back to homework assessments when reviewing for exams.
 
 Question generators based on skill levels such as _Remember_, _Understand_ and _Apply_ from the [Bloom's Taxonomy](https://en.wikipedia.org/wiki/Bloom's_taxonomy) often involve a solution process that requires information retrival to answer conceptual questions or computation of simple expressions. These skills are the most appropriate for questions using the unlimited variants with single retry option.
-The [demo homework assessment](https://www.prairielearn.org/pl/course_instance/128605/assessment/2310476) includes some examples using this configuration:
+The [demo homework assessment](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310476) includes some examples using this configuration:
 
 **Question 1** asks students to demonstrate basic thinking and remembering skills, by selecting the numbers that are prime (or odd, or even, etc). Students need to successully complete at least 3 question variants in order to receive full credit.
 
@@ -35,7 +35,7 @@ More sophisticated skill levels can require multiple steps during the solution p
 
 ![Unlimited variants with prescribed number of retry attempts](./set-retry-per-variant.png)
 
-Similarly to the above configuration, instructors can define the number of times a student needs to correctly answer a question variant to earn full credit. The [demo homework assessment](https://www.prairielearn.org/pl/course_instance/128605/assessment/2310476) includes some examples using this configuration:
+Similarly to the above configuration, instructors can define the number of times a student needs to correctly answer a question variant to earn full credit. The [demo homework assessment](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310476) includes some examples using this configuration:
 
 **Question 4** asks students to illustrate a vector with given position and orientation. Each question variant has two attempts, allowing students to retry the same question before generaring a new variant. In this example, students may have the correct understanding of the question, but potentially count the position incorrectly, or miss the correct orientation (clockwise or counter-clockwise). The second attempt gives students the opportunity to adjust their thinking, without having to start from the beginning. They need to successully complete at least 2 question variants in order to receive full credit.
 
@@ -48,4 +48,4 @@ and have unlimited attempts to complete the question successfully. This is desir
 
 ![Unlimited retry attempts for a single question variant](./one-variant-unlimited-attempts.png)
 
-**Question 6** from [demo homework assessment](https://www.prairielearn.org/pl/course_instance/128605/assessment/2310476) asks students to apply knowledge from a given topic to contruct the solution of a "real-world" problem. Students have unlimited attempts to submit the correct solution for full credit.
+**Question 6** from [demo homework assessment](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310476) asks students to apply knowledge from a given topic to contruct the solution of a "real-world" problem. Students have unlimited attempts to submit the correct solution for full credit.

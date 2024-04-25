@@ -1,0 +1,10 @@
+<pl-question-panel>
+  <p>If $a = {{params.a}}$ and $b = {{params.b}}$, what is $a$ multiplied by $b$?</p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="product">
+  <pl-answer correct="true">${{params.correct_answer}}$</pl-answer>
+  <pl-answer correct="false">${{params.wrong_answer1}}$</pl-answer>
+  <pl-answer correct="false">${{params.wrong_answer2}}$</pl-answer>
+  <pl-answer correct="false">${{params.wrong_answer3}}$</pl-answer>
+</pl-multiple-choice>

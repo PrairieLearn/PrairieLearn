@@ -1,18 +1,18 @@
-import random, math
+import random
+
 
 def generate(data):
-
     # Simulate values
     a = random.randint(2, 10)
-    b = a+4
-    c = random.randint(20,100)/100
-    d = random.uniform(1,99)
+    b = a + 4
+    c = random.randint(20, 100) / 100
+    d = random.uniform(1, 99)
 
     # Assemble Matrix
-    x = [a,b,a]
-    x1 = [[a,b],[a,b]]
-    x2 = [[a,b,a],[a,b,a],[a,b,a]]
-    xC = [c,a,c]
+    x = [a, b, a]
+    x1 = [[a, b], [a, b]]
+    x2 = [[a, b, a], [a, b, a], [a, b, a]]
+    xC = [c, a, c]
 
     # Release parameters
     data["params"]["a"] = a

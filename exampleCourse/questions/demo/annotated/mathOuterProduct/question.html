@@ -3,10 +3,10 @@
 compute the outer product ${\bf w} = \textrm{a} {\bf u} \otimes \textrm{b} {\bf v}$</p>
 
 <pl-variable-output show-mathematica=false show-r=false>
-  <variable params-name="u" digits={{params.d}}>u</variable>
-  <variable params-name="v" digits={{params.d}}>v</variable>
-  <variable params-name="a" digits=0>a</variable>
-  <variable params-name="b" digits=0>b</variable>
+  <pl-variable params-name="u" digits={{params.d}}>u</pl-variable>
+  <pl-variable params-name="v" digits={{params.d}}>v</pl-variable>
+  <pl-variable params-name="a" digits=0>a</pl-variable>
+  <pl-variable params-name="b" digits=0>b</pl-variable>
 </pl-variable-output>
 
 </pl-question-panel>
@@ -15,8 +15,7 @@ compute the outer product ${\bf w} = \textrm{a} {\bf u} \otimes \textrm{b} {\bf 
 <pl-matrix-input answers-name="w" label="${\bf w} = $" comparison="sigfig" digits={{params.d2}}></pl-matrix-input>
 
 <pl-question-panel>
-  <!-- This is not part of the question, and is included for documentation purposes-->
-  <p></p>
+  <!-- This is not part of the question, and is included for documentation purposes -->
   <div class="alert alert-info p-2" role="alert">
     <small>Note: this is an example of a question generator with randomized parameters, which is used to
        generate a <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md" target="_blank">fixed question variant for an exam</a>. Students receive instant feedback and have <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">retry attempts for partial credit.</a>

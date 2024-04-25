@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Admin Query",
+  "description": "Description of an administrator SQL query.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description"],
+  "properties": {
+    "comment": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+    },
+    "description": {
+      "description": "Brief one-line description of the query.",
+      "type": "string"
+    },
+    "resultFormats": {
+      "description": "Custom formats for result columns.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["pre"]
+      }
+    },
+    "params": {
+      "description": "Parameters for the query.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description"],
+        "properties": {
+          "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          },
+          "name": {
+            "description": "Name of the parameter. Must match a $name in the SQL.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Brief one-line description of the parameter.",
+            "type": "string"
+          },
+          "default": {
+            "description": "Default value.",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

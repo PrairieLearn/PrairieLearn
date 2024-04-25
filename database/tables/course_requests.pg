@@ -1,15 +1,16 @@
 columns
     approved_by: bigint
-    approved_status: enum_course_request_status default 'pending'::enum_course_request_status
+    approved_status: enum_course_request_status not null default 'pending'::enum_course_request_status
     created_at: timestamp with time zone not null default now()
     first_name: text
     github_user: text
     id: bigint not null default nextval('course_requests_id_seq'::regclass)
     institution: text
     last_name: text
-    short_name: text
-    title: text
-    user_id: bigint
+    referral_source: text
+    short_name: text not null
+    title: text not null
+    user_id: bigint not null
     work_email: text
 
 indexes
