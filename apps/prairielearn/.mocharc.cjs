@@ -14,6 +14,10 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
+// We need to point to this `tsconfig.json` specifically to pick up the
+// `allowJs: true` option.
+process.env.TSX_TSCONFIG_PATH = './src/tsconfig.json';
+
 module.exports = {
   'node-option': [
     'import=tsx/esm',
