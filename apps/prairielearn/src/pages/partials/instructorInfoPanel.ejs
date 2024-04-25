@@ -46,7 +46,7 @@
       <% if (locals.course_instance) { %>
       <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
       <% } else { %>
-      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
+      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>"><%= question.qid %></a>
       <% } %>
     </div>
   </div>
