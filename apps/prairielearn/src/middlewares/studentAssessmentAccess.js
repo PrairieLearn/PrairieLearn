@@ -3,21 +3,15 @@ import { Router } from 'express';
 import * as _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
-import { generateSignedToken, getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { config } from '../lib/config';
 import { setCookie } from '../lib/cookie';
-import { idsEqual } from '../lib/id';
 
 const router = Router();
 
 var timeout = 24; // hours
 
 router.all('/', function (req, res, next) {
-  // SEB: check user-agent
-  if ('user-agent' in req.headers) {
-    checkUserAgent(res, req.headers['user-agent']);
-  }
-
   if (
     typeof res.locals.assessment_instance === 'undefined' &&
     !_.get(res.locals, 'authz_result.active', true)
@@ -39,19 +33,6 @@ router.all('/', function (req, res, next) {
       closedAssessmentNotActive(res);
     }
     return;
-  }
-
-  // SafeExamBrowser protect the assessment
-  if ('authz_result' in res.locals && res.locals.authz_result.mode === 'SEB') {
-    // If the assessment is complete, use this middleware to show the logout page
-    if ('assessment_instance' in res.locals && res.locals.assessment_instance.open === false) {
-      return badSEB(req, res);
-    }
-
-    // If any of our auth checks didn't pass, fail (send to download)
-    if (res.locals.authz_data.mode !== 'SEB') {
-      return badSEB(req, res);
-    }
   }
 
   // Password protect the assessment. Note that this only handles the general
@@ -108,48 +89,6 @@ function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
   setCookie(res, ['pl_pw_origUrl', 'pl2_pw_original_url'], req.originalUrl);
   res.redirect('/pl/password');
-}
-
-function badSEB(req, res) {
-  var SEBdata = {
-    user_id: res.locals.user.user_id,
-    assessment_id: res.locals.assessment.id,
-    course_instance_id: res.locals.course_instance.id,
-    authz_data: res.locals.authz_data,
-  };
-  res.locals.SEBdata = generateSignedToken(SEBdata, config.secretKey);
-  //var proto = 'seb://';
-  //var proto = 'http://';  // For testing
-  //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
-  res.locals.SEBUrl = config.SEBDownloadUrl;
-  res.locals.prompt = 'SEB';
-  return res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-}
-
-function checkUserAgent(res, userAgent) {
-  // Check the useragent has SEB in it
-  if (!userAgent.includes('SEB/2')) return;
-
-  // Check user-agent header for exam string
-  var examHash = userAgent.match(/prairielearn:(.+)$/);
-  if (examHash === null) return;
-  var key = examHash[1];
-
-  var fromSEB = getCheckedSignedTokenData(key, config.secretKey, {
-    maxAge: timeout * 60 * 60 * 1000,
-  });
-
-  if ('assessment' in res.locals) {
-    if (
-      idsEqual(fromSEB.assessment_id, res.locals.assessment.id) &&
-      idsEqual(fromSEB.user_id, res.locals.authz_data.user.user_id)
-    ) {
-      res.locals.authz_data.mode = 'SEB';
-    }
-  } else {
-    // Assessment list view, enable the mode
-    res.locals.authz_data.mode = 'SEB';
-  }
 }
 
 function closedAssessmentNotActive(res) {

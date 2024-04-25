@@ -4,10 +4,8 @@ const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as fs from 'fs-extra';
 import * as async from 'async';
-const _ = require('lodash');
-import * as path from 'path';
+import * as _ from 'lodash';
 import * as sqldb from '@prairielearn/postgres';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as error from '@prairielearn/error';
 
 import { CourseInstanceAddEditor } from '../../lib/editors';
@@ -65,9 +63,7 @@ router.get('/', function (req, res, next) {
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    debug(`Responding to post with action ${req.body.__action}`);
     if (req.body.__action === 'add_course_instance') {
-      debug(`Responding to action add_course_instance`);
       const editor = new CourseInstanceAddEditor({
         locals: res.locals,
       });
@@ -79,9 +75,6 @@ router.post(
         return;
       }
 
-      debug(
-        `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
-      );
       const result = await sqldb.queryOneRowAsync(sql.select_course_instance_id_from_uuid, {
         uuid: editor.uuid,
         course_id: res.locals.course.id,

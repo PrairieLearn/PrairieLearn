@@ -1,6 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as util from 'node:util';
 const express = require('express');
 import * as http from 'node:http';
@@ -14,8 +14,8 @@ import * as fs from 'node:fs';
 import * as async from 'async';
 import * as fsPromises from 'node:fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-const argv = require('yargs-parser')(process.argv.slice(2));
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const yargsParser = require('yargs-parser');
+import debugfn from 'debug';
 const archiver = require('archiver');
 import * as net from 'node:net';
 const asyncHandler = require('express-async-handler');
@@ -35,6 +35,7 @@ import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
 import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
@@ -119,6 +120,8 @@ async
 
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }

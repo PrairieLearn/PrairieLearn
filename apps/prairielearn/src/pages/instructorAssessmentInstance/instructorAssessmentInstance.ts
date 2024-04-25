@@ -171,7 +171,7 @@ router.post(
         req.body.points,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
       await updateAssessmentInstanceScore(
@@ -179,7 +179,7 @@ router.post(
         req.body.score_perc,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(

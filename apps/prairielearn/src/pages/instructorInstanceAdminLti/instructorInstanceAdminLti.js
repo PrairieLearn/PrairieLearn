@@ -1,6 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import * as express from 'express';
 
 import { getCourseOwners } from '../../lib/course';

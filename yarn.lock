@@ -3258,6 +3258,8 @@ __metadata:
     "@socket.io/redis-adapter": ^8.3.0
     "@types/archiver": ^6.0.2
     "@types/async": ^3.2.24
+    "@types/blocked": ^1.3.4
+    "@types/blocked-at": ^1.0.4
     "@types/body-parser": ^1.19.5
     "@types/bootstrap": ^4.6.6
     "@types/byline": ^4.2.36
@@ -3290,12 +3292,14 @@ __metadata:
     "@types/node-jose": ^1.1.13
     "@types/oauth-signature": ^1.5.2
     "@types/object-hash": ^3.0.6
+    "@types/on-finished": ^2.3.4
     "@types/passport": ^1.0.16
     "@types/passport-azure-ad": ^4.3.6
     "@types/pem": ^1.14.4
     "@types/pg": ^8.11.4
     "@types/qrcode-svg": ^1.1.4
     "@types/request": ^2.48.12
+    "@types/serve-favicon": ^2.5.7
     "@types/streamifier": ^0.1.2
     "@types/tar": ^6.1.11
     "@types/tmp": ^0.2.6
@@ -4544,6 +4548,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/blocked-at@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "@types/blocked-at@npm:1.0.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: 1c23c30f697e5f29604cf59ccd3c9633ab96d1d119c96dfd3348892e64a1900c12a37c4ac4bfa07983656ca4f96cafb65d7d56eaa96e1b86886d6d2375079786
+  languageName: node
+  linkType: hard
+
+"@types/blocked@npm:^1.3.4":
+  version: 1.3.4
+  resolution: "@types/blocked@npm:1.3.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: 840261f6fc74e445cd38ce79aaab4a24a5a22a84437a92d1a90994cb9eb3764242012043c6e6ccdee46bc1bba14acb7c0b90c2fb9c5a1d3f740934d19fc5cf0f
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*, @types/body-parser@npm:^1.19.5":
   version: 1.19.5
   resolution: "@types/body-parser@npm:1.19.5"
@@ -5001,6 +5023,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/on-finished@npm:^2.3.4":
+  version: 2.3.4
+  resolution: "@types/on-finished@npm:2.3.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: e782eacf40c994b9b87ee95301041a931c9631c20cca21765f287400b606ef1397a385312ad441788a072c090110b4f4b7172303c6d5908e93edaa2578d97245
+  languageName: node
+  linkType: hard
+
 "@types/on-headers@npm:^1.0.3":
   version: 1.0.3
   resolution: "@types/on-headers@npm:1.0.3"
@@ -5152,6 +5183,15 @@ __metadata:
     "@types/mime": ^1
     "@types/node": "*"
   checksum: 10b620a5960058ef009afbc17686f680d6486277c62f640845381ec4baa0ea683fdd77c3afea4803daf5fcddd3fb2972c8aa32e078939f1d4e96f83195c89793
+  languageName: node
+  linkType: hard
+
+"@types/serve-favicon@npm:^2.5.7":
+  version: 2.5.7
+  resolution: "@types/serve-favicon@npm:2.5.7"
+  dependencies:
+    "@types/express": "*"
+  checksum: 1ae98ff01c977307ab989d2c31ea7ffa51977ad2aa2e5877e4e6829a647b0c01301483a8c53585b3655dda394867e83852ea13e02728b6d65ba7121a66141d62
   languageName: node
   linkType: hard
 

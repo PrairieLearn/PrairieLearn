@@ -2,7 +2,7 @@
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as async from 'async';
-import * as path from 'path';
+import debugfn from 'debug';
 
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
@@ -24,7 +24,7 @@ import {
 } from '../../models/course-permissions';
 import { parseUidsString } from '../../lib/user';
 
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();
