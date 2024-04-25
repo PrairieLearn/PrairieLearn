@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../components/Modal.html';
+
 export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
@@ -29,125 +31,8 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
           )}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                <div
-                  class="modal fade"
-                  id="uploadInstanceQuestionScoresModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="uploadInstanceQuestionScoresModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="uploadInstanceQuestionScoresModalLabel">
-                          Upload new question scores
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        ${csvHelpInstanceQuestionScores()}
-                        <form
-                          name="upload-instance-question-scores-form"
-                          method="POST"
-                          enctype="multipart/form-data"
-                        >
-                          <div class="form-group">
-                            <div class="custom-file">
-                              <input
-                                type="file"
-                                name="file"
-                                class="custom-file-input"
-                                id="uploadInstanceQuestionScoresFileInput"
-                              />
-                              <label
-                                class="custom-file-label"
-                                for="uploadInstanceQuestionScoresFileInput"
-                                >Choose CSV file</label
-                              >
-                            </div>
-                          </div>
-                          <div class="d-flex justify-content-end">
-                            <div class="form-group mb-0">
-                              <input
-                                type="hidden"
-                                name="__action"
-                                value="upload_instance_question_scores"
-                              />
-                              <input
-                                type="hidden"
-                                name="__csrf_token"
-                                value="${resLocals.__csrf_token}"
-                              />
-                              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                                Cancel
-                              </button>
-                              <button type="submit" class="btn btn-primary">Upload</button>
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="modal fade"
-                  id="uploadAssessmentInstanceScoresModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="uploadAssessmentInstanceScoresModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="uploadAssessmentInstanceScoresModalLabel">
-                          Upload new total scores
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        ${csvHelpAssessmentInstanceScores()}
-                        <form
-                          name="upload-assessment-instance-scores-form"
-                          method="POST"
-                          enctype="multipart/form-data"
-                        >
-                          <div class="form-group">
-                            <div class="custom-file">
-                              <input
-                                type="file"
-                                name="file"
-                                class="custom-file-input"
-                                id="uploadAssessmentInstanceScoresFileInput"
-                              />
-                              <label
-                                class="custom-file-label"
-                                for="uploadAssessmentInstanceScoresFileInput"
-                                >Choose CSV file</label
-                              >
-                            </div>
-                          </div>
-                          <div class="d-flex justify-content-end">
-                            <div class="form-group mb-0">
-                              <input
-                                type="hidden"
-                                name="__action"
-                                value="upload_assessment_instance_scores"
-                              />
-                              <input
-                                type="hidden"
-                                name="__csrf_token"
-                                value="${resLocals.__csrf_token}"
-                              />
-                              <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                                Cancel
-                              </button>
-                              <button type="submit" class="btn btn-primary">Upload</button>
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ${uploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
+                ${uploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
               `
             : ''}
 
@@ -328,4 +213,68 @@ myhappygroup,1,95
 greatgroup,1,85</pre
     >
   `;
+}
+
+function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'uploadInstanceQuestionScoresModal',
+    title: 'Upload new question scores',
+    formEncType: 'multipart/form-data',
+    body: html`
+      ${csvHelpInstanceQuestionScores()}
+      <div class="form-group">
+        <div class="custom-file">
+          <input
+            type="file"
+            name="file"
+            class="custom-file-input"
+            id="uploadInstanceQuestionScoresFileInput"
+          />
+          <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput"
+            >Choose CSV file</label
+          >
+        </div>
+      </div>
+      <div class="d-flex justify-content-end">
+        <div class="form-group mb-0">
+          <input type="hidden" name="__action" value="upload_instance_question_scores" />
+          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </div>
+    `,
+  });
+}
+
+function uploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'uploadAssessmentInstanceScoresModal',
+    title: 'Upload new total scores',
+    formEncType: 'multipart/form-data',
+    body: html`
+      ${csvHelpAssessmentInstanceScores()}
+      <div class="form-group">
+        <div class="custom-file">
+          <input
+            type="file"
+            name="file"
+            class="custom-file-input"
+            id="uploadAssessmentInstanceScoresFileInput"
+          />
+          <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput"
+            >Choose CSV file</label
+          >
+        </div>
+      </div>
+      <div class="d-flex justify-content-end">
+        <div class="form-group mb-0">
+          <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
+          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </div>
+    `,
+  });
 }
