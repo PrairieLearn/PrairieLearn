@@ -62,5 +62,6 @@ ast-grep -p '__filename' -r 'import.meta.filename' -U $ROOT_DIR/apps/*/src
 ast-grep -p "import * as fs from 'fs-extra'" -r "import fs from 'fs-extra'" -U $ROOT_DIR/apps/*/src
 ast-grep -p "import * as jju from 'jju'" -r "import jju from 'jju'" -U $ROOT_DIR/apps/*/src
 ast-grep -p "import * as mustache from 'mustache'" -r "import mustache from 'mustache'" -U $ROOT_DIR/apps/*/src
+ast-grep -p "import * as pg from 'pg'" -r "import pg from 'pg'" -U $ROOT_DIR/apps/*/src
 
 make -C $ROOT_DIR format-js
