@@ -37,6 +37,7 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import _ from 'lodash';
+import esMain from 'es-main';
 
 import { logger, addFileLogging } from '@prairielearn/logger';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config';
@@ -2163,7 +2164,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (config.startServer) {
+if (esMain(import.meta) && config.startServer) {
   async.series(
     [
       async () => {
