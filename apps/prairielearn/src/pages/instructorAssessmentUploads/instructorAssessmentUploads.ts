@@ -1,5 +1,4 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -10,6 +9,7 @@ import {
   uploadAssessmentInstanceScores,
 } from '../../lib/score-upload';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
+import { InstructorAssessmentUploads } from './instructorAssessmentUploads.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -23,12 +23,14 @@ router.get(
     res.locals.upload_job_sequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },
-      JobSequenceSchema.extend({
+      z.object({
+        job_sequence: JobSequenceSchema,
         start_date_formatted: z.string(),
         user_uid: UserSchema.shape.uid,
       }),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentUploads({ resLocals: res.locals }));
   }),
 );
 
