@@ -398,17 +398,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "size",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
+    # Before going to the trouble of preparing answers list, check for name duplication
+    name = pl.get_string_attrib(element, "answers-name")
 
     if (
         pl.has_attrib(element, "size")
         and get_display_type(element) is not DisplayType.DROPDOWN
     ):
         raise ValueError(
-            '"size" attribute should only be set if display is "dropdown".'
+            f'"size" attribute on "{name}" should only be set if display is "dropdown".'
         )
-
-    # Before going to the trouble of preparing answers list, check for name duplication
-    name = pl.get_string_attrib(element, "answers-name")
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
