@@ -7,9 +7,8 @@ import debugfn from 'debug';
 import * as sqldb from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
 
-const debug = debugfn('prairielearn:ltiOutcomes');
-
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:ltiOutcomes');
 const parser = new xml2js.Parser({ explicitArray: false });
 const builder = new xml2js.Builder();
 

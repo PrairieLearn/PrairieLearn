@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as error from '@prairielearn/error';
 import assert = require('node:assert');
-import _ = require('lodash');
+import * as _ from 'lodash';
 import type { EventEmitter } from 'node:events';
 
 import * as ltiOutcomes from './ltiOutcomes';
@@ -174,7 +174,7 @@ export async function processGradingResult(content: any): Promise<void> {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
+    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -209,7 +209,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_(content.grading.score).isFinite()) {
+      if (!_.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',

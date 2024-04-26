@@ -353,6 +353,9 @@ jobs:
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
 
+      - name: Check for CJS requires which could be ESM imports
+        run: node ./tools/cjs-to-esm-candidates.mjs --check
+
   report-image-sizes:
     runs-on: ubuntu-latest
     needs:

@@ -1,6 +1,5 @@
 import * as async from 'async';
 import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
 
@@ -18,7 +17,7 @@ import {
   AssessmentInstanceSchema,
 } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export const InstanceLogSchema = z.object({
