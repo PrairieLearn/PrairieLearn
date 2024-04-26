@@ -7,6 +7,7 @@ import * as chunks from '../../lib/chunks';
 import { config } from '../../lib/config';
 import { APP_ROOT_PATH } from '../../lib/paths';
 import { HttpStatusError } from '@prairielearn/error';
+import { getQuestionCourse } from '../../lib/question-variant';
 
 const router = Router({ mergeParams: true });
 
@@ -50,11 +51,21 @@ router.get(
       res.removeHeader('Cache-Control');
     }
 
+    // on building different URLs to make it work: https://github.com/PrairieLearn/PrairieLearn/issues/8322
+    // also edit here to point to those URLs is question course is different than variant course:
+    // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]12
+    // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]45
+
+    // http://localhost:3000/pl/course_instance/40/instructor/question/202/preview
+
     let elementFilesDir;
     if (res.locals.course) {
       // Files should be served from the course directory
-      const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-      await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'elements' });
+      console.log(res.locals.question);
+      const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+      const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+      await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
+
       elementFilesDir = path.join(coursePath, 'elements');
       res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
     } else {
