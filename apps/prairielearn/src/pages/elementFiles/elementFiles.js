@@ -8,6 +8,7 @@ import { config } from '../../lib/config';
 import { APP_ROOT_PATH } from '../../lib/paths';
 import { selectCourseById } from '../../models/course';
 import { HttpStatusError } from '@prairielearn/error';
+import { getQuestionCourse } from '../../lib/question-variant';
 
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
@@ -27,10 +28,7 @@ export default function (options = { publicEndpoint: false }) {
       const valid =
         pathSpl[1] === CLIENT_FOLDER ||
         EXTENSION_WHITELIST.some((extension) => filename.endsWith(extension));
-      // console.log(pathSpl)
-      // console.log(filename)
       if (!valid) {
-        // console.log('here')
         throw new HttpStatusError(404, 'Unable to serve that file');
       }
 
@@ -54,15 +52,24 @@ export default function (options = { publicEndpoint: false }) {
         res.removeHeader('Cache-Control');
       }
 
-      if (options.publicEndpoint) {
-        res.locals.course = await selectCourseById(req.params.course_id);
-      }
+      // if (options.publicEndpoint) {
+      //   res.locals.course = await selectCourseById(req.params.course_id);
+      //   // TODO: don't actually assign this here if the element should come from core elements?
+      // }
+
+      // on building different URLs to make it work: https://github.com/PrairieLearn/PrairieLearn/issues/8322
+      // also edit here to point to those URLs is question course is different than variant course:
+      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]12
+      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]45
+
 
       let elementFilesDir;
       if (res.locals.course) {
         // Files should be served from the course directory
-        const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-        await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'elements' });
+        console.log(res.locals.question)
+        const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+        const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+        await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
         elementFilesDir = path.join(coursePath, 'elements');
         res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
       } else {

@@ -168,6 +168,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/text/:filename',
   '/pl/course/:course_id/grading_job/:job_id/file/:file',
   '/pl/news_item/:news_item_id/*',
+  '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
