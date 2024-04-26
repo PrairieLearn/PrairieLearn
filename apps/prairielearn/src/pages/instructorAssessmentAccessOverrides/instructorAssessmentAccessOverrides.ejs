@@ -103,7 +103,6 @@
                 <input type="hidden" name="__action" value="add_new_override">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= user.uid %>" required readonly>
-                <!-- <input type="hidden" name="timezone" value="<%= timezone %>"> -->
                 <% if (!assessment.group_work) { %>
                   <div class="form-group">
                     <label for="student_uid">Student UID</label>
@@ -117,7 +116,6 @@
                 <% } %>
                 <div class="form-group">
                   <label for="start_date">Start Date</label>
-                  <!-- <input type="datetime-local" class="form-control" id="start_date" name="start_date" required> -->
                   <div class="input-group">
                     <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
                     <div class="input-group-append">
@@ -127,7 +125,6 @@
                 </div>
                 <div class="form-group">
                   <label for="end_date">End Date</label>
-                  <!-- <input type="datetime-local" class="form-control" id="end_date" name="end_date" required> -->
                   <div class="input-group">
                     <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
                     <div class="input-group-append">
@@ -193,11 +190,9 @@
                       <span class="input-group-text">(<%= timezone %>)</span>
                     </div>
                   </div>
-                  <!-- <input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required> -->
                 </div>
                 <div class="form-group">
                   <label for="edit-end_date">End Date</label>
-                  <!-- <input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required> -->
                   <div class="input-group">
                     <input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
                     <div class="input-group-append">
