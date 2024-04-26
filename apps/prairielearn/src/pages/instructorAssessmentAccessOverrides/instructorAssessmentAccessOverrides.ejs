@@ -58,11 +58,20 @@
         $('.delete-button').on('click', function () {
           var button = $(this);
           var policyId = $(this).data('policy-id');
-
+          var csrfToken = button.data('__csrf_token');
+          var action = button.data('__action');
+          
           // Set the values of the form's hidden input fields
           $('#deleteModal input[name="policy_id"]').val(policyId);
-          
+          $('#deleteModal input[name="csrf_token"]').val(csrfToken);
+          $('#confirmDeleteButton').data('policy-id', policyId);
 
+          console.log(csrfToken)
+          console.log(policyId)
+          $('#deleteModal input[name="__action"]').val(action);
+
+          
+          
           // Show the modal confirmation dialog
           $('#deleteModal').modal('show');
         });
@@ -70,10 +79,19 @@
         // Event listener for confirm delete button in the modal
         $('#confirmDeleteButton').on('click', function () {
           // Set the __action value to "delete_override"
+          var button = $(this);
+          var policyId = button.data('policy-id'); // get policy id from data attribute
+         
+          $('form[name="delete-override-form"] input[name="policy_id"]').val(policyId);
+
+          // $('#form[name="__csrf_token"]').val(csrfToken);
           $('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
 
           // Submit the form
+          
+          // $('form[name="delete-override"] input[name="__action"]').val('delete_override');
           $('form[name="delete-override-form"]').submit();
+          
         });
     });
 
@@ -263,14 +281,11 @@
                         <i class="fas fa-edit"></i> Edit
                       </button>
                       
-                      <form name="delete-override-form" method="POST">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <input type="hidden" name="__action" value="delete_override">
-                        <input type="hidden" name="policy_id" value="<%= policy.id %>">
-                          <button type="button" class="dropdown-item delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
-                          <i class="fas fa-remove"></i> Delete
-                        </button>
-                      </form>
+                      
+                      <button type="button" class="dropdown-item delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>"  data-__action="elete_override" data-policy-id="<%= policy.id %>" data-csrf-token="<%= __csrf_token %>">
+                        <i class="fas fa-remove"></i> Delete
+                      </button>
+                      <!-- </form> -->
                     </div>
                   </div>
                 </td>
@@ -280,7 +295,7 @@
         </table>
       </div>
       <!-- Modal dialog for delete confirmation -->
-      <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+      <!-- <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -297,6 +312,31 @@
               <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
               <button id="confirmDeleteButton" type="button" class="btn btn-danger">Delete</button>
             </div>
+          </div>
+        </div>
+      </div> -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <form name="delete-override-form" method="POST">
+              <input type="hidden" name="__action" value="delete_override">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <input type="hidden" name="policy_id" value="">
+              <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <p>Are you sure you want to delete this Access Override? </p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button id="confirmDeleteButton" type="button" class="btn btn-danger" data-csrf-token="<%= __csrf_token %>" ">Delete</button>
+                
+              </div>
+            </form>
           </div>
         </div>
       </div>
