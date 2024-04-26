@@ -14,12 +14,12 @@ SELECT
   ) AS created_by,
   aap.credit::text AS credit,
   format_date_full_compact (
-    aap.end_date,
+    aap.end_date::timestamp AT TIME ZONE $timezone,
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS end_date,
   aap.note AS note,
   format_date_full_compact (
-    aap.start_date,
+    aap.start_date::timestamp AT TIME ZONE $timezone,
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS start_date,
   (
@@ -89,10 +89,10 @@ VALUES
     NOW(),
     $created_by,
     $credit,
-    $end_date,
+    $end_date::timestamp AT TIME ZONE $timezone,
     $group_id,
     $note,
-    $start_date,
+    $start_date::timestamp AT TIME ZONE $timezone,
     $user_id
   )
 RETURNING
@@ -102,10 +102,10 @@ RETURNING
 UPDATE assessment_access_policies
 SET
   credit = $credit,
-  end_date = $end_date,
+  end_date = $end_date::timestamp AT TIME ZONE $timezone,
   group_id = $group_id,
   note = $note,
-  start_date = $start_date,
+  start_date = $start_date::timestamp AT TIME ZONE $timezone,
   user_id = $user_id
 WHERE
   assessment_id = $assessment_id

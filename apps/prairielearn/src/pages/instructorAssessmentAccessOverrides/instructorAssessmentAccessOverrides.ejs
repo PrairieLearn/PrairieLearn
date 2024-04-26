@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <%- include('../partials/head'); %>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
 </head>
 <body>
   <script>
+    function toDatetimeLocal(date) {
+        var year = date.getFullYear();
+        var month = ('0' + (date.getMonth() + 1)).slice(-2);
+        var day = ('0' + date.getDate()).slice(-2);
+        var hours = ('0' + date.getHours()).slice(-2);
+        var minutes = ('0' + date.getMinutes()).slice(-2);
+        return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+    }
+
+   
     $(function () {
       $('[data-toggle="popover"]').popover({ sanitize: false,   container: 'body' });
 
@@ -30,12 +38,10 @@
         editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
         editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
         editOverrideForm.find('#edit-credit').val(button.data('credit'));
-        
-        var timezone = "<%= timezone %>";
-        var policy_start_date = moment.utc(button.data('start-date')).tz(timezone);       
-        var policy_start_date_string = policy_start_date.toISOString().slice(0, 16);
-        var policy_end_date = moment.utc(button.data('end-date')).tz(timezone);
-        var policy_end_date_string = policy_end_date.toISOString().slice(0, 16);
+        var policy_start_date = new Date(button.data('start-date'));     
+        var policy_start_date_string = toDatetimeLocal(policy_start_date);
+        var policy_end_date = new Date(button.data('end-date'));
+        var policy_end_date_string = toDatetimeLocal(policy_end_date);
 
         editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
         editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
@@ -97,6 +103,7 @@
                 <input type="hidden" name="__action" value="add_new_override">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= user.uid %>" required readonly>
+                <!-- <input type="hidden" name="timezone" value="<%= timezone %>"> -->
                 <% if (!assessment.group_work) { %>
                   <div class="form-group">
                     <label for="student_uid">Student UID</label>
@@ -110,11 +117,23 @@
                 <% } %>
                 <div class="form-group">
                   <label for="start_date">Start Date</label>
-                  <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+                  <!-- <input type="datetime-local" class="form-control" id="start_date" name="start_date" required> -->
+                  <div class="input-group">
+                    <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+                    <div class="input-group-append">
+                      <span class="input-group-text">(<%= timezone %>)</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label for="end_date">End Date</label>
-                  <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+                  <!-- <input type="datetime-local" class="form-control" id="end_date" name="end_date" required> -->
+                  <div class="input-group">
+                    <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+                    <div class="input-group-append">
+                      <span class="input-group-text">(<%= timezone %>)</span>
+                    </div>
+                  </div>
                   <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
                 </div>
                 <div class="form-group">
@@ -168,11 +187,23 @@
                 <% } %>
                 <div class="form-group">
                   <label for="edit-start_date">Start Date</label>
-                  <input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
+                  <div class="input-group">
+                    <input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
+                    <div class="input-group-append">
+                      <span class="input-group-text">(<%= timezone %>)</span>
+                    </div>
+                  </div>
+                  <!-- <input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required> -->
                 </div>
                 <div class="form-group">
                   <label for="edit-end_date">End Date</label>
-                  <input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
+                  <!-- <input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required> -->
+                  <div class="input-group">
+                    <input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
+                    <div class="input-group-append">
+                      <span class="input-group-text">(<%= timezone %>)</span>
+                    </div>
+                  </div>
                   <div id="edit-end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
                 </div>
                 <div class="form-group">
@@ -232,25 +263,22 @@
                     </button>
                     <% } %>
                     <div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
-                      <form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <input type="hidden" name="__action" value="edit_override">
-                        
-                          <button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-group-name="<%= policy.group_name %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">	
-                          <i class="fas fa-edit"></i> Edit
-                        </button>
-                      </form>
+                    
+                      <button type="button" class="dropdown-item edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-group-name="<%= policy.group_name %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>" data-policy-id="<%= policy.id %>">	
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                      
                       <form name="delete-override-form" method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="delete_override">
                         <input type="hidden" name="policy_id" value="<%= policy.id %>">
-                          <button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
+                          <button type="button" class="dropdown-item delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
                           <i class="fas fa-remove"></i> Delete
                         </button>
                       </form>
                     </div>
                   </div>
-                </td>						
+                </td>
               </tr>
             <% }); %>
           </tbody>
@@ -267,6 +295,7 @@
               </button>
             </div>
             <div class="modal-body">
+              
               <p>Are you sure you want to delete this Access Override? </p>
             </div>
             <div class="modal-footer">

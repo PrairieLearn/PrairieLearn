@@ -7,7 +7,7 @@ import * as error from '@prairielearn/error';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment';
 import { selectUserByUid } from '../../models/user';
 import { insertAuditLog } from '../../models/audit-log';
-import { zonedTimeToUtc } from 'date-fns-tz';
+
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -71,6 +71,7 @@ router.get(
 
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
+      timezone: res.locals.course_instance.display_timezone
     });
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
@@ -89,25 +90,24 @@ router.post(
     }
 
     if (req.body.__action === 'add_new_override') {
-      const timezone = res.locals.course_instance.display_timezone;
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
         uid: req.body.student_uid,
-        group_name: req.body.group_name,
+        group_name: req.body.group_name
       });
-
-      await runInTransactionAsync(async () => {        
+      await runInTransactionAsync(async () => {       
         const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           created_by: res.locals.authn_user.user_id,
           credit: req.body.credit,
-          end_date: zonedTimeToUtc(new Date(req.body.end_date), timezone),
+          end_date: new Date(req.body.end_date),
           group_name: req.body.group_name || null,
           note: req.body.note || null,
-          start_date: zonedTimeToUtc(new Date(req.body.start_date), timezone),
+          start_date: new Date(req.body.start_date),
           group_id: group_id || null,
           user_id: user_id || null,
+          timezone: res.locals.course_instance.display_timezone
         });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
@@ -119,6 +119,7 @@ router.post(
           new_state: JSON.stringify(inserted.rows[0]),
           row_id: inserted.rows[0].id,
         });
+        
       });
 
       res.redirect(req.originalUrl);
@@ -147,7 +148,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
-      const timezone = res.locals.course_instance.display_timezone;
+      // const timezone = res.locals.course_instance.display_timezone;
 
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
@@ -168,13 +169,14 @@ router.post(
         const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           credit: req.body.credit,
-          end_date: zonedTimeToUtc(new Date(req.body.end_date), timezone),
+          end_date: new Date(req.body.end_date),
           group_name: req.body.group_name || null,
           note: req.body.note || null,
-          start_date: zonedTimeToUtc(new Date(req.body.start_date), timezone),
+          start_date: new Date(req.body.start_date),
           group_id: group_id || null,
           user_id: user_id || null,
           assessment_access_policies_id: req.body.policy_id,
+          timezone: res.locals.course_instance.display_timezone
         });
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
