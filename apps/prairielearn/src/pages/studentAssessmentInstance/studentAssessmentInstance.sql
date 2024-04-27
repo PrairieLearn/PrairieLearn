@@ -16,10 +16,8 @@ WITH
       instance_questions AS iq
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
-      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
       iq.assessment_instance_id = $assessment_instance_id
-      AND aq.deleted_at IS NULL
       AND s.score IS NOT NULL
     GROUP BY
       v.id
@@ -39,12 +37,10 @@ WITH
       ) AS variants
     FROM
       instance_questions AS iq
-      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
     WHERE
       iq.assessment_instance_id = $assessment_instance_id
-      AND aq.deleted_at IS NULL
       AND NOT v.open
       AND NOT v.broken
     GROUP BY
