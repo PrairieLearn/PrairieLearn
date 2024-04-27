@@ -8,7 +8,18 @@
         const collapseButtonId = `variants-points-collapse-button-${instance_question_id}`;
     %>
     <% if (previous_variants.length > MAX_DISPLAYED_VARIANTS) { %>
-        <a id="<%= collapseButtonId %>" role="button" onclick="$(`.<%= collapseClass %>`).css('display','inline-block'); $(`#<%= collapseButtonId %>`).css('display','none');">&hellip;</a>
+        <a
+            id="<%= collapseButtonId %>"
+            role="button"
+            onclick="
+                // show all the hidden variant score buttons
+                document.querySelectorAll('.<%= collapseClass %>').forEach(e => e.style.display = 'inline-block');
+                // hide the ... button that triggered the expansion
+                document.querySelectorAll('#<%= collapseButtonId %>').forEach(e => e.style.display = 'none');
+            "
+        >
+            &hellip;
+        </a>
     <% } %>
     <% for (var i = 0; i < previous_variants.length; i++) { %>
         <a
