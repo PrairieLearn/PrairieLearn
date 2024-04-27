@@ -4,23 +4,21 @@
 
 <% if (previous_variants) { %>
     <%
-        const collapseId = `variants-points-collapse-${instance_question_id}`;
+        const collapseClass = `variants-points-collapse-${instance_question_id}`;
         const collapseButtonId = `variants-points-collapse-button-${instance_question_id}`;
-        let startHiddenIndex = null;
-        let endHiddenIndex = null;
     %>
     <% if (previous_variants.length > MAX_DISPLAYED_VARIANTS) { %>
-        <a id="<%= collapseButtonId %>" role="button" onclick="$(`#<%= collapseId %>`).css('display','inline'); $(`#<%= collapseButtonId %>`).css('display','none');">&hellip;</a>
-        <% startHiddenIndex = 0; %>
-        <% endHiddenIndex = previous_variants.length - MAX_DISPLAYED_VARIANTS; %>
+        <a id="<%= collapseButtonId %>" role="button" onclick="$(`.<%= collapseClass %>`).css('display','inline-block'); $(`#<%= collapseButtonId %>`).css('display','none');">&hellip;</a>
     <% } %>
     <% for (var i = 0; i < previous_variants.length; i++) { %>
-        <% if (i == startHiddenIndex) { %>
-            <span id="<%= collapseId %>" style="display:none">
-        <% } %>
-        <% if (i == endHiddenIndex) { %>
-            </span>
-        <% } %>
-        <a class="badge badge-secondary" href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"><%= Math.floor(previous_variants[i].max_submission_score * 100) + "%"  %></a>
+        <a
+            class="badge badge-secondary <%= collapseClass %>"
+            <% if (i < previous_variants.length - MAX_DISPLAYED_VARIANTS) { %>
+                style="display: none"
+            <% } %>
+            href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"
+        >
+            <%= Math.floor(previous_variants[i].max_submission_score * 100) + "%"  %>
+        </a>
     <% } %>
 <% } %>
