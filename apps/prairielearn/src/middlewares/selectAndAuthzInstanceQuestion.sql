@@ -158,7 +158,7 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
   LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
-  LEFT JOIN instance_question_variants AS iqv ON (iqv.instance_question_id = iq.id)
+  LEFT JOIN instance_question_variants AS iqv ON (TRUE)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,
