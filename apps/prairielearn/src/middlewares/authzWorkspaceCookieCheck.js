@@ -1,8 +1,10 @@
-const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
-const { config } = require('../lib/config');
-const { idsEqual } = require('../lib/id');
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { config } from '../lib/config';
+import { idsEqual } from '../lib/id';
 
-module.exports = (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   // This middleware looks for a workspace_id-specific cookie and,
   // if found, skips the rest of authn/authz. The special cookie is
   // set by middlewares/authzWorkspaceCookieSet.js
@@ -23,4 +25,4 @@ module.exports = (req, res, next) => {
 
   // otherwise we fall through and proceed to the full authn/authz stack
   next();
-};
+});

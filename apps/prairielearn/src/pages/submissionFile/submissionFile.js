@@ -1,12 +1,12 @@
 // @ts-check
-const express = require('express');
+import { Router } from 'express';
 const asyncHandler = require('express-async-handler');
-const { isBinaryFile } = require('isbinaryfile');
-const mime = require('mime');
-const sqldb = require('@prairielearn/postgres');
+import { isBinaryFile } from 'isbinaryfile';
+import * as mime from 'mime';
+import * as sqldb from '@prairielearn/postgres';
 
-const { selectCourseById } = require('../../models/course');
-const { selectQuestionById } = require('../../models/question');
+import { selectCourseById } from '../../models/course';
+import { selectQuestionById } from '../../models/question';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -29,8 +29,8 @@ async function guessMimeType(name, buffer) {
   return isBinary ? 'application/octet-stream' : 'text/plain';
 }
 
-module.exports = function (options = { publicEndpoint: false }) {
-  const router = express.Router({ mergeParams: true });
+export default function (options = { publicEndpoint: false }) {
+  const router = Router({ mergeParams: true });
 
   router.get(
     '/*',
@@ -44,6 +44,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           res.locals.course.id !== res.locals.question.course_id
         ) {
           res.sendStatus(404);
+          return;
         }
       }
 
@@ -79,4 +80,4 @@ module.exports = function (options = { publicEndpoint: false }) {
     }),
   );
   return router;
-};
+}

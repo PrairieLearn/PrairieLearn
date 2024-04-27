@@ -1,8 +1,10 @@
-const { generateSignedToken } = require('@prairielearn/signed-token');
-const { config } = require('../lib/config');
-const { shouldSecureCookie, setCookie } = require('../lib/cookie');
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import { generateSignedToken } from '@prairielearn/signed-token';
+import { config } from '../lib/config';
+import { shouldSecureCookie, setCookie } from '../lib/cookie';
 
-module.exports = (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and
   // are authorized to access res.locals.workspace_id. We will set a
   // short-lived cookie specific to this workspace_id that will let
@@ -22,4 +24,4 @@ module.exports = (req, res, next) => {
     secure: shouldSecureCookie(req),
   });
   next();
-};
+});

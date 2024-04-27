@@ -1,8 +1,14 @@
-const { logger } = require('@prairielearn/logger');
+// @ts-check
+import { logger } from '@prairielearn/logger';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   if (req.method !== 'OPTIONS') {
-    var access = {
+    logger.verbose('request', {
       timestamp: new Date().toISOString(),
       ip: req.ip,
       forwardedIP: req.headers['x-forwarded-for'],
@@ -13,8 +19,7 @@ module.exports = function (req, res, next) {
       params: req.params,
       body: req.body,
       response_id: res.locals.response_id,
-    };
-    logger.verbose('request', access);
+    });
   }
   next();
-};
+}

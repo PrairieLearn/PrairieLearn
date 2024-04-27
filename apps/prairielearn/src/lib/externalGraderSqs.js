@@ -3,7 +3,7 @@ import * as async from 'async';
 import { EventEmitter } from 'events';
 import * as fs from 'fs-extra';
 import * as tar from 'tar';
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';

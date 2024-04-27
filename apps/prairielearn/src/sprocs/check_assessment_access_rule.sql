@@ -12,8 +12,7 @@ CREATE FUNCTION
 BEGIN
     authorized := TRUE;
 
-    IF (assessment_access_rule.mode IS NOT NULL
-        AND assessment_access_rule.mode != 'SEB') THEN
+    IF (assessment_access_rule.mode IS NOT NULL) THEN
         IF mode IS NULL OR mode != assessment_access_rule.mode THEN
             authorized := FALSE;
         END IF;

@@ -1,12 +1,11 @@
 // @ts-check
-import { promisify } from 'util';
 import * as _ from 'lodash';
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 
 import * as error from '@prairielearn/error';
 
-const LogPageView = require('../../middlewares/logPageView');
+import { logPageView } from '../../middlewares/logPageView';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -20,7 +19,6 @@ import { idsEqual } from '../../lib/id';
 import { insertIssue } from '../../lib/issues';
 import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
 
-const logPageView = promisify(LogPageView('studentInstanceQuestion'));
 const router = express.Router();
 
 /**
@@ -288,7 +286,7 @@ router.get(
         : req.query.variant_id;
     await getAndRenderVariant(variant_id, null, res.locals);
 
-    await logPageView(req, res);
+    await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
 
     if (

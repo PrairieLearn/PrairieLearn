@@ -13,10 +13,10 @@
 // changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
 // in order to update the file in `dist`.
 
-const path = require('path');
-const readline = require('readline');
+import * as path from 'node:path';
+import { createInterface } from 'node:readline';
 
-const requireFrontend = require('../lib/require-frontend');
+import requireFrontend from '../lib/require-frontend';
 
 /**
  * Attempts to load the server module that should be used for a particular
@@ -125,65 +125,65 @@ function getLineOnce(rl) {
   });
 }
 
-if (require.main === module) {
-  // Redirect `stdout` to `stderr` so that we can ensure that no
-  // user code can write to `stdout`; we need to use `stdout` to send results
-  // instead.
-  const stdoutWrite = process.stdout.write.bind(process.stdout);
-  process.stdout.write = process.stderr.write.bind(process.stderr);
-
-  (async () => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    const line = await getLineOnce(rl);
-
-    if (!line) {
-      throw new Error('Did not get data from parent process');
-    }
-
-    // Close the reader to empty the event loop.
-    rl.close();
-
-    const input = JSON.parse(line);
-
-    const {
-      // These first four are required.
-      questionServerPath,
-      func,
-      coursePath,
-      question,
-
-      // Depending on which function is being invoked, these may or may not
-      // be present.
-      variant_seed,
-      variant,
-      submission,
-    } = input;
-
-    const server = await loadServer(questionServerPath, coursePath);
-
-    let data;
-    if (func === 'generate') {
-      data = generate(server, coursePath, question, variant_seed);
-    } else if (func === 'grade') {
-      data = grade(server, coursePath, submission, variant, question);
-    } else {
-      throw new Error(`Unknown function: ${func}`);
-    }
-
-    // Write data back to invoking process.
-    stdoutWrite(JSON.stringify({ val: data, present: true }), 'utf-8');
-    stdoutWrite('\n');
-
-    // If we get here, everything went well - exit cleanly.
-    process.exit(0);
-  })().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-} else {
+if (require.main !== module) {
   throw new Error('This script is designed to be run as the main process');
 }
+
+// Redirect `stdout` to `stderr` so that we can ensure that no
+// user code can write to `stdout`; we need to use `stdout` to send results
+// instead.
+const stdoutWrite = process.stdout.write.bind(process.stdout);
+process.stdout.write = process.stderr.write.bind(process.stderr);
+
+(async () => {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const line = await getLineOnce(rl);
+
+  if (!line) {
+    throw new Error('Did not get data from parent process');
+  }
+
+  // Close the reader to empty the event loop.
+  rl.close();
+
+  const input = JSON.parse(line);
+
+  const {
+    // These first four are required.
+    questionServerPath,
+    func,
+    coursePath,
+    question,
+
+    // Depending on which function is being invoked, these may or may not
+    // be present.
+    variant_seed,
+    variant,
+    submission,
+  } = input;
+
+  const server = await loadServer(questionServerPath, coursePath);
+
+  let data;
+  if (func === 'generate') {
+    data = generate(server, coursePath, question, variant_seed);
+  } else if (func === 'grade') {
+    data = grade(server, coursePath, submission, variant, question);
+  } else {
+    throw new Error(`Unknown function: ${func}`);
+  }
+
+  // Write data back to invoking process.
+  stdoutWrite(JSON.stringify({ val: data, present: true }), 'utf-8');
+  stdoutWrite('\n');
+
+  // If we get here, everything went well - exit cleanly.
+  process.exit(0);
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

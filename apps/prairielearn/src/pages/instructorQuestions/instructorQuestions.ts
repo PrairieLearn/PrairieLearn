@@ -1,7 +1,5 @@
-import ERR = require('async-stacktrace');
 import { Router } from 'express';
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { QuestionAddEditor } from '../../lib/editors';
 import * as fs from 'fs-extra';
@@ -44,33 +42,30 @@ router.get(
   }),
 );
 
-router.post('/', (req, res, next) => {
-  if (req.body.__action === 'add_question') {
-    const editor = new QuestionAddEditor({
-      locals: res.locals,
-    });
-    editor.canEdit((err) => {
-      if (ERR(err, next)) return;
-      editor.doEdit((err, job_sequence_id) => {
-        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-        } else {
-          sqldb.queryOneRow(
-            sql.select_question_id_from_uuid,
-            { uuid: editor.uuid, course_id: res.locals.course.id },
-            (err, result) => {
-              if (ERR(err, next)) return;
-              res.redirect(
-                res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings',
-              );
-            },
-          );
-        }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'add_question') {
+      const editor = new QuestionAddEditor({
+        locals: res.locals,
       });
-    });
-  } else {
-    next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
-  }
-});
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+
+      const result = await sqldb.queryOneRowAsync(sql.select_question_id_from_uuid, {
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
+      res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings');
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
 export default router;
