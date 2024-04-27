@@ -21,8 +21,6 @@
         <% if (i == endHiddenIndex) { %>
             </span>
         <% } %>
-        <span class="badge badge-secondary">
-            <a class="text-white" href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"><%= Math.floor(previous_variants[i].max_submission_score * 100) + "%"  %></a> 
-        </span>
+        <a class="badge badge-secondary" href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"><%= Math.floor(previous_variants[i].max_submission_score * 100) + "%"  %></a>
     <% } %>
 <% } %>
