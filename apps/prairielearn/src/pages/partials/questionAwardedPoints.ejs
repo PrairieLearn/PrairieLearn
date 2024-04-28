@@ -14,7 +14,7 @@
             aria-label="Show older variants"
             onclick="
                 // show all the hidden variant score buttons
-                document.querySelectorAll('.<%= collapseClass %>').forEach(e => e.style.display = 'inline-block');
+                document.querySelectorAll('.<%= collapseClass %>').forEach(e => e.style.display = '');
                 // hide the ... button that triggered the expansion
                 document.querySelectorAll('#<%= collapseButtonId %>').forEach(e => e.style.display = 'none');
             "
