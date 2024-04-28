@@ -8,9 +8,9 @@
         const collapseButtonId = `variants-points-collapse-button-${instance_question_id}`;
     %>
     <% if (previous_variants.length > MAX_DISPLAYED_VARIANTS) { %>
-        <a
+        <button
             id="<%= collapseButtonId %>"
-            role="button"
+            class="bg-white text-body p-0 m-0 border-0 rounded-0"
             aria-label="Show older variants"
             onclick="
                 // show all the hidden variant score buttons
@@ -20,7 +20,7 @@
             "
         >
             &hellip;
-        </a>
+        </button>
     <% } %>
     <% for (var i = 0; i < previous_variants.length; i++) { %>
         <a
