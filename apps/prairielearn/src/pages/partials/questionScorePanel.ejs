@@ -14,7 +14,7 @@
       <% } %>
       <% if (assessment.type == 'Homework') { %>
       <tr>
-        <td colspan="2" style="white-space: normal;">
+        <td colspan="2" class="text-wrap">
           Previous variants:
           <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %>
         </td>
