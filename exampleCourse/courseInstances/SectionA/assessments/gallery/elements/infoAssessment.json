@@ -8,7 +8,6 @@
         {
             "title": "Submission Elements",
             "questions": [
-                {"id": "@cs374/cs225/graph_modeling/describe_target_graph",           "points": 2, "maxPoints": 10},
                 {"id": "element/multipleChoice",           "points": 2, "maxPoints": 10},
                 {"id": "element/checkbox",                 "points": 2, "maxPoints": 10},
                 {"id": "element/numberInput",              "points": 2, "maxPoints": 10},
