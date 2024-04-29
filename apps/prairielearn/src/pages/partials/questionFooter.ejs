@@ -68,7 +68,7 @@
           <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a>
           <% } else if (showTryAgainButton) { %>
             <a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">
-              <%= instance_question_info.previous_variants.some((variant) => variant.open) ? "Go to latest variant" : "Try a new variant" %>
+              <%= instance_question_info.previous_variants?.some((variant) => variant.open) ? "Go to latest variant" : "Try a new variant" %>
             </a>
           <% } else if (hasAttemptsOtherVariants) { %>
           <small class="font-italic align-self-center">Additional attempts available with new variants</small>
