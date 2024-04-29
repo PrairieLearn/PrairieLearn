@@ -8,6 +8,9 @@ import { config } from '../../lib/config';
 import { APP_ROOT_PATH } from '../../lib/paths';
 import { HttpStatusError } from '@prairielearn/error';
 import { getQuestionCourse } from '../../lib/question-variant';
+import { selectQuestionById } from '../../models/question';
+import { selectVariantById } from '../../models/variant';
+import { idsEqual } from '../../lib/id';
 
 const router = Router({ mergeParams: true });
 
@@ -58,11 +61,19 @@ router.get(
 
     // http://localhost:3000/pl/course_instance/40/instructor/question/202/preview
 
+    // refer to #9776 in the PR   https://github.com/PrairieLearn/PrairieLearn/pull/9776
+
     let elementFilesDir;
     if (res.locals.course) {
       // Files should be served from the course directory
-      console.log(res.locals.question);
-      const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+      const variant = await selectVariantById(req.params.variant_id);
+      if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
+        // the existence of the variant within the course validates that this course has sharing permissions on this question
+        throw new HttpStatusError(404, 'Not Found');
+      }
+      const question = await selectQuestionById(variant.question_id);
+      const question_course = await getQuestionCourse(question, res.locals.course);
+
       const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
       await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
 

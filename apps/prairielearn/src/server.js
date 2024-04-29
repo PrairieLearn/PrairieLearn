@@ -790,15 +790,18 @@ export function initExpress() {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
+    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElements/:cachebuster',
+    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/instructor/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
-    '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    // TODO make sure you validate the permissions somehow!!! should you instead use the question_instance_id or variant_id so
+    // you can validate that it existss??? meaning that the people actually have permissions to be using these element files???
+    // variant ID should be fine, you can get the course id from that lookup
+    '/pl/course/:course_id(\\d+)/variant/:variant_id(\\d+)/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
@@ -822,15 +825,15 @@ export function initExpress() {
   // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles').default);
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/elements',
+    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/elements',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
+    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/instructor/elements',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
-    '/pl/course/:course_id(\\d+)/elements',
+    '/pl/course/:course_id(\\d+)/variant/:variant_id(\\d+)/elements',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
