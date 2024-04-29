@@ -48,6 +48,17 @@ export function defaultTabulator(
     paginationSize: 50,
     paginationSizeSelector: [10, 20, 50, 100, 200, 500, true],
     ...options,
+    langs: {
+      default: {
+        pagination: {
+          first: '<i class="bi bi-chevron-bar-left"></i>',
+          last: '<i class="bi bi-chevron-bar-right"></i>',
+          prev: '<i class="bi bi-chevron-left"></i>',
+          next: '<i class="bi bi-chevron-right"></i>',
+        },
+      },
+      ...options?.langs,
+    },
   });
 
   if (options.columnVisibilityDropdown) {
