@@ -790,6 +790,18 @@ export function initExpress() {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles').default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles').default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles').default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles').default,
   );
@@ -821,6 +833,18 @@ export function initExpress() {
   //
   // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles').default);
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/elements',
+    require('./pages/elementFiles/elementFiles').default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
+    require('./pages/elementFiles/elementFiles').default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/elements',
+    require('./pages/elementFiles/elementFiles').default,
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/elements',
     require('./pages/elementFiles/elementFiles').default,

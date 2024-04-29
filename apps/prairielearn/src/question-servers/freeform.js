@@ -1541,7 +1541,7 @@ export async function render(
         styleUrls.push(
           assets.courseElementAssetPath(
             course.commit_hash,
-            locals.urlPrefix + `/variant/${variant.id}`,
+            locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
             file,
           ),
         ),
@@ -1550,7 +1550,7 @@ export async function render(
         scriptUrls.push(
           assets.courseElementAssetPath(
             course.commit_hash,
-            locals.urlPrefix + `/variant/${variant.id}`,
+            locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
             file,
           ),
         ),
@@ -1581,7 +1581,7 @@ export async function render(
           ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
             assets.courseElementAssetPath(
               course.commit_hash,
-              locals.urlPrefix + `/variant/${variant.id}`,
+              locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
               file,
             ),
           ),
