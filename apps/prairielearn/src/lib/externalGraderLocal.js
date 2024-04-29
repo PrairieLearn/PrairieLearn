@@ -11,7 +11,6 @@ import { logger } from '@prairielearn/logger';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon';
 import { config } from './config';
 import * as sqldb from '@prairielearn/postgres';
-import { promisify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -43,7 +42,7 @@ export class ExternalGraderLocal {
       results.received_time = new Date().toISOString();
       emitter.emit('received', results.received_time);
 
-      await promisify(buildDirectory)(dir, submission, variant, question, course);
+      await buildDirectory(dir, submission, variant, question, course);
 
       if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.
