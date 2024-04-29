@@ -48,11 +48,11 @@ export function AdministratorInstitutionCourseInstance({
             </li>
             <li class="breadcrumb-item">
               <a href="/pl/administrator/institution/${institution.id}/course/${course.id}">
-                ${course.title} (${course.short_name})
+                ${course.short_name}: ${course.title}
               </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-              ${course_instance.long_name} (${course_instance.short_name})
+              ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
             </li>
           </ol>
         </nav>

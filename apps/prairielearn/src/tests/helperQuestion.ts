@@ -1,4 +1,3 @@
-import * as util from 'util';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
@@ -694,5 +693,3 @@ export async function checkNoIssuesForLastVariantAsync() {
       JSON.stringify(result.rows, null, '    '),
   );
 }
-
-export const checkNoIssuesForLastVariant = util.callbackify(checkNoIssuesForLastVariantAsync);

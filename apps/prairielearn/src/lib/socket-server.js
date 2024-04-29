@@ -3,10 +3,11 @@ import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { logger } from '@prairielearn/logger';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 
 import { config } from './config';
+
+const debug = debugfn('prairielearn:socket-server');
 
 /**
  * @param {Redis} client

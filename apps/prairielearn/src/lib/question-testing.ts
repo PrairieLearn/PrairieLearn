@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as async from 'async';
 import jsonStringifySafe = require('json-stringify-safe');
 
@@ -215,7 +215,6 @@ async function testVariant(
  * @param variant_course - The course for the variant.
  * @param authn_user_id - The currently authenticated user.
  * @param test_type - The type of test to run.
- * @returns
  */
 async function testQuestion(
   question: Question,

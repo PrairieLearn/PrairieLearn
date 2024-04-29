@@ -1,10 +1,10 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
 const SearchString = require('search-string');
-const { z } = require('zod');
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as paginate from '../../lib/paginate';

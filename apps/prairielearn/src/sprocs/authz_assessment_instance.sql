@@ -14,7 +14,6 @@ CREATE FUNCTION
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT password text,           -- Password (if any) for this assessment.
         OUT mode enum_mode,
-        OUT seb_config JSONB,
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is visible but not active
@@ -43,7 +42,6 @@ BEGIN
     password := assessment_result.password;
     access_rules := assessment_result.access_rules;
     mode := assessment_result.mode;
-    seb_config := assessment_result.seb_config;
     show_closed_assessment := assessment_result.show_closed_assessment;
     show_closed_assessment_score := assessment_result.show_closed_assessment_score;
     active := assessment_result.active;

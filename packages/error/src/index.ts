@@ -42,14 +42,14 @@ export function makeWithInfo(message: string, info: string): ErrorWithInfo {
 }
 
 export function addData(err: any, data: any): ErrorWithData {
-  const newErr: ErrorWithData = _(err).isError() ? err : new Error(String(err));
+  const newErr = (_.isError(err) ? err : new Error(String(err))) as ErrorWithData;
   newErr.data = newErr.data || {};
   _.assign(newErr.data, data);
   return newErr;
 }
 
 export function newMessage(err: any, newMsg: string): ErrorWithData {
-  const newErr: ErrorWithData = _(err).isError() ? err : new Error(String(err));
+  const newErr = (_.isError(err) ? err : new Error(String(err))) as ErrorWithData;
   newErr.data = newErr.data || {};
   newErr.data._previousMessages = newErr.data._previousMessages || [];
   newErr.data._previousMessages.splice(0, 0, newErr.message);
