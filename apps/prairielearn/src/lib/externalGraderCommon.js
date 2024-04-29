@@ -1,8 +1,7 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 import * as _ from 'lodash';
-import * as async from 'async';
-import * as fs from 'fs-extra';
+import * as fsExtra from 'fs-extra';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
 import { logger } from '@prairielearn/logger';
@@ -21,169 +20,85 @@ export function getJobDirectory(jobId) {
  * Constructs a directory of files to be used for grading.
  *
  * @param {string} dir
- * @param {any} submission
- * @param {any} variant
- * @param {any} question
- * @param {any} course
+ * @param {import('./db-types').Submission} submission
+ * @param {import('./db-types').Variant} variant
+ * @param {import('./db-types').Question} question
+ * @param {import('./db-types').Course} course
  */
-export function buildDirectory(dir, submission, variant, question, course, callback) {
+export async function buildDirectory(dir, submission, variant, question, course) {
   const coursePath = getRuntimeDirectoryForCourse(course);
-  async.series(
-    [
-      (callback) => {
-        // Attempt to remove existing directory first
-        fs.remove(dir, () => {
-          // Ignore error for now
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdirs(dir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'serverFilesCourse'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'tests'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'student'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'data'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        // Copy all specified files/directories into serverFilesCourse/
-        if (question.external_grading_files) {
-          async.each(
-            question.external_grading_files,
-            (file, callback) => {
-              const src = path.join(coursePath, 'serverFilesCourse', file);
-              const dest = path.join(dir, 'serverFilesCourse', file);
-              fs.copy(src, dest, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-              });
-            },
-            (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            },
-          );
-        } else {
-          callback(null);
-        }
-      },
-      (callback) => {
-        // This is temporary while /grade/shared is deprecated but still supported
-        // TODO remove this when we remove support for /grade/shared
-        const src = path.join(dir, 'serverFilesCourse');
-        const dest = path.join(dir, 'shared');
-        fs.copy(src, dest, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        // Tests might not be specified, only copy them if they exist
-        const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
-        fs.access(testsDir, fs.constants.R_OK, (err) => {
-          if (!err) {
-            fs.copy(testsDir, path.join(dir, 'tests'), (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          } else {
-            logger.warn(
-              `No tests directory found for ${question.qid}; maybe you meant to specify some?`,
-            );
-            callback(null);
-          }
-        });
-      },
-      (callback) => {
-        if (submission.submitted_answer._files) {
-          async.each(
-            submission.submitted_answer._files,
-            (file, callback) => {
-              if (!file.name) {
-                return callback(new Error("File was missing 'name' property."));
-              }
-              if (file.contents == null) {
-                return callback(new Error("File was missing 'contents' property."));
-              }
+  try {
+    // Attempt to remove existing directory first
+    await fsPromises.rm(dir, { force: true, recursive: true });
+    await fsPromises.mkdir(dir, { recursive: true });
+    await fsPromises.mkdir(path.join(dir, 'serverFilesCourse'));
+    await fsPromises.mkdir(path.join(dir, 'tests'));
+    await fsPromises.mkdir(path.join(dir, 'student'));
+    await fsPromises.mkdir(path.join(dir, 'data'));
 
-              // Files are expected to be base-64 encoded
-              let decodedContents = Buffer.from(file.contents, 'base64');
-              // Check that the file name does not try to navigate up in
-              // the directory hierarchy
-              const fullPath = path.join(dir, 'student', file.name);
-              if (!contains(path.join(dir, 'student'), fullPath)) {
-                callback(new Error('Invalid filename'));
-                return;
-              }
-              // The version of ensureDir provided by fs-extra
-              // automatically creates intermediate paths recursively.
-              const targetDir = path.dirname(fullPath);
-              fs.ensureDir(targetDir, (err) => {
-                if (ERR(err, callback)) return;
-                fs.writeFile(fullPath, decodedContents, (err) => {
-                  if (ERR(err, callback)) return;
-                  callback(null);
-                });
-              });
-            },
-            function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            },
-          );
-        } else {
-          callback(null);
-        }
-      },
-      (callback) => {
-        // This uses the same fields passed v3's server.grade functions
-        const data = {
-          params: variant.params,
-          correct_answers: variant.true_answer,
-          submitted_answers: submission.submitted_answer,
-          format_errors: submission.format_errors,
-          partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
-          score: submission.score == null ? 0 : submission.score,
-          feedback: submission.feedback == null ? {} : submission.feedback,
-          variant_seed: parseInt(variant.variant_seed, 36),
-          options: variant.options || {},
-          raw_submitted_answers: submission.raw_submitted_answer,
-          gradable: submission.gradable,
-        };
-        fs.writeJSON(path.join(dir, 'data', 'data.json'), data, callback);
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) {
-        return logger.error(`Error setting up ${dir}`);
+    // Copy all specified files/directories into serverFilesCourse/
+    for (const file of question.external_grading_files ?? []) {
+      const src = path.join(coursePath, 'serverFilesCourse', file);
+      const dest = path.join(dir, 'serverFilesCourse', file);
+      await fsExtra.copy(src, dest);
+    }
+
+    // This is temporary while /grade/shared is deprecated but still supported
+    // TODO remove this when we remove support for /grade/shared
+    const src = path.join(dir, 'serverFilesCourse');
+    const dest = path.join(dir, 'shared');
+    await fsExtra.copy(src, dest);
+
+    if (question.directory != null) {
+      const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
+      await fsExtra.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
+        // Tests might not be specified, only copy them if they exist
+        if (err.code !== 'ENOENT') throw err;
+      });
+    }
+
+    for (const file of submission.submitted_answer?._files ?? []) {
+      if (!file.name) {
+        throw new Error("File was missing 'name' property.");
+      }
+      if (file.contents == null) {
+        throw new Error("File was missing 'contents' property.");
       }
 
-      logger.verbose(`Successfully set up ${dir}`);
-      callback(null);
-    },
-  );
+      // Files are expected to be base-64 encoded
+      let decodedContents = Buffer.from(file.contents, 'base64');
+      // Check that the file name does not try to navigate up in
+      // the directory hierarchy
+      const fullPath = path.join(dir, 'student', file.name);
+      if (!contains(path.join(dir, 'student'), fullPath)) {
+        throw new Error('Invalid filename');
+      }
+
+      await fsPromises.mkdir(path.dirname(fullPath), { recursive: true });
+      await fsPromises.writeFile(fullPath, decodedContents);
+    }
+
+    // This uses the same fields passed v3's server.grade functions
+    const data = {
+      params: variant.params,
+      correct_answers: variant.true_answer,
+      submitted_answers: submission.submitted_answer,
+      format_errors: submission.format_errors,
+      partial_scores: submission.partial_scores ?? {},
+      score: submission.score ?? 0,
+      feedback: submission.feedback ?? {},
+      variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+      options: variant.options || {},
+      raw_submitted_answers: submission.raw_submitted_answer,
+      gradable: submission.gradable,
+    };
+    await fsPromises.writeFile(path.join(dir, 'data', 'data.json'), JSON.stringify(data));
+
+    logger.verbose(`Successfully set up ${dir}`);
+  } catch (err) {
+    logger.error(`Error setting up ${dir}`);
+    throw err;
+  }
 }
 
 /**
