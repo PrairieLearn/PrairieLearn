@@ -29,6 +29,8 @@ WITH
         jsonb_build_object(
           'variant_id',
           v.id,
+          'open',
+          v.open,
           'max_submission_score',
           COALESCE(vmss.max_submission_score, 0)
         )
@@ -41,7 +43,6 @@ WITH
       LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
     WHERE
       iq.assessment_instance_id = $assessment_instance_id
-      AND NOT v.open
       AND NOT v.broken
     GROUP BY
       iq.id

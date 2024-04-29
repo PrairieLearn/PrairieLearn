@@ -53,6 +53,7 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   previous_variants: z.array(
     z.object({
       variant_id: IdSchema,
+      open: z.boolean(),
       max_submission_score: z.number(),
     }),
   ),
