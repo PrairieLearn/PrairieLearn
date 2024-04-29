@@ -230,9 +230,9 @@ function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
             class="custom-file-input"
             id="uploadInstanceQuestionScoresFileInput"
           />
-          <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput"
-            >Choose CSV file</label
-          >
+          <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput">
+            Choose CSV file
+          </label>
         </div>
       </div>
       <div class="d-flex justify-content-end">
