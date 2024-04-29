@@ -11,7 +11,7 @@ RUN apt-get update && \
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
 
 COPY requirements.txt /requirements.txt
-RUN pip3 install --no-cache-dir -r /requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
 
 ENV LANG=en_US.UTF-8
 ENV LC_LANG=en_US.UTF-8
