@@ -1,9 +1,24 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
 import { Modal } from '../../components/Modal.html';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
 
-export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<string, any> }) {
+export const UploadJobSequenceSchema = z.object({
+  job_sequence: JobSequenceSchema,
+  start_date_formatted: z.string(),
+  user_uid: UserSchema.shape.uid,
+});
+type UploadJobSequence = z.infer<typeof UploadJobSequenceSchema>;
+
+export function InstructorAssessmentUploads({
+  resLocals,
+  uploadJobSequences,
+}: {
+  resLocals: Record<string, any>;
+  uploadJobSequences: UploadJobSequence[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -31,8 +46,8 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
           )}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                ${uploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
-                ${uploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
+                ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
+                ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
               `
             : ''}
 
@@ -64,7 +79,7 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                             </a>
                           </p>
                           <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                            ${csvHelpInstanceQuestionScores()}
+                            ${CsvHelpInstanceQuestionScores()}
                           </div>
                         </td>
                       </tr>
@@ -88,7 +103,7 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                             >
                           </p>
                           <div class="collapse" id="uploadAssessmentScoresHelp">
-                            ${csvHelpAssessmentInstanceScores()}
+                            ${CsvHelpAssessmentInstanceScores()}
                           </div>
                         </td>
                       </tr>
@@ -110,8 +125,8 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.upload_job_sequences && resLocals.upload_job_sequences.length > 0
-                    ? resLocals.upload_job_sequences.map((job_sequence) => {
+                  ${uploadJobSequences && uploadJobSequences.length > 0
+                    ? uploadJobSequences.map((job_sequence) => {
                         return html`
                           <tr>
                             <td>${job_sequence.job_sequence.number}</td>
@@ -149,7 +164,7 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
   `.toString();
 }
 
-function csvHelpInstanceQuestionScores() {
+function CsvHelpInstanceQuestionScores() {
   return html`
     <p>
       Upload a CSV file in the format of the
@@ -183,7 +198,7 @@ student2@example.com,1,matrixMultiply,100,Great job!</pre
   `;
 }
 
-function csvHelpAssessmentInstanceScores() {
+function CsvHelpAssessmentInstanceScores() {
   return html`
     <p>Upload a CSV file like this:</p>
     <pre class="ml-4">
@@ -215,13 +230,13 @@ greatgroup,1,85</pre
   `;
 }
 
-function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string }) {
+function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'upload-instance-question-scores-form',
     title: 'Upload new question scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${csvHelpInstanceQuestionScores()}
+      ${CsvHelpInstanceQuestionScores()}
       <div class="form-group">
         <div class="custom-file">
           <input
@@ -247,13 +262,13 @@ function uploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
   });
 }
 
-function uploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string }) {
+function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'upload-assessment-instance-scores-form',
     title: 'Upload new total scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${csvHelpAssessmentInstanceScores()}
+      ${CsvHelpAssessmentInstanceScores()}
       <div class="form-group">
         <div class="custom-file">
           <input

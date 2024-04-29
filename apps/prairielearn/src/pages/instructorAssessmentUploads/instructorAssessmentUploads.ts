@@ -2,14 +2,15 @@ import asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import {
   uploadInstanceQuestionScores,
   uploadAssessmentInstanceScores,
 } from '../../lib/score-upload';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
-import { InstructorAssessmentUploads } from './instructorAssessmentUploads.html';
+import {
+  InstructorAssessmentUploads,
+  UploadJobSequencesSchema,
+} from './instructorAssessmentUploads.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -20,17 +21,12 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.locals.upload_job_sequences = await sqldb.queryRows(
+    const uploadJobSequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },
-      z.object({
-        job_sequence: JobSequenceSchema,
-        start_date_formatted: z.string(),
-        user_uid: UserSchema.shape.uid,
-      }),
+      UploadJobSequencesSchema,
     );
-    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    res.send(InstructorAssessmentUploads({ resLocals: res.locals }));
+    res.send(InstructorAssessmentUploads({ resLocals: res.locals, uploadJobSequences }));
   }),
 );
 
