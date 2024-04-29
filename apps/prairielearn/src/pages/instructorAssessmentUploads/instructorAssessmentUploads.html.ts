@@ -59,9 +59,9 @@ export function InstructorAssessmentUploads({ resLocals }: { resLocals: Record<s
                         <td>
                           <p>
                             Upload a CSV file to set per-question scores for individual students.
-                            <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp"
-                              >Show details...</a
-                            >
+                            <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
+                              Show details...
+                            </a>
                           </p>
                           <div class="collapse" id="uploadInstanceQuestionScoresHelp">
                             ${csvHelpInstanceQuestionScores()}
