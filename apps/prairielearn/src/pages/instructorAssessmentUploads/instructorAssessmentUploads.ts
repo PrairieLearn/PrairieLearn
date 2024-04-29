@@ -9,7 +9,7 @@ import {
 } from '../../lib/score-upload';
 import {
   InstructorAssessmentUploads,
-  UploadJobSequencesSchema,
+  UploadJobSequenceSchema,
 } from './instructorAssessmentUploads.html';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.get(
     const uploadJobSequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },
-      UploadJobSequencesSchema,
+      UploadJobSequenceSchema,
     );
     res.send(InstructorAssessmentUploads({ resLocals: res.locals, uploadJobSequences }));
   }),
