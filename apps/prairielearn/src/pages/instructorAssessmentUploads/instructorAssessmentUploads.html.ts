@@ -50,117 +50,138 @@ export function InstructorAssessmentUploads({
                 ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
               `
             : ''}
-
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Uploads
-            </div>
-
-            ${resLocals.authz_data.has_course_instance_permission_edit
-              ? html`
-                  <div class="table-responsive pb-0">
-                    <table class="table">
-                      <tr>
-                        <td style="width: 1%">
-                          <button
-                            type="button"
-                            class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
-                            data-target="#upload-instance-question-scores-form"
-                          >
-                            <i class="fas fa-upload"></i> Upload new question scores
-                          </button>
-                        </td>
-                        <td>
-                          <p>
-                            Upload a CSV file to set per-question scores for individual students.
-                            <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
-                              Show details...
-                            </a>
-                          </p>
-                          <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                            ${CsvHelpInstanceQuestionScores()}
-                          </div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="width: 1%">
-                          <button
-                            type="button"
-                            class="btn btn-primary text-nowrap"
-                            data-toggle="modal"
-                            data-target="#upload-assessment-instance-scores-form"
-                          >
-                            <i class="fas fa-upload"></i> Upload new total scores
-                          </button>
-                        </td>
-                        <td>
-                          <p>
-                            Upload a CSV file to set the total assessment score for individual
-                            students.
-                            <a data-toggle="collapse" href="#uploadAssessmentScoresHelp"
-                              >Show details...</a
-                            >
-                          </p>
-                          <div class="collapse" id="uploadAssessmentScoresHelp">
-                            ${CsvHelpAssessmentInstanceScores()}
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-                `
-              : ''}
-
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${uploadJobSequences && uploadJobSequences.length > 0
-                    ? uploadJobSequences.map((job_sequence) => {
-                        return html`
-                          <tr>
-                            <td>${job_sequence.job_sequence.number}</td>
-                            <td>${job_sequence.start_date_formatted}</td>
-                            <td>${job_sequence.job_sequence.description}</td>
-                            <td>${job_sequence.user_uid}</td>
-                            <td>
-                              ${renderEjs(__filename, "<%- include('../partials/jobStatus'); %>", {
-                                status: job_sequence.job_sequence.status,
-                              })}
-                            </td>
-                            <td>
-                              <a
-                                href="${resLocals.urlPrefix}/jobSequence/${job_sequence.job_sequence
-                                  .id}"
-                                class="btn btn-xs btn-info"
-                                >Details</a
-                              >
-                            </td>
-                          </tr>
-                        `;
-                      })
-                    : html`
-                        <tr>
-                          <td colspan="6">No previous uploads.</td>
-                        </tr>
-                      `}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          ${AssessmentUploadCard({
+            assessmentSetName: resLocals.assessment_set.name,
+            assessmentNumber: resLocals.assessment.number,
+            authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
+            uploadJobSequences,
+            urlPrefix: resLocals.urlPrefix,
+          })}
         </main>
       </body>
     </html>
+  `.toString();
+}
+
+function AssessmentUploadCard({
+  assessmentSetName,
+  assessmentNumber,
+  authzHasPermissionEdit,
+  uploadJobSequences,
+  urlPrefix,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: number;
+  authzHasPermissionEdit: boolean;
+  uploadJobSequences: UploadJobSequence[];
+  urlPrefix: string;
+}) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        ${assessmentSetName} ${assessmentNumber}: Uploads
+      </div>
+
+      ${authzHasPermissionEdit
+        ? html`
+            <div class="table-responsive pb-0">
+              <table class="table">
+                <tr>
+                  <td style="width: 1%">
+                    <button
+                      type="button"
+                      class="btn btn-primary text-nowrap"
+                      data-toggle="modal"
+                      data-target="#upload-instance-question-scores-form"
+                    >
+                      <i class="fas fa-upload"></i> Upload new question scores
+                    </button>
+                  </td>
+                  <td>
+                    <p>
+                      Upload a CSV file to set per-question scores for individual students.
+                      <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">
+                        Show details...
+                      </a>
+                    </p>
+                    <div class="collapse" id="uploadInstanceQuestionScoresHelp">
+                      ${CsvHelpInstanceQuestionScores()}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="width: 1%">
+                    <button
+                      type="button"
+                      class="btn btn-primary text-nowrap"
+                      data-toggle="modal"
+                      data-target="#upload-assessment-instance-scores-form"
+                    >
+                      <i class="fas fa-upload"></i> Upload new total scores
+                    </button>
+                  </td>
+                  <td>
+                    <p>
+                      Upload a CSV file to set the total assessment score for individual students.
+                      <a data-toggle="collapse" href="#uploadAssessmentScoresHelp"
+                        >Show details...</a
+                      >
+                    </p>
+                    <div class="collapse" id="uploadAssessmentScoresHelp">
+                      ${CsvHelpAssessmentInstanceScores()}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          `
+        : ''}
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Date</th>
+              <th>Description</th>
+              <th>User</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${uploadJobSequences && uploadJobSequences.length > 0
+              ? uploadJobSequences.map((job_sequence) => {
+                  return html`
+                    <tr>
+                      <td>${job_sequence.job_sequence.number}</td>
+                      <td>${job_sequence.start_date_formatted}</td>
+                      <td>${job_sequence.job_sequence.description}</td>
+                      <td>${job_sequence.user_uid}</td>
+                      <td>
+                        ${renderEjs(__filename, "<%- include('../partials/jobStatus'); %>", {
+                          status: job_sequence.job_sequence.status,
+                        })}
+                      </td>
+                      <td>
+                        <a
+                          href="${urlPrefix}/jobSequence/${job_sequence.job_sequence.id}"
+                          class="btn btn-xs btn-info"
+                          >Details</a
+                        >
+                      </td>
+                    </tr>
+                  `;
+                })
+              : html`
+                  <tr>
+                    <td colspan="6">No previous uploads.</td>
+                  </tr>
+                `}
+          </tbody>
+        </table>
+      </div>
+    </div>
   `.toString();
 }
 
