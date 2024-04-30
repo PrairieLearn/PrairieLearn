@@ -10,6 +10,11 @@ import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
 
 import { clearCookie, setCookie } from '../../lib/cookie';
+import {
+  CoursePermissionSchema,
+  CourseInstancePermissionSchema,
+  UserSchema,
+} from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -44,8 +49,10 @@ router.get(
       },
       z.object({
         available_course_roles: z.array(CoursePermissionSchema.shape.course_role.unwrap()),
-        available_course_instance_roles: z.array(CourseInstancePermissionSchema.shape.course_instance_role.unwrap()),
-        available_uids: z.array(z.string()).nullable(),
+        available_course_instance_roles: z.array(
+          CourseInstancePermissionSchema.shape.course_instance_role.unwrap(),
+        ),
+        available_uids: z.array(UserSchema.shape.uid).nullable(),
       }),
     );
     _.assign(res.locals, courseRoles);
