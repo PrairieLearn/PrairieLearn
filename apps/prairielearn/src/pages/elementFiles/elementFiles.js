@@ -78,7 +78,7 @@ router.get(
           variant.instance_question_id
         ) {
           req.params.instance_question_id = variant.instance_question_id;
-          await selectAndAuthzInstanceQuestion(req, res);
+          await selectAndAuthzInstanceQuestion(req, res); // TODO: also need to add on the req.params.assessment_id before calling?
         }
       } else {
         question_course = res.locals.course;
