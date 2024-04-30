@@ -1,64 +1,51 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as fs from 'fs-extra';
-import * as async from 'async';
-import * as _ from 'lodash';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { z } from 'zod';
 
 import { CourseInstanceAddEditor } from '../../lib/editors';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { CourseInstanceSchema } from '../../lib/db-types';
 
 var router = express.Router();
 var sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', function (req, res, next) {
-  async.series(
-    [
-      (callback) => {
-        fs.access(res.locals.course.path, (err) => {
-          if (err) {
-            if (err.code === 'ENOENT') {
-              res.locals.needToSync = true;
-            } else {
-              return ERR(err, callback);
-            }
-          }
-          callback(null);
-        });
-      },
-      async () => {
-        res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
-          course_id: res.locals.course.id,
-          user_id: res.locals.user.user_id,
-          authn_user_id: res.locals.authn_user.user_id,
-          is_administrator: res.locals.is_administrator,
-          authn_is_administrator: res.locals.authz_data.authn_is_administrator,
-        });
-      },
-      (callback) => {
-        const params = {
-          course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          res.locals.course_instances.forEach((ci) => {
-            var row = _.find(result.rows, (row) => idsEqual(row.course_instance_id, ci.id));
-            ci.number = row?.number || 0;
-          });
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
-  );
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    try {
+      fs.access(res.locals.course.path);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        res.locals.needToSync = true;
+      } else {
+        throw new Error('Invalid course path');
+      }
+    }
+
+    res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
+      course_id: res.locals.course.id,
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+    });
+    const enrollmentCounts = await sqldb.queryRows(
+      sql.select_enrollment_counts,
+      { course_id: res.locals.course.id },
+      z.object({ course_instance_id: CourseInstanceSchema.shape.id, number: z.string() }),
+    );
+    res.locals.course_instances.forEach((ci) => {
+      const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
+      ci.number = row?.number || 0;
+    });
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 router.post(
   '/',
