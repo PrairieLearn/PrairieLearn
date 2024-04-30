@@ -182,7 +182,7 @@ function AssessmentUploadCard({
         </table>
       </div>
     </div>
-  `.toString();
+  `;
 }
 
 function CsvHelpInstanceQuestionScores() {
