@@ -13,9 +13,7 @@ router.get(
   asyncHandler(async (req, res) => {
     res.locals.access_rules = await sqldb.queryRows(
       sql.course_instance_access_rules,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      { course_instance_id: res.locals.course_instance.id },
       z.object({
         uids: z.string(),
         start_date: z.string(),
