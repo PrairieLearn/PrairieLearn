@@ -14,16 +14,11 @@ export async function sync(
   const questionAuthorsParam: string[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionTagNames = new Set<string>();
-    (question.data?.tags ?? []).forEach((t) => dedupedQuestionTagNames.add(t));
-    question.data?.authors.forEach((author) => {
-      questionAuthorsParam.push(JSON.stringify([questionIds[qid], author]));
-    });
-  });
 
-  if (questionAuthorsParam.length > 0) {
-    console.log(questionAuthorsParam);
-  }
+    if (question.data?.authors) {
+      questionAuthorsParam.push(JSON.stringify([questionIds[qid], question.data.authors])); // TODO: map authors onto IDs instead?
+    }
+  });
 
   perf.start('sproc:sync_question_authors');
   await sqldb.callAsync('sync_question_authors', [questionAuthorsParam]);

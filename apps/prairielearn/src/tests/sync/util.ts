@@ -176,6 +176,7 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  authors?: string[];
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;
