@@ -43,8 +43,8 @@ router.get(
           : 'None',
       },
       z.object({
-        available_course_roles: z.array(z.string()),
-        available_course_instance_roles: z.array(z.string()),
+        available_course_roles: z.array(CoursePermissionSchema.shape.course_role.unwrap()),
+        available_course_instance_roles: z.array(CourseInstancePermissionSchema.shape.course_instance_role.unwrap()),
         available_uids: z.array(z.string()).nullable(),
       }),
     );
