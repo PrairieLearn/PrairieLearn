@@ -2,6 +2,7 @@
 const asyncHandler = require('express-async-handler');
 import * as path from 'node:path';
 import { Router } from 'express';
+import { z } from 'zod';
 
 import * as chunks from '../../lib/chunks';
 import { config } from '../../lib/config';
@@ -11,6 +12,7 @@ import { getQuestionCourse } from '../../lib/question-variant';
 import { selectQuestionById } from '../../models/question';
 import { selectVariantById } from '../../models/variant';
 import { idsEqual } from '../../lib/id';
+import { selectAndAuthzInstanceQuestion } from '../../middlewares/selectAndAuthzInstanceQuestion';
 
 const router = Router({ mergeParams: true });
 
@@ -58,14 +60,26 @@ router.get(
     if (res.locals.course) {
       // Files should be served from the course directory
       let question_course;
-      if (req.params.variant_id) {
-        const variant = await selectVariantById(req.params.variant_id);
+      if (req.query.variant_id) {
+        const variant = await selectVariantById(z.string().parse(req.query.variant_id));
         if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
           // the existence of the variant within the course validates that this course has sharing permissions on this question
           throw new HttpStatusError(404, 'Not Found');
         }
+
         const question = await selectQuestionById(variant.question_id);
         question_course = await getQuestionCourse(question, res.locals.course);
+
+        // if the question course is different from the variant course (the question is being shared), check the user's
+        // permissions on the variant
+        if (
+          question_course.id !== variant.course_id &&
+          !res.locals.authz_data.has_course_permission_view &&
+          variant.instance_question_id
+        ) {
+          req.params.instance_question_id = variant.instance_question_id;
+          await selectAndAuthzInstanceQuestion(req, res);
+        }
       } else {
         question_course = res.locals.course;
       }

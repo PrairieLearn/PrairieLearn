@@ -802,18 +802,6 @@ export function initExpress() {
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/instructor/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/variant/:variant_id(\\d+)/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
     require('./pages/elementExtensionFiles/elementExtensionFiles').default,
   );
@@ -843,18 +831,6 @@ export function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/variant/:variant_id(\\d+)/instructor/elements',
-    require('./pages/elementFiles/elementFiles').default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/variant/:variant_id(\\d+)/elements',
     require('./pages/elementFiles/elementFiles').default,
   );
   app.use(

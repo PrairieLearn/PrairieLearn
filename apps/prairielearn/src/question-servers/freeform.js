@@ -1539,20 +1539,14 @@ export async function render(
       );
       dependencies.courseElementStyles.forEach((file) =>
         styleUrls.push(
-          assets.courseElementAssetPath(
-            course.commit_hash,
-            locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
-            file,
-          ),
+          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+            (question.course_id !== course.id ? `?variant_id=${variant.id}` : ''),
         ),
       );
       dependencies.courseElementScripts.forEach((file) =>
         scriptUrls.push(
-          assets.courseElementAssetPath(
-            course.commit_hash,
-            locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
-            file,
-          ),
+          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+            (question.course_id !== course.id ? `?variant_id=${variant.id}` : ''),
         ),
       );
       dependencies.extensionStyles.forEach((file) =>
@@ -1578,12 +1572,11 @@ export async function render(
           ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
             assets.coreElementAssetPath(file),
           ),
-          ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-            assets.courseElementAssetPath(
-              course.commit_hash,
-              locals.urlPrefix + question.course_id !== course.id ? `/variant/${variant.id}` : '',
-              file,
-            ),
+          ..._.mapValues(
+            dynamicDependencies.courseElementScripts,
+            (file) =>
+              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+              (question.course_id !== course.id ? `?variant_id=${variant.id}` : ''),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
