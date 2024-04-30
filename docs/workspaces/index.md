@@ -258,12 +258,10 @@ docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyter
 
 ## What to Tell Students
 
-Before any real quizzes or exams it is recommended that instructors run through Prarielearn basics with their students to give students a chance to get used to the Prarielearn environment.
+Instructors are strongly encouraged to allow students to get exposed to the PrairieLearn workspace environment, as well as specific workspaces to be used in a course, before any formal quizzes or exams. In particular, some workspaces may behave in ways that students need to be aware of. Instructors should provide students with instructions on:
 
-The following are the most important instructions to give:
+- How to save their work and submit. Students should understand the difference between saving files inside the workspace environment and saving/submitting it on PrairieLearn itself. In particular, it should be clear to students that files saved inside the workspace are not automatically graded.
 
-- How to save/submit so that students do not lose any work e.g. the difference between save only vs. save and submit buttons.
+- Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, for the Jupyter workspace, students may need to know how to interrupt or restart the kernel.
 
-- Advise on workspace-specific instructions, e.g. how to interrupt/restart the kernel in Jupyter workspaces.
-
-- Set expectations about workspace start times (in the worst case, a workspace may take several minutes as new machines are started and as images are pulled)
+- Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
