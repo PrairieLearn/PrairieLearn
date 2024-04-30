@@ -24,7 +24,7 @@
     <% } %>
     <% for (var i = 0; i < previous_variants.length; i++) { %>
         <a
-            class="badge <%= previous_variants[i].variant_id == current_variant_id ? 'badge-light' : previous_variants[i].open ? 'badge-primary' : 'badge-secondary' %> <%= collapseClass %>"
+            class="badge <%= previous_variants[i].variant_id == current_variant_id ? 'badge-info' : 'badge-secondary' %> <%= collapseClass %>"
             <% if (i < previous_variants.length - MAX_DISPLAYED_VARIANTS) { %>
                 style="display: none"
             <% } %>
