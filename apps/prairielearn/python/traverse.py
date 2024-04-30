@@ -36,12 +36,13 @@ def traverse_and_execute(
 ) -> None:
     elements = lxml.html.fragments_fromstring(html)
 
-    # If there's leading text, the first element of the array will be a string.
-    # We can just discard that.
-    if isinstance(elements[0], str):
-        del elements[0]
-
-    for e in chain.from_iterable(element.iter() for element in elements):
+    for e in chain.from_iterable(
+        element.iter()
+        for element in elements
+        # If there's leading text, the first element of the array will be a string.
+        # We can just discard that.
+        if isinstance(element, lxml.html.HtmlElement)
+    ):
         fn(e)
 
 
