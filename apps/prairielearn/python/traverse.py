@@ -34,7 +34,7 @@ UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
-    elements = lxml.html.fragments_fromstring(html)
+    elements: list[lxml.html.HtmlElement] = lxml.html.fragments_fromstring(html)
 
     # If there's leading text, the first element of the array will be a string.
     # We can just discard that.
