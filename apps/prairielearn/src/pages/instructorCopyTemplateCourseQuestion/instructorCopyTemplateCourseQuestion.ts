@@ -39,8 +39,8 @@ router.post(
       }),
     );
 
-    if (result.course.template_course === false) {
-      throw new error.HttpStatusError(400, 'The given course is not a template course.');
+    if (!(result.course.template_course || result.question.shared_publicly_source)) {
+      throw new error.HttpStatusError(400, 'Copying this question is not permitted');
     }
 
     await copyQuestionBetweenCourses(res, {
