@@ -3,7 +3,7 @@ export const PLAN_FEATURE_NAMES = [
   'external-grading',
   'workspaces',
 ] as const;
-export const PLAN_NAMES = ['basic', 'compute', 'everything'] as const;
+export const PLAN_NAMES = ['basic', 'public_questions', 'compute', 'everything'] as const;
 
 export type PlanFeatureName = (typeof PLAN_FEATURE_NAMES)[number];
 export type PlanName = (typeof PLAN_NAMES)[number];
@@ -17,6 +17,9 @@ export const PLANS = {
   // Enabled when student billing for enrollments is enabled for a course instance.
   basic: {
     features: ['course-instance-access'],
+  },
+  public_questions: {
+    features: ['external-grading'],
   },
   // Enables workspaces and external grading. Can be used in combination with
   // the `basic` plan (for a course using student billing for enrollments) or
