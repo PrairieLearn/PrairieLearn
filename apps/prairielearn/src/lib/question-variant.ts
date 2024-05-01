@@ -14,6 +14,7 @@ import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types';
 import { idsEqual } from './id';
 import { selectCourseInstanceById } from '../models/course-instances';
 import { isEnterprise } from './license';
+import { planGrantsMatchPlanFeatures } from '../ee/lib/billing/plans-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -284,7 +285,7 @@ async function makeAndInsertVariant(
 
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
-    const has_workspace_grant = isEnterprise() && false; // TODO make a call to feature grants to check
+    const has_workspace_grant = isEnterprise() && false; // TODO make a call to feature grants to check if it should be allowed
     if (question.workspace_image !== null && has_workspace_grant) {
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
     }
