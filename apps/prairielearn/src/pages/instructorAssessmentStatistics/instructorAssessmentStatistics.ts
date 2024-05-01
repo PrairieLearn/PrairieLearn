@@ -1,12 +1,13 @@
-// @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import { stringify } from '@prairielearn/csv';
 
 import * as error from '@prairielearn/error';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import * as sqldb from '@prairielearn/postgres';
 import { updateAssessmentStatistics } from '../../lib/assessment';
+import { AssessmentSchema } from '../../lib/db-types';
+import { InstructorAssessmentStatistics } from './instructorAssessmentStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -31,10 +32,13 @@ router.get(
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment = assessmentResult.rows[0].assessment;
+    res.locals.assessment = await sqldb.queryRow(
+      sql.select_assessment,
+      {
+        assessment_id: res.locals.assessment.id,
+      },
+      AssessmentSchema,
+    );
 
     // get formatted duration statistics
     //
@@ -46,6 +50,7 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
     res.locals.duration_stat = durationStatsResult.rows[0];
+    console.log(res.locals.duration_stat);
 
     const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
       assessment_id: res.locals.assessment.id,
@@ -57,7 +62,7 @@ router.get(
     });
     res.locals.user_scores = userScoresResult.rows;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentStatistics({ resLocals: res.locals }));
   }),
 );
 
