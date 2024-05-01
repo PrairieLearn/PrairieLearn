@@ -1,21 +1,29 @@
-from automata.fa.dfa import DFA
-from automata.fa.nfa import NFA
-from automata.fa.fa import FA
-from random import sample
 from itertools import chain, product
-from typing import Tuple, List, Any, Union, Set, Generator
+from random import sample
+from typing import Generator, List, Set, Tuple, Union
+
+from automata.fa.dfa import DFA
+from automata.fa.fa import FA
+from automata.fa.nfa import NFA
 from typing_extensions import assert_never
 
 LATEX_EPSILON = r"\varepsilon"
 
-def strings_of_length_at_most_n(lower_bound: int, n: int, *, alphabet: Set[str] = {'0', '1'}) -> Generator[str, None, None]:
-    return ("".join(char_list) for char_list in chain.from_iterable(
-        product(alphabet, repeat=k) for k in range(lower_bound, n + 1)))
 
-def check_dfa(submitted_dfa: DFA,
-              reference_dfa: DFA,
-              max_length_to_check: int
-              ) -> Tuple[List[str], List[str]]:
+def strings_of_length_at_most_n(
+    lower_bound: int, n: int, *, alphabet: Set[str] = {"0", "1"}
+) -> Generator[str, None, None]:
+    return (
+        "".join(char_list)
+        for char_list in chain.from_iterable(
+            product(alphabet, repeat=k) for k in range(lower_bound, n + 1)
+        )
+    )
+
+
+def check_dfa(
+    submitted_dfa: DFA, reference_dfa: DFA, max_length_to_check: int
+) -> Tuple[List[str], List[str]]:
     """
     Parameters
       - submitted_dfa: DFA submitted by the student
@@ -34,7 +42,9 @@ def check_dfa(submitted_dfa: DFA,
     false_positives: List[str] = []
     false_negatives: List[str] = []
 
-    for bitstring in strings_of_length_at_most_n(0, max_length_to_check, alphabet=submitted_dfa.input_symbols):
+    for bitstring in strings_of_length_at_most_n(
+        0, max_length_to_check, alphabet=submitted_dfa.input_symbols
+    ):
         accepted_by_reference_DFA = reference_dfa.accepts_input(bitstring)
         accepted_by_submitted_DFA = submitted_dfa.accepts_input(bitstring)
 
@@ -57,7 +67,9 @@ def check_dfa(submitted_dfa: DFA,
     return false_positives, false_negatives
 
 
-def sample_input_strings(max_input_string_len: int, num_rand_choices: int, fa: FA) -> Tuple[List[str], List[str]]:
+def sample_input_strings(
+    max_input_string_len: int, num_rand_choices: int, fa: FA
+) -> Tuple[List[str], List[str]]:
     """
     Samples accepted and not accepted input strings for the given fa. Converts
     for display on the frontend.
@@ -67,7 +79,9 @@ def sample_input_strings(max_input_string_len: int, num_rand_choices: int, fa: F
     accepted = []
     not_accepted = []
 
-    for x in strings_of_length_at_most_n(1, max_input_string_len, alphabet=fa.input_symbols):
+    for x in strings_of_length_at_most_n(
+        1, max_input_string_len, alphabet=fa.input_symbols
+    ):
         if fa.accepts_input(x):
             accepted.append(x)
         else:
@@ -87,7 +101,9 @@ def sample_input_strings(max_input_string_len: int, num_rand_choices: int, fa: F
 
     else:
         sampled_accepted = sample(accepted, num_rand_choices // 2)
-        sampled_not_accepted = sample(not_accepted, num_rand_choices // 2 + num_rand_choices % 2)
+        sampled_not_accepted = sample(
+            not_accepted, num_rand_choices // 2 + num_rand_choices % 2
+        )
 
     # Always include the empty string
     if fa.accepts_input(""):
@@ -107,15 +123,17 @@ def get_equiv_dfa(fsm: Union[DFA, NFA]) -> DFA:
 
     assert_never(fsm)
 
-def generate_dfa_feedback_html(student_equiv_dfa: DFA,
-                             reference_equiv_dfa: DFA,
-                             max_length_to_check: int,
-                             student_input_name: str) -> str:
+
+def generate_dfa_feedback_html(
+    student_equiv_dfa: DFA,
+    reference_equiv_dfa: DFA,
+    max_length_to_check: int,
+    student_input_name: str,
+) -> str:
     """
     Generate feedback html for elements. The 'language' here is defined by
     reference_equiv_dfa.
     """
-
 
     def latex_prepare_first_n_list(elements: List[str], n: int) -> str:
         "Format a list of strings for display as HTML"
@@ -124,22 +142,32 @@ def generate_dfa_feedback_html(student_equiv_dfa: DFA,
             return elem if elem else LATEX_EPSILON
 
         string_list = ["<ul>\n"]
-        string_list.extend(f"<li>${elem_to_latex(elem)}$</li>\n" for elem in elements[:n])
+        string_list.extend(
+            f"<li>${elem_to_latex(elem)}$</li>\n" for elem in elements[:n]
+        )
         string_list.append("</ul>")
-        return ''.join(string_list)
+        return "".join(string_list)
 
-
-    false_positives, false_negatives = \
-        check_dfa(student_equiv_dfa, reference_equiv_dfa, max_length_to_check)
+    false_positives, false_negatives = check_dfa(
+        student_equiv_dfa, reference_equiv_dfa, max_length_to_check
+    )
 
     assert false_positives or false_negatives
     feedback_string_list = []
 
     if false_positives:
-        feedback_string_list.append(f"Here are some strings matched by your {student_input_name} which are not in the language:")
-        feedback_string_list.append(latex_prepare_first_n_list(false_positives, max_length_to_check))
+        feedback_string_list.append(
+            f"Here are some strings matched by your {student_input_name} which are not in the language:"
+        )
+        feedback_string_list.append(
+            latex_prepare_first_n_list(false_positives, max_length_to_check)
+        )
     if false_negatives:
-        feedback_string_list.append(f"Here are some strings in the language which aren't matched by your {student_input_name}:")
-        feedback_string_list.append(latex_prepare_first_n_list(false_negatives, max_length_to_check))
+        feedback_string_list.append(
+            f"Here are some strings in the language which aren't matched by your {student_input_name}:"
+        )
+        feedback_string_list.append(
+            latex_prepare_first_n_list(false_negatives, max_length_to_check)
+        )
 
-    return ''.join(feedback_string_list)
+    return "".join(feedback_string_list)
