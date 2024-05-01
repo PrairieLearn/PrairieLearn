@@ -73,7 +73,8 @@ export function InstructorAssessmentRegrading({
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                           .id}/instances"
-                        > assessment instances page</a
+                      >
+                        assessment instances page</a
                       >.
                     </p>
                   </div>
@@ -111,8 +112,9 @@ export function InstructorAssessmentRegrading({
                                 href="${resLocals.urlPrefix}/jobSequence/${jobSequence.job_sequence
                                   .id}"
                                 class="btn btn-xs btn-info"
-                                >Details</a
                               >
+                                Details
+                              </a>
                             </td>
                           </tr>
                         `;
@@ -146,8 +148,7 @@ function regradeAllAssessmentInstancesModal({
     title: 'Regrade all assessment instances',
     body: html`
       Are you sure you want to regrade all assessment instances for
-      <strong>${assessmentSetName} ${assessmentNumber}</strong>?
-      This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="regrade_all" />
