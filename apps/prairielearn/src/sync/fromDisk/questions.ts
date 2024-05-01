@@ -6,6 +6,8 @@ import { makePerformance } from '../performance';
 import { CourseData, Question } from '../course-db';
 import { IdSchema } from '../../lib/db-types';
 
+const sql = sqldb.loadSqlEquiv(__filename);
+
 const perf = makePerformance('questions');
 
 function getParamsForQuestion(q: Question | null | undefined) {
@@ -56,6 +58,27 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
+  const sharedQuestions = await sqldb.queryRows(
+    sql.select_shared_questions,
+    { course_id: courseId },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+    }),
+  );
+
+  console.log(sharedQuestions);
+
+  const qids = Object.entries(courseData.questions).map(([qid, _]) => qid);
+  console.log(qids, '\n==========================================');
+
+  sharedQuestions.forEach((question) => {
+    if (qids.indexOf(question.qid) === -1) {
+      // TODO if the question with same id still exists, make it a rename error instead, link the error to that question
+      infofile.addError(courseData.course, 'Not allowed to delete a shared question.');
+    }
+  });
+
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
