@@ -73,7 +73,7 @@ export function InstructorAssessmentRegrading({
                       <a
                         href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                           .id}/instances"
-                        >assessment instances page </a
+                        > assessment instances page</a
                       >.
                     </p>
                   </div>
