@@ -135,7 +135,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam', async () => {
+  step('start the exam and access a question', async () => {
     const form = {
       __action: 'new_instance',
       __csrf_token: context.__csrf_token,
@@ -152,11 +152,25 @@ describe('Exam and homework assessment with active access restriction', function
     assert.include(examInstanceUrl, '/assessment_instance/');
     context.examInstanceUrl = examInstanceUrl;
 
-    // save the examQuestionUrl for later
-    const examQuestionUrl = response.$('a:contains("Question 1")').attr('href');
-    context.examQuestionUrl = `${context.siteUrl}${examQuestionUrl}`;
-
+    // Save context for future tests
     context.__csrf_token = response.$('span[id=test_csrf_token]').text();
+    const questionWithVariantPath = response.$('a:contains("Question 1")').attr('href');
+    const questionWithoutVariantPath = response.$('a:contains("Question 2")').attr('href');
+    context.examQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
+    context.examQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
+
+    const questionResponse = await helperClient.fetchCheerio(context.examQuestionUrl, {
+      headers,
+    });
+    assert.isTrue(questionResponse.ok);
+  });
+
+  step('count number of variants generated', async() => {
+    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
+      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+    });
+    context.numberOfVariants = countVariantsResult.rows[0].count;
+    assert.equal(context.numberOfVariants, 1);
   });
 
   step('simulate a time limit expiration', async () => {
@@ -186,6 +200,28 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(results.rows[0].open, false);
   });
 
+  step('access question with existing variant when exam is closed', async () => {
+    const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+
+    // There should be no save or grade buttons
+    assert.lengthOf(response.$('button.question-save'), 0);
+    assert.lengthOf(response.$('button.question-grade'), 0);
+  });
+
+  step('access question without existing variant when exam is closed', async () => {
+    const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+
+    const msg = response.$('main div.card-body');
+    assert.lengthOf(msg, 1);
+    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+  });
+
   step(
     'ensure that a link to the exam is visible on the assessments page if student has started the exam and active is false',
     async () => {
@@ -209,6 +245,35 @@ describe('Exam and homework assessment with active access restriction', function
     const msg = response.$('p.small.mb-0');
     assert.lengthOf(msg, 1);
     assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
+  });
+
+  step('access question with existing variant when exam is not active', async () => {
+    const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+
+    // There should be no save or grade buttons
+    assert.lengthOf(response.$('button.question-save'), 0);
+    assert.lengthOf(response.$('button.question-grade'), 0);
+  });
+
+  step('access question without existing variant when exam is not active', async () => {
+    const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+
+    const msg = response.$('main div.card-body');
+    assert.lengthOf(msg, 1);
+    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+  });
+
+  step('ensure that no new variants have been created', async () => {
+    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
+      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+    });
+    assert.equal(countVariantsResult.rows[0].count, context.numberOfVariants);
   });
 
   step('access the exam when active and showClosedAssessment are false', async () => {
@@ -261,11 +326,14 @@ describe('Exam and homework assessment with active access restriction', function
     context.hwInstanceUrl = hwInstanceUrl;
 
     // the link to the first question begins with "HWX.1." where X is the homework number
-    const questionTitlePrefix = 'HW' + context.hwNumber + '.1.';
-
-    // save the hwQuestionUrl for later
-    const hwQuestionUrl = response.$('a:contains(' + questionTitlePrefix + ')').attr('href');
-    context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
+    const questionWithVariantPath = response
+      .$('a:contains(HW' + context.hwNumber + '.1.)')
+      .attr('href');
+    const questionWithoutVariantPath = response
+      .$('a:contains(HW' + context.hwNumber + '.2.)')
+      .attr('href');
+    context.hwQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
+    context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
   });
 
   step('access a question when homework is active', async () => {
@@ -278,6 +346,14 @@ describe('Exam and homework assessment with active access restriction', function
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
+  });
+
+  step('count number of variants generated', async() => {
+    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
+      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
+    });
+    context.numberOfVariants = countVariantsResult.rows[0].count;
+    assert.equal(context.numberOfVariants, 1);
   });
 
   step('access the homework when it is no longer active', async () => {
@@ -293,9 +369,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
   });
 
-  step('access a question when homework is no longer active', async () => {
-    headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
-
+  step('access question with existing variant when homework is not active', async () => {
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       headers,
     });
@@ -304,6 +378,24 @@ describe('Exam and homework assessment with active access restriction', function
     // There should be no save or grade buttons
     assert.lengthOf(response.$('button.question-save'), 0);
     assert.lengthOf(response.$('button.question-grade'), 0);
+  });
+
+  step('access question without existing variant when homework is not active', async () => {
+    const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+
+    const msg = response.$('main div.card-body');
+    assert.lengthOf(msg, 1);
+    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+  });
+
+  step('ensure that no new variants have been created', async () => {
+    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
+      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+    });
+    assert.equal(countVariantsResult.rows[0].count, context.numberOfVariants);
   });
 
   step(

@@ -21,6 +21,16 @@ WHERE
   AND aset.abbreviation = 'E'
   AND a.number = '11';
 
+-- BLOCK count_variants
+SELECT
+  COUNT(v.*)
+FROM
+  variants AS v
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  ai.id = $assessment_instance_id;
+
 -- BLOCK select_homework8
 SELECT
   a.id
