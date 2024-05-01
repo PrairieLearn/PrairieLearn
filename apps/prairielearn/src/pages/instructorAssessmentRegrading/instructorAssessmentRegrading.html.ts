@@ -146,8 +146,8 @@ function regradeAllAssessmentInstancesModal({
     title: 'Regrade all assessment instances',
     body: html`
       Are you sure you want to regrade all assessment instances for
-      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
-      ? This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>?
+      This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="regrade_all" />
