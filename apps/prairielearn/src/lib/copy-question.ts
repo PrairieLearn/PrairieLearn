@@ -16,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 export async function setQuestionCopyTargets(res: Response) {
   // Avoid querying for editable courses if we won't be able to copy this
   // question anyways.
-  if (!res.locals.course.template_course) {
+  if (!(res.locals.course.template_course || res.locals.question.shared_publicly_source)) {
     return;
   }
 
