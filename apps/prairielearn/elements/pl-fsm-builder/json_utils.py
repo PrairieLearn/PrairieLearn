@@ -3,60 +3,60 @@
 import copy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict, TypeVar, Union
+from typing import Any, TypedDict, TypeVar
 
-from automata.fa.dfa import DFA  # , DFAJsonDict
-from automata.fa.nfa import NFA  # , NFAJsonDict
+from automata.fa.dfa import DFA
+from automata.fa.nfa import NFA
 
 FSMRawJsonStateT = str
-FSMRawTransitionT = Dict[FSMRawJsonStateT, Dict[str, List[FSMRawJsonStateT]]]
+FSMRawTransitionT = dict[FSMRawJsonStateT, dict[str, list[FSMRawJsonStateT]]]
 
-ErrorStatesT = Optional[Set[str]]
+ErrorStatesT = None | set[str]
 
-StartTupleT = Tuple[None, None, str]
-TransitionTupleT = Tuple[str, str, str]
-MissingTransitionTupleT = Tuple[str, str, None]
+StartTupleT = tuple[None, None, str]
+TransitionTupleT = tuple[str, str, str]
+MissingTransitionTupleT = tuple[str, str, None]
 
-ErrorTransitionsT = Optional[
-    Union[Set[StartTupleT], Set[TransitionTupleT], Set[MissingTransitionTupleT]]
-]
+ErrorTransitionsT = (
+    None | set[StartTupleT] | set[TransitionTupleT] | set[MissingTransitionTupleT]
+)
 
 
 class FSMRawJsonDict(TypedDict):
-    input_symbols: List[str]
-    states: List[FSMRawJsonStateT]
+    input_symbols: list[str]
+    states: list[FSMRawJsonStateT]
     transitions: FSMRawTransitionT
-    initial_state: List[FSMRawJsonStateT]
-    final_states: List[FSMRawJsonStateT]
+    initial_state: list[FSMRawJsonStateT]
+    final_states: list[FSMRawJsonStateT]
     epsilon_symbol: str
 
 
 DFAStateT = Any
-DFAPathT = Dict[str, DFAStateT]
-DFATransitionsT = Dict[DFAStateT, DFAPathT]
+DFAPathT = dict[str, DFAStateT]
+DFATransitionsT = dict[DFAStateT, DFAPathT]
 
 
 class DFAJsonDict(TypedDict):
     "A class with type signatures for the dfa json dict"
-    states: List[DFAStateT]
-    input_symbols: List[str]
+    states: list[DFAStateT]
+    input_symbols: list[str]
     transitions: DFATransitionsT
     initial_state: DFAStateT
-    final_states: List[DFAStateT]
+    final_states: list[DFAStateT]
 
 
 NFAStateT = Any
-NFAPathT = Dict[str, Set[NFAStateT]]
-NFATransitionsT = Dict[NFAStateT, NFAPathT]
+NFAPathT = dict[str, set[NFAStateT]]
+NFATransitionsT = dict[NFAStateT, NFAPathT]
 
 
 class NFAJsonDict(TypedDict):
     "A class with type signatures for the nfa json dict"
-    states: List[NFAStateT]
-    input_symbols: List[str]
-    transitions: Dict[NFAStateT, Dict[str, List[NFAStateT]]]
+    states: list[NFAStateT]
+    input_symbols: list[str]
+    transitions: dict[NFAStateT, dict[str, list[NFAStateT]]]
     initial_state: NFAStateT
-    final_states: List[NFAStateT]
+    final_states: list[NFAStateT]
 
 
 class FSMType(Enum):
@@ -74,8 +74,8 @@ class JsonValidationException(Exception):
 
 
 def convert_states_for_json(
-    states_list: List[FSMRawJsonStateT],
-) -> List[FSMRawJsonStateT]:
+    states_list: list[FSMRawJsonStateT],
+) -> list[FSMRawJsonStateT]:
     """
     Check for duplicate states.
     """
@@ -98,7 +98,7 @@ def convert_states_for_json(
 
 
 def convert_initial_state_for_json(
-    initial_state: List[FSMRawJsonStateT],
+    initial_state: list[FSMRawJsonStateT],
 ) -> FSMRawJsonStateT:
     """
     Check there is only one initial state.
@@ -114,7 +114,7 @@ def convert_initial_state_for_json(
     return initial_state[0]
 
 
-def check_final_states_for_json(final_states: List[FSMRawJsonStateT]) -> None:
+def check_final_states_for_json(final_states: list[FSMRawJsonStateT]) -> None:
     """
     Check that final states are nonempty.
     """
@@ -125,7 +125,7 @@ def check_final_states_for_json(final_states: List[FSMRawJsonStateT]) -> None:
 
 
 def check_transitions_invalid_characters_for_json(
-    transitions: FSMRawTransitionT, input_symbols: Set[str]
+    transitions: FSMRawTransitionT, input_symbols: set[str]
 ) -> None:
     """
     Check for transitions on invalid characters.
@@ -146,9 +146,9 @@ def check_transitions_invalid_characters_for_json(
 
 def check_transitions_missed_characters_for_json(
     transitions: FSMRawTransitionT,
-    input_symbols: Set[str],
-    dump_state_tuple: Optional[Tuple[FSMRawJsonStateT, List[FSMRawJsonStateT]]],
-    epsilon_symbol: Optional[str],
+    input_symbols: set[str],
+    dump_state_tuple: None | tuple[FSMRawJsonStateT, list[FSMRawJsonStateT]],
+    epsilon_symbol: None | str,
 ) -> None:
     """
     Check that transitioning on characters is never missed. If there is an
@@ -240,9 +240,7 @@ def check_transitions_redundant_for_json(transitions: FSMRawTransitionT) -> None
         )
 
 
-def check_for_unreachable_states(
-    fa: Union[DFA, NFA], dump_state_name: Optional[str]
-) -> None:
+def check_for_unreachable_states(fa: DFA | NFA, dump_state_name: None | str) -> None:
     # TODO fix this check.
     unreachable_states = set(fa.states)
 
@@ -360,7 +358,7 @@ def nfa_convert_json(nfa_dict: FSMRawJsonDict) -> NFAJsonDict:
 T = TypeVar("T")
 
 
-def list_as_set(elem_list: List[T]) -> Set[T]:
+def list_as_set(elem_list: list[T]) -> set[T]:
     """
     Transforms a list to a set, raising an exception if the input has duplicates.
     """

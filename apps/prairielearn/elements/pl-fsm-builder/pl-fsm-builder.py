@@ -1,6 +1,6 @@
 import html
 import json
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable
 
 import chevron
 import json_utils as ju
@@ -148,7 +148,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if node["isAcceptState"]:
             final_states.append(node["text"])
 
-    transitions: Dict[str, Dict[str, List[str]]] = {state: dict() for state in states}
+    transitions: dict[str, dict[str, list[str]]] = {state: dict() for state in states}
     initial_states = []
 
     for link in fsm_json["links"]:
@@ -239,7 +239,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         rerference_json_string = data["correct_answers"][name]
         max_states = data["params"][name].get("max_states")
 
-        def get_grading_info(fsm_json_string: str) -> Tuple[DFA, int]:
+        def get_grading_info(fsm_json_string: str) -> tuple[DFA, int]:
             fsm_json_dict = json.loads(fsm_json_string)
 
             if fsm_type is ju.FSMType.DFA:
@@ -251,7 +251,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             else:
                 assert_never(fsm_type)
 
-        def grade_fsm(fsm_json_string: str) -> Tuple[float, str]:
+        def grade_fsm(fsm_json_string: str) -> tuple[float, str]:
             student_equiv_dfa, num_states = get_grading_info(fsm_json_string)
             correct_equiv_dfa, _ = get_grading_info(rerference_json_string)
 
@@ -308,9 +308,9 @@ def print_dump_state(fsm_type: ju.FSMType, num_states: int, dump_state: bool) ->
 def grade_question_parameterized(
     data: pl.QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[bool | float, None | str]],
     weight: int = 1,
-    feedback_field_name: Optional[str] = None,
+    feedback_field_name: None | str = None,
 ) -> None:
     """
     Grade question question_name, marked correct if grade_function(student_answer) returns True in

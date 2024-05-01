@@ -1,6 +1,6 @@
 from itertools import chain, product
 from random import sample
-from typing import Generator, List, Set, Tuple, Union
+from typing import Generator
 
 from automata.fa.dfa import DFA
 from automata.fa.fa import FA
@@ -11,7 +11,7 @@ LATEX_EPSILON = r"\varepsilon"
 
 
 def strings_of_length_at_most_n(
-    lower_bound: int, n: int, *, alphabet: Set[str] = {"0", "1"}
+    lower_bound: int, n: int, *, alphabet: set[str] = {"0", "1"}
 ) -> Generator[str, None, None]:
     return (
         "".join(char_list)
@@ -23,7 +23,7 @@ def strings_of_length_at_most_n(
 
 def check_dfa(
     submitted_dfa: DFA, reference_dfa: DFA, max_length_to_check: int
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """
     Parameters
       - submitted_dfa: DFA submitted by the student
@@ -39,8 +39,8 @@ def check_dfa(
         raise ValueError("Input symbols for submitted DFA don't match reference")
 
     # Brute Force Check
-    false_positives: List[str] = []
-    false_negatives: List[str] = []
+    false_positives: list[str] = []
+    false_negatives: list[str] = []
 
     for bitstring in strings_of_length_at_most_n(
         0, max_length_to_check, alphabet=submitted_dfa.input_symbols
@@ -69,7 +69,7 @@ def check_dfa(
 
 def sample_input_strings(
     max_input_string_len: int, num_rand_choices: int, fa: FA
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """
     Samples accepted and not accepted input strings for the given fa. Converts
     for display on the frontend.
@@ -115,7 +115,7 @@ def sample_input_strings(
     return sampled_accepted, sampled_not_accepted
 
 
-def get_equiv_dfa(fsm: Union[DFA, NFA]) -> DFA:
+def get_equiv_dfa(fsm: DFA | NFA) -> DFA:
     if isinstance(fsm, NFA):
         return DFA.from_nfa(fsm)
     elif isinstance(fsm, DFA):
@@ -135,7 +135,7 @@ def generate_dfa_feedback_html(
     reference_equiv_dfa.
     """
 
-    def latex_prepare_first_n_list(elements: List[str], n: int) -> str:
+    def latex_prepare_first_n_list(elements: list[str], n: int) -> str:
         "Format a list of strings for display as HTML"
 
         def elem_to_latex(elem: str) -> str:
