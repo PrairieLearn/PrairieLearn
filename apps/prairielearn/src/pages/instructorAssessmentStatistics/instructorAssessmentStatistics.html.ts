@@ -1,8 +1,51 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { z } from 'zod';
 
-export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Record<string, any> }) {
+import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types';
+
+export const DurationStatSchema = z.object({
+  median: AssessmentSchema.shape.duration_stat_median,
+  min: AssessmentSchema.shape.duration_stat_min,
+  max: AssessmentSchema.shape.duration_stat_max,
+  mean: AssessmentSchema.shape.duration_stat_mean,
+  median_mins: z.number(),
+  min_mins: z.number(),
+  max_mins: z.number(),
+  mean_mins: z.number(),
+  threshold_seconds: AssessmentSchema.shape.duration_stat_threshold_seconds,
+  threshold_labels: AssessmentSchema.shape.duration_stat_threshold_labels,
+  hist: AssessmentSchema.shape.duration_stat_hist,
+});
+export type DurationStat = z.infer<typeof DurationStatSchema>;
+
+export const AssessmentScoreHistogramByDateSchema = z.object({
+  date: z.date(),
+  date_formatted: z.string(),
+  number: z.string(),
+  mean_score_perc: z.number(),
+  histogram: z.array(z.number()),
+});
+type AssessmentScoreHistogramByDate = z.infer<typeof AssessmentScoreHistogramByDateSchema>;
+
+export const UserScoreSchema = z.object({
+  duration_secs: z.number(),
+  score_perc: AssessmentInstanceSchema.shape.score_perc,
+});
+type UserScore = z.infer<typeof UserScoreSchema>;
+
+export function InstructorAssessmentStatistics({
+  resLocals,
+  durationStat,
+  assessmentScoreHistogramByDate,
+  userScores,
+}: {
+  resLocals: Record<string, any>;
+  durationStat: DurationStat;
+  assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];
+  userScores: UserScore[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -18,11 +61,6 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
         <script src="${assetPath('localscripts/parallel_histograms.js')}"></script>
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
@@ -38,7 +76,7 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
             ${resLocals.assessment.score_stat_number > 0
               ? html`
                   <div class="card-body">
-                    <div id="scoreHist" class="scoreHistogram"></div>
+                    <div id="scoreHist" class="histogram"></div>
                     <script>
                       $(function () {
                         var data = [${escapeHtml(resLocals.assessment.score_stat_hist)}];
@@ -123,16 +161,18 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                     <div id="durationHist" class="histogram"></div>
                     <script>
                       $(function () {
-                        var data = [${escapeHtml(resLocals.duration_stat.hist)}];
-                        var xgrid = [${escapeHtml(resLocals.duration_stat.threshold_seconds)}];
+                        var data = [${unsafeHtml(`${durationStat.hist}`)}];
+                        var xgrid = [${unsafeHtml(`${durationStat.threshold_seconds}`)}];
                         var options = {
                           ymin: 0,
                           xlabel: 'duration',
                           ylabel: 'number of students',
                           xTickLabels: [
-                            ${resLocals.duration_stat.threshold_labels.forEach(function (label) {
-                              `${label}`;
-                            })},
+                            ${unsafeHtml(
+                              `${durationStat.threshold_labels.map(function (label) {
+                                return JSON.stringify(label);
+                              })}`,
+                            )},
                           ],
                         };
                         histogram('#durationHist', data, xgrid, options);
@@ -145,19 +185,19 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                       <tbody>
                         <tr>
                           <td>Mean duration</td>
-                          <td><%= duration_stat.mean %></td>
+                          <td>${durationStat.mean}</td>
                         </tr>
                         <tr>
                           <td>Median duration</td>
-                          <td><%= duration_stat.median %></td>
+                          <td>${durationStat.median}</td>
                         </tr>
                         <tr>
                           <td>Minimum duration</td>
-                          <td><%= duration_stat.min %></td>
+                          <td>${durationStat.min}</td>
                         </tr>
                         <tr>
                           <td>Maximum duration</td>
-                          <td><%= duration_stat.max %></td>
+                          <td>${durationStat.max}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -166,8 +206,9 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                     <small>
                       Download
                       <a
-                        href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= durationStatsCsvFilename %>"
-                        ><%= durationStatsCsvFilename %></a
+                        href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                          .id}/assessment_statistics/${resLocals.durationStatsCsvFilename}"
+                        >${resLocals.durationStatsCsvFilename}</a
                       >. Data outside of the plotted range is included in the last bin.
                     </small>
                   </div>
@@ -187,30 +228,29 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                     <script>
                       $(function () {
                         const xdata = [
-                          ${escapeHtml(
-                            resLocals.user_scores.map((user) => {
+                          ${unsafeHtml(
+                            `${userScores.map((user) => {
                               return user.duration_secs;
-                            }),
+                            })}`,
                           )},
                         ];
-                        console.log('xdata', xdata);
                         const ydata = [
-                          ${escapeHtml(
-                            resLocals.user_scores.map((user) => {
+                          ${unsafeHtml(
+                            `${userScores.map((user) => {
                               return user.score_perc;
-                            }),
+                            })}`,
                           )},
                         ];
                         const options = {
-                          xgrid: [${escapeHtml(resLocals.duration_stat.threshold_seconds)}],
+                          xgrid: [${unsafeHtml(`${durationStat.threshold_seconds}`)}],
                           ygrid: _.range(0, 110, 10),
                           xlabel: 'duration',
                           ylabel: 'score / %',
                           xTickLabels: [
-                            ${escapeHtml(
-                              resLocals.duration_stat.threshold_labels.map((label) => {
-                                return label;
-                              }),
+                            ${unsafeHtml(
+                              `${durationStat.threshold_labels.map(function (label) {
+                                return JSON.stringify(label);
+                              })}`,
                             )},
                           ],
                         };
@@ -243,21 +283,28 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                       style="overflow-x: scroll; overflow-y: hidden;"
                     ></div>
                     <script>
-                      $(function() {
-                          var data = [<% assessment_score_histogram_by_date.forEach(function(day) {
-                            %>{label: '<%= day.date_formatted %>',
-                               mean: '<%= day.mean_score_perc %>',
-                               histogram: "<%= day.histogram %>".split(",")},<% }); %>];
+                      $(function () {
+                        var data = [
+                          ${unsafeHtml(
+                            `${assessmentScoreHistogramByDate.map(function (day) {
+                              return JSON.stringify({
+                                label: day.date_formatted,
+                                mean: day.mean_score_perc,
+                                histogram: day.histogram,
+                              });
+                            })}`,
+                          )},
+                        ];
 
-                          var options = {
-                              ygrid: _.range(0, 110, 10),
-                              xgrid: [<%= assessment_score_histogram_by_date.length %>],
-                              xlabel: 'start date',
-                              ylabel: 'score / %',
-                              yTickLabels: _.range(100, -10, -10),
-                              width: data.length * 200
-                          };
-                          parallel_histograms("#scoreHistsByDateDiv", data, options);
+                        var options = {
+                          ygrid: _.range(0, 110, 10),
+                          xgrid: [${escapeHtml(html`${assessmentScoreHistogramByDate.length}`)}],
+                          xlabel: 'start date',
+                          ylabel: 'score / %',
+                          yTickLabels: _.range(100, -10, -10),
+                          width: data.length * 200,
+                        };
+                        parallel_histograms('#scoreHistsByDateDiv', data, options);
                       });
                     </script>
                   </div>
@@ -266,8 +313,9 @@ export function InstructorAssessmentStatistics({ resLocals }: { resLocals: Recor
                     <small>
                       Download
                       <a
-                        href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= statsByDateCsvFilename %>"
-                        ><%= statsByDateCsvFilename %></a
+                        href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                          .id}/assessment_statistics/${resLocals.statsByDateCsvFilename}"
+                        >${resLocals.statsByDateCsvFilename}</a
                       >.
                       <br />
                       Each day shows a histogram of the scores on this assessment for that day. The

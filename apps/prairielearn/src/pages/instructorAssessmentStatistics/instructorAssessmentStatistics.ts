@@ -7,7 +7,12 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
 import * as sqldb from '@prairielearn/postgres';
 import { updateAssessmentStatistics } from '../../lib/assessment';
 import { AssessmentSchema } from '../../lib/db-types';
-import { InstructorAssessmentStatistics } from './instructorAssessmentStatistics.html';
+import {
+  AssessmentScoreHistogramByDateSchema,
+  DurationStatSchema,
+  InstructorAssessmentStatistics,
+  UserScoreSchema,
+} from './instructorAssessmentStatistics.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -46,23 +51,38 @@ router.get(
     // instance for each user, so the scatter plot of instance durations vs
     // scores won't include low-scoring instances. It's not clear if we want to
     // change this.
-    const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.duration_stat = durationStatsResult.rows[0];
-    console.log(res.locals.duration_stat);
+    const durationStat = await sqldb.queryRow(
+      sql.select_duration_stats,
+      {
+        assessment_id: res.locals.assessment.id,
+      },
+      DurationStatSchema,
+    );
 
-    const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment_score_histogram_by_date = histByDateResult.rows;
+    const assessmentScoreHistogramByDate = await sqldb.queryRows(
+      sql.assessment_score_histogram_by_date,
+      {
+        assessment_id: res.locals.assessment.id,
+      },
+      AssessmentScoreHistogramByDateSchema,
+    );
 
-    const userScoresResult = await sqldb.queryAsync(sql.user_scores, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.user_scores = userScoresResult.rows;
+    const userScores = await sqldb.queryRows(
+      sql.user_scores,
+      {
+        assessment_id: res.locals.assessment.id,
+      },
+      UserScoreSchema,
+    );
 
-    res.send(InstructorAssessmentStatistics({ resLocals: res.locals }));
+    res.send(
+      InstructorAssessmentStatistics({
+        resLocals: res.locals,
+        durationStat,
+        assessmentScoreHistogramByDate,
+        userScores,
+      }),
+    );
   }),
 );
 
