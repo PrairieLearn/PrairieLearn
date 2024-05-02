@@ -60,14 +60,16 @@ export default function (options = { publicEndpoint: false, static: false }) {
       if (options.publicEndpoint && !options.static) {
         const variant = await selectVariantById(z.string().parse(req.query.variant_id));
         if (!variant) throw new HttpStatusError(404, 'Not Found');
+
         const question = await selectQuestionById(variant.question_id);
         if (!question.shared_publicly) throw new HttpStatusError(404, 'Not Found');
+
         const course = await selectCourseById(req.params.course_id);
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         await chunks.ensureChunksForCourseAsync(course.id, { type: 'elements' });
+
         elementFilesDir = path.join(coursePath, 'elements');
       } else if (!options.publicEndpoint && !options.static) {
-        // Files should be served from the course directory
         let question_course;
         if (req.query.variant_id) {
           const variant = await selectVariantById(z.string().parse(req.query.variant_id));
