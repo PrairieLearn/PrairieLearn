@@ -200,7 +200,7 @@ router.get(
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
-      const csvData = [];
+      const csvData: (string | number)[][] = [];
 
       let groupData = ['Number'];
       for (let day = 0; day < numDays; day++) {
