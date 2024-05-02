@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <% if (question_is_shared) { %>
+  <% if (question_is_shared && course.sharing_name) { %>
   <div class="d-flex flex-wrap">
     <div class="pr-1">Shared As:</div>
     <% if (question.shared_publicly) { %>
