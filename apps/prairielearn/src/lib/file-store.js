@@ -11,7 +11,7 @@ import { config } from './config';
 import { uploadToS3, getFromS3 } from '../lib/aws';
 import { IdSchema } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const StorageTypes = Object.freeze({

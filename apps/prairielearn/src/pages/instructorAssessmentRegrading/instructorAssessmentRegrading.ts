@@ -1,12 +1,13 @@
-// @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
-import { z } from 'zod';
+import asyncHandler = require('express-async-handler');
 
 import * as error from '@prairielearn/error';
 import { regradeAllAssessmentInstances } from '../../lib/regrading';
 import * as sqldb from '@prairielearn/postgres';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
+import {
+  InstructorAssessmentRegrading,
+  RegradingJobSequenceSchema,
+} from './instructorAssessmentRegrading.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -17,15 +18,12 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.locals.regrading_job_sequences = await sqldb.queryRows(
+    const regradingJobSequences = await sqldb.queryRows(
       sql.select_regrading_job_sequences,
       { assessment_id: res.locals.assessment.id },
-      JobSequenceSchema.extend({
-        start_date_formatted: z.string(),
-        user_uid: UserSchema.shape.uid,
-      }),
+      RegradingJobSequenceSchema,
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentRegrading({ resLocals: res.locals, regradingJobSequences }));
   }),
 );
 

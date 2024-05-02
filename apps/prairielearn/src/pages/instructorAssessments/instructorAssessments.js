@@ -3,7 +3,7 @@ import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 import AnsiUp from 'ansi_up';
 import * as error from '@prairielearn/error';
-const debug = require('debug')('prairielearn:instructorAssessments');
+import debugfn from 'debug';
 import { stringifyStream } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
@@ -18,6 +18,7 @@ import {
 const router = express.Router();
 const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorAssessments');
 
 const csvFilename = (locals) => {
   return (

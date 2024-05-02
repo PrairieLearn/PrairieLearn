@@ -1,81 +1,82 @@
+// @ts-check
+
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const opentelemetry = require('@prairielearn/opentelemetry');
+import * as opentelemetry from '@prairielearn/opentelemetry';
 
-const Sentry = require('@prairielearn/sentry');
+import * as Sentry from '@prairielearn/sentry';
 // `@sentry/tracing` must be imported before `@sentry/profiling-node`.
-require('@sentry/tracing');
-const { ProfilingIntegration } = require('@sentry/profiling-node');
+import '@sentry/tracing';
+import { ProfilingIntegration } from '@sentry/profiling-node';
 
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const fs = require('fs');
-const util = require('util');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as fs from 'node:fs';
+import * as util from 'node:util';
+import * as path from 'node:path';
 const favicon = require('serve-favicon');
-const async = require('async');
+import * as async from 'async';
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-const Bowser = require('bowser');
-const http = require('http');
-const https = require('https');
+import * as Bowser from 'bowser';
+import * as http from 'node:http';
+import * as https from 'node:https';
 const blocked = require('blocked');
 const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
-const { v4: uuidv4 } = require('uuid');
-const argv = require('yargs-parser')(process.argv.slice(2));
+import { v4 as uuidv4 } from 'uuid';
+const yargsParser = require('yargs-parser');
 const multer = require('multer');
-const { filesize } = require('filesize');
-const url = require('url');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const {
+import * as url from 'url';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
   startBatchedMigrations,
   stopBatchedMigrations,
-} = require('@prairielearn/migrations');
+} from '@prairielearn/migrations';
 
-const { logger, addFileLogging } = require('@prairielearn/logger');
-const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
-const load = require('./lib/load');
-const externalGrader = require('./lib/externalGrader');
-const externalGraderResults = require('./lib/externalGraderResults');
-const externalGradingSocket = require('./lib/externalGradingSocket');
-const workspace = require('./lib/workspace');
-const sqldb = require('@prairielearn/postgres');
-const migrations = require('@prairielearn/migrations');
-const error = require('@prairielearn/error');
-const sprocs = require('./sprocs');
-const news_items = require('./news_items');
-const cron = require('./cron');
-const socketServer = require('./lib/socket-server');
-const serverJobs = require('./lib/server-jobs-legacy');
-const freeformServer = require('./question-servers/freeform');
-const { cache } = require('@prairielearn/cache');
-const { LocalCache } = require('./lib/local-cache');
-const codeCaller = require('./lib/code-caller');
-const assets = require('./lib/assets');
-const namedLocks = require('@prairielearn/named-locks');
-const { EncodedData } = require('@prairielearn/browser-utils');
-const nodeMetrics = require('./lib/node-metrics');
-const { isEnterprise } = require('./lib/license');
-const lifecycleHooks = require('./lib/lifecycle-hooks');
-const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
-const staticNodeModules = require('./middlewares/staticNodeModules').default;
-const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { features } = require('./lib/features');
-const { featuresMiddleware } = require('./lib/features/middleware');
-const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
-const { createSessionMiddleware } = require('@prairielearn/session');
-const { PostgresSessionStore } = require('./lib/session-store');
-const { pullAndUpdateCourse } = require('./lib/course');
-const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
-const { SocketActivityMetrics } = require('./lib/telemetry/socket-activity-metrics');
+import { logger, addFileLogging } from '@prairielearn/logger';
+import { config, loadConfig, setLocalsFromConfig } from './lib/config';
+import * as load from './lib/load';
+import * as externalGrader from './lib/externalGrader';
+import * as externalGraderResults from './lib/externalGraderResults';
+import * as externalGradingSocket from './lib/externalGradingSocket';
+import * as workspace from './lib/workspace';
+import * as sqldb from '@prairielearn/postgres';
+import * as migrations from '@prairielearn/migrations';
+import * as error from '@prairielearn/error';
+import * as sprocs from './sprocs';
+import * as news_items from './news_items';
+import * as cron from './cron';
+import * as socketServer from './lib/socket-server';
+import * as serverJobs from './lib/server-jobs-legacy';
+import * as freeformServer from './question-servers/freeform';
+import { cache } from '@prairielearn/cache';
+import { LocalCache } from './lib/local-cache';
+import * as codeCaller from './lib/code-caller';
+import * as assets from './lib/assets';
+import * as namedLocks from '@prairielearn/named-locks';
+import { EncodedData } from '@prairielearn/browser-utils';
+import * as nodeMetrics from './lib/node-metrics';
+import { isEnterprise } from './lib/license';
+import * as lifecycleHooks from './lib/lifecycle-hooks';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths';
+import staticNodeModules from './middlewares/staticNodeModules';
+import { flashMiddleware, flash } from '@prairielearn/flash';
+import { features } from './lib/features';
+import { featuresMiddleware } from './lib/features/middleware';
+import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost';
+import { createSessionMiddleware } from '@prairielearn/session';
+import { PostgresSessionStore } from './lib/session-store';
+import { pullAndUpdateCourse } from './lib/course';
+import { selectJobsByJobSequenceId } from './lib/server-jobs';
+import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
+
+const argv = yargsParser(process.argv.slice(2));
 
 // If there is only one argument and `server.js` is being executed directly,
 // legacy it into the config option.
@@ -109,7 +110,7 @@ function enterpriseOnlyMiddleware(load) {
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {import('express').Express} The express "app" object that was created.
  */
-module.exports.initExpress = function () {
+export function initExpress() {
   const app = express();
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
@@ -203,10 +204,6 @@ module.exports.initExpress = function () {
       fileSize: config.fileUploadMaxBytes,
       parts: config.fileUploadMaxParts,
     },
-  });
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {
-    base: 10,
-    round: 0,
   });
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
@@ -323,6 +320,7 @@ module.exports.initExpress = function () {
 
   // proxy workspaces to remote machines
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
+  /** @type {import('http-proxy-middleware').Options} */
   const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -333,7 +331,6 @@ module.exports.initExpress = function () {
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
         if (workspace_url_rewrite == null) {
-          debug(`pathRewrite: querying workspace_url_rewrite for workspace_id=${workspace_id}`);
           const sql =
             'SELECT q.workspace_url_rewrite' +
             ' FROM questions AS q' +
@@ -344,9 +341,6 @@ module.exports.initExpress = function () {
           if (workspace_url_rewrite == null) workspace_url_rewrite = true;
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
-        debug(
-          `pathRewrite: found workspace_url_rewrite=${workspace_url_rewrite} for workspace_id=${workspace_id}`,
-        );
         if (!workspace_url_rewrite) {
           return path;
         }
@@ -393,14 +387,14 @@ module.exports.initExpress = function () {
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
       if (res && !res.headersSent) {
-        if (res.status && res.send) {
-          res.status(err.status ?? 500).send('Error proxying workspace request');
-        }
+        res
+          .status?.(/** @type {any} */ (err).status ?? 500)
+          ?.send?.('Error proxying workspace request');
       }
     },
   };
   const workspaceProxy = createProxyMiddleware((pathname) => {
-    return pathname.match('/pl/workspace/([0-9])+/container/');
+    return !!pathname.match('/pl/workspace/([0-9])+/container/');
   }, workspaceProxyOptions);
   const workspaceAuthRouter = express.Router();
   workspaceAuthRouter.use([
@@ -484,7 +478,7 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {})) {
+      if (err) {
         logger.verbose('request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
@@ -511,7 +505,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged').default);
 
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2').default);
-  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
+  app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2').default);
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib').default);
 
   if (isEnterprise()) {
@@ -527,7 +521,7 @@ module.exports.initExpress = function () {
     );
   }
 
-  app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
+  app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti').default);
   app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev').default);
@@ -539,8 +533,6 @@ module.exports.initExpress = function () {
     },
     require('./pages/authLogout/authLogout').default,
   ]);
-  // disable SEB until we can fix the mcrypt issues
-  // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn').default); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken').default); // authn for the API, set res.locals.authn_user
 
@@ -572,7 +564,7 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {})) {
+      if (err) {
         logger.verbose('authed_request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
@@ -1006,7 +998,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1112,10 +1104,12 @@ module.exports.initExpress = function () {
       // Redirect legacy question URLs to their preview page.
       // We need to maintain query parameters like `variant_id` so that the
       // preview page can render the correct variant.
-      const newUrl = `${req.params[0]}/preview`;
-      const newUrlParts = url.parse(newUrl);
-      newUrlParts.query = req.query;
-      res.redirect(url.format(newUrlParts));
+      res.redirect(
+        url.format({
+          pathname: `${req.params[0]}/preview`,
+          search: url.parse(req.originalUrl).search,
+        }),
+      );
     },
   );
   app.use(
@@ -1172,7 +1166,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_view';
         next();
       },
-      require('./pages/instructorFileBrowser/instructorFileBrowser'),
+      require('./pages/instructorFileBrowser/instructorFileBrowser').default,
     ],
   );
   app.use(
@@ -1220,7 +1214,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sharing';
       next();
     },
-    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
     function (req, res, next) {
@@ -1262,7 +1256,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics', [
     function (req, res, next) {
@@ -1290,7 +1284,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_download',
@@ -1365,7 +1359,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_download',
@@ -1654,10 +1648,12 @@ module.exports.initExpress = function () {
     // Redirect legacy question URLs to their preview page.
     // We need to maintain query parameters like `variant_id` so that the
     // preview page can render the correct variant.
-    const newUrl = `${req.params[0]}/preview`;
-    const newUrlParts = url.parse(newUrl);
-    newUrlParts.query = req.query;
-    res.redirect(url.format(newUrlParts));
+    res.redirect(
+      url.format({
+        pathname: `${req.params[0]}/preview`,
+        search: url.parse(req.originalUrl).search,
+      }),
+    );
   });
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', function (req, res, next) {
     res.locals.navPage = 'question';
@@ -1696,7 +1692,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
@@ -1728,7 +1724,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sharing';
       next();
     },
-    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/staff', [
     function (req, res, next) {
@@ -1770,7 +1766,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'syncs';
       next();
     },
-    require('./pages/courseSyncs/courseSyncs'),
+    require('./pages/courseSyncs/courseSyncs').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/topics', [
     function (req, res, next) {
@@ -1798,7 +1794,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_view';
       next();
     },
-    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+    require('./pages/instructorFileBrowser/instructorFileBrowser').default,
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_download',
@@ -1898,7 +1894,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/publicQuestionPreview/publicQuestionPreview'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview').default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/questions', [
     function (req, res, next) {
@@ -1906,7 +1902,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/publicQuestions/publicQuestions'),
+    require('./pages/publicQuestions/publicQuestions').default,
   ]);
 
   // Client files for questions
@@ -2054,10 +2050,10 @@ module.exports.initExpress = function () {
   // The Sentry error handler must come before our own.
   app.use(Sentry.Handlers.errorHandler());
 
-  app.use(require('./pages/error/error'));
+  app.use(require('./pages/error/error').default);
 
   return app;
-};
+}
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -2067,8 +2063,8 @@ module.exports.initExpress = function () {
 /** @type {import('http').Server | import('https').Server} */
 var server;
 
-module.exports.startServer = async () => {
-  const app = module.exports.initExpress();
+export async function startServer() {
+  const app = initExpress();
 
   if (config.serverType === 'https') {
     const key = await fs.promises.readFile(config.sslKeyFile);
@@ -2127,17 +2123,17 @@ module.exports.startServer = async () => {
     server.on('listening', () => {
       if (!done) {
         done = true;
-        resolve();
+        resolve(null);
       }
     });
   });
 
   return server;
-};
+}
 
-module.exports.stopServer = function (callback) {
-  if (!server) return callback(new Error('cannot stop an undefined server'));
-  if (!server.listening) return callback(null);
+export async function stopServer() {
+  if (!server) throw new Error('cannot stop an undefined server');
+  if (!server.listening) return;
 
   // This exists mostly for tests, where we might have dangling connections
   // from `fetch()` requests whose bodies we never read. `server.close()` won't
@@ -2149,34 +2145,25 @@ module.exports.stopServer = function (callback) {
   // PrairieLearn is stopped.
   server.closeAllConnections();
 
-  server.close(function (err) {
-    if (ERR(err, callback)) return;
-    callback(null);
-  });
-};
+  await util.promisify(server.close.bind(server))();
+}
 
-module.exports.insertDevUser = function (callback) {
+export async function insertDevUser() {
   // add dev user as Administrator
-  var sql =
+  const sql =
     'INSERT INTO users (uid, name)' +
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';
-  sqldb.queryOneRow(sql, [], function (err, result) {
-    if (ERR(err, callback)) return;
-    var user_id = result.rows[0].user_id;
-    var sql =
-      'INSERT INTO administrators (user_id)' +
-      ' VALUES ($user_id)' +
-      ' ON CONFLICT (user_id) DO NOTHING;';
-    var params = { user_id };
-    sqldb.query(sql, params, function (err, _result) {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  });
-};
+  const result = await sqldb.queryOneRowAsync(sql, []);
+  const user_id = result.rows[0].user_id;
+  const adminSql =
+    'INSERT INTO administrators (user_id)' +
+    ' VALUES ($user_id)' +
+    ' ON CONFLICT (user_id) DO NOTHING;';
+  await sqldb.queryAsync(adminSql, { user_id });
+}
 
 if (require.main === module && config.startServer) {
   async.series(
@@ -2221,9 +2208,9 @@ if (require.main === module && config.startServer) {
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
             integrations,
-            tracesSampleRate: config.sentryTracesSampleRate,
+            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
             // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate,
+            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -2289,7 +2276,7 @@ if (require.main === module && config.startServer) {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
-          password: config.postgresqlPassword,
+          password: config.postgresqlPassword ?? undefined,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
           ssl: config.postgresqlSsl,
@@ -2323,7 +2310,7 @@ if (require.main === module && config.startServer) {
         if (argv['refresh-workspace-hosts-and-exit']) {
           logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
 
-          const hosts = await markAllWorkspaceHostsUnhealthy();
+          const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
 
           const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
           logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
@@ -2505,24 +2492,17 @@ if (require.main === module && config.startServer) {
           redisUrl: config.redisUrl,
         }),
       async () => await freeformServer.init(),
-      function (callback) {
-        if (!config.devMode) return callback(null);
-        module.exports.insertDevUser(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        if (!config.devMode) return;
+
+        await insertDevUser();
       },
       async () => {
         logger.verbose('Starting server...');
-        await module.exports.startServer();
+        await startServer();
       },
       async () => socketServer.init(server),
-      function (callback) {
-        externalGradingSocket.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => externalGradingSocket.init(),
       async () => externalGrader.init(),
       async () => workspace.init(),
       async () => serverJobs.init(),

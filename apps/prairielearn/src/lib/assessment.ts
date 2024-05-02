@@ -1,6 +1,5 @@
 import * as async from 'async';
 import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
 
@@ -18,7 +17,7 @@ import {
   AssessmentInstanceSchema,
 } from './db-types';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
+const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export const InstanceLogSchema = z.object({
@@ -155,7 +154,7 @@ export async function update(
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
-    await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   }
   return updated;
 }

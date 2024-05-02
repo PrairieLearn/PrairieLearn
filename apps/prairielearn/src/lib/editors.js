@@ -1,5 +1,5 @@
 // @ts-check
-const _ = require('lodash');
+import * as _ from 'lodash';
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 import { createServerJob } from './server-jobs';
@@ -13,7 +13,7 @@ import {
 } from '../models/course';
 import { config } from './config';
 import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as fs from 'fs-extra';
 import * as async from 'async';
@@ -27,6 +27,7 @@ import * as b64Util from '../lib/base64-util';
 import { html } from '@prairielearn/html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:editors');
 
 /**
  * @param {any} course
