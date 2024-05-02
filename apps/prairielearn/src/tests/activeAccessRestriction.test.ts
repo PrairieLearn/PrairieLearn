@@ -165,7 +165,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.isTrue(questionResponse.ok);
   });
 
-  step('count number of variants generated', async() => {
+  step('count number of variants generated', async () => {
     const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
       assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
     });
@@ -348,7 +348,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('count number of variants generated', async() => {
+  step('count number of variants generated', async () => {
     const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
       assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
     });
