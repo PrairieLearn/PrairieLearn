@@ -3039,7 +3039,7 @@ __metadata:
     "@types/ejs": ^3.1.5
     "@types/node": ^20.12.2
     chai: ^4.4.1
-    ejs: ^3.1.9
+    ejs: ^3.1.10
     mocha: ^10.4.0
     tsx: ^4.7.2
     typescript: ^5.4.3
@@ -3343,7 +3343,7 @@ __metadata:
     dockerode: ^4.0.2
     dompurify: ^3.0.11
     dropzone: ^5.9.3
-    ejs: ^3.1.9
+    ejs: ^3.1.10
     execa: ^5.1.1
     express: ^4.19.2
     express-async-handler: ^1.2.0
@@ -8236,14 +8236,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ejs@npm:^3.1.9":
-  version: 3.1.9
-  resolution: "ejs@npm:3.1.9"
+"ejs@npm:^3.1.10":
+  version: 3.1.10
+  resolution: "ejs@npm:3.1.10"
   dependencies:
     jake: ^10.8.5
   bin:
     ejs: bin/cli.js
-  checksum: af6f10eb815885ff8a8cfacc42c6b6cf87daf97a4884f87a30e0c3271fedd85d76a3a297d9c33a70e735b97ee632887f85e32854b9cdd3a2d97edf931519a35f
+  checksum: ce90637e9c7538663ae023b8a7a380b2ef7cc4096de70be85abf5a3b9641912dde65353211d05e24d56b1f242d71185c6d00e02cb8860701d571786d92c71f05
   languageName: node
   linkType: hard
 
