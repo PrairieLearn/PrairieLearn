@@ -43,7 +43,7 @@ WITH
       LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
     WHERE
       iq.assessment_instance_id = $assessment_instance_id
-      AND NOT v.broken_at IS NULL
+      AND v.broken_at IS NULL
     GROUP BY
       iq.id
   )
