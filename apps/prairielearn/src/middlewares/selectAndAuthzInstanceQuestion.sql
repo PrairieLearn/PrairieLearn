@@ -76,7 +76,7 @@ WITH
       LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
     WHERE
       v.instance_question_id = $instance_question_id
-      AND NOT v.broken
+      AND NOT v.broken_at IS NULL
   )
 SELECT
   jsonb_set(
