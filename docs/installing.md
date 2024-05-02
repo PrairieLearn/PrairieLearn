@@ -60,9 +60,9 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on ARM64 hardware
+### Running on Apple M1 and other ARM64 hardware
 
-If you're using an Apple Silicon Mac or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+If you're using an Apple Silicon Mac (M1, M2, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
 
 ```
 no matching manifest for linux/arm64/v8 in the manifest list entries
@@ -74,7 +74,9 @@ To fix this, add `--platform linux/amd64` before the image in any `docker run` c
 docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
 ```
 
-When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check "Use Rosetta for x86/amd64 emulation on Apple Silicon", and click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+
+If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
 
 _Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
@@ -85,6 +87,8 @@ In production, PrairieLearn runs external grading jobs and workspaces on a distr
 - Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
 - Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
 - Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+
+#### Preparation
 
 In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
 
@@ -97,7 +101,13 @@ To run PrairieLearn locally with external grader and workspace support, create a
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, and you are using Linux or Mac OS X, the new command is as follows:
+#### Platform-specific invocations
+
+Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows, depending on your operating system:
+
+##### macOS
+
+If you are on **macOS**, use this invocation, which includes the "platform" flag mentioned above to avoid problems on Apple ARM chips. (This does require Rosetta emulation to be enabled as described above.)
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -105,10 +115,13 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
     prairielearn/prairielearn
 ```
 
-If you are on Windows, you can use the following command on the WSL 2 shell:
+##### Linux or Windows WSL2
+
+If you are on **Linux**, or if you are on **Windows** using the WSL 2 shell, you can use the following command:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -116,7 +129,7 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --add-host=host.docker.internal:172.17.0.1 \
+    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
     prairielearn/prairielearn
 ```
 
