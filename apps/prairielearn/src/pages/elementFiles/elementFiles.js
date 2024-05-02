@@ -12,7 +12,6 @@ import { getQuestionCourse } from '../../lib/question-variant';
 import { selectQuestionById } from '../../models/question';
 import { selectVariantById } from '../../models/variant';
 import { idsEqual } from '../../lib/id';
-import { selectAndAuthzInstanceQuestion } from '../../middlewares/selectAndAuthzInstanceQuestion';
 
 const router = Router({ mergeParams: true });
 
