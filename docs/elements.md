@@ -719,7 +719,7 @@ generation if two (or more) choices are identical.
 | `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                        |
 | `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                       |
 | `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.    |
-| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as possible. Should only be used with `display` set to `"dropdown"`. |
+| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
