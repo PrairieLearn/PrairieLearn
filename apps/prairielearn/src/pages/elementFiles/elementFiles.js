@@ -63,23 +63,12 @@ router.get(
       if (req.query.variant_id) {
         const variant = await selectVariantById(z.string().parse(req.query.variant_id));
         if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
-          // the existence of the variant within the course validates that this course has sharing permissions on this question
           throw new HttpStatusError(404, 'Not Found');
         }
 
+        // the existence of the variant within the course validates that this course has sharing permissions on this question
         const question = await selectQuestionById(variant.question_id);
         question_course = await getQuestionCourse(question, res.locals.course);
-
-        // if the question course is different from the variant course (the question is being shared), check the user's
-        // permissions on the variant
-        if (
-          question_course.id !== variant.course_id &&
-          !res.locals.authz_data.has_course_permission_view &&
-          variant.instance_question_id
-        ) {
-          req.params.instance_question_id = variant.instance_question_id;
-          await selectAndAuthzInstanceQuestion(req, res); // TODO: also need to add on the req.params.assessment_id before calling?
-        }
       } else {
         question_course = res.locals.course;
       }
