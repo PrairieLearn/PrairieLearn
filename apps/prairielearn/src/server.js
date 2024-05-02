@@ -823,7 +823,7 @@ export function initExpress() {
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles').default);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default(),
+    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: false, static: true }),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
@@ -1905,8 +1905,12 @@ export function initExpress() {
     require('./pages/publicQuestions/publicQuestions').default,
   ]);
   app.use(
+    '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true, static: false }),
+  );
+  app.use(
     '/pl/public/course/:course_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true }),
+    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true, static: false }),
   );
 
   // Client files for questions

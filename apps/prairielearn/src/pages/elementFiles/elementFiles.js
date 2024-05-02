@@ -14,8 +14,6 @@ import { selectQuestionById } from '../../models/question';
 import { selectVariantById } from '../../models/variant';
 import { idsEqual } from '../../lib/id';
 
-const router = Router({ mergeParams: true });
-
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
  * static files from an element's "clientFilesElement" directory.
@@ -24,7 +22,7 @@ const router = Router({ mergeParams: true });
 const EXTENSION_WHITELIST = ['.js', '.css'];
 const CLIENT_FOLDER = 'clientFilesElement';
 
-export default function (options = { publicEndpoint: false }) {
+export default function (options = { publicEndpoint: false, static: false }) {
   const router = Router({ mergeParams: true });
   router.get(
     '/*',
@@ -58,13 +56,17 @@ export default function (options = { publicEndpoint: false }) {
         res.removeHeader('Cache-Control');
       }
 
-      // if (options.publicEndpoint) {
-      //   res.locals.course = await selectCourseById(req.params.course_id);
-      //   // TODO: don't actually assign this here if the element should come from core elements?
-      // }
-
       let elementFilesDir;
-      if (res.locals.course) {
+      if (options.publicEndpoint && !options.static) {
+        const variant = await selectVariantById(z.string().parse(req.query.variant_id));
+        if (!variant) throw new HttpStatusError(404, 'Not Found');
+        const question = await selectQuestionById(variant.question_id);
+        if (!question.shared_publicly) throw new HttpStatusError(404, 'Not Found');
+        const course = await selectCourseById(req.params.course_id);
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        await chunks.ensureChunksForCourseAsync(course.id, { type: 'elements' });
+        elementFilesDir = path.join(coursePath, 'elements');
+      } else if (!options.publicEndpoint && !options.static) {
         // Files should be served from the course directory
         let question_course;
         if (req.query.variant_id) {
@@ -83,16 +85,10 @@ export default function (options = { publicEndpoint: false }) {
         await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
 
         elementFilesDir = path.join(coursePath, 'elements');
-        res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
       } else {
         elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
-        res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
       }
-
-      // on building different URLs to make it work: https://github.com/PrairieLearn/PrairieLearn/issues/8322
-      // also edit here to point to those URLs is question course is different than variant course:
-      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]12
-      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]45
+      res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
     }),
   );
   return router;
