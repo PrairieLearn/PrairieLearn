@@ -50,10 +50,23 @@
       <% } %>
     </div>
   </div>
-    <div class="d-flex flex-wrap">
-      <div class="pr-1">Title:</div>
-      <div><%= question.title %></div>
-    </div>
+
+  <% if (question_is_shared) { %>
+  <div class="d-flex flex-wrap">
+    <div class="pr-1">Shared As:</div>
+    <% if (question.shared_publicly) { %>
+      <div>
+        <a href="<%= plainUrlPrefix %>/public/course/<%= course.id %>/question/<%= question.id %>/preview">@<%= course.sharing_name %>/<%= question.qid %></a>
+      </div>
+    <% } else { %>
+      <div>@<%= course.sharing_name %>/<%= question.qid %></div>
+    <% } %>
+  </div>
+  <% } %>
+  <div class="d-flex flex-wrap">
+    <div class="pr-1">Title:</div>
+    <div><%= question.title %></div>
+  </div>
   <div class="d-flex flex-wrap">
     <div class="pr-1">Started at: </div>
     <div><%= variant.formatted_date %></div>
@@ -95,7 +108,7 @@
   <% } %>
   <% } %>
 
-  <% 
+  <%
      let ip_assessment = null;
      let ip_assessment_instance = null;
      let ip_instance_question = null;

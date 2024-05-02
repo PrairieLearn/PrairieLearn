@@ -2,6 +2,7 @@
 const asyncHandler = require('express-async-handler');
 import * as path from 'node:path';
 import { Router } from 'express';
+import { z } from 'zod';
 
 import * as chunks from '../../lib/chunks';
 import { config } from '../../lib/config';
@@ -9,6 +10,11 @@ import { APP_ROOT_PATH } from '../../lib/paths';
 import { selectCourseById } from '../../models/course';
 import { HttpStatusError } from '@prairielearn/error';
 import { getQuestionCourse } from '../../lib/question-variant';
+import { selectQuestionById } from '../../models/question';
+import { selectVariantById } from '../../models/variant';
+import { idsEqual } from '../../lib/id';
+
+const router = Router({ mergeParams: true });
 
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
@@ -57,25 +63,36 @@ export default function (options = { publicEndpoint: false }) {
       //   // TODO: don't actually assign this here if the element should come from core elements?
       // }
 
-      // on building different URLs to make it work: https://github.com/PrairieLearn/PrairieLearn/issues/8322
-      // also edit here to point to those URLs is question course is different than variant course:
-      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]12
-      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]45
-
-
       let elementFilesDir;
       if (res.locals.course) {
         // Files should be served from the course directory
-        console.log(res.locals.question)
-        const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+        let question_course;
+        if (req.query.variant_id) {
+          const variant = await selectVariantById(z.string().parse(req.query.variant_id));
+          if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
+            throw new HttpStatusError(404, 'Not Found');
+          }
+
+          // the existence of the variant within the course validates that this course has sharing permissions on this question
+          const question = await selectQuestionById(variant.question_id);
+          question_course = await getQuestionCourse(question, res.locals.course);
+        } else {
+          question_course = res.locals.course;
+        }
         const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
         await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
+
         elementFilesDir = path.join(coursePath, 'elements');
         res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
       } else {
         elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
         res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
       }
+
+      // on building different URLs to make it work: https://github.com/PrairieLearn/PrairieLearn/issues/8322
+      // also edit here to point to those URLs is question course is different than variant course:
+      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]12
+      // https://github.com/PrairieLearn/PrairieLearn/blob/72fe3496c8807e4c5b7ba2ad926c77900a2a9389/apps/prairielearn/src/question-servers/freeform.js#L[…]45
     }),
   );
   return router;

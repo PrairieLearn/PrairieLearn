@@ -26,6 +26,7 @@ import * as chunks from '../lib/chunks';
 import * as assets from '../lib/assets';
 import { APP_ROOT_PATH } from '../lib/paths';
 import { features } from '../lib/features';
+import { idsEqual } from '../lib/id';
 
 const debug = debugfn('prairielearn:freeform');
 
@@ -1538,10 +1539,16 @@ export async function render(
         scriptUrls.push(assets.coreElementAssetPath(file)),
       );
       dependencies.courseElementStyles.forEach((file) =>
-        styleUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        styleUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+            (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
+        ),
       );
       dependencies.courseElementScripts.forEach((file) =>
-        scriptUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        scriptUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+            (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
+        ),
       );
       dependencies.extensionStyles.forEach((file) =>
         styleUrls.push(
@@ -1566,8 +1573,11 @@ export async function render(
           ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
             assets.coreElementAssetPath(file),
           ),
-          ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-            assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+          ..._.mapValues(
+            dynamicDependencies.courseElementScripts,
+            (file) =>
+              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
+              (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
