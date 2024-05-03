@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <% if (typeof new_variant_forbidden === 'undefined') { %>
     <%- compiled_script_tag('question.ts') %>
     <% if (assessment.type === 'Exam') { %>
     <%- compiled_script_tag('examTimeLimitCountdown.ts') %>
@@ -19,6 +18,7 @@
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
+    <% if (!locals.no_variant_exists) { %>
     <% if (question.type != 'Freeform') { %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= asset_path('javascripts/require.js') %>"></script>
@@ -39,20 +39,20 @@
 
     <%- include('../partials/navbar', {navPage: ''}); %>
     <main id="content" class="container">
-      <% if (typeof new_variant_forbidden !== 'undefined') { %>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <%- include('../partials/questionTitle', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
-        </div>
-        <div class="card-body">
-          A new variant cannot be created because the assessment is closed.
-        </div>
-      </div>
-      <%- include('../partials/questionNavSideButtonGroup') %>
-      <% } else { %>
       <div class="row">
         <div class="col-lg-9 col-sm-12">
+          <% if (locals.no_variant_exists) { %>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <%- include('../partials/questionTitle', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
+            </div>
+            <div class="card-body">
+              This question was never viewed while the assessment was open, so a variant cannot be created.
+            </div>
+          </div>
+          <% } else { %>
           <%- include('../partials/question', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
+          <% } %>
         </div>
 
         <div class="col-lg-3 col-sm-12">
@@ -91,7 +91,6 @@
           <%- include('../partials/instructorInfoPanel') %>
         </div>
       </div>
-      <% } %>
     </main>
   </body>
 </html>

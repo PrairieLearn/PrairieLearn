@@ -21,6 +21,9 @@ describe('Exam and homework assessment with active access restriction', function
 
   const headers: Record<string, string> = {};
 
+  const VARIANT_FORBIDDEN_STRING =
+    'This question was never viewed while the assessment was open, so a variant cannot be created.';
+
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -217,9 +220,8 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
 
-    const msg = response.$('main div.card-body');
-    assert.lengthOf(msg, 1);
-    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
+    assert.lengthOf(result, 1);
   });
 
   step(
@@ -264,9 +266,8 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
 
-    const msg = response.$('main div.card-body');
-    assert.lengthOf(msg, 1);
-    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
+    assert.lengthOf(result, 1);
   });
 
   step('ensure that no new variants have been created', async () => {
@@ -386,9 +387,8 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.equal(response.status, 403);
 
-    const msg = response.$('main div.card-body');
-    assert.lengthOf(msg, 1);
-    assert.match(msg.text(), /A new variant cannot be created because the assessment is closed\./);
+    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
+    assert.lengthOf(result, 1);
   });
 
   step('ensure that no new variants have been created', async () => {
