@@ -33,6 +33,7 @@
     "@prairielearn/csv": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/error": "workspace:^",
+    "@prairielearn/excalidraw": "workspace:^",
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/flash": "workspace:^",
     "@prairielearn/html": "workspace:^",

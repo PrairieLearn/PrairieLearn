@@ -1,0 +1,30 @@
+.excalidraw-root label {
+    margin-bottom: initial;
+}
+
+.excalidraw-root .excalidraw-button.save-button {
+    padding: 0.5rem;
+    margin-left: 1rem;
+    cursor: initial;
+    --button-height: 2.5rem;
+    --button-width: 5rem;
+}
+
+.excalidraw-root .excalidraw-button.save-button-unsaved {
+    background: #ffc107;
+    cursor: initial;
+}
+
+.excalidraw-root label[title="Library"] {
+    display: none;
+}
+
+.excalidraw-root .draw-container {
+    width: var(--container-width);
+    height: var(--container-height);
+}
+
+.excalidraw-root .popover {
+    border: unset;
+    background-color: unset;
+}

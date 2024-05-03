@@ -1,0 +1,20 @@
+<script>
+    $(async () => {
+        const module = (await import("pl-excalidraw-js"))
+        await module.init_sketch("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")))
+    })
+</script>
+
+<div id="excalidraw-host-{{uuid}}">
+    <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}"/>
+    <style>
+        .excalidraw-root {
+            --container-width: {{width}};
+            --container-height: {{height}};
+        }
+    </style>
+
+    <div class="excalidraw-root">
+        <div id="excalidraw-{{uuid}}" class="draw-container"></div>
+    </div>
+</div>

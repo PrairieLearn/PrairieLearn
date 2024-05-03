@@ -1,0 +1,16 @@
+{
+  "controller": "pl-excalidraw.py",
+  "dependencies": {
+    "nodeModulesScripts": [],
+    "elementScripts": [],
+    "elementStyles": ["pl-excalidraw.css"]
+  },
+  "dynamicDependencies": {
+    "elementScripts": {
+      "pl-excalidraw-js": "pl-excalidraw.js"
+    },
+    "nodeModulesScripts": {
+      "pl-excalidraw-deps": "@prairielearn/excalidraw/dist/index.js"
+    }
+  }
+}
