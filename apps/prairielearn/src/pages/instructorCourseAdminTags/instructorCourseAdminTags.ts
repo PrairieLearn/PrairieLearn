@@ -4,7 +4,7 @@ import * as express from 'express';
 
 import * as sqldb from '@prairielearn/postgres';
 import { TagSchema } from '../../lib/db-types';
-import { InstructorCourseAdminTags } from './InstructorCourseAdminTags.html';
+import { InstructorCourseAdminTags } from './instructorCourseAdminTags.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
