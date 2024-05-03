@@ -57,9 +57,7 @@ router.get(
 
     const assessmentScoreHistogramByDate = await sqldb.queryRows(
       sql.assessment_score_histogram_by_date,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentScoreHistogramByDateSchema,
     );
 
