@@ -51,9 +51,7 @@ router.get(
     // change this.
     const durationStat = await sqldb.queryRow(
       sql.select_duration_stats,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       DurationStatSchema,
     );
 
