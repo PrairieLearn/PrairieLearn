@@ -129,9 +129,13 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity (may need a different port if you have changed docker's defaults)` \
+    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
     prairielearn/prairielearn
 ```
+
+###### Troubleshooting the --add-host option on Linux and Windows
+
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
 
 ## Upgrading your Docker's version of PrairieLearn
 
