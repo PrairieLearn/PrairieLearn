@@ -65,9 +65,7 @@ router.get(
 
     const userScores = await sqldb.queryRows(
       sql.user_scores,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       UserScoreSchema,
     );
 
