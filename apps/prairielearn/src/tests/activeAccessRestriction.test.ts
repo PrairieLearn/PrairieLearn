@@ -22,7 +22,7 @@ describe('Exam and homework assessment with active access restriction', function
   const headers: Record<string, string> = {};
 
   const VARIANT_FORBIDDEN_STRING =
-    'This question was never viewed while the assessment was open, so a variant cannot be created.';
+    'This question was not viewed while the assessment was open, so no variant was created.';
 
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
