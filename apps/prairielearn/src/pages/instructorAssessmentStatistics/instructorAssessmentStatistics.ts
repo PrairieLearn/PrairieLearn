@@ -37,11 +37,9 @@ router.get(
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    res.locals.assessment = await sqldb.queryRow(
+    const assessment = await sqldb.queryRow(
       sql.select_assessment,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentSchema,
     );
 
@@ -78,6 +76,7 @@ router.get(
     res.send(
       InstructorAssessmentStatistics({
         resLocals: res.locals,
+        assessment,
         durationStat,
         assessmentScoreHistogramByDate,
         userScores,
