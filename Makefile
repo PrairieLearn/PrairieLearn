@@ -22,6 +22,8 @@ dev: start-support
 	@yarn dev
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
+dev-all: start-support
+	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
 	@yarn start
