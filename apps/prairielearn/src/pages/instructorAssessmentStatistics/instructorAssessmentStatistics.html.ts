@@ -81,7 +81,6 @@ export function InstructorAssessmentStatistics({
               ? html`
                   <div class="card-body">
                     <div
-                      id="scoreHist"
                       class="js-histogram"
                       data-histogram="${JSON.stringify(assessment.score_stat_hist)}"
                       data-xgrid="${JSON.stringify(_.range(0, 110, 10))}"
@@ -159,7 +158,6 @@ export function InstructorAssessmentStatistics({
               ? html`
                   <div class="card-body">
                     <div
-                      id="durationHist"
                       class="js-histogram"
                       data-histogram="${JSON.stringify(durationStat.hist)}"
                       data-xgrid="${JSON.stringify(durationStat.threshold_seconds)}"
@@ -216,7 +214,6 @@ export function InstructorAssessmentStatistics({
               ? html`
                   <div class="card-body">
                     <div
-                      id="durationScoreScatter"
                       class="js-scatter"
                       data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
                       data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
@@ -249,7 +246,6 @@ export function InstructorAssessmentStatistics({
               ? html`
                   <div class="card-body">
                     <div
-                      id="scoreHistsByDateDiv"
                       style="overflow-x: scroll; overflow-y: hidden;"
                       class="js-parallel-histograms"
                       data-histograms="${JSON.stringify(
