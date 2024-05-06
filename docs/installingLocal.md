@@ -35,6 +35,9 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
   # Or, run PrairieLearn like it's run in production.
   make start
 
+  # To support workspaces in local development, use `make dev-all` and `make start-all` to run
+  # both PrairieLearn and a workspace server application.
+
   # To stop the server, press Ctrl-C.
   # To exit the container, press Ctrl-C and then Ctrl-D.
   ```

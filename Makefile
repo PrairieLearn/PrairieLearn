@@ -31,6 +31,8 @@ start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
 	@node apps/prairielearn/dist/executor.js
+start-all: start-support
+	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:
 	@yarn workspace @prairielearn/prairielearn pg-describe postgres -o ../../database
