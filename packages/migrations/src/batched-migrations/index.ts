@@ -6,16 +6,16 @@ export {
   selectBatchedMigration,
   selectBatchedMigrationForTimestamp,
   retryFailedBatchedMigrationJobs,
-} from './batched-migration.js';
+} from './batched-migration';
 export {
   BatchedMigrationJobRow,
   BatchedMigrationJobStatus,
   selectRecentJobsWithStatus,
-} from './batched-migration-job.js';
+} from './batched-migration-job';
 export {
   initBatchedMigrations,
   startBatchedMigrations,
   stopBatchedMigrations,
   enqueueBatchedMigration,
   finalizeBatchedMigration,
-} from './batched-migrations-runner.js';
+} from './batched-migrations-runner';

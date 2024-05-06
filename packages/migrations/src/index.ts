@@ -1,6 +1,6 @@
 import path from 'path';
 
-export { init } from './migrations/index.js';
+export { init } from './migrations';
 
 export {
   BatchedMigrationRow,
@@ -18,6 +18,6 @@ export {
   selectBatchedMigrationForTimestamp,
   selectRecentJobsWithStatus,
   retryFailedBatchedMigrationJobs,
-} from './batched-migrations/index.js';
+} from './batched-migrations';
 
-export const SCHEMA_MIGRATIONS_PATH = path.resolve(import.meta.dirname, '..', 'schema-migrations');
+export const SCHEMA_MIGRATIONS_PATH = path.resolve(__dirname, '..', 'schema-migrations');

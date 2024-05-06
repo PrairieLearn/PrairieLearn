@@ -3,9 +3,6 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["node", "mocha"],
-    // Use native ESM.
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "types": ["node", "mocha"]
   }
 }

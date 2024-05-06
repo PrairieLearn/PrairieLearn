@@ -4,7 +4,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { doWithLock } from '@prairielearn/named-locks';
 
-import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations.js';
+import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
   BatchedMigrationRowSchema,
   BatchedMigrationRow,
@@ -14,8 +14,8 @@ import {
   updateBatchedMigrationStatus,
   BatchedMigrationImplementation,
   validateBatchedMigrationImplementation,
-} from './batched-migration.js';
-import { BatchedMigrationRunner } from './batched-migration-runner.js';
+} from './batched-migration';
+import { BatchedMigrationRunner } from './batched-migration-runner';
 
 const sql = loadSqlEquiv(__filename);
 

@@ -11,7 +11,7 @@ import {
   parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
-} from '../load-migrations.js';
+} from '../load-migrations';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

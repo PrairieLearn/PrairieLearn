@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import path from 'node:path';
 import { makePostgresTestUtils, queryAsync } from '@prairielearn/postgres';
 
-import { getMigrationsToExecute, initWithLock } from './migrations.js';
+import { getMigrationsToExecute, initWithLock } from './migrations';
 
 describe('migrations', () => {
   describe('getMigrationsToExecute', () => {

@@ -8,7 +8,7 @@ import {
   parseAnnotations,
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
-} from './load-migrations.js';
+} from './load-migrations';
 
 chai.use(chaiAsPromised);
 
