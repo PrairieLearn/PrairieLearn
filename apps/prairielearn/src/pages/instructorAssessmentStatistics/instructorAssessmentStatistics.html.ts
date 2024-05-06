@@ -224,9 +224,7 @@ export function InstructorAssessmentStatistics({
                         }),
                       )}"
                       data-ydata="${JSON.stringify(
-                        userScores.map((user) => {
-                          return user.score_perc;
-                        }),
+                        userScores.map((user) => user.score_perc),
                       )}"
                       data-options="${JSON.stringify({
                         xgrid: durationStat.threshold_seconds,
