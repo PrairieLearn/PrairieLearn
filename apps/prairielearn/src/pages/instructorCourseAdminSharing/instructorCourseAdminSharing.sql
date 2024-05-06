@@ -40,6 +40,7 @@ SET
 WHERE
   id = $course_id;
 
+
 -- BLOCK sharing_set_create
 INSERT INTO
   sharing_sets (course_id, name)
@@ -69,3 +70,19 @@ SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+
+-- Michael TESTING below
+
+-- BLOCK update_sharing_name OR update choose_sharing_name above to check for if 
+-- someone has imported a question from the course yet or not
+UPDATE pl_courses
+SET
+  sharing_name = $sharing_name
+WHERE
+  id = $course_id;
+
+
+
+
+-- Michael TESTING above

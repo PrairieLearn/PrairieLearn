@@ -98,6 +98,26 @@ router.post(
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
       }
+      /*
+       * BEGIN TEST, michael
+       */
+
+      // Check if a problem in the course has been imported into another course
+        // Can only be changed if none imported into another course
+
+      const hasShared = await sqldb.queryRows(
+        sql.select_sharing_sets,
+        { course_id: res.locals.course.id }
+      );
+
+      if (hasShared.length > 0) {
+        throw new error.HttpStatusError(403, 'Cannot change sharing name because questions have been imported from this course');
+      } 
+      
+      /*
+       * END TEST, michael
+       */
+
       await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
         sharing_name: req.body.course_sharing_name.trim(),
         course_id: res.locals.course.id,
