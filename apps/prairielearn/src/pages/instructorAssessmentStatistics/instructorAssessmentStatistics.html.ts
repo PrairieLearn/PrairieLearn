@@ -257,13 +257,11 @@ export function InstructorAssessmentStatistics({
                       style="overflow-x: scroll; overflow-y: hidden;"
                       class="parallel_histograms"
                       data-histograms="${JSON.stringify(
-                        assessmentScoreHistogramByDate.map(function (day) {
-                          return {
-                            label: day.date_formatted,
-                            mean: day.mean_score_perc,
-                            histogram: day.histogram,
-                          };
-                        }),
+                        assessmentScoreHistogramByDate.map((day) => ({
+                          label: day.date_formatted,
+                          mean: day.mean_score_perc,
+                          histogram: day.histogram,
+                        })),
                       )}"
                       data-options="${JSON.stringify({
                         ygrid: _.range(0, 110, 10),
