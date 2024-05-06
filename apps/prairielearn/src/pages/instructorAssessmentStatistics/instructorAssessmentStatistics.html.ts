@@ -82,7 +82,7 @@ export function InstructorAssessmentStatistics({
                   <div class="card-body">
                     <div
                       id="scoreHist"
-                      class="histogram"
+                      class="js-histogram"
                       data-histogram="${JSON.stringify(assessment.score_stat_hist)}"
                       data-xgrid="${JSON.stringify(_.range(0, 110, 10))}"
                       data-options="${JSON.stringify({
@@ -160,7 +160,7 @@ export function InstructorAssessmentStatistics({
                   <div class="card-body">
                     <div
                       id="durationHist"
-                      class="histogram"
+                      class="js-histogram"
                       data-histogram="${JSON.stringify(durationStat.hist)}"
                       data-xgrid="${JSON.stringify(durationStat.threshold_seconds)}"
                       data-options="${JSON.stringify({
@@ -217,13 +217,9 @@ export function InstructorAssessmentStatistics({
                   <div class="card-body">
                     <div
                       id="durationScoreScatter"
-                      class="scatter"
-                      data-xdata="${JSON.stringify(
-                        userScores.map((user) => user.duration_secs),
-                      )}"
-                      data-ydata="${JSON.stringify(
-                        userScores.map((user) => user.score_perc),
-                      )}"
+                      class="js-scatter"
+                      data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
+                      data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                       data-options="${JSON.stringify({
                         xgrid: durationStat.threshold_seconds,
                         ygrid: _.range(0, 110, 10),
@@ -255,7 +251,7 @@ export function InstructorAssessmentStatistics({
                     <div
                       id="scoreHistsByDateDiv"
                       style="overflow-x: scroll; overflow-y: hidden;"
-                      class="parallel_histograms"
+                      class="js-parallel-histograms"
                       data-histograms="${JSON.stringify(
                         assessmentScoreHistogramByDate.map((day) => ({
                           label: day.date_formatted,
