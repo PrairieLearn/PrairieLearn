@@ -4,9 +4,9 @@ import path from 'node:path';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
-import { BatchedMigrationsRunner } from './batched-migrations-runner';
-import { selectAllBatchedMigrations } from './batched-migration';
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
+import { BatchedMigrationsRunner } from './batched-migrations-runner.js';
+import { selectAllBatchedMigrations } from './batched-migration.js';
 
 chai.use(chaiAsPromised);
 

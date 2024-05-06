@@ -9,12 +9,12 @@ import {
   updateBatchedMigrationStatus,
   BatchedMigrationStatusSchema,
   BatchedMigrationImplementation,
-} from './batched-migration';
+} from './batched-migration.js';
 import {
   BatchedMigrationJobRowSchema,
   BatchedMigrationJobStatus,
   BatchedMigrationJobRow,
-} from './batched-migration-job';
+} from './batched-migration-job.js';
 
 const sql = loadSqlEquiv(__filename);
 
