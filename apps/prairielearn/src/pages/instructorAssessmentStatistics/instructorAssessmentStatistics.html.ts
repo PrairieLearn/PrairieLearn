@@ -162,8 +162,7 @@ export function InstructorAssessmentStatistics({
                       id="durationHist"
                       class="histogram"
                       data-histogram="${JSON.stringify(durationStat.hist)}"
-                      data-xgrid="
-                      ${JSON.stringify(durationStat.threshold_seconds)}"
+                      data-xgrid="${JSON.stringify(durationStat.threshold_seconds)}"
                       data-options="${JSON.stringify({
                         ymin: 0,
                         xlabel: 'duration',
