@@ -219,9 +219,7 @@ export function InstructorAssessmentStatistics({
                       id="durationScoreScatter"
                       class="scatter"
                       data-xdata="${JSON.stringify(
-                        userScores.map((user) => {
-                          return user.duration_secs;
-                        }),
+                        userScores.map((user) => user.duration_secs),
                       )}"
                       data-ydata="${JSON.stringify(
                         userScores.map((user) => user.score_perc),
