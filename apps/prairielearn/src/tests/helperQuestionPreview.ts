@@ -313,3 +313,42 @@ export function testFileDownloads(
     });
   });
 }
+
+export function testElementClientFiles(
+  previewPageInfo: QuestionPreviewPageInfo,
+  customElement: QuestionInfo,
+) {
+  const locals: any = previewPageInfo;
+
+  describe('setting up the submission data', function () {
+    it('should succeed', function () {
+      // locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+      locals.question = customElement;
+    });
+  });
+  helperQuestion.getInstanceQuestion(locals);
+  describe('downloading course text file', function () {
+    let elemList;
+    it('should contain a script tag for course-element.js', function () {
+      elemList = locals.$('script[src*="course-element.js"]');
+      assert.lengthOf(elemList, 1);
+    });
+    let page;
+    it('should download something with the link to course-element.js', function (callback) {
+      const fileUrl = locals.siteUrl + elemList[0].attribs.src;
+      request(fileUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should have downloaded a file with the contents of course-element.js', function () {
+      assert(page.includes('This text was added by a script.'));
+    });
+  });
+}
