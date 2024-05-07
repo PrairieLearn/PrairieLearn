@@ -17,7 +17,7 @@ import {
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.filename);
 
 const DEFAULT_MIN_VALUE = 1n;
 const DEFAULT_BATCH_SIZE = 1_000;

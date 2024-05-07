@@ -16,7 +16,7 @@ import {
   BatchedMigrationJobRow,
 } from './batched-migration-job';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.filename);
 
 interface BatchedMigrationRunnerOptions {
   logProgress?: boolean;
