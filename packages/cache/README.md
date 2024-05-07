@@ -25,7 +25,7 @@ const myCache = new Cache();
 
 await myCache.init({
   type: 'redis',
-  cacheKeyPrefix: 'my-app:',
+  keyPrefix: 'my-app:',
   redisUrl: 'redis://localhost:6379/',
 });
 ```
