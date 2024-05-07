@@ -1,6 +1,7 @@
-const fetch = require('node-fetch').default;
-const cheerio = require('cheerio');
-const fs = require('fs-extra');
+// @ts-check
+import fetch from 'node-fetch';
+import cheerio from 'cheerio';
+import fs from 'fs-extra';
 
 const COURSE_URL = 'http://localhost:3000/pl/course/4';
 const QUESTIONS_URL = `${COURSE_URL}/course_admin/questions`;
@@ -10,7 +11,7 @@ async function loadQuestions() {
   const response = await fetch(QUESTIONS_URL);
   const text = await response.text();
   const $ = cheerio.load(text);
-  const questionData = $('#questionsTable').attr('data-data');
+  const questionData = $('#questionsTable').attr('data-data') ?? '[]';
   return JSON.parse(questionData);
 }
 
@@ -35,8 +36,8 @@ function sanitizeHtml(html) {
  * Usage:
  *
  * ```sh
- * node tools/snapshot-question-html.js ./old-renderer
- * node tools/snapshot-question-html.js ./new-renderer
+ * node tools/snapshot-question-html.mjs ./old-renderer
+ * node tools/snapshot-question-html.mjs ./new-renderer
  * git diff --no-index ./old-renderer ./new-renderer
  * ```
  */
