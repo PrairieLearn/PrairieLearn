@@ -1,6 +1,11 @@
 // @ts-check
 
-import { ECR, ECRClient, RepositoryNotFoundException } from '@aws-sdk/client-ecr';
+import {
+  ECR,
+  ECRClient,
+  RepositoryAlreadyExistsException,
+  RepositoryNotFoundException,
+} from '@aws-sdk/client-ecr';
 import * as async from 'async';
 const Docker = require('dockerode');
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
@@ -81,7 +86,21 @@ async function ensureECRRepo(repo, job) {
     job.info('Repository not found');
 
     job.info(`Creating repository: ${repo}`);
-    await ecr.createRepository({ repositoryName: repo });
+    try {
+      await ecr.createRepository({ repositoryName: repo });
+    } catch (err) {
+      if (err instanceof RepositoryAlreadyExistsException) {
+        // Someone else created the repository before we could; this is fine.
+      } else {
+        // Something else went wrong; allow it to bubble up.
+        Sentry.captureException(err, {
+          tags: {
+            repository: repo,
+          },
+        });
+        throw err;
+      }
+    }
 
     job.info('Successfully created repository');
   } else {
@@ -170,13 +189,11 @@ async function pullAndPushToECR(image, dockerAuth, job) {
   const pushImage = docker.getImage(pushImageName);
 
   job.info(`Pushing image: ${repository.getCombined()}`);
-  // @ts-expect-error -- https://github.com/DefinitelyTyped/DefinitelyTyped/pull/69385
   const pushStream = await pushImage.push({ authconfig: dockerAuth });
 
   await new Promise((resolve, reject) => {
     const printedInfos = new Set();
     docker.modem.followProgress(
-      // @ts-expect-error -- https://github.com/DefinitelyTyped/DefinitelyTyped/pull/69385
       pushStream,
       (err) => {
         if (err) reject(err);
