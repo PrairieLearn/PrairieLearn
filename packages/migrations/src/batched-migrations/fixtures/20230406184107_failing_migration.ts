@@ -1,4 +1,3 @@
-// @ts-check
 import { makeBatchedMigration } from '../batched-migration';
 
 export default makeBatchedMigration({

@@ -49,7 +49,7 @@ describe('BatchedMigrationsRunner', () => {
     assert.equal(migrations[0].filename, '20230406184103_successful_migration.ts');
     assert.equal(migrations[0].status, 'pending');
     assert.equal(migrations[1].timestamp, '20230406184107');
-    assert.equal(migrations[1].filename, '20230406184107_failing_migration.js');
+    assert.equal(migrations[1].filename, '20230406184107_failing_migration.ts');
     assert.equal(migrations[1].status, 'pending');
     assert.equal(migrations[2].timestamp, '20230407230446');
     assert.equal(migrations[2].filename, '20230407230446_no_rows_migration.ts');
