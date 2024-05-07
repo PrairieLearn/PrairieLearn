@@ -101,13 +101,11 @@ To run PrairieLearn locally with external grader and workspace support, create a
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-#### Platform-specific invocations
+#### Running Docker with the extended features
 
-Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows, depending on your operating system:
+Now, we can run PrairieLearn as usual, but with additional options to allow the external grading or workspaces features. We require these extra options so that Docker can spawn additional containers alongside the main PrairieLearn container.
 
-##### macOS
-
-If you are on **macOS**, use this invocation, which includes the "platform" flag mentioned above to avoid problems on Apple ARM chips. (This does require Rosetta emulation to be enabled as described above.)
+For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -116,26 +114,15 @@ docker run -it --rm -p 3000:3000 \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
     --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
-    prairielearn/prairielearn
-```
-
-##### Linux or Windows WSL 2
-
-If you are on **Linux**, or if you are on **Windows** using the WSL 2 shell, you can use the following command:
-
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
-    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
     --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
     prairielearn/prairielearn
 ```
 
-###### Troubleshooting the --add-host option on Linux and Windows
+###### Troubleshooting the --add-host option and network timeouts
 
 If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+
+If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 
 ## Upgrading your Docker's version of PrairieLearn
 
