@@ -369,6 +369,11 @@ function buildLocals(
  */
 export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
+  locals.question_is_shared = await sqldb.queryRow(
+    sql.select_is_shared,
+    { question_id: locals.question.id },
+    z.boolean(),
+  );
 
   if (variant_id != null) {
     locals.variant = await sqldb.queryOptionalRow(
