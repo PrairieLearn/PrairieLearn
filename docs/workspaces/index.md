@@ -262,6 +262,6 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 
 - How to save their work and submit. Students should understand the difference between saving files inside the workspace environment and saving/submitting it on PrairieLearn itself. In particular, it should be clear to students that files saved inside the workspace are not automatically graded.
 
-- Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, for the Jupyter workspace, students may need to know how to interrupt or restart the kernel.
+- Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing, and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, in Jupyter workspaces, students may need to know how to interrupt or restart the kernel.
 
 - Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
