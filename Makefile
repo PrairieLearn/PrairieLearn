@@ -59,8 +59,6 @@ lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
-# TODO double check these two commands together are exactly what we want
-# https://docs.astral.sh/ruff/linter/
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
 lint-html:
@@ -72,8 +70,6 @@ format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
-
-# https://docs.astral.sh/ruff/formatter/#sorting-imports
 format-python:
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
