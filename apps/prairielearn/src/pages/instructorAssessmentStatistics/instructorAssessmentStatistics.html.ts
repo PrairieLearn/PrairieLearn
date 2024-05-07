@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import * as _ from 'lodash';
 import { z } from 'zod';
 
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
 import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types';
 
 export const DurationStatSchema = z.object({
@@ -59,9 +59,6 @@ export function InstructorAssessmentStatistics({
         })}
         <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
         <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
-        <script src="${assetPath('localscripts/histogram.js')}"></script>
-        <script src="${assetPath('localscripts/scatter.js')}"></script>
-        <script src="${assetPath('localscripts/parallel_histograms.js')}"></script>
         ${compiledScriptTag('instructorAssessmentStatisticsClient.ts')}
       </head>
       <body>

@@ -1,6 +1,5 @@
 declare global {
   interface Window {
-    _: any;
     d3: any;
   }
 }
@@ -10,23 +9,22 @@ export function histogram(
   data: number[],
   xgrid: number[],
   options: {
-    width: number;
-    height: number;
-    xmin: number | 'auto';
-    xmax: number | 'auto';
-    ymin: number | 'auto';
-    ymax: number | 'auto';
-    xlabel: string;
-    ylabel: string;
-    xTickLabels: string[] | 'auto';
-    topMargin: number;
-    rightMargin: number;
-    bottomMargin: number;
-    leftMargin: number;
+    width?: number;
+    height?: number;
+    xmin?: number | 'auto';
+    xmax?: number | 'auto';
+    ymin?: number | 'auto';
+    ymax?: number | 'auto';
+    xlabel?: string;
+    ylabel?: string;
+    xTickLabels?: string[] | 'auto';
+    topMargin?: number;
+    rightMargin?: number;
+    bottomMargin?: number;
+    leftMargin?: number;
   },
 ) {
-  options = options || {};
-  window._.defaults(options, {
+  options = {
     width: 100,
     height: 40,
     xmin: 'auto',
@@ -40,24 +38,25 @@ export function histogram(
     rightMargin: 20,
     bottomMargin: 55,
     leftMargin: 70,
-  });
+    ...options,
+  };
 
-  const width = 600 - options.leftMargin - options.rightMargin;
-  const height = 371 - options.topMargin - options.bottomMargin;
+  const width = 600 - (options.leftMargin ?? 70) - (options.rightMargin ?? 20);
+  const height = 371 - (options.topMargin ?? 10) - (options.bottomMargin ?? 55);
 
-  const xmin = options.xmin === 'auto' ? window._(xgrid).min() : options.xmin;
-  const xmax = options.xmax === 'auto' ? window._(xgrid).max() : options.xmax;
+  const xmin = options.xmin === 'auto' ? Math.min(...xgrid) : options.xmin;
+  const xmax = options.xmax === 'auto' ? Math.max(...xgrid) : options.xmax;
   const x = window.d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
 
-  const ymin = options.ymin === 'auto' ? window._(data).min() : options.ymin;
-  const ymax = options.ymax === 'auto' ? window._(data).max() : options.ymax;
+  const ymin = options.ymin === 'auto' ? Math.min(...data) : options.ymin;
+  const ymax = options.ymax === 'auto' ? Math.max(...data) : options.ymax;
   const y = window.d3.scaleLinear().domain([ymin, ymax]).nice().range([height, 0]);
 
   const xTickFormat =
     options.xTickLabels === 'auto'
       ? null
       : function (d: null, i: number) {
-          return options.xTickLabels[i];
+          return options.xTickLabels ? options.xTickLabels[i] : null;
         };
   const xAxis = window.d3.axisBottom().scale(x).tickValues(xgrid).tickFormat(xTickFormat);
 
@@ -70,8 +69,8 @@ export function histogram(
   const svg = window.d3
     .select($(selector).get(0))
     .append('svg')
-    .attr('width', width + options.leftMargin + options.rightMargin)
-    .attr('height', height + options.topMargin + options.bottomMargin)
+    .attr('width', width + (options.leftMargin ?? 0) + (options.rightMargin ?? 0))
+    .attr('height', height + (options.topMargin ?? 0) + (options.bottomMargin ?? 0))
     .attr('class', 'center-block statsPlot')
     .append('g')
     .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');

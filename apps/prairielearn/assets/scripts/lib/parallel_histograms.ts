@@ -15,23 +15,21 @@ export function parallel_histograms(
   selector: Element,
   data: Data[],
   options: {
-    width: number;
-    height: number;
-    xTickLabels: string[] | 'auto';
-    yTickLabels: string[] | 'auto';
-    xAxisHeight: number;
-    yAxisWidth: number;
-    xgrid: number[];
-    ygrid: number[];
-    xlabel: string;
-    ylabel: string;
-    topPadding: number;
-    rightPadding: number;
+    width?: number;
+    height?: number;
+    xTickLabels?: string[] | 'auto';
+    yTickLabels?: string[] | 'auto';
+    xAxisHeight?: number;
+    yAxisWidth?: number;
+    xgrid?: number[];
+    ygrid?: number[];
+    xlabel?: string;
+    ylabel?: string;
+    topPadding?: number;
+    rightPadding?: number;
   },
 ) {
-  options = options || {};
-
-  window._.defaults(options, {
+  options = {
     width: 600,
     height: 370,
     xTickLabels: 'auto',
@@ -40,10 +38,11 @@ export function parallel_histograms(
     xAxisHeight: 70,
     topPadding: 15,
     rightPadding: 2,
-  });
+    ...options,
+  };
 
-  const width = options.width;
-  const height = options.height;
+  const width: number = options.width ?? 600;
+  const height = options.height ?? 370;
 
   const yTickLabels = options.yTickLabels;
 
@@ -53,9 +52,9 @@ export function parallel_histograms(
   const topPadding = options.topPadding;
   const rightPadding = options.rightPadding;
 
-  const totalWidth = width + yAxisWidth + rightPadding;
-  const heightWithPadding = height + topPadding;
-  const totalHeight = heightWithPadding + xAxisHeight;
+  const totalWidth = width + (yAxisWidth ?? 70) + (rightPadding ?? 2);
+  const heightWithPadding = height + (topPadding ?? 15);
+  const totalHeight = heightWithPadding + (xAxisHeight ?? 70);
 
   const numBuckets = data[0].histogram.length;
   const numDays = data.length;
@@ -120,7 +119,7 @@ export function parallel_histograms(
       return (histogram[i] / max) * width_per_day;
     };
 
-    const xOffset = (index + 0.5) * width_per_day + yAxisWidth;
+    const xOffset = (index + 0.5) * width_per_day + (yAxisWidth ?? 70);
 
     const g = plot.append('g').attr('transform', 'translate(' + xOffset + ', 0)');
 
@@ -161,7 +160,7 @@ export function parallel_histograms(
   const yAxis = window.d3
     .axisLeft()
     .tickFormat(function (d: null, i: number) {
-      return yTickLabels[i];
+      return yTickLabels ? yTickLabels[i] : null;
     })
     .scale(yLinear);
 
@@ -188,15 +187,15 @@ export function parallel_histograms(
   plot.append('line').attr({
     x1: yAxisWidth,
     y1: topPadding,
-    x2: width + yAxisWidth,
+    x2: width + (yAxisWidth ?? 70),
     y2: topPadding,
     class: 'x axis',
   });
 
   plot.append('line').attr({
-    x1: width + yAxisWidth,
+    x1: width + (yAxisWidth ?? 70),
     y1: topPadding,
-    x2: width + yAxisWidth,
+    x2: width + (yAxisWidth ?? 70),
     y2: heightWithPadding,
     class: 'y axis',
   });

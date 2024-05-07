@@ -5,26 +5,25 @@ import { scatter } from './lib/scatter';
 import { parallel_histograms } from './lib/parallel_histograms';
 
 onDocumentReady(() => {
-  document.querySelectorAll('.js-histogram').forEach((histogramElement) => {
-    const histogramHtmlElement = histogramElement as HTMLElement;
-    const data = JSON.parse(histogramHtmlElement.dataset.histogram ?? '');
-    const xgrid = JSON.parse(histogramHtmlElement.dataset.xgrid ?? '');
-    const options = JSON.parse(histogramHtmlElement.dataset.options ?? '');
+  document.querySelectorAll<HTMLElement>('.js-histogram').forEach((histogramElement) => {
+    const data = JSON.parse(histogramElement.dataset.histogram ?? '');
+    const xgrid = JSON.parse(histogramElement.dataset.xgrid ?? '');
+    const options = JSON.parse(histogramElement.dataset.options ?? '');
     histogram(histogramElement, data, xgrid, options);
   });
 
-  document.querySelectorAll('.js-scatter').forEach((scatterElement) => {
-    const scatterHtmlElement = scatterElement as HTMLElement;
-    const xdata = JSON.parse(scatterHtmlElement.dataset.xdata ?? '');
-    const ydata = JSON.parse(scatterHtmlElement.dataset.ydata ?? '');
-    const options = JSON.parse(scatterHtmlElement.dataset.options ?? '');
+  document.querySelectorAll<HTMLElement>('.js-scatter').forEach((scatterElement) => {
+    const xdata = JSON.parse(scatterElement.dataset.xdata ?? '');
+    const ydata = JSON.parse(scatterElement.dataset.ydata ?? '');
+    const options = JSON.parse(scatterElement.dataset.options ?? '');
     scatter(scatterElement, xdata, ydata, options);
   });
 
-  document.querySelectorAll('.js-parallel-histograms').forEach((parallelHistogramsElement) => {
-    const parallelHistogramsHtmlElement = parallelHistogramsElement as HTMLElement;
-    const data = JSON.parse(parallelHistogramsHtmlElement.dataset.histograms ?? '');
-    const options = JSON.parse(parallelHistogramsHtmlElement.dataset.options ?? '');
-    parallel_histograms(parallelHistogramsElement, data, options);
-  });
+  document
+    .querySelectorAll<HTMLElement>('.js-parallel-histograms')
+    .forEach((parallelHistogramsElement) => {
+      const data = JSON.parse(parallelHistogramsElement.dataset.histograms ?? '');
+      const options = JSON.parse(parallelHistogramsElement.dataset.options ?? '');
+      parallel_histograms(parallelHistogramsElement, data, options);
+    });
 });

@@ -1,6 +1,5 @@
 declare global {
   interface Window {
-    _: any;
     d3: any;
   }
 }
@@ -10,28 +9,27 @@ export function scatter(
   xdata: number[],
   ydata: number[],
   options: {
-    width: number;
-    height: number;
-    xmin: number | 'auto';
-    xmax: number | 'auto';
-    ymin: number | 'auto';
-    ymax: number | 'auto';
-    xlabel: string;
-    ylabel: string;
-    xgrid: number[];
-    ygrid: number[];
-    xTickLabels: string[] | 'auto';
-    yTickLabels: string[] | 'auto';
-    topMargin: number;
-    rightMargin: number;
-    bottomMargin: number;
-    leftMargin: number;
-    radius: number;
-    labels: string[];
+    width?: number;
+    height?: number;
+    xmin?: number | 'auto';
+    xmax?: number | 'auto';
+    ymin?: number | 'auto';
+    ymax?: number | 'auto';
+    xlabel?: string;
+    ylabel?: string;
+    xgrid?: number[] | 'auto';
+    ygrid?: number[] | 'auto';
+    xTickLabels?: string[] | 'auto';
+    yTickLabels?: string[] | 'auto';
+    topMargin?: number;
+    rightMargin?: number;
+    bottomMargin?: number;
+    leftMargin?: number;
+    radius?: number;
+    labels?: Record<string, any>;
   },
 ) {
-  options = options || {};
-  window._.defaults(options, {
+  options = {
     width: 600,
     height: 600,
     xmin: 'auto',
@@ -50,10 +48,11 @@ export function scatter(
     leftMargin: 70,
     radius: 2,
     labels: {},
-  });
+    ...options,
+  };
 
-  const width = options.width - options.leftMargin - options.rightMargin;
-  const height = options.height - options.topMargin - options.bottomMargin;
+  const width = (options.width ?? 600) - (options.leftMargin ?? 70) - (options.rightMargin ?? 0);
+  const height = (options.height ?? 600) - (options.topMargin ?? 10) - (options.bottomMargin ?? 55);
 
   const xmin = options.xmin === 'auto' ? window._(options.xgrid).min() : options.xmin;
   const xmax = options.xmax === 'auto' ? window._(options.xgrid).max() : options.xmax;
@@ -76,7 +75,7 @@ export function scatter(
     options.xTickLabels === 'auto'
       ? null
       : function (d: null, i: number) {
-          return options.xTickLabels[i];
+          return options.xTickLabels ? options.xTickLabels[i] : null;
         };
 
   const xAxis = window.d3.axisBottom().scale(x).tickValues(options.xgrid).tickFormat(xTickFormat);
@@ -85,7 +84,7 @@ export function scatter(
     options.yTickLabels === 'auto'
       ? null
       : function (d: null, i: number) {
-          return options.yTickLabels[i];
+          return options.yTickLabels ? options.yTickLabels[i] : null;
         };
   const yAxis = window.d3.axisLeft().scale(y).tickValues(options.ygrid).tickFormat(yTickFormat);
 
@@ -106,8 +105,8 @@ export function scatter(
   const svg = window.d3
     .select($(selector).get(0))
     .append('svg')
-    .attr('width', width + options.leftMargin + options.rightMargin)
-    .attr('height', height + options.topMargin + options.bottomMargin)
+    .attr('width', width + (options.leftMargin ?? 70) + (options.rightMargin ?? 20))
+    .attr('height', height + (options.topMargin ?? 10) + (options.bottomMargin ?? 55))
     .attr('class', 'center-block statsPlot')
     .append('g')
     .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
