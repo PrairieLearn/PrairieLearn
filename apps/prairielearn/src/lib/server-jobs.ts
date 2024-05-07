@@ -333,6 +333,7 @@ export function init() {
     if (jobIds.length === 0) return;
 
     queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+      Sentry.captureException(err);
       logger.error('Error updating heartbeats for live server jobs', err);
     });
   }, config.serverJobHeartbeatIntervalSec * 1000);
@@ -375,6 +376,7 @@ export function connection(socket) {
         callback({ status, output });
       },
       (err) => {
+        Sentry.captureException(err);
         logger.error('socket.io joinJob error selecting job_id ' + msg.job_id, err);
       },
     );
@@ -410,6 +412,7 @@ export function connection(socket) {
         callback({ job_count });
       },
       (err) => {
+        Sentry.captureException(err);
         logger.error(
           'socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id,
           err,
@@ -435,6 +438,7 @@ export async function errorAbandonedJobs() {
         error_message: 'Job abandoned by server',
       });
     } catch (err) {
+      Sentry.captureException(err);
       logger.error('errorAbandonedJobs: error updating job on error', err);
     } finally {
       socketServer.io.to('job-' + row.id).emit('update');
