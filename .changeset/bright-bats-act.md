@@ -1,5 +1,5 @@
 ---
-"@prairielearn/cache": minor
+'@prairielearn/cache': minor
 ---
 
 Export the `Cache` class
