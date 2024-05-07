@@ -1,0 +1,11 @@
+{
+    "controller": "pl-fsm-builder.py",
+    "dependencies": {
+        "elementScripts": [
+            "pl-fsm-builder.js"
+        ],
+        "elementStyles": [
+            "pl-fsm-builder.css"
+        ]
+    }
+}

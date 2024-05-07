@@ -1,4 +1,5 @@
 ansi2html==1.9.1
+automata-lib==8.3.0
 black==24.4.2
 chevron==0.14.0
 coloraide==3.3.1
