@@ -322,7 +322,7 @@ export function testElementClientFiles(
 
   describe('setting up the submission data', function () {
     it('should succeed', function () {
-      // locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+      locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
       locals.question = customElement;
     });
   });
