@@ -67,7 +67,7 @@ describe('migrations', () => {
     });
 
     it('runs both SQL and JavaScript migrations', async () => {
-      const migrationDir = path.join(__dirname, 'fixtures');
+      const migrationDir = path.join(import.meta.dirname, 'fixtures');
       await initWithLock([migrationDir], 'prairielearn_migrations');
 
       // If both migrations ran successfully, there should be a single user

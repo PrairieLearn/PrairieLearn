@@ -35,7 +35,7 @@ describe('BatchedMigrationsRunner', () => {
   it('enqueues migrations', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -59,7 +59,7 @@ describe('BatchedMigrationsRunner', () => {
   it('safely enqueues migrations multiple times', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -74,7 +74,7 @@ describe('BatchedMigrationsRunner', () => {
   it('finalizes a successful migration', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -91,7 +91,7 @@ describe('BatchedMigrationsRunner', () => {
   it('finalizes a failing migration', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');
