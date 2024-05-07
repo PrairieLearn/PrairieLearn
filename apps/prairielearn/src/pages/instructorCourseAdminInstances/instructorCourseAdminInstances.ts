@@ -8,8 +8,11 @@ import { z } from 'zod';
 import { CourseInstanceAddEditor } from '../../lib/editors';
 import { idsEqual } from '../../lib/id';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { CourseInstanceSchema } from '../../lib/db-types';
-import { InstructorCourseAdminInstances } from './instructorCourseAdminInstances.html';
+import { CourseInstanceSchema, IdSchema } from '../../lib/db-types';
+import {
+  InstructorCourseAdminInstances,
+  CourseInstanceAuthzRow,
+} from './instructorCourseAdminInstances.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -27,7 +30,7 @@ router.get(
       }
     }
 
-    res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
+    const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -37,13 +40,13 @@ router.get(
     const enrollmentCounts = await sqldb.queryRows(
       sql.select_enrollment_counts,
       { course_id: res.locals.course.id },
-      z.object({ course_instance_id: CourseInstanceSchema.shape.id, number: z.string() }),
+      z.object({ course_instance_id: CourseInstanceSchema.shape.id, number: z.number() }),
     );
-    res.locals.course_instances.forEach((ci) => {
+    courseInstances.forEach((ci) => {
       const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
       ci.number = row?.number || 0;
     });
-    res.send(InstructorCourseAdminInstances({ resLocals: res.locals }));
+    res.send(InstructorCourseAdminInstances({ resLocals: res.locals, courseInstances }));
   }),
 );
 
@@ -62,14 +65,19 @@ router.post(
         return;
       }
 
-      const result = await sqldb.queryOneRowAsync(sql.select_course_instance_id_from_uuid, {
-        uuid: editor.uuid,
-        course_id: res.locals.course.id,
-      });
+      const courseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance_id_from_uuid,
+        {
+          uuid: editor.uuid,
+          course_id: res.locals.course.id,
+        },
+        IdSchema,
+      );
+
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          result.rows[0].course_instance_id +
+          courseInstanceId +
           '/instructor/instance_admin/settings',
       );
     } else {

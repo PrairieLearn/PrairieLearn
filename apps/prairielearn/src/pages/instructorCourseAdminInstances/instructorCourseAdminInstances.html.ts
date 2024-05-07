@@ -1,7 +1,17 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export function InstructorCourseAdminInstances({ resLocals }: { resLocals: Record<string, any> }) {
+import { CourseInstanceAuthz } from '../../models/course-instances';
+
+export type CourseInstanceAuthzRow = CourseInstanceAuthz & { number?: number };
+
+export function InstructorCourseAdminInstances({
+  resLocals,
+  courseInstances,
+}: {
+  resLocals: Record<string, any>;
+  courseInstances: CourseInstanceAuthzRow[];
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -69,43 +79,39 @@ export function InstructorCourseAdminInstances({ resLocals }: { resLocals: Recor
                     <th>CIID</th>
                     <th id="earliest-access-date">
                       Earliest Access Date
-                      <a
-                        role="button"
+                      <button
                         class="btn btn-xs btn-light"
                         data-placement="auto"
                         data-trigger="focus"
                         data-toggle="popover"
                         data-html="true"
                         title="Earliest Access Date"
-                        tabindex="0"
                         data-content="${PopoverStartDate()}"
                         aria-label="Information about Earliest Access Date"
                       >
                         <i class="far fa-question-circle" aria-hidden="true"></i>
-                      </a>
+                      </button>
                     </th>
                     <th id="latest-access-date">
                       Latest Access Date
-                      <a
-                        role="button"
+                      <button
                         class="btn btn-xs btn-light"
                         data-placement="auto"
                         data-trigger="focus"
                         data-toggle="popover"
                         data-html="true"
                         title="Latest Access Date"
-                        tabindex="0"
                         data-content="${PopoverEndDate()}"
                         aria-label="Information about Latest Access Date"
                       >
                         <i class="far fa-question-circle" aria-hidden="true"></i>
-                      </a>
+                      </button>
                     </th>
                     <th>Students</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${resLocals.course_instances.map((row) => {
+                  ${courseInstances.map((row) => {
                     return html`
                       <tr>
                         <td class="align-left">
