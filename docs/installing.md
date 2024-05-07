@@ -103,9 +103,7 @@ mkdir "$HOME/pl_ag_jobs"
 
 #### Running Docker with the extended features
 
-Now, we can run PrairieLearn as usual, but with additional options to allow the external grading or workspaces features. We require these extra options so that Docker can spawn additional containers alongside the main PrairieLearn container.
-
-For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
+Now, we can run PrairieLearn with additional options to allow the external grading or workspaces features. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
