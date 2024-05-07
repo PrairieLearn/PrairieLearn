@@ -1,5 +1,5 @@
 ---
-"@prairielearn/migrations": minor
+'@prairielearn/migrations': minor
 ---
 
 Export `retryFailedBatchedMigrationJobs` function
