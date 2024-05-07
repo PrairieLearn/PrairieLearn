@@ -3,10 +3,10 @@ import path from 'path';
 export { init } from './migrations/index.js';
 
 export {
-  BatchedMigrationRow,
-  BatchedMigrationStatus,
-  BatchedMigrationJobRow,
-  BatchedMigrationJobStatus,
+  type BatchedMigrationRow,
+  type BatchedMigrationStatus,
+  type BatchedMigrationJobRow,
+  type BatchedMigrationJobStatus,
   makeBatchedMigration,
   initBatchedMigrations,
   startBatchedMigrations,

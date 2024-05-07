@@ -1,6 +1,6 @@
 export {
-  BatchedMigrationRow,
-  BatchedMigrationStatus,
+  type BatchedMigrationRow,
+  type BatchedMigrationStatus,
   makeBatchedMigration,
   selectAllBatchedMigrations,
   selectBatchedMigration,
@@ -8,8 +8,8 @@ export {
   retryFailedBatchedMigrationJobs,
 } from './batched-migration.js';
 export {
-  BatchedMigrationJobRow,
-  BatchedMigrationJobStatus,
+  type BatchedMigrationJobRow,
+  type BatchedMigrationJobStatus,
   selectRecentJobsWithStatus,
 } from './batched-migration-job.js';
 export {
