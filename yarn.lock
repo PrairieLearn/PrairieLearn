@@ -2779,13 +2779,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@popperjs/core@npm:^2.9.2":
-  version: 2.11.7
-  resolution: "@popperjs/core@npm:2.11.7"
-  checksum: 5b6553747899683452a1d28898c1b39173a4efd780e74360bfcda8eb42f1c5e819602769c81a10920fc68c881d07fb40429604517d499567eac079cfa6470f19
-  languageName: node
-  linkType: hard
-
 "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes":
   version: 0.0.0-use.local
   resolution: "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes"
@@ -3046,7 +3039,7 @@ __metadata:
     "@types/ejs": ^3.1.5
     "@types/node": ^20.12.2
     chai: ^4.4.1
-    ejs: ^3.1.9
+    ejs: ^3.1.10
     mocha: ^10.4.0
     tsx: ^4.7.2
     typescript: ^5.4.3
@@ -3265,8 +3258,10 @@ __metadata:
     "@socket.io/redis-adapter": ^8.3.0
     "@types/archiver": ^6.0.2
     "@types/async": ^3.2.24
+    "@types/blocked": ^1.3.4
+    "@types/blocked-at": ^1.0.4
     "@types/body-parser": ^1.19.5
-    "@types/bootstrap": ^5.2.10
+    "@types/bootstrap": ^4.6.6
     "@types/byline": ^4.2.36
     "@types/chai": ^4.3.14
     "@types/chai-as-promised": ^7.1.8
@@ -3297,12 +3292,14 @@ __metadata:
     "@types/node-jose": ^1.1.13
     "@types/oauth-signature": ^1.5.2
     "@types/object-hash": ^3.0.6
+    "@types/on-finished": ^2.3.4
     "@types/passport": ^1.0.16
     "@types/passport-azure-ad": ^4.3.6
     "@types/pem": ^1.14.4
     "@types/pg": ^8.11.4
     "@types/qrcode-svg": ^1.1.4
     "@types/request": ^2.48.12
+    "@types/serve-favicon": ^2.5.7
     "@types/streamifier": ^0.1.2
     "@types/tar": ^6.1.11
     "@types/tmp": ^0.2.6
@@ -3346,7 +3343,7 @@ __metadata:
     dockerode: ^4.0.2
     dompurify: ^3.0.11
     dropzone: ^5.9.3
-    ejs: ^3.1.9
+    ejs: ^3.1.10
     execa: ^5.1.1
     express: ^4.19.2
     express-async-handler: ^1.2.0
@@ -3445,6 +3442,7 @@ __metadata:
     unzipper: ^0.10.14
     uuid: ^9.0.1
     winston: ^3.13.0
+    xml-formatter: ^3.6.2
     xml2js: ^0.6.2
     yargs-parser: ^21.1.1
     zod: ^3.22.4
@@ -4550,6 +4548,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/blocked-at@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "@types/blocked-at@npm:1.0.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: 1c23c30f697e5f29604cf59ccd3c9633ab96d1d119c96dfd3348892e64a1900c12a37c4ac4bfa07983656ca4f96cafb65d7d56eaa96e1b86886d6d2375079786
+  languageName: node
+  linkType: hard
+
+"@types/blocked@npm:^1.3.4":
+  version: 1.3.4
+  resolution: "@types/blocked@npm:1.3.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: 840261f6fc74e445cd38ce79aaab4a24a5a22a84437a92d1a90994cb9eb3764242012043c6e6ccdee46bc1bba14acb7c0b90c2fb9c5a1d3f740934d19fc5cf0f
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*, @types/body-parser@npm:^1.19.5":
   version: 1.19.5
   resolution: "@types/body-parser@npm:1.19.5"
@@ -4560,12 +4576,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/bootstrap@npm:^5.2.10":
-  version: 5.2.10
-  resolution: "@types/bootstrap@npm:5.2.10"
+"@types/bootstrap@npm:^4.6.6":
+  version: 4.6.6
+  resolution: "@types/bootstrap@npm:4.6.6"
   dependencies:
-    "@popperjs/core": ^2.9.2
-  checksum: d1253a2f19c96d667e280c07eb29cca00529f31fc3b799d5feef928476735994411a1a2643e3f1581855250d031f120e628396b79bade491ea956a99192eaeea
+    "@types/jquery": "*"
+    popper.js: ^1.14.1
+  checksum: 8363fab7ab37db8859779ad33baa65d56d7bd23017827ee6487671d2e69977dd79baabbc47264edbec5afe46ef163025035ac848eca186dfd38021e1eba4bb2d
   languageName: node
   linkType: hard
 
@@ -4783,7 +4800,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jquery@npm:^3.5.29":
+"@types/jquery@npm:*, @types/jquery@npm:^3.5.29":
   version: 3.5.29
   resolution: "@types/jquery@npm:3.5.29"
   dependencies:
@@ -5006,6 +5023,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/on-finished@npm:^2.3.4":
+  version: 2.3.4
+  resolution: "@types/on-finished@npm:2.3.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: e782eacf40c994b9b87ee95301041a931c9631c20cca21765f287400b606ef1397a385312ad441788a072c090110b4f4b7172303c6d5908e93edaa2578d97245
+  languageName: node
+  linkType: hard
+
 "@types/on-headers@npm:^1.0.3":
   version: 1.0.3
   resolution: "@types/on-headers@npm:1.0.3"
@@ -5157,6 +5183,15 @@ __metadata:
     "@types/mime": ^1
     "@types/node": "*"
   checksum: 10b620a5960058ef009afbc17686f680d6486277c62f640845381ec4baa0ea683fdd77c3afea4803daf5fcddd3fb2972c8aa32e078939f1d4e96f83195c89793
+  languageName: node
+  linkType: hard
+
+"@types/serve-favicon@npm:^2.5.7":
+  version: 2.5.7
+  resolution: "@types/serve-favicon@npm:2.5.7"
+  dependencies:
+    "@types/express": "*"
+  checksum: 1ae98ff01c977307ab989d2c31ea7ffa51977ad2aa2e5877e4e6829a647b0c01301483a8c53585b3655dda394867e83852ea13e02728b6d65ba7121a66141d62
   languageName: node
   linkType: hard
 
@@ -8201,14 +8236,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ejs@npm:^3.1.9":
-  version: 3.1.9
-  resolution: "ejs@npm:3.1.9"
+"ejs@npm:^3.1.10":
+  version: 3.1.10
+  resolution: "ejs@npm:3.1.10"
   dependencies:
     jake: ^10.8.5
   bin:
     ejs: bin/cli.js
-  checksum: af6f10eb815885ff8a8cfacc42c6b6cf87daf97a4884f87a30e0c3271fedd85d76a3a297d9c33a70e735b97ee632887f85e32854b9cdd3a2d97edf931519a35f
+  checksum: ce90637e9c7538663ae023b8a7a380b2ef7cc4096de70be85abf5a3b9641912dde65353211d05e24d56b1f242d71185c6d00e02cb8860701d571786d92c71f05
   languageName: node
   linkType: hard
 
@@ -13608,7 +13643,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"popper.js@npm:^1.16.1":
+"popper.js@npm:^1.14.1, popper.js@npm:^1.16.1":
   version: 1.16.1
   resolution: "popper.js@npm:1.16.1"
   checksum: c56ae5001ec50a77ee297a8061a0221d99d25c7348d2e6bcd3e45a0d0f32a1fd81bca29d46cb0d4bdf13efb77685bd6a0ce93f9eb3c608311a461f945fffedbe
@@ -17140,6 +17175,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"xml-formatter@npm:^3.6.2":
+  version: 3.6.2
+  resolution: "xml-formatter@npm:3.6.2"
+  dependencies:
+    xml-parser-xo: ^4.1.0
+  checksum: 6ca632b136d47f68b12be88e5543f859cdc754c9e1c1386c68b8c7803f9b894c8ec19f51bdcbfa957d782358aa19778b2ef46702f4120a78920661b683033290
+  languageName: node
+  linkType: hard
+
 "xml-name-validator@npm:^3.0.0":
   version: 3.0.0
   resolution: "xml-name-validator@npm:3.0.0"
@@ -17151,6 +17195,13 @@ __metadata:
   version: 5.0.0
   resolution: "xml-name-validator@npm:5.0.0"
   checksum: 86effcc7026f437701252fcc308b877b4bc045989049cfc79b0cc112cb365cf7b009f4041fab9fb7cd1795498722c3e9fe9651afc66dfa794c16628a639a4c45
+  languageName: node
+  linkType: hard
+
+"xml-parser-xo@npm:^4.1.0":
+  version: 4.1.1
+  resolution: "xml-parser-xo@npm:4.1.1"
+  checksum: f726f4416d501eb9b197a7a34178aeaee9ba9a53babf61e78265240f8a6f44bd099a15c76d2610a9519c9d1dcc812bb773ae8a00df39019f911f24e1ecff0cdf
   languageName: node
   linkType: hard
 

@@ -168,21 +168,3 @@ export function getPaths(req, res) {
 
   return paths;
 }
-
-/**
- * Wrapper around {@link getPaths} to support callback-based usage.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {(err: Error | null | undefined, paths?: any) => void} callback
- */
-export function getPathsCallback(req, res, callback) {
-  let paths;
-  try {
-    paths = getPaths(req, res);
-  } catch (err) {
-    callback(err);
-    return;
-  }
-  callback(null, paths);
-}

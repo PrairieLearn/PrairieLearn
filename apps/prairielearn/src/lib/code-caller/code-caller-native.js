@@ -1,14 +1,16 @@
 // @ts-check
-const _ = require('lodash');
-const path = require('path');
-const child_process = require('child_process');
-const { v4: uuidv4 } = require('uuid');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as _ from 'lodash';
+import * as path from 'node:path';
+import * as child_process from 'node:child_process';
+import { v4 as uuidv4 } from 'uuid';
+import debugfn from 'debug';
 
-const { FunctionMissingError } = require('./code-caller-shared');
-const { logger } = require('@prairielearn/logger');
-const { deferredPromise } = require('../deferred');
-const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('../paths');
+import { FunctionMissingError } from './code-caller-shared';
+import { logger } from '@prairielearn/logger';
+import { deferredPromise } from '../deferred';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths';
+
+const debug = debugfn('prairielearn:code-caller-native');
 
 const CREATED = Symbol('CREATED');
 const WAITING = Symbol('WAITING');
@@ -77,7 +79,7 @@ const EXITED = Symbol('EXITED');
 /**
  * @implements {CodeCaller}
  */
-class CodeCallerNative {
+export class CodeCallerNative {
   /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    *
@@ -698,5 +700,3 @@ class CodeCallerNative {
     return true;
   }
 }
-
-module.exports.CodeCallerNative = CodeCallerNative;

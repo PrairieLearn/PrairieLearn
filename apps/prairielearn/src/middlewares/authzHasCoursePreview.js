@@ -1,8 +1,14 @@
-const error = require('@prairielearn/error');
+// @ts-check
+import { HttpStatusError } from '@prairielearn/error';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_preview) {
-    return next(new error.HttpStatusError(403, 'Requires course preview access'));
+    return next(new HttpStatusError(403, 'Requires course preview access'));
   }
   next();
-};
+}

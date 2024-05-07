@@ -3,7 +3,7 @@ import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
-import { get as _get } from 'lodash';
+import * as _ from 'lodash';
 import { callbackify } from 'util';
 import * as crypto from 'crypto';
 import { URL } from 'url';
@@ -50,7 +50,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      uid = _get(lti13_claims, lti13_instance.uid_attribute);
+      uid = _.get(lti13_claims, lti13_instance.uid_attribute);
       if (!uid) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (
@@ -77,7 +77,7 @@ router.post(
     if (lti13_instance.uin_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-      uin = _get(lti13_claims, lti13_instance.uin_attribute);
+      uin = _.get(lti13_claims, lti13_instance.uin_attribute);
       if (!uin) {
         throw new error.HttpStatusError(
           500,
@@ -94,7 +94,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "name"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      name = _get(lti13_claims, lti13_instance.name_attribute);
+      name = _.get(lti13_claims, lti13_instance.name_attribute);
     }
 
     const userInfo = {

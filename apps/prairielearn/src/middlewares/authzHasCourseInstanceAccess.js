@@ -1,6 +1,12 @@
-const error = require('@prairielearn/error');
+// @ts-check
+import { HttpStatusError } from '@prairielearn/error';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   if (
     // Effective user is course instructor.
     res.locals.authz_data.has_course_permission_preview ||
@@ -11,6 +17,6 @@ module.exports = function (req, res, next) {
   ) {
     return next();
   } else {
-    return next(new error.HttpStatusError(403, 'Access denied'));
+    return next(new HttpStatusError(403, 'Access denied'));
   }
-};
+}

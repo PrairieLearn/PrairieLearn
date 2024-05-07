@@ -1,10 +1,10 @@
 // usage:
-// $ node dump-anonymize.js <data-dump-folder> <anonymous-output-folder>
+// $ node dump-anonymize.mjs <data-dump-folder> <anonymous-output-folder>
 
-const fs = require('fs');
-const async = require('async');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
+import fs from 'node:fs';
+import async from 'async';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'node:path';
 
 const infolder = process.argv[2];
 const outfolder = process.argv[3];

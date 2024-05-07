@@ -1,7 +1,8 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+// @ts-check
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-function AdministratorNetworks({ resLocals }) {
+export function AdministratorNetworks({ resLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -56,5 +57,3 @@ function AdministratorNetworks({ resLocals }) {
     </html>
   `.toString();
 }
-
-module.exports.AdministratorNetworks = AdministratorNetworks;
