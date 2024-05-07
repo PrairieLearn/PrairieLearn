@@ -1,5 +1,4 @@
 import * as crypto from 'node:crypto';
-import express = require('express');
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { hashElement, type HashElementNode } from 'folder-hash';
@@ -7,8 +6,6 @@ import * as compiledAssets from '@prairielearn/compiled-assets';
 
 import { config } from './config';
 import { APP_ROOT_PATH } from './paths';
-import staticNodeModules from '../middlewares/staticNodeModules';
-import elementFiles from '../pages/elementFiles/elementFiles';
 import { HtmlSafeString } from '@prairielearn/html';
 
 let assetsPrefix: string | null = null;
@@ -113,7 +110,7 @@ function getNodeModulesAssetHash(assetPath: string): string {
   return hash;
 }
 
-function assertAssetsPrefix(): string {
+export function assertAssetsPrefix(): string {
   if (!assetsPrefix) {
     throw new Error('init() must be called before accessing assets');
   }
@@ -143,40 +140,6 @@ export async function init() {
  */
 export async function close() {
   await compiledAssets.close();
-}
-
-/**
- * Applies middleware to the given Express app to serve static assets.
- */
-export function applyMiddleware(app: express.Application) {
-  const assetsPrefix = assertAssetsPrefix();
-  const router = express.Router();
-
-  // Compiled assets have a digest/hash embedded in their filenames, so they
-  // don't require a separate cachebuster.
-  router.use('/build', compiledAssets.handler());
-
-  router.use(
-    '/node_modules/:cachebuster',
-    staticNodeModules('.', {
-      // In dev mode, we assume that `node_modules` won't change while the server
-      // is running, so we'll enable long-term caching.
-      maxAge: '1y',
-      immutable: true,
-    }),
-  );
-  router.use(
-    '/public/:cachebuster',
-    express.static(path.join(APP_ROOT_PATH, 'public'), {
-      // In dev mode, assets are likely to change while the server is running,
-      // so we'll prevent them from being cached.
-      maxAge: config.devMode ? 0 : '1y',
-      immutable: !config.devMode,
-    }),
-  );
-  router.use('/elements/:cachebuster', elementFiles);
-
-  app.use(assetsPrefix, router);
 }
 
 /**

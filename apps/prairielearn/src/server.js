@@ -57,6 +57,7 @@ import { cache } from '@prairielearn/cache';
 import { LocalCache } from './lib/local-cache';
 import * as codeCaller from './lib/code-caller';
 import * as assets from './lib/assets';
+import { applyAssetMiddleware } from './middlewares/assets';
 import * as namedLocks from '@prairielearn/named-locks';
 import { EncodedData } from '@prairielearn/browser-utils';
 import * as nodeMetrics from './lib/node-metrics';
@@ -442,7 +443,7 @@ export function initExpress() {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  assets.applyMiddleware(app);
+  applyAssetMiddleware(assets.assertAssetsPrefix(), app);
 
   // This route is kept around for legacy reasons - new code should prefer the
   // assets system with cacheable assets.
