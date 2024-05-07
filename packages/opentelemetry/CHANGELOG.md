@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.11.3
+
+### Patch Changes
+
+- 290f60f: Refine configuration types
+
 ## 1.11.2
 
 ### Patch Changes

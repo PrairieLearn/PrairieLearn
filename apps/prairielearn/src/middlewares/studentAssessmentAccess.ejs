@@ -2,15 +2,6 @@
 <html lang="en">
 <head>
     <%- include('../pages/partials/head'); %>
-    <% if (prompt == 'SEB') { %>
-    <script>
-        function backOnFocus() {
-            window.addEventListener("focus", function(event) {
-                window.history.back();
-            }, false);
-        }
-    </script>
-    <% } %>
 </head>
 <body>
     <%- include('../pages/partials/navbar', {navPage: ''}); %>
@@ -47,22 +38,6 @@
                         </div>
                       <% } %>
                     </div>
-
-                    <% if (authz_data.mode == 'SEB') { %>
-                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a></p>
-                    <% } %>
-
-                <% } else if (prompt == 'SEB') { %>
-
-                    <p class="lead text-center">
-                        This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
-                    </p>
-
-                    <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
-
-                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>" onClick="backOnFocus();">
-                        Launch into the Safe Exam Browser
-                    </a>
                 
                 <% } else if (typeof assessment_instance === 'undefined' || assessment_instance.open) { %>
 

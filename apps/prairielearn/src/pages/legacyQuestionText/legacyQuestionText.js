@@ -1,43 +1,46 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import { Router } from 'express';
+const asyncHandler = require('express-async-handler');
 
-const chunks = require('../../lib/chunks');
-var filePaths = require('../../lib/file-paths');
+import * as chunks from '../../lib/chunks';
+import * as filePaths from '../../lib/file-paths';
 
-router.get('/:filename', function (req, res, next) {
-  const question = res.locals.question;
-  const course = res.locals.course;
-  const filename = 'text/' + req.params.filename;
-  const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+const router = Router();
 
-  chunks.getTemplateQuestionIds(question, (err, questionIds) => {
-    if (ERR(err, next)) return;
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    const question = res.locals.question;
+    const course = res.locals.course;
+    const filename = 'text/' + req.params.filename;
+    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
+    const questionIds = await chunks.getTemplateQuestionIds(question);
+
+    /** @type {chunks.Chunk[]} */
     const templateQuestionChunks = questionIds.map((id) => ({
       type: 'question',
       questionId: id,
     }));
-    const chunksToLoad = [
-      {
-        type: 'question',
-        questionId: question.id,
-      },
-    ].concat(templateQuestionChunks);
-    chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
-      if (ERR(err, next)) return;
-      filePaths.questionFilePath(
-        filename,
-        question.directory,
-        coursePath,
-        question,
-        function (err, fullPath, effectiveFilename, rootPath) {
-          if (ERR(err, next)) return;
-          res.sendFile(effectiveFilename, { root: rootPath });
+    const chunksToLoad =
+      /** @type {chunks.Chunk[]} */
+      ([
+        {
+          type: 'question',
+          questionId: question.id,
         },
-      );
-    });
-  });
-});
+      ]).concat(templateQuestionChunks);
+    await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
-module.exports = router;
+    const { rootPath, effectiveFilename } = await filePaths.questionFilePath(
+      filename,
+      question.directory,
+      coursePath,
+      question,
+    );
+
+    res.sendFile(effectiveFilename, { root: rootPath });
+  }),
+);
+
+export default router;

@@ -1,61 +1,55 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+const asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const error = require('@prairielearn/error');
-var sqldb = require('@prairielearn/postgres');
-
-const chunks = require('../../lib/chunks');
-var filePaths = require('../../lib/file-paths');
+import * as chunks from '../../lib/chunks';
+import * as filePaths from '../../lib/file-paths';
 
 var sql = sqldb.loadSqlEquiv(__filename);
+const router = Router();
 
-router.get('/:filename', function (req, res, next) {
-  var question = res.locals.question;
-  var course = res.locals.course;
-  var filename = req.params.filename;
-  var params = {
-    question_id: question.id,
-    filename,
-    type: question.type,
-  };
-  sqldb.queryOneRow(sql.check_client_files, params, function (err, result) {
-    if (ERR(err, next)) return;
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    const question = res.locals.question;
+    const course = res.locals.course;
+    const filename = req.params.filename;
+    const result = await sqldb.queryOneRowAsync(sql.check_client_files, {
+      question_id: question.id,
+      filename,
+      type: question.type,
+    });
     if (!result.rows[0].access_allowed) {
-      return next(new error.HttpStatusError(403, 'Access denied'));
+      throw new error.HttpStatusError(403, 'Access denied');
     }
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
-    chunks.getTemplateQuestionIds(question, (err, questionIds) => {
-      if (ERR(err, next)) return;
+    const questionIds = await chunks.getTemplateQuestionIds(question);
 
-      const templateQuestionChunks = questionIds.map((id) => ({
-        type: 'question',
-        questionId: id,
-      }));
-      const chunksToLoad = [
-        {
-          type: 'question',
-          questionId: question.id,
-        },
-      ].concat(templateQuestionChunks);
-      chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
-        if (ERR(err, next)) return;
+    /** @type {chunks.Chunk[]} */
+    const templateQuestionChunks = questionIds.map((id) => ({
+      type: 'question',
+      questionId: id,
+    }));
+    const chunksToLoad = /** @type {chunks.Chunk[]} */ ([
+      {
+        type: /** @type {const} */ ('question'),
+        questionId: question.id,
+      },
+    ]).concat(templateQuestionChunks);
+    await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
-        filePaths.questionFilePath(
-          filename,
-          question.directory,
-          coursePath,
-          question,
-          function (err, fullPath, effectiveFilename, rootPath) {
-            if (ERR(err, next)) return;
-            res.sendFile(effectiveFilename, { root: rootPath });
-          },
-        );
-      });
-    });
-  });
-});
+    const { effectiveFilename, rootPath } = await filePaths.questionFilePath(
+      filename,
+      question.directory,
+      coursePath,
+      question,
+    );
+    res.sendFile(effectiveFilename, { root: rootPath });
+  }),
+);
 
-module.exports = router;
+export default router;

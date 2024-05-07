@@ -3,7 +3,7 @@ import { step } from 'mocha-steps';
 import * as fs from 'fs-extra';
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as path from 'path';
 import * as freeform from '../question-servers/freeform.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
