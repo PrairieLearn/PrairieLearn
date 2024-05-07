@@ -70,11 +70,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { PostgresSessionStore } from './lib/session-store';
 import { pullAndUpdateCourse } from './lib/course';
-import {
-  init as serverJobsInit,
-  stop as serverJobsStop,
-  selectJobsByJobSequenceId,
-} from './lib/server-jobs';
+import * as serverJobs from './lib/server-jobs';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
@@ -2459,7 +2455,7 @@ if (require.main === module && config.startServer) {
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
           logger.info(`Waiting for job to finish...`);
           await jobPromise;
-          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+          (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
           });
           process.exit(0);
@@ -2508,7 +2504,7 @@ if (require.main === module && config.startServer) {
       async () => externalGradingSocket.init(),
       async () => externalGrader.init(),
       async () => workspace.init(),
-      async () => serverJobsInit(),
+      async () => serverJobs.init(),
       async () => nodeMetrics.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
@@ -2544,7 +2540,7 @@ if (require.main === module && config.startServer) {
           const results = await Promise.allSettled([
             externalGraderResults.stop(),
             cron.stop(),
-            serverJobsStop(),
+            serverJobs.stop(),
             stopBatchedMigrations(),
           ]);
           results.forEach((r) => {
