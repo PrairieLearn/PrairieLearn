@@ -2,6 +2,7 @@ import * as express from 'express';
 import asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { config } from '../../../lib/config';
 
 import * as manualGrading from '../../../lib/manualGrading';
 import { InstanceQuestionSchema } from '../../../lib/db-types';
@@ -135,6 +136,34 @@ router.post(
       } else {
         res.send({});
       }
+    } else if (req.body.__action === 'bot_grade_assessment') {
+      // TODO check if bot grading is enabled
+      // if (!res.locals.question_sharing_enabled) {
+      //   throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      // }
+      // start a server job to call openai api to grade all the things
+      console.log('BOT GRADING THE ASSESSMENT!');
+      // res.send({});
+      console.log(config.openAiApiKey);
+
+      // // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
+      // const serverJob = await createServerJob({
+      //   courseId: locals.course ? locals.course.id : null,
+      //   type: 'botGrading',
+      //   description: 'Use LLM to grade assessment question',
+      // });
+
+      // serverJob.executeInBackground(async (job) => {
+      // SQL query to get the thing to grade (look at select_variant_with_last_submission in instanceQuestion.sql)
+      // call the API to grade the thing
+      // Put the grade in the database (make a new grading_job, assign to user id 1)
+      // Can we just call the function "updateInstanceQuestionScore" from manualGrading.ts?
+      // });
+
+      // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"
+      // to check out your database, run "docker exec -it mypl psql postgres"
+
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

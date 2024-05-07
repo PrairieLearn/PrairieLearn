@@ -340,6 +340,14 @@
       </a>
       <%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>
 
+      <form name="start-bot-grading" method="POST">
+        <input type="hidden" name="__action" value="bot_grade_assessment" />
+        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Bot Grade!</button>
+        </div>
+      </form>
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment.tid %> / Question <%= number_in_alternative_group %>.

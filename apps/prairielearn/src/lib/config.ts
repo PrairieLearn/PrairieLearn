@@ -516,6 +516,7 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  openAiApiKey: z.string().default(''),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
