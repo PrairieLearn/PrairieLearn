@@ -21,12 +21,12 @@ export const SelectedAssessmentsSchema = z.object({
 });
 type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
 
-export const SharingSetSchema = z.object({
+export const SharingSetRowSchema = z.object({
   id: IdSchema,
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSet = z.infer<typeof SharingSetSchema>;
+type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -48,8 +48,8 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSet[];
-  sharingSetsOther: SharingSet[];
+  sharingSetsIn: SharingSetRow[];
+  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {

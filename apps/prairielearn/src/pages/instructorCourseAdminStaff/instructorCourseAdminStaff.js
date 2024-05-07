@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
+import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
@@ -23,6 +24,12 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions';
 import { parseUidsString } from '../../lib/user';
+import {
+  CourseInstancePermissionSchema,
+  CourseInstanceSchema,
+  CoursePermissionSchema,
+  UserSchema,
+} from '../../lib/db-types';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
@@ -33,6 +40,32 @@ const router = express.Router();
  * The maximum number of UIDs that can be provided in a single request.
  */
 const MAX_UIDS = 100;
+
+const CourseUsersRowSchema = z.object({
+  user_id: UserSchema.shape.user_id,
+  uid: UserSchema.shape.uid,
+  name: UserSchema.shape.name,
+  course_role: CoursePermissionSchema.shape.course_role,
+  course_instance_roles: z
+    .array(
+      z.object({
+        id: CourseInstanceSchema.shape.id,
+        short_name: CourseInstanceSchema.shape.short_name,
+        course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+        course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+        course_instance_role_formatted: z.string(),
+      }),
+    )
+    .nullable(),
+  other_course_instances: z
+    .array(
+      z.object({
+        id: CourseInstanceSchema.shape.id,
+        short_name: CourseInstanceSchema.shape.short_name,
+      }),
+    )
+    .nullable(),
+});
 
 router.get(
   '/',
@@ -49,11 +82,15 @@ router.get(
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
-    const course_users = await sqldb.queryAsync(sql.select_course_users, {
-      course_id: res.locals.course.id,
-    });
+    const course_users = await sqldb.queryRows(
+      sql.select_course_users,
+      {
+        course_id: res.locals.course.id,
+      },
+      CourseUsersRowSchema,
+    );
 
-    res.locals.course_users = course_users.rows;
+    res.locals.course_users = course_users;
     res.locals.course_instances = course_instances;
 
     res.locals.uids_limit = MAX_UIDS;

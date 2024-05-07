@@ -20,7 +20,7 @@ import { IdSchema } from '../../lib/db-types';
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
-  SharingSetSchema,
+  SharingSetRowSchema,
 } from './instructorQuestionSettings.html';
 
 const router = express.Router();
@@ -251,7 +251,7 @@ router.get(
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         },
-        SharingSetSchema,
+        SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
       sharingSetsOther = result.filter((row) => !row.in_set);

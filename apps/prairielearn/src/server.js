@@ -1213,7 +1213,7 @@ export function initExpress() {
       res.locals.navSubPage = 'sharing';
       next();
     },
-    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
     function (req, res, next) {
@@ -1723,7 +1723,7 @@ export function initExpress() {
       res.locals.navSubPage = 'sharing';
       next();
     },
-    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing').default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/staff', [
     function (req, res, next) {
@@ -1893,7 +1893,7 @@ export function initExpress() {
       res.locals.navSubPage = 'preview';
       next();
     },
-    require('./pages/publicQuestionPreview/publicQuestionPreview'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview').default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/questions', [
     function (req, res, next) {
@@ -1901,7 +1901,7 @@ export function initExpress() {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/publicQuestions/publicQuestions'),
+    require('./pages/publicQuestions/publicQuestions').default,
   ]);
 
   // Client files for questions
