@@ -119,7 +119,7 @@ docker run -it --rm -p 3000:3000 \
     prairielearn/prairielearn
 ```
 
-##### Linux or Windows WSL2
+##### Linux or Windows WSL 2
 
 If you are on **Linux**, or if you are on **Windows** using the WSL 2 shell, you can use the following command:
 
