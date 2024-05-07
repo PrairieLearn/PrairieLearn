@@ -66,9 +66,8 @@ async function ensureECRRepo(repo, job) {
 
   try {
     const data = await ecr.describeRepositories({ repositoryNames: [repo] });
-    const repositoryFound = !!data.repositories?.find((r) => r.repositoryName === repo);
 
-    if (repositoryFound) {
+    if (data.repositories?.some((r) => r.repositoryName === repo)) {
       // The repository already exists; there's nothing for us to do.
       job.info('Repository found');
       return;
