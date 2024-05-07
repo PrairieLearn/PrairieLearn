@@ -64,49 +64,41 @@ async function ensureECRRepo(repo, job) {
   const ecr = new ECR(makeAwsClientConfig());
   job.info(`Describing repositories with name: ${repo}`);
 
-  let repositoryFound = false;
   try {
     const data = await ecr.describeRepositories({ repositoryNames: [repo] });
-    repositoryFound = !!data.repositories?.find((r) => r.repositoryName === repo);
+    const repositoryFound = !!data.repositories?.find((r) => r.repositoryName === repo);
+
+    if (repositoryFound) {
+      // The repository already exists; there's nothing for us to do.
+      job.info('Repository found');
+      return;
+    }
   } catch (err) {
     if (err instanceof RepositoryNotFoundException) {
       // Repository not found; this is expected.
     } else {
       // Something else went wrong; allow it to bubble up.
-      Sentry.captureException(err, {
-        tags: {
-          repository: repo,
-        },
-      });
+      Sentry.captureException(err, { tags: { repository: repo } });
       throw err;
     }
   }
 
-  if (!repositoryFound) {
-    job.info('Repository not found');
+  job.info('Repository not found');
+  job.info(`Creating repository: ${repo}`);
 
-    job.info(`Creating repository: ${repo}`);
-    try {
-      await ecr.createRepository({ repositoryName: repo });
-    } catch (err) {
-      if (err instanceof RepositoryAlreadyExistsException) {
-        // Someone else created the repository before we could; this is fine.
-      } else {
-        // Something else went wrong; allow it to bubble up.
-        Sentry.captureException(err, {
-          tags: {
-            repository: repo,
-          },
-        });
-        throw err;
-      }
+  try {
+    await ecr.createRepository({ repositoryName: repo });
+  } catch (err) {
+    if (err instanceof RepositoryAlreadyExistsException) {
+      // Someone else created the repository before we could; this is fine.
+    } else {
+      // Something else went wrong; allow it to bubble up.
+      Sentry.captureException(err, { tags: { repository: repo } });
+      throw err;
     }
-
-    job.info('Successfully created repository');
-  } else {
-    // Already exists, nothing to do
-    job.info('Repository found');
   }
+
+  job.info('Successfully created repository');
 }
 
 function logProgressOutput(output, job, printedInfos, prefix) {
