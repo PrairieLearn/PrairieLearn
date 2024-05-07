@@ -20,10 +20,10 @@ export function getJobDirectory(jobId) {
  * Constructs a directory of files to be used for grading.
  *
  * @param {string} dir
- * @param {import('./db-types').Submission} submission
- * @param {import('./db-types').Variant} variant
- * @param {import('./db-types').Question} question
- * @param {import('./db-types').Course} course
+ * @param {import('./db-types.js').Submission} submission
+ * @param {import('./db-types.js').Variant} variant
+ * @param {import('./db-types.js').Question} question
+ * @param {import('./db-types.js').Course} course
  */
 export async function buildDirectory(dir, submission, variant, question, course) {
   const coursePath = getRuntimeDirectoryForCourse(course);
