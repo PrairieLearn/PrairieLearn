@@ -12,9 +12,9 @@ ENV IPYTHONDIR=/tmp/ipython
 ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
 
 USER root
-COPY install.sh requirements.txt /
+COPY install.sh requirements.txt pl-gosu-helper.sh /
 RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
-CMD ["start.sh", "jupyter", "lab"]
+CMD ["pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
