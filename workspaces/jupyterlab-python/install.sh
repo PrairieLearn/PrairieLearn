@@ -26,11 +26,13 @@ chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
 
 # Install all Python dependencies.
-pip3 install -r /requirements.txt
+pip install uv
+uv pip install --system -r /requirements.txt
 
 # Clear various caches to minimize the final image size.
 apt-get clean
-pip3 cache purge
+uv cache clean
+pip cache purge
 
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
