@@ -17,6 +17,7 @@ export {
   selectBatchedMigration,
   selectBatchedMigrationForTimestamp,
   selectRecentJobsWithStatus,
+  retryFailedBatchedMigrationJobs,
 } from './batched-migrations';
 
 export const SCHEMA_MIGRATIONS_PATH = path.resolve(__dirname, '..', 'schema-migrations');
