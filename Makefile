@@ -6,7 +6,7 @@ python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:
 	@yarn
-	@make python-deps build
+	@$(MAKE) python-deps build
 
 migrate:
 	@yarn migrate
@@ -22,6 +22,8 @@ dev: start-support
 	@yarn dev
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
+dev-all: start-support
+	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
 	@yarn start
@@ -29,6 +31,8 @@ start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
 	@node apps/prairielearn/dist/executor.js
+start-all: start-support
+	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:
 	@yarn workspace @prairielearn/prairielearn pg-describe postgres -o ../../database

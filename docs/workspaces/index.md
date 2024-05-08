@@ -236,11 +236,10 @@ In order to run workspaces in a local Docker environment, the `docker` command m
 For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
 
 ```sh
-make dev-workspace-host
-make dev
+make dev-all
 ```
 
-For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
 
 ## Permissions in production
 

@@ -2949,7 +2949,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@types/async": ^3.2.24
     "@types/chai": ^4.3.14
-    "@types/dockerode": ^3.3.26
+    "@types/dockerode": ^3.3.29
     "@types/fs-extra": ^11.0.4
     "@types/node": ^20.12.2
     "@types/sinon": ^17.0.3
@@ -3212,7 +3212,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.8
     "@types/cookie-parser": ^1.4.7
     "@types/crypto-js": ^4.2.2
-    "@types/dockerode": ^3.3.26
+    "@types/dockerode": ^3.3.29
     "@types/express": ^4.17.21
     "@types/express-list-endpoints": ^6.0.3
     "@types/express-session": ^1.18.0
@@ -4643,13 +4643,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/dockerode@npm:^3.3.26":
-  version: 3.3.26
-  resolution: "@types/dockerode@npm:3.3.26"
+"@types/dockerode@npm:^3.3.29":
+  version: 3.3.29
+  resolution: "@types/dockerode@npm:3.3.29"
   dependencies:
     "@types/docker-modem": "*"
     "@types/node": "*"
-  checksum: ec1e83ef2d938813c8fa72f7c8744a9bf598369d8a0f340377ddff25c6e7d118379cd297eecbe4af2b7aa64bf5cd1bb66b32d1e3874a062433b967265be94f09
+    "@types/ssh2": "*"
+  checksum: e69dc6f3c70f7a4573e61ea697cb18b89f49198afeda713f8cd862ac0f0d4b6a36b308542933a743269e9936f61ca85809a55d0c5f2ad4933244135cd25643d9
   languageName: node
   linkType: hard
 
