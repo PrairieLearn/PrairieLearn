@@ -4,7 +4,7 @@ import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 import assert from 'node:assert';
 
-class Cache {
+export class Cache {
   enabled = false;
   type = 'none';
   memoryCache?: LRUCache<string, string>;
