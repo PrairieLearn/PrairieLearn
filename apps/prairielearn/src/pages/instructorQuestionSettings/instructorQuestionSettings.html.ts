@@ -1,4 +1,4 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
@@ -9,7 +9,8 @@ import { isEnterprise } from '../../lib/license';
 import { idsEqual } from '../../lib/id';
 
 export const SelectedAssessmentsSchema = z.object({
-  title: z.string(),
+  short_name: z.string(),
+  long_name: z.string(),
   course_instance_id: IdSchema,
   assessments: z.array(
     z.object({
@@ -75,6 +76,11 @@ export function InstructorQuestionSettings({
             $('[data-toggle="popover"]').popover({
               sanitize: false,
             });
+          });
+        </script>
+        <script>
+          $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
           });
         </script>
 
@@ -155,17 +161,20 @@ export function InstructorQuestionSettings({
                   <h2 class="h4">Topic</h2>
                   <div class="list-group">
                     <div class="list-group-item d-flex align-items-center">
-                      ${renderEjs(__filename, "<%- include('../partials/topic') %>", {
-                        topic: resLocals.topic,
-                      })}
-                      <span class="ml-3">${resLocals.topic.description}</span>
+                      <span
+                        class="badge color-${resLocals.topic.color}"
+                        data-toggle="tooltip"
+                        data-html="true"
+                        title="${unsafeHtml(resLocals.topic.description)}"
+                        >${resLocals.topic.name}</span
+                      >
                     </div>
                   </div>
                 </div>
                 <hr />
                 <div>
                   <h2 class="h4">Tags</h2>
-                  <div class="list-group">${TagRows({ tags: resLocals.tags })}</div>
+                  <div>${TagRows({ tags: resLocals.tags })}</div>
                 </div>
                 <hr />
                 <div>
@@ -582,17 +591,26 @@ function QuestionSharing({
 function TagRows({ tags }) {
   if (!tags || tags.length === 0) {
     return html` <small class="text-muted"> This question does not have any tags. </small>`;
-  }
-  return tags.map((tag) => {
+  } else {
     return html`
-      <div class="list-group-item d-flex align-items-center">
-        <div class="col-1 px-0">
-          <span class="badge color-${tag.color}"> ${tag.name} </span>
+      <div class="list-group">
+        <div class="list-group-item ">
+          ${tags.map((tag) => {
+            return html`
+              <span
+                class="badge color-${tag.color}"
+                style="white-space: unset; word-break: break-all"
+                data-toggle="tooltip"
+                title="${unsafeHtml(tag.description)}"
+              >
+                ${tag.name}
+              </span>
+            `;
+          })}
         </div>
-        <span class="col-auto px-0">${tag.description}</span>
       </div>
     `;
-  });
+  }
 }
 
 function AssessmentRows({ assessmentsWithQuestion }) {
@@ -604,11 +622,18 @@ function AssessmentRows({ assessmentsWithQuestion }) {
     return assessmentsWithQuestion.map((courseInstance) => {
       return html`
         <div class="card pb-2 mb-2">
-          <div class="h6 card-header">${courseInstance.title}</div>
+          <div class="h6 card-header">
+            ${courseInstance.long_name} (${courseInstance.short_name})
+          </div>
           <div class="card-body">
             ${courseInstance.assessments.map((assessment) => {
               return html`
-                <span class="badge color-${assessment.color}"> ${assessment.label} </span>
+                <a
+                  href="/pl/course_instance/${courseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
+                  class="badge color-${assessment.color}"
+                >
+                  ${assessment.label}
+                </a>
               `;
             })}
           </div>
