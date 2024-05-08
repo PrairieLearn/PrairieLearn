@@ -1,4 +1,4 @@
-const courseDB = require('../apps/prairielearn/dist/sync/course-db');
+import courseDB from '../apps/prairielearn/dist/sync/course-db.js';
 (async () => {
   const courseData = await courseDB.loadFullCourse('/course');
   const errors = [];

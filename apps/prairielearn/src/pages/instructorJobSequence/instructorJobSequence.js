@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs-legacy';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
 
 const router = Router();
 
