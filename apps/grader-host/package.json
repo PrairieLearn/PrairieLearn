@@ -47,7 +47,7 @@
     "mocha": "^10.4.0",
     "nodemon": "^3.1.0",
     "sinon": "^17.0.1",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3",
     "typescript-cp": "^0.1.9"
   }

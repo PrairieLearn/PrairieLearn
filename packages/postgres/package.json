@@ -20,7 +20,7 @@
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.4.0",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3"
   },
   "dependencies": {
