@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/**/*.test.ts"
+    "test": "mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.4",

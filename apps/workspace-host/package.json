@@ -8,13 +8,13 @@
     "dev:no-watch": "tsx src/interface.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/interface.js",
-    "test": "mocha --no-config --require tsx src/**/*.test.{js,ts}"
+    "test": "mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.540.0",
-    "@aws-sdk/client-s3": "^3.540.0",
-    "@aws-sdk/credential-providers": "^3.540.0",
-    "@aws-sdk/lib-storage": "^3.540.0",
+    "@aws-sdk/client-ecr": "^3.565.0",
+    "@aws-sdk/client-s3": "^3.565.0",
+    "@aws-sdk/credential-providers": "^3.565.0",
+    "@aws-sdk/lib-storage": "^3.565.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
