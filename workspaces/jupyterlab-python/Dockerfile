@@ -16,9 +16,5 @@ COPY install.sh requirements.txt /
 RUN /bin/bash /install.sh
 COPY jupyter_server_config.py /etc/jupyter/
 
-# Suppress the opt-in dialog for announcements.  
-# https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
-RUN jupyter labextension disable @jupyterlab/apputils-extension:announcements
-
 USER jovyan
 CMD ["start.sh", "jupyter", "lab"]
