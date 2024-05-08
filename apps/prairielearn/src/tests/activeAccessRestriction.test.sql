@@ -23,7 +23,7 @@ WHERE
 
 -- BLOCK count_variants
 SELECT
-  COUNT(v.*)
+  COUNT(v.*)::integer
 FROM
   variants AS v
   JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
@@ -52,7 +52,7 @@ WHERE
 
 -- BLOCK get_attached_files
 SELECT
-  *
+  COUNT(*)::integer
 FROM
   files
 WHERE

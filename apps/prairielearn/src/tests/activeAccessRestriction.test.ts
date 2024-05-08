@@ -6,6 +6,9 @@ import { config } from '../lib/config';
 import * as helperServer from './helperServer';
 import * as helperClient from './helperClient';
 
+import { z } from 'zod';
+import { IdSchema, AssessmentInstanceSchema } from '../lib/db-types';
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Exam and homework assessment with active access restriction', function () {
@@ -35,12 +38,10 @@ describe('Exam and homework assessment with active access restriction', function
   });
   before('set up testing server', async function () {
     await helperServer.before().call(this);
-    const resultsExam = await sqldb.queryOneRowAsync(sql.select_exam11, []);
-    context.examId = resultsExam.rows[0].id;
+    context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
-    const resultsHomework = await sqldb.queryOneRowAsync(sql.select_homework8, []);
-    context.hwId = resultsHomework.rows[0].id;
+    context.hwId = await sqldb.queryRow(sql.select_homework8, IdSchema);
     context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
     context.hwNumber = '8';
   });
@@ -109,8 +110,11 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('check that an assessment instance was not created', async () => {
-    const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
-    assert.equal(results.rowCount, 0);
+    const results = await sqldb.queryRows(
+      sql.select_assessment_instances,
+      AssessmentInstanceSchema,
+    );
+    assert.equal(results.length, 0);
   });
 
   step(
@@ -169,10 +173,13 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('count number of variants generated', async () => {
-    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
-      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-    });
-    context.numberOfVariants = countVariantsResult.rows[0].count;
+    context.numberOfVariants = await sqldb.queryRow(
+      sql.count_variants,
+      {
+        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+      },
+      z.number(),
+    );
     assert.equal(context.numberOfVariants, 1);
   });
 
@@ -191,16 +198,19 @@ describe('Exam and homework assessment with active access restriction', function
     assert.isTrue(response.ok);
 
     // We should have been redirected back to the same assessment instance
-    assert.equal(response.url, context.examInstanceUrl + '?timeLimitExpired=true');
+    assert.equal(response.url, `${context.examInstanceUrl}?timeLimitExpired=true`);
 
     // Since showClosedAssessment is true, Question 1 is visible.
     assert.lengthOf(response.$('a:contains("Question 1")'), 1);
   });
 
   step('check that the assessment instance is closed', async () => {
-    const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
-    assert.equal(results.rowCount, 1);
-    assert.equal(results.rows[0].open, false);
+    const results = await sqldb.queryRows(
+      sql.select_assessment_instances,
+      AssessmentInstanceSchema,
+    );
+    assert.equal(results.length, 1);
+    assert.equal(results[0].open, false);
   });
 
   step('access question with existing variant when exam is closed', async () => {
@@ -219,9 +229,7 @@ describe('Exam and homework assessment with active access restriction', function
       headers,
     });
     assert.equal(response.status, 403);
-
-    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
-    assert.lengthOf(result, 1);
+    assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
   });
 
   step(
@@ -265,16 +273,18 @@ describe('Exam and homework assessment with active access restriction', function
       headers,
     });
     assert.equal(response.status, 403);
-
-    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
-    assert.lengthOf(result, 1);
+    assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
   });
 
   step('ensure that no new variants have been created', async () => {
-    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
-      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-    });
-    assert.equal(countVariantsResult.rows[0].count, context.numberOfVariants);
+    const countVariantsResult = await sqldb.queryRow(
+      sql.count_variants,
+      {
+        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+      },
+      z.number(),
+    );
+    assert.equal(countVariantsResult, context.numberOfVariants);
   });
 
   step('access the exam when active and showClosedAssessment are false', async () => {
@@ -327,11 +337,9 @@ describe('Exam and homework assessment with active access restriction', function
     context.hwInstanceUrl = hwInstanceUrl;
 
     // the link to the first question begins with "HWX.1." where X is the homework number
-    const questionWithVariantPath = response
-      .$('a:contains(HW' + context.hwNumber + '.1.)')
-      .attr('href');
+    const questionWithVariantPath = response.$(`a:contains(HW${context.hwNumber}.1.)`).attr('href');
     const questionWithoutVariantPath = response
-      .$('a:contains(HW' + context.hwNumber + '.2.)')
+      .$(`a:contains(HW${context.hwNumber}.2.)`)
       .attr('href');
     context.hwQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
     context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
@@ -350,10 +358,13 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('count number of variants generated', async () => {
-    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
-      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
-    });
-    context.numberOfVariants = countVariantsResult.rows[0].count;
+    context.numberOfVariants = await sqldb.queryRow(
+      sql.count_variants,
+      {
+        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
+      },
+      z.number(),
+    );
     assert.equal(context.numberOfVariants, 1);
   });
 
@@ -386,16 +397,18 @@ describe('Exam and homework assessment with active access restriction', function
       headers,
     });
     assert.equal(response.status, 403);
-
-    const result = response.$('div.card-body:contains(' + VARIANT_FORBIDDEN_STRING + ')');
-    assert.lengthOf(result, 1);
+    assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
   });
 
   step('ensure that no new variants have been created', async () => {
-    const countVariantsResult = await sqldb.queryOneRowAsync(sql.count_variants, {
-      assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-    });
-    assert.equal(countVariantsResult.rows[0].count, context.numberOfVariants);
+    const countVariantsResult = await sqldb.queryRow(
+      sql.count_variants,
+      {
+        assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
+      },
+      z.number(),
+    );
+    assert.equal(countVariantsResult, context.numberOfVariants);
   });
 
   step(
@@ -467,12 +480,14 @@ describe('Exam and homework assessment with active access restriction', function
   step(
     'check that no credit is received for an answer submitted when active is false',
     async () => {
-      const params = {
-        assessment_id: context.hwId,
-      };
-
-      const result = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
-      assert.equal(result.rows[0].points, 0);
+      const points = await sqldb.queryRow(
+        sql.read_assessment_instance_points,
+        {
+          assessment_id: context.hwId,
+        },
+        z.number(),
+      );
+      assert.equal(points, 0);
     },
   );
 
@@ -599,14 +614,16 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('check that no files or text were attached', async () => {
-    const params = {
-      assessment_id: context.hwId,
-    };
-
-    const result = await sqldb.queryZeroOrOneRowAsync(sql.get_attached_files, params);
+    const numberOfFiles = await sqldb.queryRow(
+      sql.get_attached_files,
+      {
+        assessment_id: context.hwId,
+      },
+      z.number(),
+    );
 
     // Note: inserting text is really inserting a file in disguise, so we just need to check
     // that the files table is empty.
-    assert.equal(result.rowCount, 0);
+    assert.equal(numberOfFiles, 0);
   });
 });
