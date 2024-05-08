@@ -51,7 +51,6 @@ import * as sprocs from './sprocs';
 import * as news_items from './news_items';
 import * as cron from './cron';
 import * as socketServer from './lib/socket-server';
-import * as serverJobs from './lib/server-jobs-legacy';
 import * as freeformServer from './question-servers/freeform';
 import { cache } from '@prairielearn/cache';
 import { LocalCache } from './lib/local-cache';
@@ -71,7 +70,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { PostgresSessionStore } from './lib/session-store';
 import { pullAndUpdateCourse } from './lib/course';
-import { selectJobsByJobSequenceId } from './lib/server-jobs';
+import * as serverJobs from './lib/server-jobs';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
@@ -2456,7 +2455,7 @@ if (require.main === module && config.startServer) {
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
           logger.info(`Waiting for job to finish...`);
           await jobPromise;
-          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+          (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
           });
           process.exit(0);

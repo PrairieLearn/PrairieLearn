@@ -5,13 +5,13 @@ import {
   selectAllBatchedMigrations,
   selectBatchedMigration,
   selectRecentJobsWithStatus,
+  retryFailedBatchedMigrationJobs,
 } from '@prairielearn/migrations';
 
 import {
   AdministratorBatchedMigrations,
   AdministratorBatchedMigration,
 } from './administratorBatchedMigrations.html';
-import { retryFailedBatchedMigrationJobs } from '@prairielearn/migrations/dist/batched-migrations';
 
 const router = Router({ mergeParams: true });
 
