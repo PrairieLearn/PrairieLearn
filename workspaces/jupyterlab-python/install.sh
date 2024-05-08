@@ -2,6 +2,9 @@
 
 set -ex
 
+# This script requires root.
+[ "$(id -u)" -eq 0 ] || exit 1
+
 # On PL, we want to standardize on using 1001:1001 for the user. We change
 # the "jovyan" account's default UID and GID here.
 USER_NAME=jovyan
@@ -20,7 +23,7 @@ apt-get update && apt-get -y upgrade
 apt-get -y install gosu gcc graphviz graphviz-dev
 
 # Test gosu and prepare the gosu helper.
-gosu jovyan true
+gosu jovyan true || exit 1
 mv /pl-gosu-helper.sh /usr/local/bin/
 chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
