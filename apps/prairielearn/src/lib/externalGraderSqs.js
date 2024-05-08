@@ -31,19 +31,12 @@ export class ExternalGraderSqs {
 
     async.series(
       [
-        (callback) => {
-          buildDirectory(dir, submission, variant, question, course, callback);
-        },
         async () => {
+          await buildDirectory(dir, submission, variant, question, course);
+
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
-          let tarball = tar.create(
-            {
-              gzip: true,
-              cwd: dir,
-            },
-            ['.'],
-          );
+          let tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
 
           const passthrough = new PassThrough();
           tarball.pipe(passthrough);
@@ -55,14 +48,10 @@ export class ExternalGraderSqs {
           };
 
           const s3 = new S3(makeS3ClientConfig());
-          await new Upload({
-            client: s3,
-            params,
-          }).done();
-        },
-        async () => {
+          await new Upload({ client: s3, params }).done();
+
           // Store S3 info for this job
-          sqldb.queryAsync(sql.update_s3_info, {
+          await sqldb.queryAsync(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,

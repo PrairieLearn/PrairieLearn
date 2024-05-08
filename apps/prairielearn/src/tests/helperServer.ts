@@ -10,7 +10,7 @@ import { config } from '../lib/config';
 import * as load from '../lib/load';
 import * as cron from '../cron';
 import * as socketServer from '../lib/socket-server';
-import * as serverJobs from '../lib/server-jobs-legacy';
+import * as serverJobs from '../lib/server-jobs';
 import * as freeformServer from '../question-servers/freeform';
 import * as localCache from '../lib/local-cache';
 import * as codeCaller from '../lib/code-caller';
