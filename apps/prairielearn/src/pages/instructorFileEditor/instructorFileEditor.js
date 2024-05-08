@@ -7,7 +7,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import debugfn from 'debug';
-import * as serverJobs from '../../lib/server-jobs-legacy';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
@@ -90,7 +90,7 @@ router.get(
 
     if (fileEdit.jobSequenceId != null) {
       debug('Read job sequence');
-      fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutput(
+      fileEdit.jobSequence = await getJobSequenceWithFormattedOutput(
         fileEdit.jobSequenceId,
         res.locals.course.id,
       );
