@@ -1244,7 +1244,6 @@ export async function render(
     let allRenderedElementNames = [];
     const courseIssues = [];
     const context = await getContext(question, course);
-
     // Hack: we need to propagate this back up to the original caller so
     // they can expose the selected renderer to the client via a header, but
     // parent functions don't actually return things. So we'll just stick it
@@ -1541,13 +1540,13 @@ export async function render(
       dependencies.courseElementStyles.forEach((file) =>
         styleUrls.push(
           assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-            (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
+            (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
         ),
       );
       dependencies.courseElementScripts.forEach((file) =>
         scriptUrls.push(
           assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-            (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
+            (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
         ),
       );
       dependencies.extensionStyles.forEach((file) =>
@@ -1577,7 +1576,7 @@ export async function render(
             dynamicDependencies.courseElementScripts,
             (file) =>
               assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-              (!idsEqual(question.course_id, course.id) ? `?variant_id=${variant.id}` : ''),
+              (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),

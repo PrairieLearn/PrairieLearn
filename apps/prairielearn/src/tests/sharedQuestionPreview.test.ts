@@ -1,15 +1,15 @@
+import { z } from 'zod';
+
 import {
   testQuestionPreviews,
   testFileDownloads,
   testElementClientFiles,
 } from './helperQuestionPreview';
 import { config } from '../lib/config';
-import { z } from 'zod';
 import { features } from '../lib/features/index';
 import * as sqldb from '@prairielearn/postgres';
 import * as helperServer from './helperServer';
 import * as syncUtil from './sync/util';
-import { selectCourseById } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -65,6 +65,12 @@ describe('Shared Question Preview', function () {
     }
   });
 
+  before('set up another course to consume shared questions from ', async () => {
+    const consumingCourseData = syncUtil.getCourseData();
+    consumingCourseData.course.name = 'CONSUMING 101';
+    await syncUtil.writeAndSyncCourseData(consumingCourseData);
+  });
+
   describe('Test Public Question Previews', function () {
     const previewPageInfo = {
       siteUrl,
@@ -82,15 +88,11 @@ describe('Shared Question Preview', function () {
     // testElementClientFiles(previewPageInfo, customElement);
   });
 
-  describe('Test Shared Question Previews Within a Course', async function () {
-    const consumingCourseData = syncUtil.getCourseData();
-    consumingCourseData.course.name = 'CONSUMING 101';
-    const consumingCourseResults = await syncUtil.writeAndSyncCourseData(consumingCourseData);
-    const consumingCourse = await selectCourseById(consumingCourseResults.syncResults.courseId);
+  describe('Test Shared Question Previews Within a Course', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course/${consumingCourse.id}/question`,
+      questionBaseUrl: baseUrl + `/course/2/question`,
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };
