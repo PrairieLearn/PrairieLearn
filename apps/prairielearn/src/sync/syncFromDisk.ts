@@ -2,6 +2,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { config } from '../lib/config';
 import * as courseDB from './course-db';
+import * as syncAuthors from './fromDisk/authors';
 import * as syncCourseInfo from './fromDisk/courseInfo';
 import * as syncCourseInstances from './fromDisk/courseInstances';
 import * as syncTopics from './fromDisk/topics';
@@ -52,6 +53,7 @@ export async function syncDiskToSqlWithLock(
     syncQuestions.sync(courseId, courseData),
   );
 
+  await perf.timed('syncAuthors', () => syncAuthors.sync(courseId, courseData, questionIds));
   await perf.timed('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));

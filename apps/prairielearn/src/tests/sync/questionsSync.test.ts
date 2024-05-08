@@ -212,6 +212,24 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
+  it('Authors are put into database', async () => {
+    const courseData = util.getCourseData();
+    const newAuthor = 'example@example.com';
+
+    if (!courseData.questions[util.QUESTION_ID].authors) {
+      courseData.questions[util.QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+
+    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthor = questionAuthors.find((q) => q.author_name === newAuthor);
+    assert.equal(questionAuthor?.question_id, originalSyncedQuestion?.id);
+  });
+
   it('records an error if "options" object is invalid', async () => {
     const courseData = util.getCourseData();
     const testQuestion = courseData.questions[util.QUESTION_ID];
