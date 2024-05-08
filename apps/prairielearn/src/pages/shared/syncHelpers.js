@@ -58,7 +58,7 @@ export async function gitStatus(locals) {
 
 /**
  * @param {string} repo
- * @param {import('../../lib/server-jobs').ServerJob} job
+ * @param {import('../../lib/server-jobs.js').ServerJob} job
  */
 async function ensureECRRepo(repo, job) {
   const ecr = new ECR(makeAwsClientConfig());
