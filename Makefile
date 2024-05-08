@@ -6,7 +6,7 @@ python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:
 	@yarn
-	@make python-deps build
+	@$(MAKE) python-deps build
 
 migrate:
 	@yarn migrate
