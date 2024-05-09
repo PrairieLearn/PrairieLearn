@@ -398,7 +398,7 @@ export async function gradeVariant(
       IdSchema.nullable(),
     );
     if (assessment_instance_id != null) {
-      await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+      await ltiOutcomes.updateScore(assessment_instance_id);
     }
   }
 }

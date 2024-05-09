@@ -672,9 +672,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if (not allow_blank_submission) and (
         student_answer is None or student_answer == []
     ):
-        data["format_errors"][
-            answer_name
-        ] = "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
+        data["format_errors"][answer_name] = (
+            "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
+        )
         return
 
     grading_method = pl.get_enum_attrib(
@@ -970,10 +970,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
-            (
-                grading_method in LCS_GRADABLE_TYPES
-                and partial_credit_type is PartialCreditType.LCS
-            )
+            grading_method in LCS_GRADABLE_TYPES
+            and partial_credit_type is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 

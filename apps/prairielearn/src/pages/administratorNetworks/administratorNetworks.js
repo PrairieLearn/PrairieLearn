@@ -1,12 +1,12 @@
-//@ts-check
+// @ts-check
 const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
-const express = require('express');
-const sqldb = require('@prairielearn/postgres');
+import * as _ from 'lodash';
+import { Router } from 'express';
+import * as sqldb from '@prairielearn/postgres';
 
-const { AdministratorNetworks } = require('./administratorNetworks.html');
+import { AdministratorNetworks } from './administratorNetworks.html';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
@@ -18,4 +18,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

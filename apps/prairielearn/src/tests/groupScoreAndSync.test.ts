@@ -1,5 +1,5 @@
 import ERR = require('async-stacktrace');
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { assert } from 'chai';
 import request = require('request');
 import * as cheerio from 'cheerio';

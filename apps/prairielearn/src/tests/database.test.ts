@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as path from 'node:path';
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 

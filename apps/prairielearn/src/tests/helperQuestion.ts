@@ -1,4 +1,3 @@
-import * as util from 'util';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
@@ -476,7 +475,7 @@ export function regradeAssessment(locals: Record<string, any>) {
     });
     it('should have a CSRF token', function () {
       assert(locals.$);
-      const elemList = locals.$('form[name="regrade-all-form"] input[name="__csrf_token"]');
+      const elemList = locals.$('#regrade-all-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -694,5 +693,3 @@ export async function checkNoIssuesForLastVariantAsync() {
       JSON.stringify(result.rows, null, '    '),
   );
 }
-
-export const checkNoIssuesForLastVariant = util.callbackify(checkNoIssuesForLastVariantAsync);

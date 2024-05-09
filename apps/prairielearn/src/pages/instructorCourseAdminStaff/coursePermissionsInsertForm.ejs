@@ -9,8 +9,9 @@
   </div>
 
   <div class="form-group">
-    <label for="addUsersInputUid">List of UIDs separated by commas, whitespaces, or semicolons:</label>
-    <textarea class="form-control" id="addUsersInputUid" name="uid" placeholder="user1@domain.org, user2@domain.org" required></textarea>
+    <label for="addUsersInputUid">UIDs:</label>
+    <textarea class="form-control" id="addUsersInputUid" name="uid" placeholder="student1@example.com, student2@example.com" required aria-describedby="addUsersInputUidHelp"></textarea>
+    <small id="addUsersInputUidHelp" class="form-text text-muted">Enter up to <%= uids_limit %> UIDs separated by commas, semicolons, or whitespace.</small>
   </div>
 
   <div class="form-group">

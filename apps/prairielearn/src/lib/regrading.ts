@@ -87,7 +87,7 @@ export async function regradeAssessmentInstance(
     } else {
       job.info('No changes made');
     }
-    await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   });
   return serverJob.jobSequenceId;
 }
@@ -150,7 +150,7 @@ export async function regradeAllAssessmentInstances(
         } else {
           msg += 'No changes made';
         }
-        await ltiOutcomes.updateScoreAsync(row.assessment_instance_id);
+        await ltiOutcomes.updateScore(row.assessment_instance_id);
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;
