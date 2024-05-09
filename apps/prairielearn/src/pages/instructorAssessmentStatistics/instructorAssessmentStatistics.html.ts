@@ -64,7 +64,6 @@ export function InstructorAssessmentStatistics({
           pageTitle: 'Statistics',
         })}
         <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-        <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
         ${compiledScriptTag('instructorAssessmentStatisticsClient.ts')}
       </head>
       <body>
