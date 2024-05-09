@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
-import { InstitutionAdminCourses } from './institutionAdminCourses.html';
-import { CourseSchema } from '../../../lib/db-types';
+import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
+import { InstitutionAdminCourses } from './institutionAdminCourses.html.js';
+import { CourseSchema } from '../../../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(

@@ -1,4 +1,4 @@
-import morphdom = require('morphdom');
+import morphdom from 'morphdom';
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import {

@@ -1,6 +1,6 @@
 import { type RootHookObject } from 'mocha';
 
-import { createTemplate, dropTemplate } from './helperDb';
+import { createTemplate, dropTemplate } from './helperDb.js';
 
 export async function mochaGlobalSetup() {
   // Create a global instance of our template database, dropping the existing

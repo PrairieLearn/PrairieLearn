@@ -4,11 +4,11 @@ import * as cheerio from 'cheerio';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

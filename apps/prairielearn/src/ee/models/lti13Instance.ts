@@ -1,8 +1,8 @@
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types';
-import { getInstitutionAuthenticationProviders } from '../lib/institution';
+import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
+import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectLti13Instance(lti13_instance_id: string): Promise<Lti13Instance> {
   const lti13_instance = await queryOptionalRow(

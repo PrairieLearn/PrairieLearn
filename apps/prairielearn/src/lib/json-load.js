@@ -1,6 +1,6 @@
 // @ts-check
 import * as fs from 'fs/promises';
-import * as jju from 'jju';
+import jju from 'jju';
 import Ajv from 'ajv';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used

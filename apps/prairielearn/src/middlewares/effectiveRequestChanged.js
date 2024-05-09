@@ -1,5 +1,5 @@
 // @ts-check
-import { clearCookie } from '../lib/cookie';
+import { clearCookie } from '../lib/cookie.js';
 
 /**
  * @param {import('express').Request} req

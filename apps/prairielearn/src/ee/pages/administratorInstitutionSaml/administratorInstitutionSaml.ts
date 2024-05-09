@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 // We import from this instead of `pem` directly because the latter includes
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
@@ -13,15 +13,15 @@ import formatXml from 'xml-formatter';
 import {
   AdministratorInstitutionSaml,
   DecodedAssertion,
-} from './administratorInstitutionSaml.html';
+} from './administratorInstitutionSaml.html.js';
 import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} from '../../lib/institution';
-import { getSamlOptions } from '../../auth/saml/index';
+} from '../../lib/institution.js';
+import { getSamlOptions } from '../../auth/saml/index.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 function createCertificate(

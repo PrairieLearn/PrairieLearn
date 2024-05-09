@@ -1,12 +1,12 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as fsExtra from 'fs-extra';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
-import { getRuntimeDirectoryForCourse } from './chunks';
+import { getRuntimeDirectoryForCourse } from './chunks.js';
 
 /**
  * Returns the directory where job files should be written to while running

@@ -1,9 +1,9 @@
 import { Router, type Request, Response, NextFunction } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { callbackify } from 'util';
 import * as crypto from 'crypto';
 import { URL } from 'url';
@@ -11,12 +11,12 @@ import { URL } from 'url';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { cache } from '@prairielearn/cache';
-import * as authnLib from '../../../lib/authn';
-import { selectLti13Instance } from '../../models/lti13Instance';
-import { Lti13Test } from './lti13Auth.html';
-import { getCanonicalHost } from '../../../lib/url';
+import * as authnLib from '../../../lib/authn.js';
+import { selectLti13Instance } from '../../models/lti13Instance.js';
+import { Lti13Test } from './lti13Auth.html.js';
+import { getCanonicalHost } from '../../../lib/url.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const StateTest = '-StateTest';

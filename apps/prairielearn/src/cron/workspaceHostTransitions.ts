@@ -6,11 +6,11 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { config } from '../lib/config';
-import { makeAwsClientConfig } from '../lib/aws';
-import * as workspaceHostUtils from '../lib/workspaceHost';
+import { config } from '../lib/config.js';
+import { makeAwsClientConfig } from '../lib/aws.js';
+import * as workspaceHostUtils from '../lib/workspaceHost.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function run() {
   if (!config.runningInEc2) return;

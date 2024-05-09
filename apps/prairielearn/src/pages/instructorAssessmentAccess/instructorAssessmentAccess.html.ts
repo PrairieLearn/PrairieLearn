@@ -30,7 +30,7 @@ export function InstructorAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
         <script>
@@ -38,10 +38,10 @@ export function InstructorAssessmentAccess({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}

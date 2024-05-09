@@ -1,4 +1,4 @@
-import { getAwsClientNamesFromImportDeclaration } from '../utils';
+import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
  * This rule enforces that we always explicitly provide a config to AWS clients.

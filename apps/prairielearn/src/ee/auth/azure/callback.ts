@@ -1,8 +1,8 @@
-import passport = require('passport');
+import passport from 'passport';
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import * as authnLib from '../../../lib/authn';
+import * as authnLib from '../../../lib/authn.js';
 
 const router = Router();
 

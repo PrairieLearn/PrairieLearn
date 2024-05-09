@@ -1,21 +1,21 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
 import { S3 } from '@aws-sdk/client-s3';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeS3ClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
+import { makeS3ClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
 import {
   WorkspaceLogRow,
   WorkspaceLogRowSchema,
   WorkspaceLogs,
   WorkspaceVersionLogs,
-} from './workspaceLogs.html';
+} from './workspaceLogs.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Given a list of workspace logs for a specific version sorted by date in

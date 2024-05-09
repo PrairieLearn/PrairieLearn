@@ -1,9 +1,9 @@
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperDb from '../helperDb';
+import * as helperDb from '../helperDb.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let user_id = null;
 

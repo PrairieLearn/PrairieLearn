@@ -1,18 +1,21 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as _ from 'lodash';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import * as express from 'express';
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getCourseOwners, checkAssessmentInstanceBelongsToCourseInstance } from '../../lib/course';
-import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name';
-import { updateAssessmentInstanceScore } from '../../lib/assessment';
+import {
+  getCourseOwners,
+  checkAssessmentInstanceBelongsToCourseInstance,
+} from '../../lib/course.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const csvFilename = function (locals) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
@@ -30,7 +33,7 @@ router.get(
       // users just wouldn't see the tab at all, and this caused a lot of questions
       // about why staff couldn't see the gradebook tab.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
@@ -38,7 +41,7 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     res.locals.course_assessments = result.rows;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

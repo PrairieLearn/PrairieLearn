@@ -1,4 +1,4 @@
-import { Question, Course, Variant, Submission } from '../lib/db-types';
+import { Question, Course, Variant, Submission } from '../lib/db-types.js';
 
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';

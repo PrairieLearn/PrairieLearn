@@ -6,7 +6,7 @@ import { promisify } from 'util';
 import zlib from 'zlib';
 import { program } from 'commander';
 
-import { build } from './index';
+import { build } from './index.js';
 
 const gzip = promisify(zlib.gzip);
 const brotli = promisify(zlib.brotliCompress);

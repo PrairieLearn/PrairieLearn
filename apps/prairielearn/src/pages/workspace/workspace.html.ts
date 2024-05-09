@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { compiledScriptTag } from '../../lib/assets';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
   navTitle,
@@ -24,7 +24,7 @@ export function Workspace({
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
       </head>

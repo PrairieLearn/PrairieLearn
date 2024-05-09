@@ -1,23 +1,26 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { logPageView } from '../../middlewares/logPageView';
+import { logPageView } from '../../middlewares/logPageView.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import { gradeAssessmentInstance } from '../../lib/assessment';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { getQuestionGroupPermissions } from '../../lib/groups';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
-import { insertIssue } from '../../lib/issues';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
+} from '../../lib/question-render.js';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionGroupPermissions } from '../../lib/groups.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { idsEqual } from '../../lib/id.js';
+import { insertIssue } from '../../lib/issues.js';
+import {
+  processSubmission,
+  validateVariantAgainstQuestion,
+} from '../../lib/question-submission.js';
 
 const router = express.Router();
 
@@ -309,7 +312,7 @@ router.get(
       }
     }
     setRendererHeader(res);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

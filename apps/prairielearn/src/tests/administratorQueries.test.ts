@@ -1,10 +1,10 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import * as helperServer from './helperServer.js';
+import * as helperClient from './helperClient.js';
 
 describe('AdministratorQuery page', function () {
   this.timeout(60000);

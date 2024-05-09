@@ -1,16 +1,16 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as _ from 'lodash';
+import ERR from 'async-stacktrace';
+import _ from 'lodash';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { config } from './config';
-import { renderPanelsForSubmission } from './question-render';
-import * as socketServer from './socket-server';
+import { config } from './config.js';
+import { renderPanelsForSubmission } from './question-render.js';
+import * as socketServer from './socket-server.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /** @type {import('socket.io').Namespace} */
 let namespace;

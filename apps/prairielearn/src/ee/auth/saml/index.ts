@@ -1,6 +1,6 @@
 import { MultiSamlStrategy, type SamlConfig } from '@node-saml/passport-saml';
 
-import { getInstitutionSamlProvider } from '../../lib/institution';
+import { getInstitutionSamlProvider } from '../../lib/institution.js';
 
 export async function getSamlOptions({
   institution_id,

@@ -1,7 +1,7 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import { Question, QuestionSchema } from '../lib/db-types';
+import { Question, QuestionSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionById(question_id: string): Promise<Question> {
   return await queryRow(

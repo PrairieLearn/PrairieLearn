@@ -1,12 +1,12 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { assert } from 'chai';
-import request = require('request');
+import request from 'request';
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
+import * as helperServer from './helperServer.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperExam from './helperExam.js';
 
 const locals: Record<string, any> = {};
 

@@ -16,7 +16,7 @@
 import * as path from 'node:path';
 import { createInterface } from 'node:readline';
 
-import requireFrontend from '../lib/require-frontend';
+import requireFrontend from '../lib/require-frontend.js';
 
 /**
  * Attempts to load the server module that should be used for a particular
