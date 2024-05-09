@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import * as cron from '../cron';
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';

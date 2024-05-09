@@ -1,9 +1,9 @@
-import express = require('express');
+import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import fetch from 'node-fetch';
 import { S3 } from '@aws-sdk/client-s3';
-import error = require('@prairielearn/error');
-import sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
@@ -14,7 +14,7 @@ import {
   WorkspaceVersionLogs,
 } from './workspaceLogs.html';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**

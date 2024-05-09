@@ -187,5 +187,3 @@ def generate(data):
     sup_line = sup_line.rstrip(",")
     sup_line += "]"
     data["params"]["sup_line_M"] = sup_line
-
-    return data

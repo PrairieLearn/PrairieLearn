@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import * as jose from 'node-jose';
 import { z } from 'zod';
-import { sortBy } from 'lodash';
+import * as _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
@@ -61,7 +61,7 @@ router.get(
       },
     ];
 
-    const platform_defaults = sortBy(
+    const platform_defaults = _.sortBy(
       [...platform_defaults_hardcoded, ...config.lti13InstancePlatforms],
       ['display_order', 'platform'],
     );

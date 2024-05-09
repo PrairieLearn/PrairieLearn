@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/*.test.ts"
+    "test": "mocha src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

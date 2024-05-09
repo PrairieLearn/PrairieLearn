@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import debugFactory from 'debug';
+import debugfn from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
@@ -15,7 +15,7 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
-const debug = debugFactory('@prairielearn/postgres');
+const debug = debugfn('@prairielearn/postgres');
 const lastQueryMap = new WeakMap<pg.PoolClient, string>();
 const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
@@ -87,8 +87,8 @@ function paramsToArray(
   let paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
-    if (!_(map).has(v)) {
-      if (!_(params).has(v)) throw new Error(`Missing parameter: ${v}`);
+    if (!_.has(map, v)) {
+      if (!_.has(params, v)) throw new Error(`Missing parameter: ${v}`);
       if (_.isArray(params[v])) {
         map[v] =
           'ARRAY[' +
