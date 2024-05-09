@@ -72,17 +72,32 @@ WHERE
   id = $course_id;
 
 
--- Michael TESTING below
+-- Michael TESTING below (replacement of the "BLOCK choose_sharing_name" block above)
 
--- BLOCK update_sharing_name OR update choose_sharing_name above to check for if 
--- someone has imported a question from the course yet or not
-UPDATE pl_courses
-SET
-  sharing_name = $sharing_name
-WHERE
-  id = $course_id;
+-- Check if another course has imported at least one question from a specific sharing set
+-- Update the sharing name if no question has been imported, otherwise return a message
 
+-- BLOCK check_and_update_sharing_name
+DO $$DECLARE
+  question_imported BOOLEAN;
+BEGIN
+  -- Check if at least one question from the sharing set has been imported by another course
+  SELECT EXISTS (
+    SELECT 1
+    FROM sharing_set_questions AS sq
+    JOIN sharing_sets AS ss ON sq.sharing_set_id = ss.id
+    WHERE ss.course_id != $sharing_set_course_id -- Any course but the source course
+  ) INTO question_imported;
 
-
+  -- Update the sharing name if no question has been imported, otherwise return a message
+  IF NOT question_imported THEN
+    -- Update the sharing name
+    UPDATE pl_courses
+    SET sharing_name = $sharing_name
+    WHERE id = $course_id;
+  ELSE
+    RAISE NOTICE 'Unable to change sharing name. At least one question has been imported from the sharing set.';
+  END IF;
+END$$
 
 -- Michael TESTING above

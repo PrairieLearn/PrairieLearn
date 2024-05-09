@@ -87,7 +87,7 @@ router.post(
       if (consuming_course_id === null) {
         throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
-    } else if (req.body.__action === 'choose_sharing_name') {
+    } else if (req.body.__action === 'check_and_choose_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
         req.body.course_sharing_name.includes('@') ||
@@ -98,30 +98,16 @@ router.post(
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
       }
-      /*
-       * BEGIN TEST, michael
-       */
+
 
       // Check if a problem in the course has been imported into another course
         // Can only be changed if none imported into another course
-
-      const hasShared = await sqldb.queryRows(
-        sql.select_sharing_sets,
-        { course_id: res.locals.course.id }
-      );
-
-      if (hasShared.length > 0) {
-        throw new error.HttpStatusError(403, 'Cannot change sharing name because questions have been imported from this course');
-      } 
-      
-      /*
-       * END TEST, michael
-       */
-
-      await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
+      await sqldb.queryZeroOrOneRowAsync(sql.check_and_update_sharing_name, {
         sharing_name: req.body.course_sharing_name.trim(),
         course_id: res.locals.course.id,
       });
+      
+
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

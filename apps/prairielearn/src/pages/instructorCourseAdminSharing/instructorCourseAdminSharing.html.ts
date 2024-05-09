@@ -99,7 +99,7 @@ const chooseSharingNameModal = (resLocals) => {
         </div>
         <div class="modal-footer">
           <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="choose_sharing_name">
+            <input type="hidden" name="__action" value="check_and_choose_sharing_name">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
             <div class=form-group>
               <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
