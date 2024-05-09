@@ -136,6 +136,17 @@ export function parseInstanceQuestionId(url: string): number {
 }
 
 /**
+ * Get assessment instance id from URL params.
+ */
+export function parseAssessmentInstanceId(url: string): number {
+  const match = url.match(/assessment_instance\/(\d+)/);
+  assert(match);
+  const iqId = parseInt(match[1]);
+  assert.isNumber(iqId);
+  return iqId;
+}
+
+/**
  * Acts as 'save' or 'save and grade' button click on student instance question page.
  *
  * @param instanceQuestionUrl The instance question url the student is answering the question on.
