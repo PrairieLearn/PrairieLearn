@@ -24,7 +24,7 @@ import {
 } from '../../lib/question-submission.js';
 import { IdSchema } from '../../lib/db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const router = express.Router();
 
@@ -307,7 +307,7 @@ router.get(
       );
       if (last_variant_id == null) {
         res.locals.no_variant_exists = true;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
         return;
       }
 
