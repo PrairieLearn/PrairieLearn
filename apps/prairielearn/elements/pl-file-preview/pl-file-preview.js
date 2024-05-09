@@ -1,4 +1,5 @@
-/* eslint-env browser,jquery,nb */
+/* eslint-env browser,jquery */
+/* global nb */
 // Note about notebookjs: I'm not thrilled with how notebook and marked are styling the 
 // Markdown. Unfortunately, I don't have the design skills to make it any better than 
 // it is right now. Perhaps somebody else can pick up where I left off and make improvements.
