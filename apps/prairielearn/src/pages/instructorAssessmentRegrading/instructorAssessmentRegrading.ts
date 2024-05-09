@@ -1,32 +1,31 @@
-// @ts-check
-const ERR = require('async-stacktrace');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 
 import * as error from '@prairielearn/error';
 import { regradeAllAssessmentInstances } from '../../lib/regrading';
 import * as sqldb from '@prairielearn/postgres';
+import {
+  InstructorAssessmentRegrading,
+  RegradingJobSequenceSchema,
+} from './instructorAssessmentRegrading.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be a student data viewer)'));
-  }
-  var params = {
-    assessment_id: res.locals.assessment.id,
-  };
-  sqldb.query(sql.select_regrading_job_sequences, params, function (err, result) {
-    if (ERR(err, next)) return;
-    res.locals.regrading_job_sequences = result.rows;
-    debug('render page');
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    const regradingJobSequences = await sqldb.queryRows(
+      sql.select_regrading_job_sequences,
+      { assessment_id: res.locals.assessment.id },
+      RegradingJobSequenceSchema,
+    );
+    res.send(InstructorAssessmentRegrading({ resLocals: res.locals, regradingJobSequences }));
+  }),
+);
 
 router.post(
   '/',

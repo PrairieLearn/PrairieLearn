@@ -1,5 +1,17 @@
 # @prairielearn/migrations
 
+## 2.1.0
+
+### Minor Changes
+
+- 30d559d: Export `retryFailedBatchedMigrationJobs` function
+
+## 2.0.21
+
+### Patch Changes
+
+- 290f60f: Ensure compatibility when `esModuleInterop` isn't in use
+
 ## 2.0.20
 
 ### Patch Changes

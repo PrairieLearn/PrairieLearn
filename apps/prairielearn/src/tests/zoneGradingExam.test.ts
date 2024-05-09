@@ -1,4 +1,4 @@
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';

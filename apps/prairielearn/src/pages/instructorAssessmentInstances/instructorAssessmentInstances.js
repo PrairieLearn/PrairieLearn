@@ -6,7 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { regradeAssessmentInstance } from '../../lib/regrading';
 import {
-  checkBelongsAsync,
+  checkBelongs,
   gradeAssessmentInstance,
   gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
@@ -98,7 +98,7 @@ router.post(
     if (req.body.__action === 'close') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      await checkBelongs(assessment_instance_id, assessment_id);
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
@@ -141,7 +141,7 @@ router.post(
     } else if (req.body.__action === 'regrade') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      await checkBelongs(assessment_instance_id, assessment_id);
       const job_sequence_id = await regradeAssessmentInstance(
         assessment_instance_id,
         res.locals.user.user_id,

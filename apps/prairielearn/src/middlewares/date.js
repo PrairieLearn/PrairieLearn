@@ -1,6 +1,12 @@
-const { config } = require('../lib/config');
+// @ts-check
+import { config } from '../lib/config';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   res.locals.req_date = new Date();
   res.locals.true_req_date = res.locals.req_date;
 
@@ -11,4 +17,4 @@ module.exports = function (req, res, next) {
   }
 
   next();
-};
+}
