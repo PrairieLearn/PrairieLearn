@@ -1,12 +1,12 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { type Request, type Response } from 'express';
 
 import * as error from '@prairielearn/error';
 
-import { saveAndGradeSubmission, saveSubmission } from './grading';
-import { idsEqual } from './id';
-import { selectVariantById } from '../models/variant';
-import { type Variant } from './db-types';
+import { saveAndGradeSubmission, saveSubmission } from './grading.js';
+import { idsEqual } from './id.js';
+import { selectVariantById } from '../models/variant.js';
+import { type Variant } from './db-types.js';
 
 export async function validateVariantAgainstQuestion(
   unsafe_variant_id: string,

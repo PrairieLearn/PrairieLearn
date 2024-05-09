@@ -1,4 +1,4 @@
-import { getAwsClientNamesFromImportDeclaration } from '../utils';
+import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
  * This ESLint rules enforces that we always provide a "shared" config to AWS

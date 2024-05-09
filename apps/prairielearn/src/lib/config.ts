@@ -8,7 +8,7 @@ import {
 import { logger } from '@prairielearn/logger';
 import { filesize } from 'filesize';
 
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),

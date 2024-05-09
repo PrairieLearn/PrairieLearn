@@ -1,13 +1,13 @@
 // @ts-check
-const unified = require('unified');
-const markdown = require('remark-parse');
-const raw = require('rehype-raw');
-const gfm = require('remark-gfm');
-const remark2rehype = require('remark-rehype');
-const math = require('remark-math');
-const stringify = require('rehype-stringify');
-const sanitize = require('rehype-sanitize');
-const visit = require('unist-util-visit');
+import unified from 'unified';
+import markdown from 'remark-parse';
+import raw from 'rehype-raw';
+import gfm from 'remark-gfm';
+import remark2rehype from 'remark-rehype';
+import math from 'remark-math';
+import stringify from 'rehype-stringify';
+import sanitize from 'rehype-sanitize';
+import visit from 'unist-util-visit';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See

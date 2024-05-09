@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { QuestionAddEditor } from '../../lib/editors';
-import * as fs from 'fs-extra';
-import { QuestionsPage } from './instructorQuestions.html';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
-import asyncHandler = require('express-async-handler');
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { QuestionAddEditor } from '../../lib/editors.js';
+import fs from 'fs-extra';
+import { QuestionsPage } from './instructorQuestions.html.js';
+import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
+import asyncHandler from 'express-async-handler';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

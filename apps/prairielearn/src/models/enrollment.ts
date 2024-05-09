@@ -1,16 +1,22 @@
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
-import { Course, CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
-import { isEnterprise } from '../lib/license';
+import {
+  Course,
+  CourseInstance,
+  Enrollment,
+  EnrollmentSchema,
+  Institution,
+} from '../lib/db-types.js';
+import { isEnterprise } from '../lib/license.js';
 import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment';
-import { assertNever } from '../lib/types';
-import { HttpRedirect } from '../lib/redirect';
+} from '../ee/models/enrollment.js';
+import { assertNever } from '../lib/types.js';
+import { HttpRedirect } from '../lib/redirect.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function ensureEnrollment({
   course_instance_id,

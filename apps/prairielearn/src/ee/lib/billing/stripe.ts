@@ -2,11 +2,11 @@ import Stripe from 'stripe';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { cache } from '@prairielearn/cache';
-import { config } from '../../../lib/config';
-import { selectAndLockUserById, selectUserById } from '../../../models/user';
-import { PlanName } from './plans-types';
+import { config } from '../../../lib/config.js';
+import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
+import { PlanName } from './plans-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export function getStripeClient() {
   if (!config.stripeSecretKey) {

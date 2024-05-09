@@ -7,8 +7,8 @@ import {
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 
-import { config } from '../lib/config';
-import queueReceiver from '../lib/receiveFromQueue';
+import { config } from '../lib/config.js';
+import queueReceiver from '../lib/receiveFromQueue.js';
 
 function randomString() {
   return Math.random().toString(36).slice(2);

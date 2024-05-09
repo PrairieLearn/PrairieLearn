@@ -1,14 +1,14 @@
 // @ts-check
 import { Router } from 'express';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { config } from '../../lib/config';
-import { shouldSecureCookie, setCookie, clearCookie } from '../../lib/cookie';
+import { config } from '../../lib/config.js';
+import { shouldSecureCookie, setCookie, clearCookie } from '../../lib/cookie.js';
 
 const router = Router();
 
 router.get('/', function (req, res) {
   res.locals.passwordInvalid = 'pl_assessmentpw' in req.cookies;
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 router.post('/', function (req, res) {

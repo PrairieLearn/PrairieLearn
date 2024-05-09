@@ -1,9 +1,9 @@
 import { assert } from 'chai';
-import stripAnsi = require('strip-ansi');
+import stripAnsi from 'strip-ansi';
 import { logger } from '@prairielearn/logger';
 
-import { createServerJob, getJobSequence } from '../lib/server-jobs';
-import * as helperServer from './helperServer';
+import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
+import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {
   let originalSilent;

@@ -1,4 +1,4 @@
-import * as pg from 'pg';
+import pg from 'pg';
 import * as path from 'path';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -8,7 +8,7 @@ import {
   SCHEMA_MIGRATIONS_PATH,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
-import * as sprocs from '../sprocs';
+import * as sprocs from '../sprocs/index.js';
 import * as namedLocks from '@prairielearn/named-locks';
 import { Context } from 'mocha';
 
@@ -56,12 +56,12 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   // so we need to make sure the batched migration machinery is initialized.
   initBatchedMigrations({
     project: 'prairielearn',
-    directories: [path.resolve(__dirname, '..', 'batched-migrations')],
+    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
   });
 
   if (runMigrations) {
     await initMigrations(
-      [path.resolve(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       'prairielearn',
     );
   }

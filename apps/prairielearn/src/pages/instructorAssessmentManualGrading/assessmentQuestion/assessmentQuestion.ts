@@ -1,14 +1,14 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import * as manualGrading from '../../../lib/manualGrading';
-import { InstanceQuestionSchema } from '../../../lib/db-types';
+import * as manualGrading from '../../../lib/manualGrading.js';
+import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import { z } from 'zod';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -29,7 +29,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(__filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
 

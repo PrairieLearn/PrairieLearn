@@ -1,18 +1,18 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
-import { CourseInstanceAddEditor } from '../../lib/editors';
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { CourseInstanceSchema } from '../../lib/db-types';
+import { CourseInstanceAddEditor } from '../../lib/editors.js';
+import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 
 var router = express.Router();
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -43,7 +43,7 @@ router.get(
       const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
       ci.number = row?.number || 0;
     });
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -1,12 +1,12 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as path from 'path';
-const jsonStringifySafe = require('json-stringify-safe');
+import jsonStringifySafe from 'json-stringify-safe';
 
 import { formatErrorStack, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
-import { config } from '../../lib/config';
+import { config } from '../../lib/config.js';
 
 /** @type {import('express').ErrorRequestHandler} */
 export default function (err, req, res, _next) {
@@ -67,11 +67,11 @@ export default function (err, req, res, _next) {
     // development error handler
     // will print stacktrace
     templateData.errorStack = err.stack ? formatErrorStack(err) : null;
-    res.render(path.join(__dirname, 'error'), templateData);
+    res.render(path.join(import.meta.dirname, 'error'), templateData);
   } else {
     // production error handler
     // no stacktraces leaked to user
     templateData.error = { message: err.message, info: err.info };
-    res.render(path.join(__dirname, 'error'), templateData);
+    res.render(path.join(import.meta.dirname, 'error'), templateData);
   }
 }

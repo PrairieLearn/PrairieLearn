@@ -4,16 +4,16 @@ import signature from 'cookie-signature';
 import asyncHandler from 'express-async-handler';
 import cookie from 'cookie';
 
-import { SessionStore } from './store';
-import { beforeEnd } from './before-end';
-import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie';
+import { SessionStore } from './store.js';
+import { beforeEnd } from './before-end.js';
+import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie.js';
 import {
   type Session,
   generateSessionId,
   loadSession,
   hashSession,
   truncateExpirationDate,
-} from './session';
+} from './session.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

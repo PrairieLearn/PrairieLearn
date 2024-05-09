@@ -1,4 +1,4 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -8,11 +8,11 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { isEnterprise } from '../lib/license';
+import { config } from '../lib/config.js';
+import { isEnterprise } from '../lib/license.js';
 
 const debug = debugfn('prairielearn:cron');
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * jobTimeouts meaning (used by stop()):

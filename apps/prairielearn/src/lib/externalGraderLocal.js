@@ -1,18 +1,18 @@
 // @ts-check
 import * as path from 'path';
-const Docker = require('dockerode');
+import Docker from 'dockerode';
 import * as os from 'os';
-const EventEmitter = require('events');
-import * as fs from 'fs-extra';
-const byline = require('byline');
-const execa = require('execa');
+import EventEmitter from 'events';
+import fs from 'fs-extra';
+import byline from 'byline';
+import execa from 'execa';
 
 import { logger } from '@prairielearn/logger';
-import { buildDirectory, makeGradingResult } from './externalGraderCommon';
-import { config } from './config';
+import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
+import { config } from './config.js';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class ExternalGraderLocal {
   handleGradingRequest(grading_job, submission, variant, question, course) {

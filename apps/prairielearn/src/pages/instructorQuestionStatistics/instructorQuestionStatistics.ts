@@ -1,19 +1,19 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { questionFilenamePrefix } from '../../lib/sanitize-name';
+import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   AssessmentQuestionStatsRowSchema,
   InstructorQuestionStatistics,
-} from './instructorQuestionStatistics.html';
-import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
+} from './instructorQuestionStatistics.html.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function makeStatsCsvFilename(locals) {
   const prefix = questionFilenamePrefix(locals.question, locals.course);
