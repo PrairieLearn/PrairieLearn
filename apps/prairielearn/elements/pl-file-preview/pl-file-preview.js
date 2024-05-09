@@ -1,5 +1,7 @@
-/* eslint-env browser,jquery */
-
+/* eslint-env browser,jquery,nb */
+/* notebook.min.js is only 8K, so it is a static dependency for this element.
+   See https://prairielearn.readthedocs.io/en/latest/devElements/#element-dependencies
+   to make it dynamic and load only when the file is an .ipynb file */
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -112,8 +114,15 @@
             .then(async (blob) => {
               const type = blob.type;
               if (type === 'text/plain') {
+                if (escapedFileName.endsWith('.ipynb')) {
+                  const notebook = nb.parse(JSON.parse(await blob.text()));
+                  const rendered = notebook.render();
+                  pre.appendChild(rendered);
+                } else {
                 const text = await blob.text();
                 code.textContent = text;
+                }
+
                 pre.classList.remove('d-none');
                 hideErrorMessage();
 

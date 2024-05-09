@@ -24,3 +24,15 @@
   border-top-right-radius: 0;
   border-top-left-radius: 0;
 }
+
+.nb-input pre  {
+  color: lightgreen;
+}
+
+.nb-markdown-cell p {
+  line-height: 0
+}
+
+.nb-markdown-cell li {
+  line-height: 0
+}
