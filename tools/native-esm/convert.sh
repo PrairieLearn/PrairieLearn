@@ -39,6 +39,9 @@ ast-grep scan --rule $SCRIPT_DIR/rewrite-local-dynamic-imports.ts.yml -U $ROOT_D
 ast-grep -p 'loadSqlEquiv(__filename)' -r 'loadSqlEquiv(import.meta.url)' -U $ROOT_DIR/apps/*/src
 ast-grep -p '$SQLDB.loadSqlEquiv(__filename)' -r '$SQLDB.loadSqlEquiv(import.meta.url)' -U $ROOT_DIR/apps/*/src
 
+# Fix `renderEjs` calls
+ast-grep -p 'renderEjs(__filename, $$$ARGS)' -r 'renderEjs(import.meta.url, $$$ARGS)' -U $ROOT_DIR/apps/*/src
+
 # Fix `lodash` imports
 ast-grep -p "import * as _ from 'lodash'" -r "import _ from 'lodash'" -U $ROOT_DIR/apps/*/src
 
