@@ -1,7 +1,11 @@
 {
   "controller": "pl-file-preview.py",
   "dependencies": {
-    "nodeModulesScripts": ["dompurify/dist/purify.min.js", "marked/marked.min.js", "notebookjs/notebook.min.js"],
+    "nodeModulesScripts": [
+      "dompurify/dist/purify.min.js",
+      "marked/marked.min.js",
+      "notebookjs/notebook.min.js"
+    ],
     "elementScripts": ["pl-file-preview.js"],
     "elementStyles": ["pl-file-preview.css"]
   }

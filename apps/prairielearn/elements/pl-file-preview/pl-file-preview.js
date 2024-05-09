@@ -1,11 +1,11 @@
 /* eslint-env browser,jquery */
 /* global nb */
-// Note about notebookjs: I'm not thrilled with how notebook and marked are styling the 
-// Markdown. Unfortunately, I don't have the design skills to make it any better than 
+// Note about notebookjs: I'm not thrilled with how notebook and marked are styling the
+// Markdown. Unfortunately, I don't have the design skills to make it any better than
 // it is right now. Perhaps somebody else can pick up where I left off and make improvements.
-// Similarly, it might be nice to have syntax highlighting for the code blocks; but, that is 
+// Similarly, it might be nice to have syntax highlighting for the code blocks; but, that is
 // also a task for another day.
-// One last idea: Do we want a "hide markdown" button (assuming that it is usually the code 
+// One last idea: Do we want a "hide markdown" button (assuming that it is usually the code
 // blocks that are of interest to most instructors)?
 (() => {
   async function downloadFile(path, name) {
@@ -124,8 +124,8 @@
                   const rendered = notebook.render();
                   pre.appendChild(rendered);
                 } else {
-                const text = await blob.text();
-                code.textContent = text;
+                  const text = await blob.text();
+                  code.textContent = text;
                 }
 
                 pre.classList.remove('d-none');
