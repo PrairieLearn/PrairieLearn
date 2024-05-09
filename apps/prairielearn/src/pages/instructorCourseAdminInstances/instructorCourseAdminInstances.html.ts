@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseInstanceAuthz } from '../../models/course-instances';
 
-export type CourseInstanceAuthzRow = CourseInstanceAuthz & { number?: number };
+export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
 
 export function InstructorCourseAdminInstances({
   resLocals,
@@ -123,7 +123,7 @@ export function InstructorCourseAdminInstances({
                         <td class="align-left">${row.short_name}</td>
                         <td class="align-left">${row.formatted_start_date}</td>
                         <td class="align-left">${row.formatted_end_date}</td>
-                        <td class="align-middle">${row.number}</td>
+                        <td class="align-middle">${row.enrollment_count}</td>
                       </tr>
                     `;
                   })}

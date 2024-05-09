@@ -40,11 +40,11 @@ router.get(
     const enrollmentCounts = await sqldb.queryRows(
       sql.select_enrollment_counts,
       { course_id: res.locals.course.id },
-      z.object({ course_instance_id: CourseInstanceSchema.shape.id, number: z.number() }),
+      z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
     );
     courseInstances.forEach((ci) => {
       const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
-      ci.number = row?.number || 0;
+      ci.enrollment_count = row?.enrollment_count || 0;
     });
     res.send(InstructorCourseAdminInstances({ resLocals: res.locals, courseInstances }));
   }),
