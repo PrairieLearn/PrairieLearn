@@ -35,7 +35,7 @@ const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers'
  * @param {number} nTemplates
  * @returns {Promise<QuestionFilePathInfo>}
  */
-export async function questionFilePathAsync(
+export async function questionFilePath(
   filename,
   questionDirectory,
   coursePath,
@@ -73,7 +73,7 @@ export async function questionFilePathAsync(
     }
 
     const templateQuestion = result.rows[0];
-    return questionFilePathAsync(
+    return await questionFilePath(
       filename,
       templateQuestion.directory,
       coursePath,
@@ -119,14 +119,4 @@ export async function questionFilePathAsync(
       }
     }
   }
-}
-
-export function questionFilePath(filename, questionDirectory, coursePath, question, callback) {
-  questionFilePathAsync(filename, questionDirectory, coursePath, question)
-    .then(({ fullPath, effectiveFilename, rootPath }) => {
-      callback(null, fullPath, effectiveFilename, rootPath);
-    })
-    .catch((err) => {
-      callback(err);
-    });
 }

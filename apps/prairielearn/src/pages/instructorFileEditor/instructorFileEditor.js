@@ -6,8 +6,8 @@ import * as sqldb from '@prairielearn/postgres';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-const debug = require('debug')('prairielearn:instructorFileEditor');
-import * as serverJobs from '../../lib/server-jobs-legacy';
+import debugfn from 'debug';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
@@ -23,6 +23,7 @@ import { FileModifyEditor } from '../../lib/editors';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:instructorFileEditor');
 
 router.get(
   '/*',
@@ -89,7 +90,7 @@ router.get(
 
     if (fileEdit.jobSequenceId != null) {
       debug('Read job sequence');
-      fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
+      fileEdit.jobSequence = await getJobSequenceWithFormattedOutput(
         fileEdit.jobSequenceId,
         res.locals.course.id,
       );

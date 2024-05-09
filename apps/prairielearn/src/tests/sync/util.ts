@@ -71,14 +71,8 @@ export interface GroupRole {
   canAssignRoles?: boolean;
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
 interface AssessmentAllowAccess {
-  mode?: 'Public' | 'Exam' | 'SEB';
+  mode?: 'Public' | 'Exam';
   examUuid?: string;
   uids?: string[];
   credit?: number;
@@ -86,7 +80,6 @@ interface AssessmentAllowAccess {
   endDate?: string;
   timeLimitMin?: number;
   password?: string;
-  SEBConfig?: SEBConfig;
   active?: boolean;
 }
 

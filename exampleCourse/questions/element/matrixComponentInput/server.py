@@ -22,5 +22,3 @@ def generate(data):
     data["correct_answers"]["out4"] = pl.to_json(long_matrix)
     data["correct_answers"]["out5"] = pl.to_json(y)
     data["correct_answers"]["out6"] = pl.to_json(I)
-
-    return data

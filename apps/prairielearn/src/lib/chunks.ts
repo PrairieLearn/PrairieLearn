@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as aws from './aws';
+import { downloadFromS3, makeS3ClientConfig } from './aws';
 import { chalk, chalkDim } from './chalk';
 import { createServerJob, ServerJob } from './server-jobs';
 import * as courseDB from '../sync/course-db';
@@ -640,7 +640,7 @@ export async function createAndUploadChunks(
   // upload, we'd face a denial of service if someone changed a sufficient number
   // of chunks in a single commit because we'd be rapidly hammering the EC2 IMDS
   // with requests for credentials and would likely get rate limited.
-  const s3 = new S3(aws.makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig());
 
   await async.eachLimit(chunksToGenerate, config.chunksMaxParallelUpload, async (chunk) => {
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
@@ -917,7 +917,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.ensureDir(path.dirname(downloadPath));
-  await aws.downloadFromS3Async(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
@@ -1050,7 +1050,6 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
     }),
   );
 }
-export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
 
 interface QuestionWithTemplateDirectory {
   id: string;
@@ -1063,7 +1062,7 @@ interface QuestionWithTemplateDirectory {
  * @param question A question object.
  * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
-export async function getTemplateQuestionIdsAsync(
+export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
@@ -1073,7 +1072,6 @@ export async function getTemplateQuestionIdsAsync(
   const questionIds = result.rows.map((r) => r.id);
   return questionIds;
 }
-export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsync);
 
 /**
  * Logs the changes to chunks for a given job.

@@ -5,8 +5,8 @@ import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
 import lti13Auth from '../auth/lti13/lti13Auth';
 import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
 import { features } from '../../lib/features';
-import middlewareAuthn = require('../../middlewares/authn');
-import csrfToken = require('../../middlewares/csrfToken');
+import authnMiddleware from '../../middlewares/authn';
+import csrfToken from '../../middlewares/csrfToken';
 import { selectLti13Instance } from '../models/lti13Instance';
 
 const router = Router({ mergeParams: true });
@@ -30,7 +30,7 @@ router.use(
 router.use('/:lti13_instance_id/auth', lti13Auth);
 router.use(
   '/:lti13_instance_id/course_navigation',
-  middlewareAuthn, // authentication, set res.locals.authn_user
+  authnMiddleware, // authentication, set res.locals.authn_user
   csrfToken,
   lti13CourseNavigation,
 );

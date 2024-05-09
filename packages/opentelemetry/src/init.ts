@@ -129,26 +129,28 @@ instrumentations.forEach((i) => {
 
 let tracerProvider: NodeTracerProvider | null;
 
-export interface OpenTelemetryConfigEnabled {
-  openTelemetryEnabled: true;
-  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
-  openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
+interface OpenTelemetryConfigEnabled {
+  openTelemetryEnabled: boolean;
+  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter | null;
+  openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter | null;
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
-  honeycombApiKey?: string;
-  honeycombDataset?: string;
+  honeycombApiKey?: string | null;
+  honeycombDataset?: string | null;
   serviceName?: string;
 }
 
-export type OpenTelemetryConfig =
-  | OpenTelemetryConfigEnabled
-  | {
-      openTelemetryEnabled: false;
-    };
+// When we know for sure that OpenTelemetry is disabled, we won't require
+// any other attributes to be set.
+interface OpenTelemetryConfigDisabled extends Partial<OpenTelemetryConfigEnabled> {
+  openTelemetryEnabled: false;
+}
 
-function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix = ''): Metadata {
+export type OpenTelemetryConfig = OpenTelemetryConfigEnabled | OpenTelemetryConfigDisabled;
+
+function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
@@ -160,7 +162,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | null {
+function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
   if (!config.openTelemetryExporter) return null;
 
   if (typeof config.openTelemetryExporter === 'object') {
@@ -186,7 +188,7 @@ function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | nu
   }
 }
 
-function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExporter | null {
+function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
   if (!config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
@@ -215,7 +217,7 @@ function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExport
   }
 }
 
-function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor | null {
+function getSpanProcessor(config: OpenTelemetryConfig): SpanProcessor | null {
   if (typeof config.openTelemetrySpanProcessor === 'object') {
     return config.openTelemetrySpanProcessor;
   }

@@ -152,7 +152,7 @@ export function AdministratorInstitutions({
                         <td>
                           ${isEnterprise()
                             ? html`
-                                <a href="/pl/institution/${institution.id}/admin">
+                                <a href="/pl/administrator/institution/${institution.id}">
                                   ${institution.short_name}
                                 </a>
                               `
