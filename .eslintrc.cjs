@@ -24,6 +24,7 @@ module.exports = {
       node: true,
     },
   },
+  reportUnusedDisableDirectives: true,
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
@@ -31,6 +32,12 @@ module.exports = {
     'no-only-tests/no-only-tests': 'error',
     'handle-callback-err': 'error',
     'no-template-curly-in-string': 'error',
+    'no-restricted-globals': [
+      'error',
+      // These are not available in ES modules.
+      '__filename',
+      '__dirname',
+    ],
     'no-restricted-syntax': [
       'error',
       {
@@ -48,10 +55,6 @@ module.exports = {
 
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',
-
-    // By default, eslint-plugin-import only validates ESM syntax. We're still
-    // using CommonJS, so we need to explicitly enable support for that.
-    'import/no-unresolved': [2],
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.

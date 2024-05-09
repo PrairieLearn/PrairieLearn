@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
 import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
 
+// eslint-disable-next-line no-restricted-globals -- Not yet native ESM
 const sql = loadSqlEquiv(__filename);
 
 interface ColumnDescription {
