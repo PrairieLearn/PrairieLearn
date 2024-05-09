@@ -1,5 +1,5 @@
 ---
-"@prairielearn/migrations": major
+'@prairielearn/migrations': major
 ---
 
 Convert to native ESM
