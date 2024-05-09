@@ -5,19 +5,19 @@ export {
   SpanStatusCode,
   ValueType,
   TraceFlags,
-  Meter,
-  Counter,
-  Histogram,
-  UpDownCounter,
-  ObservableCounter,
-  ObservableUpDownCounter,
-  ObservableGauge,
-  ObservableResult,
+  type Meter,
+  type Counter,
+  type Histogram,
+  type UpDownCounter,
+  type ObservableCounter,
+  type ObservableUpDownCounter,
+  type ObservableGauge,
+  type ObservableResult,
 } from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
 
-export { init, shutdown, disableInstrumentations } from './init';
-export { instrumented } from './tracing';
+export { init, shutdown, disableInstrumentations } from './init.js';
+export { instrumented } from './tracing.js';
 export {
   instrumentedWithMetrics,
   getCounter,
@@ -27,5 +27,5 @@ export {
   getObservableUpDownCounter,
   getObservableGauge,
   createObservableValueGauges,
-  createObservableValueGaugesOptions,
-} from './metrics';
+  type CreateObservableValueGaugesOptions,
+} from './metrics.js';
