@@ -10,7 +10,8 @@
     "directory": "packages/browser-utils"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
