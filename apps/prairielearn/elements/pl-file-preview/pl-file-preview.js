@@ -4,7 +4,7 @@
 // Markdown. Unfortunately, I don't have the design skills to make it any better than
 // it is right now. Perhaps somebody else can pick up where I left off and make improvements.
 // Similarly, it might be nice to have syntax highlighting for the code blocks; but, that is
-// also a task for another day.
+// also a task for a different day.
 // One last idea: Do we want a "hide markdown" button (assuming that it is usually the code
 // blocks that are of interest to most instructors)?
 (() => {
