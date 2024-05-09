@@ -71,6 +71,7 @@ import { createSessionMiddleware } from '@prairielearn/session';
 import { PostgresSessionStore } from './lib/session-store';
 import { pullAndUpdateCourse } from './lib/course';
 import * as serverJobs from './lib/server-jobs';
+import { validateLti13CourseInstance } from './ee/models/lti13Instance';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics';
 
 process.on('warning', (e) => console.warn(e));
