@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import * as _ from 'lodash';
 import { z } from 'zod';
 
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
+import { compiledScriptTag } from '../../lib/assets';
 import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types';
 
 export const DurationStatSchema = z.object({
