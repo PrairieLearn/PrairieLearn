@@ -17,6 +17,9 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
+let scoreStatsCsvFilename = '';
+let durationStatsCsvFilename = '';
+let statsByDateCsvFilename = '';
 const setFilenames = function (locals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
@@ -24,9 +27,9 @@ const setFilenames = function (locals) {
     locals.course_instance,
     locals.course,
   );
-  locals.scoreStatsCsvFilename = prefix + 'score_stats.csv';
-  locals.durationStatsCsvFilename = prefix + 'duration_stats.csv';
-  locals.statsByDateCsvFilename = prefix + 'scores_by_date.csv';
+  scoreStatsCsvFilename = prefix + 'score_stats.csv';
+  durationStatsCsvFilename = prefix + 'duration_stats.csv';
+  statsByDateCsvFilename = prefix + 'scores_by_date.csv';
 };
 
 router.get(
@@ -74,6 +77,9 @@ router.get(
         durationStat,
         assessmentScoreHistogramByDate,
         userScores,
+        scoreStatsCsvFilename,
+        durationStatsCsvFilename,
+        statsByDateCsvFilename,
       }),
     );
   }),
@@ -92,7 +98,7 @@ router.get(
     });
     res.locals.assessment = assessmentResult.rows[0].assessment;
 
-    if (req.params.filename === res.locals.scoreStatsCsvFilename) {
+    if (req.params.filename === scoreStatsCsvFilename) {
       const csvData = [
         [
           res.locals.course.short_name,
@@ -140,7 +146,7 @@ router.get(
           ...res.locals.assessment.score_stat_hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
-    } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
+    } else if (req.params.filename === durationStatsCsvFilename) {
       // get formatted duration statistics
       const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
         assessment_id: res.locals.assessment.id,
@@ -184,7 +190,7 @@ router.get(
           ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
-    } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
+    } else if (req.params.filename === statsByDateCsvFilename) {
       const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
         assessment_id: res.locals.assessment.id,
       });

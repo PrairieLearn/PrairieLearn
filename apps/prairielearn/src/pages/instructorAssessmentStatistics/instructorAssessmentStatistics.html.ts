@@ -42,12 +42,18 @@ export function InstructorAssessmentStatistics({
   durationStat,
   assessmentScoreHistogramByDate,
   userScores,
+  scoreStatsCsvFilename,
+  durationStatsCsvFilename,
+  statsByDateCsvFilename,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
   durationStat: DurationStat;
   assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];
   userScores: UserScore[];
+  scoreStatsCsvFilename: string;
+  durationStatsCsvFilename: string;
+  statsByDateCsvFilename: string;
 }) {
   return html`
     <!doctype html>
@@ -137,8 +143,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${resLocals.scoreStatsCsvFilename}"
-                        >${resLocals.scoreStatsCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${scoreStatsCsvFilename}"
+                        >${scoreStatsCsvFilename}</a
                       >. Data outside of the plotted range is included in the last bin.
                     </small>
                   </div>
@@ -193,8 +199,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${resLocals.durationStatsCsvFilename}"
-                        >${resLocals.durationStatsCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${durationStatsCsvFilename}"
+                        >${durationStatsCsvFilename}</a
                       >. Data outside of the plotted range is included in the last bin.
                     </small>
                   </div>
@@ -267,8 +273,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${resLocals.statsByDateCsvFilename}"
-                        >${resLocals.statsByDateCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${statsByDateCsvFilename}"
+                        >${statsByDateCsvFilename}</a
                       >.
                       <br />
                       Each day shows a histogram of the scores on this assessment for that day. The

@@ -1,8 +1,4 @@
-declare global {
-  interface Window {
-    d3: any;
-  }
-}
+import { scaleLinear, axisBottom, axisLeft, select, zip } from 'd3';
 
 export function scatter(
   selector: Element,
@@ -11,14 +7,14 @@ export function scatter(
   options: {
     width?: number;
     height?: number;
-    xmin?: number | 'auto';
-    xmax?: number | 'auto';
-    ymin?: number | 'auto';
-    ymax?: number | 'auto';
+    xmin?: number;
+    xmax?: number;
+    ymin?: number;
+    ymax?: number;
     xlabel?: string;
     ylabel?: string;
-    xgrid?: number[] | 'auto';
-    ygrid?: number[] | 'auto';
+    xgrid?: number[];
+    ygrid?: number[];
     xTickLabels?: string[] | 'auto';
     yTickLabels?: string[] | 'auto';
     topMargin?: number;
@@ -26,20 +22,20 @@ export function scatter(
     bottomMargin?: number;
     leftMargin?: number;
     radius?: number;
-    labels?: Record<string, any>;
+    labels?: [];
   },
 ) {
-  options = {
+  const resolvedOptions = {
     width: 600,
     height: 600,
-    xmin: 'auto',
-    xmax: 'auto',
-    ymin: 'auto',
-    ymax: 'auto',
+    xmin: null,
+    xmax: null,
+    ymin: null,
+    ymax: null,
     xlabel: 'value',
     ylabel: 'count',
-    xgrid: 'auto',
-    ygrid: 'auto',
+    xgrid: [],
+    ygrid: [],
     xTickLabels: 'auto',
     yTickLabels: 'auto',
     topMargin: 10,
@@ -47,23 +43,33 @@ export function scatter(
     bottomMargin: 55,
     leftMargin: 70,
     radius: 2,
-    labels: {},
+    labels: [],
     ...options,
   };
 
-  const width = (options.width ?? 600) - (options.leftMargin ?? 70) - (options.rightMargin ?? 0);
-  const height = (options.height ?? 600) - (options.topMargin ?? 10) - (options.bottomMargin ?? 55);
+  const width =
+    (resolvedOptions.width ?? 600) -
+    (resolvedOptions.leftMargin ?? 70) -
+    (resolvedOptions.rightMargin ?? 0);
+  const height =
+    (resolvedOptions.height ?? 600) -
+    (resolvedOptions.topMargin ?? 10) -
+    (resolvedOptions.bottomMargin ?? 55);
 
-  const xmin = options.xmin === 'auto' ? window._(options.xgrid).min() : options.xmin;
-  const xmax = options.xmax === 'auto' ? window._(options.xgrid).max() : options.xmax;
-  const x = window.d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+  const xmin =
+    resolvedOptions.xmin === null ? Math.min(...resolvedOptions.xgrid) : resolvedOptions.xmin;
+  const xmax =
+    resolvedOptions.xmax === null ? Math.max(...resolvedOptions.xgrid) : resolvedOptions.xmax;
+  const x = scaleLinear().domain([xmin, xmax]).range([0, width]);
 
-  const ymin = options.ymin === 'auto' ? window._(options.ygrid).min() : options.ymin;
-  const ymax = options.ymax === 'auto' ? window._(options.ygrid).max() : options.ymax;
-  const y = window.d3.scaleLinear().domain([ymin, ymax]).range([height, 0]);
+  const ymin =
+    resolvedOptions.ymin === null ? Math.min(...resolvedOptions.ygrid) : resolvedOptions.ymin;
+  const ymax =
+    resolvedOptions.ymax === null ? Math.max(...resolvedOptions.ygrid) : resolvedOptions.ymax;
+  const y = scaleLinear().domain([ymin, ymax]).range([height, 0]);
 
-  xdata = xdata.filter($.isNumeric);
-  ydata = ydata.filter($.isNumeric);
+  xdata = xdata.filter((x) => typeof x === 'number');
+  ydata = ydata.filter((y) => typeof y === 'number');
   xdata = xdata.map(function (x) {
     return Math.max(xmin, Math.min(xmax, x));
   });
@@ -71,45 +77,39 @@ export function scatter(
     return Math.max(ymin, Math.min(ymax, y));
   });
 
-  const xTickFormat =
-    options.xTickLabels === 'auto'
-      ? null
-      : function (d: null, i: number) {
-          return options.xTickLabels ? options.xTickLabels[i] : null;
-        };
+  let xAxis = axisBottom(x).tickValues(resolvedOptions.xgrid);
+  if (resolvedOptions.xTickLabels !== 'auto') {
+    xAxis = xAxis.tickFormat((d, i) => resolvedOptions.xTickLabels[i]);
+  }
 
-  const xAxis = window.d3.axisBottom().scale(x).tickValues(options.xgrid).tickFormat(xTickFormat);
+  let yAxis = axisLeft(y).tickValues(resolvedOptions.ygrid);
+  if (resolvedOptions.yTickLabels !== 'auto') {
+    yAxis = yAxis.tickFormat((d, i) => resolvedOptions.yTickLabels[i]);
+  }
 
-  const yTickFormat =
-    options.yTickLabels === 'auto'
-      ? null
-      : function (d: null, i: number) {
-          return options.yTickLabels ? options.yTickLabels[i] : null;
-        };
-  const yAxis = window.d3.axisLeft().scale(y).tickValues(options.ygrid).tickFormat(yTickFormat);
-
-  const xGrid = window.d3
-    .axisBottom()
-    .scale(x)
-    .tickValues(options.xgrid)
+  const xGrid = axisBottom(x)
+    .tickValues(resolvedOptions.xgrid)
     .tickSize(-height)
-    .tickFormat('');
+    .tickFormat(() => '');
 
-  const yGrid = window.d3
-    .axisLeft()
-    .scale(y)
-    .tickValues(options.ygrid)
+  const yGrid = axisLeft(y)
+    .tickValues(resolvedOptions.ygrid)
     .tickSize(-width)
-    .tickFormat('');
+    .tickFormat(() => '');
 
-  const svg = window.d3
-    .select($(selector).get(0))
+  const svg = select(selector)
     .append('svg')
-    .attr('width', width + (options.leftMargin ?? 70) + (options.rightMargin ?? 20))
-    .attr('height', height + (options.topMargin ?? 10) + (options.bottomMargin ?? 55))
+    .attr('width', width + (resolvedOptions.leftMargin ?? 70) + (resolvedOptions.rightMargin ?? 20))
+    .attr(
+      'height',
+      height + (resolvedOptions.topMargin ?? 10) + (resolvedOptions.bottomMargin ?? 55),
+    )
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
+    .attr(
+      'transform',
+      'translate(' + resolvedOptions.leftMargin + ',' + resolvedOptions.topMargin + ')',
+    );
 
   svg
     .append('g')
@@ -129,7 +129,7 @@ export function scatter(
     .attr('x', width / 2)
     .attr('y', '3em')
     .style('text-anchor', 'middle')
-    .text(options.xlabel);
+    .text(resolvedOptions.xlabel);
 
   svg
     .append('g')
@@ -141,16 +141,20 @@ export function scatter(
     .attr('x', -height / 2)
     .attr('y', '-3em')
     .style('text-anchor', 'middle')
-    .text(options.ylabel);
-
-  svg.append('line').attr({ x1: 0, y1: 0, x2: width, y2: 0, class: 'x axis' });
-
-  svg.append('line').attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
+    .text(resolvedOptions.ylabel);
 
   // zips the data used to create the scatter plot
   // each data point has value [x, y, label]
   // if options.labels is not specified, then each data point will have an undefined label, and no labels will appear in the plot
-  const pData = window.d3.zip(xdata, ydata, options.labels);
+  let pData = zip(xdata, ydata, resolvedOptions.labels);
+
+  // if the number of labels is not equal to the number of data points, not all the data points will render. In this case, we zip the data points together without labels to preserve data.
+  if (
+    resolvedOptions.labels.length !== xdata.length ||
+    resolvedOptions.labels.length !== ydata.length
+  ) {
+    pData = zip(xdata, ydata);
+  }
 
   const nodes = svg.selectAll('.point').data(pData).enter().append('g');
 
@@ -164,17 +168,17 @@ export function scatter(
       return y(p[1]);
     })
     .attr('r', function () {
-      return options.radius;
+      return resolvedOptions.radius;
     });
 
   nodes
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('class', 'pointLabel')
-    .attr('x', function (p: (number | string)[]) {
+    .attr('x', function (p: number[]) {
       return x(p[0]);
     })
-    .attr('y', function (p: (number | string)[]) {
+    .attr('y', function (p: number[]) {
       return y(p[1]) - 6;
     })
     .text(function (p: (number | string)[]) {

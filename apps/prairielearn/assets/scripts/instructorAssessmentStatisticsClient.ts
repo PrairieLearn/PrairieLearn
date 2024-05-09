@@ -2,7 +2,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { histogram } from './lib/histogram';
 import { scatter } from './lib/scatter';
-import { parallel_histograms } from './lib/parallel_histograms';
+import { parallel_histograms } from './lib/parallelHistograms';
 
 onDocumentReady(() => {
   document.querySelectorAll<HTMLElement>('.js-histogram').forEach((histogramElement) => {

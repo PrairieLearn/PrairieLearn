@@ -1,9 +1,4 @@
-declare global {
-  interface Window {
-    _: any;
-    d3: any;
-  }
-}
+import { scaleLinear, scaleBand, axisBottom, axisLeft, range, select } from 'd3';
 
 interface Data {
   label: string;
@@ -29,7 +24,7 @@ export function parallel_histograms(
     rightPadding?: number;
   },
 ) {
-  options = {
+  const resolvedOptions = {
     width: 600,
     height: 370,
     xTickLabels: 'auto',
@@ -41,16 +36,16 @@ export function parallel_histograms(
     ...options,
   };
 
-  const width: number = options.width ?? 600;
-  const height = options.height ?? 370;
+  const width: number = resolvedOptions.width ?? 600;
+  const height = resolvedOptions.height ?? 370;
 
-  const yTickLabels = options.yTickLabels;
+  const yTickLabels = resolvedOptions.yTickLabels;
 
-  const yAxisWidth = options.yAxisWidth;
-  const xAxisHeight = options.xAxisHeight;
+  const yAxisWidth = resolvedOptions.yAxisWidth;
+  const xAxisHeight = resolvedOptions.xAxisHeight;
 
-  const topPadding = options.topPadding;
-  const rightPadding = options.rightPadding;
+  const topPadding = resolvedOptions.topPadding;
+  const rightPadding = resolvedOptions.rightPadding;
 
   const totalWidth = width + (yAxisWidth ?? 70) + (rightPadding ?? 2);
   const heightWithPadding = height + (topPadding ?? 15);
@@ -59,24 +54,24 @@ export function parallel_histograms(
   const numBuckets = data[0].histogram.length;
   const numDays = data.length;
 
-  const yLinear = window.d3.scaleLinear().domain([0, numBuckets]).range([0, height]);
+  const yLinear = scaleLinear().domain([0, numBuckets]).range([0, height]);
 
-  const xOrdinal = window.d3
-    .scaleBand()
-    .domain(window.d3.range(numDays))
+  const xOrdinal = scaleBand()
+    .domain(range(numDays).map((d) => `${d}`))
     .rangeRound([0, width])
     .padding(0.0);
 
-  const xLinear = window.d3.scaleLinear().domain([0, numDays]).range([0, width]);
+  const xLinear = scaleLinear().domain([0, numDays]).range([0, width]);
 
-  const plot = window.d3
-    .select($(selector).get(0))
+  const plot = select(selector)
     .insert('svg', ':first-child')
     .attr('width', totalWidth)
     .attr('height', totalHeight)
     .attr('class', 'center-block statsPlot');
 
-  const verticalGridLinear = window.d3.axisBottom().scale(xLinear).tickSize(-height).tickFormat('');
+  const verticalGridLinear = axisBottom(xLinear)
+    .tickSize(-height)
+    .tickFormat(() => '');
 
   plot
     .append('g')
@@ -84,11 +79,9 @@ export function parallel_histograms(
     .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
     .call(verticalGridLinear);
 
-  const verticalGridOrdinal = window.d3
-    .axisBottom()
-    .scale(xOrdinal)
+  const verticalGridOrdinal = axisBottom(xOrdinal)
     .tickSize(-height)
-    .tickFormat('');
+    .tickFormat(() => '');
 
   plot
     .append('g')
@@ -96,7 +89,9 @@ export function parallel_histograms(
     .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
     .call(verticalGridOrdinal);
 
-  const horizontalGrid = window.d3.axisLeft().scale(yLinear).tickSize(-width).tickFormat('');
+  const horizontalGrid = axisLeft(yLinear)
+    .tickSize(-width)
+    .tickFormat(() => '');
 
   plot
     .append('g')
@@ -128,18 +123,10 @@ export function parallel_histograms(
       .enter()
       .append('rect')
       .attr('class', 'outlineBar')
-      .attr('x', function (d: null, i: number) {
-        return widthForBucketFunction(i) * -0.5;
-      })
-      .attr('y', function (d: null, i: number) {
-        return heightWithPadding - yLinear(i + 1);
-      })
-      .attr('width', function (d: null, i: number) {
-        return widthForBucketFunction(i);
-      })
-      .attr('height', function () {
-        return height_per_bucket;
-      });
+      .attr('x', (d, i) => widthForBucketFunction(i) * -0.5)
+      .attr('y', (d, i) => heightWithPadding - yLinear(i + 1))
+      .attr('width', (d, i) => widthForBucketFunction(i))
+      .attr('height', () => height_per_bucket);
 
     g.append('line')
       .attr('class', 'parallelHistMean')
@@ -157,12 +144,7 @@ export function parallel_histograms(
       });
   }
 
-  const yAxis = window.d3
-    .axisLeft()
-    .tickFormat(function (d: null, i: number) {
-      return yTickLabels ? yTickLabels[i] : null;
-    })
-    .scale(yLinear);
+  const yAxis = axisLeft(yLinear).tickFormat((d, i) => yTickLabels[i] ?? '');
 
   plot
     .append('g')
@@ -173,7 +155,7 @@ export function parallel_histograms(
     .call(yAxis)
     .append('text')
     .attr('class', 'label')
-    .text(options.ylabel);
+    .text(resolvedOptions.ylabel ?? '');
 
   // it's rotated, so x means y, and y means x
   plot
@@ -184,28 +166,8 @@ export function parallel_histograms(
     .attr('transform', 'rotate(-90)')
     .style('text-anchor', 'start');
 
-  plot.append('line').attr({
-    x1: yAxisWidth,
-    y1: topPadding,
-    x2: width + (yAxisWidth ?? 70),
-    y2: topPadding,
-    class: 'x axis',
-  });
-
-  plot.append('line').attr({
-    x1: width + (yAxisWidth ?? 70),
-    y1: topPadding,
-    x2: width + (yAxisWidth ?? 70),
-    y2: heightWithPadding,
-    class: 'y axis',
-  });
-
-  const xAxis = window.d3
-    .axisBottom()
-    .scale(xOrdinal)
-    .tickFormat(function (d: null, i: number) {
-      return data[i].label;
-    })
+  const xAxis = axisBottom(xOrdinal)
+    .tickFormat((d, i) => data[i].label)
     .ticks(10);
 
   plot
@@ -221,7 +183,7 @@ export function parallel_histograms(
     .attr('x', width / 2)
     .attr('y', '3em')
     .style('text-anchor', 'middle')
-    .text(options.xlabel);
+    .text(resolvedOptions.xlabel ?? '');
 }
 
 function calculate_max(data: Data[]) {

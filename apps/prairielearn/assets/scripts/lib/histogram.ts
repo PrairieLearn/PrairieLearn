@@ -1,8 +1,4 @@
-declare global {
-  interface Window {
-    d3: any;
-  }
-}
+import { scaleLinear, axisBottom, axisLeft, select } from 'd3';
 
 export function histogram(
   selector: Element,
@@ -24,7 +20,7 @@ export function histogram(
     leftMargin?: number;
   },
 ) {
-  options = {
+  const resolvedOptions = {
     width: 100,
     height: 40,
     xmin: 'auto',
@@ -41,39 +37,48 @@ export function histogram(
     ...options,
   };
 
-  const width = 600 - (options.leftMargin ?? 70) - (options.rightMargin ?? 20);
-  const height = 371 - (options.topMargin ?? 10) - (options.bottomMargin ?? 55);
+  const width = 600 - (resolvedOptions.leftMargin ?? 70) - (resolvedOptions.rightMargin ?? 20);
+  const height = 371 - (resolvedOptions.topMargin ?? 10) - (resolvedOptions.bottomMargin ?? 55);
 
-  const xmin = options.xmin === 'auto' ? Math.min(...xgrid) : options.xmin;
-  const xmax = options.xmax === 'auto' ? Math.max(...xgrid) : options.xmax;
-  const x = window.d3.scaleLinear().domain([xmin, xmax]).range([0, width]);
+  const xmin = resolvedOptions.xmin === 'auto' ? Math.min(...xgrid) : resolvedOptions.xmin;
+  const xmax = resolvedOptions.xmax === 'auto' ? Math.max(...xgrid) : resolvedOptions.xmax;
+  if (typeof xmin !== 'number' || typeof xmax !== 'number') {
+    throw new Error('xmin and xmax must be numbers');
+  }
+  const x = scaleLinear().domain([xmin, xmax]).range([0, width]);
 
-  const ymin = options.ymin === 'auto' ? Math.min(...data) : options.ymin;
-  const ymax = options.ymax === 'auto' ? Math.max(...data) : options.ymax;
-  const y = window.d3.scaleLinear().domain([ymin, ymax]).nice().range([height, 0]);
+  const ymin = resolvedOptions.ymin === 'auto' ? Math.min(...data) : resolvedOptions.ymin;
+  const ymax = resolvedOptions.ymax === 'auto' ? Math.max(...data) : resolvedOptions.ymax;
+  if (typeof ymin !== 'number' || typeof ymax !== 'number') {
+    throw new Error('xmin and xmax must be numbers');
+  }
+  const y = scaleLinear().domain([ymin, ymax]).nice().range([height, 0]);
 
-  const xTickFormat =
-    options.xTickLabels === 'auto'
-      ? null
-      : function (d: null, i: number) {
-          return options.xTickLabels ? options.xTickLabels[i] : null;
-        };
-  const xAxis = window.d3.axisBottom().scale(x).tickValues(xgrid).tickFormat(xTickFormat);
+  let xAxis = axisBottom(x).tickValues(xgrid);
+  if (resolvedOptions.xTickLabels !== 'auto') {
+    xAxis = xAxis.tickFormat((d, i) => resolvedOptions.xTickLabels[i]);
+  }
+  const yAxis = axisLeft(y);
 
-  const yAxis = window.d3.axisLeft().scale(y);
+  const xGrid = axisBottom(x)
+    .tickValues(xgrid)
+    .tickSize(-height)
+    .tickFormat(() => '');
 
-  const xGrid = window.d3.axisBottom().scale(x).tickValues(xgrid).tickSize(-height).tickFormat('');
+  const yGrid = axisLeft(y)
+    .tickSize(-width)
+    .tickFormat(() => '');
 
-  const yGrid = window.d3.axisLeft().scale(y).tickSize(-width).tickFormat('');
-
-  const svg = window.d3
-    .select($(selector).get(0))
+  const svg = select(selector)
     .append('svg')
-    .attr('width', width + (options.leftMargin ?? 0) + (options.rightMargin ?? 0))
-    .attr('height', height + (options.topMargin ?? 0) + (options.bottomMargin ?? 0))
+    .attr('width', width + (resolvedOptions.leftMargin ?? 0) + (resolvedOptions.rightMargin ?? 0))
+    .attr('height', height + (resolvedOptions.topMargin ?? 0) + (resolvedOptions.bottomMargin ?? 0))
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
+    .attr(
+      'transform',
+      'translate(' + resolvedOptions.leftMargin + ',' + resolvedOptions.topMargin + ')',
+    );
 
   svg
     .append('g')
@@ -85,31 +90,14 @@ export function histogram(
 
   svg
     .selectAll('.outlineBar')
-    .data(data) // .data(_.times(data.length, _.constant(0)))
+    .data(data)
     .enter()
     .append('rect')
     .attr('class', 'outlineBar')
-    .attr('x', function (d: null, i: number) {
-      return x(xgrid[i]);
-    })
-    .attr('y', function (d: number) {
-      return y(d);
-    })
-    .attr('width', function (d: null, i: number) {
-      return x(xgrid[i + 1]) - x(xgrid[i]);
-    })
-    .attr('height', function (d: number) {
-      return y(0) - y(d);
-    });
-
-  /*
-        svg.selectAll(".outlineBar")
-        .data(data)
-        .transition()
-        .duration(3000)
-        .attr("y", function(d, i) {return y(d);})
-        .attr("height", function(d, i) {return y(0) - y(d);});
-      */
+    .attr('x', (d, i) => x(xgrid[i]))
+    .attr('y', (d) => y(d))
+    .attr('width', (d, i) => x(xgrid[i + 1]) - x(xgrid[i]))
+    .attr('height', (d) => y(0) - y(d));
 
   svg
     .append('g')
@@ -121,7 +109,7 @@ export function histogram(
     .attr('x', width / 2)
     .attr('y', '3em')
     .style('text-anchor', 'middle')
-    .text(options.xlabel);
+    .text(resolvedOptions.xlabel);
 
   svg
     .append('g')
@@ -133,9 +121,5 @@ export function histogram(
     .attr('x', -height / 2)
     .attr('y', '-3em')
     .style('text-anchor', 'middle')
-    .text(options.ylabel);
-
-  svg.append('line').attr({ x1: 0, y1: 0, x2: width, y2: 0, class: 'x axis' });
-
-  svg.append('line').attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
+    .text(resolvedOptions.ylabel);
 }
