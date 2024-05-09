@@ -8,19 +8,19 @@ The `html` tagged template literal can be used to render HTML while ensuring tha
 
 By convention, HTML templates are located in `*.html.ts` files.
 
-```js
+```ts
 // Hello.html.ts
 import { html } from '@prairielearn/html';
 
-export function Hello ({ name }: { name: string }) {
+export function Hello({ name }: { name: string }) {
   return html`<div>Hello, ${name}!</div>`;
-};
+}
 ```
 
 This can then be used to render a string:
 
-```js
-import { Hello } from './Hello.html';
+```ts
+import { Hello } from './Hello.html.ts';
 
 console.log(Hello({ name: 'Anjali' }).toString());
 // Prints "<div>Hello, Anjali!</div>"
@@ -30,7 +30,7 @@ console.log(Hello({ name: 'Anjali' }).toString());
 
 If you want to pre-escape some HTML, you can wrap it in `escapeHtml` to avoid escaping it twice. This is useful if you want to inline some HTML into an attribute, for instance with a Bootstrap popover.
 
-```js
+```ts
 import { html, escapeHtml } from '@prairielearn/html';
 
 console.log(html`
