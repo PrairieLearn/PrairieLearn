@@ -1,9 +1,0 @@
-id: fix-lib-index-files-in-lib
-language: TypeScript
-rule:
-  any:
-    - pattern: import $IMPORT from '$LOCATION';
-constraints:
-  LOCATION:
-    regex: '^\..*/(code-caller|features)$'
-fix: import $IMPORT from '$LOCATION/index';
