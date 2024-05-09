@@ -41,6 +41,7 @@ import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 
@@ -92,6 +93,10 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+// When adding new instrumentation here, add the corresponding packages to
+// `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
+// before anything tries to load them via CJS. This is necessary because the
+// instrumentations can't hook into the ESM loader.
 const instrumentations = [
   new AwsInstrumentation(),
   new ConnectInstrumentation(),
@@ -117,6 +122,7 @@ const instrumentations = [
       /\/pl\/webhooks\/ping/,
     ],
   }),
+  new IORedisInstrumentation(),
   new PgInstrumentation(),
   new RedisInstrumentation(),
 ];
