@@ -1,3 +1,5 @@
+// The packages below were determined by inspecting the implementation of each
+// instrumentation package and finding which packages/files they're patching.
 const PRELOAD_PACKAGES = [
   // @opentelemetry/instrumentation-aws
   '@aws-sdk/middleware-stack/dist/cjs/MiddlewareStack.js',
