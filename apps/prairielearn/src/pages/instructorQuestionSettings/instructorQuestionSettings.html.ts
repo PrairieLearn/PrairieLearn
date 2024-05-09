@@ -447,7 +447,7 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <h6>${a_with_q.title}</h6>
+                    <h6>${a_with_q.short_name}</h6>
                     ${a_with_q.assessments.map(function (a) {
                       return html`
                         <a
@@ -508,9 +508,9 @@ function QuestionSharing({
   qid,
 }: {
   questionSharedPublicly: boolean;
-  sharingSetsIn: SharingSet[];
+  sharingSetsIn: SharingSetRow[];
   hasCoursePermissionOwn: boolean;
-  sharingSetsOther: SharingSet[];
+  sharingSetsOther: SharingSetRow[];
   csrfToken: string;
   qid: string;
 }) {

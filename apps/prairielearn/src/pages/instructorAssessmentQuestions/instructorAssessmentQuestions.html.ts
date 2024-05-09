@@ -231,7 +231,6 @@ function AssessmentQuestionsTable({
                       urlPrefix,
                       count: question.open_issue_count,
                       issueQid: question.qid,
-                      urlPrefix,
                     })}
                   </a>
                 </td>
