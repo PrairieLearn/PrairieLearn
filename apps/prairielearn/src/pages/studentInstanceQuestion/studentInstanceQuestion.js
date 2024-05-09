@@ -3,6 +3,7 @@ import * as _ from 'lodash';
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 
+import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
 import { logPageView } from '../../middlewares/logPageView';
@@ -18,6 +19,9 @@ import { uploadFile, deleteFile } from '../../lib/file-store';
 import { idsEqual } from '../../lib/id';
 import { insertIssue } from '../../lib/issues';
 import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
+import { IdSchema } from '../../lib/db-types';
+
+var sql = sqldb.loadSqlEquiv(__filename);
 
 const router = express.Router();
 
@@ -280,10 +284,35 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const variant_id =
+    let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
         : req.query.variant_id;
+
+    const isAssessmentAvailable =
+      res.locals.assessment_instance.open && res.locals.authz_result.active;
+
+    if (variant_id === null && !isAssessmentAvailable) {
+      // We can't generate a new variant in this case, so we
+      // fetch and display the most recent non-broken variant.
+      // If no such variant exists, we tell the user that a new variant
+      // cannot be generated.
+      const last_variant_id = await sqldb.queryOptionalRow(
+        sql.select_last_variant_id,
+        { instance_question_id: res.locals.instance_question.id },
+        IdSchema,
+      );
+      if (last_variant_id == null) {
+        res.locals.no_variant_exists = true;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        return;
+      }
+
+      // For exams, we leave variant_id as null; getAndRenderVariant will handle it.
+      if (res.locals.assessment.type === 'Homework') {
+        variant_id = last_variant_id;
+      }
+    }
     await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
