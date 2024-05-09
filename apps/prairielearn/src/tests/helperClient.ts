@@ -1,7 +1,7 @@
 import fetch, { RequestInit, Response } from 'node-fetch';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
 interface CheerioResponse extends Response {
   $: cheerio.CheerioAPI;

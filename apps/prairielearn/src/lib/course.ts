@@ -1,22 +1,22 @@
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { createServerJob } from './server-jobs';
-import { config } from './config';
-import * as chunks from './chunks';
-import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
-import { IdSchema, User, UserSchema } from './db-types';
+import { createServerJob } from './server-jobs.js';
+import { config } from './config.js';
+import * as chunks from './chunks.js';
+import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
+import { IdSchema, User, UserSchema } from './db-types.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
   selectCourseById,
   updateCourseCommitHash,
-} from '../models/course';
+} from '../models/course.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Check that an assessment_instance_id really belongs to the given course_instance_id

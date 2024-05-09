@@ -1,5 +1,5 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
@@ -10,8 +10,8 @@ import { logger } from '@prairielearn/logger';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,
@@ -22,18 +22,18 @@ import {
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
-} from '../../models/course-permissions';
-import { parseUidsString } from '../../lib/user';
+} from '../../models/course-permissions.js';
+import { parseUidsString } from '../../lib/user.js';
 import {
   CourseInstancePermissionSchema,
   CourseInstanceSchema,
   CoursePermissionSchema,
   UserSchema,
-} from '../../lib/db-types';
+} from '../../lib/db-types.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router();
 
 /**
@@ -95,7 +95,7 @@ router.get(
 
     res.locals.uids_limit = MAX_UIDS;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -158,7 +158,7 @@ router.post(
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
          */
         async (memo, uid) => {
-          /** @type {import('../../lib/db-types').User} */
+          /** @type {import('../../lib/db-types.js').User} */
           let user;
           try {
             user = await insertCoursePermissionsByUserUid({

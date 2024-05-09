@@ -59,10 +59,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 console.log(sql.select_user);
 console.log(sql.select_course);
-
-// Or, if you're working in a CommonJS file:
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
 ```
 
 ### Making queries

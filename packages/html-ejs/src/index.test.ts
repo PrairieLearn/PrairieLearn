@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { renderEjs } from './index';
+import { renderEjs } from './index.js';
 
 describe('renderEjs', () => {
   it('renders EJS template without data', () => {

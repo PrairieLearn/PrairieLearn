@@ -1,8 +1,8 @@
 import { assert } from 'chai';
 import * as path from 'path';
-import * as jsonLoad from '../lib/json-load';
+import * as jsonLoad from '../lib/json-load.js';
 
-const testfile = (filename: string) => path.join(__dirname, 'testJsonLoad', filename);
+const testfile = (filename: string) => path.join(import.meta.dirname, 'testJsonLoad', filename);
 
 const schema = {
   $schema: 'http://json-schema.org/draft-07/schema#',

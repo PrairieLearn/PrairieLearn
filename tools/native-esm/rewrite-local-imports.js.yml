@@ -1,0 +1,9 @@
+id: rewrite-local-imports
+language: JavaScript
+rule:
+  any:
+    - pattern: import $IMPORT from '$LOCATION';
+constraints:
+  LOCATION:
+    regex: '^\.'
+fix: import $IMPORT from '$LOCATION.js';

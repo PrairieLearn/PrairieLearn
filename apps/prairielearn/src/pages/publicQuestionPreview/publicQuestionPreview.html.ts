@@ -1,14 +1,14 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
           pageNote: 'Preview',
           pageTitle: resLocals.question.qid,
@@ -31,11 +31,11 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${renderEjs(__filename, "<%- include('../partials/question') %>", {
+              ${renderEjs(import.meta.url, "<%- include('../partials/question') %>", {
                 ...resLocals,
                 question_context: 'public',
               })}

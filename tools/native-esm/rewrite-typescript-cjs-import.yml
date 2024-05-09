@@ -1,0 +1,20 @@
+id: rewrite-typescript-cjs-import
+language: TypeScript
+rule:
+  any:
+    - kind: import_statement
+      has:
+        kind: import_require_clause
+        pattern: $CLAUSE
+transform:
+  NEW_CLAUSE_A:
+    replace:
+      replace: '= require\('
+      by: 'from '
+      source: $CLAUSE
+  NEW_CLAUSE_B:
+    replace:
+      replace: '\)'
+      by: ';'
+      source: $NEW_CLAUSE_A
+fix: 'import $NEW_CLAUSE_B'

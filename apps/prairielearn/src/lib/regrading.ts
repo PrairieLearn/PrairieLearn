@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { createServerJob } from './server-jobs';
-import * as ltiOutcomes from './ltiOutcomes';
-import { IdSchema } from './db-types';
+import { createServerJob } from './server-jobs.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { IdSchema } from './db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),

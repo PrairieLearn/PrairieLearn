@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types';
+import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
@@ -34,7 +34,7 @@ export function AdministratorWorkspaces({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
         <script>
@@ -49,7 +49,7 @@ export function AdministratorWorkspaces({
             });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'workspaces',

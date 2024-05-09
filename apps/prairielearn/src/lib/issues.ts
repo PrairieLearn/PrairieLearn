@@ -2,7 +2,7 @@ import * as async from 'async';
 
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
-import { Variant } from './db-types';
+import { Variant } from './db-types.js';
 
 interface IssueForErrorData {
   variantId: string;

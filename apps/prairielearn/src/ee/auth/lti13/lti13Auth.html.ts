@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Lti13Instance } from '../../../lib/db-types';
-import { LoadUserAuth } from '../../../lib/authn';
+import { Lti13Instance } from '../../../lib/db-types.js';
+import { LoadUserAuth } from '../../../lib/authn.js';
 
 export const Lti13Test = ({
   resLocals,
@@ -20,7 +20,7 @@ export const Lti13Test = ({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           pageTitle: 'LTI 1.3 test',
         })}

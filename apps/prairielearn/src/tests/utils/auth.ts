@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { callRow, queryRow } from '@prairielearn/postgres';
-import { config } from '../../lib/config';
-import { IdSchema, User, UserSchema } from '../../lib/db-types';
+import { config } from '../../lib/config.js';
+import { IdSchema, User, UserSchema } from '../../lib/db-types.js';
 
 export interface AuthUser {
   name: string | null;

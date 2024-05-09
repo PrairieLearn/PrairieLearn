@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type CourseInstance } from '../../lib/db-types';
-import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html';
-import { QuestionsPageDataAnsified } from '../../models/questions';
+import { type CourseInstance } from '../../lib/db-types.js';
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
+import { QuestionsPageDataAnsified } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
@@ -19,15 +19,15 @@ export const QuestionsPage = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
         ${QuestionsTableHead()}
       </head>
 
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
             resLocals,
           )}

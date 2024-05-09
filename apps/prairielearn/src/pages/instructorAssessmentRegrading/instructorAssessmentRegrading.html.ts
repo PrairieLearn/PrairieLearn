@@ -2,8 +2,8 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
-import { Modal } from '../../components/Modal.html';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import { Modal } from '../../components/Modal.html.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -23,7 +23,7 @@ export function InstructorAssessmentRegrading({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
         <script>
@@ -31,10 +31,10 @@ export function InstructorAssessmentRegrading({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -103,9 +103,13 @@ export function InstructorAssessmentRegrading({
                             <td>${jobSequence.job_sequence.description}</td>
                             <td>${jobSequence.user_uid}</td>
                             <td>
-                              ${renderEjs(__filename, "<%- include('../partials/jobStatus'); %>", {
-                                status: jobSequence.job_sequence.status,
-                              })}
+                              ${renderEjs(
+                                import.meta.url,
+                                "<%- include('../partials/jobStatus'); %>",
+                                {
+                                  status: jobSequence.job_sequence.status,
+                                },
+                              )}
                             </td>
                             <td>
                               <a

@@ -1,3 +1,5 @@
+const path = require('node:path');
+
 // We support running our tests in two modes:
 //
 // - Directly against the source files in `src/`, in which case we use
@@ -14,11 +16,15 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
+// We need to point to this `tsconfig.json` specifically to pick up the
+// `allowJs: true` option.
+process.env.TSX_TSCONFIG_PATH = path.resolve(__dirname, './src/tsconfig.json');
+
 module.exports = {
-  require: [
-    isRunningOnDist ? null : 'tsx',
-    isRunningOnDist ? './dist/tests/mocha-hooks.js' : './src/tests/mocha-hooks.ts',
-  ].filter(Boolean),
+  'node-option': ['import=tsx/esm'],
+  require: [isRunningOnDist ? './dist/tests/mocha-hooks.js' : './src/tests/mocha-hooks.ts'].filter(
+    Boolean,
+  ),
   timeout: '30000', // in milliseconds
   'watch-files': ['.'],
 };

@@ -1,17 +1,17 @@
 import { type Response } from 'express';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config';
+import { config } from './config.js';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { Course, Question } from './db-types';
-import { selectCoursesWithEditAccess } from '../models/course';
-import { idsEqual } from './id';
+import { Course, Question } from './db-types.js';
+import { selectCoursesWithEditAccess } from '../models/course.js';
+import { idsEqual } from './id.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function setQuestionCopyTargets(res: Response) {
   // Avoid querying for editable courses if we won't be able to copy this

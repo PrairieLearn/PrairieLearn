@@ -7,7 +7,7 @@ import {
   diffDirectories,
   diffDatabaseAndDirectory,
   diffDirectoryAndDatabase,
-} from '../diff';
+} from '../diff.js';
 
 const args = yargs
   .usage('Usage: $0 [options]')

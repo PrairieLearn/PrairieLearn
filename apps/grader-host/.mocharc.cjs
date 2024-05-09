@@ -1,3 +1,3 @@
 module.exports = {
-  require: ['tsx'],
+  'node-option': ['import=tsx/esm'],
 };

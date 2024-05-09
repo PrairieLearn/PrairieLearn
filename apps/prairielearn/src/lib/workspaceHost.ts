@@ -11,9 +11,9 @@ import {
   WorkspaceLogSchema,
   type WorkspaceHost,
   type WorkspaceLog,
-} from './db-types';
+} from './db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Marks the given workspace host as unhealthy.
