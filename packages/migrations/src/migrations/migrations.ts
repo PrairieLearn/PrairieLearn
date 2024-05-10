@@ -11,9 +11,9 @@ import {
   parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
-} from '../load-migrations';
+} from '../load-migrations.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export async function init(directories: string | string[], project: string) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];

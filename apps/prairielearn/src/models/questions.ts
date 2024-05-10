@@ -1,13 +1,13 @@
 import * as sqldb from '@prairielearn/postgres';
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 import {
   TopicSchema,
   SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
   TagSchema,
-} from '../lib/db-types';
+} from '../lib/db-types.js';
 import { z } from 'zod';
-import { idsEqual } from '../lib/id';
+import { idsEqual } from '../lib/id.js';
 
 const QuestionsPageDataSchema = z.object({
   id: z.string(),
@@ -33,7 +33,7 @@ export interface QuestionsPageDataAnsified extends QuestionsPageData {
 }
 
 const ansiUp = new AnsiUp();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionsForCourse(
   course_id: string | number,

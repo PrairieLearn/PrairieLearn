@@ -24,6 +24,7 @@ module.exports = {
       node: true,
     },
   },
+  reportUnusedDisableDirectives: true,
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
@@ -31,6 +32,12 @@ module.exports = {
     'no-only-tests/no-only-tests': 'error',
     'handle-callback-err': 'error',
     'no-template-curly-in-string': 'error',
+    'no-restricted-globals': [
+      'error',
+      // These are not available in ES modules.
+      '__filename',
+      '__dirname',
+    ],
     'no-restricted-syntax': [
       'error',
       {
@@ -48,21 +55,6 @@ module.exports = {
 
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',
-
-    // By default, eslint-plugin-import only validates ESM syntax. We're still
-    // using CommonJS, so we need to explicitly enable support for that.
-    'import/no-unresolved': [
-      2,
-      {
-        commonjs: true,
-      },
-    ],
-
-    // This gives false positives for `fs-extra`, which re-exports everything
-    // from `fs`. We'll disable it for now.
-    //
-    // TODO: file an issue upstream with `eslint-plugin-import`.
-    'import/namespace': 'off',
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
@@ -93,12 +85,6 @@ module.exports = {
     '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
-    {
-      files: ['*.js'],
-      rules: {
-        '@typescript-eslint/no-var-requires': 'off',
-      },
-    },
     {
       files: ['*.ts'],
       rules: {

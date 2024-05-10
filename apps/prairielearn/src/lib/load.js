@@ -1,12 +1,12 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 import debugfn from 'debug';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import { config } from './config';
+import { config } from './config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:load');
 
 class LoadEstimator {

@@ -1,20 +1,20 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
-import * as _ from 'lodash';
-import * as oauthSignature from 'oauth-signature';
+import _ from 'lodash';
+import oauthSignature from 'oauth-signature';
 import { cache } from '@prairielearn/cache';
 
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { config } from '../../lib/config';
-import { shouldSecureCookie, setCookie } from '../../lib/cookie';
+import { config } from '../../lib/config.js';
+import { shouldSecureCookie, setCookie } from '../../lib/cookie.js';
 import { HttpStatusError } from '@prairielearn/error';
 
 const TIME_TOLERANCE_SEC = 3000;
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
   '/',

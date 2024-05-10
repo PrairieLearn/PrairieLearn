@@ -1,11 +1,11 @@
 // @ts-check
 import { createInterface } from 'node:readline';
-import { FunctionMissingError } from './lib/code-caller';
-import { CodeCallerNative } from './lib/code-caller/code-caller-native';
+import { FunctionMissingError } from './lib/code-caller/index.js';
+import { CodeCallerNative } from './lib/code-caller/code-caller-native.js';
 
 /**
  * @typedef {Object} Request
- * @property {import('./lib/code-caller/code-caller-native').CallType} type
+ * @property {import('./lib/code-caller/code-caller-native.js').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -16,7 +16,7 @@ import { CodeCallerNative } from './lib/code-caller/code-caller-native';
 /**
  * @typedef {Object} Results
  * @property {string} [error]
- * @property {import('./lib/code-caller/code-caller-native').ErrorData} [errorData]
+ * @property {import('./lib/code-caller/code-caller-native.js').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]

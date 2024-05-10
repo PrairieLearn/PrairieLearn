@@ -11,11 +11,11 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
-import { config, setLocalsFromConfig } from './config';
-import * as manualGrading from './manualGrading';
-import * as questionServers from '../question-servers';
-import { getQuestionCourse, ensureVariant } from './question-variant';
-import { writeCourseIssues } from './issues';
+import { config, setLocalsFromConfig } from './config.js';
+import * as manualGrading from './manualGrading.js';
+import * as questionServers from '../question-servers/index.js';
+import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { writeCourseIssues } from './issues.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -32,9 +32,9 @@ import {
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,
-} from './db-types';
+} from './db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantSelectResultSchema = VariantSchema.extend({
   assessment: AssessmentSchema.nullable(),
@@ -139,7 +139,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param submissions - The full list of submissions to the variant.
  * @param question_course - The course for the question.
  * @param locals - The current locals for the page response.
- * @type {(variant_course: import('./db-types').Course, ...a: Parameters<import('../question-servers').QuestionServer['render']>) => Promise<import('../question-servers').RenderResultData>}
+ * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
  */
 async function render(
   variant_course,
@@ -176,9 +176,9 @@ async function render(
  * question panels.
  *
  * @param  {String} urlPrefix The prefix of the generated URLs.
- * @param  {import('./db-types').Variant} variant The variant object for this question.
- * @param  {import('./db-types').Question} question The question.
- * @param  {import('./db-types').InstanceQuestion?} instance_question The instance question.
+ * @param  {import('./db-types.js').Variant} variant The variant object for this question.
+ * @param  {import('./db-types.js').Question} question The question.
+ * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
 function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
@@ -551,7 +551,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 }
 
 /**
- * @param {import('./db-types').GradingJob | null} job
+ * @param {import('./db-types.js').GradingJob | null} job
  */
 function buildGradingJobStats(job) {
   if (job) {
@@ -711,7 +711,13 @@ export async function renderPanelsForSubmission({
         urlPrefix,
         plainUrlPrefix: config.urlPrefix,
       };
-      const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
+      const templatePath = path.join(
+        import.meta.dirname,
+        '..',
+        'pages',
+        'partials',
+        'submission.ejs',
+      );
       panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
     },
     async () => {
@@ -733,7 +739,7 @@ export async function renderPanelsForSubmission({
         authz_result: { authorized_edit: authorizedEdit },
       };
       const templatePath = path.join(
-        __dirname,
+        import.meta.dirname,
         '..',
         'pages',
         'partials',
@@ -756,7 +762,7 @@ export async function renderPanelsForSubmission({
       };
 
       const templatePath = path.join(
-        __dirname,
+        import.meta.dirname,
         '..',
         'pages',
         'partials',
@@ -779,7 +785,13 @@ export async function renderPanelsForSubmission({
         ...locals,
       };
 
-      const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'questionFooter.ejs');
+      const templatePath = path.join(
+        import.meta.dirname,
+        '..',
+        'pages',
+        'partials',
+        'questionFooter.ejs',
+      );
       panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
     },
     async () => {
@@ -802,7 +814,7 @@ export async function renderPanelsForSubmission({
         urlPrefix, // needed to get urlPrefix for the course instance, not the site
       };
       const templatePath = path.join(
-        __dirname,
+        import.meta.dirname,
         '..',
         'pages',
         'partials',

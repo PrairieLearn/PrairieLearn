@@ -5,15 +5,16 @@
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-const requirejs = require('requirejs');
+import requirejs from 'requirejs';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 
 import { logger } from '@prairielearn/logger';
 
-import { APP_ROOT_PATH } from './paths';
+import { APP_ROOT_PATH } from './paths.js';
 
 requirejs.config({
-  nodeRequire: require,
+  nodeRequire: createRequire(import.meta.url),
   baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 

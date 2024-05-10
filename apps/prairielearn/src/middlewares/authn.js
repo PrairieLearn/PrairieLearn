@@ -1,13 +1,13 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
-import { config } from '../lib/config';
-import * as authnLib from '../lib/authn';
-import { clearCookie, setCookie } from '../lib/cookie';
+import { config } from '../lib/config.js';
+import * as authnLib from '../lib/authn.js';
+import { clearCookie, setCookie } from '../lib/cookie.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
