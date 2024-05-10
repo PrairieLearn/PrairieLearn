@@ -84,7 +84,6 @@ router.get(
 
     if (req.params.filename === csvFilename(res.locals)) {
       const assessmentsResult = await sqldb.queryAsync(sql.course_assessments, {
-        course_id: res.locals.course.id,
         course_instance_id: res.locals.course_instance.id,
       });
       const userScoresCursor = await sqldb.queryCursor(sql.user_scores, {
