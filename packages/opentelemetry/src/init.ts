@@ -32,6 +32,7 @@ import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
+import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 
@@ -41,6 +42,7 @@ import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 
@@ -92,6 +94,10 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+// When adding new instrumentation here, add the corresponding packages to
+// `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
+// before anything tries to load them via CJS. This is necessary because the
+// instrumentations can't hook into the ESM loader.
 const instrumentations = [
   new AwsInstrumentation(),
   new ConnectInstrumentation(),
@@ -117,6 +123,7 @@ const instrumentations = [
       /\/pl\/webhooks\/ping/,
     ],
   }),
+  new IORedisInstrumentation(),
   new PgInstrumentation(),
   new RedisInstrumentation(),
 ];
@@ -180,9 +187,7 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
       });
       break;
     case 'jaeger':
-      return new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'grpc://localhost:4317/',
-      });
+      return new OTLPTraceExporterHttp();
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
