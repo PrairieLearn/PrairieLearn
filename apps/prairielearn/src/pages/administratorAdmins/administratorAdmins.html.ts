@@ -1,6 +1,6 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { User } from '../../lib/db-types';
+import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
   admins,
@@ -13,7 +13,7 @@ export function AdministratorAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
         <script>
@@ -21,7 +21,7 @@ export function AdministratorAdmins({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'administrators',

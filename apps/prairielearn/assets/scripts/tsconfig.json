@@ -5,8 +5,12 @@
     "rootDir": "../../",
     "outDir": "../../public/build/scripts",
     "types": ["jquery", "bootstrap"],
+    "strict": true,
+    // Support native ESM, which esbuild supports.
     "esModuleInterop": true,
-    "strict": true
+    "allowSyntheticDefaultImports": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": ["**/*"]
 }

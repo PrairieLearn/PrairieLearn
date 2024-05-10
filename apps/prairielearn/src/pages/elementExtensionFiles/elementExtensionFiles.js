@@ -1,10 +1,10 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
 import { Router } from 'express';
 
-import { config } from '../../lib/config';
-import * as chunks from '../../lib/chunks';
+import { config } from '../../lib/config.js';
+import * as chunks from '../../lib/chunks.js';
 import { HttpStatusError } from '@prairielearn/error';
 
 const router = Router({ mergeParams: true });

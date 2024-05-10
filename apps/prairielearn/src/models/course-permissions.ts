@@ -13,10 +13,10 @@ import {
   CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
-} from '../lib/db-types';
-import { selectOrInsertUserByUid } from './user';
+} from '../lib/db-types.js';
+import { selectOrInsertUserByUid } from './user.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function insertCoursePermissionsByUserUid({
   course_id,

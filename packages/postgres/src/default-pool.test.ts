@@ -1,12 +1,13 @@
 import { assert } from 'chai';
-import { PostgresPool } from './pool';
-import * as pgPool from './default-pool';
+import { PostgresPool } from './pool.js';
+import * as pgPool from './default-pool.js';
 
 /**
  * Properties on {@link PostgresPool} that should not be available on the default
  * pool's exports.
  */
 const HIDDEN_PROPERTIES = new Set([
+  'constructor',
   // Private members
   'pool',
   'alsClient',

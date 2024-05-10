@@ -1,5 +1,5 @@
-import { setupCountdown } from './lib/countdown';
-import { saveQuestionFormData } from './lib/confirmOnUnload';
+import { setupCountdown } from './lib/countdown.js';
+import { saveQuestionFormData } from './lib/confirmOnUnload.js';
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 

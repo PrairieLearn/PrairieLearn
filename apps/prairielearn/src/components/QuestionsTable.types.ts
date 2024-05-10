@@ -1,4 +1,4 @@
-import { type QuestionsPageDataAnsified } from '../models/questions';
+import { type QuestionsPageDataAnsified } from '../models/questions.js';
 
 export interface EncodedQuestionsData {
   plainUrlPrefix: string;

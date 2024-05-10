@@ -1,9 +1,9 @@
 // @ts-check
 import * as async from 'async';
 import { EventEmitter } from 'events';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as tar from 'tar';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
@@ -11,11 +11,11 @@ import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/clie
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeAwsClientConfig, makeS3ClientConfig } from './aws';
-import { config as globalConfig } from './config';
-import { getJobDirectory, buildDirectory } from './externalGraderCommon';
+import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
+import { config as globalConfig } from './config.js';
+import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let QUEUE_URL = null;
 

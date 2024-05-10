@@ -3,9 +3,9 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { step } from 'mocha-steps';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
+import * as helperServer from './helperServer.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperExam from './helperExam.js';
 
 const locals: Record<string, any> = {};
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -8,11 +8,11 @@ import {
   AuthLogin,
   AuthLoginUnsupportedProvider,
   type InstitutionAuthnProvider,
-} from './authLogin.html';
-import { config } from '../../lib/config';
-import * as authLib from '../../lib/authn';
+} from './authLogin.html.js';
+import { config } from '../../lib/config.js';
+import * as authLib from '../../lib/authn.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 const InstitutionAuthnProviderSchema = z.object({

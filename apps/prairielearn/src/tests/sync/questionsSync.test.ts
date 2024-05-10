@@ -1,10 +1,10 @@
 import { assert } from 'chai';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 
-import * as util from './util';
-import * as helperDb from '../helperDb';
-import { idsEqual } from '../../lib/id';
+import * as util from './util.js';
+import * as helperDb from '../helperDb.js';
+import { idsEqual } from '../../lib/id.js';
 
 /**
  * Makes an empty question.

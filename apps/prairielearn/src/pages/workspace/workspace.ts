@@ -1,17 +1,17 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 import * as error from '@prairielearn/error';
 
-import { config } from '../../lib/config';
-import { selectVariantIdForWorkspace } from '../../models/workspace';
+import { config } from '../../lib/config.js';
+import { selectVariantIdForWorkspace } from '../../models/workspace.js';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { Workspace } from './workspace.html';
+import { Workspace } from './workspace.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getNavTitleHref(res: express.Response): Promise<string> {
   const variant_id = await selectVariantIdForWorkspace(res.locals.workspace_id);

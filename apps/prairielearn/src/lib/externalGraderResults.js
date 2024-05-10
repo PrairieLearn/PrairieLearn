@@ -11,14 +11,14 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { makeS3ClientConfig, makeAwsClientConfig } from './aws';
-import { config } from './config';
-import { gradingJobStatusUpdated } from './externalGradingSocket';
-import { processGradingResult } from './externalGrader';
-import * as externalGraderCommon from './externalGraderCommon';
-import { deferredPromise } from './deferred';
+import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import { gradingJobStatusUpdated } from './externalGradingSocket.js';
+import { processGradingResult } from './externalGrader.js';
+import * as externalGraderCommon from './externalGraderCommon.js';
+import { deferredPromise } from './deferred.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();

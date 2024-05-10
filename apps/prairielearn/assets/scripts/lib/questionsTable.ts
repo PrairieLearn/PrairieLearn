@@ -3,16 +3,16 @@ import { type CellComponent, type FormatterParams } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
-import { defaultTabulator, selectFilterOnSearch } from './tabulator';
+import { defaultTabulator, selectFilterOnSearch } from './tabulator.js';
 import type {
   Topic,
   Tag,
   SharingSet,
   AssessmentsFormatForQuestion,
-} from '../../../src/lib/db-types';
-import type { QuestionsPageDataAnsified } from '../../../src/models/questions';
-import { idsEqual } from '../../../src/lib/id';
-import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types';
+} from '../../../src/lib/db-types.js';
+import type { QuestionsPageDataAnsified } from '../../../src/models/questions.js';
+import { idsEqual } from '../../../src/lib/id.js';
+import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types.js';
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances, showSharingSets, urlPrefix, qidPrefix } =
