@@ -46,7 +46,8 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   function idleErrorHandler(err) {
     throw err;
   }
-  await sqldb.initAsync(pgConfig, idleErrorHandler);
+  // In testing, errorOnUnusedParameters (true)
+  await sqldb.initAsync(pgConfig, idleErrorHandler, true);
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.

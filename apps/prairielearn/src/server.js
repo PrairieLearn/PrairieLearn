@@ -2352,7 +2352,8 @@ if (esMain(import.meta) && config.startServer) {
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
-        await sqldb.initAsync(pgConfig, idleErrorHandler);
+        // If devMode=true also set errorOnUnusedParameters
+        await sqldb.initAsync(pgConfig, idleErrorHandler, config.devMode);
 
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.

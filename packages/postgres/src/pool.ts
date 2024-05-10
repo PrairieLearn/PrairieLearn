@@ -68,6 +68,7 @@ function debugParams(params: QueryParams): string {
 function paramsToArray(
   sql: string,
   params: QueryParams,
+  errorOnUnusedParameters: boolean,
 ): { processedSql: string; paramsArray: any } {
   if (typeof sql !== 'string') throw new Error('SQL must be a string');
   if (Array.isArray(params)) {
@@ -109,9 +110,11 @@ function paramsToArray(
   }
   processedSql += remainingSql;
   remainingSql = '';
-  const difference = _.difference(Object.keys(params), Object.keys(map));
-  if (difference.length) {
-    console.warn(new Error(`Unused parameters in query: ${JSON.stringify(difference)}`));
+  if (errorOnUnusedParameters) {
+    const difference = _.difference(Object.keys(params), Object.keys(map));
+    if (difference.length) {
+      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
+    }
   }
   return { processedSql, paramsArray };
 }
@@ -157,6 +160,7 @@ export class PostgresPool {
   private searchSchema: string | null = null;
   /** Tracks the total number of queries executed by this pool. */
   private _queryCount = 0;
+  private errorOnUnusedParameters = false;
 
   /**
    * Creates a new connection pool and attempts to connect to the database.
@@ -164,7 +168,9 @@ export class PostgresPool {
   async initAsync(
     pgConfig: pg.PoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
+    errorOnUnusedParameters = false,
   ): Promise<void> {
+    this.errorOnUnusedParameters = errorOnUnusedParameters;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);
@@ -297,7 +303,7 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
     try {
       lastQueryMap.set(client, processedSql);
       const result = await client.query(processedSql, paramsArray);
@@ -1022,7 +1028,7 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryCursorWithClient()', 'sql:', debugString(sql));
     debug('queryCursorWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
     lastQueryMap.set(client, processedSql);
     return client.query(new Cursor(processedSql, paramsArray));
   }

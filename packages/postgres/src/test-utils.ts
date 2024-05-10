@@ -77,6 +77,7 @@ async function createDatabase(
       (err) => {
         throw err;
       },
+      true, // errorOnUnusedParameters
     );
   }
 }

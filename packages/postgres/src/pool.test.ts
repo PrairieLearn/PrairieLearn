@@ -280,7 +280,7 @@ describe('@prairielearn/postgres', function () {
       assert.match(maybeError.message, /syntax error/);
       assert.isDefined(maybeError.data);
       assert.equal(maybeError.data.sql, 'NOT VALID SQL');
-      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
+      assert.deepEqual(maybeError.data.sqlParams, {});
       assert.isDefined(maybeError.data.sqlError);
       assert.equal(maybeError.data.sqlError.severity, 'ERROR');
     });
