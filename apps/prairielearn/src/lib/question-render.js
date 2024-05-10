@@ -334,7 +334,7 @@ function buildLocals(
       : question?.grading_method === 'Manual'
         ? 100
         : 0);
-  if (locals.manualPercentage === 0) {
+  if (locals.manualPercentage === 100) {
     locals.showGradeButton = false;
   }
 
