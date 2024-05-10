@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
 ## 1.0.10
 
 ### Patch Changes
