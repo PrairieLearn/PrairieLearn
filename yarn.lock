@@ -8313,14 +8313,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.0.11":
-  version: 3.0.11
-  resolution: "dompurify@npm:3.0.11"
-  checksum: aefb86fbaa2cc6acda1a75ea918f69043689cb726f2932e5c1c3c85904255fd145230d66f0a9493ed27d64d035e990f3a767d99d73b1ae7c0b297782be230658
-  languageName: node
-  linkType: hard
-
-"dompurify@npm:^3.0.8":
+"dompurify@npm:^3.0.11, dompurify@npm:^3.0.8":
   version: 3.1.2
   resolution: "dompurify@npm:3.1.2"
   checksum: 450edfacc3918db29afb417a9f9d3fcb00412fe33435eb809b087f746b75c3d50b8e2520fac67efeef249664eba3de8524a0355172ec22eb151157aece3edf31
