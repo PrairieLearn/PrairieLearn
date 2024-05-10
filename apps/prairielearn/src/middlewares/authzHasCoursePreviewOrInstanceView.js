@@ -1,6 +1,6 @@
 // @ts-check
 import * as error from '@prairielearn/error';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
 export async function authzHasCoursePreviewOrInstanceView(req, res) {
   if (

@@ -1,14 +1,14 @@
 // @ts-check
 import { Router } from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { isBinaryFile } from 'isbinaryfile';
-import * as mime from 'mime';
+import mime from 'mime';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectCourseById } from '../../models/course';
-import { selectQuestionById } from '../../models/question';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
 

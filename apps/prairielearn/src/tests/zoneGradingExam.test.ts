@@ -1,14 +1,14 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
+import { config } from '../lib/config.js';
+import * as helperServer from './helperServer.js';
+import * as helperQuestion from './helperQuestion.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 

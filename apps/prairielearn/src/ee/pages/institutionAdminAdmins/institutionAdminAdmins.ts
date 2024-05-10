@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
-import { InstitutionAdminAdmins } from './institutionAdminAdmins.html';
+import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
+import { InstitutionAdminAdmins } from './institutionAdminAdmins.html.js';
 
 const router = Router({ mergeParams: true });
 

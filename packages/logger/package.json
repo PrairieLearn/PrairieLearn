@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/logger",
   "version": "1.0.15",
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",

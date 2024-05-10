@@ -1,17 +1,17 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
-import archiver = require('archiver');
+import archiver from 'archiver';
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { getGroupConfig } from '../../lib/groups';
-import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html';
+import { getGroupConfig } from '../../lib/groups.js';
+import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type Columns = [string, string][];
 

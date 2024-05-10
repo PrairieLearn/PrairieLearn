@@ -1,12 +1,12 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
 import * as jose from 'jose';
 import * as crypto from 'node:crypto';
 
-import { config } from '../../lib/config';
-import { AuthPrairieTest } from './prairietest.html';
-import { isEnterprise } from '../../lib/license';
-import { redirectToTermsPageIfNeeded } from '../lib/terms';
+import { config } from '../../lib/config.js';
+import { AuthPrairieTest } from './prairietest.html.js';
+import { isEnterprise } from '../../lib/license.js';
+import { redirectToTermsPageIfNeeded } from '../lib/terms.js';
 
 const router = Router({ mergeParams: true });
 

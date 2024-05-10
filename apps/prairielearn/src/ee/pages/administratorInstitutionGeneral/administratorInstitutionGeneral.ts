@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -7,18 +7,18 @@ import { flash } from '@prairielearn/flash';
 import {
   AdministratorInstitutionGeneral,
   InstitutionStatisticsSchema,
-} from './administratorInstitutionGeneral.html';
-import { getInstitution } from '../../lib/institution';
+} from './administratorInstitutionGeneral.html.js';
+import { getInstitution } from '../../lib/institution.js';
 import {
   getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
-} from '../../lib/billing/plans';
-import { InstitutionSchema } from '../../../lib/db-types';
-import { insertAuditLog } from '../../../models/audit-log';
-import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { getAvailableTimezones } from '../../../lib/timezones';
+} from '../../lib/billing/plans.js';
+import { InstitutionSchema } from '../../../lib/db-types.js';
+import { insertAuditLog } from '../../../models/audit-log.js';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import { getAvailableTimezones } from '../../../lib/timezones.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(

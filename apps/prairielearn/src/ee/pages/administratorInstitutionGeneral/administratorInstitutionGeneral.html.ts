@@ -3,9 +3,9 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { type PlanGrant, type Institution } from '../../../lib/db-types';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { formatTimezone, Timezone } from '../../../lib/timezones';
+import { type PlanGrant, type Institution } from '../../../lib/db-types.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import { formatTimezone, Timezone } from '../../../lib/timezones.js';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
@@ -31,7 +31,7 @@ export function AdministratorInstitutionGeneral({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'General',
@@ -52,7 +52,7 @@ export function AdministratorInstitutionGeneral({
         </style>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',

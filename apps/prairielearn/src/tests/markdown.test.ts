@@ -1,4 +1,4 @@
-import * as markdown from '../lib/markdown';
+import * as markdown from '../lib/markdown.js';
 import { assert } from 'chai';
 
 const testMarkdownQuestion = (question, expected) => {

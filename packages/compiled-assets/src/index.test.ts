@@ -14,7 +14,7 @@ import {
   compiledScriptPath,
   compiledStylesheetPath,
   type CompiledAssetsOptions,
-} from './index';
+} from './index.js';
 
 async function testProject(options: CompiledAssetsOptions) {
   await tmp.withDir(
