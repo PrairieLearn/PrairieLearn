@@ -1,11 +1,11 @@
 import { html } from '@prairielearn/html';
-import { RubricInputSection } from './rubricInputSection.html';
+import { RubricInputSection } from './rubricInputSection.html.js';
 import {
   AutoPointsSection,
   ManualPointsSection,
   TotalPointsSection,
-} from './gradingPointsSection.html';
-import { type Issue, type User } from '../../../lib/db-types';
+} from './gradingPointsSection.html.js';
+import { type Issue, type User } from '../../../lib/db-types.js';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;

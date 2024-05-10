@@ -1,30 +1,34 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import * as error from '@prairielearn/error';
-import { startTestQuestion } from '../../lib/question-testing';
+import { startTestQuestion } from '../../lib/question-testing.js';
 import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
 import { z } from 'zod';
 
-import { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } from '../../lib/editors';
-import { config } from '../../lib/config';
-import { encodePath } from '../../lib/uri-util';
-import { idsEqual } from '../../lib/id';
+import {
+  QuestionRenameEditor,
+  QuestionDeleteEditor,
+  QuestionCopyEditor,
+} from '../../lib/editors.js';
+import { config } from '../../lib/config.js';
+import { encodePath } from '../../lib/uri-util.js';
+import { idsEqual } from '../../lib/id.js';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { flash } from '@prairielearn/flash';
-import { features } from '../../lib/features/index';
-import { getCanonicalHost } from '../../lib/url';
-import { selectCoursesWithEditAccess } from '../../models/course';
-import { IdSchema } from '../../lib/db-types';
+import { features } from '../../lib/features/index.js';
+import { getCanonicalHost } from '../../lib/url.js';
+import { selectCoursesWithEditAccess } from '../../models/course.js';
+import { IdSchema } from '../../lib/db-types.js';
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
-} from './instructorQuestionSettings.html';
+} from './instructorQuestionSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
   '/test',

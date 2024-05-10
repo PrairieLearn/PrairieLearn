@@ -9,7 +9,7 @@ import { Meter } from '@opentelemetry/api';
 import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
-import { instrumentedWithMetrics } from './metrics';
+import { instrumentedWithMetrics } from './metrics.js';
 
 chai.use(chaiAsPromised);
 

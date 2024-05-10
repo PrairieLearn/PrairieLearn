@@ -1,7 +1,7 @@
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
-import { CourseRequestSchema, UserSchema } from '../../lib/db-types';
+import { CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -20,7 +20,7 @@ export function RequestCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head')%>", {
           ...resLocals,
         })}
         <script>
@@ -47,7 +47,7 @@ export function RequestCourse({
         </script>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
           ...resLocals,
           navPage: 'request_course',
         })}
@@ -99,7 +99,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                   <td>${course_request.short_name}</td>
                   <td>${course_request.title}</td>
                   <td>
-                    ${renderEjs(__filename, "<%- include('approvalStatusIcon')%>", {
+                    ${renderEjs(import.meta.url, "<%- include('approvalStatusIcon')%>", {
                       status: course_request.approved_status,
                     })}
                   </td>

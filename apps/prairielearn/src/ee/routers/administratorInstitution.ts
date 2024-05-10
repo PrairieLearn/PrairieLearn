@@ -1,15 +1,15 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import authzIsAdministrator from '../../middlewares/authzIsAdministrator';
-import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral';
-import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses';
-import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse';
-import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance';
-import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso';
-import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml';
-import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13';
-import { features } from '../../lib/features';
+import authzIsAdministrator from '../../middlewares/authzIsAdministrator.js';
+import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral.js';
+import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses.js';
+import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse.js';
+import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance.js';
+import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso.js';
+import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml.js';
+import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13.js';
+import { features } from '../../lib/features/index.js';
 
 const router = Router({ mergeParams: true });
 

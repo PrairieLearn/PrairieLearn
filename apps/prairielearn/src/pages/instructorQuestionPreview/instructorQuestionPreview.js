@@ -1,8 +1,8 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as express from 'express';
 import { z } from 'zod';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
@@ -10,12 +10,15 @@ import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import * as issues from '../../lib/issues';
-import { logPageView } from '../../middlewares/logPageView';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
-import { IdSchema } from '../../lib/db-types';
+} from '../../lib/question-render.js';
+import * as issues from '../../lib/issues.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import {
+  processSubmission,
+  validateVariantAgainstQuestion,
+} from '../../lib/question-submission.js';
+import { IdSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
 
@@ -88,7 +91,7 @@ router.get(
     await setQuestionCopyTargets(res);
 
     setRendererHeader(res);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -228,9 +228,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub = "".join(a_sub.split())
 
     if not a_sub and not allow_blank:
-        data["format_errors"][
-            name
-        ] = "Invalid format. The submitted answer was left blank."
+        data["format_errors"][name] = (
+            "Invalid format. The submitted answer was left blank."
+        )
         data["submitted_answers"][name] = None
     else:
         data["submitted_answers"][name] = pl.to_json(a_sub)

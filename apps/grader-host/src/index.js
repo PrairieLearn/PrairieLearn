@@ -1,35 +1,35 @@
 // @ts-check
 import * as util from 'node:util';
-const ERR = require('async-stacktrace');
-import * as fs from 'fs-extra';
+import ERR from 'async-stacktrace';
+import fs from 'fs-extra';
 import * as async from 'async';
 import * as tmp from 'tmp';
-const Docker = require('dockerode');
+import Docker from 'dockerode';
 import { S3 } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { Upload } from '@aws-sdk/lib-storage';
 import { exec } from 'child_process';
 import * as path from 'path';
-const byline = require('byline');
+import byline from 'byline';
 import { pipeline } from 'node:stream/promises';
 import * as Sentry from '@prairielearn/sentry';
 import * as sqldb from '@prairielearn/postgres';
 import { sanitizeObject } from '@prairielearn/sanitize';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 
-import globalLogger from './lib/logger';
-import { makeJobLogger } from './lib/jobLogger';
-import { config, loadConfig } from './lib/config';
-import * as healthCheck from './lib/healthCheck';
-import * as lifecycle from './lib/lifecycle';
-import pullImages from './lib/pullImages';
-import receiveFromQueue from './lib/receiveFromQueue';
-import * as timeReporter from './lib/timeReporter';
-import * as load from './lib/load';
-import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws';
+import globalLogger from './lib/logger.js';
+import { makeJobLogger } from './lib/jobLogger.js';
+import { config, loadConfig } from './lib/config.js';
+import * as healthCheck from './lib/healthCheck.js';
+import * as lifecycle from './lib/lifecycle.js';
+import pullImages from './lib/pullImages.js';
+import receiveFromQueue from './lib/receiveFromQueue.js';
+import * as timeReporter from './lib/timeReporter.js';
+import * as load from './lib/load.js';
+import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;

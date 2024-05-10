@@ -1,11 +1,11 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeAwsClientConfig } from '../lib/aws';
-import { config } from '../lib/config';
+import { makeAwsClientConfig } from '../lib/aws.js';
+import { config } from '../lib/config.js';
 
 export async function run() {
   if (!config.runningInEc2) return;

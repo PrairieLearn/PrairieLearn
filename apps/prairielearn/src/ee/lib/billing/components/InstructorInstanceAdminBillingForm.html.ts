@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types';
+import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
 interface InstructorInstanceAdminBillingInput {
   initialRequiredPlans: PlanName[];

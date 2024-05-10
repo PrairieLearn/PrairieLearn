@@ -1,13 +1,13 @@
-import asyncHandler = require('express-async-handler');
-import express = require('express');
+import asyncHandler from 'express-async-handler';
+import express from 'express';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as error from '@prairielearn/error';
-import { AdministratorAdmins } from './administratorAdmins.html';
-import { UserSchema } from '../../lib/db-types';
+import { AdministratorAdmins } from './administratorAdmins.html.js';
+import { UserSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

@@ -2,6 +2,7 @@
   "name": "@prairielearn/path-utils",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -11,7 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/**/*.test.ts"
+    "test": "mocha src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
@@ -20,7 +21,7 @@
     "@types/node": "^20.12.2",
     "chai": "^4.4.1",
     "mocha": "^10.4.0",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3"
   }
 }
