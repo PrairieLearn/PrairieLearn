@@ -1,15 +1,15 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
+import { config } from '../../lib/config.js';
 import {
   InstructorAssessmentAccess,
   AssessmentAccessRulesSchema,
-} from './instructorAssessmentAccess.html';
+} from './instructorAssessmentAccess.html.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

@@ -1,9 +1,9 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
-import * as syncHelpers from '../shared/syncHelpers';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import * as syncHelpers from '../shared/syncHelpers.js';
 import { logger } from '@prairielearn/logger';
 
 const router = Router();
@@ -44,7 +44,7 @@ router.get(
     }
 
     res.locals.job_sequence = job_sequence;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

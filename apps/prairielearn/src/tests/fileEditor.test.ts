@@ -1,30 +1,30 @@
-import ERR = require('async-stacktrace');
-import request = require('request');
+import ERR from 'async-stacktrace';
+import request from 'request';
 import { assert } from 'chai';
 import { readFileSync } from 'node:fs';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import * as async from 'async';
 import * as cheerio from 'cheerio';
 import * as tmp from 'tmp';
 import fetch from 'node-fetch';
-import FormData = require('form-data');
+import FormData from 'form-data';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 import { exec } from 'child_process';
-import * as b64Util from '../lib/base64-util';
-import { encodePath } from '../lib/uri-util';
-import { EXAMPLE_COURSE_PATH } from '../lib/paths';
+import * as b64Util from '../lib/base64-util.js';
+import { encodePath } from '../lib/uri-util.js';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 let page, elemList;
 
 // Uses course within tests/testFileEditor
-const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
+const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 // Set up temporary writeable directories for course content
 const baseDir = tmp.dirSync().name;

@@ -617,9 +617,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     if submitted_key not in all_keys and submitted_key is not None:
-        data["format_errors"][
-            name
-        ] = f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        data["format_errors"][name] = (
+            f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        )
         return
 
 

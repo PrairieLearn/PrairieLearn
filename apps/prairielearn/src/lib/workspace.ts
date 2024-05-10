@@ -6,11 +6,11 @@ import { promises as fsPromises } from 'fs';
 import * as fse from 'fs-extra';
 import * as async from 'async';
 import debugfn from 'debug';
-import archiver = require('archiver');
-import klaw = require('klaw');
+import archiver from 'archiver';
+import klaw from 'klaw';
 import { v4 as uuidv4 } from 'uuid';
 import * as tmp from 'tmp-promise';
-import * as mustache from 'mustache';
+import mustache from 'mustache';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
 import { ok as assert } from 'node:assert';
@@ -24,11 +24,11 @@ import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import { config } from './config';
-import * as socketServer from './socket-server';
-import * as chunks from './chunks';
-import * as workspaceHostUtils from './workspaceHost';
-import * as issues from './issues';
+import { config } from './config.js';
+import * as socketServer from './socket-server.js';
+import * as chunks from './chunks.js';
+import * as workspaceHostUtils from './workspaceHost.js';
+import * as issues from './issues.js';
 import {
   CourseSchema,
   DateFromISOString,
@@ -36,10 +36,10 @@ import {
   VariantSchema,
   WorkspaceHostSchema,
   WorkspaceSchema,
-} from './db-types';
+} from './db-types.js';
 
 const debug = debugfn('prairielearn:workspace');
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const WorkspaceDataSchema = z.object({
   workspace: WorkspaceSchema,

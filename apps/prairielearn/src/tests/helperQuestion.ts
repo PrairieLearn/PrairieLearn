@@ -2,12 +2,12 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { setTimeout as sleep } from 'timers/promises';
-import * as _ from 'lodash';
-import FormData = require('form-data');
+import _ from 'lodash';
+import FormData from 'form-data';
 
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {

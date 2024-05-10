@@ -1,20 +1,20 @@
-import AnsiUp from 'ansi_up';
-import execa = require('execa');
+import { AnsiUp } from 'ansi_up';
+import execa from 'execa';
 import { z } from 'zod';
 import { setTimeout as sleep } from 'node:timers/promises';
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk, chalkDim } from './chalk';
-import * as socketServer from './socket-server';
-import { IdSchema, Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types';
-import { config } from './config';
+import { chalk, chalkDim } from './chalk.js';
+import * as socketServer from './socket-server.js';
+import { IdSchema, Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
+import { config } from './config.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 interface CreateServerJobOptions {
   courseId?: string;

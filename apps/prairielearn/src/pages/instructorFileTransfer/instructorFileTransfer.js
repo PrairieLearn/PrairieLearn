@@ -1,16 +1,16 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import * as path from 'path';
 import debugfn from 'debug';
 import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
-import { QuestionTransferEditor } from '../../lib/editors';
-import { config } from '../../lib/config';
-import { idsEqual } from '../../lib/id';
+import { QuestionTransferEditor } from '../../lib/editors.js';
+import { config } from '../../lib/config.js';
+import { idsEqual } from '../../lib/id.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 
 async function getFileTransfer(file_transfer_id, user_id) {

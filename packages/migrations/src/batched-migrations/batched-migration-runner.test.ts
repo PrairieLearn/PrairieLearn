@@ -8,10 +8,10 @@ import {
   insertBatchedMigration,
   makeBatchedMigration,
   updateBatchedMigrationStatus,
-} from './batched-migration';
-import { BatchedMigrationJobRowSchema } from './batched-migration-job';
-import { BatchedMigrationRunner } from './batched-migration-runner';
-import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
+} from './batched-migration.js';
+import { BatchedMigrationJobRowSchema } from './batched-migration-job.js';
+import { BatchedMigrationRunner } from './batched-migration-runner.js';
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',

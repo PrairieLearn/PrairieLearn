@@ -57,7 +57,7 @@
     </tbody>
   </table>
 
-  <% if (assessment.allow_issue_reporting) { %>
+  <% if (!locals.no_variant_exists && assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
       <div class="alert alert-warning mt-2" role="alert">

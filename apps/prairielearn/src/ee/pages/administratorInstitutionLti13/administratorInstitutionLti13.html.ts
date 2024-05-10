@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Lti13Instance } from '../../../lib/db-types';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
+import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { compiledScriptTag } from '../../../lib/assets';
+import { compiledScriptTag } from '../../../lib/assets.js';
 
 export function AdministratorInstitutionLti13({
   institution,
@@ -25,7 +25,7 @@ export function AdministratorInstitutionLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'LTI 1.3',
@@ -33,7 +33,7 @@ export function AdministratorInstitutionLti13({
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',

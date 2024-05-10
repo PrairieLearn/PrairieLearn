@@ -1,8 +1,8 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData } from '../course-db';
+import * as infofile from '../infofile.js';
+import { makePerformance } from '../performance.js';
+import { CourseData } from '../course-db.js';
 
 const perf = makePerformance('assessmentModules');
 

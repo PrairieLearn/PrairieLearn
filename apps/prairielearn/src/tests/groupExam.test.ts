@@ -2,15 +2,15 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import { step } from 'mocha-steps';
 
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
-import * as helperServer from './helperServer';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { UserSchema } from '../lib/db-types';
+import * as helperServer from './helperServer.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { UserSchema } from '../lib/db-types.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

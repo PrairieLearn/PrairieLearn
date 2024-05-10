@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 
-import { parseDockerLogs } from './docker';
+import { parseDockerLogs } from './docker.js';
 
 // See "Stream format" docs on the Docker ContainerAttach API:
 // https://docs.docker.com/engine/api/v1.41/#tag/Container/operation/ContainerAttach

@@ -1,22 +1,22 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { regradeAssessmentInstance } from '../../lib/regrading';
+import { regradeAssessmentInstance } from '../../lib/regrading.js';
 import {
   checkBelongs,
   gradeAssessmentInstance,
   gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
-} from '../../lib/assessment';
+} from '../../lib/assessment.js';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '../../lib/db-types';
+import { IdSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AssessmentInstanceRowSchema = z.object({
   assessment_label: z.string(),
@@ -74,7 +74,7 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.type('text/javascript');
-    res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
   }),
 );
 
@@ -84,7 +84,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
