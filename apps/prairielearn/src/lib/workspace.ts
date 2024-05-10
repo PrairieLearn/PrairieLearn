@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import * as path from 'path';
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
-import * as fse from 'fs-extra';
+import fse from 'fs-extra';
 import * as async from 'async';
 import debugfn from 'debug';
 import archiver from 'archiver';
