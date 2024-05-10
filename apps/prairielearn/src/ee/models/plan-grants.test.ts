@@ -1,6 +1,6 @@
-import * as helperDb from '../../tests/helperDb';
-import { getOrCreateUser } from '../../tests/utils/auth';
-import { ensurePlanGrant } from './plan-grants';
+import * as helperDb from '../../tests/helperDb.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
+import { ensurePlanGrant } from './plan-grants.js';
 
 describe('plan-grants', () => {
   before(helperDb.before);

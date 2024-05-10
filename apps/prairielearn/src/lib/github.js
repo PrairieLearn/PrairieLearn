@@ -4,16 +4,16 @@ import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@prairielearn/sentry';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { config } from './config';
+import { config } from './config.js';
 import { logger } from '@prairielearn/logger';
-import { updateCourseCommitHash } from '../models/course';
-import { syncDiskToSql } from '../sync/syncFromDisk';
-import { sendCourseRequestMessage } from './opsbot';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
-import { createServerJob } from './server-jobs';
+import { updateCourseCommitHash } from '../models/course.js';
+import { syncDiskToSql } from '../sync/syncFromDisk.js';
+import { sendCourseRequestMessage } from './opsbot.js';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { createServerJob } from './server-jobs.js';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /*
   Required configuration options to get this working:
@@ -171,7 +171,7 @@ async function addUserToRepo(client, repo, username, permission) {
  */
 export async function createCourseRepoJob(options, authn_user) {
   /**
-   * @param {import('./server-jobs').ServerJob} job
+   * @param {import('./server-jobs.js').ServerJob} job
    */
   const createCourseRepo = async (job) => {
     const client = getGithubClient();

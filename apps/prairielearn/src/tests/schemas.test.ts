@@ -1,6 +1,6 @@
 import Ajv from 'ajv';
 import { assert } from 'chai';
-import * as schemas from '../schemas';
+import * as schemas from '../schemas/index.js';
 
 const isObject = (a) => !!a && a.constructor === Object;
 
@@ -37,13 +37,15 @@ for (const schemaName of Object.keys(schemas)) {
   describe(`${schemaName} schema`, () => {
     const schema = schemas[schemaName];
     it('compiles', () => {
-      const ajv = new Ajv();
+      // https://github.com/ajv-validator/ajv/issues/2132
+      const ajv = new Ajv.default();
       const validate = ajv.compile(schema);
       assert.isFunction(validate);
     });
 
     it('validates', () => {
-      const ajv = new Ajv();
+      // https://github.com/ajv-validator/ajv/issues/2132
+      const ajv = new Ajv.default();
       const valid = ajv.validateSchema(schema);
       if (ajv.errors) {
         console.error(ajv.errors);

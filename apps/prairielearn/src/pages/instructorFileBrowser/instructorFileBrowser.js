@@ -1,21 +1,21 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
 import * as error from '@prairielearn/error';
 
 import * as path from 'node:path';
-import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors';
+import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { contains } from '@prairielearn/path-utils';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as async from 'async';
 import hljs from 'highlight.js';
 import * as FileType from 'file-type';
 import { isBinaryFile } from 'isbinaryfile';
-import { encodePath } from '../../lib/uri-util';
-import * as editorUtil from '../../lib/editorUtil';
-import AnsiUp from 'ansi_up';
-import { getCourseOwners } from '../../lib/course';
-import { getPaths } from '../../lib/instructorFiles';
+import { encodePath } from '../../lib/uri-util.js';
+import * as editorUtil from '../../lib/editorUtil.js';
+import { AnsiUp } from 'ansi_up';
+import { getCourseOwners } from '../../lib/course.js';
+import { getPaths } from '../../lib/instructorFiles.js';
 
 const router = Router();
 
@@ -174,7 +174,7 @@ router.get(
       getCourseOwners(res.locals.course.id)
         .then((owners) => {
           res.locals.course_owners = owners;
-          res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
         })
         .catch((err) => next(err));
       return;
@@ -210,7 +210,7 @@ router.get(
     }
 
     res.locals.file_browser = file_browser;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

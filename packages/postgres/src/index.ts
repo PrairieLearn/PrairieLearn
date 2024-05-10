@@ -1,8 +1,12 @@
-export { PoolClient } from 'pg';
+export { type PoolClient } from 'pg';
 
-export { loadSql, loadSqlEquiv } from './loader';
-export { PostgresPool } from './pool';
+export { loadSql, loadSqlEquiv } from './loader.js';
+export { PostgresPool } from './pool.js';
 
-export * from './default-pool';
+export * from './default-pool.js';
 
-export { makePostgresTestUtils, PostgresTestUtils, PostgresTestUtilsOptions } from './test-utils';
+export {
+  makePostgresTestUtils,
+  type PostgresTestUtils,
+  type PostgresTestUtilsOptions,
+} from './test-utils.js';

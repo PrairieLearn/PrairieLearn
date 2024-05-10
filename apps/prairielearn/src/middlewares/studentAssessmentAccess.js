@@ -1,11 +1,11 @@
 // @ts-check
 import { Router } from 'express';
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
-import { config } from '../lib/config';
-import { setCookie } from '../lib/cookie';
+import { config } from '../lib/config.js';
+import { setCookie } from '../lib/cookie.js';
 
 const router = Router();
 
@@ -93,15 +93,15 @@ function badPassword(res, req) {
 
 function closedAssessmentNotActive(res) {
   res.locals.prompt = 'closedAssessmentNotActive';
-  res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function closedAssessmentNotActiveHiddenGrade(res) {
   res.locals.prompt = 'closedAssessmentNotActiveHiddenGrade';
-  res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function assessmentNotStartedNotActive(res) {
   res.locals.prompt = 'assessmentNotStartedNotActive';
-  res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
 }

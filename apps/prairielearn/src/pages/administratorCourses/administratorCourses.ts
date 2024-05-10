@@ -1,20 +1,20 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
+import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
   selectPendingCourseRequests,
   updateCourseRequest,
-} from '../../lib/course-request';
-import { selectAllInstitutions } from '../../models/institution';
-import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html';
+} from '../../lib/course-request.js';
+import { selectAllInstitutions } from '../../models/institution.js';
+import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

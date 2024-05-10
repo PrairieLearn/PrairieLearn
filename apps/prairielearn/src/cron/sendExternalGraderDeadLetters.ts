@@ -7,9 +7,9 @@ import {
 } from '@aws-sdk/client-sqs';
 import { logger } from '@prairielearn/logger';
 
-import { makeAwsClientConfig } from '../lib/aws';
-import { config } from '../lib/config';
-import * as opsbot from '../lib/opsbot';
+import { makeAwsClientConfig } from '../lib/aws.js';
+import { config } from '../lib/config.js';
+import * as opsbot from '../lib/opsbot.js';
 
 // After loading the queue url for the first time, we'll cache it here
 const QUEUE_URLS = {};

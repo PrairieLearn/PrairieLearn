@@ -1,7 +1,7 @@
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
+import * as helperServer from './helperServer.js';
+import * as helperQuestion from './helperQuestion.js';
 
 const locals: Record<string, any> = {};
 

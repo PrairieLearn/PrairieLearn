@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Tag } from '../../lib/db-types';
+import { Tag } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTags({
   resLocals,
@@ -13,13 +13,13 @@ export function InstructorCourseAdminTags({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -41,7 +41,9 @@ export function InstructorCourseAdminTags({
                       <tr>
                         <td class="align-middle">${tag.number}</td>
                         <td class="align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/tag'); %>", { tag })}
+                          ${renderEjs(import.meta.url, "<%- include('../partials/tag'); %>", {
+                            tag,
+                          })}
                         </td>
                         <td class="align-middle">${tag.color}</td>
                         <td class="align-middle">${tag.description}</td>

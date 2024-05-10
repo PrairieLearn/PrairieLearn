@@ -1,5 +1,5 @@
 import ClipboardJS from 'clipboard';
-import { mathjaxTypeset } from './lib/mathjax';
+import { mathjaxTypeset } from './lib/mathjax.js';
 
 $(() => {
   resetInstructorGradingPanel();

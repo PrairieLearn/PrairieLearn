@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import _ from 'lodash';
 import { structuredPatch } from 'diff';
 
-import { describeDatabase, formatDatabaseDescription } from './describe';
+import { describeDatabase, formatDatabaseDescription } from './describe.js';
 
 interface DatabaseInfo {
   type: 'database';

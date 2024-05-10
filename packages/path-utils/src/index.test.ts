@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { contains } from './index';
+import { contains } from './index.js';
 
 describe('File paths', () => {
   describe('parentContainsChild function', () => {

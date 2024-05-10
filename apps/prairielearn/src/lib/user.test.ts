@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { parseUidsString } from './user';
+import { parseUidsString } from './user.js';
 
 describe('user utilities', () => {
   describe('parseUidsString', () => {

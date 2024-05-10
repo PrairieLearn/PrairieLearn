@@ -1,5 +1,5 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { saveButtonEnabling } from './lib/saveButtonEnabling';
+import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(() => {
   const courseSettingsForm = document.querySelector<HTMLFormElement>(

@@ -1,21 +1,21 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as _ from 'lodash';
+import ERR from 'async-stacktrace';
+import _ from 'lodash';
 import * as express from 'express';
 
-import { getCourseOwners } from '../../lib/course';
+import { getCourseOwners } from '../../lib/course.js';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
     getCourseOwners(res.locals.course.id)
       .then((owners) => {
         res.locals.course_owners = owners;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => next(err));
     return;
@@ -28,7 +28,7 @@ router.get('/', function (req, res, next) {
     if (ERR(err, next)) return;
     _.assign(res.locals, result.rows[0]);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   });
 });
 

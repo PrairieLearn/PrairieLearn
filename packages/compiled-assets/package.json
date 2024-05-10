@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/compiled-assets",
   "version": "2.0.17",
+  "type": "module",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": {
@@ -11,7 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/index.test.ts"
+    "test": "mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
@@ -31,7 +32,7 @@
     "get-port": "^5.1.1",
     "mocha": "^10.4.0",
     "node-fetch": "^2.7.0",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3"
   }
 }

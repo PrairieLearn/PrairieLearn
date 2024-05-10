@@ -1,4 +1,4 @@
-import * as editor from '../lib/editorUtil';
+import * as editor from '../lib/editorUtil.js';
 import { assert } from 'chai';
 
 describe('editor library', () => {

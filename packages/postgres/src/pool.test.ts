@@ -14,8 +14,8 @@ import {
   callOptionalRow,
   queryCursor,
   queryValidatedCursor,
-} from './default-pool';
-import { makePostgresTestUtils } from './test-utils';
+} from './default-pool.js';
+import { makePostgresTestUtils } from './test-utils.js';
 
 chai.use(chaiAsPromised);
 const { assert } = chai;

@@ -1,5 +1,5 @@
 // @ts-check
-import { idsEqual } from '../lib/id';
+import { idsEqual } from '../lib/id.js';
 
 /**
  * @param {import('express').Request} req
