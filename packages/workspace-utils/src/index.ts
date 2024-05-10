@@ -8,8 +8,7 @@ import { type Dirent } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// eslint-disable-next-line no-restricted-globals -- Not yet native ESM
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
 

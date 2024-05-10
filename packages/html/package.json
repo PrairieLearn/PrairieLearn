@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/html",
   "version": "3.1.7",
+  "type": "module",
   "main": "dist/index.js",
   "sideEffects": false,
   "repository": {

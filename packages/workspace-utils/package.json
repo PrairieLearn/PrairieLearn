@@ -2,6 +2,7 @@
   "name": "@prairielearn/workspace-utils",
   "version": "1.0.20",
   "private": true,
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",

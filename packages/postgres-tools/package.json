@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/postgres-tools",
   "version": "1.1.17",
+  "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "pg-describe": "./dist/bin/pg-describe.js",
