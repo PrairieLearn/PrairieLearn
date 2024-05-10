@@ -1,12 +1,12 @@
 <%
-  const has_manual_grading = (manualPercentage > 0 || instance_question?.manual_points || instance_question?.requires_manual_grading);
+  const has_manual_grading = (manualPercentage > 0 || locals.instance_question?.manual_points || locals.instance_question?.requires_manual_grading);
   const has_auto_grading = manualPercentage < 100;
   const auto_submission_status_prefix = has_manual_grading ? 'auto-grading: ' : '';
  %>
 <% if (has_manual_grading) { %>
     <%# The manual grading status only applies to the latest submission %>
     <% if (submission.submission_number == submissionCount) { %>
-        <% if (!locals.assessment_question || instance_question.requires_manual_grading) { %>
+        <% if (!locals.assessment_question || locals.instance_question?.requires_manual_grading) { %>
             <% if (!submission.gradable && !locals.assessment_question?.max_auto_points) { %>
                 <span class="badge badge-danger">invalid, not gradable</span><br/>
             <% } else { %>
