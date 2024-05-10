@@ -42,6 +42,13 @@ const differentiatePolynomial = {
   title: 'Differentiate a polynomial function of one variable',
 };
 
+function decodeBrowserData(element) {
+  const base64Data = element.text();
+  const jsonData = Buffer.from(base64Data, 'base64').toString('utf8');
+  const data = JSON.parse(jsonData);
+  return data;
+}
+
 describe('Instructor questions', function () {
   this.timeout(60000);
 
@@ -103,7 +110,7 @@ describe('Instructor questions', function () {
       parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data');
+      questionData = decodeBrowserData(parsedPage('#questions-table-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -153,7 +160,7 @@ describe('Instructor questions', function () {
       parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data');
+      questionData = decodeBrowserData(parsedPage('#questions-table-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });

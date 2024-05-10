@@ -430,6 +430,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string().nullable(),
   }),
 );
+export type AssessmentsFormatForQuestion = z.infer<typeof AssessmentsFormatForQuestionSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
