@@ -1,10 +1,11 @@
 // @ts-check
 import * as fs from 'fs/promises';
-import * as jju from 'jju';
+import jju from 'jju';
 import Ajv from 'ajv';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv();
+// https://github.com/ajv-validator/ajv/issues/2132
+const ajv = new Ajv.default();
 
 /**
  * Asynchronously reads the specified JSON file.

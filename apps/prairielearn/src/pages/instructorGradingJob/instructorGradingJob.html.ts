@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { IdSchema } from '../../lib/db-types';
+import { IdSchema } from '../../lib/db-types.js';
 
 const GradingJobSchema = z.object({
   id: IdSchema,
@@ -36,13 +36,13 @@ export function InstructorGradingJob({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
           pageTitle: `Grading Job ${gradingJobQueryResult.grading_job.id}`,
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: '',
         })}

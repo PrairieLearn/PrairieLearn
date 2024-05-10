@@ -2,23 +2,23 @@
 import * as path from 'node:path';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
-const Docker = require('dockerode');
-const MemoryStream = require('memorystream');
+import Docker from 'dockerode';
+import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
 import { Mutex } from 'async-mutex';
 import * as os from 'node:os';
-import * as fs from 'fs-extra';
-const execa = require('execa');
+import fs from 'fs-extra';
+import execa from 'execa';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import * as bindMount from '@prairielearn/bind-mount';
 import { instrumented } from '@prairielearn/opentelemetry';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 
-import { config } from '../config';
-import { FunctionMissingError } from './code-caller-shared';
-import { deferredPromise } from '../deferred';
-import { makeAwsClientConfig } from '../aws';
+import { config } from '../config.js';
+import { FunctionMissingError } from './code-caller-shared.js';
+import { deferredPromise } from '../deferred.js';
+import { makeAwsClientConfig } from '../aws.js';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -108,8 +108,8 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
@@ -196,7 +196,7 @@ export class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.forbiddenModules = forbiddenModules;

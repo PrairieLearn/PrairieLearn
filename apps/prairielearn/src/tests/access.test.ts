@@ -1,13 +1,13 @@
 import { assert } from 'chai';
-import request = require('request');
+import request from 'request';
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { ensureEnrollment } from '../models/enrollment';
-import * as helperServer from './helperServer';
+import { config } from '../lib/config.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

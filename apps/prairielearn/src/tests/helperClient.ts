@@ -1,7 +1,7 @@
 import fetch, { RequestInit, Response } from 'node-fetch';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
 interface CheerioResponse extends Response {
   $: cheerio.CheerioAPI;
@@ -129,6 +129,17 @@ export function setUser(user: User): void {
  */
 export function parseInstanceQuestionId(url: string): number {
   const match = url.match(/instance_question\/(\d+)/);
+  assert(match);
+  const iqId = parseInt(match[1]);
+  assert.isNumber(iqId);
+  return iqId;
+}
+
+/**
+ * Get assessment instance id from URL params.
+ */
+export function parseAssessmentInstanceId(url: string): number {
+  const match = url.match(/assessment_instance\/(\d+)/);
   assert(match);
   const iqId = parseInt(match[1]);
   assert.isNumber(iqId);

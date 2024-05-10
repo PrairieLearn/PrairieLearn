@@ -6,8 +6,8 @@ import setCookie from 'set-cookie-parser';
 import asyncHandler from 'express-async-handler';
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { createSessionMiddleware } from './index';
-import { MemoryStore } from './memory-store';
+import { createSessionMiddleware } from './index.js';
+import { MemoryStore } from './memory-store.js';
 
 const TEST_SECRET = 'test-secret';
 

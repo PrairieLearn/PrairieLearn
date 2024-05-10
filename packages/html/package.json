@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/html",
   "version": "3.1.7",
+  "type": "module",
   "main": "dist/index.js",
   "sideEffects": false,
   "repository": {
@@ -18,7 +19,7 @@
     "@types/node": "^20.12.2",
     "chai": "^4.4.1",
     "mocha": "^10.4.0",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3"
   }
 }

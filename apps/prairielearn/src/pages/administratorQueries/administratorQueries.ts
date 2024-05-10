@@ -1,13 +1,13 @@
 import * as express from 'express';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import * as jsonLoad from '../../lib/json-load';
-import { AdministratorQueries, AdministratorQueryJsonSchema } from './administratorQueries.html';
+import * as jsonLoad from '../../lib/json-load.js';
+import { AdministratorQueries, AdministratorQueryJsonSchema } from './administratorQueries.html.js';
 
 const router = express.Router();
-const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
+const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 router.get(
   '/',

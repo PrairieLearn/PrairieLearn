@@ -1,10 +1,10 @@
-import loopbench = require('loopbench');
+import loopbench from 'loopbench';
 import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
 
-import { makeAwsClientConfig } from './aws';
-import { config } from './config';
+import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
 
 const loopbenchInstance = loopbench();
 

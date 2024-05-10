@@ -1,7 +1,7 @@
 // @ts-check
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import debugfn from 'debug';
@@ -9,7 +9,7 @@ import { pipeline } from 'node:stream/promises';
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 
 import { logger } from '@prairielearn/logger';
-import { config } from './config';
+import { config } from './config.js';
 
 const debug = debugfn('prairielearn:aws');
 

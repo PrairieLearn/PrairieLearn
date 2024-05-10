@@ -1,12 +1,12 @@
 import * as async from 'async';
-import * as mustache from 'mustache';
-import * as _ from 'lodash';
+import mustache from 'mustache';
+import _ from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id';
-import * as markdown from './markdown';
-import * as ltiOutcomes from './ltiOutcomes';
+import { idsEqual } from './id.js';
+import * as markdown from './markdown.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -15,9 +15,9 @@ import {
   RubricItem,
   RubricItemSchema,
   RubricSchema,
-} from './db-types';
+} from './db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */

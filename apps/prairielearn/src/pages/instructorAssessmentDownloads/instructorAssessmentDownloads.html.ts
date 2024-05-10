@@ -40,13 +40,13 @@ export function InstructorAssessmentDownloads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}

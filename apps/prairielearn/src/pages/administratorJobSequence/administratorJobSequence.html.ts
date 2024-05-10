@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { nodeModulesAssetPath } from '../../lib/assets';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function AdministratorJobSequence({
   job_sequence,
@@ -13,14 +13,14 @@ export function AdministratorJobSequence({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
         <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: '',
         })}
@@ -33,7 +33,7 @@ export function AdministratorJobSequence({
               </a>
             </div>
           </div>
-          ${renderEjs(__filename, "<%- include('../partials/jobSequenceResults') %>", {
+          ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults') %>", {
             ...resLocals,
             job_sequence,
             job_sequence_enable_live_update: true,

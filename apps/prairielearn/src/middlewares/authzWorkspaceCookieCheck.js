@@ -1,8 +1,8 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
-import { config } from '../lib/config';
-import { idsEqual } from '../lib/id';
+import { config } from '../lib/config.js';
+import { idsEqual } from '../lib/id.js';
 
 export default asyncHandler(async (req, res, next) => {
   // This middleware looks for a workspace_id-specific cookie and,

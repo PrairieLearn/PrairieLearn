@@ -1,13 +1,13 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as _ from 'lodash';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import { Router } from 'express';
 import * as sqldb from '@prairielearn/postgres';
 
-import { AdministratorNetworks } from './administratorNetworks.html';
+import { AdministratorNetworks } from './administratorNetworks.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

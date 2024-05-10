@@ -1,6 +1,6 @@
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import { logger } from '@prairielearn/logger';
-import * as opsbot from '../lib/opsbot';
+import * as opsbot from '../lib/opsbot.js';
 import * as sqldb from '@prairielearn/postgres';
 
 export async function run() {

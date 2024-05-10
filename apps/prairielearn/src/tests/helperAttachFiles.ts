@@ -1,10 +1,10 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-import FormData = require('form-data');
+import FormData from 'form-data';
 import * as cheerio from 'cheerio';
 
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
 

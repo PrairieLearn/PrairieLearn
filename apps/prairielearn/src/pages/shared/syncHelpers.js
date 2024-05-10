@@ -7,14 +7,14 @@ import {
   RepositoryNotFoundException,
 } from '@aws-sdk/client-ecr';
 import * as async from 'async';
-const Docker = require('dockerode');
+import Docker from 'dockerode';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as Sentry from '@prairielearn/sentry';
 
-import { makeAwsClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
-import { createServerJob } from '../../lib/server-jobs';
-import { pullAndUpdateCourse } from '../../lib/course';
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import { pullAndUpdateCourse } from '../../lib/course.js';
 
 const docker = new Docker();
 
@@ -58,7 +58,7 @@ export async function gitStatus(locals) {
 
 /**
  * @param {string} repo
- * @param {import('../../lib/server-jobs').ServerJob} job
+ * @param {import('../../lib/server-jobs.js').ServerJob} job
  */
 async function ensureECRRepo(repo, job) {
   const ecr = new ECR(makeAwsClientConfig());
@@ -124,7 +124,7 @@ function logProgressOutput(output, job, printedInfos, prefix) {
  *
  * @param {string} image
  * @param {import('@prairielearn/docker-utils').DockerAuth} dockerAuth
- * @param {import('../../lib/server-jobs').ServerJob} job
+ * @param {import('../../lib/server-jobs.js').ServerJob} job
  */
 async function pullAndPushToECR(image, dockerAuth, job) {
   const { cacheImageRegistry } = config;
