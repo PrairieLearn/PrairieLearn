@@ -54,6 +54,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@asamuzakjp/dom-selector@npm:^2.0.1":
+  version: 2.0.2
+  resolution: "@asamuzakjp/dom-selector@npm:2.0.2"
+  dependencies:
+    bidi-js: ^1.0.3
+    css-tree: ^2.3.1
+    is-potential-custom-element-name: ^1.0.1
+  checksum: a454537fcba4f241d3c1303f6068944462fc0ba9cd2c5e3ad639c0acb58ffb7809e5d4cbdac805c8c2525b2450d53a992ff98f07a323c5246044e8e3de3561fe
+  languageName: node
+  linkType: hard
+
 "@aws-crypto/crc32@npm:3.0.0":
   version: 3.0.0
   resolution: "@aws-crypto/crc32@npm:3.0.0"
@@ -3499,6 +3510,7 @@ __metadata:
     node-fetch: ^2.7.0
     node-jose: ^2.2.0
     nodemon: ^3.1.0
+    notebookjs: ^0.8.2
     numeric: ^1.2.6
     oauth-signature: ^1.5.0
     object-hash: ^3.0.0
@@ -6254,6 +6266,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bidi-js@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "bidi-js@npm:1.0.3"
+  dependencies:
+    require-from-string: ^2.0.2
+  checksum: 877c5dcfd69a35fd30fee9e49a03faf205a7a4cd04a38af7648974a659cab7b1cd51fa881d7957c07bd1fc5adf22b90a56da3617bb0885ee69d58ff41117658c
+  languageName: node
+  linkType: hard
+
 "big-integer@npm:^1.6.17":
   version: 1.6.51
   resolution: "big-integer@npm:1.6.51"
@@ -7409,6 +7430,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"css-tree@npm:^2.3.1":
+  version: 2.3.1
+  resolution: "css-tree@npm:2.3.1"
+  dependencies:
+    mdn-data: 2.0.30
+    source-map-js: ^1.0.1
+  checksum: 493cc24b5c22b05ee5314b8a0d72d8a5869491c1458017ae5ed75aeb6c3596637dbe1b11dac2548974624adec9f7a1f3a6cf40593dc1f9185eb0e8279543fbc0
+  languageName: node
+  linkType: hard
+
 "css-what@npm:^6.1.0":
   version: 6.1.0
   resolution: "css-what@npm:6.1.0"
@@ -8270,6 +8301,13 @@ __metadata:
   version: 3.0.11
   resolution: "dompurify@npm:3.0.11"
   checksum: aefb86fbaa2cc6acda1a75ea918f69043689cb726f2932e5c1c3c85904255fd145230d66f0a9493ed27d64d035e990f3a767d99d73b1ae7c0b297782be230658
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.0.8":
+  version: 3.1.2
+  resolution: "dompurify@npm:3.1.2"
+  checksum: 450edfacc3918db29afb417a9f9d3fcb00412fe33435eb809b087f746b75c3d50b8e2520fac67efeef249664eba3de8524a0355172ec22eb151157aece3edf31
   languageName: node
   linkType: hard
 
@@ -11397,6 +11435,40 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsdom@npm:^23.2.0":
+  version: 23.2.0
+  resolution: "jsdom@npm:23.2.0"
+  dependencies:
+    "@asamuzakjp/dom-selector": ^2.0.1
+    cssstyle: ^4.0.1
+    data-urls: ^5.0.0
+    decimal.js: ^10.4.3
+    form-data: ^4.0.0
+    html-encoding-sniffer: ^4.0.0
+    http-proxy-agent: ^7.0.0
+    https-proxy-agent: ^7.0.2
+    is-potential-custom-element-name: ^1.0.1
+    parse5: ^7.1.2
+    rrweb-cssom: ^0.6.0
+    saxes: ^6.0.0
+    symbol-tree: ^3.2.4
+    tough-cookie: ^4.1.3
+    w3c-xmlserializer: ^5.0.0
+    webidl-conversions: ^7.0.0
+    whatwg-encoding: ^3.1.1
+    whatwg-mimetype: ^4.0.0
+    whatwg-url: ^14.0.0
+    ws: ^8.16.0
+    xml-name-validator: ^5.0.0
+  peerDependencies:
+    canvas: ^2.11.2
+  peerDependenciesMeta:
+    canvas:
+      optional: true
+  checksum: 3ba97e6ac56c38d92d0ce2d0fac5de4042f7dec40d127872e1aa88dd379980f8ea2108a008319ceac54dc07a784078ed4b4401bf9109a76276ca2cace229c8df
+  languageName: node
+  linkType: hard
+
 "jsdom@npm:^24.0.0":
   version: 24.0.0
   resolution: "jsdom@npm:24.0.0"
@@ -12051,6 +12123,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"marked@npm:^11.1.1":
+  version: 11.2.0
+  resolution: "marked@npm:11.2.0"
+  bin:
+    marked: bin/marked.js
+  checksum: 80757c268420d58d2fb2dadb8e1f9e80b96160dc667de69fe455cf5fd874e5cfec87a171249f49f28729e90de4bafa1f586562ffaad04836fe6e6c355365f60a
+  languageName: node
+  linkType: hard
+
 "mathjax@npm:^3.2.2":
   version: 3.2.2
   resolution: "mathjax@npm:3.2.2"
@@ -12199,6 +12280,13 @@ __metadata:
   version: 2.0.0
   resolution: "mdast-util-to-string@npm:2.0.0"
   checksum: 0b2113ada10e002fbccb014170506dabe2f2ddacaacbe4bc1045c33f986652c5a162732a2c057c5335cdb58419e2ad23e368e5be226855d4d4e280b81c4e9ec2
+  languageName: node
+  linkType: hard
+
+"mdn-data@npm:2.0.30":
+  version: 2.0.30
+  resolution: "mdn-data@npm:2.0.30"
+  checksum: d6ac5ac7439a1607df44b22738ecf83f48e66a0874e4482d6424a61c52da5cde5750f1d1229b6f5fa1b80a492be89465390da685b11f97d62b8adcc6e88189aa
   languageName: node
   linkType: hard
 
@@ -12998,6 +13086,18 @@ __metadata:
   version: 3.0.0
   resolution: "normalize-path@npm:3.0.0"
   checksum: 88eeb4da891e10b1318c4b2476b6e2ecbeb5ff97d946815ffea7794c31a89017c70d7f34b3c2ebf23ef4e9fc9fb99f7dffe36da22011b5b5c6ffa34f4873ec20
+  languageName: node
+  linkType: hard
+
+"notebookjs@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "notebookjs@npm:0.8.2"
+  dependencies:
+    ansi_up: ^6.0.2
+    dompurify: ^3.0.8
+    jsdom: ^23.2.0
+    marked: ^11.1.1
+  checksum: 540ed818cc2ad55efe1281250c9797afd6f44152d9d271a52a7dfb6ead2b5a2ef87de56691126dbcd992dc2c1b3ba4eb3dd49c28f1a85bda1c050e946a0e0985
   languageName: node
   linkType: hard
 
@@ -15379,6 +15479,13 @@ __metadata:
     ip-address: ^9.0.5
     smart-buffer: ^4.2.0
   checksum: a3eedee3054d55edb1395db1fb4689259b76af062aadd4c3e757961c7122f27baedd9a0947d70cfc902cf8d8c378f5874293ea96c6fb805033d7a08da32f012e
+  languageName: node
+  linkType: hard
+
+"source-map-js@npm:^1.0.1":
+  version: 1.2.0
+  resolution: "source-map-js@npm:1.2.0"
+  checksum: 791a43306d9223792e84293b00458bf102a8946e7188f3db0e4e22d8d530b5f80a4ce468eb5ec0bf585443ad55ebbd630bf379c98db0b1f317fd902500217f97
   languageName: node
   linkType: hard
 
