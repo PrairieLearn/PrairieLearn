@@ -17,21 +17,21 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.6",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^20.12.2",
+    "@types/node": "^20.12.11",
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.4.0",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.3"
+    "tsx": "^4.9.4",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.0",
+    "@types/lodash": "^4.17.1",
     "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
-    "pg": "^8.11.4",
-    "pg-cursor": "^2.10.4",
+    "pg": "^8.11.5",
+    "pg-cursor": "^2.10.5",
     "pg-pool": "^3.6.2",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   }
 }
