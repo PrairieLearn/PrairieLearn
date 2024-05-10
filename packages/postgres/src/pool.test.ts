@@ -265,7 +265,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+      const cursor = await queryCursor('NOT VALID SQL', {});
 
       async function readAllRows() {
         const allRows = [];
