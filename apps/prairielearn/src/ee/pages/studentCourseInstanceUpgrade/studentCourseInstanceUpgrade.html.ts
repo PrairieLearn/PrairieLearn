@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { PlanName } from '../../lib/billing/plans-types';
-import { compiledScriptTag } from '../../../lib/assets';
-import { Course, CourseInstance } from '../../../lib/db-types';
-import { formatStripePrice } from '../../lib/billing/stripe';
+import { PlanName } from '../../lib/billing/plans-types.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
+import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { formatStripePrice } from '../../lib/billing/stripe.js';
 
 export function StudentCourseInstanceUpgrade({
   course,
@@ -27,13 +27,13 @@ export function StudentCourseInstanceUpgrade({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", {
           ...resLocals,
         })}
         ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           // This won't actually render anything on the page; it just has to be non-null.
           navPage: 'upgrade',
@@ -108,12 +108,12 @@ export function CourseInstanceStudentUpdateSuccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", {
           ...resLocals,
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           // This won't actually render anything on the page; it just has to be non-null.
           navPage: 'upgrade',

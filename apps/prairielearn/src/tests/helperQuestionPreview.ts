@@ -1,9 +1,9 @@
 import { assert } from 'chai';
-import request = require('request');
-import * as helperQuestion from './helperQuestion';
+import request from 'request';
+import * as helperQuestion from './helperQuestion.js';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface QuestionPreviewPageInfo {
   siteUrl: string;

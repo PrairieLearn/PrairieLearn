@@ -1,10 +1,10 @@
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import express = require('express');
 import * as path from 'node:path';
-import staticNodeModules from '../middlewares/staticNodeModules';
-import elementFiles from '../pages/elementFiles/elementFiles';
-import { config } from '../lib/config';
-import { APP_ROOT_PATH } from '../lib/paths';
+import staticNodeModules from '../middlewares/staticNodeModules.js';
+import elementFiles from '../pages/elementFiles/elementFiles.js';
+import { config } from '../lib/config.js';
+import { APP_ROOT_PATH } from '../lib/paths.js';
 
 /**
  * Applies middleware to the given Express app to serve static assets.

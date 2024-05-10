@@ -1,5 +1,5 @@
 // @ts-check
-const winston = require('winston');
+import winston from 'winston';
 import { format } from 'logform';
 
 const consoleTransport = new winston.transports.Console({

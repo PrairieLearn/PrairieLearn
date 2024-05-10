@@ -1,18 +1,18 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
-import * as fs from 'fs-extra';
-import { config } from '../lib/config';
+import fs from 'fs-extra';
+import { config } from '../lib/config.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as path from 'path';
 import * as freeform from '../question-servers/freeform.js';
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
 import { promisify } from 'util';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import * as helperServer from './helperServer.js';
+import * as helperClient from './helperClient.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Course element extensions', function () {
   this.timeout(60000);

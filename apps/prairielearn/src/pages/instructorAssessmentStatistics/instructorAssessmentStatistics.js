@@ -1,15 +1,15 @@
 // @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { stringify } from '@prairielearn/csv';
 
 import * as error from '@prairielearn/error';
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import * as sqldb from '@prairielearn/postgres';
-import { updateAssessmentStatistics } from '../../lib/assessment';
+import { updateAssessmentStatistics } from '../../lib/assessment.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const setFilenames = function (locals) {
   const prefix = assessmentFilenamePrefix(
@@ -57,7 +57,7 @@ router.get(
     });
     res.locals.user_scores = userScoresResult.rows;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

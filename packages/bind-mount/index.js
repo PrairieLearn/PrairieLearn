@@ -1,4 +1,5 @@
 try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const addon = require('bindings')('addon');
 
   module.exports.mount = (source, target) => {

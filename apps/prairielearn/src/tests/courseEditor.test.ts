@@ -1,23 +1,23 @@
-import ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import { assert } from 'chai';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import * as async from 'async';
 import * as cheerio from 'cheerio';
 import { exec } from 'child_process';
 import fetch from 'node-fetch';
-import klaw = require('klaw');
+import klaw from 'klaw';
 import * as tmp from 'tmp';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 
-const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
+const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 // Set up temporary writeable directories for course content
 const baseDir = tmp.dirSync().name;

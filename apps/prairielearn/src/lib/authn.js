@@ -3,14 +3,14 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { config } from './config';
-import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
-import { InstitutionSchema, UserSchema } from './db-types';
-import { HttpRedirect } from './redirect';
-import { isEnterprise } from './license';
-import { redirectToTermsPageIfNeeded } from '../ee/lib/terms';
+import { config } from './config.js';
+import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie.js';
+import { InstitutionSchema, UserSchema } from './db-types.js';
+import { HttpRedirect } from './redirect.js';
+import { isEnterprise } from './license.js';
+import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * @typedef {Object} LoadUserOptions

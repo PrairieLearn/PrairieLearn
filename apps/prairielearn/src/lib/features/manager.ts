@@ -2,9 +2,9 @@ import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { config } from '../config';
+import { config } from '../config.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const IsFeatureEnabledSchema = z.object({
   has_feature_grant: z.boolean(),

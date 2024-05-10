@@ -1,7 +1,7 @@
 // @ts-check
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import * as async from 'async';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import Ajv from 'ajv';
 import {
@@ -12,8 +12,8 @@ import {
 import * as Sentry from '@prairielearn/sentry';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import globalLogger from './logger';
-import { config } from './config';
+import globalLogger from './logger.js';
+import { config } from './config.js';
 
 let messageSchema = null;
 
@@ -110,12 +110,13 @@ export default function (sqs, queueUrl, receiveCallback, doneCallback) {
       },
       (callback) => {
         if (!messageSchema) {
-          fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
+          fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'), (err, data) => {
             if (ERR(err, (err) => globalLogger.error(err))) {
               globalLogger.error('Failed to read message schema; exiting process.');
               process.exit(1);
             }
-            const ajv = new Ajv();
+            // https://github.com/ajv-validator/ajv/issues/2132
+            const ajv = new Ajv.default();
             messageSchema = ajv.compile(data);
             return callback(null);
           });

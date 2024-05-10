@@ -1,17 +1,16 @@
 import { z } from 'zod';
 
 import {
+  testElementClientFiles,
   testQuestionPreviews,
   testFileDownloads,
-  testElementClientFiles,
-} from './helperQuestionPreview';
-import { config } from '../lib/config';
-import { features } from '../lib/features/index';
+} from './helperQuestionPreview.js';
+import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import * as helperServer from './helperServer.js';
+import * as syncUtil from './sync/util.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer';
-import * as syncUtil from './sync/util';
-
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

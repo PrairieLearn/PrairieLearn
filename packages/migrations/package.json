@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "2.1.0",
+  "version": "3.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -10,7 +11,7 @@
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
-    "test": "mocha --no-config --require tsx src/**/*.test.ts"
+    "test": "mocha src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
@@ -21,7 +22,7 @@
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.7.2",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.3",
     "typescript-cp": "^0.1.9"
   },

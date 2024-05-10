@@ -1,6 +1,6 @@
 import { OIDCStrategy } from 'passport-azure-ad';
 
-import { config } from '../../../lib/config';
+import { config } from '../../../lib/config.js';
 
 export function getAzureStrategy() {
   return new OIDCStrategy(

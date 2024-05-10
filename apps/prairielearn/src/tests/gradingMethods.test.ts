@@ -1,14 +1,14 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import fetch from 'node-fetch';
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 import * as sqldb from '@prairielearn/postgres';
 import { io } from 'socket.io-client';
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

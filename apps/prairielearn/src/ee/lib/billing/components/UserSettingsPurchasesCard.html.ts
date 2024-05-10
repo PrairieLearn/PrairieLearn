@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { type Purchase } from '../purchases';
-import { formatStripePrice } from '../stripe';
-import { StripeCheckoutSession } from '../../../../lib/db-types';
+import { type Purchase } from '../purchases.js';
+import { formatStripePrice } from '../stripe.js';
+import { StripeCheckoutSession } from '../../../../lib/db-types.js';
 
 export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[] }) {
   return html`
