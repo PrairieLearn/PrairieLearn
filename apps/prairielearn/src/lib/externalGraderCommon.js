@@ -1,6 +1,6 @@
 // @ts-check
 import _ from 'lodash';
-import * as fsExtra from 'fs-extra';
+import fsExtra from 'fs-extra';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
