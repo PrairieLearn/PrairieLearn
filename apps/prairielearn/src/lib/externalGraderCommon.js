@@ -1,6 +1,6 @@
 // @ts-check
 import _ from 'lodash';
-import * as fsExtra from 'fs-extra';
+import fs from 'fs-extra';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
@@ -40,18 +40,18 @@ export async function buildDirectory(dir, submission, variant, question, course)
     for (const file of question.external_grading_files ?? []) {
       const src = path.join(coursePath, 'serverFilesCourse', file);
       const dest = path.join(dir, 'serverFilesCourse', file);
-      await fsExtra.copy(src, dest);
+      await fs.copy(src, dest);
     }
 
     // This is temporary while /grade/shared is deprecated but still supported
     // TODO remove this when we remove support for /grade/shared
     const src = path.join(dir, 'serverFilesCourse');
     const dest = path.join(dir, 'shared');
-    await fsExtra.copy(src, dest);
+    await fs.copy(src, dest);
 
     if (question.directory != null) {
       const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
-      await fsExtra.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
+      await fs.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
         // Tests might not be specified, only copy them if they exist
         if (err.code !== 'ENOENT') throw err;
       });
