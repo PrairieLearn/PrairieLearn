@@ -1,5 +1,5 @@
 // @ts-check
-const chalkLib = require('chalk');
+import chalkLib from 'chalk';
 export const chalk = new chalkLib.Instance({ level: 3 });
 
 /**

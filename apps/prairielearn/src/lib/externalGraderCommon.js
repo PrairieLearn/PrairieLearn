@@ -1,12 +1,12 @@
 // @ts-check
-import * as _ from 'lodash';
-import * as fsExtra from 'fs-extra';
+import _ from 'lodash';
+import fs from 'fs-extra';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
-import { getRuntimeDirectoryForCourse } from './chunks';
+import { getRuntimeDirectoryForCourse } from './chunks.js';
 
 /**
  * Returns the directory where job files should be written to while running
@@ -20,10 +20,10 @@ export function getJobDirectory(jobId) {
  * Constructs a directory of files to be used for grading.
  *
  * @param {string} dir
- * @param {import('./db-types').Submission} submission
- * @param {import('./db-types').Variant} variant
- * @param {import('./db-types').Question} question
- * @param {import('./db-types').Course} course
+ * @param {import('./db-types.js').Submission} submission
+ * @param {import('./db-types.js').Variant} variant
+ * @param {import('./db-types.js').Question} question
+ * @param {import('./db-types.js').Course} course
  */
 export async function buildDirectory(dir, submission, variant, question, course) {
   const coursePath = getRuntimeDirectoryForCourse(course);
@@ -40,18 +40,18 @@ export async function buildDirectory(dir, submission, variant, question, course)
     for (const file of question.external_grading_files ?? []) {
       const src = path.join(coursePath, 'serverFilesCourse', file);
       const dest = path.join(dir, 'serverFilesCourse', file);
-      await fsExtra.copy(src, dest);
+      await fs.copy(src, dest);
     }
 
     // This is temporary while /grade/shared is deprecated but still supported
     // TODO remove this when we remove support for /grade/shared
     const src = path.join(dir, 'serverFilesCourse');
     const dest = path.join(dir, 'shared');
-    await fsExtra.copy(src, dest);
+    await fs.copy(src, dest);
 
     if (question.directory != null) {
       const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
-      await fsExtra.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
+      await fs.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
         // Tests might not be specified, only copy them if they exist
         if (err.code !== 'ENOENT') throw err;
       });

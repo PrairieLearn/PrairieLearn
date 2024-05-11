@@ -2,7 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { nodeModulesAssetPath } from '../../lib/assets';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.array(z.record(z.any())),
@@ -152,7 +152,7 @@ export function AdministratorQuery({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
@@ -166,7 +166,7 @@ export function AdministratorQuery({
           )}"></script>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'queries',

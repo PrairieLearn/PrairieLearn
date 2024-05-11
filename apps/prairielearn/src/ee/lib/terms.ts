@@ -1,10 +1,10 @@
 import { type Response } from 'express';
 import { callRow } from '@prairielearn/postgres';
 
-import { ModeSchema, type User } from '../../lib/db-types';
-import { HttpRedirect } from '../../lib/redirect';
-import { setCookie } from '../../lib/cookie';
-import { features } from '../../lib/features';
+import { ModeSchema, type User } from '../../lib/db-types.js';
+import { HttpRedirect } from '../../lib/redirect.js';
+import { setCookie } from '../../lib/cookie.js';
+import { features } from '../../lib/features/index.js';
 
 function hasUserAcceptedTerms(user: User): boolean {
   // At the moment, we only have one revision of our terms and conditions, so

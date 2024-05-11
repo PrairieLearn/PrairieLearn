@@ -27,7 +27,7 @@ export function Enroll({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
@@ -39,7 +39,7 @@ export function Enroll({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}
@@ -245,14 +245,14 @@ export function EnrollLtiMessage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}
@@ -293,14 +293,14 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}

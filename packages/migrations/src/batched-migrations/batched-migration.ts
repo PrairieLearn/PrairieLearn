@@ -7,7 +7,7 @@ import {
 } from '@prairielearn/postgres';
 import { z } from 'zod';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.filename);
 
 export const BatchedMigrationStatusSchema = z.enum([
   'pending',

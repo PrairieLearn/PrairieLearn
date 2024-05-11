@@ -5,26 +5,26 @@ import * as opentelemetry from '@prairielearn/opentelemetry';
 import debugfn from 'debug';
 import { cache } from '@prairielearn/cache';
 
-import * as assets from '../lib/assets';
-import { config } from '../lib/config';
-import * as load from '../lib/load';
-import * as cron from '../cron';
-import * as socketServer from '../lib/socket-server';
-import * as serverJobs from '../lib/server-jobs';
-import * as freeformServer from '../question-servers/freeform';
-import * as localCache from '../lib/local-cache';
-import * as codeCaller from '../lib/code-caller';
-import * as externalGrader from '../lib/externalGrader';
-import * as externalGradingSocket from '../lib/externalGradingSocket';
-import { TEST_COURSE_PATH } from '../lib/paths';
+import * as assets from '../lib/assets.js';
+import { config } from '../lib/config.js';
+import * as load from '../lib/load.js';
+import * as cron from '../cron/index.js';
+import * as socketServer from '../lib/socket-server.js';
+import * as serverJobs from '../lib/server-jobs.js';
+import * as freeformServer from '../question-servers/freeform.js';
+import * as localCache from '../lib/local-cache.js';
+import * as codeCaller from '../lib/code-caller/index.js';
+import * as externalGrader from '../lib/externalGrader.js';
+import * as externalGradingSocket from '../lib/externalGradingSocket.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-import * as server from '../server';
+import * as server from '../server.js';
 
-import * as helperDb from './helperDb';
-import * as helperCourse from './helperCourse';
+import * as helperDb from './helperDb.js';
+import * as helperCourse from './helperCourse.js';
 
 const debug = debugfn('prairielearn:helperServer');
 
@@ -48,7 +48,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       config.filesRoot = tmpDir.path;
 
       debug('before(): initializing cron');
-      cron.init();
+      await cron.init();
 
       debug('before(): inserting dev user');
       await server.insertDevUser();

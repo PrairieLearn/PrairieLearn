@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import { DateFromISOString, IdSchema } from '../lib/db-types';
-import { createCourseRepoJob } from '../lib/github';
-import { sendCourseRequestMessage } from '../lib/opsbot';
+import { DateFromISOString, IdSchema } from '../lib/db-types.js';
+import { createCourseRepoJob } from '../lib/github.js';
+import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const JobsRowSchema = z.object({
   authn_user_id: IdSchema.nullable(),

@@ -1,5 +1,5 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -8,11 +8,11 @@ import { z } from 'zod';
 import {
   uploadInstanceQuestionScores,
   uploadAssessmentInstanceScores,
-} from '../../lib/score-upload';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
+} from '../../lib/score-upload.js';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -28,7 +28,7 @@ router.get(
         user_uid: UserSchema.shape.uid,
       }),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -1,8 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { Modal } from '../../components/Modal.html.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -21,7 +21,7 @@ export function InstructorAssessmentSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
         <script>
           $(() => {
@@ -60,10 +60,10 @@ export function InstructorAssessmentSettings({
             });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -120,7 +120,7 @@ export function InstructorAssessmentSettings({
                             data-placement="auto"
                             title="Change AID"
                             data-content="${renderEjs(
-                              __filename,
+                              import.meta.url,
                               "<%= include('../partials/changeIdForm'), %>",
                               {
                                 id_label: 'AID',

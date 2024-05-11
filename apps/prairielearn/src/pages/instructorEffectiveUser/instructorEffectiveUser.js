@@ -1,6 +1,6 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as _ from 'lodash';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import * as express from 'express';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
@@ -9,15 +9,15 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { clearCookie, setCookie } from '../../lib/cookie';
+import { clearCookie, setCookie } from '../../lib/cookie.js';
 import {
   CoursePermissionSchema,
   CourseInstancePermissionSchema,
   UserSchema,
-} from '../../lib/db-types';
+} from '../../lib/db-types.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorEffectiveUser');
 
 router.get(
@@ -87,7 +87,7 @@ router.get(
       },
     );
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

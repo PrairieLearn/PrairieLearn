@@ -3,11 +3,11 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { gradeAssessmentInstance } from '../lib/assessment';
-import { config } from '../lib/config';
-import { AssessmentInstanceSchema } from '../lib/db-types';
+import { gradeAssessmentInstance } from '../lib/assessment.js';
+import { config } from '../lib/config.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * This cron job runs periodically to check for any exams that need to be
