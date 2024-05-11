@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
