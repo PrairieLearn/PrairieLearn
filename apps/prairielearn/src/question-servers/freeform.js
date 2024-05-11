@@ -1345,7 +1345,7 @@ export async function render(
       };
 
       for (let type in question.dependencies) {
-        if (!_.has(dependencies, type)) continue;
+        if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
           if (!_.includes(dependencies[type], dep)) {
@@ -1412,7 +1412,7 @@ export async function render(
         }
 
         for (const type in elementDependencies) {
-          if (!_.has(dependencies, type)) continue;
+          if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
             if (!_.includes(dependencies[type], dep)) {
@@ -1471,7 +1471,7 @@ export async function render(
             }
 
             for (const type in extension) {
-              if (!_.has(dependencies, type)) continue;
+              if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
                 if (!_.includes(dependencies[type], dep)) {

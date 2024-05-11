@@ -1,4 +1,4 @@
-import chai from 'chai';
+import chai, { assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -18,7 +18,6 @@ import {
 import { makePostgresTestUtils } from './test-utils.js';
 
 chai.use(chaiAsPromised);
-const { assert } = chai;
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',
@@ -278,11 +277,11 @@ describe('@prairielearn/postgres', function () {
       const maybeError = await readAllRows().catch((err) => err);
       assert.instanceOf(maybeError, Error);
       assert.match(maybeError.message, /syntax error/);
-      assert.isDefined(maybeError.data);
-      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
-      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
-      assert.isDefined(maybeError.data.sqlError);
-      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+      assert.isDefined((maybeError as any).data);
+      assert.equal((maybeError as any).data.sql, 'NOT VALID SQL');
+      assert.deepEqual((maybeError as any).data.sqlParams, { foo: 'bar' });
+      assert.isDefined((maybeError as any).data.sqlError);
+      assert.equal((maybeError as any).data.sqlError.severity, 'ERROR');
     });
   });
 

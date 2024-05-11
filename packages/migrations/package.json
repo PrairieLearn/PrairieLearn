@@ -17,13 +17,13 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.2",
+    "@types/node": "^20.12.11",
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.3",
+    "tsx": "^4.9.4",
+    "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {
@@ -33,6 +33,6 @@
     "@prairielearn/postgres": "workspace:^",
     "fs-extra": "^11.2.0",
     "serialize-error": "^8.1.0",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   }
 }

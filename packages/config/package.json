@@ -9,23 +9,23 @@
     "test": "mocha src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.565.0",
-    "@aws-sdk/client-secrets-manager": "^3.565.0",
+    "@aws-sdk/client-ec2": "^3.574.0",
+    "@aws-sdk/client-secrets-manager": "^3.574.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.2.0",
     "lodash": "^4.17.21",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.0",
+    "@types/lodash": "^4.17.1",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.2",
+    "@types/node": "^20.12.11",
     "chai": "^4.4.1",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.3"
+    "tsx": "^4.9.4",
+    "typescript": "^5.4.5"
   }
 }

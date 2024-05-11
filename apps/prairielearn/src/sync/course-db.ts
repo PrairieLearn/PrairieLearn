@@ -3,7 +3,7 @@ import _ from 'lodash';
 import fs from 'fs-extra';
 import * as async from 'async';
 import jju from 'jju';
-import Ajv, { type JSONSchemaType } from 'ajv';
+import { Ajv, type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 
@@ -19,8 +19,7 @@ import { features } from '../lib/features/index.js';
 const perf = makePerformance('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-// https://github.com/ajv-validator/ajv/issues/2132
-const ajv = new Ajv.default({ allErrors: true });
+const ajv = new Ajv({ allErrors: true });
 
 const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
