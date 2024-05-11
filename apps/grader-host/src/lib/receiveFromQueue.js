@@ -3,7 +3,7 @@ import ERR from 'async-stacktrace';
 import * as async from 'async';
 import fs from 'fs-extra';
 import * as path from 'path';
-import Ajv from 'ajv';
+import { Ajv } from 'ajv';
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
@@ -115,8 +115,7 @@ export default function (sqs, queueUrl, receiveCallback, doneCallback) {
               globalLogger.error('Failed to read message schema; exiting process.');
               process.exit(1);
             }
-            // https://github.com/ajv-validator/ajv/issues/2132
-            const ajv = new Ajv.default();
+            const ajv = new Ajv();
             messageSchema = ajv.compile(data);
             return callback(null);
           });
