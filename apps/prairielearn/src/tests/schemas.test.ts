@@ -43,8 +43,7 @@ for (const schemaName of Object.keys(schemas)) {
     });
 
     it('validates', () => {
-      // https://github.com/ajv-validator/ajv/issues/2132
-      const ajv = new Ajv.default();
+      const ajv = new Ajv();
       const valid = ajv.validateSchema(schema);
       if (ajv.errors) {
         console.error(ajv.errors);
