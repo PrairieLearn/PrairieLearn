@@ -57,7 +57,6 @@ router.get(
       sql.questions,
       {
         assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
       },
       AssessmentQuestionStatsRowSchema,
     );

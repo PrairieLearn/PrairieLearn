@@ -113,6 +113,7 @@ function paramsToArray(
   if (errorOnUnusedParameters) {
     const difference = _.difference(Object.keys(params), Object.keys(map));
     if (difference.length) {
+      console.warn(new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`));
       throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
     }
   }

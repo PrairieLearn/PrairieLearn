@@ -411,7 +411,6 @@ async function updateAssessmentInstanceFromJson(
       {
         assessment_id,
         uid: json.uid,
-        group_name: json.group_name,
         instance_number: json.instance,
       },
       IdSchema,
