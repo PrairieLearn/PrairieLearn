@@ -295,16 +295,18 @@ export async function updateAssessmentQuestionRubric(
           rubric_id: new_rubric_id,
         })),
         async (item) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { id, order, ...itemData } = item;
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           const updated =
             item.id == null
               ? null
-              : await sqldb.queryOptionalRow(sql.update_rubric_item, { ...itemData, id }, IdSchema);
+              : await sqldb.queryOptionalRow(
+                  sql.update_rubric_item,
+                  _.omit(item, ['order']),
+                  IdSchema,
+                );
           if (updated == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, itemData);
+            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
           }
         },
       );
