@@ -5,9 +5,7 @@
 import * as opentelemetry from '@prairielearn/opentelemetry';
 
 import * as Sentry from '@prairielearn/sentry';
-// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
-import '@sentry/tracing';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 import asyncHandler from 'express-async-handler';
 import * as fs from 'node:fs';
@@ -2257,7 +2255,7 @@ if (esMain(import.meta) && config.startServer) {
         if (config.sentryDsn) {
           const integrations = [];
           if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
-            integrations.push(new ProfilingIntegration());
+            integrations.push(nodeProfilingIntegration());
           }
 
           await Sentry.init({
