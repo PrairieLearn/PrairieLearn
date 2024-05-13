@@ -4,7 +4,7 @@ import type { NextFunction, Request, Response } from 'express';
 export function enrichSentryEventMiddleware(req: Request, res: Response, next: NextFunction) {
   // This will ensure that this middleware is always run in an isolated
   // context so that we don't accidentally leak data between requests.
-  Sentry.runWithAsyncContext(() => {
+  Sentry.withScope(() => {
     const scope = Sentry.getCurrentScope();
 
     // This event processor will run whenever an event is captured by Sentry.

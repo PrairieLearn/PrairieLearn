@@ -2,10 +2,10 @@
 
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
+import './lib/instrument.js';
 import * as opentelemetry from '@prairielearn/opentelemetry';
 
 import * as Sentry from '@prairielearn/sentry';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 import asyncHandler from 'express-async-handler';
 import * as fs from 'node:fs';
@@ -38,7 +38,7 @@ import _ from 'lodash';
 import esMain from 'es-main';
 
 import { logger, addFileLogging } from '@prairielearn/logger';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { config, setLocalsFromConfig } from './lib/config.js';
 import * as load from './lib/load.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
@@ -61,7 +61,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import * as nodeMetrics from './lib/node-metrics.js';
 import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { APP_ROOT_PATH } from './lib/paths.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { flashMiddleware, flash } from '@prairielearn/flash';
 import { features } from './lib/features/index.js';
@@ -76,20 +76,6 @@ import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.j
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
-
-if ('h' in argv || 'help' in argv) {
-  var msg = `PrairieLearn command line options:
-    -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
-    --migrate-and-exit                  Run the DB initialization parts and exit
-    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
-    --sync-course <course_id>           Synchronize a course and exit
-`;
-
-  console.log(msg);
-  process.exit(0);
-}
 
 /**
  * @template T
@@ -113,14 +99,8 @@ export async function initExpress() {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // These should come first so that we get instrumentation on all our requests.
+  // This should come first so that we get instrumentation on all our requests.
   if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-
-    if (config.sentryTracesSampleRate) {
-      app.use(Sentry.Handlers.tracingHandler());
-    }
-
     app.use((await import('./lib/sentry.js')).enrichSentryEventMiddleware);
   }
 
@@ -2102,7 +2082,7 @@ export async function initExpress() {
   });
 
   // The Sentry error handler must come before our own.
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(Sentry.expressErrorHandler());
 
   app.use((await import('./pages/error/error.js')).default);
 
@@ -2225,64 +2205,12 @@ if (esMain(import.meta) && config.startServer) {
       async () => {
         logger.verbose('PrairieLearn server start');
 
-        // For backwards compatibility, we'll default to trying to load config
-        // files from both the application and repository root.
-        //
-        // We'll put the app config file second so that it can override anything
-        // in the repository root config file.
-        let configPaths = [
-          path.join(REPOSITORY_ROOT_PATH, 'config.json'),
-          path.join(APP_ROOT_PATH, 'config.json'),
-        ];
-
-        // If a config file was specified on the command line, we'll use that
-        // instead of the default locations.
-        if ('config' in argv) {
-          configPaths = [argv['config']];
-        }
-
-        // Load config immediately so we can use it configure everything else.
-        await loadConfig(configPaths);
-
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
         await opentelemetry.init({
           ...config,
           serviceName: 'prairielearn',
         });
-
-        // Same with Sentry configuration.
-        if (config.sentryDsn) {
-          const integrations = [];
-          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
-            integrations.push(nodeProfilingIntegration());
-          }
-
-          await Sentry.init({
-            dsn: config.sentryDsn,
-            environment: config.sentryEnvironment,
-            integrations,
-            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
-            // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
-            beforeSend: (event) => {
-              // This will be necessary until we can consume the following change:
-              // https://github.com/chimurai/http-proxy-middleware/pull/823
-              //
-              // The following error message should match the error that's thrown
-              // from the `router` function in our `http-proxy-middleware` config.
-              if (
-                event.exception?.values?.some(
-                  (value) => value.type === 'Error' && value.value === 'Workspace is not running',
-                )
-              ) {
-                return null;
-              }
-
-              return event;
-            },
-          });
-        }
 
         if (config.logFilename) {
           addFileLogging({ filename: config.logFilename });
