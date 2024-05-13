@@ -8,7 +8,7 @@ import * as tmp from 'tmp-promise';
 import { Mutex } from 'async-mutex';
 import * as os from 'node:os';
 import fs from 'fs-extra';
-import execa from 'execa';
+import { execa } from 'execa';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import * as bindMount from '@prairielearn/bind-mount';
 import { instrumented } from '@prairielearn/opentelemetry';

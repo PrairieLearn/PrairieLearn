@@ -33,7 +33,7 @@ async function getToken(): Promise<string> {
     headers: {
       'X-aws-ec2-metadata-token-ttl-seconds': TOKEN_TTL.toString(),
     },
-    timeout: 5_000,
+    signal: AbortSignal.timeout(5_000),
   });
   if (!tokenRes.ok) {
     throw new Error(`Failed to get IMDS token: ${tokenRes.status} ${tokenRes.statusText}`);
@@ -50,7 +50,7 @@ export async function fetchImdsText(path: string): Promise<string> {
     headers: {
       'X-aws-ec2-metadata-token': token,
     },
-    timeout: 5_000,
+    signal: AbortSignal.timeout(5_000),
   });
 
   if (!res.ok) {

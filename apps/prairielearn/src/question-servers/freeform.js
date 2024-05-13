@@ -574,6 +574,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
+        nodeName: '#document-fragment',
         childNodes: [node],
       });
       let ret_val, consoleLog;

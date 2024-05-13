@@ -1,6 +1,5 @@
 import { assert } from 'chai';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
+import fetch, { FormData } from 'node-fetch';
 import * as cheerio from 'cheerio';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -65,10 +64,7 @@ export function attachFile(locals, textFile) {
         formData.append('filename', 'testfile.txt');
         formData.append('contents', 'This is the test text');
       } else {
-        formData.append('file', 'This is the test text', {
-          filename: 'testfile.txt',
-          contentType: 'text/plain',
-        });
+        formData.append('file', new Blob(['This is the test text']), 'testfile.txt');
       }
 
       const res = await fetch(locals.attachFilesUrl, { method: 'POST', body: formData });
