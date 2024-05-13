@@ -11,10 +11,10 @@
     "test": "mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.565.0",
-    "@aws-sdk/client-s3": "^3.565.0",
-    "@aws-sdk/credential-providers": "^3.565.0",
-    "@aws-sdk/lib-storage": "^3.565.0",
+    "@aws-sdk/client-ecr": "^3.574.0",
+    "@aws-sdk/client-s3": "^3.574.0",
+    "@aws-sdk/credential-providers": "^3.574.0",
+    "@aws-sdk/lib-storage": "^3.574.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -34,20 +34,20 @@
     "dockerode": "^4.0.2",
     "express": "^4.19.2",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.3.2",
+    "ioredis": "^5.4.1",
     "lodash": "^4.17.21",
     "node-fetch": "2.7.0",
     "uuid": "^9.0.1",
     "yargs-parser": "^21.1.1",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.12.2",
+    "@types/node": "^20.12.11",
     "chai": "^4.4.1",
     "mocha": "^10.4.0",
     "nodemon": "^3.1.0",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.3",
+    "tsx": "^4.9.4",
+    "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
   }
 }

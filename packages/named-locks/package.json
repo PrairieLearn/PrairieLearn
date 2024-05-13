@@ -14,11 +14,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.12.2",
-    "typescript": "^5.4.3"
+    "@types/node": "^20.12.11",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "pg": "^8.11.4"
+    "pg": "^8.11.5"
   }
 }
