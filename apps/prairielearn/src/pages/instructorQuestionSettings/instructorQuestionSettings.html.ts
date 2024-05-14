@@ -98,7 +98,7 @@ export function InstructorQuestionSettings({
                 <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
-                  <input  
+                  <input
                     type="text"
                     class="form-control"
                     id="title"
