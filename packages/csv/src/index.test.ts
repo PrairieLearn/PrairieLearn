@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { assert } from 'chai';
 
-import { stringifyStream } from './index';
+import { stringifyStream } from './index.js';
 
 function streamToString(stream: NodeJS.ReadableStream): Promise<string> {
   const chunks: Buffer[] = [];

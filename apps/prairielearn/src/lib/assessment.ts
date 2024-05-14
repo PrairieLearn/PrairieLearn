@@ -1,14 +1,13 @@
 import * as async from 'async';
 import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { gradeVariant } from './grading';
+import { gradeVariant } from './grading.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as ltiOutcomes from './ltiOutcomes';
-import { createServerJob } from './server-jobs';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 import {
   CourseSchema,
   IdSchema,
@@ -16,10 +15,10 @@ import {
   VariantSchema,
   ClientFingerprintSchema,
   AssessmentInstanceSchema,
-} from './db-types';
+} from './db-types.js';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:assessment');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export const InstanceLogSchema = z.object({
   event_name: z.string(),

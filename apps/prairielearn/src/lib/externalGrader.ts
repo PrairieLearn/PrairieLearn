@@ -3,15 +3,15 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as error from '@prairielearn/error';
-import assert = require('node:assert');
-import _ = require('lodash');
+import assert from 'node:assert';
+import _ from 'lodash';
 import type { EventEmitter } from 'node:events';
 
-import * as ltiOutcomes from './ltiOutcomes';
-import { config } from './config';
-import * as externalGradingSocket from './externalGradingSocket';
-import { ExternalGraderSqs } from './externalGraderSqs';
-import { ExternalGraderLocal } from './externalGraderLocal';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { config } from './config.js';
+import * as externalGradingSocket from './externalGradingSocket.js';
+import { ExternalGraderSqs } from './externalGraderSqs.js';
+import { ExternalGraderLocal } from './externalGraderLocal.js';
 import {
   IdSchema,
   CourseSchema,
@@ -24,9 +24,9 @@ import {
   type Variant,
   type Question,
   type Course,
-} from './db-types';
+} from './db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const GradingJobInfoSchema = z.object({
   grading_job: GradingJobSchema,
@@ -174,7 +174,7 @@ export async function processGradingResult(content: any): Promise<void> {
       throw new error.AugmentedError('invalid grading', { data: { content } });
     }
 
-    if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
+    if (_.has(content.grading, 'feedback') && !_.isObject(content.grading.feedback)) {
       throw new error.AugmentedError('invalid grading.feedback', { data: { content } });
     }
 
@@ -209,7 +209,7 @@ export async function processGradingResult(content: any): Promise<void> {
         content.grading.score = 0;
         gradable = false;
       }
-      if (!_(content.grading.score).isFinite()) {
+      if (!_.isFinite(content.grading.score)) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score is not a number.',

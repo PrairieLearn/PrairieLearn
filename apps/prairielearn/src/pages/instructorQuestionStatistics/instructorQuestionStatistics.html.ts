@@ -2,7 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
   AssessmentSchema,
@@ -11,9 +11,9 @@ import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
-} from '../../lib/db-types';
-import { formatFloat } from '../../lib/format';
-import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
+} from '../../lib/db-types.js';
+import { formatFloat } from '../../lib/format.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -42,7 +42,7 @@ export function InstructorQuestionStatistics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageNote: resLocals.question.qid,
         })}
@@ -59,10 +59,10 @@ export function InstructorQuestionStatistics({
             });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/questionSyncErrorsAndWarnings'); %>",
             resLocals,
           )}

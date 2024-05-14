@@ -2,12 +2,12 @@ import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 
-import * as helperServer from './helperServer';
-import { deleteAllGroups } from '../lib/groups';
-import * as groupUpdate from '../lib/group-update';
-import { TEST_COURSE_PATH } from '../lib/paths';
+import * as helperServer from './helperServer.js';
+import { deleteAllGroups } from '../lib/groups.js';
+import * as groupUpdate from '../lib/group-update.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
 describe('test auto group and delete groups', function () {
@@ -39,7 +39,7 @@ describe('test auto group and delete groups', function () {
       max_group_size,
       min_group_size,
     );
-    await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
+    await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
   step('check groups and users', async () => {

@@ -1,21 +1,22 @@
-import asyncHandler = require('express-async-handler');
+// @ts-check
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 
 import * as error from '@prairielearn/error';
-import { regradeAssessmentInstance } from '../../lib/regrading';
+import { regradeAssessmentInstance } from '../../lib/regrading.js';
 import {
   checkBelongs,
   gradeAssessmentInstance,
   gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
-} from '../../lib/assessment';
+} from '../../lib/assessment.js';
 import * as sqldb from '@prairielearn/postgres';
-import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html';
-import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types';
+import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
+import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/raw_data.json',

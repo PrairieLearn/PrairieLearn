@@ -1,9 +1,9 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
-import * as serverJobs from '../../lib/server-jobs-legacy';
-import * as syncHelpers from '../shared/syncHelpers';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import * as syncHelpers from '../shared/syncHelpers.js';
 import { logger } from '@prairielearn/logger';
 
 const router = Router();
@@ -17,10 +17,7 @@ router.get(
 
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;
-    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
-      job_sequence_id,
-      course_id,
-    );
+    const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
 
     if (job_sequence.status === 'Running') {
       // All edits wait for the corresponding job sequence to finish before
@@ -47,7 +44,7 @@ router.get(
     }
 
     res.locals.job_sequence = job_sequence;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -251,23 +251,23 @@ def parse(element_html, data):
         try:
             student_answer = int(submitted_answers.get(expected_html_name, None))
         except (ValueError, TypeError):
-            data["format_errors"][
-                expected_html_name
-            ] = "The submitted answer is not a legal option."
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer is not a legal option."
+            )
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
         if student_answer == -1:
-            data["format_errors"][
-                expected_html_name
-            ] = "The submitted answer was left blank."
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer was left blank."
+            )
         elif student_answer is None:
             data["format_errors"][expected_html_name] = "No answer was submitted."
         else:
             if not legal_answer(student_answer, display_options):
-                data["format_errors"][
-                    expected_html_name
-                ] = "The submitted answer is invalid."
+                data["format_errors"][expected_html_name] = (
+                    "The submitted answer is invalid."
+                )
 
 
 def render(element_html, data):

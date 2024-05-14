@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types';
+import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
   course_instance: CourseInstanceSchema,
@@ -25,14 +25,14 @@ export function AdministratorInstitutionCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'Courses',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',

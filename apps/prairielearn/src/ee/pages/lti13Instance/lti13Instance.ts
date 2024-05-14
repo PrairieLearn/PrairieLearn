@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import * as jose from 'node-jose';
-import { getCanonicalHost } from '../../../lib/url';
+import asyncHandler from 'express-async-handler';
+import jose from 'node-jose';
+import { getCanonicalHost } from '../../../lib/url.js';
 import { URL } from 'url';
-import { selectLti13Instance } from '../../models/lti13Instance';
-import { cloneDeep } from 'lodash';
+import { selectLti13Instance } from '../../models/lti13Instance.js';
+import _ from 'lodash';
 
 const router = Router({ mergeParams: true });
 
@@ -67,7 +67,7 @@ router.get(
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lmsConfig = cloneDeep(ltiConfig);
+    const lmsConfig = _.cloneDeep(ltiConfig);
     const host = getCanonicalHost(req);
     const url = new URL(host);
 

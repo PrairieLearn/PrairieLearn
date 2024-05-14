@@ -1,9 +1,9 @@
 // @ts-check
 import { Router } from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import { config } from '../../lib/config';
-import * as authnLib from '../../lib/authn';
+import { config } from '../../lib/config.js';
+import * as authnLib from '../../lib/authn.js';
 
 const router = Router();
 

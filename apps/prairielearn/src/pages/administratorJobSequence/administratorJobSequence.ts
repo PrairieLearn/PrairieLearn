@@ -1,18 +1,15 @@
-import express = require('express');
-import asyncHandler = require('express-async-handler');
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 
-import * as serverJobs from '../../lib/server-jobs-legacy';
-import { AdministratorJobSequence } from './administratorJobSequence.html';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import { AdministratorJobSequence } from './administratorJobSequence.html.js';
 
 const router = express.Router();
 
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
-    const job_sequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
-      req.params.job_sequence_id,
-      null,
-    );
+    const job_sequence = await getJobSequenceWithFormattedOutput(req.params.job_sequence_id, null);
 
     res.send(
       AdministratorJobSequence({

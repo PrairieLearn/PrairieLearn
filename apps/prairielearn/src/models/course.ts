@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
-import { Course, CourseSchema } from '../lib/db-types';
+import { Course, CourseSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({

@@ -1,5 +1,16 @@
 # @prairielearn/flash
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/html@4.0.0
+
 ## 1.1.9
 
 ### Patch Changes

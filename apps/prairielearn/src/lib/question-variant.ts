@@ -1,20 +1,20 @@
-import _ = require('lodash');
-import * as fg from 'fast-glob';
+import _ from 'lodash';
+import fg from 'fast-glob';
 import { z } from 'zod';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
-import * as questionServers from '../question-servers';
-import { writeCourseIssues } from './issues';
-import { selectCourseById } from '../models/course';
-import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
-import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types';
-import { idsEqual } from './id';
-import { selectCourseInstanceById } from '../models/course-instances';
+import * as questionServers from '../question-servers/index.js';
+import { writeCourseIssues } from './issues.js';
+import { selectCourseById } from '../models/course.js';
+import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
+import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types.js';
+import { idsEqual } from './id.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),
@@ -56,7 +56,7 @@ async function makeVariant(
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (_(options).has('variant_seed') && options.variant_seed != null) {
+  if (_.has(options, 'variant_seed') && options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);

@@ -2,7 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -12,10 +12,10 @@ import {
   QuestionSchema,
   TopicSchema,
   ZoneSchema,
-} from '../../lib/db-types';
-import { formatFloat } from '../../lib/format';
-import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
-import { Modal } from '../../components/Modal.html';
+} from '../../lib/db-types.js';
+import { formatFloat } from '../../lib/format.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
+import { Modal } from '../../components/Modal.html.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -49,7 +49,7 @@ export function InstructorAssessmentQuestionStatistics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
         <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
         <script src="${assetPath('localscripts/scatter.js')}"></script>
@@ -61,10 +61,10 @@ export function InstructorAssessmentQuestionStatistics({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -203,14 +203,14 @@ export function InstructorAssessmentQuestionStatistics({
                           </a>
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
+                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
                             score: row.mean_question_score
                               ? Math.round(row.mean_question_score)
                               : null,
                           })}
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
+                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
                             score: row.discrimination ? Math.round(row.discrimination) : null,
                           })}
                         </td>

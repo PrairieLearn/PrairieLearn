@@ -1,12 +1,12 @@
 import * as async from 'async';
-import * as mustache from 'mustache';
-import { sum, sumBy } from 'lodash';
+import mustache from 'mustache';
+import _ from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id';
-import * as markdown from './markdown';
-import * as ltiOutcomes from './ltiOutcomes';
+import { idsEqual } from './id.js';
+import * as markdown from './markdown.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -15,9 +15,9 @@ import {
   RubricItem,
   RubricItemSchema,
   RubricSchema,
-} from './db-types';
+} from './db-types.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */
@@ -369,7 +369,7 @@ async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = sum(
+    const sum_rubric_item_points = _.sum(
       rubric_items?.map(
         (item) =>
           (item.score ?? 1) *
@@ -473,11 +473,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          sumBy(
+          _.sumBy(
             Object.values(score.partial_scores),
             (value) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
-        sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
