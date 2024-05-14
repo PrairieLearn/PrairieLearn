@@ -10,7 +10,7 @@ declare global {
 }
 
 onDocumentReady(() => {
-  const dataset = document.getElementById('usersTable')?.dataset || null;
+  const dataset = document.getElementById('usersTable')?.dataset;
   if (!dataset) {
     return;
   }
@@ -102,38 +102,35 @@ onDocumentReady(() => {
     }
   });
 
-  $('#deleteAssessmentInstanceModal').on(
-    'show.bs.modal',
-    function (event: JQuery.Event & { relatedTarget?: HTMLElement }) {
-      const modal = $(this);
+  $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
+    const modal = $(this);
 
-      modal.find('form').on('submit', (e) => {
-        e.preventDefault();
-        $.post(
-          $(e.target).attr('action') ?? '',
-          $(e.target).serialize(),
-          function () {
-            refreshTable();
-          },
-          'json',
-        );
-        modal.modal('hide');
+    modal.find('form').on('submit', (e) => {
+      e.preventDefault();
+      $.post(
+        $(e.target).attr('action') ?? '',
+        $(e.target).serialize(),
+        function () {
+          refreshTable();
+        },
+        'json',
+      );
+      modal.modal('hide');
+    });
+
+    if (event.relatedTarget) {
+      templateFromAttributes(event.relatedTarget, modal[0], {
+        'data-uid': '.modal-uid',
+        'data-name': '.modal-name',
+        'data-group-name': '.modal-group-name',
+        'data-uid-list': '.modal-uid-list',
+        'data-number': '.modal-number',
+        'data-date-formatted': '.modal-date',
+        'data-score-perc': '.modal-score-perc',
+        'data-assessment-instance-id': '.modal-assessment-instance-id',
       });
-
-      if (event.relatedTarget) {
-        templateFromAttributes(event.relatedTarget, modal[0], {
-          'data-uid': '.modal-uid',
-          'data-name': '.modal-name',
-          'data-group-name': '.modal-group-name',
-          'data-uid-list': '.modal-uid-list',
-          'data-number': '.modal-number',
-          'data-date-formatted': '.modal-date',
-          'data-score-perc': '.modal-score-perc',
-          'data-assessment-instance-id': '.modal-assessment-instance-id',
-        });
-      }
-    },
-  );
+    }
+  });
 
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
@@ -377,8 +374,6 @@ onDocumentReady(() => {
   function timeLimitEditPopoverContent(this: any) {
     const row = $(this).data('row');
     const action = row.action ? row.action : 'set_time_limit';
-    const checkbox = $('#reopen-closed');
-    checkbox.toggle(row.time_remaining_sec === null);
     return html`
       <form
         name="set-time-limit-form"
@@ -563,7 +558,10 @@ onDocumentReady(() => {
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
-    const ai_id: number = parseInt(row.assessment_instance_id);
+    const ai_id = parseInt(row.assessment_instance_id);
+    if (!csrfToken) {
+      throw new Error('CSRF token not found');
+    }
     return html`
       <div>
         <div class="dropdown">
@@ -582,14 +580,14 @@ onDocumentReady(() => {
             tabindex="0"
             data-toggle="popover"
             title="Confirm close"
-            data-content="${escapeHtml(CloseForm({ csrfToken: csrfToken ?? '', ai_id }))}"
+            data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
           ></div>
           <div
             id="row${ai_id}PopoverRegrade"
             tabindex="0"
             data-toggle="popover"
             title="Confirm regrade"
-            data-content="${escapeHtml(RegradeForm({ csrfToken: csrfToken ?? '', ai_id }))}"
+            data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
           ></div>
           <div class="dropdown-menu" onclick="window.event.preventDefault()">
             ${hasCourseInstancePermissionEdit

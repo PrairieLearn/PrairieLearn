@@ -63,23 +63,23 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           )}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                ${deleteAssessmentInstanceModal({
+                ${DeleteAssessmentInstanceModal({
                   assessmentSetName: resLocals.assessment_set.name,
                   assessmentNumber: resLocals.assessment.number,
                   assessmentGroupWork: resLocals.assessment.group_work,
                   csrfToken: resLocals.__csrf_token,
                 })}
-                ${deleteAllAssessmentInstancesModal({
+                ${DeleteAllAssessmentInstancesModal({
                   assessmentSetName: resLocals.assessment_set.name,
                   assessmentNumber: resLocals.assessment.number,
                   csrfToken: resLocals.__csrf_token,
                 })}
-                ${gradeAllAssessmentInstancesModal({
+                ${GradeAllAssessmentInstancesModal({
                   assessmentSetName: resLocals.assessment_set.name,
                   assessmentNumber: resLocals.assessment.number,
                   csrfToken: resLocals.__csrf_token,
                 })}
-                ${closeAllAssessmentInstancesModal({
+                ${CloseAllAssessmentInstancesModal({
                   assessmentSetName: resLocals.assessment_set.name,
                   assessmentNumber: resLocals.assessment.number,
                   csrfToken: resLocals.__csrf_token,
@@ -334,7 +334,7 @@ function TimeRemainingHelpModal() {
   });
 }
 
-function deleteAssessmentInstanceModal({
+function DeleteAssessmentInstanceModal({
   assessmentSetName,
   assessmentNumber,
   assessmentGroupWork,
@@ -381,7 +381,7 @@ function deleteAssessmentInstanceModal({
   });
 }
 
-function deleteAllAssessmentInstancesModal({
+function DeleteAllAssessmentInstancesModal({
   assessmentSetName,
   assessmentNumber,
   csrfToken,
@@ -407,7 +407,7 @@ function deleteAllAssessmentInstancesModal({
   });
 }
 
-function gradeAllAssessmentInstancesModal({
+function GradeAllAssessmentInstancesModal({
   assessmentSetName,
   assessmentNumber,
   csrfToken,
@@ -433,7 +433,7 @@ function gradeAllAssessmentInstancesModal({
   });
 }
 
-function closeAllAssessmentInstancesModal({
+function CloseAllAssessmentInstancesModal({
   assessmentSetName,
   assessmentNumber,
   csrfToken,
