@@ -11,10 +11,8 @@ import {
   deleteAssessmentInstance,
 } from '../../lib/assessment';
 import * as sqldb from '@prairielearn/postgres';
-import {
-  InstructorAssessmentInstances,
-  AssessmentInstanceRowSchema,
-} from './instructorAssessmentInstances.html';
+import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html';
+import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);

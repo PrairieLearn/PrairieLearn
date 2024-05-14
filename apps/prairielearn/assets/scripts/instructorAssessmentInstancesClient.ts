@@ -1,53 +1,24 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types';
+
 declare global {
   interface Window {
     popoverSubmitViaAjax: (e: any, popover: JQuery) => void;
   }
 }
 
-interface AssessmentInstanceRow {
-  assessment_instance_id: number;
-  assessment_label: string;
-  client_fingerprint_id_change_count: number;
-  date: Date;
-  date_formatted: string;
-  duration: string;
-  duration_mins: number;
-  duration_secs: number;
-  group_id: number | null;
-  group_name: string | null;
-  group_roles: string[] | null;
-  highest_score: boolean;
-  max_points: number;
-  name: string | null;
-  number: number;
-  open: boolean;
-  points: number;
-  role: string | null;
-  score_perc: number | null;
-  time_remaining: string;
-  time_remaining_sec: number | null;
-  total_time: string;
-  total_time_sec: number | null;
-  uid: string | null;
-  uid_list: string[] | null;
-  user_id: number | null;
-  user_name_list: string[] | null;
-  username: string | null;
-}
-
 onDocumentReady(() => {
-  const assessmentGroupWork = $('#usersTable').data('assessment-group-work');
-  const assessmentMultipleInstance = $('#usersTable').data('assessment-multiple-instance');
-  const assessmentNumber = $('#usersTable').data('assessment-number');
-  const assessmentSetAbbr = $('#usersTable').data('assessment-set-abbr');
-  const csrfToken = $('#usersTable').data('csrf-token');
-  const has_course_instance_permission_edit = $('#usersTable').data(
-    'has-course-instance-permission-edit',
-  );
-  const urlPrefix = $('#usersTable').data('url-prefix');
+  const dataset = document.getElementById('usersTable')?.dataset || null;
+  if (!dataset) {
+    return;
+  }
+  const { assessmentSetAbbr, assessmentNumber, csrfToken, urlPrefix } = dataset;
+  const assessmentGroupWork = dataset.assessmentGroupWork === 'true';
+  const assessmentMultipleInstance = dataset.assessmentMultipleInstance === 'true';
+  const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
+
   const bsTable = $('#usersTable').bootstrapTable({
     buttons: {
       studentsOnly: {
@@ -123,40 +94,46 @@ onDocumentReady(() => {
   $(document).on('keydown', (event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
-      String.fromCharCode(event.which).toLowerCase() === 'f'
+      String.fromCharCode(event.which).toLowerCase() === 'f' &&
+      $('.fixed-table-toolbar .search input')[0] !== document.activeElement
     ) {
       $('.fixed-table-toolbar .search input').trigger('focus');
       event.preventDefault();
     }
   });
 
-  $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event: any) {
-    const modal = $(this);
+  $('#deleteAssessmentInstanceModal').on(
+    'show.bs.modal',
+    function (event: JQuery.Event & { relatedTarget?: HTMLElement }) {
+      const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+      modal.find('form').on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
-    templateFromAttributes(event.relatedTarget, modal[0], {
-      'data-uid': '.modal-uid',
-      'data-name': '.modal-name',
-      'data-group-name': '.modal-group-name',
-      'data-uid-list': '.modal-uid-list',
-      'data-number': '.modal-number',
-      'data-date-formatted': '.modal-date',
-      'data-score-perc': '.modal-score-perc',
-      'data-assessment-instance-id': '.modal-assessment-instance-id',
-    });
-  });
+      if (event.relatedTarget) {
+        templateFromAttributes(event.relatedTarget, modal[0], {
+          'data-uid': '.modal-uid',
+          'data-name': '.modal-name',
+          'data-group-name': '.modal-group-name',
+          'data-uid-list': '.modal-uid-list',
+          'data-number': '.modal-number',
+          'data-date-formatted': '.modal-date',
+          'data-score-perc': '.modal-score-perc',
+          'data-assessment-instance-id': '.modal-assessment-instance-id',
+        });
+      }
+    },
+  );
 
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
@@ -382,17 +359,19 @@ onDocumentReady(() => {
     bsTable.bootstrapTable('refresh', { silent: true });
   }
 
-  window.popoverSubmitViaAjax = function (e: any, popover) {
+  window.popoverSubmitViaAjax = function (e: SubmitEvent, popover: JQuery) {
     e.preventDefault();
-    $.post(
-      window.location.pathname,
-      $(e.target).serialize(),
-      function () {
-        refreshTable();
-      },
-      'json',
-    );
-    $(popover).popover('hide');
+    if (e.target) {
+      $.post(
+        window.location.pathname,
+        $(e.target).serialize(),
+        function () {
+          refreshTable();
+        },
+        'json',
+      );
+      $(popover).popover('hide');
+    }
   };
 
   function timeLimitEditPopoverContent(this: any) {
@@ -470,9 +449,9 @@ onDocumentReady(() => {
                   type="checkbox"
                   name="reopen_closed"
                   value="true"
-                  id="reopen-closed"
+                  id="reopen_closed"
                 />
-                <label class="form-check-label" for="reopen-closed">
+                <label class="form-check-label" for="reopen_closed">
                   Also re-open closed instances
                 </label>
               </div>
@@ -527,11 +506,9 @@ onDocumentReady(() => {
     return html`
       ${value}
       <span>
-        <a
+        <button
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
-          role="button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
-          tabindex="0"
           data-row="${JSON.stringify(row)}"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
@@ -559,17 +536,17 @@ onDocumentReady(() => {
     let nameA: string | null, nameB: string | null, idA, idB;
     if (assessmentGroupWork) {
       (nameA = rowA.group_name), (nameB = rowB.group_name);
-      (idA = rowA.group_id), (idB = rowB.group_id);
+      (idA = rowA.group_id ?? ''), (idB = rowB.group_id ?? '');
     } else {
       (nameA = rowA.uid), (nameB = rowB.uid);
-      (idA = rowA.user_id), (idB = rowB.user_id);
+      (idA = rowA.user_id ?? ''), (idB = rowB.user_id ?? '');
     }
 
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
-    if (!compare) compare = (idA ?? 0) - (idB ?? 0);
-    if (!compare) compare = rowA.number - rowB.number;
+    if (!compare) compare = (parseInt(idA) ?? 0) - (parseInt(idB) ?? 0);
+    if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
     if (!compare) compare = valueA - valueB;
     return compare;
   }
@@ -586,7 +563,7 @@ onDocumentReady(() => {
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
-    const ai_id = row.assessment_instance_id;
+    const ai_id: number = parseInt(row.assessment_instance_id);
     return html`
       <div>
         <div class="dropdown">
@@ -605,17 +582,17 @@ onDocumentReady(() => {
             tabindex="0"
             data-toggle="popover"
             title="Confirm close"
-            data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+            data-content="${escapeHtml(CloseForm({ csrfToken: csrfToken ?? '', ai_id }))}"
           ></div>
           <div
             id="row${ai_id}PopoverRegrade"
             tabindex="0"
             data-toggle="popover"
             title="Confirm regrade"
-            data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+            data-content="${escapeHtml(RegradeForm({ csrfToken: csrfToken ?? '', ai_id }))}"
           ></div>
           <div class="dropdown-menu" onclick="window.event.preventDefault()">
-            ${has_course_instance_permission_edit
+            ${hasCourseInstancePermissionEdit
               ? html`
                   <button
                     class="dropdown-item"

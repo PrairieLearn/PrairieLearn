@@ -1,43 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
-import { AssessmentInstanceSchema, GroupSchema, IdSchema, UserSchema } from '../../lib/db-types';
 import { Modal } from '../../components/Modal.html';
-
-export const AssessmentInstanceRowSchema = z.object({
-  assessment_instance_id: IdSchema,
-  assessment_label: z.string(),
-  client_fingerprint_id_change_count:
-    AssessmentInstanceSchema.shape.client_fingerprint_id_change_count,
-  date_formatted: z.string(),
-  date: AssessmentInstanceSchema.shape.date,
-  duration_mins: z.number(),
-  duration_secs: z.number(),
-  duration: z.string(),
-  group_id: AssessmentInstanceSchema.shape.group_id,
-  group_name: GroupSchema.shape.name.nullable(),
-  group_roles: z.array(z.string()).nullable(),
-  highest_score: z.boolean(),
-  max_points: AssessmentInstanceSchema.shape.max_points,
-  name: UserSchema.shape.name.nullable(),
-  number: AssessmentInstanceSchema.shape.number,
-  open: AssessmentInstanceSchema.shape.open,
-  points: AssessmentInstanceSchema.shape.points,
-  role: z.string(),
-  score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
-  time_remaining_sec: z.number().nullable(),
-  time_remaining: z.string(),
-  total_time_sec: z.number().nullable(),
-  total_time: z.string(),
-  uid_list: z.array(UserSchema.shape.uid).nullable(),
-  uid: UserSchema.shape.uid.nullable(),
-  user_id: UserSchema.shape.user_id.nullable(),
-  user_name_list: z.array(UserSchema.shape.name).nullable(),
-  username: z.string().nullable(),
-});
-export type AssessmentInstanceRow = z.infer<typeof AssessmentInstanceRowSchema>;
 
 export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
@@ -98,181 +63,27 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           )}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
-                <div
-                  class="modal fade"
-                  id="deleteAssessmentInstanceModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="deleteAssessmentInstanceModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="deleteAssessmentInstanceModalLabel">
-                          Delete assessment instance
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to delete assessment instance
-                        <span class="modal-number"></span> of
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </strong>
-                        for
-                        ${resLocals.assessment.group_work
-                          ? html`
-                              <strong><span class="modal-group-name"></span></strong>
-                              (<span class="modal-uid-list"></span>)
-                            `
-                          : html`
-                              <strong><span class="modal-name"></span></strong>
-                              (<span class="modal-uid"></span>)
-                            `}
-                        started at
-                        <strong><span class="modal-date"></span></strong> with a score of
-                        <strong><span class="modal-score-perc"></span>%</strong>?
-                      </div>
-                      <div class="modal-footer">
-                        <form name="delete-form" method="POST">
-                          <input type="hidden" name="__action" value="delete" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <input
-                            type="hidden"
-                            name="assessment_instance_id"
-                            class="modal-assessment-instance-id"
-                            value=""
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-danger">Delete</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="modal fade"
-                  id="deleteAllAssessmentInstancesModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="deleteAllAssessmentInstancesModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="deleteAllAssessmentInstancesModalLabel">
-                          Delete all assessment instances
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to delete all assessment instances for
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </strong>
-                        ? This cannot be undone.
-                      </div>
-                      <div class="modal-footer">
-                        <form name="delete-all-form" method="POST">
-                          <input type="hidden" name="__action" value="delete_all" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-danger">Delete all</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="modal fade"
-                  id="gradeAllAssessmentInstancesModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="gradeAllAssessmentInstancesModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="gradeAllAssessmentInstancesModalLabel">
-                          Grade all assessment instances
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to grade pending submissions for all assessment
-                        instances for
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </strong>
-                        ? This cannot be undone.
-                      </div>
-                      <div class="modal-footer">
-                        <form name="grade-all-form" method="POST">
-                          <input type="hidden" name="__action" value="grade_all" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-primary">Grade all</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="modal fade"
-                  id="closeAllAssessmentInstancesModal"
-                  tabindex="-1"
-                  role="dialog"
-                  aria-labelledby="closeAllAssessmentInstancesModalLabel"
-                >
-                  <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title" id="closeAllAssessmentInstancesModalLabel">
-                          Grade and Close all assessment instances
-                        </h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to grade and close all assessment instances for
-                        <strong>
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </strong>
-                        ? This cannot be undone.
-                      </div>
-                      <div class="modal-footer">
-                        <form name="grade-all-form" method="POST">
-                          <input type="hidden" name="__action" value="close_all" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-primary">Grade and Close all</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ${deleteAssessmentInstanceModal({
+                  assessmentSetName: resLocals.assessment_set.name,
+                  assessmentNumber: resLocals.assessment.number,
+                  assessmentGroupWork: resLocals.assessment.group_work,
+                  csrfToken: resLocals.__csrf_token,
+                })}
+                ${deleteAllAssessmentInstancesModal({
+                  assessmentSetName: resLocals.assessment_set.name,
+                  assessmentNumber: resLocals.assessment.number,
+                  csrfToken: resLocals.__csrf_token,
+                })}
+                ${gradeAllAssessmentInstancesModal({
+                  assessmentSetName: resLocals.assessment_set.name,
+                  assessmentNumber: resLocals.assessment.number,
+                  csrfToken: resLocals.__csrf_token,
+                })}
+                ${closeAllAssessmentInstancesModal({
+                  assessmentSetName: resLocals.assessment_set.name,
+                  assessmentNumber: resLocals.assessment.number,
+                  csrfToken: resLocals.__csrf_token,
+                })}
               `
             : ''}
 
@@ -306,7 +117,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 >
                                   <i class="fas fa-times" aria-hidden="true"></i> Delete all
                                   instances
-                                </a>
+                                </button>
                                 <button
                                   class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
                                 >
@@ -316,11 +127,11 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 <button
                                   class="dropdown-item"
                                   data-toggle="modal"
-                                  data-target="#gradeAllAssessmentInstancesModal"
+                                  data-target="#grade-all-form"
                                 >
                                   <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade
                                   all instances
-                                </a>
+                                </button>
                                 <button
                                   class="dropdown-item"
                                   data-toggle="modal"
@@ -328,7 +139,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 >
                                   <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
                                   instances
-                                </a>
+                                </button>
                               `
                             : html`
                                 <button class="dropdown-item disabled" disabled>
@@ -519,6 +330,131 @@ function TimeRemainingHelpModal() {
     `,
     footer: html`
       <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+    `,
+  });
+}
+
+function deleteAssessmentInstanceModal({
+  assessmentSetName,
+  assessmentNumber,
+  assessmentGroupWork,
+  csrfToken,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: number;
+  assessmentGroupWork: boolean;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'deleteAssessmentInstanceModal',
+    title: 'Delete assessment instance',
+    body: html`
+      Are you sure you want to delete assessment instance
+      <span class="modal-number"></span> of
+      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
+      for
+      ${assessmentGroupWork
+        ? html`
+            <strong><span class="modal-group-name"></span></strong>
+            (<span class="modal-uid-list"></span>)
+          `
+        : html`
+            <strong><span class="modal-name"></span></strong>
+            (<span class="modal-uid"></span>)
+          `}
+      started at
+      <strong><span class="modal-date"></span></strong> with a score of
+      <strong><span class="modal-score-perc"></span>%</strong>?
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="delete" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input
+        type="hidden"
+        name="assessment_instance_id"
+        class="modal-assessment-instance-id"
+        value=""
+      />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete</button>
+    `,
+  });
+}
+
+function deleteAllAssessmentInstancesModal({
+  assessmentSetName,
+  assessmentNumber,
+  csrfToken,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: number;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'deleteAllAssessmentInstancesModal',
+    title: 'Delete all assessment instances',
+    body: html`
+      Are you sure you want to delete all assessment instances for
+      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
+      ? This cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="delete_all" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete all</button>
+    `,
+  });
+}
+
+function gradeAllAssessmentInstancesModal({
+  assessmentSetName,
+  assessmentNumber,
+  csrfToken,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: number;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'grade-all-form',
+    title: 'Grade all assessment instances',
+    body: html`
+      Are you sure you want to grade pending submissions for all assessment instances for
+      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
+      ? This cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="grade_all" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Grade all</button>
+    `,
+  });
+}
+
+function closeAllAssessmentInstancesModal({
+  assessmentSetName,
+  assessmentNumber,
+  csrfToken,
+}: {
+  assessmentSetName: string;
+  assessmentNumber: number;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'closeAllAssessmentInstancesModal',
+    title: 'Grade and Close all assessment instances',
+    body: html`
+      Are you sure you want to grade and close all assessment instances for
+      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
+      ? This cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="close_all" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Grade and Close all</button>
     `,
   });
 }
