@@ -3,8 +3,8 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import * as _ from 'lodash';
 import { z } from 'zod';
 
-import { compiledScriptTag } from '../../lib/assets';
-import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types';
+import { compiledScriptTag } from '../../lib/assets.js';
+import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -36,40 +36,42 @@ export const UserScoreSchema = z.object({
 });
 type UserScore = z.infer<typeof UserScoreSchema>;
 
+export interface Filenames {
+  scoreStatsCsvFilename: string;
+  durationStatsCsvFilename: string;
+  statsByDateCsvFilename: string;
+}
+
 export function InstructorAssessmentStatistics({
   resLocals,
   assessment,
   durationStat,
   assessmentScoreHistogramByDate,
   userScores,
-  scoreStatsCsvFilename,
-  durationStatsCsvFilename,
-  statsByDateCsvFilename,
+  filenames,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
   durationStat: DurationStat;
   assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];
   userScores: UserScore[];
-  scoreStatsCsvFilename: string;
-  durationStatsCsvFilename: string;
-  statsByDateCsvFilename: string;
+  filenames: Filenames;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: 'Statistics',
         })}
         ${compiledScriptTag('instructorAssessmentStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -141,8 +143,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${scoreStatsCsvFilename}"
-                        >${scoreStatsCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${filenames.scoreStatsCsvFilename}"
+                        >${filenames.scoreStatsCsvFilename}</a
                       >. Data outside of the plotted range is included in the last bin.
                     </small>
                   </div>
@@ -197,8 +199,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${durationStatsCsvFilename}"
-                        >${durationStatsCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${filenames.durationStatsCsvFilename}"
+                        >${filenames.durationStatsCsvFilename}</a
                       >. Data outside of the plotted range is included in the last bin.
                     </small>
                   </div>
@@ -271,8 +273,8 @@ export function InstructorAssessmentStatistics({
                     <small>
                       Download
                       <a
-                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${statsByDateCsvFilename}"
-                        >${statsByDateCsvFilename}</a
+                        href="${resLocals.urlPrefix}/assessment/${assessment.id}/assessment_statistics/${filenames.statsByDateCsvFilename}"
+                        >${filenames.statsByDateCsvFilename}</a
                       >.
                       <br />
                       Each day shows a histogram of the scores on this assessment for that day. The

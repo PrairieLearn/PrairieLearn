@@ -36,8 +36,8 @@ export function parallel_histograms(
     ...options,
   };
 
-  const width: number = resolvedOptions.width ?? 600;
-  const height = resolvedOptions.height ?? 370;
+  const width = resolvedOptions.width;
+  const height = resolvedOptions.height;
 
   const yTickLabels = resolvedOptions.yTickLabels;
 
@@ -47,21 +47,21 @@ export function parallel_histograms(
   const topPadding = resolvedOptions.topPadding;
   const rightPadding = resolvedOptions.rightPadding;
 
-  const totalWidth = width + (yAxisWidth ?? 70) + (rightPadding ?? 2);
-  const heightWithPadding = height + (topPadding ?? 15);
-  const totalHeight = heightWithPadding + (xAxisHeight ?? 70);
+  const totalWidth = width + yAxisWidth + rightPadding;
+  const heightWithPadding = height + topPadding;
+  const totalHeight = heightWithPadding + xAxisHeight;
 
   const numBuckets = data[0].histogram.length;
-  const numDays = data.length;
+  const numHistograms = data.length;
 
   const yLinear = scaleLinear().domain([0, numBuckets]).range([0, height]);
 
   const xOrdinal = scaleBand()
-    .domain(range(numDays).map((d) => `${d}`))
+    .domain(range(numHistograms).map((d) => `${d}`))
     .rangeRound([0, width])
     .padding(0.0);
 
-  const xLinear = scaleLinear().domain([0, numDays]).range([0, width]);
+  const xLinear = scaleLinear().domain([0, numHistograms]).range([0, width]);
 
   const plot = select(selector)
     .insert('svg', ':first-child')
@@ -103,7 +103,7 @@ export function parallel_histograms(
 
   const max = calculate_max(data);
 
-  const width_per_day = width / numDays;
+  const width_per_day = width / numHistograms;
   const height_per_bucket = height / numBuckets;
 
   for (let index = 0; index < data.length; index++) {

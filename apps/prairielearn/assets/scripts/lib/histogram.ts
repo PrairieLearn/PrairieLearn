@@ -21,8 +21,8 @@ export function histogram(
   },
 ) {
   const resolvedOptions = {
-    width: 100,
-    height: 40,
+    width: 600,
+    height: 371,
     xmin: 'auto',
     xmax: 'auto',
     ymin: 'auto',
@@ -37,8 +37,8 @@ export function histogram(
     ...options,
   };
 
-  const width = 600 - (resolvedOptions.leftMargin ?? 70) - (resolvedOptions.rightMargin ?? 20);
-  const height = 371 - (resolvedOptions.topMargin ?? 10) - (resolvedOptions.bottomMargin ?? 55);
+  const width = resolvedOptions.width - resolvedOptions.leftMargin - resolvedOptions.rightMargin;
+  const height = resolvedOptions.height - resolvedOptions.topMargin - resolvedOptions.bottomMargin;
 
   const xmin = resolvedOptions.xmin === 'auto' ? Math.min(...xgrid) : resolvedOptions.xmin;
   const xmax = resolvedOptions.xmax === 'auto' ? Math.max(...xgrid) : resolvedOptions.xmax;
@@ -71,20 +71,13 @@ export function histogram(
 
   const svg = select(selector)
     .append('svg')
-    .attr('width', width + (resolvedOptions.leftMargin ?? 0) + (resolvedOptions.rightMargin ?? 0))
-    .attr('height', height + (resolvedOptions.topMargin ?? 0) + (resolvedOptions.bottomMargin ?? 0))
+    .attr('width', resolvedOptions.width)
+    .attr('height', resolvedOptions.height)
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr(
-      'transform',
-      'translate(' + resolvedOptions.leftMargin + ',' + resolvedOptions.topMargin + ')',
-    );
+    .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 
-  svg
-    .append('g')
-    .attr('class', 'x grid')
-    .attr('transform', 'translate(0,' + height + ')')
-    .call(xGrid);
+  svg.append('g').attr('class', 'x grid').attr('transform', `translate(0,${height})`).call(xGrid);
 
   svg.append('g').attr('class', 'y grid').call(yGrid);
 
@@ -102,7 +95,7 @@ export function histogram(
   svg
     .append('g')
     .attr('class', 'x axis')
-    .attr('transform', 'translate(0,' + height + ')')
+    .attr('transform', `translate(0,${height})`)
     .call(xAxis)
     .append('text')
     .attr('class', 'label')

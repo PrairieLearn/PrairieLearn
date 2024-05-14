@@ -70,12 +70,8 @@ export function scatter(
 
   xdata = xdata.filter((x) => typeof x === 'number');
   ydata = ydata.filter((y) => typeof y === 'number');
-  xdata = xdata.map(function (x) {
-    return Math.max(xmin, Math.min(xmax, x));
-  });
-  ydata = ydata.map(function (y) {
-    return Math.max(ymin, Math.min(ymax, y));
-  });
+  xdata = xdata.map((x) => Math.max(xmin, Math.min(xmax, x)));
+  ydata = ydata.map((y) => Math.max(ymin, Math.min(ymax, y)));
 
   let xAxis = axisBottom(x).tickValues(resolvedOptions.xgrid);
   if (resolvedOptions.xTickLabels !== 'auto') {
