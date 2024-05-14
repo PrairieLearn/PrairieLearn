@@ -801,6 +801,19 @@ export async function initExpress() {
     },
   ]);
 
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/instructor/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
@@ -846,6 +859,18 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/instructor/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(

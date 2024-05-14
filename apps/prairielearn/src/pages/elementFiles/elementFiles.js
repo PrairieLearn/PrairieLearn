@@ -8,10 +8,10 @@ import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
 import { HttpStatusError } from '@prairielearn/error';
-import { getQuestionCourse } from '../../lib/question-variant';
-import { selectQuestionById } from '../../models/question';
-import { selectVariantById } from '../../models/variant';
-import { idsEqual } from '../../lib/id';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { selectQuestionById } from '../../models/question.js';
+import { selectVariantById } from '../../models/variant.js';
+import { idsEqual } from '../../lib/id.js';
 
 const router = Router({ mergeParams: true });
 
