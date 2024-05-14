@@ -51,9 +51,7 @@ router.post(
 
     const ltiResult = await sqldb.queryOptionalRow(
       sql.lookup_credential,
-      {
-        consumer_key: parameters.oauth_consumer_key,
-      },
+      { consumer_key: parameters.oauth_consumer_key },
       LtiCredentialsSchema,
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
@@ -62,7 +60,7 @@ router.post(
       'POST',
       ltiRedirectUrl,
       parameters,
-      // TODO: column should be non-nullable
+      // TODO: column should be `NOT NULL`
       /** @type {string} */ (ltiResult.secret),
       undefined,
       { encodeSignature: false },
