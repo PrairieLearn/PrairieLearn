@@ -16,7 +16,7 @@ export function InstructorCourseAdminInstances({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: 'Course Instances',
         })}
@@ -32,10 +32,10 @@ export function InstructorCourseAdminInstances({
             });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
