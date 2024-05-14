@@ -102,23 +102,16 @@ export function scatter(
     )
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr(
-      'transform',
-      'translate(' + resolvedOptions.leftMargin + ',' + resolvedOptions.topMargin + ')',
-    );
+    .attr('transform', `translate(${resolvedOptions.leftMargin},${resolvedOptions.topMargin})`);
 
-  svg
-    .append('g')
-    .attr('class', 'x grid')
-    .attr('transform', 'translate(0,' + height + ')')
-    .call(xGrid);
+  svg.append('g').attr('class', 'x grid').attr('transform', `translate(0,${height})`).call(xGrid);
 
   svg.append('g').attr('class', 'y grid').call(yGrid);
 
   svg
     .append('g')
     .attr('class', 'x axis')
-    .attr('transform', 'translate(0,' + height + ')')
+    .attr('transform', `translate(0,${height})`)
     .call(xAxis)
     .append('text')
     .attr('class', 'label')
@@ -157,27 +150,15 @@ export function scatter(
   nodes
     .append('circle')
     .attr('class', 'point')
-    .attr('cx', function (p: number[]) {
-      return x(p[0]);
-    })
-    .attr('cy', function (p: number[]) {
-      return y(p[1]);
-    })
-    .attr('r', function () {
-      return resolvedOptions.radius;
-    });
+    .attr('cx', (p) => x(p[0]))
+    .attr('cy', (p) => y(p[1]))
+    .attr('r', () => resolvedOptions.radius);
 
   nodes
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('class', 'pointLabel')
-    .attr('x', function (p: number[]) {
-      return x(p[0]);
-    })
-    .attr('y', function (p: number[]) {
-      return y(p[1]) - 6;
-    })
-    .text(function (p: (number | string)[]) {
-      return p[2];
-    });
+    .attr('x', (p) => x(p[0]))
+    .attr('y', (p) => y(p[1]) - 6)
+    .text((p) => p[2]);
 }

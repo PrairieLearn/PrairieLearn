@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { z } from 'zod';
 
 import { compiledScriptTag } from '../../lib/assets.js';

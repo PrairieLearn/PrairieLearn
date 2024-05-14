@@ -6,7 +6,7 @@ interface Data {
   mean: number;
 }
 
-export function parallel_histograms(
+export function parallelHistograms(
   selector: Element,
   data: Data[],
   options: {
@@ -76,7 +76,7 @@ export function parallel_histograms(
   plot
     .append('g')
     .attr('class', 'grid')
-    .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
+    .attr('transform', `translate(${yAxisWidth},${heightWithPadding})`)
     .call(verticalGridLinear);
 
   const verticalGridOrdinal = axisBottom(xOrdinal)
@@ -86,7 +86,7 @@ export function parallel_histograms(
   plot
     .append('g')
     .attr('class', 'grid')
-    .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
+    .attr('transform', `translate(${yAxisWidth},${heightWithPadding})`)
     .call(verticalGridOrdinal);
 
   const horizontalGrid = axisLeft(yLinear)
@@ -96,9 +96,7 @@ export function parallel_histograms(
   plot
     .append('g')
     .attr('class', 'grid')
-    .attr('transform', function () {
-      return 'translate(' + yAxisWidth + ',' + topPadding + ')';
-    })
+    .attr('transform', () => `translate(${yAxisWidth},${topPadding})`)
     .call(horizontalGrid);
 
   const max = calculate_max(data);
@@ -116,7 +114,7 @@ export function parallel_histograms(
 
     const xOffset = (index + 0.5) * width_per_day + (yAxisWidth ?? 70);
 
-    const g = plot.append('g').attr('transform', 'translate(' + xOffset + ', 0)');
+    const g = plot.append('g').attr('transform', `translate(${xOffset}, 0)`);
 
     g.selectAll('.bar')
       .data(histogram)
@@ -130,18 +128,10 @@ export function parallel_histograms(
 
     g.append('line')
       .attr('class', 'parallelHistMean')
-      .attr('x1', function () {
-        return -width_per_day / 2;
-      })
-      .attr('x2', function () {
-        return width_per_day / 2;
-      })
-      .attr('y1', function () {
-        return heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets);
-      })
-      .attr('y2', function () {
-        return heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets);
-      });
+      .attr('x1', () => -width_per_day / 2)
+      .attr('x2', () => width_per_day / 2)
+      .attr('y1', () => heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets))
+      .attr('y2', () => heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets));
   }
 
   const yAxis = axisLeft(yLinear).tickFormat((d, i) => yTickLabels[i] ?? '');
@@ -149,9 +139,7 @@ export function parallel_histograms(
   plot
     .append('g')
     .attr('class', 'y axis')
-    .attr('transform', function () {
-      return 'translate(' + yAxisWidth + ', ' + topPadding + ')';
-    })
+    .attr('transform', () => `translate(${yAxisWidth},${topPadding})`)
     .call(yAxis)
     .append('text')
     .attr('class', 'label')
@@ -173,9 +161,7 @@ export function parallel_histograms(
   plot
     .append('g')
     .attr('class', 'x axis')
-    .attr('transform', function () {
-      return 'translate(' + yAxisWidth + ', ' + heightWithPadding + ')';
-    })
+    .attr('transform', () => `translate(${yAxisWidth},${heightWithPadding})`)
     .attr('height', xAxisHeight)
     .call(xAxis)
     .append('text')

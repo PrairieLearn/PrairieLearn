@@ -18,7 +18,7 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const setFilenames = function (locals) {
+function getFilenames(locals: Record<string, any>): Filenames {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -26,14 +26,12 @@ const setFilenames = function (locals) {
     locals.course,
   );
 
-  const filenames: Filenames = {
+  return {
     scoreStatsCsvFilename: prefix + 'score_stats.csv',
     durationStatsCsvFilename: prefix + 'duration_stats.csv',
     statsByDateCsvFilename: prefix + 'scores_by_date.csv',
   };
-
-  return filenames;
-};
+}
 
 router.get(
   '/',
@@ -78,7 +76,7 @@ router.get(
         durationStat,
         assessmentScoreHistogramByDate,
         userScores,
-        filenames: setFilenames(res.locals),
+        filenames: getFilenames(res.locals),
       }),
     );
   }),
@@ -87,7 +85,7 @@ router.get(
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
-    const filenames = setFilenames(res.locals);
+    const filenames = getFilenames(res.locals);
 
     await updateAssessmentStatistics(res.locals.assessment.id);
 
