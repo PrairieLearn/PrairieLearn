@@ -148,7 +148,7 @@ export function startJob(jobType, id, maxJobCount) {
 
 export function endJob(jobType, id) {
   debug(`endJob(): jobType = ${jobType}, id = ${id}`);
-  if (!_.has(estimators, jobType)) throw new Error(`endJob(): no such estimator: ${jobType}`);
+  if (!(jobType in estimators)) throw new Error(`endJob(): no such estimator: ${jobType}`);
   estimators[jobType].endJob(id);
 }
 

@@ -87,9 +87,9 @@ function paramsToArray(
   let paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
-    if (!_.has(map, v)) {
-      if (!_.has(params, v)) throw new Error(`Missing parameter: ${v}`);
-      if (_.isArray(params[v])) {
+    if (!(v in map)) {
+      if (!(v in params)) throw new Error(`Missing parameter: ${v}`);
+      if (Array.isArray(params[v])) {
         map[v] =
           'ARRAY[' +
           _.map(_.range(nParams + 1, nParams + params[v].length + 1), function (n) {

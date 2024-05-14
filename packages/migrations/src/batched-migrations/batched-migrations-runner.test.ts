@@ -1,4 +1,4 @@
-import chai, { assert } from 'chai';
+import { use as chaiUse, assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import path from 'node:path';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
@@ -8,7 +8,7 @@ import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
 import { BatchedMigrationsRunner } from './batched-migrations-runner.js';
 import { selectAllBatchedMigrations } from './batched-migration.js';
 
-chai.use(chaiAsPromised);
+chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',

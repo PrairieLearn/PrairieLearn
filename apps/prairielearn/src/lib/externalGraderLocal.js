@@ -5,7 +5,7 @@ import * as os from 'os';
 import EventEmitter from 'events';
 import fs from 'fs-extra';
 import byline from 'byline';
-import execa from 'execa';
+import { execa } from 'execa';
 
 import { logger } from '@prairielearn/logger';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';

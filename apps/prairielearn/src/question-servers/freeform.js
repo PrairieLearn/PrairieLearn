@@ -575,6 +575,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
+        nodeName: '#document-fragment',
         childNodes: [node],
       });
       let ret_val, consoleLog;
@@ -1345,7 +1346,7 @@ export async function render(
       };
 
       for (let type in question.dependencies) {
-        if (!_.has(dependencies, type)) continue;
+        if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
           if (!_.includes(dependencies[type], dep)) {
@@ -1412,7 +1413,7 @@ export async function render(
         }
 
         for (const type in elementDependencies) {
-          if (!_.has(dependencies, type)) continue;
+          if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
             if (!_.includes(dependencies[type], dep)) {
@@ -1471,7 +1472,7 @@ export async function render(
             }
 
             for (const type in extension) {
-              if (!_.has(dependencies, type)) continue;
+              if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
                 if (!_.includes(dependencies[type], dep)) {

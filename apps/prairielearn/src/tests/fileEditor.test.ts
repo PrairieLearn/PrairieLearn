@@ -7,8 +7,7 @@ import * as path from 'path';
 import * as async from 'async';
 import * as cheerio from 'cheerio';
 import * as tmp from 'tmp';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
+import fetch, { FormData } from 'node-fetch';
 
 import { config } from '../lib/config.js';
 import * as sqldb from '@prairielearn/postgres';
@@ -1115,10 +1114,7 @@ function testUploadFile(params) {
       const formData = new FormData();
       formData.append('__action', 'upload_file');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', Buffer.from(params.contents), {
-        filename: params.filename,
-        contentType: 'text/plain',
-      });
+      formData.append('file', new Blob([Buffer.from(params.contents)]), params.filename);
 
       if (locals.file_path) {
         formData.append('file_path', locals.file_path);
