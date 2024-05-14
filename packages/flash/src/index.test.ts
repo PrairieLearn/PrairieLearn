@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { flashMiddleware, flash } from './index';
+import { flashMiddleware, flash } from './index.js';
 import { html } from '@prairielearn/html';
 
 describe('flash', () => {

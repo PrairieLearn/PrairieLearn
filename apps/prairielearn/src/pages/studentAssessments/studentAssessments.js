@@ -1,9 +1,9 @@
 // @ts-check
 import { Router } from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
@@ -17,7 +17,7 @@ router.get(
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     });
     res.locals.rows = result.rows;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

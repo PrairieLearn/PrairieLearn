@@ -7,12 +7,12 @@ import debugfn from 'debug';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config';
-import { uploadToS3, getFromS3 } from '../lib/aws';
-import { IdSchema } from './db-types';
+import { config } from './config.js';
+import { uploadToS3, getFromS3 } from '../lib/aws.js';
+import { IdSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const StorageTypes = Object.freeze({
   S3: 'S3',

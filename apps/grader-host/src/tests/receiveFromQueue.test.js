@@ -1,14 +1,14 @@
 // @ts-check
 import { assert } from 'chai';
-import * as sinon from 'sinon';
+import sinon from 'sinon';
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 
-import { config } from '../lib/config';
-import queueReceiver from '../lib/receiveFromQueue';
+import { config } from '../lib/config.js';
+import queueReceiver from '../lib/receiveFromQueue.js';
 
 function randomString() {
   return Math.random().toString(36).slice(2);

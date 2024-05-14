@@ -1,11 +1,11 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
 import * as express from 'express';
 
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
+const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = express.Router({ mergeParams: true });
 
 router.get(

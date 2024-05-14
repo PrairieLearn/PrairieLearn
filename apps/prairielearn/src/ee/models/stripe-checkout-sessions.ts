@@ -1,9 +1,9 @@
 import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import type Stripe from 'stripe';
-import { PlanName } from '../lib/billing/plans-types';
-import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../lib/db-types';
+import { PlanName } from '../lib/billing/plans-types.js';
+import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function insertStripeCheckoutSessionForUserInCourseInstance({
   agent_user_id,

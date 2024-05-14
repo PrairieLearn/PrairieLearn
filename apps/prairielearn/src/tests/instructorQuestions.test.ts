@@ -1,15 +1,15 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { assert } from 'chai';
-import request = require('request');
+import request from 'request';
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import { idsEqual } from '../lib/id';
-import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
+import { config } from '../lib/config.js';
+import * as helperServer from './helperServer.js';
+import { idsEqual } from '../lib/id.js';
+import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

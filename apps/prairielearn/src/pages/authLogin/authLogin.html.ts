@@ -1,9 +1,9 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { config } from '../../lib/config';
-import { assetPath } from '../../lib/assets';
-import { isEnterprise } from '../../lib/license';
+import { config } from '../../lib/config.js';
+import { assetPath } from '../../lib/assets.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export interface InstitutionAuthnProvider {
   name: string;
@@ -28,7 +28,7 @@ function LoginPageContainer({
     <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <style>
           html,
           body {

@@ -2,7 +2,7 @@ import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import * as child_process from 'child_process';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
 import * as tar from 'tar';
@@ -12,16 +12,16 @@ import { v4 as uuidv4 } from 'uuid';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
-import { downloadFromS3, makeS3ClientConfig } from './aws';
-import { chalk, chalkDim } from './chalk';
-import { createServerJob, ServerJob } from './server-jobs';
-import * as courseDB from '../sync/course-db';
-import type { CourseData } from '../sync/course-db';
-import { config } from './config';
+import { downloadFromS3, makeS3ClientConfig } from './aws.js';
+import { chalk, chalkDim } from './chalk.js';
+import { createServerJob, ServerJob } from './server-jobs.js';
+import * as courseDB from '../sync/course-db.js';
+import { CourseData } from '../sync/course-db.js';
+import { config } from './config.js';
 import { contains } from '@prairielearn/path-utils';
-import { getLockNameForCoursePath } from '../models/course';
+import { getLockNameForCoursePath } from '../models/course.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type ChunkType =
   | 'elements'

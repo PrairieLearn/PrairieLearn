@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { AssessmentQuestionSchema } from '../../../lib/db-types';
-import { idsEqual } from '../../../lib/id';
+import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -37,20 +37,24 @@ export function ManualGradingAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
-          ${renderEjs(__filename, "<%- include('../../partials/assessmentOpenInstancesAlert') %>", {
-            ...resLocals,
-            num_open_instances,
-          })}
+          ${renderEjs(
+            import.meta.url,
+            "<%- include('../../partials/assessmentOpenInstancesAlert') %>",
+            {
+              ...resLocals,
+              num_open_instances,
+            },
+          )}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue

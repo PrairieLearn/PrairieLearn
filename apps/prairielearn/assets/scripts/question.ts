@@ -1,9 +1,9 @@
 import { Socket, io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import { mathjaxTypeset } from './lib/mathjax';
-import { setupCountdown } from './lib/countdown';
-import { confirmOnUnload } from './lib/confirmOnUnload';
+import { mathjaxTypeset } from './lib/mathjax.js';
+import { setupCountdown } from './lib/countdown.js';
+import { confirmOnUnload } from './lib/confirmOnUnload.js';
 
 onDocumentReady(() => {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');

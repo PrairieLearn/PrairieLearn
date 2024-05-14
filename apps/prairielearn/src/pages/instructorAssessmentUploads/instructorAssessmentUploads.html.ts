@@ -155,7 +155,7 @@ function AssessmentUploadCard({
                       <td>${job_sequence.job_sequence.description}</td>
                       <td>${job_sequence.user_uid}</td>
                       <td>
-                        ${renderEjs(__filename, "<%- include('../partials/jobStatus'); %>", {
+                        ${renderEjs(import.meta.url, "<%- include('../partials/jobStatus'); %>", {
                           status: job_sequence.job_sequence.status,
                         })}
                       </td>

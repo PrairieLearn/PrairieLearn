@@ -1,11 +1,11 @@
 // @ts-check
 import * as sqldb from '@prairielearn/postgres';
-import logger from './logger';
-import { config } from './config';
-import * as lifecycle from './lifecycle';
-import * as healthCheck from './healthCheck';
+import logger from './logger.js';
+import { config } from './config.js';
+import * as lifecycle from './lifecycle.js';
+import * as healthCheck from './healthCheck.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 var initialized = false;
 var currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;

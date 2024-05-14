@@ -1,5 +1,23 @@
 # @prairielearn/cache
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/logger@2.0.0
+  - @prairielearn/sentry@2.0.0
+
+## 1.1.0
+
+### Minor Changes
+
+- 3ef2b1d: Export the `Cache` class
+
 ## 1.0.3
 
 ### Patch Changes

@@ -5,7 +5,7 @@ import { Redis } from 'ioredis';
 import { logger } from '@prairielearn/logger';
 import debugfn from 'debug';
 
-import { config } from './config';
+import { config } from './config.js';
 
 const debug = debugfn('prairielearn:socket-server');
 

@@ -1,11 +1,11 @@
 // @ts-check
-import * as _ from 'lodash';
-const asyncHandler = require('express-async-handler');
+import _ from 'lodash';
+import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstructorQuestion(req, res) {
   if (res.locals.course_instance) {

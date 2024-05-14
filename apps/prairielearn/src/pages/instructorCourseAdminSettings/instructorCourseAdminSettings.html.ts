@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { formatTimezone, type Timezone } from '../../lib/timezones';
-import { compiledScriptTag } from '../../lib/assets';
+import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,
@@ -21,19 +21,23 @@ export function InstructorCourseAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
         })}
         ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
         })}
         <main id="content" class="container">
-          ${renderEjs(__filename, "<%- include('../partials/courseSyncErrorsAndWarnings'); %>", {
-            ...resLocals,
-          })}
+          ${renderEjs(
+            import.meta.url,
+            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
+            {
+              ...resLocals,
+            },
+          )}
           <div class="card  mb-4">
             <div class="card-header bg-primary text-white d-flex">Course Settings</div>
             <div class="card-body">

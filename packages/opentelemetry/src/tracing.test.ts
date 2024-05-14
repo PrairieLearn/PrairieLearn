@@ -1,7 +1,7 @@
 import { tracing } from '@opentelemetry/sdk-node';
 import { assert } from 'chai';
 
-import { context, init, instrumented, trace, SpanStatusCode } from './index';
+import { context, init, instrumented, trace, SpanStatusCode } from './index.js';
 import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
 
 describe('instrumented', () => {

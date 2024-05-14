@@ -1,9 +1,9 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 import { z } from 'zod';
-import { Modal } from '../../components/Modal.html';
+import { Modal } from '../../components/Modal.html.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -30,7 +30,7 @@ export function InstructorAssessmentGroups({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
@@ -72,10 +72,10 @@ export function InstructorAssessmentGroups({
             $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}

@@ -1,12 +1,12 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { Router } from 'express';
 
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
@@ -25,7 +25,7 @@ router.get(
     res.locals.news_item = result.rows[0];
 
     const indexFilename = path.join(
-      __dirname,
+      import.meta.dirname,
       '..',
       '..',
       'news_items',
@@ -34,7 +34,7 @@ router.get(
     );
     res.locals.news_item_html = await fs.readFile(indexFilename, 'utf8');
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -51,7 +51,7 @@ router.get(
 
     res.locals.news_item = result.rows[0];
     const news_item_dir = path.join(
-      __dirname,
+      import.meta.dirname,
       '..',
       '..',
       'news_items',
