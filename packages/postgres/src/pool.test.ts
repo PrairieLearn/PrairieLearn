@@ -1,4 +1,4 @@
-import chai, { assert } from 'chai';
+import { use as chaiUse, assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -17,7 +17,7 @@ import {
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
 
-chai.use(chaiAsPromised);
+chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',

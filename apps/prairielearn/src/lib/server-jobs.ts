@@ -1,5 +1,5 @@
 import { AnsiUp } from 'ansi_up';
-import execa from 'execa';
+import { execa } from 'execa';
 import { z } from 'zod';
 import { setTimeout as sleep } from 'node:timers/promises';
 import _ from 'lodash';

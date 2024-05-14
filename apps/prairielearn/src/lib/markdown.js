@@ -1,5 +1,5 @@
 // @ts-check
-import unified from 'unified';
+import { unified } from 'unified';
 import markdown from 'remark-parse';
 import raw from 'rehype-raw';
 import gfm from 'remark-gfm';
@@ -7,7 +7,7 @@ import remark2rehype from 'remark-rehype';
 import math from 'remark-math';
 import stringify from 'rehype-stringify';
 import sanitize from 'rehype-sanitize';
-import visit from 'unist-util-visit';
+import { visit } from 'unist-util-visit';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -18,7 +18,6 @@ const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
 function visitCodeBlock(ast, _vFile) {
   return visit(ast, 'code', (node, index, parent) => {
-    // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.lang & node.value do not exist on type Node<Data>.
     let { lang, value } = node;
     const attrs = [];
 
@@ -54,9 +53,7 @@ function visitCodeBlock(ast, _vFile) {
  */
 function visitCheckSingleParagraph(ast, _vFile) {
   return visit(ast, 'root', (node, _index, _parent) => {
-    // @ts-expect-error - TODO: resolve after converting file to TypeScript
     if (node.children.length === 1 && node.children[0].tagName === 'p') {
-      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.children does not exist on type Node<Data>.
       node.children = node.children[0].children;
     }
     return;
@@ -76,7 +73,6 @@ function visitMathBlock(ast, _vFile) {
     const endFence = node.type === 'math' ? '\n$$' : '$';
     const text = {
       type: 'text',
-      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.value does not exist on type Node<Data>.
       value: startFence + node.value + endFence,
     };
     parent?.children.splice(index, 1, text);
@@ -84,6 +80,10 @@ function visitMathBlock(ast, _vFile) {
   });
 }
 
+/**
+ * @param {(ast: any, vfile: import('vfile').VFile) => undefined} visitor
+ * @returns {() => (ast: import('hast').Root, file: import('vfile').VFile) => import('hast').Root}
+ */
 function makeHandler(visitor) {
   return () => (ast, vFile, next) => {
     visitor(ast, vFile);
@@ -138,12 +138,12 @@ export function processQuestion(html) {
       return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
     });
     const res = questionProcessor.processSync(decodedContents);
-    return res.contents;
+    return res.value;
   });
 }
 
 export async function processContent(original) {
-  return (await defaultProcessor.process(original)).contents;
+  return (await defaultProcessor.process(original)).value;
 }
 
 /**
@@ -151,5 +151,5 @@ export async function processContent(original) {
  * (paragraph) it will return the content without a `p` tag.
  */
 export async function processContentInline(original) {
-  return (await inlineProcessor.process(original)).contents;
+  return (await inlineProcessor.process(original)).value;
 }

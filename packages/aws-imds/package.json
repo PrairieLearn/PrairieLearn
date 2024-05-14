@@ -18,7 +18,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "node-fetch": "^2.7.0",
+    "node-fetch": "^3.3.2",
     "zod": "^3.23.8"
   }
 }

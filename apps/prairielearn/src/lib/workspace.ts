@@ -190,10 +190,17 @@ async function controlContainer(
     body: JSON.stringify(postJson),
     headers: { 'Content-Type': 'application/json' },
   });
+
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError((await res.json()).message);
+      throw new SubmissionFormatError(((await res.json()) as any).message);
     }
+
+    const body = res.body;
+    if (!body) {
+      throw new SubmissionFormatError('No response body');
+    }
+
     const contentDisposition = res.headers.get('content-disposition');
     if (contentDisposition == null) throw new Error(`Content-Disposition is null`);
     const match = contentDisposition.match(/^attachment; filename="(.*)"$/);
@@ -206,7 +213,7 @@ async function controlContainer(
     return new Promise((resolve, reject) => {
       stream
         .on('open', () => {
-          res.body.pipe(stream);
+          body.pipe(stream);
         })
         .on('error', (err) => {
           reject(err);
@@ -216,10 +223,11 @@ async function controlContainer(
         });
     });
   }
+
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = await res.json();
+  const json = (await res.json()) as any;
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
