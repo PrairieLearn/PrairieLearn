@@ -24,6 +24,7 @@ await sqldb.initAsync(
     idleTimeoutMillis: 30000,
   },
   idleErrorHandler,
+  false, // errorOnUnusedParameters, defaults to false
 );
 ```
 
