@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 4.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
 ## 3.1.7
 
 ### Patch Changes

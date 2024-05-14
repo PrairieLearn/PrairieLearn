@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
-import { Modal } from '../../../components/Modal.html';
+import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
+import { Modal } from '../../../components/Modal.html.js';
 
 export function AdministratorInstitutionSaml({
   institution,
@@ -32,14 +32,14 @@ export function AdministratorInstitutionSaml({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'SAML',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',

@@ -1,7 +1,7 @@
 // @ts-check
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import globby from 'globby';
+import { globby } from 'globby';
 import { parse } from '@typescript-eslint/parser';
 
 // These modules have their types declared as `export = ...`, so we can't use

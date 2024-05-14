@@ -1,20 +1,20 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { User } from '../../../lib/db-types';
+import { User } from '../../../lib/db-types.js';
 
 export function Terms({ user, resLocals }: { user: User; resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           pageTitle: 'Terms and conditions',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           navPage: 'plain',
           navbarType: 'plain',

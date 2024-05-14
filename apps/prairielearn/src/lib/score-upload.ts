@@ -1,15 +1,15 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import csvtojson = require('csvtojson');
+import csvtojson from 'csvtojson';
 import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { createServerJob } from './server-jobs';
-import * as manualGrading from './manualGrading';
-import { IdSchema } from './db-types';
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment';
+import { createServerJob } from './server-jobs.js';
+import * as manualGrading from './manualGrading.js';
+import { IdSchema } from './db-types.js';
+import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),

@@ -8,7 +8,7 @@ import { type Dirent } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
 

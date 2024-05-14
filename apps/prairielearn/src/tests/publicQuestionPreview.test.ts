@@ -1,10 +1,10 @@
-import { testQuestionPreviews, testFileDownloads } from './helperQuestionPreview';
-import { config } from '../lib/config';
+import { testQuestionPreviews, testFileDownloads } from './helperQuestionPreview.js';
+import { config } from '../lib/config.js';
 import { z } from 'zod';
-import { features } from '../lib/features/index';
+import { features } from '../lib/features/index.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer';
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

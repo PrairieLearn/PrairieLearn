@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
 ## 1.0.15
 
 ### Patch Changes

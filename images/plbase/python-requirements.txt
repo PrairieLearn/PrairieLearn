@@ -1,13 +1,7 @@
 ansi2html==1.9.1
-black==24.4.2
 chevron==0.14.0
 coloraide==3.3.1
 Faker==25.0.0
-flake8-black==0.3.6
-flake8-isort==6.1.1
-Flake8-pyproject==1.2.3
-flake8==7.0.0
-isort==5.13.2
 lxml==5.2.1
 matplotlib==3.8.4
 networkx==3.3
@@ -31,6 +25,7 @@ pytest==8.2.0
 recommonmark==0.7.1
 regex==2024.4.28
 rpy2==3.5.12
+ruff==0.4.0
 schemdraw==0.19
 scikit-learn==1.4.2
 scipy==1.13.0

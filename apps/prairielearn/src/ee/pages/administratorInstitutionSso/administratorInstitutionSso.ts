@@ -1,18 +1,18 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { AdministratorInstitutionSso } from './administratorInstitutionSso.html';
+import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';
 import {
   getInstitution,
   getSupportedAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-} from '../../lib/institution';
+} from '../../lib/institution.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const enabledProvidersSchema = z.array(z.string());

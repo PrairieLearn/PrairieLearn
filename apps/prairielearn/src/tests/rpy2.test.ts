@@ -2,11 +2,11 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { queryRow } from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { IdSchema } from '../lib/db-types';
-import { features } from '../lib/features';
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import { config } from '../lib/config.js';
+import { IdSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
+import * as helperServer from './helperServer.js';
+import * as helperClient from './helperClient.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
