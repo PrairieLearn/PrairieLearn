@@ -9,8 +9,8 @@ import {
   CoursePermissionSchema,
   User,
   UserSchema,
-} from '../../lib/db-types';
-import { compiledScriptTag } from '../../lib/assets';
+} from '../../lib/db-types.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export const CourseUsersRowSchema = z.object({
   user_id: UserSchema.shape.user_id,
@@ -56,7 +56,7 @@ export function InstructorCourseAdminStaff({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <style>
           .popover {
             max-width: 35%;
@@ -70,10 +70,10 @@ export function InstructorCourseAdminStaff({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -136,7 +136,7 @@ export function InstructorCourseAdminStaff({
                     data-placement="auto"
                     title="Delete non-owners"
                     data-content="${escapeHtml(
-                      coursePermissionsDeleteNonOwnersForm({
+                      CoursePermissionsDeleteNonOwnersForm({
                         csrfToken: resLocals.__csrf_token,
                         id: 'coursePermissionsDeleteNonOwnersButton',
                       }),
@@ -173,7 +173,7 @@ export function InstructorCourseAdminStaff({
                 </div>
               </div>
             </div>
-            ${staffTable({
+            ${StaffTable({
               csrfToken: resLocals.__csrf_token,
               courseUsers,
               authnUser: resLocals.authn_user,
@@ -191,43 +191,7 @@ export function InstructorCourseAdminStaff({
                 : ''}
               <details>
                 <summary>Recommended access levels</summary>
-                <table class="table table-striped table-sm border" style="max-width: 45em">
-                  <tr>
-                    <th scope="col">Role</th>
-                    <th class="text-center" scope="col">Course content access</th>
-                    <th class="text-center" scope="col">Student data access</th>
-                  </tr>
-                  <tr>
-                    <td>Instructor</td>
-                    <td class="text-center">Course content owner</td>
-                    <td class="text-center">Student data editor</td>
-                  </tr>
-                  <tr>
-                    <td>TAs developing course content</td>
-                    <td class="text-center">Course content editor</td>
-                    <td class="text-center">Student data editor</td>
-                  </tr>
-                  <tr>
-                    <td>Student content developers (not TAs)</td>
-                    <td class="text-center">Course content editor</td>
-                    <td class="text-center">None</td>
-                  </tr>
-                  <tr>
-                    <td>TAs involved in grading</td>
-                    <td class="text-center">None</td>
-                    <td class="text-center">Student data editor</td>
-                  </tr>
-                  <tr>
-                    <td>Other TAs</td>
-                    <td class="text-center">None</td>
-                    <td class="text-center">Student data viewer</td>
-                  </tr>
-                  <tr>
-                    <td>Instructors from other classes</td>
-                    <td class="text-center">Course content viewer</td>
-                    <td class="text-center">None</td>
-                  </tr>
-                </table>
+                ${AccessLevelsTable()}
               </details>
             </small>
           </div>
@@ -384,7 +348,7 @@ function coursePermissionsInsertForm({
   `;
 }
 
-function coursePermissionsDeleteNonOwnersForm({
+function CoursePermissionsDeleteNonOwnersForm({
   csrfToken,
   id,
 }: {
@@ -413,7 +377,7 @@ function coursePermissionsDeleteNonOwnersForm({
   `;
 }
 
-function staffTable({
+function StaffTable({
   csrfToken,
   courseUsers,
   authnUser,
@@ -732,6 +696,48 @@ function staffTable({
           `;
         })}
       </tbody>
+    </table>
+  `;
+}
+
+function AccessLevelsTable() {
+  return html`
+    <table class="table table-striped table-sm border" style="max-width: 45em">
+      <tr>
+        <th scope="col">Role</th>
+        <th class="text-center" scope="col">Course content access</th>
+        <th class="text-center" scope="col">Student data access</th>
+      </tr>
+      <tr>
+        <td>Instructor</td>
+        <td class="text-center">Course content owner</td>
+        <td class="text-center">Student data editor</td>
+      </tr>
+      <tr>
+        <td>TAs developing course content</td>
+        <td class="text-center">Course content editor</td>
+        <td class="text-center">Student data editor</td>
+      </tr>
+      <tr>
+        <td>Student content developers (not TAs)</td>
+        <td class="text-center">Course content editor</td>
+        <td class="text-center">None</td>
+      </tr>
+      <tr>
+        <td>TAs involved in grading</td>
+        <td class="text-center">None</td>
+        <td class="text-center">Student data editor</td>
+      </tr>
+      <tr>
+        <td>Other TAs</td>
+        <td class="text-center">None</td>
+        <td class="text-center">Student data viewer</td>
+      </tr>
+      <tr>
+        <td>Instructors from other classes</td>
+        <td class="text-center">Course content viewer</td>
+        <td class="text-center">None</td>
+      </tr>
     </table>
   `;
 }
