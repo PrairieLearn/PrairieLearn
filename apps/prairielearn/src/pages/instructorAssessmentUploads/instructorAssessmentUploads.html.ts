@@ -2,8 +2,8 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { Modal } from '../../components/Modal.html';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types';
+import { Modal } from '../../components/Modal.html.js';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -23,24 +23,20 @@ export function InstructorAssessmentUploads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
         <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-
           // make the file inputs display the file name
           $(document).on('change', '.custom-file-input', function () {
             this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
             $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -271,6 +267,8 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
           </label>
         </div>
       </div>
+    `,
+    footer: html`
       <div class="d-flex justify-content-end">
         <div class="form-group mb-0">
           <input type="hidden" name="__action" value="upload_instance_question_scores" />
@@ -303,6 +301,8 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
           >
         </div>
       </div>
+    `,
+    footer: html`
       <div class="d-flex justify-content-end">
         <div class="form-group mb-0">
           <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
