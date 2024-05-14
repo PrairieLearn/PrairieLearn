@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IdSchema, AssessmentInstanceSchema, GroupSchema, UserSchema } from '../../lib/db-types';
+import { IdSchema, AssessmentInstanceSchema, GroupSchema, UserSchema } from '../../lib/db-types.js';
 
 export const AssessmentInstanceRowSchema = z.object({
   assessment_instance_id: IdSchema,

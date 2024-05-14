@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { Modal } from '../../components/Modal.html.js';
 
 export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
