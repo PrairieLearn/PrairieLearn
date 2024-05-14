@@ -269,14 +269,10 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
       </div>
     `,
     footer: html`
-      <div class="d-flex justify-content-end">
-        <div class="form-group mb-0">
-          <input type="hidden" name="__action" value="upload_instance_question_scores" />
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Upload</button>
-        </div>
-      </div>
+      <input type="hidden" name="__action" value="upload_instance_question_scores" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
 }
@@ -303,14 +299,10 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
       </div>
     `,
     footer: html`
-      <div class="d-flex justify-content-end">
-        <div class="form-group mb-0">
-          <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Upload</button>
-        </div>
-      </div>
+      <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload</button>
     `,
   });
 }
