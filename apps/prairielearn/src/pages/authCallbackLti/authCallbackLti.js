@@ -158,7 +158,7 @@ router.post(
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
         await sqldb.queryAsync(sql.upsert_outcome, {
-          user_id: userResult.rows[0].user_id,
+          user_id: userResult.user_id,
           assessment_id: linkResult.rows[0].assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,
           lis_outcome_service_url: parameters.lis_outcome_service_url,
