@@ -1,6 +1,6 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
-import QR = require('qrcode-svg');
+import QR from 'qrcode-svg';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
@@ -11,14 +11,14 @@ import {
   CourseInstanceCopyEditor,
   CourseInstanceRenameEditor,
   CourseInstanceDeleteEditor,
-} from '../../lib/editors';
-import { encodePath } from '../../lib/uri-util';
-import { getCanonicalHost } from '../../lib/url';
-import { IdSchema } from '../../lib/db-types';
-import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html';
+} from '../../lib/editors.js';
+import { encodePath } from '../../lib/uri-util.js';
+import { getCanonicalHost } from '../../lib/url.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

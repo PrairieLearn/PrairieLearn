@@ -1,28 +1,28 @@
 // @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import debugfn from 'debug';
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
-import AnsiUp from 'ansi_up';
-const sha256 = require('crypto-js/sha256');
-import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
-import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { AnsiUp } from 'ansi_up';
+import sha256 from 'crypto-js/sha256.js';
+import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
+import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { isBinaryFile } from 'isbinaryfile';
-import * as modelist from 'ace-code/src/ext/modelist';
-import { idsEqual } from '../../lib/id';
-import { getPaths } from '../../lib/instructorFiles';
-import { getCourseOwners } from '../../lib/course';
+import * as modelist from 'ace-code/src/ext/modelist.js';
+import { idsEqual } from '../../lib/id.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { getCourseOwners } from '../../lib/course.js';
 import { logger } from '@prairielearn/logger';
-import { FileModifyEditor } from '../../lib/editors';
+import { FileModifyEditor } from '../../lib/editors.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileEditor');
 
 router.get(
@@ -32,13 +32,13 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
@@ -178,7 +178,7 @@ router.get(
 
     res.locals.fileEdit = fileEdit;
     res.locals.fileEdit.paths = paths;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

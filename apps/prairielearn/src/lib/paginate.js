@@ -1,5 +1,5 @@
 // @ts-check
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 export function pages(chosenPage, count, pageSize) {
   let lastPage = Math.ceil(count / pageSize);

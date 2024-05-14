@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Modal } from '../../components/Modal.html';
-import { Course, CourseInstance, Institution } from '../../lib/db-types';
+import { Modal } from '../../components/Modal.html.js';
+import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 
 export const FeatureGrantRowSchema = z.object({
@@ -34,10 +34,10 @@ export function AdministratorFeatures({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'features',
@@ -85,7 +85,7 @@ export function AdministratorFeature({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
@@ -98,7 +98,7 @@ export function AdministratorFeature({
         </style>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'features',

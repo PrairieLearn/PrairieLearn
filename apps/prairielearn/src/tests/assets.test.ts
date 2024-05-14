@@ -3,11 +3,11 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config';
-import * as assets from '../lib/assets';
-import { APP_ROOT_PATH } from '../lib/paths';
+import { config } from '../lib/config.js';
+import * as assets from '../lib/assets.js';
+import { APP_ROOT_PATH } from '../lib/paths.js';
 
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');

@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
 ## 1.2.4
 
 ### Patch Changes

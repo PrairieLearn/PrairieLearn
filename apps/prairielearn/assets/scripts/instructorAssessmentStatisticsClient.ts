@@ -1,8 +1,8 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import { histogram } from './lib/histogram';
-import { scatter } from './lib/scatter';
-import { parallel_histograms } from './lib/parallelHistograms';
+import { histogram } from './lib/histogram.js';
+import { scatter } from './lib/scatter.js';
+import { parallel_histograms } from './lib/parallelHistograms.js';
 
 onDocumentReady(() => {
   document.querySelectorAll<HTMLElement>('.js-histogram').forEach((histogramElement) => {

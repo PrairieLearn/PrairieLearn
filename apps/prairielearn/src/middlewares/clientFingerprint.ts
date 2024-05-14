@@ -1,11 +1,11 @@
 // @ts-check
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '../lib/db-types';
-import { idsEqual } from '../lib/id';
+import { IdSchema } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
 import { Request, Response } from 'express';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
   if (!res.locals.assessment_instance) {

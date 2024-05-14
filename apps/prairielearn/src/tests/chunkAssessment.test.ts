@@ -2,15 +2,15 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 
-import { config } from '../lib/config';
-import * as chunks from '../lib/chunks';
+import { config } from '../lib/config.js';
+import * as chunks from '../lib/chunks.js';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
-import * as helperQuestion from './helperQuestion';
+import * as helperServer from './helperServer.js';
+import * as helperClient from './helperClient.js';
+import * as helperQuestion from './helperQuestion.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Generate chunks and use them for a student homework', function () {
   this.timeout(60000);

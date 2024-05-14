@@ -1,17 +1,17 @@
 // @ts-check
-import * as _ from 'lodash';
-const asyncHandler = require('express-async-handler');
+import _ from 'lodash';
+import asyncHandler from 'express-async-handler';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { html } from '@prairielearn/html';
-import { idsEqual } from '../lib/id';
-import { features } from '../lib/features/index';
-import { clearCookie } from '../lib/cookie';
+import { idsEqual } from '../lib/id.js';
+import { features } from '../lib/features/index.js';
+import { clearCookie } from '../lib/cookie.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
 
 /**
