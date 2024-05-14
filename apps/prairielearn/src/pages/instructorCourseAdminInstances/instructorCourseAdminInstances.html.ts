@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseInstanceAuthz } from '../../models/course-instances';
+import { CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
 
