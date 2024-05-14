@@ -11,9 +11,9 @@
         var day = ('0' + date.getDate()).slice(-2);
         var hours = ('0' + date.getHours()).slice(-2);
         var minutes = ('0' + date.getMinutes()).slice(-2);
-        return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+        var seconds = ('0' + date.getSeconds()).slice(-2);
+        return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds;
     }
-
    
     $(function () {
       $('[data-toggle="popover"]').popover({ sanitize: false,   container: 'body' });
@@ -280,7 +280,6 @@
                       <button type="button" class="dropdown-item delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>"  data-__action="elete_override" data-policy-id="<%= policy.id %>" data-csrf-token="<%= __csrf_token %>">
                         <i class="fas fa-remove"></i> Delete
                       </button>
-                      <!-- </form> -->
                     </div>
                   </div>
                 </td>
