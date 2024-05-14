@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { Terms } from './terms.html';
-import { clearCookie } from '../../../lib/cookie';
+import { Terms } from './terms.html.js';
+import { clearCookie } from '../../../lib/cookie.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(

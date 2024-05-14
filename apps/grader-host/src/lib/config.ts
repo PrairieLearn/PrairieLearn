@@ -7,7 +7,7 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
-import logger from './logger';
+import logger from './logger.js';
 
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';

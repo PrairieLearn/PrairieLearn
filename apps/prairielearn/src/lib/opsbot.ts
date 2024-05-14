@@ -1,5 +1,5 @@
 import * as error from '@prairielearn/error';
-import { config } from './config';
+import { config } from './config.js';
 import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
 

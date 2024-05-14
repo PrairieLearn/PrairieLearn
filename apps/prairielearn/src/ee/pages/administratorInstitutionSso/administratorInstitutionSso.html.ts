@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
+import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export const AdministratorInstitutionSso = ({
   institution,
@@ -22,14 +22,14 @@ export const AdministratorInstitutionSso = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'SSO',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',

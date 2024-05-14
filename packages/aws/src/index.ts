@@ -1,1 +1,1 @@
-export { makeAwsConfigProvider } from './config';
+export { makeAwsConfigProvider } from './config.js';

@@ -1,5 +1,5 @@
 // @ts-check
-import { config } from './config';
+import { config } from './config.js';
 
 /**
  * This function may only return `true` if the user has obtained a contract,

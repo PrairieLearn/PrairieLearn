@@ -2,10 +2,10 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { z } from 'zod';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { GradingJobSchema, User } from '../../../lib/db-types';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets';
-import { GradingPanel } from './gradingPanel.html';
-import { RubricSettingsModal } from './rubricSettingsModal.html';
+import { GradingJobSchema, User } from '../../../lib/db-types.js';
+import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import { GradingPanel } from './gradingPanel.html.js';
+import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -27,7 +27,7 @@ export function InstanceQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", {
           ...resLocals,
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
           // instance_question_info is reset to keep the default title from showing the student question number
@@ -52,10 +52,10 @@ export function InstanceQuestion({
         ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <div class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../../partials/questionSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -75,7 +75,7 @@ export function InstanceQuestion({
             : ''}
           <div class="row">
             <div class="col-lg-8 col-12">
-              ${renderEjs(__filename, "<%- include('../../partials/question') %>", {
+              ${renderEjs(import.meta.url, "<%- include('../../partials/question') %>", {
                 ...resLocals,
                 question_context: 'manual_grading',
               })}
@@ -90,15 +90,19 @@ export function InstanceQuestion({
               </div>
 
               ${resLocals.file_list.length > 0
-                ? renderEjs(__filename, "<%- include('../../partials/attachFilePanel') %>", {
+                ? renderEjs(import.meta.url, "<%- include('../../partials/attachFilePanel') %>", {
                     ...resLocals,
                     question_context: 'manual_grading',
                   })
                 : ''}
-              ${renderEjs(__filename, "<%- include('../../partials/instructorInfoPanel'); %>", {
-                ...resLocals,
-                question_context: 'manual_grading',
-              })}
+              ${renderEjs(
+                import.meta.url,
+                "<%- include('../../partials/instructorInfoPanel'); %>",
+                {
+                  ...resLocals,
+                  question_context: 'manual_grading',
+                },
+              )}
             </div>
           </div>
         </main>

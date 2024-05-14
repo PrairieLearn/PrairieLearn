@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import { config } from '../../lib/config';
-import { clearCookie, setCookie } from '../../lib/cookie';
+import { config } from '../../lib/config.js';
+import { clearCookie, setCookie } from '../../lib/cookie.js';
 
 const router = Router();
 

@@ -2,11 +2,11 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { Modal } from '../../components/Modal.html';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types';
-import { CourseWithPermissions } from '../../models/course';
-import { isEnterprise } from '../../lib/license';
-import { idsEqual } from '../../lib/id';
+import { Modal } from '../../components/Modal.html.js';
+import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseWithPermissions } from '../../models/course.js';
+import { isEnterprise } from '../../lib/license.js';
+import { idsEqual } from '../../lib/id.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),
@@ -60,7 +60,7 @@ export function InstructorQuestionSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           pageNote: resLocals.question.qid,
           ...resLocals,
         })}
@@ -84,10 +84,10 @@ export function InstructorQuestionSettings({
           });
         </script>
 
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/questionSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -98,7 +98,7 @@ export function InstructorQuestionSettings({
                 <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
-                  <input
+                  <input  
                     type="text"
                     class="form-control"
                     id="title"
@@ -125,7 +125,7 @@ export function InstructorQuestionSettings({
                           data-placement="auto"
                           title="Change QID"
                           data-content="${renderEjs(
-                            __filename,
+                            import.meta.url,
                             "<%= include('../partials/changeIdForm') %>",
                             {
                               id_label: 'QID',

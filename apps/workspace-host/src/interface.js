@@ -1,25 +1,25 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as _ from 'lodash';
+import ERR from 'async-stacktrace';
+import _ from 'lodash';
 import * as util from 'node:util';
-const express = require('express');
+import express from 'express';
 import * as http from 'node:http';
 import fetch from 'node-fetch';
 import * as path from 'node:path';
 import { S3 } from '@aws-sdk/client-s3';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { Upload } from '@aws-sdk/lib-storage';
-const Docker = require('dockerode');
+import Docker from 'dockerode';
 import * as fs from 'node:fs';
 import * as async from 'async';
 import * as fsPromises from 'node:fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-const yargsParser = require('yargs-parser');
+import yargsParser from 'yargs-parser';
 import debugfn from 'debug';
-const archiver = require('archiver');
+import archiver from 'archiver';
 import * as net from 'node:net';
-const asyncHandler = require('express-async-handler');
-const bodyParser = require('body-parser');
+import asyncHandler from 'express-async-handler';
+import bodyParser from 'body-parser';
 import { Mutex } from 'async-mutex';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
@@ -28,13 +28,13 @@ import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 import { cache } from '@prairielearn/cache';
 
-import { config, loadConfig } from './lib/config';
-import { parseDockerLogs } from './lib/docker';
-import * as socketServer from './lib/socket-server';
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
+import { config, loadConfig } from './lib/config.js';
+import { parseDockerLogs } from './lib/docker.js';
+import * as socketServer from './lib/socket-server.js';
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 

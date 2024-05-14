@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
 import esbuild, { Metafile } from 'esbuild';
 import path from 'path';
-import globby from 'globby';
+import { globby } from 'globby';
 import fs from 'fs-extra';
 import http from 'node:http';
 import { html, HtmlSafeString } from '@prairielearn/html';

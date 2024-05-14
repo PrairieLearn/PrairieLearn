@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { makeGradingResult } from './externalGraderCommon';
+import { makeGradingResult } from './externalGraderCommon.js';
 
 describe('externalGraderCommon', () => {
   describe('makeGradingResult', () => {

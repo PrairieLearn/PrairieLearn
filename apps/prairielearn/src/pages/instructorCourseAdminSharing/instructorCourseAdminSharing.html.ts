@@ -132,7 +132,7 @@ export const InstructorSharing = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
         <script>
@@ -140,7 +140,7 @@ export const InstructorSharing = ({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>

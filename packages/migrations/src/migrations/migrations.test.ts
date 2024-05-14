@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import path from 'node:path';
 import { makePostgresTestUtils, queryAsync } from '@prairielearn/postgres';
 
-import { getMigrationsToExecute, initWithLock } from './migrations';
+import { getMigrationsToExecute, initWithLock } from './migrations.js';
 
 describe('migrations', () => {
   describe('getMigrationsToExecute', () => {
@@ -67,7 +67,7 @@ describe('migrations', () => {
     });
 
     it('runs both SQL and JavaScript migrations', async () => {
-      const migrationDir = path.join(__dirname, 'fixtures');
+      const migrationDir = path.join(import.meta.dirname, 'fixtures');
       await initWithLock([migrationDir], 'prairielearn_migrations');
 
       // If both migrations ran successfully, there should be a single user

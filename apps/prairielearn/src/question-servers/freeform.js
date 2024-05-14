@@ -1,38 +1,38 @@
 // @ts-check
 
 import * as async from 'async';
-import * as _ from 'lodash';
-import * as fs from 'fs-extra';
+import _ from 'lodash';
+import fs from 'fs-extra';
 import * as path from 'path';
-import * as mustache from 'mustache';
+import mustache from 'mustache';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
 import * as cheerio from 'cheerio/lib/slim';
 import * as parse5 from 'parse5';
 import debugfn from 'debug';
-const objectHash = require('object-hash');
+import objectHash from 'object-hash';
 
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 import { logger } from '@prairielearn/logger';
 import { cache } from '@prairielearn/cache';
 
-import * as schemas from '../schemas';
-import { config } from '../lib/config';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
-import * as jsonLoad from '../lib/json-load';
-import { getOrUpdateCourseCommitHash } from '../models/course';
-import * as markdown from '../lib/markdown';
-import * as chunks from '../lib/chunks';
-import * as assets from '../lib/assets';
-import { APP_ROOT_PATH } from '../lib/paths';
-import { features } from '../lib/features';
+import * as schemas from '../schemas/index.js';
+import { config } from '../lib/config.js';
+import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
+import * as jsonLoad from '../lib/json-load.js';
+import { getOrUpdateCourseCommitHash } from '../models/course.js';
+import * as markdown from '../lib/markdown.js';
+import * as chunks from '../lib/chunks.js';
+import * as assets from '../lib/assets.js';
+import { APP_ROOT_PATH } from '../lib/paths.js';
+import { features } from '../lib/features/index.js';
 
 const debug = debugfn('prairielearn:freeform');
 
 /**
  * @typedef {Object} QuestionProcessingContext
- * @property {import('../lib/db-types').Course} course
- * @property {import('../lib/db-types').Question} question
+ * @property {import('../lib/db-types.js').Course} course
+ * @property {import('../lib/db-types.js').Question} question
  * @property {string} course_dir
  * @property {string} course_dir_host
  * @property {string} question_dir
@@ -497,7 +497,7 @@ function checkData(data, origData, phase) {
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {any} context
  * @param {string} html
@@ -574,6 +574,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
+        nodeName: '#document-fragment',
         childNodes: [node],
       });
       let ret_val, consoleLog;
@@ -800,7 +801,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
 /**
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -835,7 +836,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   }
 
   let processFunction;
-  /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, any]} */
+  /** @type {[string, import('../lib/code-caller/index.js').CodeCaller, any, any, any]} */
   let args;
   if (context.renderer === 'experimental') {
     processFunction = experimentalProcess;
@@ -971,7 +972,7 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -1103,10 +1104,10 @@ export async function prepare(question, course, variant) {
 
 /**
  * @param {'question' | 'answer' | 'submission'} panel
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
- * @param {import('../lib/db-types').Variant} variant
- * @param {import('../lib/db-types').Submission?} submission
- * @param {import('../lib/db-types').Course} course
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Submission?} submission
+ * @param {import('../lib/db-types.js').Course} course
  * @param {Record<string, any>} locals
  * @param {QuestionProcessingContext} context
  * @returns {Promise<RenderPanelResult>}
@@ -1345,7 +1346,7 @@ export async function render(
       };
 
       for (let type in question.dependencies) {
-        if (!_.has(dependencies, type)) continue;
+        if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
           if (!_.includes(dependencies[type], dep)) {
@@ -1412,7 +1413,7 @@ export async function render(
         }
 
         for (const type in elementDependencies) {
-          if (!_.has(dependencies, type)) continue;
+          if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
             if (!_.includes(dependencies[type], dep)) {
@@ -1471,7 +1472,7 @@ export async function render(
             }
 
             for (const type in extension) {
-              if (!_.has(dependencies, type)) continue;
+              if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
                 if (!_.includes(dependencies[type], dep)) {

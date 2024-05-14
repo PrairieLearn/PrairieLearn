@@ -1,10 +1,10 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { config } from '../../lib/config';
+import { config } from '../../lib/config.js';
 
 const router = Router();
 

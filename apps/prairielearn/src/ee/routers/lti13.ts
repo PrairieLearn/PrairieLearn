@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
-import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
-import lti13Auth from '../auth/lti13/lti13Auth';
-import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
-import { features } from '../../lib/features';
-import authnMiddleware from '../../middlewares/authn';
-import csrfToken from '../../middlewares/csrfToken';
-import { selectLti13Instance } from '../models/lti13Instance';
+import lti13InstancePages from '../pages/lti13Instance/lti13Instance.js';
+import lti13Auth from '../auth/lti13/lti13Auth.js';
+import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation.js';
+import { features } from '../../lib/features/index.js';
+import authnMiddleware from '../../middlewares/authn.js';
+import csrfToken from '../../middlewares/csrfToken.js';
+import { selectLti13Instance } from '../models/lti13Instance.js';
 
 const router = Router({ mergeParams: true });
 

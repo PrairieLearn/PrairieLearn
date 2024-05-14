@@ -2,9 +2,9 @@
 import * as assert from 'node:assert';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
-import logger from './logger';
-import { config } from './config';
-import { makeAwsClientConfig } from './aws';
+import logger from './logger.js';
+import { config } from './config.js';
+import { makeAwsClientConfig } from './aws.js';
 
 /**
  * Stores our current state. We do one-way transitions:

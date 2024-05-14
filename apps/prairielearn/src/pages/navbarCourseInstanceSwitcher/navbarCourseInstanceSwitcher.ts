@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import { NavbarCourseInstanceSwitcher } from './navbarCourseInstanceSwitcher.html';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import asyncHandler from 'express-async-handler';
+import { NavbarCourseInstanceSwitcher } from './navbarCourseInstanceSwitcher.html.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = Router();
 
