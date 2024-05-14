@@ -2,11 +2,11 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import { config } from '../lib/config.js';
+import * as helperServer from './helperServer.js';
+import * as helperClient from './helperClient.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules', function () {
   this.timeout(60000);

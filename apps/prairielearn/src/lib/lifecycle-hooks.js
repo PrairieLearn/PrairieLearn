@@ -6,8 +6,8 @@ import {
 } from '@aws-sdk/client-auto-scaling';
 import { logger } from '@prairielearn/logger';
 
-import { makeAwsClientConfig } from './aws';
-import { config } from './config';
+import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
 
 /**
  * Gets the lifecycle state of the current EC2 instance.

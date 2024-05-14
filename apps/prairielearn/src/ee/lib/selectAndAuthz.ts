@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types';
+import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
 import { HttpStatusError } from '@prairielearn/error';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstitutionAsAdmin({
   institution_id,

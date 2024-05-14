@@ -3,8 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as workspaceHostUtils from '../lib/workspaceHost';
-import * as helperDb from './helperDb';
+import * as workspaceHostUtils from '../lib/workspaceHost.js';
+import * as helperDb from './helperDb.js';
 
 const WorkspaceHostSchema = z.object({
   id: z.string(),

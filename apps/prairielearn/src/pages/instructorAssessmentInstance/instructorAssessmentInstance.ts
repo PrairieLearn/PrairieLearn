@@ -1,29 +1,29 @@
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
 import { z } from 'zod';
 
-import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name';
-import * as ltiOutcomes from '../../lib/ltiOutcomes';
-import { updateInstanceQuestionScore } from '../../lib/manualGrading';
+import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
+import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
+import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
   updateAssessmentInstanceScore,
-} from '../../lib/assessment';
-import { resetVariantsForInstanceQuestion } from '../../models/variant';
+} from '../../lib/assessment.js';
+import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
 import {
   InstructorAssessmentInstance,
   AssessmentInstanceStatsSchema,
   InstanceQuestionRowSchema,
-} from './instructorAssessmentInstance.html';
+} from './instructorAssessmentInstance.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const DateDurationResultSchema = z.object({
   assessment_instance_date_formatted: z.string(),

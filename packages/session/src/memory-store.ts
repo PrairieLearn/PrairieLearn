@@ -1,4 +1,4 @@
-import { SessionStore, SessionStoreData } from './store';
+import { SessionStore, SessionStoreData } from './store.js';
 
 export class MemoryStore implements SessionStore {
   private sessions = new Map<string, { expiresAt: Date; data: string }>();

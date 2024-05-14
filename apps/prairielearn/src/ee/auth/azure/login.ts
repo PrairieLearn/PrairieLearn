@@ -1,4 +1,4 @@
-import passport = require('passport');
+import passport from 'passport';
 import { Router } from 'express';
 
 const router = Router();

@@ -1,4 +1,4 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
@@ -8,11 +8,11 @@ import { logger } from '@prairielearn/logger';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from '../../lib/id';
+import { idsEqual } from '../../lib/id.js';
 import {
   CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
-} from '../../models/course-instances';
+} from '../../models/course-instances.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,
@@ -23,17 +23,17 @@ import {
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
-} from '../../models/course-permissions';
-import { parseUidsString } from '../../lib/user';
-import { User } from '../../lib/db-types';
+} from '../../models/course-permissions.js';
+import { parseUidsString } from '../../lib/user.js';
+import { User } from '../../lib/db-types.js';
 import {
   InstructorCourseAdminStaff,
   CourseUsersRowSchema,
-} from './instructorCourseAdminStaff.html';
+} from './instructorCourseAdminStaff.html.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router();
 
 /**
