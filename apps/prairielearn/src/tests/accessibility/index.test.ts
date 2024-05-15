@@ -5,7 +5,6 @@ import { JSDOM } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
-import { disableInstrumentations } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -243,10 +242,6 @@ describe('accessibility', () => {
   let endpoints: expressListEndpoints.Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
-    // The OpenTelemetry instrumentation for Express breaks our ability to inspect
-    // the Express routes. We need to disable it before loading the server.
-    disableInstrumentations();
-
     config.cronActive = false;
     await helperServer.before(EXAMPLE_COURSE_PATH).call(this);
     config.cronActive = true;
