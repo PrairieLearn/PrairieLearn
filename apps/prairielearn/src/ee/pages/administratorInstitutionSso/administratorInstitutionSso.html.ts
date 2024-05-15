@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export const AdministratorInstitutionSso = ({

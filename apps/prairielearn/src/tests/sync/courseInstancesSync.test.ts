@@ -1,9 +1,12 @@
+import * as path from 'path';
+
 import { assert } from 'chai';
 import fs from 'fs-extra';
-import * as path from 'path';
-import * as util from './util.js';
-import * as helperDb from '../helperDb.js';
+
 import { idsEqual } from '../../lib/id.js';
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 /**
  * Makes an empty course instance.

@@ -1,7 +1,8 @@
 // @ts-check
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
-import { Router } from 'express';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { AdministratorNetworks } from './administratorNetworks.html.js';

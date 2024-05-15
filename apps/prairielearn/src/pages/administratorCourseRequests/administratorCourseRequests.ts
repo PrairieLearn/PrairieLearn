@@ -1,5 +1,6 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 
 import { config } from '../../lib/config.js';
@@ -9,6 +10,7 @@ import {
   updateCourseRequest,
 } from '../../lib/course-request.js';
 import { selectAllInstitutions } from '../../models/institution.js';
+
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
 
 const router = express.Router();

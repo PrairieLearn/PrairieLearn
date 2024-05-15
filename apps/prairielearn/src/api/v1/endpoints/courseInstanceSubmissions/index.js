@@ -1,7 +1,8 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
+
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 

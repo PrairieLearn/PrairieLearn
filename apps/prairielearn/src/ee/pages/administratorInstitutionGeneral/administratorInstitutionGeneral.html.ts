@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type PlanGrant, type Institution } from '../../../lib/db-types.js';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 import { formatTimezone, Timezone } from '../../../lib/timezones.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),

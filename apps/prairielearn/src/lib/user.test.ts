@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+
 import { parseUidsString } from './user.js';
 
 describe('user utilities', () => {

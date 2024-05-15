@@ -1,9 +1,10 @@
 // @ts-check
 import * as sqldb from '@prairielearn/postgres';
-import logger from './logger.js';
+
 import { config } from './config.js';
-import * as lifecycle from './lifecycle.js';
 import * as healthCheck from './healthCheck.js';
+import * as lifecycle from './lifecycle.js';
+import logger from './logger.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

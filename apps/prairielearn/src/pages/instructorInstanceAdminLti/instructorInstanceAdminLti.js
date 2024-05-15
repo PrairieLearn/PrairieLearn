@@ -1,11 +1,12 @@
 // @ts-check
 import ERR from 'async-stacktrace';
-import _ from 'lodash';
 import * as express from 'express';
+import _ from 'lodash';
 
-import { getCourseOwners } from '../../lib/course.js';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
+import { getCourseOwners } from '../../lib/course.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

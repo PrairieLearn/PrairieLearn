@@ -2,20 +2,20 @@ import { assert } from 'chai';
 import fetch from 'node-fetch';
 
 import { config } from '../../../lib/config.js';
+import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
-import { enableEnterpriseEdition } from '../../tests/ee-helpers.js';
-import {
-  reconcilePlanGrantsForCourseInstance,
-  reconcilePlanGrantsForCourseInstanceUser,
-  updateRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans.js';
 import {
   withUser,
   type AuthUser,
   getConfiguredUser,
   getOrCreateUser,
 } from '../../../tests/utils/auth.js';
-import { ensureEnrollment } from '../../../models/enrollment.js';
+import {
+  reconcilePlanGrantsForCourseInstance,
+  reconcilePlanGrantsForCourseInstanceUser,
+  updateRequiredPlansForCourseInstance,
+} from '../../lib/billing/plans.js';
+import { enableEnterpriseEdition } from '../../tests/ee-helpers.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const assessmentsUrl = `${siteUrl}/pl/course_instance/1/assessments`;

@@ -1,21 +1,20 @@
 // @ts-check
-import * as async from 'async';
 import * as path from 'path';
-import * as ejs from 'ejs';
-import { differenceInMilliseconds } from 'date-fns';
 import * as util from 'util';
+
+import * as async from 'async';
+import { differenceInMilliseconds } from 'date-fns';
+import * as ejs from 'ejs';
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import * as questionServers from '../question-servers/index.js';
 
 import { config, setLocalsFromConfig } from './config.js';
-import * as manualGrading from './manualGrading.js';
-import * as questionServers from '../question-servers/index.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
-import { writeCourseIssues } from './issues.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -33,6 +32,9 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
+import { writeCourseIssues } from './issues.js';
+import * as manualGrading from './manualGrading.js';
+import { getQuestionCourse, ensureVariant } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

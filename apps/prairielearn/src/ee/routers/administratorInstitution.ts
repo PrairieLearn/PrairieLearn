@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { features } from '../../lib/features/index.js';
 import authzIsAdministrator from '../../middlewares/authzIsAdministrator.js';
-import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral.js';
-import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses.js';
 import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse.js';
 import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance.js';
-import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso.js';
-import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml.js';
+import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses.js';
+import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral.js';
 import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13.js';
-import { features } from '../../lib/features/index.js';
+import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml.js';
+import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso.js';
 
 const router = Router({ mergeParams: true });
 

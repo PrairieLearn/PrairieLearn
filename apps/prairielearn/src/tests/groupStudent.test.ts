@@ -1,16 +1,17 @@
 import ERR from 'async-stacktrace';
-import fetch from 'node-fetch';
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
+import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { assert } from 'chai';
-import * as cheerio from 'cheerio';
-
-import * as helperServer from './helperServer.js';
 import { idsEqual } from '../lib/id.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+
 import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

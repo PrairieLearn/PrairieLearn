@@ -1,4 +1,5 @@
 import ClipboardJS from 'clipboard';
+
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 $(() => {

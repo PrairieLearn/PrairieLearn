@@ -1,19 +1,21 @@
 // @ts-check
-import * as express from 'express';
-import asyncHandler from 'express-async-handler';
-import { AnsiUp } from 'ansi_up';
-import * as error from '@prairielearn/error';
-import debugfn from 'debug';
-import { stringifyStream } from '@prairielearn/csv';
-import * as sqldb from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 
-import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { AssessmentAddEditor } from '../../lib/editors.js';
+import { AnsiUp } from 'ansi_up';
+import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
+import { AssessmentAddEditor } from '../../lib/editors.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 const router = express.Router();
 const ansiUp = new AnsiUp();

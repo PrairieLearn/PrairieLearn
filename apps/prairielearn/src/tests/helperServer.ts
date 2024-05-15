@@ -1,32 +1,32 @@
-import * as tmp from 'tmp-promise';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { assert } from 'chai';
-import * as opentelemetry from '@prairielearn/opentelemetry';
-import debugfn from 'debug';
-import { cache } from '@prairielearn/cache';
 
-import * as assets from '../lib/assets.js';
-import { config } from '../lib/config.js';
-import * as load from '../lib/load.js';
+import { assert } from 'chai';
+import debugfn from 'debug';
+import * as tmp from 'tmp-promise';
+
+import { cache } from '@prairielearn/cache';
+import * as opentelemetry from '@prairielearn/opentelemetry';
+import * as sqldb from '@prairielearn/postgres';
+
 import * as cron from '../cron/index.js';
-import * as socketServer from '../lib/socket-server.js';
-import * as serverJobs from '../lib/server-jobs.js';
-import * as freeformServer from '../question-servers/freeform.js';
-import * as localCache from '../lib/local-cache.js';
+import * as assets from '../lib/assets.js';
 import * as codeCaller from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
+import * as load from '../lib/load.js';
+import * as localCache from '../lib/local-cache.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
+import * as serverJobs from '../lib/server-jobs.js';
+import * as socketServer from '../lib/socket-server.js';
+import * as freeformServer from '../question-servers/freeform.js';
 import * as server from '../server.js';
 
-import * as helperDb from './helperDb.js';
 import * as helperCourse from './helperCourse.js';
+import * as helperDb from './helperDb.js';
 
 const debug = debugfn('prairielearn:helperServer');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.

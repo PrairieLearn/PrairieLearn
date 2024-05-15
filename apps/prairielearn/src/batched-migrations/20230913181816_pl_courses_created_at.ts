@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { z } from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
