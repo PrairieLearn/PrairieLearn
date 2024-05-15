@@ -152,11 +152,20 @@ describe('Test workspace dynamic files', function () {
         { file: 'invalid_encoding.bin', msg: 'unsupported file encoding' },
         { file: '../outside_home.txt', msg: 'traverses outside the home directory' },
         { file: 'server.py', msg: 'local file outside the question directory' },
+        { file: 'no_contents.txt', msg: 'has neither "contents" nor "questionFile"', contents: '' },
       ];
       for (const expectedError of expectedErrors) {
         const issueError = issueErrors.find((error) => error.file === expectedError.file);
         assert.isDefined(issueError, `Expected error not found: ${expectedError.file}`);
         assert.include(issueError.msg, expectedError.msg);
+        if (expectedError.contents != null) {
+          await checkFileContents(expectedError.file, expectedError.contents);
+        } else {
+          await fs.access(join(sourcePath, expectedError.file)).then(
+            () => assert.fail(`File ${expectedError.file} should not exist`),
+            (err) => assert.equal(err.code, 'ENOENT'),
+          );
+        }
       }
       assert.lengthOf(issueErrors, expectedErrors.length);
     });

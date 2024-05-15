@@ -28,4 +28,8 @@ def generate(data):
             "name": "server.py",
             "questionFile": "../workspace/server.py",
         },
+        {
+            # File without contents or questionFile
+            "name": "no_contents.txt",
+        },
     ]
