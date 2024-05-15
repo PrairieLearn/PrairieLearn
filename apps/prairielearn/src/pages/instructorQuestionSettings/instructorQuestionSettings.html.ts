@@ -1,12 +1,13 @@
+import { z } from 'zod';
+
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 import { Modal } from '../../components/Modal.html.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { CourseWithPermissions } from '../../models/course.js';
-import { isEnterprise } from '../../lib/license.js';
 import { idsEqual } from '../../lib/id.js';
+import { isEnterprise } from '../../lib/license.js';
+import { CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),

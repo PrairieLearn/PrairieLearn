@@ -1,9 +1,11 @@
 // @ts-check
+import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
+
 import { IdSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { Request, Response } from 'express';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

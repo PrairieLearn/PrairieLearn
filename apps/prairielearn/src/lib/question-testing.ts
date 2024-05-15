@@ -1,14 +1,12 @@
-import _ from 'lodash';
 import * as async from 'async';
 import jsonStringifySafe from 'json-stringify-safe';
+import _ from 'lodash';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+
 import * as questionServers from '../question-servers/index.js';
-import { type ServerJob, createServerJob } from './server-jobs.js';
-import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
-import { getQuestionCourse, ensureVariant } from './question-variant.js';
-import { getAndRenderVariant } from './question-render.js';
-import { writeCourseIssues } from './issues.js';
+
 import {
   GradingJobSchema,
   SubmissionSchema,
@@ -18,7 +16,11 @@ import {
   type Course,
   type CourseInstance,
 } from './db-types.js';
-import { z } from 'zod';
+import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
+import { writeCourseIssues } from './issues.js';
+import { getAndRenderVariant } from './question-render.js';
+import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

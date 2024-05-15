@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import fs from 'fs-extra';
-import prettyBytes from 'pretty-bytes';
 import path from 'path';
 import { promisify } from 'util';
 import zlib from 'zlib';
+
 import { program } from 'commander';
+import fs from 'fs-extra';
+import prettyBytes from 'pretty-bytes';
 
 import { build } from './index.js';
 

@@ -1,14 +1,17 @@
 // @ts-check
+import * as path from 'path';
+
 import { assert } from 'chai';
 import fs from 'fs-extra';
-import * as path from 'path';
+
+import * as sqldb from '@prairielearn/postgres';
+
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
-import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from '../../lib/id.js';
+import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
-import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

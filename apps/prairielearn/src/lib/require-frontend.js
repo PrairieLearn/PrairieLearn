@@ -5,9 +5,10 @@
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-import requirejs from 'requirejs';
-import * as path from 'node:path';
 import { createRequire } from 'node:module';
+import * as path from 'node:path';
+
+import requirejs from 'requirejs';
 
 import { logger } from '@prairielearn/logger';
 

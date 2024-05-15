@@ -1,6 +1,8 @@
 import { assert } from 'chai';
-import * as util from './util.js';
+
 import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 describe('Initial Sync', () => {
   before('set up testing database', helperDb.before);

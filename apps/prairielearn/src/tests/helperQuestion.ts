@@ -1,8 +1,9 @@
+import { setTimeout as sleep } from 'timers/promises';
+
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch, { FormData } from 'node-fetch';
-import { setTimeout as sleep } from 'timers/promises';
 import _ from 'lodash';
+import fetch, { FormData } from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
