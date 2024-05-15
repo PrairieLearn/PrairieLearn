@@ -1,5 +1,5 @@
 import * as compiledAssets from '@prairielearn/compiled-assets';
-import express = require('express');
+import express from 'express';
 import * as path from 'node:path';
 import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';
