@@ -63,7 +63,7 @@ module.exports = {
     'import/order': [
       'error',
       {
-        'newlines-between': 'always-and-inside-groups',
+        'newlines-between': 'always',
         alphabetize: {
           order: 'asc',
         },
