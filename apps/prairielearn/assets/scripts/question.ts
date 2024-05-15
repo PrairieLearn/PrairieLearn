@@ -128,7 +128,7 @@ function fetchResults(socket: Socket, submissionId: string) {
       if (msg) {
         updateDynamicPanels(msg, submissionId);
       } else {
-        console.error('Error retrieving results for submission ' + submissionId);
+        console.error(`Error retrieving results for submission ${submissionId}`);
       }
       // Restore modal state if need be
       if (wasModalOpen) {
