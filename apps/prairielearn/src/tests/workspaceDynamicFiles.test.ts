@@ -27,31 +27,29 @@ async function checkFileContents(filename: string, expectedContents: string) {
   assert.equal(fileContents, expectedContents);
 }
 
-function createAndInitializeWorkspaceQuestion(qid: string) {
-  it('create workspace question variant', async () => {
-    const questionId = await queryRow(sql.select_test_question, { qid }, IdSchema);
-    const workspaceQuestionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
-    const response = await fetch(workspaceQuestionUrl);
+async function createWorkspaceVariant(qid: string) {
+  const questionId = await queryRow(sql.select_test_question, { qid }, IdSchema);
+  const workspaceQuestionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
+  const response = await fetch(workspaceQuestionUrl);
 
-    const $ = cheerio.load(await response.text());
-    const workspaceButton = $('a:contains("Open workspace")');
-    assert.lengthOf(workspaceButton, 1);
+  const $ = cheerio.load(await response.text());
+  const workspaceButton = $('a:contains("Open workspace")');
+  assert.lengthOf(workspaceButton, 1);
 
-    workspaceId = workspaceButton.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
-    assert.isDefined(workspaceId);
+  workspaceId = workspaceButton.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
+  assert.isDefined(workspaceId);
 
-    variantId = $('.question-form input[name="__variant_id"]').attr('value');
-    assert.isDefined(variantId);
-  });
+  variantId = $('.question-form input[name="__variant_id"]').attr('value');
+  assert.isDefined(variantId);
+}
 
-  it('initialize workspace', async () => {
-    assert.isDefined(workspaceId);
-    // A workspace is typically initialized using sockets, but to simplify the
-    // testing environment, we will call the initialization process directly.
-    ({ sourcePath } = await initialize(workspaceId));
-    const directoryStats = await fs.stat(sourcePath);
-    assert.isTrue(directoryStats.isDirectory());
-  });
+async function initializeWorkspace() {
+  assert.isDefined(workspaceId);
+  // A workspace is typically initialized using sockets, but to simplify the
+  // testing environment, we will call the initialization process directly.
+  ({ sourcePath } = await initialize(workspaceId));
+  const directoryStats = await fs.stat(sourcePath);
+  assert.isTrue(directoryStats.isDirectory());
 }
 
 describe('Test workspace dynamic files', function () {
@@ -70,7 +68,8 @@ describe('Test workspace dynamic files', function () {
   after('shut down testing server', helperServer.after);
 
   describe('Question with valid dynamic files', () => {
-    createAndInitializeWorkspaceQuestion('workspace');
+    it('create workspace question variant', async () => createWorkspaceVariant('workspace'));
+    it('initialize workspace', initializeWorkspace);
 
     it('creates all static files', async () => {
       await checkFileContents(
@@ -125,7 +124,9 @@ describe('Test workspace dynamic files', function () {
   });
 
   describe('Question with invalid dynamic files', () => {
-    createAndInitializeWorkspaceQuestion('workspaceInvalidDynamicFiles');
+    it('create workspace question variant', async () =>
+      createWorkspaceVariant('workspaceInvalidDynamicFiles'));
+    it('initialize workspace', initializeWorkspace);
 
     it('creates valid files', async () => {
       await checkFileContents('static.txt', 'Static content\n');
