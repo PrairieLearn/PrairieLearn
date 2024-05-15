@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type CourseInstance } from '../../lib/db-types.js';
+
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { QuestionsPageDataAnsified } from '../../models/questions.js';
 
 export const QuestionsPage = ({

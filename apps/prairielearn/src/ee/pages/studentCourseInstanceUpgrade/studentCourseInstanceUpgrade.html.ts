@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { PlanName } from '../../lib/billing/plans-types.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
 
 export function StudentCourseInstanceUpgrade({

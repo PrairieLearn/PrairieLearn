@@ -1,5 +1,6 @@
-import * as async from 'async';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import * as async from 'async';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../lib/aws.js';

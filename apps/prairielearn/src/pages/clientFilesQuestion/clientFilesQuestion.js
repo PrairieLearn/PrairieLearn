@@ -1,13 +1,15 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
+
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { HttpStatusError } from '@prairielearn/error';
 
 import * as chunks from '../../lib/chunks.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
-import { HttpStatusError } from '@prairielearn/error';
 
 export default function (options = { publicEndpoint: false }) {
   const router = Router({ mergeParams: true });

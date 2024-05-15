@@ -1,21 +1,24 @@
-import ERR from 'async-stacktrace';
-import request from 'request';
-import { assert } from 'chai';
-import { readFileSync } from 'node:fs';
-import fs from 'fs-extra';
-import * as path from 'path';
-import * as async from 'async';
-import * as cheerio from 'cheerio';
-import * as tmp from 'tmp';
-import fetch, { FormData } from 'node-fetch';
-
-import { config } from '../lib/config.js';
-import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer.js';
 import { exec } from 'child_process';
+import { readFileSync } from 'node:fs';
+import * as path from 'path';
+
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fs from 'fs-extra';
+import fetch, { FormData } from 'node-fetch';
+import request from 'request';
+import * as tmp from 'tmp';
+
+import * as sqldb from '@prairielearn/postgres';
+
 import * as b64Util from '../lib/base64-util.js';
-import { encodePath } from '../lib/uri-util.js';
+import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { encodePath } from '../lib/uri-util.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -1,4 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+
 import { RubricData, RubricGradingData } from '../../../lib/manualGrading.js';
 
 export function RubricInputSection({
