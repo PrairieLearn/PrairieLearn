@@ -77,6 +77,13 @@ interface InitializeResult {
   destinationPath: string;
 }
 
+interface FileGenerationError {
+  file: string;
+  msg: string;
+  err?: any;
+  data?: Record<string, any>;
+}
+
 /**
  * Internal error type for tracking submission with format issues.
  */
@@ -367,17 +374,8 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     questionId: question.id,
   });
 
-  const fileGenerationErrors: {
-    file: string;
-    msg: string;
-    err?: any;
-    data?: Record<string, any>;
-  }[] = [];
-
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
-  const localPath = path.join(questionBasePath, 'workspace');
-  const templatePath = path.join(questionBasePath, 'workspaceTemplates');
 
   // base workspace directory wherever we are uploading to
   const remoteDirName = `workspace-${workspace_id}-${workspace.version}`;
@@ -386,6 +384,60 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
   const root = config.workspaceHomeDirRoot;
   const destinationPath = path.join(root, remotePath);
   const sourcePath = `${destinationPath}-${uuidv4()}`;
+
+  const { fileGenerationErrors } = await generateWorkspaceFiles({
+    questionBasePath,
+    params: variant.params,
+    correctAnswers: variant.true_answer,
+    targetPath: sourcePath,
+    homeDirectory: question.workspace_home || sourcePath
+  });
+
+  if (fileGenerationErrors.length > 0) {
+    const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
+    await issues.insertIssue({
+      variantId: variant.id,
+      studentMessage: 'Error initializing workspace files',
+      instructorMessage: 'Error initializing workspace files',
+      manuallyReported: false,
+      courseCaused: true,
+      courseData: { workspace, variant, question, course },
+      systemData: {
+        courseErrData: {
+          // This is shown in the console log of the issue
+          outputBoth: output,
+          // This data is only shown if user is admin (e.g., in dev mode).
+          errors: fileGenerationErrors.map((error) => ({
+            ...error,
+            // Since error is typically not serializable, a custom object is created.
+            err: serializeError(error.err),
+          })),
+        },
+      },
+      authnUserId: null,
+    });
+  }
+
+  return { sourcePath, destinationPath };
+}
+
+async function generateWorkspaceFiles({
+  questionBasePath,
+  params,
+  correctAnswers,
+  targetPath,
+  homeDirectory,
+}: {
+  questionBasePath: string;
+  params: Record<string, any> | null;
+  correctAnswers: Record<string, any> | null;
+  targetPath: string;
+  homeDirectory: string;
+}): Promise<{ fileGenerationErrors: FileGenerationError[] }> {
+  const localPath = path.join(questionBasePath, 'workspace');
+  const templatePath = path.join(questionBasePath, 'workspaceTemplates');
+
+  const fileGenerationErrors: FileGenerationError[] = [];
 
   const staticFiles: WorkspaceFile[] = (
     await async
@@ -400,7 +452,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
       })
   ).filter((file): file is WorkspaceFile => !!file);
 
-  const mustacheParams = { params: variant.params, correct_answers: variant.true_answer };
+  const mustacheParams = { params, correct_answers: correctAnswers };
 
   const templateFiles: WorkspaceFile[] = (
     await async
@@ -435,7 +487,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
   ).filter((file): file is WorkspaceFile => !!file);
 
   const dynamicFiles: WorkspaceFile[] =
-    (variant.params?._workspace_files as DynamicWorkspaceFile[] | null)
+    (params?._workspace_files as DynamicWorkspaceFile[] | null)
       ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
         if (!file?.name) {
@@ -448,7 +500,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
         }
         try {
           // Discard names with directory traversal outside the home directory
-          if (!contains(sourcePath, path.join(sourcePath, file.name), false)) {
+          if (!contains(homeDirectory, path.join(homeDirectory, file.name), false)) {
             fileGenerationErrors.push({
               file: file.name,
               msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
@@ -513,16 +565,16 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
-  await fs.ensureDir(sourcePath);
+  await fs.ensureDir(targetPath);
   await fsPromises.chown(
-    sourcePath,
+    targetPath,
     config.workspaceJobsDirectoryOwnerUid,
     config.workspaceJobsDirectoryOwnerGid,
   );
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
-      const sourceFile = path.join(sourcePath, workspaceFile.name);
+      const sourceFile = path.join(targetPath, workspaceFile.name);
       try {
         await fs.ensureDir(path.dirname(sourceFile));
         if ('localPath' in workspaceFile) {
@@ -542,7 +594,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     });
 
     // Update permissions so that the directory and all contents are owned by the workspace user
-    for await (const file of klaw(sourcePath)) {
+    for await (const file of klaw(targetPath)) {
       await fsPromises.chown(
         file.path,
         config.workspaceJobsDirectoryOwnerUid,
@@ -550,33 +602,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
       );
     }
   }
-
-  if (fileGenerationErrors.length > 0) {
-    const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
-    await issues.insertIssue({
-      variantId: variant.id,
-      studentMessage: 'Error initializing workspace files',
-      instructorMessage: 'Error initializing workspace files',
-      manuallyReported: false,
-      courseCaused: true,
-      courseData: { workspace, variant, question, course },
-      systemData: {
-        courseErrData: {
-          // This is shown in the console log of the issue
-          outputBoth: output,
-          // This data is only shown if user is admin (e.g., in dev mode).
-          errors: fileGenerationErrors.map((error) => ({
-            ...error,
-            // Since error is typically not serializable, a custom object is created.
-            err: serializeError(error.err),
-          })),
-        },
-      },
-      authnUserId: null,
-    });
-  }
-
-  return { sourcePath, destinationPath };
+  return { fileGenerationErrors };
 }
 
 /**
