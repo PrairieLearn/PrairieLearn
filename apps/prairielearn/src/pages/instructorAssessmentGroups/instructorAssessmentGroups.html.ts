@@ -1,9 +1,11 @@
+import { z } from 'zod';
+
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
-import { z } from 'zod';
-import { Modal } from '../../components/Modal.html.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,

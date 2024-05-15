@@ -1,7 +1,9 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import type Stripe from 'stripe';
-import { PlanName } from '../lib/billing/plans-types.js';
+
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+
 import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../lib/db-types.js';
+import { PlanName } from '../lib/billing/plans-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

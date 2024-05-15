@@ -1,5 +1,6 @@
 // @ts-check
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../lib/aws.js';

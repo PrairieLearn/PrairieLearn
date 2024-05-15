@@ -3,6 +3,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { isBinaryFile } from 'isbinaryfile';
 import mime from 'mime';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';

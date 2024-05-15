@@ -1,5 +1,6 @@
-import * as editor from '../lib/editorUtil.js';
 import { assert } from 'chai';
+
+import * as editor from '../lib/editorUtil.js';
 
 describe('editor library', () => {
   it('gets details for course info file', () => {

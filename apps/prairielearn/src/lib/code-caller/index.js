@@ -1,16 +1,19 @@
 // @ts-check
 import * as os from 'node:os';
-import { createPool } from 'generic-pool';
-import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
-import debugfn from 'debug';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import debugfn from 'debug';
+import { createPool } from 'generic-pool';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
-import { config } from '../config.js';
+import * as Sentry from '@prairielearn/sentry';
+
 import * as chunks from '../chunks.js';
+import { config } from '../config.js';
 import { features } from '../features/index.js';
 import * as load from '../load.js';
+
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
 import { FunctionMissingError } from './code-caller-shared.js';

@@ -1,8 +1,9 @@
 import './lib/htmx';
 import 'htmx.org/dist/ext/loading-states.js';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
 import CookiesModule from 'js-cookie';
+
+import { onDocumentReady } from '@prairielearn/browser-utils';
 
 const COOKIE_EXPIRATION_DAYS = 30;
 

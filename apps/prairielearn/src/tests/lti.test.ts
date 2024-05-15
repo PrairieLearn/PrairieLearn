@@ -1,10 +1,12 @@
+import { assert } from 'chai';
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
-import { assert } from 'chai';
+
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+
 import * as helperServer from './helperServer.js';
-import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

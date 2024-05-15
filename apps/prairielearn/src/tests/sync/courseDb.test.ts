@@ -1,10 +1,12 @@
-import { assert } from 'chai';
-import * as tmp from 'tmp-promise';
-import fs from 'fs-extra';
 import * as path from 'path';
+
+import { assert } from 'chai';
+import fs from 'fs-extra';
+import * as tmp from 'tmp-promise';
 
 import * as courseDb from '../../sync/course-db.js';
 import * as infofile from '../../sync/infofile.js';
+
 import { Question } from './util.js';
 
 async function withTempDirectory(callback: (dir: string) => Promise<void>) {

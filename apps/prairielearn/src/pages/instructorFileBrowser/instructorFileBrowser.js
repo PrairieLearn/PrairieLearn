@@ -1,21 +1,23 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import { Router } from 'express';
-import * as error from '@prairielearn/error';
-
 import * as path from 'node:path';
-import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
-import { contains } from '@prairielearn/path-utils';
-import fs from 'fs-extra';
-import * as async from 'async';
-import hljs from 'highlight.js';
-import { fileTypeFromFile } from 'file-type';
-import { isBinaryFile } from 'isbinaryfile';
-import { encodePath } from '../../lib/uri-util.js';
-import * as editorUtil from '../../lib/editorUtil.js';
+
 import { AnsiUp } from 'ansi_up';
+import * as async from 'async';
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import { fileTypeFromFile } from 'file-type';
+import fs from 'fs-extra';
+import hljs from 'highlight.js';
+import { isBinaryFile } from 'isbinaryfile';
+
+import * as error from '@prairielearn/error';
+import { contains } from '@prairielearn/path-utils';
+
 import { getCourseOwners } from '../../lib/course.js';
+import * as editorUtil from '../../lib/editorUtil.js';
+import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 const router = Router();
 
