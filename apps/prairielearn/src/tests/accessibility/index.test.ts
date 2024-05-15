@@ -1,8 +1,3 @@
-// The OpenTelemetry instrumentation for Express breaks our ability to inspect
-// the Express routes. We need to disable it before loading the server.
-import { disableInstrumentations } from '@prairielearn/opentelemetry';
-disableInstrumentations();
-
 import { test } from 'mocha';
 import axe from 'axe-core';
 import { JSDOM } from 'jsdom';

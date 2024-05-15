@@ -33,14 +33,14 @@
     "@types/on-headers": "^1.0.3",
     "@types/set-cookie-parser": "^2.4.7",
     "@types/uid-safe": "^2.1.5",
-    "chai": "^4.4.1",
+    "chai": "^5.1.1",
     "express": "^4.19.2",
     "fetch-cookie": "^3.0.1",
     "mocha": "^10.4.0",
-    "node-fetch": "^2.7.0",
+    "node-fetch": "^3.3.2",
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.9.4",
+    "tsx": "^4.10.2",
     "typescript": "^5.4.5"
   }
 }

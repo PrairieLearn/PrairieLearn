@@ -6,12 +6,12 @@ import {
   Histogram,
 } from '@opentelemetry/sdk-metrics';
 import { Meter } from '@opentelemetry/api';
-import chai, { assert } from 'chai';
+import { use as chaiUse, assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 import { instrumentedWithMetrics } from './metrics.js';
 
-chai.use(chaiAsPromised);
+chaiUse(chaiAsPromised);
 
 async function waitForMetricsExport(exporter: InMemoryMetricExporter) {
   while (exporter.getMetrics().length === 0) {

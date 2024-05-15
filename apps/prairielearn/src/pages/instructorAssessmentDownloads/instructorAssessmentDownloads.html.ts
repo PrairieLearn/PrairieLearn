@@ -101,7 +101,7 @@ export function InstructorAssessmentDownloads({
                           <td>
                             <a
                               href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/downloads/i${filenames.scoresAllCsvFilename}"
+                                .id}/downloads/${filenames.scoresAllCsvFilename}"
                               >${filenames.scoresAllCsvFilename}</a
                             >
                           </td>

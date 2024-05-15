@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
-import execa from 'execa';
+import { execa } from 'execa';
 
 import * as helperServer from './helperServer.js';
 import { fetchCheerio } from './helperClient.js';
