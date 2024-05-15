@@ -1,6 +1,7 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 import { Modal } from '../../components/Modal.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
