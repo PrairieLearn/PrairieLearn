@@ -35,9 +35,8 @@ for (const pkg of PRELOAD_PACKAGES) {
   try {
     require(pkg);
   } catch (e: any) {
-    // Ignore; package is likely not installed.
-    if (e.code !== 'MODULE_NOT_FOUND') {
-      throw e;
-    }
+    // If the package is not found, it's fine, it just means that it wasn't
+    // installed. We'll throw any other errors.
+    if (e.code !== 'MODULE_NOT_FOUND') throw e;
   }
 }
