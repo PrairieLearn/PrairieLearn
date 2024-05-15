@@ -1245,6 +1245,7 @@ export async function render(
     let allRenderedElementNames = [];
     const courseIssues = [];
     const context = await getContext(question, course);
+
     // Hack: we need to propagate this back up to the original caller so
     // they can expose the selected renderer to the client via a header, but
     // parent functions don't actually return things. So we'll just stick it
