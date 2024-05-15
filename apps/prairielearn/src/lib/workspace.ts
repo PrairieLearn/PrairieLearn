@@ -1,33 +1,31 @@
 // @ts-check
-import fetch from 'node-fetch';
-import * as path from 'path';
 import { promises as fsPromises } from 'fs';
-import fs from 'fs-extra';
+import { ok as assert } from 'node:assert';
+import { setTimeout as sleep } from 'node:timers/promises';
+import * as path from 'path';
+
+import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
-import archiver from 'archiver';
-import klaw from 'klaw';
-import { v4 as uuidv4 } from 'uuid';
-import * as tmp from 'tmp-promise';
-import mustache from 'mustache';
-import { setTimeout as sleep } from 'node:timers/promises';
-import { z } from 'zod';
-import { ok as assert } from 'node:assert';
-import type { Socket } from 'socket.io';
 import type { Entry } from 'fast-glob';
+import fs from 'fs-extra';
+import klaw from 'klaw';
+import mustache from 'mustache';
+import fetch from 'node-fetch';
+import type { Socket } from 'socket.io';
+import * as tmp from 'tmp-promise';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { contains } from '@prairielearn/path-utils';
-import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken } from '@prairielearn/signed-token';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { config } from './config.js';
-import * as socketServer from './socket-server.js';
 import * as chunks from './chunks.js';
-import * as workspaceHostUtils from './workspaceHost.js';
-import * as issues from './issues.js';
+import { config } from './config.js';
 import {
   CourseSchema,
   DateFromISOString,
@@ -36,6 +34,9 @@ import {
   WorkspaceHostSchema,
   WorkspaceSchema,
 } from './db-types.js';
+import * as issues from './issues.js';
+import * as socketServer from './socket-server.js';
+import * as workspaceHostUtils from './workspaceHost.js';
 
 const debug = debugfn('prairielearn:workspace');
 const sql = sqldb.loadSqlEquiv(import.meta.url);

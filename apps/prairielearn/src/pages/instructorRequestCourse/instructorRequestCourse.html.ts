@@ -1,6 +1,8 @@
+import { z } from 'zod';
+
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
+
 import { CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({

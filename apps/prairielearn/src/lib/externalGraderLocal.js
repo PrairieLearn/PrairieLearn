@@ -1,16 +1,18 @@
 // @ts-check
-import * as path from 'path';
-import Docker from 'dockerode';
-import * as os from 'os';
 import EventEmitter from 'events';
-import fs from 'fs-extra';
+import * as os from 'os';
+import * as path from 'path';
+
 import byline from 'byline';
+import Docker from 'dockerode';
 import { execa } from 'execa';
+import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
-import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
-import { config } from './config.js';
 import * as sqldb from '@prairielearn/postgres';
+
+import { config } from './config.js';
+import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

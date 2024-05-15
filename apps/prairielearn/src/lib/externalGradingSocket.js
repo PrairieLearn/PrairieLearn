@@ -1,10 +1,11 @@
 // @ts-check
 import ERR from 'async-stacktrace';
 import _ from 'lodash';
-import { checkSignedToken } from '@prairielearn/signed-token';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { config } from './config.js';
 import { renderPanelsForSubmission } from './question-render.js';

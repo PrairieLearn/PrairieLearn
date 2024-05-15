@@ -1,7 +1,8 @@
-import { config } from '../lib/config.js';
 import { logger } from '@prairielearn/logger';
-import * as opsbot from '../lib/opsbot.js';
 import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
+import * as opsbot from '../lib/opsbot.js';
 
 export async function run() {
   if (!opsbot.canSendMessages()) return;

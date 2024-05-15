@@ -1,8 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { Modal } from '../../components/Modal.html.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorAssessmentSettings({
   resLocals,

@@ -1,11 +1,13 @@
 import { assert } from 'chai';
-import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 
-import * as helperServer from './helperServer.js';
-import { deleteAllGroups } from '../lib/groups.js';
+import * as sqldb from '@prairielearn/postgres';
+
 import * as groupUpdate from '../lib/group-update.js';
+import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};

@@ -1,12 +1,13 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as sqldb from '@prairielearn/postgres';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
+
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../../lib/config.js';
 import { selectVariantIdForWorkspace } from '../../models/workspace.js';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { Workspace } from './workspace.html.js';
 

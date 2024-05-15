@@ -1,13 +1,15 @@
-import asyncHandler from 'express-async-handler';
 import express from 'express';
-import * as sqldb from '@prairielearn/postgres';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { getAvailableTimezones } from '../../lib/timezones.js';
 
 import {
   AdministratorInstitutions,
   InstitutionRowSchema,
 } from './administratorInstitutions.html.js';
-import { getAvailableTimezones } from '../../lib/timezones.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

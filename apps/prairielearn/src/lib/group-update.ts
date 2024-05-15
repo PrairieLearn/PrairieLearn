@@ -1,6 +1,8 @@
+import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import csvtojson from 'csvtojson';
+import { z } from 'zod';
+
 import * as namedLocks from '@prairielearn/named-locks';
 import {
   loadSqlEquiv,
@@ -9,11 +11,10 @@ import {
   queryOptionalRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { IdSchema, UserSchema } from './db-types.js';
-import { createServerJob } from './server-jobs.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
+import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

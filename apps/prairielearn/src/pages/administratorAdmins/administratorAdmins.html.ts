@@ -1,5 +1,6 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({

@@ -1,9 +1,11 @@
 import Stripe from 'stripe';
-import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { cache } from '@prairielearn/cache';
+import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+
 import { config } from '../../../lib/config.js';
 import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
+
 import { PlanName } from './plans-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

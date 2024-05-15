@@ -1,6 +1,9 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
+
+import { Modal } from '../../components/Modal.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -11,7 +14,6 @@ import {
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
-import { Modal } from '../../components/Modal.html.js';
 
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,

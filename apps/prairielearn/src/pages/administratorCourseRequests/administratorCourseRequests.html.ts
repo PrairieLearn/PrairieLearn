@@ -1,8 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Institution } from '../../lib/db-types.js';
-import { CourseRequestRow } from '../../lib/course-request.js';
+
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
+import { CourseRequestRow } from '../../lib/course-request.js';
+import { Institution } from '../../lib/db-types.js';
 
 export function AdministratorCourseRequests({
   rows,
