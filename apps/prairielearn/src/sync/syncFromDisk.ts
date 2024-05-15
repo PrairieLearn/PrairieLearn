@@ -1,19 +1,20 @@
 import * as namedLocks from '@prairielearn/named-locks';
 
+import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { flushElementCache } from '../question-servers/freeform.js';
+
 import * as courseDB from './course-db.js';
+import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
+import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
+import * as syncAssessments from './fromDisk/assessments.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
-import * as syncTopics from './fromDisk/topics.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
-import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
-import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
-import * as syncAssessments from './fromDisk/assessments.js';
-import { flushElementCache } from '../question-servers/freeform.js';
+import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
-import { chalk, chalkDim } from '../lib/chalk.js';
-import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 
 const perf = makePerformance('sync');
 

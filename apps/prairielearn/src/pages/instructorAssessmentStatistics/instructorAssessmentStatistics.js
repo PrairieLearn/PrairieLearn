@@ -1,12 +1,13 @@
 // @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { stringify } from '@prairielearn/csv';
 
+import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import * as sqldb from '@prairielearn/postgres';
+
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

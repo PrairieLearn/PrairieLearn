@@ -1,14 +1,16 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import * as sqldb from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
+
 import {
   InstructorCourseAdminInstances,
   CourseInstanceAuthzRow,

@@ -1,12 +1,14 @@
-import _ from 'lodash';
-import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
-import * as Sentry from '@prairielearn/sentry';
+
+import debugfn from 'debug';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
+import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
 import { isEnterprise } from '../lib/license.js';

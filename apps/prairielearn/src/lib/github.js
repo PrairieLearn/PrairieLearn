@@ -1,17 +1,20 @@
 // @ts-check
-import { Octokit } from '@octokit/rest';
-import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { config } from './config.js';
+import { Octokit } from '@octokit/rest';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+
 import { updateCourseCommitHash } from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
-import { sendCourseRequestMessage } from './opsbot.js';
+
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { config } from './config.js';
+import { sendCourseRequestMessage } from './opsbot.js';
 import { createServerJob } from './server-jobs.js';
-import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

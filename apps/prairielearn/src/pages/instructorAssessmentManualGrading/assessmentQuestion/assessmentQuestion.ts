@@ -1,11 +1,12 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import * as manualGrading from '../../../lib/manualGrading.js';
 import { InstanceQuestionSchema } from '../../../lib/db-types.js';
-import { z } from 'zod';
+import * as manualGrading from '../../../lib/manualGrading.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

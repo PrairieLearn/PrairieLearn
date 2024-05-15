@@ -1,10 +1,11 @@
-import { assert } from 'chai';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { assert } from 'chai';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config.js';
 import * as assets from '../lib/assets.js';
+import { config } from '../lib/config.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 
 import * as helperServer from './helperServer.js';

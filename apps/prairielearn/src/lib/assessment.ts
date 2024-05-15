@@ -1,13 +1,11 @@
 import * as async from 'async';
-import * as ejs from 'ejs';
 import debugfn from 'debug';
+import * as ejs from 'ejs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { gradeVariant } from './grading.js';
 import * as sqldb from '@prairielearn/postgres';
-import * as ltiOutcomes from './ltiOutcomes.js';
-import { createServerJob } from './server-jobs.js';
+
 import {
   CourseSchema,
   IdSchema,
@@ -16,6 +14,9 @@ import {
   ClientFingerprintSchema,
   AssessmentInstanceSchema,
 } from './db-types.js';
+import { gradeVariant } from './grading.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);

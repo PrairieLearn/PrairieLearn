@@ -4,6 +4,7 @@ import {
   CompleteLifecycleActionCommand,
   DescribeAutoScalingInstancesCommand,
 } from '@aws-sdk/client-auto-scaling';
+
 import { logger } from '@prairielearn/logger';
 
 import { makeAwsClientConfig } from './aws.js';

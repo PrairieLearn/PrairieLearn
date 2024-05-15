@@ -1,10 +1,12 @@
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
 import { AnsiUp } from 'ansi_up';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,

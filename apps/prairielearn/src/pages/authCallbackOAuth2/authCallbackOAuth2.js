@@ -1,13 +1,14 @@
 // @ts-check
-import * as Sentry from '@prairielearn/sentry';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { OAuth2Client } from 'google-auth-library';
+
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import * as authnLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
-import { HttpStatusError } from '@prairielearn/error';
 
 const router = Router();
 

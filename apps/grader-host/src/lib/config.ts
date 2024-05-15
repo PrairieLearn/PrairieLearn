@@ -1,6 +1,7 @@
-import { SQSClient, GetQueueUrlCommand } from '@aws-sdk/client-sqs';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
+import { SQSClient, GetQueueUrlCommand } from '@aws-sdk/client-sqs';
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeImdsConfigSource,
