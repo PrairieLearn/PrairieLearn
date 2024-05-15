@@ -1,6 +1,6 @@
 // @ts-check
-import winston from 'winston';
 import { format } from 'logform';
+import winston from 'winston';
 
 const consoleTransport = new winston.transports.Console({
   level: 'info',

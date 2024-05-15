@@ -1,10 +1,11 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { regradeAssessmentInstance } from '../../lib/regrading.js';
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   checkBelongs,
   gradeAssessmentInstance,
@@ -12,8 +13,8 @@ import {
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
 } from '../../lib/assessment.js';
-import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
+import { regradeAssessmentInstance } from '../../lib/regrading.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

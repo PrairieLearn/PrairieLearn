@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Lti13Instance } from '../../../lib/db-types.js';
+
 import { LoadUserAuth } from '../../../lib/authn.js';
+import { Lti13Instance } from '../../../lib/db-types.js';
 
 export const Lti13Test = ({
   resLocals,

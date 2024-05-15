@@ -6,6 +6,7 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
+
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,10 +14,10 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';
-import { gradingJobStatusUpdated } from './externalGradingSocket.js';
+import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
-import { deferredPromise } from './deferred.js';
+import { gradingJobStatusUpdated } from './externalGradingSocket.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

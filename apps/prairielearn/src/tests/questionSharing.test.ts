@@ -1,8 +1,10 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
@@ -10,6 +12,7 @@ import { Course } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
+
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';

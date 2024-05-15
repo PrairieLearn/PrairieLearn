@@ -1,8 +1,10 @@
 import { assert } from 'chai';
 import stripAnsi from 'strip-ansi';
+
 import { logger } from '@prairielearn/logger';
 
 import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
+
 import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {

@@ -1,12 +1,14 @@
+import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer.js';
-import { IdSchema } from '../lib/db-types.js';
 import { config } from '../lib/config.js';
-import { AuthUser, withUser } from './utils/auth.js';
+import { IdSchema } from '../lib/db-types.js';
+
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
-import { assert } from 'chai';
+import * as helperServer from './helperServer.js';
+import { AuthUser, withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

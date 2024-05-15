@@ -2,8 +2,8 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { config } from '../../lib/config.js';
 import * as authnLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
 
 const router = Router();
 

@@ -1,5 +1,7 @@
-import { assert } from 'chai';
 import * as path from 'path';
+
+import { assert } from 'chai';
+
 import * as jsonLoad from '../lib/json-load.js';
 
 const testfile = (filename: string) => path.join(import.meta.dirname, 'testJsonLoad', filename);

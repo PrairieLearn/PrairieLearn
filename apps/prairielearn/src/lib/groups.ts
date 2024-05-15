@@ -1,9 +1,12 @@
-import * as error from '@prairielearn/error';
-import { z } from 'zod';
 import _ from 'lodash';
+import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { idsEqual } from './id.js';
+
+import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
+
 import {
   GroupSchema,
   IdSchema,
@@ -14,8 +17,7 @@ import {
   GroupRoleSchema,
   type GroupUserRole,
 } from './db-types.js';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
-import { selectUserByUid } from '../models/user.js';
+import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {

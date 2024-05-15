@@ -1,11 +1,12 @@
-import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
-import { Modal } from '../../components/Modal.html.js';
+import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({

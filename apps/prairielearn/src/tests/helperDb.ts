@@ -1,16 +1,18 @@
-import pg from 'pg';
 import * as path from 'path';
 
-import * as sqldb from '@prairielearn/postgres';
+import { Context } from 'mocha';
+import pg from 'pg';
+
 import {
   init as initMigrations,
   initBatchedMigrations,
   SCHEMA_MIGRATIONS_PATH,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
-import * as sprocs from '../sprocs/index.js';
 import * as namedLocks from '@prairielearn/named-locks';
-import { Context } from 'mocha';
+import * as sqldb from '@prairielearn/postgres';
+
+import * as sprocs from '../sprocs/index.js';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';

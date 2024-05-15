@@ -1,16 +1,18 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
-import { config } from '../lib/config.js';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(import.meta.url);
+
+import { config } from '../lib/config.js';
+import { UserSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 
 import * as helperServer from './helperServer.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { UserSchema } from '../lib/db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

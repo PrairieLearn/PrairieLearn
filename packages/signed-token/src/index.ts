@@ -1,7 +1,8 @@
+import crypto from 'node:crypto';
+
 import base64url from 'base64url';
 import debugfn from 'debug';
 import _ from 'lodash';
-import crypto from 'node:crypto';
 
 const debug = debugfn('prairielearn:csrf');
 const sep = '.';
