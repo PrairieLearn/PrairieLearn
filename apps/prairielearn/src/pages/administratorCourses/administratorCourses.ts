@@ -1,5 +1,5 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -11,6 +11,7 @@ import {
   updateCourseRequest,
 } from '../../lib/course-request.js';
 import { selectAllInstitutions } from '../../models/institution.js';
+
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 
 const router = express.Router();

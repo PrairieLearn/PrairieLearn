@@ -1,12 +1,14 @@
-import * as sqldb from '@prairielearn/postgres';
 import { AnsiUp } from 'ansi_up';
+import { z } from 'zod';
+
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   TopicSchema,
   SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
   TagSchema,
 } from '../lib/db-types.js';
-import { z } from 'zod';
 import { idsEqual } from '../lib/id.js';
 
 const QuestionsPageDataSchema = z.object({

@@ -1,8 +1,8 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { config } from '../../lib/config.js';
 import { assetPath } from '../../lib/assets.js';
+import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export interface InstitutionAuthnProvider {

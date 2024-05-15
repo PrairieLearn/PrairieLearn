@@ -1,24 +1,24 @@
 // @ts-check
-import _ from 'lodash';
 import * as express from 'express';
-import { z } from 'zod';
 import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import * as issues from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
-import * as issues from '../../lib/issues.js';
-import { logPageView } from '../../middlewares/logPageView.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import {
   processSubmission,
   validateVariantAgainstQuestion,
 } from '../../lib/question-submission.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { logPageView } from '../../middlewares/logPageView.js';
 
 const router = express.Router();
 

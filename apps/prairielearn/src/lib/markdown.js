@@ -1,12 +1,12 @@
 // @ts-check
-import { unified } from 'unified';
-import markdown from 'remark-parse';
 import raw from 'rehype-raw';
-import gfm from 'remark-gfm';
-import remark2rehype from 'remark-rehype';
-import math from 'remark-math';
-import stringify from 'rehype-stringify';
 import sanitize from 'rehype-sanitize';
+import stringify from 'rehype-stringify';
+import gfm from 'remark-gfm';
+import math from 'remark-math';
+import markdown from 'remark-parse';
+import remark2rehype from 'remark-rehype';
+import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest

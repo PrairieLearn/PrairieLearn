@@ -1,13 +1,13 @@
 import ERR from 'async-stacktrace';
-import _ from 'lodash';
 import { assert } from 'chai';
+import _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer.js';
-import * as helperQuestion from './helperQuestion.js';
-import * as helperExam from './helperExam.js';
 import * as helperAttachFiles from './helperAttachFiles.js';
+import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

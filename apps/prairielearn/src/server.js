@@ -3,77 +3,79 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
-
 import * as Sentry from '@prairielearn/sentry';
+
 // `@sentry/tracing` must be imported before `@sentry/profiling-node`.
 import '@sentry/tracing';
 import { ProfilingIntegration } from '@sentry/profiling-node';
 
-import asyncHandler from 'express-async-handler';
 import * as fs from 'node:fs';
-import * as util from 'node:util';
-import * as path from 'node:path';
-import favicon from 'serve-favicon';
-import * as async from 'async';
-import express from 'express';
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
-import passport from 'passport';
-import Bowser from 'bowser';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as path from 'node:path';
+import * as util from 'node:util';
+import * as url from 'url';
+
+import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
+import bodyParser from 'body-parser';
+import Bowser from 'bowser';
+import cookieParser from 'cookie-parser';
+import esMain from 'es-main';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import _ from 'lodash';
+import multer from 'multer';
 import onFinished from 'on-finished';
+import passport from 'passport';
+import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
-import multer from 'multer';
-import * as url from 'url';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+
+import { EncodedData } from '@prairielearn/browser-utils';
+import { cache } from '@prairielearn/cache';
+import * as error from '@prairielearn/error';
+import { flashMiddleware, flash } from '@prairielearn/flash';
+import { logger, addFileLogging } from '@prairielearn/logger';
+import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
   startBatchedMigrations,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
-import _ from 'lodash';
-import esMain from 'es-main';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
+import { createSessionMiddleware } from '@prairielearn/session';
 
-import { logger, addFileLogging } from '@prairielearn/logger';
+import * as cron from './cron/index.js';
+import * as assets from './lib/assets.js';
+import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
-import * as load from './lib/load.js';
+import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
-import * as workspace from './lib/workspace.js';
-import * as sqldb from '@prairielearn/postgres';
-import * as migrations from '@prairielearn/migrations';
-import * as error from '@prairielearn/error';
-import * as sprocs from './sprocs/index.js';
-import * as news_items from './news_items/index.js';
-import * as cron from './cron/index.js';
-import * as socketServer from './lib/socket-server.js';
-import * as freeformServer from './question-servers/freeform.js';
-import { cache } from '@prairielearn/cache';
-import { LocalCache } from './lib/local-cache.js';
-import * as codeCaller from './lib/code-caller/index.js';
-import * as assets from './lib/assets.js';
-import * as namedLocks from '@prairielearn/named-locks';
-import { EncodedData } from '@prairielearn/browser-utils';
-import * as nodeMetrics from './lib/node-metrics.js';
-import { isEnterprise } from './lib/license.js';
-import * as lifecycleHooks from './lib/lifecycle-hooks.js';
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import staticNodeModules from './middlewares/staticNodeModules.js';
-import { flashMiddleware, flash } from '@prairielearn/flash';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
-import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
-import { createSessionMiddleware } from '@prairielearn/session';
-import { PostgresSessionStore } from './lib/session-store.js';
-import { pullAndUpdateCourse } from './lib/course.js';
+import { isEnterprise } from './lib/license.js';
+import * as lifecycleHooks from './lib/lifecycle-hooks.js';
+import * as load from './lib/load.js';
+import { LocalCache } from './lib/local-cache.js';
+import * as nodeMetrics from './lib/node-metrics.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
+import { PostgresSessionStore } from './lib/session-store.js';
+import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import * as workspace from './lib/workspace.js';
+import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
+import staticNodeModules from './middlewares/staticNodeModules.js';
+import * as news_items from './news_items/index.js';
+import * as freeformServer from './question-servers/freeform.js';
+import * as sprocs from './sprocs/index.js';
 
 process.on('warning', (e) => console.warn(e));
 

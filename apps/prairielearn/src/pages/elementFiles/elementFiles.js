@@ -1,12 +1,14 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
+
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { HttpStatusError } from '@prairielearn/error';
 
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
-import { HttpStatusError } from '@prairielearn/error';
 
 const router = Router({ mergeParams: true });
 

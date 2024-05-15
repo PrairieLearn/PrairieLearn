@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+
 import { RubricData } from '../../../lib/manualGrading.js';
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
