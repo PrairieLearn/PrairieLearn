@@ -13,10 +13,8 @@ import {
 import { compiledScriptTag } from '../../lib/assets.js';
 
 export const CourseUsersRowSchema = z.object({
-  user_id: UserSchema.shape.user_id,
-  uid: UserSchema.shape.uid,
-  name: UserSchema.shape.name,
-  course_role: CoursePermissionSchema.shape.course_role,
+  user: UserSchema,
+  course_permission: CoursePermissionSchema,
   course_instance_roles: z
     .array(
       z.object({
@@ -385,7 +383,7 @@ function StaffTable({
   isAdministrator,
 }: {
   csrfToken: string;
-  courseUsers: any[];
+  courseUsers: CourseUsersRow[];
   authnUser: User;
   user: User;
   isAdministrator: boolean;
@@ -401,54 +399,57 @@ function StaffTable({
       </thead>
       <tbody>
         ${courseUsers.map((courseUser) => {
-          if (!courseUser.name) hasUnknownUsers = true;
+          if (!courseUser.user.name) hasUnknownUsers = true;
           return html`
             <tr>
-              <td class="align-middle">${courseUser.uid}</td>
+              <td class="align-middle">${courseUser.user.uid}</td>
               <td class="align-middle">
-                ${courseUser.name
-                  ? courseUser.name
+                ${courseUser.user.name
+                  ? courseUser.user.name
                   : html`<span class="text-danger">Unknown user</span>`}
               </td>
               <td class="align-middle">
-                ${(courseUser.user_id === authnUser.user_id ||
-                  courseUser.user_id === user.user_id) &&
+                ${(courseUser.user.user_id === authnUser.user_id ||
+                  courseUser.user.user_id === user.user_id) &&
                 !isAdministrator
                   ? //     Cannot change the course role of
                     // yourself (or of the user you are // emulating) unless you are an administrator.
                     html`
                       <button
-                        id="courseContentDropdown-${courseUser.user_id}"
+                        id="courseContentDropdown-${courseUser.user.user_id}"
                         type="button"
                         class="btn btn-sm btn-outline-primary disabled"
                         disabled
                       >
-                        ${courseUser.course_role}
+                        ${courseUser.course_permission.course_role}
                       </button>
                     `
                   : html`
-                      <form name="course-content-access-form-${courseUser.user_id}" method="POST">
+                      <form
+                        name="course-content-access-form-${courseUser.user.user_id}"
+                        method="POST"
+                      >
                         <input
                           type="hidden"
                           name="__action"
                           value="course_permissions_update_role"
                         />
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                        <input type="hidden" name="user_id" value="${courseUser.user_id}" />
+                        <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
                         <div class="btn-group btn-group-sm" role="group">
                           <button
-                            id="courseContentDropdown-${courseUser.user_id}"
+                            id="courseContentDropdown-${courseUser.user.user_id}"
                             type="button"
                             class="btn btn-sm btn-outline-primary dropdown-toggle"
                             data-toggle="dropdown"
                             aria-haspopup="true"
                             aria-expanded="false"
                           >
-                            ${courseUser.course_role}
+                            ${courseUser.course_permission.course_role}
                           </button>
                           <div
                             class="dropdown-menu"
-                            aria-labelledby="courseContentDropdown-${courseUser.user_id}"
+                            aria-labelledby="courseContentDropdown-${courseUser.user.user_id}"
                             style="width: 35em;"
                           >
                             <div class="dropdown-header text-wrap">
@@ -547,7 +548,7 @@ function StaffTable({
                   ? courseUser.course_instance_roles.map((cir) => {
                       return html`
                         <form
-                          name="student-data-access-change-${courseUser.user_id}-${cir.id}"
+                          name="student-data-access-change-${courseUser.user.user_id}-${cir.id}"
                           method="POST"
                           class="d-inline"
                         >
@@ -557,7 +558,7 @@ function StaffTable({
                             value="course_instance_permissions_update_role_or_delete"
                           />
                           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user_id}" />
+                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
                           <input type="hidden" name="course_instance_id" value="${cir.id}" />
                           <div
                             class="btn-group btn-group-sm"
@@ -566,7 +567,7 @@ function StaffTable({
                           >
                             <div class="btn-group btn-group-sm" role="group">
                               <button
-                                id="changeCIPDrop-${courseUser.user_id}-${cir.id}"
+                                id="changeCIPDrop-${courseUser.user.user_id}-${cir.id}"
                                 type="button"
                                 class="btn btn-sm btn-outline-primary dropdown-toggle"
                                 data-toggle="dropdown"
@@ -577,7 +578,7 @@ function StaffTable({
                               </button>
                               <div
                                 class="dropdown-menu"
-                                aria-labelledby="changeCIPDrop-${courseUser.user_id}-${cir.id}"
+                                aria-labelledby="changeCIPDrop-${courseUser.user.user_id}-${cir.id}"
                                 style="width: 35em;"
                               >
                                 <div class="dropdown-header text-wrap">
@@ -634,7 +635,7 @@ function StaffTable({
                 ${courseUser.other_course_instances && courseUser.other_course_instances.length > 0
                   ? html`
                       <form
-                        name="student-data-access-add-${courseUser.user_id}"
+                        name="student-data-access-add-${courseUser.user.user_id}"
                         method="POST"
                         class="d-inline"
                       >
@@ -644,10 +645,10 @@ function StaffTable({
                           value="course_instance_permissions_insert"
                         />
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                        <input type="hidden" name="user_id" value="${courseUser.user_id}" />
+                        <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
                         <div class="btn-group btn-group-sm" role="group">
                           <button
-                            id="addCIPDrop-${courseUser.user_id}"
+                            id="addCIPDrop-${courseUser.user.user_id}"
                             type="button"
                             class="btn btn-sm btn-outline-dark dropdown-toggle"
                             data-toggle="dropdown"
@@ -658,7 +659,7 @@ function StaffTable({
                           </button>
                           <div
                             class="dropdown-menu"
-                            aria-labelledby="addCIPDrop-${courseUser.user_id}"
+                            aria-labelledby="addCIPDrop-${courseUser.user.user_id}"
                           >
                             ${courseUser.other_course_instances.map((ci) => {
                               return html`
@@ -679,12 +680,15 @@ function StaffTable({
                   : ''}
               </td>
               <td class="align-middle">
-                ${courseUser.course_role !== 'Owner' || isAdministrator
+                ${courseUser.course_permission.course_role !== 'Owner' || isAdministrator
                   ? html`
-                      <form name="student-data-access-remove-${courseUser.user_id}" method="POST">
+                      <form
+                        name="student-data-access-remove-${courseUser.user.user_id}"
+                        method="POST"
+                      >
                         <input type="hidden" name="__action" value="course_permissions_delete" />
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                        <input type="hidden" name="user_id" value="${courseUser.user_id}" />
+                        <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
                         <button type="submit" class="btn btn-sm btn-outline-dark">
                           <i class="fa fa-times"></i> Delete user
                         </button>
