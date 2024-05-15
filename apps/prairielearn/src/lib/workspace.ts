@@ -351,7 +351,7 @@ async function startup(workspace_id: string): Promise<void> {
  * workspace. This is mostly important on NFS volumes, where renames (moves)
  * are not atomic.
  */
-async function initialize(workspace_id: string): Promise<InitializeResult> {
+export async function initialize(workspace_id: string): Promise<InitializeResult> {
   const { workspace, variant, question, course } = await sqldb.queryRow(
     sql.select_workspace_data,
     { workspace_id },
