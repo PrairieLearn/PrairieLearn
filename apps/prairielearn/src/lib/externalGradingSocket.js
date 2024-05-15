@@ -59,6 +59,7 @@ export function connection(socket) {
         'url_prefix',
         'question_context',
         'csrf_token',
+        'authorized_edit',
       ])
     ) {
       return callback(null);
@@ -93,6 +94,7 @@ export function connection(socket) {
       (err) => {
         logger.error('Error rendering panels for submission', err);
         Sentry.captureException(err);
+        callback(null);
       },
     );
   });
