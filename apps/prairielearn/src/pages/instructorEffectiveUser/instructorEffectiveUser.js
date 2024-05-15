@@ -4,7 +4,7 @@ import _ from 'lodash';
 import * as express from 'express';
 import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
-import { format, utcToZonedTime } from 'date-fns-tz';
+import { format, toZonedTime } from 'date-fns-tz';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
@@ -73,14 +73,14 @@ router.get(
       res.locals.institution.display_timezone;
 
     res.locals.true_req_date_for_display = format(
-      utcToZonedTime(res.locals.true_req_date, displayTimezone),
+      toZonedTime(res.locals.true_req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,
       },
     );
     res.locals.req_date_for_display = format(
-      utcToZonedTime(res.locals.req_date, displayTimezone),
+      toZonedTime(res.locals.req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,

@@ -9,7 +9,7 @@ import { contains } from '@prairielearn/path-utils';
 import fs from 'fs-extra';
 import * as async from 'async';
 import hljs from 'highlight.js';
-import * as FileType from 'file-type';
+import { fileTypeFromFile } from 'file-type';
 import { isBinaryFile } from 'isbinaryfile';
 import { encodePath } from '../../lib/uri-util.js';
 import * as editorUtil from '../../lib/editorUtil.js';
@@ -95,7 +95,7 @@ async function browseFile(file_browser) {
   const isBinary = await isBinaryFile(file_browser.paths.workingPath);
   file_browser.isBinary = isBinary;
   if (isBinary) {
-    const type = await FileType.fromFile(file_browser.paths.workingPath);
+    const type = await fileTypeFromFile(file_browser.paths.workingPath);
     if (type) {
       if (type?.mime.startsWith('image')) {
         file_browser.isImage = true;

@@ -27,7 +27,7 @@
     "async": "^3.2.5",
     "async-stacktrace": "^0.0.2",
     "byline": "^5.0.0",
-    "chai": "^4.4.1",
+    "chai": "^5.1.1",
     "dockerode": "^4.0.2",
     "fs-extra": "^11.2.0",
     "logform": "^2.6.0",
@@ -46,8 +46,8 @@
     "@types/tmp": "^0.2.6",
     "mocha": "^10.4.0",
     "nodemon": "^3.1.0",
-    "sinon": "^17.0.2",
-    "tsx": "^4.9.4",
+    "sinon": "^17.0.1",
+    "tsx": "^4.10.2",
     "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
   }

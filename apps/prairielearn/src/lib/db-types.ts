@@ -943,3 +943,14 @@ export const JobSequenceSchema = z.object({
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });
+export type JobSequence = z.infer<typeof JobSequenceSchema>;
+
+export const LtiCredentialsSchema = z.object({
+  consumer_key: z.string().nullable(),
+  course_instance_id: z.string().nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  secret: z.string().nullable(),
+});
+export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;

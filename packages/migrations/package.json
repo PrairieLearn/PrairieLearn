@@ -18,11 +18,11 @@
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.11",
-    "chai": "^4.4.1",
-    "chai-as-promised": "^7.1.1",
+    "chai": "^5.1.1",
+    "chai-as-promised": "^7.1.2",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.9.4",
+    "tsx": "^4.10.2",
     "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
   },
@@ -32,7 +32,7 @@
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "fs-extra": "^11.2.0",
-    "serialize-error": "^8.1.0",
+    "serialize-error": "^11.0.3",
     "zod": "^3.23.8"
   }
 }

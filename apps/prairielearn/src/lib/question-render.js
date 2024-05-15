@@ -101,6 +101,9 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
+  previous_variants: z
+    .array(z.object({ variant_id: IdSchema, max_submission_score: z.number() }))
+    .nullable(),
 });
 
 /**
@@ -622,6 +625,7 @@ export async function renderPanelsForSubmission({
 
   const {
     variant,
+    previous_variants,
     submission,
     instance_question,
     next_instance_question,
@@ -737,6 +741,10 @@ export async function renderPanelsForSubmission({
         submission,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
+        urlPrefix,
+        instance_question_info: {
+          previous_variants,
+        },
       };
       const templatePath = path.join(
         import.meta.dirname,
