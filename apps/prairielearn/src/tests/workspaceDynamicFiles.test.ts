@@ -1,15 +1,17 @@
-import * as cheerio from 'cheerio';
-import { assert } from 'chai';
-import fetch from 'node-fetch';
 import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { config } from '../lib/config.js';
-import { initialize } from '../lib/workspace.js';
-import * as helperServer from './helperServer.js';
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
 import { IdSchema, IssueSchema } from '../lib/db-types.js';
+import { initialize } from '../lib/workspace.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -141,7 +143,8 @@ describe('Test workspace dynamic files', function () {
         IssueSchema,
       );
       assert.lengthOf(issues, 1);
-      const issueErrors: { file: string; msg: string }[] = issues[0].system_data?.courseErrData?.errors;
+      const issueErrors: { file: string; msg: string }[] =
+        issues[0].system_data?.courseErrData?.errors;
       assert.isDefined(issueErrors);
 
       assert.isArray(issueErrors);
