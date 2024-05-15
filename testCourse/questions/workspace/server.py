@@ -16,4 +16,12 @@ def generate(data):
         },
         {"name": "blank_file.txt", "contents": None},
         {"name": "template_and_dynamic.csv", "contents": "a,b\n1,1\n2,4\n3,9"},
+        {
+            "name": "reference_file.txt",
+            "questionFile": "file_in_question_dir.txt",
+        },
+        {
+            "name": "reference_to_subdir.txt",
+            "questionFile": "path/with/another/file.txt",
+        },
     ]

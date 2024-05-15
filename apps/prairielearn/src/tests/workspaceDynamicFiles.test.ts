@@ -8,10 +8,10 @@ import { config } from '../lib/config.js';
 import { initialize } from '../lib/workspace.js';
 import * as helperServer from './helperServer.js';
 
-import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '../lib/db-types.js';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema, IssueSchema } from '../lib/db-types.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -20,10 +20,38 @@ const originalConfig = { ...config };
 
 let workspaceId: string | undefined;
 let sourcePath: string;
+let variantId: string | undefined;
 
 async function checkFileContents(filename: string, expectedContents: string) {
   const fileContents = await fs.readFile(join(sourcePath, filename), 'binary');
   assert.equal(fileContents, expectedContents);
+}
+
+function createAndInitializeWorkspaceQuestion(qid: string) {
+  it('create workspace question variant', async () => {
+    const questionId = await queryRow(sql.select_test_question, { qid }, IdSchema);
+    const workspaceQuestionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
+    const response = await fetch(workspaceQuestionUrl);
+
+    const $ = cheerio.load(await response.text());
+    const workspaceButton = $('a:contains("Open workspace")');
+    assert.lengthOf(workspaceButton, 1);
+
+    workspaceId = workspaceButton.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
+    assert.isDefined(workspaceId);
+
+    variantId = $('.question-form input[name="__variant_id"]').attr('value');
+    assert.isDefined(variantId);
+  });
+
+  it('initialize workspace', async () => {
+    assert.isDefined(workspaceId);
+    // A workspace is typically initialized using sockets, but to simplify the
+    // testing environment, we will call the initialization process directly.
+    ({ sourcePath } = await initialize(workspaceId));
+    const directoryStats = await fs.stat(sourcePath);
+    assert.isTrue(directoryStats.isDirectory());
+  });
 }
 
 describe('Test workspace dynamic files', function () {
@@ -42,31 +70,7 @@ describe('Test workspace dynamic files', function () {
   after('shut down testing server', helperServer.after);
 
   describe('Question with valid dynamic files', () => {
-    it('create workspace question variant', async () => {
-      const questionId = await sqldb.queryRow(
-        sql.select_test_question,
-        { qid: 'workspace' },
-        IdSchema,
-      );
-      const workspaceQuestionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
-      const response = await fetch(workspaceQuestionUrl);
-
-      const $ = cheerio.load(await response.text());
-      const workspace_btns = $('a:contains("Open workspace")');
-      assert.lengthOf(workspace_btns, 1);
-
-      workspaceId = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
-      assert.isDefined(workspaceId);
-    });
-
-    it('initialize workspace', async () => {
-      assert.isDefined(workspaceId);
-      // A workspace is typically initialized using sockets, but to simplify the
-      // testing environment, we will call the initialization process directly.
-      ({ sourcePath } = await initialize(workspaceId));
-      const directoryStats = await fs.stat(sourcePath);
-      assert.isTrue(directoryStats.isDirectory());
-    });
+    createAndInitializeWorkspaceQuestion('workspace');
 
     it('creates all static files', async () => {
       await checkFileContents(
@@ -98,6 +102,8 @@ describe('Test workspace dynamic files', function () {
         '\x00\x11\x22\x33\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF',
       );
       await checkFileContents('blank_file.txt', '');
+      await checkFileContents('reference_file.txt', 'This is included in the workspace.\n');
+      await checkFileContents('reference_to_subdir.txt', 'Test file.\n');
     });
 
     it('template files override static files', async () => {
@@ -106,6 +112,53 @@ describe('Test workspace dynamic files', function () {
 
     it('dynamic files override template files', async () => {
       await checkFileContents('template_and_dynamic.csv', 'a,b\n1,1\n2,4\n3,9');
+    });
+
+    it('creates no issues', async () => {
+      const issues = await queryRows(
+        sql.select_issues_for_variant_id,
+        { variant_id: variantId },
+        IssueSchema,
+      );
+      assert.lengthOf(issues, 0);
+    });
+  });
+
+  describe('Question with invalid dynamic files', () => {
+    createAndInitializeWorkspaceQuestion('workspaceInvalidDynamicFiles');
+
+    it('creates valid files', async () => {
+      await checkFileContents('static.txt', 'Static content\n');
+      await checkFileContents('template.txt', 'A is STRING, while B is 53\n');
+      await checkFileContents('dynamic.txt', 'This is a dynamic file.\n');
+    });
+
+    let issueErrors: { file: string; msg: string }[];
+    it('creates one issue', async () => {
+      const issues = await queryRows(
+        sql.select_issues_for_variant_id,
+        { variant_id: variantId },
+        IssueSchema,
+      );
+      assert.lengthOf(issues, 1);
+      issueErrors = issues[0].system_data?.courseErrData?.errors;
+      assert.isDefined(issueErrors);
+    });
+
+    it('issue lists all expected errors', async () => {
+      assert.isArray(issueErrors);
+      const expectedErrors = [
+        { file: 'Dynamic file 1', msg: 'does not include a name' },
+        { file: 'invalid_encoding.bin', msg: 'unsupported file encoding' },
+        { file: '../outside_home.txt', msg: 'traverses outside the home directory' },
+        { file: 'server.py', msg: 'local file outside the question directory' },
+      ];
+      for (const expectedError of expectedErrors) {
+        const issueError = issueErrors.find((error) => error.file === expectedError.file);
+        assert.isDefined(issueError, `Expected error not found: ${expectedError.file}`);
+        assert.include(issueError.msg, expectedError.msg);
+      }
+      assert.lengthOf(issueErrors, expectedErrors.length);
     });
   });
 });

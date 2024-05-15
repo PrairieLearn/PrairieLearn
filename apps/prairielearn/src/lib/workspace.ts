@@ -382,6 +382,10 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
   const remoteDirName = `workspace-${workspace_id}-${workspace.version}`;
   const remotePath = path.join(remoteDirName, 'current');
 
+  const root = config.workspaceHomeDirRoot;
+  const destinationPath = path.join(root, remotePath);
+  const sourcePath = `${destinationPath}-${uuidv4()}`;
+
   const staticFiles: WorkspaceFile[] = (
     await async
       .mapSeries(klaw(localPath), async (file: klaw.Item): Promise<WorkspaceFile | null> => {
@@ -443,7 +447,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
         }
         try {
           // Discard names with directory traversal outside the home directory
-          if (!contains(remotePath, path.join(remotePath, file.name), false)) {
+          if (!contains(sourcePath, path.join(sourcePath, file.name), false)) {
             fileGenerationErrors.push({
               file: file.name,
               msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
@@ -508,10 +512,6 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
-  const root = config.workspaceHomeDirRoot;
-  const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${uuidv4()}`;
-
   await fs.ensureDir(sourcePath);
   await fsPromises.chown(
     sourcePath,
@@ -552,7 +552,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
 
   if (fileGenerationErrors.length > 0) {
     const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
-    issues.insertIssue({
+    await issues.insertIssue({
       variantId: variant.id,
       studentMessage: 'Error initializing workspace files',
       instructorMessage: 'Error initializing workspace files',
@@ -575,10 +575,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     });
   }
 
-  return {
-    sourcePath,
-    destinationPath,
-  };
+  return { sourcePath, destinationPath };
 }
 
 /**
