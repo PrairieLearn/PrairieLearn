@@ -303,28 +303,26 @@ describe('Grading method(s)', function () {
           assert.isNotNull(socketResult.submissionPanel);
 
           const $submissionPanel = cheerio.load(socketResult.submissionPanel);
-          const scoreBadge = $submissionPanel('[data-testid="submission-status"] .badge');
-          assert.lengthOf(scoreBadge, 1);
-          assert.equal(scoreBadge.text().trim(), '100%');
-          const externalGraderResults = $submissionPanel('.pl-external-grader-results');
-          assert.lengthOf(externalGraderResults, 1);
-
-          // reload QuestionsPage to simplify further checks
-          questionsPage = await (await fetch(iqUrl)).text();
-          $questionsPage = cheerio.load(questionsPage);
+          assert.lengthOf($submissionPanel('[data-testid="submission-block"]'), 1);
+          assert.equal(getLatestSubmissionStatus($submissionPanel), '100%');
+          assert.lengthOf($submissionPanel('.pl-external-grader-results'), 1);
+          assert.lengthOf($submissionPanel('.grading-block:not(.d-none)'), 0);
         });
 
         it('should result in 1 grading jobs', async () => {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 1);
         });
-        it('should result in 1 "submission-block" component being rendered', () => {
+        it('should result in 1 "submission-block" component being rendered', async () => {
+          // reload QuestionsPage to also check behaviour when results are ready on load
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being displayed', () => {
+        it('should NOT result in "grading-block" component being displayed', () => {
           assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
