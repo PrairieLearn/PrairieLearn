@@ -268,13 +268,12 @@ export const InstructorSharing = ({
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>
                               </button>
-                            </div>
-                            `
+                            </div>`
                           : ''}
                       </td>
                     </tr>
-                    `
-                  )}
+                  `,
+                )}
               </tbody>
             </table>
           </div>
