@@ -60,6 +60,24 @@ module.exports = {
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',
 
+    'import/order': [
+      'error',
+      {
+        'newlines-between': 'always',
+        alphabetize: {
+          order: 'asc',
+        },
+        pathGroups: [
+          {
+            pattern: '@prairielearn/**',
+            group: 'external',
+            position: 'after',
+          },
+        ],
+        pathGroupsExcludedImportTypes: ['builtin'],
+      },
+    ],
+
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
