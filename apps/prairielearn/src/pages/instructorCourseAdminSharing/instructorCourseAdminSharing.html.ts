@@ -90,8 +90,9 @@ const chooseSharingNameModal = (resLocals) => {
           <p class=form-text>
             Enter the sharing name you would like for your course.
           </p>
-          <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
+          <p><strong>Once you choose your course's sharing name, you may not be able to change it</strong>,
             because doing so would break the assessments of other courses that have imported your questions.
+            <strong>If you have not yet shared any questions publicly or with other courses, you may edit your course's sharing name.</strong>
             It is recommended that you choose something short but descriptive. For example, if you're teaching
             a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
             name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
@@ -99,7 +100,7 @@ const chooseSharingNameModal = (resLocals) => {
         </div>
         <div class="modal-footer">
           <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="check_and_choose_sharing_name">
+            <input type="hidden" name="__action" value="choose_sharing_name">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
             <div class=form-group>
               <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
@@ -147,10 +148,10 @@ export const InstructorSharing = ({
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>
-                  <th>Sharing Name</th>
+                  <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${!sharingName && isCourseOwner
+                    ${isCourseOwner
                       ? html`
                           <button
                             type="button"
@@ -267,12 +268,13 @@ export const InstructorSharing = ({
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>
                               </button>
-                            </div>`
+                            </div>
+                            `
                           : ''}
                       </td>
                     </tr>
-                  `,
-                )}
+                    `
+                  )}
               </tbody>
             </table>
           </div>
