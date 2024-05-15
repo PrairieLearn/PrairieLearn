@@ -1,7 +1,9 @@
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { html, unsafeHtml } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -15,7 +17,6 @@ import {
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
-import { Modal } from '../../components/Modal.html.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,

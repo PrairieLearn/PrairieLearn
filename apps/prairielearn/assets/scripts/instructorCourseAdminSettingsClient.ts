@@ -1,4 +1,5 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
+
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(() => {

@@ -2,40 +2,42 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import type Stripe from 'stripe';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import {
-  CourseInstanceStudentUpdateSuccess,
-  StudentCourseInstanceUpgrade,
-} from './studentCourseInstanceUpgrade.html.js';
-import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
-import {
-  getMissingPlanGrants,
-  getPlanGrantsForPartialContexts,
-  getRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans.js';
-import { ensurePlanGrant } from '../../models/plan-grants.js';
+import { config } from '../../../lib/config.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
   InstitutionSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
+import { getCanonicalHost } from '../../../lib/url.js';
+import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
+import {
+  getMissingPlanGrants,
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+} from '../../lib/billing/plans.js';
 import {
   getOrCreateStripeCustomerId,
   getPriceForPlan,
   getPricesForPlans,
   getStripeClient,
 } from '../../lib/billing/stripe.js';
-import { config } from '../../../lib/config.js';
+import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   insertStripeCheckoutSessionForUserInCourseInstance,
   markStripeCheckoutSessionCompleted,
   updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions.js';
-import { getCanonicalHost } from '../../../lib/url.js';
+
+import {
+  CourseInstanceStudentUpdateSuccess,
+  StudentCourseInstanceUpgrade,
+} from './studentCourseInstanceUpgrade.html.js';
 
 const router = Router({ mergeParams: true });
 

@@ -1,7 +1,8 @@
 // @ts-check
-import _ from 'lodash';
 import * as path from 'path';
+
 import jsonStringifySafe from 'json-stringify-safe';
+import _ from 'lodash';
 
 import { formatErrorStack, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';

@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { QuestionsPageData } from '../../models/questions.js';
 

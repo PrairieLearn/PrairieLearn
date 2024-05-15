@@ -1,12 +1,10 @@
 import * as async from 'async';
-import mustache from 'mustache';
 import _ from 'lodash';
+import mustache from 'mustache';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id.js';
-import * as markdown from './markdown.js';
-import * as ltiOutcomes from './ltiOutcomes.js';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -16,6 +14,9 @@ import {
   RubricItemSchema,
   RubricSchema,
 } from './db-types.js';
+import { idsEqual } from './id.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import * as markdown from './markdown.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

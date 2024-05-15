@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { formatTimezone, type Timezone } from '../../lib/timezones.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { formatTimezone, type Timezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,

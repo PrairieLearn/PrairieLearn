@@ -8,14 +8,15 @@ import {
   QuestionSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import {
   getPlanGrantsForPartialContexts,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
   planGrantsMatchFeatures,
 } from '../../lib/billing/plans.js';
+
 import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types.js';
-import { features } from '../../../lib/features/index.js';
 
 type ResLocals = Record<string, any>;
 

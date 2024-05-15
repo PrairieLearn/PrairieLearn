@@ -1,8 +1,10 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import { queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+
 import * as helperServer from './helperServer.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 

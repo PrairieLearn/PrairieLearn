@@ -1,13 +1,14 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
-import * as express from 'express';
-import debugfn from 'debug';
 import { parseISO, isValid } from 'date-fns';
 import { format, toZonedTime } from 'date-fns-tz';
+import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { clearCookie, setCookie } from '../../lib/cookie.js';
 import {

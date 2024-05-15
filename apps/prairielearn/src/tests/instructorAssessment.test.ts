@@ -1,11 +1,11 @@
 import { assert } from 'chai';
-import request from 'request';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
+import request from 'request';
 
-import * as helperServer from './helperServer.js';
-import * as helperQuestion from './helperQuestion.js';
 import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const locals: Record<string, any> = {};
 

@@ -1,3 +1,4 @@
+import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -5,7 +6,6 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 
 import {
   type User,
@@ -14,6 +14,7 @@ import {
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
 } from '../lib/db-types.js';
+
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);

@@ -1,13 +1,9 @@
 import fs from 'fs-extra';
+
+import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
-import { HttpStatusError } from '@prairielearn/error';
 
-import { createServerJob } from './server-jobs.js';
-import { config } from './config.js';
-import * as chunks from './chunks.js';
-import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
-import { IdSchema, User, UserSchema } from './db-types.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -15,6 +11,12 @@ import {
   selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
+import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
+
+import * as chunks from './chunks.js';
+import { config } from './config.js';
+import { IdSchema, User, UserSchema } from './db-types.js';
+import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
