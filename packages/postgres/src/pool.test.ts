@@ -64,6 +64,18 @@ describe('@prairielearn/postgres', function () {
   });
 
   describe('paramsToArray', () => {
+    it('enforces SQL must be a string', async () => {
+      // @ts-expect-error SQL must be a string
+      const rows = queryAsync({ invalid: true }, {});
+      await assert.isRejected(rows, 'SQL must be a string');
+    });
+
+    it('enforces params must be array or object', async () => {
+      // @ts-expect-error params must be an array or object
+      const rows = queryAsync('SELECT 33;', 33);
+      await assert.isRejected(rows, 'params must be array or object');
+    });
+
     it('rejects missing parameters', async () => {
       const rows = queryAsync('SELECT $missing;', {});
       await assert.isRejected(rows, 'Missing parameter');
