@@ -8,12 +8,11 @@ import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
 import { HttpStatusError } from '@prairielearn/error';
-import { getQuestionCourse } from '../../lib/question-variant.js';
-import { selectQuestionById } from '../../models/question.js';
-import { selectVariantById } from '../../models/variant.js';
-import { idsEqual } from '../../lib/id.js';
+import { selectCourseById } from '../../models/course.js';
+import * as sqldb from '@prairielearn/postgres';
 
 const router = Router({ mergeParams: true });
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
@@ -59,15 +58,18 @@ router.get(
     if (res.locals.course) {
       // Files should be served from the course directory
       let question_course;
-      if (req.query.variant_id) {
-        const variant = await selectVariantById(z.string().parse(req.query.variant_id));
-        if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
+      if (req.params.producing_course_id) {
+        const producing_course_id = z.string().parse(req.params.producing_course_id);
+        const has_shared_question = await sqldb.queryRow(
+          sql.select_has_shared_question,
+          { consuming_course_id: res.locals.course.id, producing_course_id },
+          z.boolean(),
+        );
+        if (!has_shared_question) {
           throw new HttpStatusError(404, 'Not Found');
         }
 
-        // the existence of the variant within the course validates that this course has sharing permissions on this question
-        const question = await selectQuestionById(variant.question_id);
-        question_course = await getQuestionCourse(question, res.locals.course);
+        question_course = await selectCourseById(producing_course_id);
       } else {
         question_course = res.locals.course;
       }

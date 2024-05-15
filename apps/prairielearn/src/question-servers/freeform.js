@@ -1540,14 +1540,26 @@ export async function render(
       );
       dependencies.courseElementStyles.forEach((file) =>
         styleUrls.push(
-          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-            (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
+          assets.courseElementAssetPath(
+            course.commit_hash,
+            locals.urlPrefix +
+              (!idsEqual(question.course_id, variant.course_id)
+                ? `/sharedElements/course/${course.id}`
+                : ''),
+            file,
+          ),
         ),
       );
       dependencies.courseElementScripts.forEach((file) =>
         scriptUrls.push(
-          assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-            (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
+          assets.courseElementAssetPath(
+            course.commit_hash,
+            locals.urlPrefix +
+              (!idsEqual(question.course_id, variant.course_id)
+                ? `/sharedElements/course/${course.id}`
+                : ''),
+            file,
+          ),
         ),
       );
       dependencies.extensionStyles.forEach((file) =>
@@ -1573,11 +1585,15 @@ export async function render(
           ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
             assets.coreElementAssetPath(file),
           ),
-          ..._.mapValues(
-            dynamicDependencies.courseElementScripts,
-            (file) =>
-              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file) +
-              (!idsEqual(question.course_id, variant.course_id) ? `?variant_id=${variant.id}` : ''),
+          ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
+            assets.courseElementAssetPath(
+              course.commit_hash,
+              locals.urlPrefix +
+                (!idsEqual(question.course_id, variant.course_id)
+                  ? `/sharedElements/course/${course.id}`
+                  : ''),
+              file,
+            ),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
