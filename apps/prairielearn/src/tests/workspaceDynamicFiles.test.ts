@@ -134,19 +134,16 @@ describe('Test workspace dynamic files', function () {
       await checkFileContents('dynamic.txt', 'This is a dynamic file.\n');
     });
 
-    let issueErrors: { file: string; msg: string }[];
-    it('creates one issue', async () => {
+    it('creates one issue with all detected errors', async () => {
       const issues = await queryRows(
         sql.select_issues_for_variant_id,
         { variant_id: variantId },
         IssueSchema,
       );
       assert.lengthOf(issues, 1);
-      issueErrors = issues[0].system_data?.courseErrData?.errors;
+      const issueErrors: { file: string; msg: string }[] = issues[0].system_data?.courseErrData?.errors;
       assert.isDefined(issueErrors);
-    });
 
-    it('issue lists all expected errors', async () => {
       assert.isArray(issueErrors);
       const expectedErrors = [
         { file: 'Dynamic file 1', msg: 'does not include a name' },
