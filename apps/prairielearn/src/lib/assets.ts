@@ -224,7 +224,7 @@ export function coreElementAssetPath(assetPath: string): string {
  * clients to immutably cache assets.
  */
 export function courseElementAssetPath(
-  courseHash: string,
+  courseHash: string | null,
   urlPrefix: string,
   assetPath: string,
 ): string {
@@ -244,7 +244,7 @@ export function courseElementAssetPath(
  * clients to immutably cache assets.
  */
 export function courseElementExtensionAssetPath(
-  courseHash: string,
+  courseHash: string | null,
   urlPrefix: string,
   assetPath: string,
 ): string {
