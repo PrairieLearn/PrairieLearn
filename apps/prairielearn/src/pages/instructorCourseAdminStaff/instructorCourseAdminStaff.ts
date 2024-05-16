@@ -3,6 +3,7 @@ import debugfn from 'debug';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
+import * as error from '@prairielearn/error';
 import { HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
