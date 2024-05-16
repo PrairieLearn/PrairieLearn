@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
+import { config } from '../../lib/config.js';
 import {
   AuthnProviderSchema,
   InstitutionSchema,
@@ -8,9 +8,9 @@ import {
   type AuthnProvider,
   type Institution,
   type SamlProvider,
-} from '../../lib/db-types';
+} from '../../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function getInstitution(institution_id: string): Promise<Institution> {
   return await queryRow(sql.select_institution, { id: institution_id }, InstitutionSchema);

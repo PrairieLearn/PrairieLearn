@@ -1,9 +1,10 @@
-import { config } from '../lib/config';
 import { logger } from '@prairielearn/logger';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function run() {
   const result = await sqldb.queryAsync(sql.select_almost_launched_timeout_workspaces, {

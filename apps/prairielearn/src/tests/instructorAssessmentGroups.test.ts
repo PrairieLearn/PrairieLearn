@@ -1,14 +1,16 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetchCookie from 'fetch-cookie';
+import { step } from 'mocha-steps';
+
 import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient';
-import { IdSchema, type User, UserSchema } from '../lib/db-types';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
+import { IdSchema, type User, UserSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 describe('Instructor group controls', () => {
   before('set up testing server', helperServer.before());

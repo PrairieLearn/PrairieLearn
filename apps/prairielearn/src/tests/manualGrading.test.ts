@@ -1,19 +1,21 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
-} from '../models/course-permissions';
+} from '../models/course-permissions.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -195,11 +197,17 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     setUser(mockStaff[0]);
     let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
     assert.equal(nextUngraded.status, 302);
-    assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    assert.equal(
+      nextUngraded.headers.get('location'),
+      new URL(manualGradingAssessmentQuestionUrl).pathname,
+    );
     setUser(mockStaff[1]);
     nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
     assert.equal(nextUngraded.status, 302);
-    assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    assert.equal(
+      nextUngraded.headers.get('location'),
+      new URL(manualGradingAssessmentQuestionUrl).pathname,
+    );
   });
 
   step('student view should have the new score/feedback/rubric', async () => {
@@ -547,15 +555,16 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        console.log(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[0]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[1]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
       });
     });
 
@@ -630,7 +639,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         },
       );
 
@@ -640,7 +649,10 @@ describe('Manual Grading', function () {
           setUser(mockStaff[1]);
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+          assert.equal(
+            nextUngraded.headers.get('location'),
+            new URL(manualGradingAssessmentQuestionUrl).pathname,
+          );
         },
       );
     });

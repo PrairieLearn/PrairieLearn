@@ -1,4 +1,6 @@
+import { filesize } from 'filesize';
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeFileConfigSource,
@@ -6,10 +8,8 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
-// @ts-expect-error -- The TypeScript resolver thinks this is a pure-ESM module
-import { filesize } from 'filesize';
 
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),

@@ -1,38 +1,42 @@
 // @ts-check
-import * as _ from 'lodash';
+import * as path from 'path';
+
+import * as async from 'async';
+import sha256 from 'crypto-js/sha256.js';
+import debugfn from 'debug';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import { contains } from '@prairielearn/path-utils';
-import { createServerJob } from './server-jobs';
 import * as namedLocks from '@prairielearn/named-locks';
-import * as syncFromDisk from '../sync/syncFromDisk';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
+import { escapeRegExp } from '@prairielearn/sanitize';
+
+import * as b64Util from '../lib/base64-util.js';
 import {
   getLockNameForCoursePath,
   getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} from '../models/course';
-import { config } from './config';
-import * as path from 'path';
-import debugfn from 'debug';
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import * as fs from 'fs-extra';
-import * as async from 'async';
-import { v4 as uuidv4 } from 'uuid';
-const sha256 = require('crypto-js/sha256');
-import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
-import { EXAMPLE_COURSE_PATH } from './paths';
-import { escapeRegExp } from '@prairielearn/sanitize';
-import * as sqldb from '@prairielearn/postgres';
-import * as b64Util from '../lib/base64-util';
-import { html } from '@prairielearn/html';
+} from '../models/course.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { config } from './config.js';
+import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { createServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
 /**
  * @param {any} course
  * @param {string} startGitHash
- * @param {import('./server-jobs').ServerJob} job
+ * @param {import('./server-jobs.js').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
   const endGitHash = await getCourseCommitHash(course.path);
@@ -110,7 +114,7 @@ export class Editor {
   }
 
   /**
-   * @param {import('./server-jobs').ServerJobExecutor} serverJob
+   * @param {import('./server-jobs.js').ServerJobExecutor} serverJob
    */
   async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait

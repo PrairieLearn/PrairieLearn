@@ -1,8 +1,10 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { config } from '../lib/config';
-import { shouldSecureCookie, setCookie } from '../lib/cookie';
+
+import { config } from '../lib/config.js';
+import { shouldSecureCookie, setCookie } from '../lib/cookie.js';
 
 export default asyncHandler(async (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and

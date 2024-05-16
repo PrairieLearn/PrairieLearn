@@ -1,9 +1,10 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs-legacy';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.get(
     }
 
     res.locals.job_sequence = job_sequence;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

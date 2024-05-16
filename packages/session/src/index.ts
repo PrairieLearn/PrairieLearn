@@ -1,19 +1,19 @@
-import type { Request, Response, NextFunction } from 'express';
-import onHeaders from 'on-headers';
-import signature from 'cookie-signature';
-import asyncHandler from 'express-async-handler';
 import cookie from 'cookie';
+import signature from 'cookie-signature';
+import type { Request, Response, NextFunction } from 'express';
+import asyncHandler from 'express-async-handler';
+import onHeaders from 'on-headers';
 
-import { SessionStore } from './store';
-import { beforeEnd } from './before-end';
-import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie';
+import { beforeEnd } from './before-end.js';
+import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie.js';
 import {
   type Session,
   generateSessionId,
   loadSession,
   hashSession,
   truncateExpirationDate,
-} from './session';
+} from './session.js';
+import { type SessionStore } from './store.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

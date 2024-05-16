@@ -1,9 +1,11 @@
 // @ts-check
 import * as path from 'path';
-import { contains } from '@prairielearn/path-utils';
-import { html } from '@prairielearn/html';
+
 import * as error from '@prairielearn/error';
-import { encodePath, decodePath } from './uri-util';
+import { html } from '@prairielearn/html';
+import { contains } from '@prairielearn/path-utils';
+
+import { encodePath, decodePath } from './uri-util.js';
 
 /**
  * For the file path of the current page, this function returns rich

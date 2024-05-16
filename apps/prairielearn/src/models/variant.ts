@@ -1,7 +1,8 @@
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
-import { Variant, VariantSchema } from '../lib/db-types';
 
-const sql = loadSqlEquiv(__filename);
+import { Variant, VariantSchema } from '../lib/db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectVariantById(variant_id: string): Promise<Variant | null> {
   return queryOptionalRow(sql.select_variant_by_id, { variant_id }, VariantSchema);

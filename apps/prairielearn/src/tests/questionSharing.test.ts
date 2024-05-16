@@ -1,21 +1,24 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { Course } from '../lib/db-types';
-import { features } from '../lib/features/index';
-import { selectCourseById } from '../models/course';
-import * as syncFromDisk from '../sync/syncFromDisk';
-import { fetchCheerio } from './helperClient';
-import * as helperServer from './helperServer';
-import { makeMockLogger } from './mockLogger';
-import * as syncUtil from './sync/util';
+import { config } from '../lib/config.js';
+import { Course } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
+import { selectCourseById } from '../models/course.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import { makeMockLogger } from './mockLogger.js';
+import * as syncUtil from './sync/util.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const { logger } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;

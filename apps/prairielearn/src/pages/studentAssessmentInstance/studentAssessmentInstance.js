@@ -1,12 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import * as assessment from '../../lib/assessment';
+import * as assessment from '../../lib/assessment.js';
+import {
+  AssessmentInstanceSchema,
+  DateFromISOString,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -14,18 +21,11 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups';
-import {
-  AssessmentInstanceSchema,
-  DateFromISOString,
-  IdSchema,
-  InstanceQuestionSchema,
-} from '../../lib/db-types';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
+} from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
@@ -289,7 +289,7 @@ router.get(
         }
       }
     }
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -1,17 +1,24 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+import {
+  CourseInstancePermissionSchema,
+  CourseInstanceSchema,
+  CoursePermissionSchema,
+  UserSchema,
+} from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import { parseUidsString } from '../../lib/user.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,
@@ -22,18 +29,11 @@ import {
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
-} from '../../models/course-permissions';
-import { parseUidsString } from '../../lib/user';
-import {
-  CourseInstancePermissionSchema,
-  CourseInstanceSchema,
-  CoursePermissionSchema,
-  UserSchema,
-} from '../../lib/db-types';
+} from '../../models/course-permissions.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router();
 
 /**
@@ -95,7 +95,7 @@ router.get(
 
     res.locals.uids_limit = MAX_UIDS;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -158,7 +158,7 @@ router.post(
          * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
          */
         async (memo, uid) => {
-          /** @type {import('../../lib/db-types').User} */
+          /** @type {import('../../lib/db-types.js').User} */
           let user;
           try {
             user = await insertCoursePermissionsByUserUid({
