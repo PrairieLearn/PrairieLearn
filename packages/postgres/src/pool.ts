@@ -5,7 +5,7 @@ import { callbackify } from 'node:util';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { QueryResult } from 'pg';
+import pg, { DatabaseError, QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
 
@@ -134,13 +134,14 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // the error object.
   sqlError.message = err.message;
 
-  // We included the processed SQL (where e.g. `$foobar` has been replaced with `$1`)
-  // so that the `sqlError.position` field is accurate.
-  const { processedSql } = paramsToArray(sql, params);
+  const errorHasPosition = err instanceof DatabaseError && err.position != null;
 
   return addDataToError(err, {
     sqlError,
-    sql: processedSql,
+    // If the error has a `position` field, we need to use the processed source
+    // (where e.g. `$foobar` has been replaced with `$1`) so that the position
+    // is accurate.
+    sql: errorHasPosition ? paramsToArray(sql, params).processedSql : sql,
     sqlParams: params,
   });
 }
