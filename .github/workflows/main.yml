@@ -293,7 +293,7 @@ jobs:
       # Since tests run in the context of the container, we need to copy all
       # the coverage reports out of the container and into the host filesystem.
       - name: Copy coverage reports to the host
-        run: node ./tools/copy-coverage-reports.sh test_container
+        run: ./tools/copy_docker_coverage_reports.sh test_container
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
