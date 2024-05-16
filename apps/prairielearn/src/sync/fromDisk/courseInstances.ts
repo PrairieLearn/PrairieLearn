@@ -1,11 +1,12 @@
 import _ from 'lodash';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
+import { IdSchema } from '../../lib/db-types.js';
+import { CourseData, CourseInstance } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { makePerformance } from '../performance.js';
-import { CourseData, CourseInstance } from '../course-db.js';
-import { IdSchema } from '../../lib/db-types.js';
 
 const perf = makePerformance('courseInstances');
 

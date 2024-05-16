@@ -1,10 +1,11 @@
-import * as async from 'async';
 import {
   SQSClient,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
+import * as async from 'async';
+
 import { logger } from '@prairielearn/logger';
 
 import { makeAwsClientConfig } from '../lib/aws.js';

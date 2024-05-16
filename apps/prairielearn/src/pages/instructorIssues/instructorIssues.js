@@ -1,18 +1,19 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import SearchString from 'search-string';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import * as paginate from '../../lib/paginate.js';
-import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
-import { idsEqual } from '../../lib/id.js';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import * as sqldb from '@prairielearn/postgres';
+
 import { IdSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import * as paginate from '../../lib/paginate.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

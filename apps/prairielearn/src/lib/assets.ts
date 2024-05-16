@@ -1,16 +1,19 @@
 import * as crypto from 'node:crypto';
-import express from 'express';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
+
+import express from 'express';
 import { hashElement, type HashElementNode } from 'folder-hash';
+
 import * as compiledAssets from '@prairielearn/compiled-assets';
+import { HtmlSafeString } from '@prairielearn/html';
+
+import staticNodeModules from '../middlewares/staticNodeModules.js';
+import elementFiles from '../pages/elementFiles/elementFiles.js';
 
 import { config } from './config.js';
 import { APP_ROOT_PATH } from './paths.js';
-import staticNodeModules from '../middlewares/staticNodeModules.js';
-import elementFiles from '../pages/elementFiles/elementFiles.js';
-import { HtmlSafeString } from '@prairielearn/html';
-import { createRequire } from 'node:module';
 
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;

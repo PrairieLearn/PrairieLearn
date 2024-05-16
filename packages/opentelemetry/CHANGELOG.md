@@ -1,5 +1,15 @@
 # @prairielearn/opentelemetry
 
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Minor Changes
+
+- c51f3aa: Upgrade all JavaScript dependencies; ensure packages loaded with ESM are instrumented
+
 ## 1.11.3
 
 ### Patch Changes

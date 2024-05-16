@@ -1,6 +1,8 @@
 // @ts-check
 import { Router } from 'express';
+
 import { generateSignedToken } from '@prairielearn/signed-token';
+
 import { config } from '../../lib/config.js';
 import { shouldSecureCookie, setCookie, clearCookie } from '../../lib/cookie.js';
 

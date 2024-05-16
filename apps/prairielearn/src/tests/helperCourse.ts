@@ -1,5 +1,6 @@
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
+
 import { makeMockLogger } from './mockLogger.js';
 
 export async function syncCourse(courseDir = TEST_COURSE_PATH) {

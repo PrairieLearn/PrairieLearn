@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { IdSchema, Institution, User } from '../../lib/db-types.js';
-import { type Purchase } from '../../ee/lib/billing/purchases.js';
-import { isEnterprise } from '../../lib/license.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
+import { type Purchase } from '../../ee/lib/billing/purchases.js';
+import { IdSchema, Institution, User } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),

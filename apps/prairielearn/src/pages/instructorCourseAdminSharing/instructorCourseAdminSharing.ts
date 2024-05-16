@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import * as error from '@prairielearn/error';
-import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
 import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
 import { getCanonicalHost } from '../../lib/url.js';
+
+import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

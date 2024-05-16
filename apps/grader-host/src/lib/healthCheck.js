@@ -1,10 +1,11 @@
 // @ts-check
 import * as http from 'node:http';
+
 import Docker from 'dockerode';
 
-import globalLogger from './logger.js';
 import { config } from './config.js';
 import * as lifecycle from './lifecycle.js';
+import globalLogger from './logger.js';
 
 /**
  * Stores our current status. Once we transition to an unhealthy state, there's

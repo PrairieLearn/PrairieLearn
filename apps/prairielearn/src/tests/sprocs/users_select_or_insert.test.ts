@@ -2,6 +2,7 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
 import * as sqldb from '@prairielearn/postgres';
+
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

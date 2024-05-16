@@ -1,11 +1,13 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { GroupConfigSchema } from '../../lib/db-types.js';
+import { uploadInstanceGroups, autoGroups } from '../../lib/group-update.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -14,13 +16,13 @@ import {
   deleteGroup,
   leaveGroup,
 } from '../../lib/groups.js';
-import { uploadInstanceGroups, autoGroups } from '../../lib/group-update.js';
-import { GroupConfigSchema } from '../../lib/db-types.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { parseUidsString } from '../../lib/user.js';
+
 import {
   InstructorAssessmentGroups,
   GroupUsersRowSchema,
 } from './instructorAssessmentGroups.html.js';
-import { parseUidsString } from '../../lib/user.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

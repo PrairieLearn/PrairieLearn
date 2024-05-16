@@ -1,4 +1,6 @@
+import { filesize } from 'filesize';
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeFileConfigSource,
@@ -6,7 +8,6 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
-import { filesize } from 'filesize';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 

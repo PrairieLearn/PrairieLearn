@@ -1,3 +1,19 @@
+const NO_RESTRICTED_SYNTAX = [
+  {
+    selector:
+      'CallExpression[callee.type="MemberExpression"][callee.object.name="MathJax"][callee.property.name=/^(typeset|tex2chtml|tex2svg)$/]',
+    message: "Don't use the synchronous MathJax API; use a function like typesetPromise() instead.",
+  },
+  {
+    selector: 'MemberExpression[object.name="MathJax"][property.name="Hub"]',
+    message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
+  },
+  {
+    selector: 'ImportDeclaration[source.value="fs-extra"]:has(ImportNamespaceSpecifier)',
+    message: 'Use a default import instead of a namespace import for fs-extra',
+  },
+];
+
 module.exports = {
   env: {
     node: true,
@@ -38,23 +54,29 @@ module.exports = {
       '__filename',
       '__dirname',
     ],
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector:
-          'CallExpression[callee.type="MemberExpression"][callee.object.name="MathJax"][callee.property.name=/^(typeset|tex2chtml|tex2svg)$/]',
-        message:
-          "Don't use the synchronous MathJax API; use a function like typesetPromise() instead.",
-      },
-      {
-        selector: 'MemberExpression[object.name="MathJax"][property.name="Hub"]',
-        message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
-      },
-    ],
+    'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
     'import/no-named-as-default-member': 'off',
+
+    'import/order': [
+      'error',
+      {
+        'newlines-between': 'always',
+        alphabetize: {
+          order: 'asc',
+        },
+        pathGroups: [
+          {
+            pattern: '@prairielearn/**',
+            group: 'external',
+            position: 'after',
+          },
+        ],
+        pathGroupsExcludedImportTypes: ['builtin'],
+      },
+    ],
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
@@ -96,6 +118,7 @@ module.exports = {
         'import/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
+          ...NO_RESTRICTED_SYNTAX,
           {
             selector: 'MemberExpression[object.name="module"][property.name="exports"]',
             message: 'module.exports should not be used in TypeScript files',

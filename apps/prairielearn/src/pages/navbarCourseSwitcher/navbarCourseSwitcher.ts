@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { NavbarCourseSwitcher } from './navbarCourseSwitcher.html.js';
+
 import { selectCoursesWithStaffAccess } from '../../models/course.js';
+
+import { NavbarCourseSwitcher } from './navbarCourseSwitcher.html.js';
 
 const router = Router();
 

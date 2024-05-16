@@ -1,7 +1,9 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
-import { z } from 'zod';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),
