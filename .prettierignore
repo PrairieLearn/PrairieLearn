@@ -3,8 +3,8 @@ node_modules
 
 # Test coverage
 coverage/
-apps/*/.nyc_output/
-packages/*/.nyc_output/
+apps/*/coverage/
+packages/*/coverage/
 
 # Transpiled code
 apps/*/dist/

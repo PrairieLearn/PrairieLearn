@@ -99,6 +99,7 @@ apps/prairielearn/public/build
 packages/*/dist
 
 ## Coverage reports
+coverage/
 apps/*/coverage
 packages/*/coverage
 
