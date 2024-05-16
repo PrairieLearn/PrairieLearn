@@ -295,8 +295,7 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', function (callback) {
-      const params = {};
-      sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
+      sqldb.queryOneRow(sql.select_assessment_instance, {}, function (err, result) {
         if (ERR(err, callback)) return;
         locals.assessment_instance = result.rows[0];
         callback(null);

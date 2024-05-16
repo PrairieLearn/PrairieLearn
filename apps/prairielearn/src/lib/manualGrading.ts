@@ -298,15 +298,9 @@ export async function updateAssessmentQuestionRubric(
         async (item) => {
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
-          const updated =
-            item.id == null
-              ? null
-              : await sqldb.queryOptionalRow(
-                  sql.update_rubric_item,
-                  _.omit(item, ['order']),
-                  IdSchema,
-                );
-          if (updated == null) {
+          if (item.id) {
+            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+          } else {
             await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
           }
         },
