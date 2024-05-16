@@ -1,7 +1,9 @@
-import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { compiledScriptTag } from '../../lib/assets.js';
 import {
   CourseInstance,
   CourseInstanceSchema,
@@ -10,7 +12,6 @@ import {
   User,
   UserSchema,
 } from '../../lib/db-types.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
