@@ -64,14 +64,14 @@ WHERE
 RETURNING
   course_id;
 
--- BLOCK choose_sharing_name
+-- BLOCK update_sharing_name
 UPDATE pl_courses
 SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
 
--- BLOCK select_has_shared_question
+-- BLOCK check_imported_questions
 SELECT
   EXISTS (
     SELECT 1

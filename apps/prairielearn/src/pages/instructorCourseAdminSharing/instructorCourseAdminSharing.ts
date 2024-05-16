@@ -87,7 +87,17 @@ router.post(
       if (consuming_course_id === null) {
         throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
-    } else if (req.body.__action === 'choose_sharing_name') {
+    } else if (req.body.__action === 'check_imported_questions') {
+      const checkResult = await sqldb.queryOptionalRow(
+        sql.check_imported_questions, 
+        {
+        course_id: res.locals.course.id,
+        },
+        z.any().nullable(),
+      );
+      return checkResult; // TEST, does return work?
+    
+    } else if (req.body.__action === 'update_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
         req.body.course_sharing_name.includes('@') ||
@@ -100,7 +110,7 @@ router.post(
       } else {
         // First, check if any questions have been imported or shared publicly
         const checkResult = await sqldb.queryOptionalRow(
-          sql.select_has_shared_question, 
+          sql.check_imported_questions, 
           {
           course_id: res.locals.course.id,
           },
@@ -110,7 +120,7 @@ router.post(
         if (!checkResult) {
           // If no questions have been imported or shared publicly, update the sharing name
           await sqldb.queryZeroOrOneRowAsync(
-            sql.choose_sharing_name, 
+            sql.update_sharing_name, 
             {
             sharing_name: req.body.course_sharing_name.trim(),
             course_id: res.locals.course.id,

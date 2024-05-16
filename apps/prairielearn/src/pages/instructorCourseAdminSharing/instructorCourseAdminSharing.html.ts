@@ -59,11 +59,37 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-const chooseSharingNameModal = (resLocals) => {
+
+// Function to check if any questions have been imported or shared publicly
+async function checkImportedQuestions(resLocals) {
+  const formData = new FormData();
+  formData.append('__action', 'check_update_sharing_set_name');
+  formData.append('__csrf_token', resLocals.__csrf_token);
+
+  try {
+    const response = await fetch('', { // TEST, what should the URL be?
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    console.log(result); // TEST
+
+    return result;
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    return error;
+  }
+}
+
+
+
+const updateSharingNameModal = (resLocals) => {
   return html`
   <div
     class="modal fade"
-    id="chooseSharingNameModal"
+    id="updateSharingNameModal"
     tabindex="-1"
     role="dialog"
     aria-hidden="true"
@@ -92,7 +118,6 @@ const chooseSharingNameModal = (resLocals) => {
           </p>
           <p><strong>Once you choose your course's sharing name, you may not be able to change it</strong>,
             because doing so would break the assessments of other courses that have imported your questions.
-            <strong>If you have not yet shared any questions publicly or with other courses, you may edit your course's sharing name.</strong>
             It is recommended that you choose something short but descriptive. For example, if you're teaching
             a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
             name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
@@ -100,7 +125,7 @@ const chooseSharingNameModal = (resLocals) => {
         </div>
         <div class="modal-footer">
           <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="choose_sharing_name">
+            <input type="hidden" name="__action" value="update_sharing_name">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
             <div class=form-group>
               <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
@@ -129,6 +154,7 @@ export const InstructorSharing = ({
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
+  const sharingNameChoosable = checkImportedQuestions(resLocals);
   return html`
     <!doctype html>
     <html lang="en">
@@ -151,21 +177,21 @@ export const InstructorSharing = ({
                   <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${isCourseOwner
+                    ${isCourseOwner && sharingNameChoosable
                       ? html`
                           <button
                             type="button"
                             class="btn btn-xs btn-secondary mx-2"
-                            id="chooseSharingName"
+                            id="updateSharingName"
                             title="Choose Sharing Name"
                             data-toggle="modal"
-                            data-target="#chooseSharingNameModal"
+                            data-target="#updateSharingNameModal"
                             data-trigger="manual"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(resLocals)}
+                          ${updateSharingNameModal(resLocals)}
                         `
                       : ''}
                   </td>
