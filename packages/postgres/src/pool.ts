@@ -16,6 +16,10 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
+export interface PLPoolConfig extends pg.PoolConfig {
+  errorOnUnusedParameters?: boolean;
+}
+
 const debug = debugfn('@prairielearn/postgres');
 const lastQueryMap = new WeakMap<pg.PoolClient, string>();
 const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
@@ -167,11 +171,10 @@ export class PostgresPool {
    * Creates a new connection pool and attempts to connect to the database.
    */
   async initAsync(
-    pgConfig: pg.PoolConfig,
+    pgConfig: PLPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
-    errorOnUnusedParameters = false,
   ): Promise<void> {
-    this.errorOnUnusedParameters = errorOnUnusedParameters;
+    this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);

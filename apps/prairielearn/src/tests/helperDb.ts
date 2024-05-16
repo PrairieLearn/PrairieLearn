@@ -11,6 +11,7 @@ import {
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
+import { PLPoolConfig } from '@prairielearn/postgres/dist/pool.js';
 
 import * as sprocs from '../sprocs/index.js';
 
@@ -38,18 +39,19 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
 });
 
 async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): Promise<void> {
-  const pgConfig = {
+  const pgConfig: PLPoolConfig = {
     user: POSTGRES_USER,
     database: dbName,
     host: POSTGRES_HOST,
     max: 10,
     idleTimeoutMillis: 30000,
+    errorOnUnusedParameters: true,
   };
   function idleErrorHandler(err) {
     throw err;
   }
   // In testing, errorOnUnusedParameters (true)
-  await sqldb.initAsync(pgConfig, idleErrorHandler, true);
+  await sqldb.initAsync(pgConfig, idleErrorHandler);
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.

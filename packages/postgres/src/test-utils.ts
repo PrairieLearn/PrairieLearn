@@ -72,12 +72,12 @@ async function createDatabase(
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
+        errorOnUnusedParameters: true,
         ...(options.poolConfig ?? {}),
       },
       (err) => {
         throw err;
       },
-      true, // errorOnUnusedParameters
     );
   }
 }

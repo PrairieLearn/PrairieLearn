@@ -2340,6 +2340,7 @@ if (esMain(import.meta) && config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
           ssl: config.postgresqlSsl,
+          errorOnUnusedParameters: config.devMode,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
@@ -2357,7 +2358,7 @@ if (esMain(import.meta) && config.startServer) {
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
         // If devMode=true also set errorOnUnusedParameters
-        await sqldb.initAsync(pgConfig, idleErrorHandler, config.devMode);
+        await sqldb.initAsync(pgConfig, idleErrorHandler);
 
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
