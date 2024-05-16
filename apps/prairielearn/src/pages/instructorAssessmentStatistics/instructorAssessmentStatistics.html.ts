@@ -1,7 +1,8 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import _ from 'lodash';
 import { z } from 'zod';
+
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types.js';
