@@ -16,7 +16,7 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
-export interface PLPoolConfig extends pg.PoolConfig {
+export interface PostgresPoolConfig extends pg.PoolConfig {
   errorOnUnusedParameters?: boolean;
 }
 
@@ -171,7 +171,7 @@ export class PostgresPool {
    * Creates a new connection pool and attempts to connect to the database.
    */
   async initAsync(
-    pgConfig: PLPoolConfig,
+    pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
     this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;

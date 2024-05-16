@@ -11,7 +11,6 @@ import {
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
-import { PLPoolConfig } from '@prairielearn/postgres/dist/pool.js';
 
 import * as sprocs from '../sprocs/index.js';
 
@@ -39,7 +38,7 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
 });
 
 async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): Promise<void> {
-  const pgConfig: PLPoolConfig = {
+  const pgConfig = {
     user: POSTGRES_USER,
     database: dbName,
     host: POSTGRES_HOST,
