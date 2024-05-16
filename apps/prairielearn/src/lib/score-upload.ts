@@ -415,7 +415,6 @@ async function updateAssessmentInstanceFromJson(
         sql.select_assessment_instance_group,
         {
           assessment_id,
-          uid: json.uid,
           group_name: json.group_name,
           instance_number: json.instance,
         },
