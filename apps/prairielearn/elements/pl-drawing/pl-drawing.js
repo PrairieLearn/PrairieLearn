@@ -52,6 +52,17 @@ class PLDrawingBaseElement {
 window.PLDrawingApi = {
   _idCounter: 0,
 
+  // This will be used to load `.svg` files from the `clientFilesElement` directory.
+  //
+  // This URL is constructed by striping off any trailing query parameters or
+  // hash fragments from the URL, then stripping off the last component of the
+  // URL (the script filename).
+  clientFilesBase: window.document.currentScript.src
+    .split(/[?#]/)[0]
+    .split('/')
+    .slice(0, -1)
+    .join('/'),
+
   /**
    * Generates a new numeric ID for a submission object.
    * Each submitted object is uniquely identified by its ID.
@@ -153,7 +164,6 @@ window.PLDrawingApi = {
 
     // Set all button icons
     let drawing_btns = $(root_elem).find('button');
-    const image_base_url = elem_options['client_files'];
     const element_base_url = elem_options['element_client_files'];
     drawing_btns.each(function (i, btn) {
       let img = btn.children[0];
@@ -166,7 +176,7 @@ window.PLDrawingApi = {
           if (!image_filename.endsWith('.svg')) {
             image_filename += '.svg';
           }
-          let base = image_base_url;
+          let base = this.clientFilesBase;
           if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
             base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
