@@ -1,15 +1,17 @@
-import ERR = require('async-stacktrace');
-import * as _ from 'lodash';
+import ERR from 'async-stacktrace';
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import * as helperServer from './helperServer';
+import { config } from '../lib/config.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;

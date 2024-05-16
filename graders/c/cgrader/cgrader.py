@@ -222,9 +222,9 @@ class CGrader:
         if ungradable_if_failed and not all(
             os.path.isfile(f) for f in objs + std_obj_files
         ):
-            self.result[
-                "message"
-            ] += f"Compilation errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Compilation errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
@@ -296,9 +296,9 @@ class CGrader:
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, "755")
         elif ungradable_if_failed:
-            self.result[
-                "message"
-            ] += f"Linker errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Linker errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
@@ -459,7 +459,9 @@ class CGrader:
             comment = (
                 ""
                 if len(exp_output) == 1
-                else " one of" if must_match_all_outputs == "any" else " all of"
+                else " one of"
+                if must_match_all_outputs == "any"
+                else " all of"
             )
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
             msg = f"Expected{comment}:{join_str}" + join_str.join(
@@ -633,9 +635,9 @@ class CGrader:
                         output=test.findtext("{*}message"),
                     )
         except FileNotFoundError:
-            self.result[
-                "message"
-            ] += "Test suite log file not found. Consult the instructor.\n"
+            self.result["message"] += (
+                "Test suite log file not found. Consult the instructor.\n"
+            )
             raise UngradableException()
         except ET.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"

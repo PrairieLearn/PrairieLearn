@@ -1,11 +1,13 @@
-import * as fs from 'fs-extra';
-import * as tmp from 'tmp-promise';
 import * as path from 'path';
-import * as sqldb from '@prairielearn/postgres';
-import stringify = require('json-stable-stringify');
-import { assert } from 'chai';
 
-import * as syncFromDisk from '../../sync/syncFromDisk';
+import { assert } from 'chai';
+import fs from 'fs-extra';
+import stringify from 'json-stable-stringify';
+import * as tmp from 'tmp-promise';
+
+import * as sqldb from '@prairielearn/postgres';
+
+import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;

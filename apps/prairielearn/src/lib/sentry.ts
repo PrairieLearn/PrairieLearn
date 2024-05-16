@@ -1,5 +1,6 @@
-import * as Sentry from '@prairielearn/sentry';
 import type { NextFunction, Request, Response } from 'express';
+
+import * as Sentry from '@prairielearn/sentry';
 
 export function enrichSentryEventMiddleware(req: Request, res: Response, next: NextFunction) {
   // This will ensure that this middleware is always run in an isolated

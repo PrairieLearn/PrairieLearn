@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-import * as defaultPool from './default-pool';
+import * as defaultPool from './default-pool.js';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';

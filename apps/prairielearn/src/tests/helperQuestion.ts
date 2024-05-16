@@ -1,13 +1,13 @@
+import { setTimeout as sleep } from 'timers/promises';
+
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
-import { setTimeout as sleep } from 'timers/promises';
-import * as _ from 'lodash';
-import FormData = require('form-data');
+import _ from 'lodash';
+import fetch, { FormData } from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
@@ -527,10 +527,7 @@ export function uploadInstanceQuestionScores(locals: Record<string, any>) {
       const formData = new FormData();
       formData.append('__action', 'upload_instance_question_scores');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', Buffer.from(locals.csvData), {
-        filename: 'data.csv',
-        contentType: 'text/csv',
-      });
+      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
       assert(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
@@ -571,10 +568,7 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
       const formData = new FormData();
       formData.append('__action', 'upload_assessment_instance_scores');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', Buffer.from(locals.csvData), {
-        filename: 'data.csv',
-        contentType: 'text/csv',
-      });
+      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
       assert(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',

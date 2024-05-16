@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { type CourseInstance } from '../../lib/db-types';
-import { idsEqual } from '../../lib/id';
+import { type CourseInstance } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 
 export function NavbarCourseInstanceSwitcher({
   course_instances,

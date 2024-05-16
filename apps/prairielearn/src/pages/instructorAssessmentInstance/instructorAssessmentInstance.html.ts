@@ -1,12 +1,13 @@
-import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
-import { InstanceLogEntry } from '../../lib/assessment';
-import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
-import { formatFloat } from '../../lib/format';
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
+import { InstanceLogEntry } from '../../lib/assessment.js';
+import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
+import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import { formatFloat } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -74,7 +75,7 @@ export function InstructorAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
@@ -94,7 +95,7 @@ export function InstructorAssessmentInstance({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
         })}
@@ -104,7 +105,7 @@ export function InstructorAssessmentInstance({
             groupWork: resLocals.assessment.group_work,
           })}
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             { ...resLocals },
           )}
@@ -179,7 +180,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Points</th>
                   <td colspan="2">
-                    ${renderEjs(__filename, "<% include('../partials/pointsFormatter'); %>")}
+                    ${renderEjs(import.meta.url, "<% include('../partials/pointsFormatter'); %>")}
                     <span id="total-points"
                       >${resLocals.assessment_instance.points.toString()}</span
                     >
@@ -215,7 +216,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Score</th>
                   <td class="align-middle" style="width: 20%;">
-                    ${renderEjs(__filename, "<%- include('../partials/scorebar'); %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
                       score: resLocals.assessment_instance.score_perc,
                     })}
                   </td>
@@ -345,7 +346,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints') %>",
                           { instance_question, component: 'auto' },
                         )}
@@ -361,7 +362,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm'); %>",
                                   {
                                     ...resLocals,
@@ -382,7 +383,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints'); %>",
                           { instance_question, component: 'manual' },
                         )}
@@ -398,7 +399,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm') %>",
                                   {
                                     ...resLocals,
@@ -419,7 +420,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints'); %>",
                           { instance_question, component: 'total' },
                         )}
@@ -435,7 +436,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm'); %>",
                                   {
                                     ...resLocals,
@@ -450,7 +451,7 @@ export function InstructorAssessmentInstance({
                           : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
-                        ${renderEjs(__filename, "<%- include('../partials/scorebar'); %>", {
+                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
                           score: instance_question.score_perc,
                         })}
                       </td>
@@ -467,7 +468,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} percentage score"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionScorePercForm');%>",
                                   {
                                     ...resLocals,
