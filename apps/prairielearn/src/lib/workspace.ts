@@ -390,7 +390,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     params: variant.params,
     correctAnswers: variant.true_answer,
     targetPath: sourcePath,
-    homeDirectory: question.workspace_home || sourcePath
+    homeDirectory: question.workspace_home || sourcePath,
   });
 
   if (fileGenerationErrors.length > 0) {
