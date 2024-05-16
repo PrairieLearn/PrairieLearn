@@ -3,11 +3,12 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { InstanceQuestionSchema } from '../../../lib/db-types.js';
+import { IdSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -147,19 +148,47 @@ router.post(
       // res.send({});
       console.log(config.openAiApiKey);
 
-      // // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
-      // const serverJob = await createServerJob({
-      //   courseId: locals.course ? locals.course.id : null,
-      //   type: 'botGrading',
-      //   description: 'Use LLM to grade assessment question',
-      // });
+      // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
+      const serverJob = await createServerJob({
+        courseId: res.locals.course ? res.locals.course.id : null,
+        type: 'botGrading',
+        description: 'Use LLM to grade assessment question',
+      });
 
-      // serverJob.executeInBackground(async (job) => {
-      // SQL query to get the thing to grade (look at select_variant_with_last_submission in instanceQuestion.sql)
-      // call the API to grade the thing
-      // Put the grade in the database (make a new grading_job, assign to user id 1)
-      // Can we just call the function "updateInstanceQuestionScore" from manualGrading.ts?
-      // });
+      serverJob.executeInBackground(async (job) => {
+        console.log('running grading in background');
+
+        // SQL query to get the thing to grade (look at select_variant_with_last_submission in instanceQuestion.sql)
+
+        // get all instance questions
+        const result = await queryRows(
+          sql.select_instance_questions_manual_grading,
+          {
+            assessment_id: res.locals.assessment.id,
+            assessment_question_id: res.locals.assessment_question.id,
+          },
+          InstanceQuestionRowSchema,
+        );
+        console.log(result.length);
+
+        // get each instance question
+        for (const instance_question of result) {
+          console.log(instance_question.id);
+          const variant_with_submission_id = await queryOptionalRow(
+            sql.select_variant_with_last_submission,
+            { instance_question_id: instance_question.id },
+            IdSchema,
+          );
+          console.log(variant_with_submission_id);
+          console.log('abc');
+        }
+
+        // call the API to grade the thing
+        // Put the grade in the database (make a new grading_job, assign to user id 1)
+        // Can we just call the function "updateInstanceQuestionScore" from manualGrading.ts?
+
+        job.info('running'); // Do we need to use the ServerJob interface?
+      });
 
       // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"
       // to check out your database, run "docker exec -it mypl psql postgres"
