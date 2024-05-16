@@ -1,7 +1,9 @@
-import asyncHandler from 'express-async-handler';
 import express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
   queryOneRowAsync,
@@ -9,17 +11,17 @@ import {
   queryRows,
   queryZeroOrOneRowAsync,
 } from '@prairielearn/postgres';
-import { flash } from '@prairielearn/flash';
 
 import { InstitutionSchema, CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
+import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
+import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+
 import {
   Enroll,
   EnrollLtiMessage,
   CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
 } from './enroll.html.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
-import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

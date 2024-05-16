@@ -1,5 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
   type CourseInstance,
@@ -7,7 +9,6 @@ import {
   type PlanGrant,
 } from '../../../lib/db-types.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
-import { compiledScriptTag } from '../../../lib/assets.js';
 
 export function AdministratorInstitutionCourseInstance({
   institution,

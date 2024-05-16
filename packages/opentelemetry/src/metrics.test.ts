@@ -1,3 +1,4 @@
+import { Meter } from '@opentelemetry/api';
 import {
   InMemoryMetricExporter,
   AggregationTemporality,
@@ -5,7 +6,6 @@ import {
   PeriodicExportingMetricReader,
   Histogram,
 } from '@opentelemetry/sdk-metrics';
-import { Meter } from '@opentelemetry/api';
 import { use as chaiUse, assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 

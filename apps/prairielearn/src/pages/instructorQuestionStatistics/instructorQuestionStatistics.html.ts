@@ -1,6 +1,7 @@
+import { z } from 'zod';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import {

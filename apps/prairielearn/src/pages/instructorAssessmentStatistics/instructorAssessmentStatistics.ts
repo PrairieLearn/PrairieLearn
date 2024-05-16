@@ -1,12 +1,14 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+
 import {
   AssessmentScoreHistogramByDateSchema,
   DurationStatSchema,

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 import {
   selectAllBatchedMigrations,

@@ -1,7 +1,9 @@
 import { z } from 'zod';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
+
 import { HttpStatusError } from '@prairielearn/error';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+
+import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

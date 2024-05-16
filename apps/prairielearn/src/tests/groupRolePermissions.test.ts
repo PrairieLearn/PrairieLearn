@@ -1,7 +1,6 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { config } from '../lib/config.js';
 
 import {
   queryAsync,
@@ -11,9 +10,11 @@ import {
   queryRow,
 } from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { config } from '../lib/config.js';
 import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

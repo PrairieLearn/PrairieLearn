@@ -1,13 +1,14 @@
-import * as async from 'async';
 import { EC2 } from '@aws-sdk/client-ec2';
+import * as async from 'async';
 import fetch from 'node-fetch';
 import { z } from 'zod';
+
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { config } from '../lib/config.js';
 import { makeAwsClientConfig } from '../lib/aws.js';
+import { config } from '../lib/config.js';
 import * as workspaceHostUtils from '../lib/workspaceHost.js';
 
 const sql = loadSqlEquiv(import.meta.url);
