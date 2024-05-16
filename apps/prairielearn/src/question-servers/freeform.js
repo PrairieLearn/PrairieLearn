@@ -1163,10 +1163,10 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
   data.options.course_element_files_url = assets
     .courseElementAssetPath(course.commit_hash, locals.urlPrefix, '')
-    .replace(/\/?^/, '');
+    .replace(/\/+$/, '');
   data.options.course_element_extension_files_url = assets
     .courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, '')
-    .replace(/\/?^/, '');
+    .replace(/\/+$/, '');
   data.options.submission_files_url = submission ? submissionFilesUrl : null;
   data.options.base_url = locals.baseUrl;
   data.options.workspace_url = locals.workspaceUrl || null;
