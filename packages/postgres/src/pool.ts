@@ -134,9 +134,13 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // the error object.
   sqlError.message = err.message;
 
+  // We included the processed SQL (where e.g. `$foobar` has been replaced with `$1`)
+  // so that the `sqlError.position` field is accurate.
+  const { processedSql } = paramsToArray(sql, params);
+
   return addDataToError(err, {
     sqlError,
-    sql,
+    sql: processedSql,
     sqlParams: params,
   });
 }
