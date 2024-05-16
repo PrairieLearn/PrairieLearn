@@ -29,7 +29,7 @@ async function checkFileContents(filename: string, expectedContents: string) {
   assert.equal(fileContents, expectedContents);
 }
 
-async function createWorkspaceVariant(qid: string) {
+async function createAndInitializeWorkspaceVariant(qid: string) {
   const questionId = await queryRow(sql.select_test_question, { qid }, IdSchema);
   const workspaceQuestionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
   const response = await fetch(workspaceQuestionUrl);
@@ -43,10 +43,7 @@ async function createWorkspaceVariant(qid: string) {
 
   variantId = $('.question-form input[name="__variant_id"]').attr('value');
   assert.isDefined(variantId);
-}
 
-async function initializeWorkspace() {
-  assert.isDefined(workspaceId);
   // A workspace is typically initialized using sockets, but to simplify the
   // testing environment, we will call the initialization process directly.
   ({ sourcePath } = await initialize(workspaceId));
@@ -70,8 +67,8 @@ describe('Test workspace dynamic files', function () {
   after('shut down testing server', helperServer.after);
 
   describe('Question with valid dynamic files', () => {
-    it('create workspace question variant', async () => createWorkspaceVariant('workspace'));
-    it('initialize workspace', initializeWorkspace);
+    it('create question variant and initialize workspace', async () =>
+      createAndInitializeWorkspaceVariant('workspace'));
 
     it('creates all static files', async () => {
       await checkFileContents(
@@ -127,9 +124,8 @@ describe('Test workspace dynamic files', function () {
   });
 
   describe('Question with invalid dynamic files', () => {
-    it('create workspace question variant', async () =>
-      createWorkspaceVariant('workspaceInvalidDynamicFiles'));
-    it('initialize workspace', initializeWorkspace);
+    it('create question variant and initialize workspace', async () =>
+      createAndInitializeWorkspaceVariant('workspaceInvalidDynamicFiles'));
 
     it('creates valid files', async () => {
       await checkFileContents('static.txt', 'Static content\n');
