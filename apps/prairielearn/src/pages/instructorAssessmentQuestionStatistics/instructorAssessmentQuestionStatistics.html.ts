@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../components/Modal.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
