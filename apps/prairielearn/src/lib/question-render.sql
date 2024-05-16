@@ -187,6 +187,8 @@ WITH
         jsonb_build_object(
           'variant_id',
           v.id,
+          'open',
+          v.open,
           'max_submission_score',
           COALESCE(vmss.max_submission_score, 0)
         )
@@ -198,8 +200,7 @@ WITH
       LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
     WHERE
       v.instance_question_id = $instance_question_id
-      AND NOT v.open
-      AND NOT v.broken
+      AND v.broken_at IS NULL
   )
 SELECT
   to_jsonb(lgj) AS grading_job,
