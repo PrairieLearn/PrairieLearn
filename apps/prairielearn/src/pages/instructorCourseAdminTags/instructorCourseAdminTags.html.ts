@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { Tag } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTags({

@@ -1,15 +1,16 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 import {
   uploadInstanceQuestionScores,
   uploadAssessmentInstanceScores,
 } from '../../lib/score-upload.js';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

@@ -1,9 +1,11 @@
 import { z } from 'zod';
+
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { Modal } from '../../components/Modal.html.js';
 import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),

@@ -3,8 +3,8 @@ import { step } from 'mocha-steps';
 
 import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer.js';
 import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 describe('AdministratorQuery page', function () {
   this.timeout(60000);

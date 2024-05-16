@@ -1,17 +1,15 @@
+import assert from 'node:assert';
+import type { EventEmitter } from 'node:events';
+
+import _ from 'lodash';
 import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import * as error from '@prairielearn/error';
-import assert from 'node:assert';
-import _ from 'lodash';
-import type { EventEmitter } from 'node:events';
 
-import * as ltiOutcomes from './ltiOutcomes.js';
 import { config } from './config.js';
-import * as externalGradingSocket from './externalGradingSocket.js';
-import { ExternalGraderSqs } from './externalGraderSqs.js';
-import { ExternalGraderLocal } from './externalGraderLocal.js';
 import {
   IdSchema,
   CourseSchema,
@@ -25,6 +23,10 @@ import {
   type Question,
   type Course,
 } from './db-types.js';
+import { ExternalGraderLocal } from './externalGraderLocal.js';
+import { ExternalGraderSqs } from './externalGraderSqs.js';
+import * as externalGradingSocket from './externalGradingSocket.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

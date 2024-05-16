@@ -1,14 +1,15 @@
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import { HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { parseUidsString } from '../../lib/user.js';
 import {
   CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
@@ -24,8 +25,7 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { parseUidsString } from '../../lib/user.js';
-import { User } from '../../lib/db-types.js';
+
 import {
   InstructorCourseAdminStaff,
   CourseUsersRowSchema,

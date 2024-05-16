@@ -1,4 +1,5 @@
 import * as stream from 'stream';
+
 import winston from 'winston';
 
 interface MockLogger {

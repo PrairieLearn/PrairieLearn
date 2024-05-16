@@ -4,14 +4,16 @@ import _ from 'lodash';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config.js';
-import * as helperServer from './helperServer.js';
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
 import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
+
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

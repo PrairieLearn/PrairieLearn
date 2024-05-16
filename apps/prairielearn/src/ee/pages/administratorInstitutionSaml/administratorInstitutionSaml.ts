@@ -1,25 +1,27 @@
+import { SAML } from '@node-saml/passport-saml';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 // We import from this instead of `pem` directly because the latter includes
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
 import * as pem from 'pem/lib/pem.js';
-import { SAML } from '@node-saml/passport-saml';
+import formatXml from 'xml-formatter';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
-import formatXml from 'xml-formatter';
 
-import {
-  AdministratorInstitutionSaml,
-  DecodedAssertion,
-} from './administratorInstitutionSaml.html.js';
+import { getSamlOptions } from '../../auth/saml/index.js';
 import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
 } from '../../lib/institution.js';
-import { getSamlOptions } from '../../auth/saml/index.js';
+
+import {
+  AdministratorInstitutionSaml,
+  DecodedAssertion,
+} from './administratorInstitutionSaml.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
