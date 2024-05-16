@@ -4,8 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
-import { config } from '../../../lib/config';
 
+import { config } from '../../../lib/config.js';
 import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 
