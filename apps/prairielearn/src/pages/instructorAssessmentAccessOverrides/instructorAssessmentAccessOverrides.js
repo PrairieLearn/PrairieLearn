@@ -58,6 +58,11 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
   return user;
 }
 
+function convertToDateTimeLocal(dateStr) {
+  var dateWithoutTimezone = dateStr.slice(0, -6);
+  var formattedDate = dateWithoutTimezone.replace(' ', 'T');
+  return formattedDate;
+}
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -71,6 +76,11 @@ router.get(
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
       assessment_id: res.locals.assessment.id,
       timezone: res.locals.course_instance.display_timezone,
+    });
+    result.rows = result.rows.map(row => {
+        row.start_date = convertToDateTimeLocal(row.start_date);
+        row.end_date = convertToDateTimeLocal(row.end_date);
+        return row;
     });
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;

@@ -5,16 +5,6 @@
 </head>
 <body>
   <script>
-    function toDatetimeLocal(date) {
-        var year = date.getFullYear();
-        var month = ('0' + (date.getMonth() + 1)).slice(-2);
-        var day = ('0' + date.getDate()).slice(-2);
-        var hours = ('0' + date.getHours()).slice(-2);
-        var minutes = ('0' + date.getMinutes()).slice(-2);
-        var seconds = ('0' + date.getSeconds()).slice(-2);
-        return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds;
-    }
-   
     $(function () {
       $('[data-toggle="popover"]').popover({ sanitize: false,   container: 'body' });
 
@@ -37,11 +27,9 @@
         editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
         editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
         editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
-        editOverrideForm.find('#edit-credit').val(button.data('credit'));
-        var policy_start_date = new Date(button.data('start-date'));     
-        var policy_start_date_string = toDatetimeLocal(policy_start_date);
-        var policy_end_date = new Date(button.data('end-date'));
-        var policy_end_date_string = toDatetimeLocal(policy_end_date);
+        editOverrideForm.find('#edit-credit').val(button.data('credit')); 
+        var policy_start_date_string = button.data('start-date');     
+        var policy_end_date_string = button.data('end-date');
 
         editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
         editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
