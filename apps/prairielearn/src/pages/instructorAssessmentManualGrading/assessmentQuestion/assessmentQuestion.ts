@@ -3,10 +3,16 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { IdSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import { IdSchema, InstanceQuestionSchema, SubmissionSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 
@@ -174,20 +180,54 @@ router.post(
         // get each instance question
         for (const instance_question of result) {
           console.log(instance_question.id);
-          const variant_with_submission_id = await queryOptionalRow(
-            sql.select_variant_with_last_submission,
+          // get last submission of instance question
+          const submission = await queryRow(
+            sql.select_last_submission,
             { instance_question_id: instance_question.id },
-            IdSchema,
+            SubmissionSchema,
           );
-          console.log(variant_with_submission_id);
-          console.log('abc');
+
+          // maybe remove some if statements that can never happen
+          console.log(submission.submitted_answer);
+          // if nothing submitted
+          if (submission.submitted_answer == null) {
+            continue;
+          }
+          // if no file submitted or too many files submitted
+          if (
+            submission.submitted_answer._files == null ||
+            submission.submitted_answer._files.length !== 1
+          ) {
+            continue;
+          }
+          const student_answer = atob(submission.submitted_answer._files[0].contents);
+          console.log(student_answer);
+
+          // TODO: Call OpenAI API to grade
+
+          const update_result = await manualGrading.updateInstanceQuestionScore(
+            res.locals.assessment.id,
+            instance_question.id,
+            submission.id,
+            req.body.modified_at,
+            { score_perc: 50 },
+            '1',
+          );
+          // if (update_result.modified_at_conflict) {
+          //   res.send({
+          //     conflict_grading_job_id: update_result.grading_job_id,
+          //     conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${update_result.grading_job_id}`,
+          //   });
+          // } else {
+          //   res.send({});
+          // }
         }
 
         // call the API to grade the thing
         // Put the grade in the database (make a new grading_job, assign to user id 1)
         // Can we just call the function "updateInstanceQuestionScore" from manualGrading.ts?
 
-        job.info('running'); // Do we need to use the ServerJob interface?
+        job.info('running'); // Do we really need to use the ServerJob interface?
       });
 
       // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"

@@ -72,9 +72,9 @@ WHERE
     )
   );
 
--- BLOCK select_variant_with_last_submission
+-- BLOCK select_last_submission
 SELECT
-  v.id AS variant_id
+  s.* AS submission
 FROM
   variants AS v
   JOIN submissions AS s ON (s.variant_id = v.id)
