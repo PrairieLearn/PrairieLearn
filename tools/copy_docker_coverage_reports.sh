@@ -11,8 +11,6 @@ fi
 CONTAINER_NAME=$1
 
 # Construct a list of all coverage reports in the container
-# docker container exec $CONTAINER_NAME ls /PrairieLearn
-# docker container exec $CONTAINER_NAME bash -c "ls /PrairieLearn/apps/*"
 docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn/apps -name lcov.info" > /tmp/coverage_reports.txt
 docker container exec $CONTAINER_NAME bash -c "find /PrairieLearn/packages -name lcov.info" > /tmp/coverage_reports.txt
 
