@@ -156,7 +156,6 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
-      // const timezone = res.locals.course_instance.display_timezone;
 
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
