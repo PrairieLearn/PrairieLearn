@@ -24,4 +24,8 @@ def generate(data):
             "name": "reference_to_subdir.txt",
             "questionFile": "path/with/another/file.txt",
         },
+        {
+            "name": "/home/prairie/full_path.txt",
+            "contents": "File identified by full path\n",
+        },
     ]
