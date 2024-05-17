@@ -389,18 +389,11 @@ async function updateInstanceQuestionFromJson(
   });
 }
 
-async function updateAssessmentInstanceFromJson(
-  json: Record<string, any>,
-  assessment_id: string,
-  authn_user_id: string,
-) {
-  if (!_.has(json, 'instance')) throw new Error('"instance" not found');
-  await sqldb.runInTransactionAsync(async () => {
-    let assessment_instance_id: string | null;
-    let id: string | null;
-    if (_.has(json, 'uid')) {
-      id = json.uid;
-      assessment_instance_id = await sqldb.queryOptionalRow(
+async function getAssessmentInstanceId(json: Record<string, any>, assessment_id: string) {
+  if ('uid' in json) {
+    return {
+      id: json.uid,
+      assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
@@ -408,10 +401,12 @@ async function updateAssessmentInstanceFromJson(
           instance_number: json.instance,
         },
         IdSchema,
-      );
-    } else if (_.has(json, 'group_name')) {
-      id = json.group_name;
-      assessment_instance_id = await sqldb.queryOptionalRow(
+      ),
+    };
+  } else if ('group_name' in json) {
+    return {
+      id: json.group_name,
+      assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_group,
         {
           assessment_id,
@@ -419,10 +414,21 @@ async function updateAssessmentInstanceFromJson(
           instance_number: json.instance,
         },
         IdSchema,
-      );
-    } else {
-      throw new Error('"uid" or "group_name" not found');
-    }
+      ),
+    };
+  } else {
+    throw new Error('"uid" or "group_name" not found');
+  }
+}
+
+async function updateAssessmentInstanceFromJson(
+  json: Record<string, any>,
+  assessment_id: string,
+  authn_user_id: string,
+) {
+  if (!_.has(json, 'instance')) throw new Error('"instance" not found');
+  await sqldb.runInTransactionAsync(async () => {
+    const { id, assessment_instance_id } = await getAssessmentInstanceId(json, assessment_id);
 
     if (assessment_instance_id == null) {
       throw new Error(`unable to locate instance ${json.instance} for ${id}`);
