@@ -98,6 +98,11 @@ apps/*/dist
 apps/prairielearn/public/build
 packages/*/dist
 
+## Coverage reports
+coverage/
+apps/*/coverage
+packages/*/coverage
+
 ## TypeScript cache
 *.tsbuildinfo
 
