@@ -8,7 +8,7 @@
     "dev:no-watch": "tsx src/interface.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/interface.js",
-    "test": "mocha src/**/*.test.{js,ts}"
+    "test": "c8 mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
     "@aws-sdk/client-ecr": "^3.574.0",
@@ -43,11 +43,23 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
     "chai": "^5.1.1",
     "mocha": "^10.4.0",
     "nodemon": "^3.1.0",
     "tsx": "^4.10.4",
     "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

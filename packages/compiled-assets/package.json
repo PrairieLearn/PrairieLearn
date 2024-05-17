@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha src/**/*.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
@@ -28,11 +28,23 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
     "chai": "^5.1.1",
     "get-port": "^7.1.0",
     "mocha": "^10.4.0",
     "node-fetch": "^3.3.2",
     "tsx": "^4.10.4",
     "typescript": "^5.4.5"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

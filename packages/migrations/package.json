@@ -11,20 +11,7 @@
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
-    "test": "mocha src/**/*.test.ts"
-  },
-  "devDependencies": {
-    "@prairielearn/tsconfig": "workspace:^",
-    "@types/fs-extra": "^11.0.4",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.11",
-    "chai": "^5.1.1",
-    "chai-as-promised": "^7.1.2",
-    "mocha": "^10.4.0",
-    "tmp-promise": "^3.0.3",
-    "tsx": "^4.10.4",
-    "typescript": "^5.4.5",
-    "typescript-cp": "^0.1.9"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@prairielearn/error": "workspace:^",
@@ -34,5 +21,30 @@
     "fs-extra": "^11.2.0",
     "serialize-error": "^11.0.3",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/fs-extra": "^11.0.4",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
+    "chai": "^5.1.1",
+    "chai-as-promised": "^7.1.2",
+    "mocha": "^10.4.0",
+    "tmp-promise": "^3.0.3",
+    "tsx": "^4.10.4",
+    "typescript": "^5.4.5",
+    "typescript-cp": "^0.1.9"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

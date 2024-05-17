@@ -9,7 +9,7 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "mocha --parallel src/**/*.test.ts",
+    "test": "c8 mocha --parallel src/**/*.test.ts",
     "test:dist": "mocha --parallel dist/**/*.test.js"
   },
   "dependencies": {
@@ -236,6 +236,7 @@
     "@types/unzipper": "^0.10.9",
     "@types/uuid": "^9.0.8",
     "axe-core": "^4.7.0",
+    "c8": "^9.1.0",
     "chai": "^5.1.1",
     "chai-as-promised": "^7.1.2",
     "express-list-endpoints": "^7.1.0",
@@ -248,6 +249,17 @@
     "tsx": "^4.10.4",
     "typescript": "^5.4.5",
     "typescript-cp": "^0.1.9"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   },
   "nodemonConfig": {
     "ignore": [

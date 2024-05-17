@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha src/**/*.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.574.0",
@@ -22,10 +22,22 @@
     "@types/lodash": "^4.17.1",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
     "chai": "^5.1.1",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.10.4",
     "typescript": "^5.4.5"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }
