@@ -1,6 +1,7 @@
 import type { Request } from 'express';
+import _ from 'lodash';
 import { z } from 'zod';
-import { get as _get } from 'lodash';
+
 import * as error from '@prairielearn/error';
 
 // Validate LTI 1.3
@@ -169,7 +170,7 @@ export class Lti13Claim {
   get(property: string): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-    return _get(this.claims, property);
+    return _.get(this.claims, property);
   }
 
   /**

@@ -18,14 +18,14 @@ export function Lti13CourseNavigationInstructor({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'lti13_course_naviation',
           pageTitle: 'Course',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
@@ -168,14 +168,14 @@ export function Lti13CourseNavigationNotReady({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'lti13_course_naviation',
           pageTitle: 'Course',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
@@ -202,14 +202,14 @@ export function Lti13CourseNavigationDone({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'lti13_course_naviation',
           pageTitle: 'Course',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
