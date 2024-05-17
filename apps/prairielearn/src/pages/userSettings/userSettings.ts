@@ -1,18 +1,21 @@
-import express = require('express');
-import asyncHandler = require('express-async-handler');
 import * as crypto from 'crypto';
+
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
+
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { AccessTokenSchema, UserSettings } from './userSettings.html';
-import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types';
-import { isEnterprise } from '../../lib/license';
-import { getPurchasesForUser } from '../../ee/lib/billing/purchases';
+import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
+import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
+
+import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

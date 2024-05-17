@@ -1,22 +1,23 @@
-import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
-import { logger } from '@prairielearn/logger';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
+
+import {
+  BatchedMigrationJobRowSchema,
+  BatchedMigrationJobStatus,
+  BatchedMigrationJobRow,
+} from './batched-migration-job.js';
 import {
   BatchedMigrationStatus,
   BatchedMigrationRow,
   updateBatchedMigrationStatus,
   BatchedMigrationStatusSchema,
   BatchedMigrationImplementation,
-} from './batched-migration';
-import {
-  BatchedMigrationJobRowSchema,
-  BatchedMigrationJobStatus,
-  BatchedMigrationJobRow,
-} from './batched-migration-job';
+} from './batched-migration.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.filename);
 
 interface BatchedMigrationRunnerOptions {
   logProgress?: boolean;

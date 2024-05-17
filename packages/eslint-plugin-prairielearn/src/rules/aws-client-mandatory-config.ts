@@ -1,7 +1,4 @@
-import {
-  getAwsClientNamesFromImportDeclaration,
-  getAwsClientNamesFromVariableDeclarator,
-} from '../utils';
+import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
  * This rule enforces that we always explicitly provide a config to AWS clients.
@@ -18,11 +15,6 @@ export default {
       // Handle `import ...` statements
       ImportDeclaration(node: any) {
         const clientNames = getAwsClientNamesFromImportDeclaration(node);
-        clientNames.forEach((clientName) => awsClientImports.add(clientName));
-      },
-      // Handle `const ... = require(...)` statements
-      VariableDeclarator(node: any) {
-        const clientNames = getAwsClientNamesFromVariableDeclarator(node);
         clientNames.forEach((clientName) => awsClientImports.add(clientName));
       },
       NewExpression(node: any) {

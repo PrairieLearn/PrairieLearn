@@ -14,8 +14,10 @@
       <% } %>
       <% if (assessment.type == 'Homework') { %>
       <tr>
-        <td>History:</td>
-        <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+        <td colspan="2" class="text-wrap">
+          Previous variants:
+          <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %>
+        </td>
       </tr>
       <% } else if (assessment_question.max_auto_points) { %>
       <tr>
@@ -55,7 +57,7 @@
     </tbody>
   </table>
 
-  <% if (assessment.allow_issue_reporting) { %>
+  <% if (!locals.no_variant_exists && assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
       <div class="alert alert-warning mt-2" role="alert">

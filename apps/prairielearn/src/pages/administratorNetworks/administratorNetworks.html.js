@@ -1,15 +1,16 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+// @ts-check
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-function AdministratorNetworks({ resLocals }) {
+export function AdministratorNetworks({ resLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'networks',
@@ -56,5 +57,3 @@ function AdministratorNetworks({ resLocals }) {
     </html>
   `.toString();
 }
-
-module.exports.AdministratorNetworks = AdministratorNetworks;

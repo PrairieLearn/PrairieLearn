@@ -1,20 +1,23 @@
-import { assert } from 'chai';
-import * as tmp from 'tmp-promise';
-import * as fs from 'fs-extra';
 import * as path from 'path';
+
+import { assert } from 'chai';
+import fs from 'fs-extra';
+import * as tmp from 'tmp-promise';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as courseDB from '../sync/course-db';
-import * as chunksLib from '../lib/chunks';
-import { config } from '../lib/config';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { makeMockLogger } from './mockLogger';
-import * as helperServer from './helperServer';
-import { syncDiskToSql } from '../sync/syncFromDisk';
-import { makeInfoFile } from '../sync/infofile';
+import * as chunksLib from '../lib/chunks.js';
+import { config } from '../lib/config.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as courseDB from '../sync/course-db.js';
+import { makeInfoFile } from '../sync/infofile.js';
+import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+import { makeMockLogger } from './mockLogger.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const COURSE: courseDB.CourseData = {
   course: makeInfoFile(),

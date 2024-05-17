@@ -1,18 +1,20 @@
 // @ts-check
-import * as path from 'path';
-import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
+
+import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
-const debugfn = require('debug');
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config';
-import { uploadToS3Async, getFromS3Async } from '../lib/aws';
-import { IdSchema } from './db-types';
+import { uploadToS3, getFromS3 } from '../lib/aws.js';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from './config.js';
+import { IdSchema } from './db-types.js';
+
+const debug = debugfn('prairielearn:socket-server');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const StorageTypes = Object.freeze({
   S3: 'S3',
@@ -56,13 +58,7 @@ export async function uploadFile({
       throw new Error('config.fileStoreS3Bucket is null, which does not allow uploads');
     }
 
-    const res = await uploadToS3Async(
-      config.fileStoreS3Bucket,
-      storage_filename,
-      null,
-      false,
-      contents,
-    );
+    const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
     // Make a filename to store the file. We use a UUIDv4 as the filename,
@@ -182,12 +178,12 @@ export async function getFile(file_id, data_type = 'buffer') {
       debug(
         `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
       );
-      buffer = await getFromS3Async(config.fileStoreS3Bucket, result.rows[0].storage_filename);
+      buffer = await getFromS3(config.fileStoreS3Bucket, result.rows[0].storage_filename);
     } else {
       debug(
         `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
       );
-      readStream = await getFromS3Async(
+      readStream = await getFromS3(
         config.fileStoreS3Bucket,
         result.rows[0].storage_filename,
         false,

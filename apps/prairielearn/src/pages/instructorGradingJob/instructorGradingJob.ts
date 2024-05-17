@@ -1,16 +1,19 @@
-import * as express from 'express';
+import type * as stream from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+
 import { S3, NoSuchKey } from '@aws-sdk/client-s3';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import asyncHandler = require('express-async-handler');
-import type * as stream from 'node:stream';
 
-import { makeS3ClientConfig } from '../../lib/aws';
-import { InstructorGradingJob, GradingJobQueryResultSchema } from './instructorGradingJob.html';
+import { makeS3ClientConfig } from '../../lib/aws.js';
+
+import { InstructorGradingJob, GradingJobQueryResultSchema } from './instructorGradingJob.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/:job_id(\\d+)',

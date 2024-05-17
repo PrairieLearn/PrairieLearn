@@ -1,6 +1,24 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { metrics } from '@opentelemetry/api';
+import { hrTimeToMilliseconds } from '@opentelemetry/core';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
+import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
+import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
+import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
+import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
+import {
+  detectResourcesSync,
+  processDetector,
+  envDetector,
+  Resource,
+} from '@opentelemetry/resources';
 import {
   PeriodicExportingMetricReader,
   MeterProvider,
@@ -21,31 +39,8 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import {
-  detectResourcesSync,
-  processDetector,
-  envDetector,
-  Resource,
-} from '@opentelemetry/resources';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { metrics } from '@opentelemetry/api';
-import { hrTimeToMilliseconds } from '@opentelemetry/core';
-
-// Exporters go here.
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
-
-// Instrumentations go here.
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
-import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
-import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-
-// Resource detectors go here.
-import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -92,6 +87,10 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+// When adding new instrumentation here, add the corresponding packages to
+// `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
+// before anything tries to load them via CJS. This is necessary because the
+// instrumentations can't hook into the ESM loader.
 const instrumentations = [
   new AwsInstrumentation(),
   new ConnectInstrumentation(),
@@ -117,6 +116,7 @@ const instrumentations = [
       /\/pl\/webhooks\/ping/,
     ],
   }),
+  new IORedisInstrumentation(),
   new PgInstrumentation(),
   new RedisInstrumentation(),
 ];
@@ -129,26 +129,28 @@ instrumentations.forEach((i) => {
 
 let tracerProvider: NodeTracerProvider | null;
 
-export interface OpenTelemetryConfigEnabled {
-  openTelemetryEnabled: true;
-  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
-  openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
+interface OpenTelemetryConfigEnabled {
+  openTelemetryEnabled: boolean;
+  openTelemetryExporter?: 'console' | 'honeycomb' | 'jaeger' | SpanExporter | null;
+  openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter | null;
   openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
-  honeycombApiKey?: string;
-  honeycombDataset?: string;
+  honeycombApiKey?: string | null;
+  honeycombDataset?: string | null;
   serviceName?: string;
 }
 
-export type OpenTelemetryConfig =
-  | OpenTelemetryConfigEnabled
-  | {
-      openTelemetryEnabled: false;
-    };
+// When we know for sure that OpenTelemetry is disabled, we won't require
+// any other attributes to be set.
+interface OpenTelemetryConfigDisabled extends Partial<OpenTelemetryConfigEnabled> {
+  openTelemetryEnabled: false;
+}
 
-function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix = ''): Metadata {
+export type OpenTelemetryConfig = OpenTelemetryConfigEnabled | OpenTelemetryConfigDisabled;
+
+function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
@@ -160,7 +162,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | null {
+function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
   if (!config.openTelemetryExporter) return null;
 
   if (typeof config.openTelemetryExporter === 'object') {
@@ -178,15 +180,13 @@ function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter | nu
       });
       break;
     case 'jaeger':
-      return new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'grpc://localhost:4317/',
-      });
+      return new OTLPTraceExporterHttp();
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
 }
 
-function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExporter | null {
+function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
   if (!config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
@@ -215,7 +215,7 @@ function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExport
   }
 }
 
-function getSpanProcessor(config: OpenTelemetryConfigEnabled): SpanProcessor | null {
+function getSpanProcessor(config: OpenTelemetryConfig): SpanProcessor | null {
   if (typeof config.openTelemetrySpanProcessor === 'object') {
     return config.openTelemetrySpanProcessor;
   }

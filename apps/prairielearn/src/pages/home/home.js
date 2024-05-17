@@ -1,13 +1,14 @@
 // @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import { isEnterprise } from '../../lib/license';
-import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms';
+import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { config } from '../../lib/config.js';
+import { isEnterprise } from '../../lib/license.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router();
 
 router.get(
@@ -17,7 +18,7 @@ router.get(
     res.locals.isAuthenticated = !!res.locals.authn_user;
 
     if (!res.locals.isAuthenticated) {
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
@@ -51,8 +52,8 @@ router.get(
       );
     }
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
-module.exports = router;
+export default router;

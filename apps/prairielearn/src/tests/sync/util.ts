@@ -1,11 +1,13 @@
-import * as fs from 'fs-extra';
-import * as tmp from 'tmp-promise';
 import * as path from 'path';
-import * as sqldb from '@prairielearn/postgres';
-import stringify = require('json-stable-stringify');
-import { assert } from 'chai';
 
-import * as syncFromDisk from '../../sync/syncFromDisk';
+import { assert } from 'chai';
+import fs from 'fs-extra';
+import stringify from 'json-stable-stringify';
+import * as tmp from 'tmp-promise';
+
+import * as sqldb from '@prairielearn/postgres';
+
+import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
@@ -71,14 +73,8 @@ export interface GroupRole {
   canAssignRoles?: boolean;
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
 interface AssessmentAllowAccess {
-  mode?: 'Public' | 'Exam' | 'SEB';
+  mode?: 'Public' | 'Exam';
   examUuid?: string;
   uids?: string[];
   credit?: number;
@@ -86,7 +82,6 @@ interface AssessmentAllowAccess {
   endDate?: string;
   timeLimitMin?: number;
   password?: string;
-  SEBConfig?: SEBConfig;
   active?: boolean;
 }
 

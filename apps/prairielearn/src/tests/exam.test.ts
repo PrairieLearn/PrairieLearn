@@ -1,15 +1,15 @@
-import ERR = require('async-stacktrace');
-import _ = require('lodash');
+import ERR from 'async-stacktrace';
 import { assert } from 'chai';
+import _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
-import * as helperAttachFiles from './helperAttachFiles';
+import * as helperAttachFiles from './helperAttachFiles.js';
+import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 

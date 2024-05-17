@@ -1,17 +1,18 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const sqldb = require('@prairielearn/postgres');
-const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
+import asyncHandler from 'express-async-handler';
 
-const { config } = require('../lib/config');
-const authnLib = require('../lib/authn');
-const { clearCookie, setCookie } = require('../lib/cookie');
+import * as sqldb from '@prairielearn/postgres';
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as authnLib from '../lib/authn.js';
+import { config } from '../lib/config.js';
+import { clearCookie, setCookie } from '../lib/cookie.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-module.exports = asyncHandler(async (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
   res.locals.news_item_notification_count = 0;
 
@@ -40,7 +41,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     });
 
     if (!data || !data.uuid || typeof data.uuid !== 'string' || !data.uuid.match(UUID_REGEXP)) {
-      return next(new Error('invalid load_test_token'));
+      throw new Error('invalid load_test_token');
     }
 
     const uuid = data.uuid;
@@ -195,5 +196,5 @@ module.exports = asyncHandler(async (req, res, next) => {
     pl_authn_cookie: true,
   });
 
-  return next();
+  next();
 });

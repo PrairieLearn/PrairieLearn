@@ -1,12 +1,14 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const path = require('path');
-const express = require('express');
+import * as path from 'node:path';
 
-const error = require('@prairielearn/error');
-const chunks = require('../../lib/chunks');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-const router = express.Router({ mergeParams: true });
+import * as error from '@prairielearn/error';
+
+import * as chunks from '../../lib/chunks.js';
+
+const router = Router({ mergeParams: true });
 
 router.get(
   '/*',
@@ -26,4 +28,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

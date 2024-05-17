@@ -1,12 +1,13 @@
 // @ts-check
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const error = require('@prairielearn/error');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-const authnLib = require('../../lib/authn');
-const { config } = require('../../lib/config');
+import * as error from '@prairielearn/error';
 
-const router = express.Router();
+import * as authnLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
+
+const router = Router();
 
 router.get(
   '/',
@@ -15,9 +16,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Shibboleth login is not enabled');
     }
 
-    var uid = req.get('x-trust-auth-uid') ?? null;
-    var name = req.get('x-trust-auth-name') ?? null;
-    var uin = req.get('x-trust-auth-uin') ?? null;
+    const uid = req.get('x-trust-auth-uid') ?? null;
+    const name = req.get('x-trust-auth-name') ?? null;
+    const uin = req.get('x-trust-auth-uin') ?? null;
 
     if (!uid) throw new Error('No authUid');
 
@@ -39,4 +40,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;
