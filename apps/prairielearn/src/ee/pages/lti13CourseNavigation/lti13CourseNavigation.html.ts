@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Course, CourseInstance } from '../../../lib/db-types';
+
+import { Course, CourseInstance } from '../../../lib/db-types.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,

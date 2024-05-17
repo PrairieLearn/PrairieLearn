@@ -1,26 +1,29 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+
+import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryOptionalRow,
   queryAsync,
   queryOneRowAsync,
 } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
-import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
-import { selectCoursesWithEditAccess } from '../../../models/course';
+
+import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
-} from '../../../models/course-instances';
+} from '../../../models/course-instances.js';
+import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { Lti13Claim } from '../../lib/lti13.js';
+
 import {
   Lti13CourseNavigationInstructor,
   //Lti13CourseNavigationNotReady,
   Lti13CourseNavigationDone,
-} from './lti13CourseNavigation.html';
-import { Lti13Claim } from '../../lib/lti13';
+} from './lti13CourseNavigation.html.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(

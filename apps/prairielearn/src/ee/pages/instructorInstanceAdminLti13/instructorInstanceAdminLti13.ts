@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
-import { InstructorInstanceAdminLti13 } from './instructorInstanceAdminLti13.html';
-import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types';
 
-const sql = loadSqlEquiv(__filename);
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+
+import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types.js';
+
+import { InstructorInstanceAdminLti13 } from './instructorInstanceAdminLti13.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(

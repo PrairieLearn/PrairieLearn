@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types';
+
+import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types.js';
 
 export function InstructorInstanceAdminLti13({
   resLocals,
@@ -17,7 +18,7 @@ export function InstructorInstanceAdminLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
         })}
       </head>
@@ -32,7 +33,7 @@ export function InstructorInstanceAdminLti13({
             });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navSubPage: 'lti13',
         })}
