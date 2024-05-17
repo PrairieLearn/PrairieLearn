@@ -22,6 +22,7 @@ await sqldb.initAsync(
     password: '...',
     max: 2,
     idleTimeoutMillis: 30000,
+    errorOnUnusedParameters: false, // defaults to false
   },
   idleErrorHandler,
 );
@@ -59,10 +60,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 console.log(sql.select_user);
 console.log(sql.select_course);
-
-// Or, if you're working in a CommonJS file:
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
 ```
 
 ### Making queries

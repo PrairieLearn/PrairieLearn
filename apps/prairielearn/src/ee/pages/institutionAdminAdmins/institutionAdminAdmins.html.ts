@@ -1,14 +1,15 @@
 import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../../components/Modal.html.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Institution,
   UserSchema,
   InstitutionAdministratorSchema,
-} from '../../../lib/db-types';
-import { compiledScriptTag } from '../../../lib/assets';
-import { Modal } from '../../../components/Modal.html';
+} from '../../../lib/db-types.js';
 
 export const InstitutionAdminAdminsRowSchema = z.object({
   user: UserSchema,
@@ -31,14 +32,14 @@ export function InstitutionAdminAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           pageTitle: `Admins — ${institution.short_name}`,
         })}
         ${compiledScriptTag('institutionAdminAdminsClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'institution',

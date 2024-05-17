@@ -1,13 +1,14 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
   type CourseInstance,
   type Institution,
   type PlanGrant,
-} from '../../../lib/db-types';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { compiledScriptTag } from '../../../lib/assets';
+} from '../../../lib/db-types.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export function AdministratorInstitutionCourseInstance({
   institution,
@@ -26,7 +27,7 @@ export function AdministratorInstitutionCourseInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'administrator_institution',
           pageTitle: 'Courses',
@@ -34,7 +35,7 @@ export function AdministratorInstitutionCourseInstance({
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',
@@ -48,11 +49,11 @@ export function AdministratorInstitutionCourseInstance({
             </li>
             <li class="breadcrumb-item">
               <a href="/pl/administrator/institution/${institution.id}/course/${course.id}">
-                ${course.title} (${course.short_name})
+                ${course.short_name}: ${course.title}
               </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-              ${course_instance.long_name} (${course_instance.short_name})
+              ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
             </li>
           </ol>
         </nav>

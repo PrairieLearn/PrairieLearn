@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { DockerName } from './index';
+import { DockerName } from './index.js';
 
 describe('DockerName', () => {
   it('parses a simple repository', () => {

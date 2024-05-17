@@ -1,4 +1,4 @@
-import { FeatureManager } from './manager';
+import { FeatureManager } from './manager.js';
 
 const featureNames = [
   'course-instance-billing',

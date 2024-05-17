@@ -1,19 +1,20 @@
 // @ts-check
-import * as path from 'path';
-const Docker = require('dockerode');
+import EventEmitter from 'events';
 import * as os from 'os';
-const EventEmitter = require('events');
-import * as fs from 'fs-extra';
-const byline = require('byline');
-const execa = require('execa');
+import * as path from 'path';
+
+import byline from 'byline';
+import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
-import { buildDirectory, makeGradingResult } from './externalGraderCommon';
-import { config } from './config';
 import * as sqldb from '@prairielearn/postgres';
-import { promisify } from 'util';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from './config.js';
+import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class ExternalGraderLocal {
   handleGradingRequest(grading_job, submission, variant, question, course) {
@@ -43,7 +44,7 @@ export class ExternalGraderLocal {
       results.received_time = new Date().toISOString();
       emitter.emit('received', results.received_time);
 
-      await promisify(buildDirectory)(dir, submission, variant, question, course);
+      await buildDirectory(dir, submission, variant, question, course);
 
       if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.

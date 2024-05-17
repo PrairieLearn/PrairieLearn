@@ -1,21 +1,22 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import { TEST_COURSE_PATH, EXAMPLE_COURSE_PATH } from '../../lib/paths';
-import * as helperServer from '../helperServer';
-import * as helperClient from '../helperClient';
-import { ensureEnrollment } from '../../models/enrollment';
+import { config } from '../../lib/config.js';
+import { TEST_COURSE_PATH, EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
-} from '../../models/course-permissions';
+} from '../../models/course-permissions.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const UserWithIdSchema = z.object({
   user_id: z.string(),

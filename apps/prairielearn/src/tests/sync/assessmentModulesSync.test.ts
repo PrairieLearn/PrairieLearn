@@ -1,7 +1,8 @@
 import { assert } from 'chai';
 
-import * as helperDb from '../helperDb';
-import * as util from './util';
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 /**
  * Checks that the assessment set present in the database matches the data

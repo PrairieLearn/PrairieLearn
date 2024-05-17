@@ -200,7 +200,7 @@ class HasInvalidVariableError(BaseSympyError):
 
 
 @dataclass
-class FunctionNameUsedWithoutArguments(BaseSympyError):
+class FunctionNameWithoutArgumentsError(BaseSympyError):
     offset: int
     text: str
 
@@ -225,64 +225,91 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
-class CheckWhiteList(ast.NodeVisitor):
-    def __init__(self, whitelist: ASTWhiteListT) -> None:
+class CheckAST(ast.NodeVisitor):
+    whitelist: ASTWhiteListT
+    variables: SympyMapT
+    functions: SympyMapT
+    __parents: dict[int, ast.AST]
+
+    def __init__(
+        self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
+    ) -> None:
         self.whitelist = whitelist
+        self.variables = variables
+        self.functions = functions
+        self.__parents = dict()
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-
-class CheckFunctions(ast.NodeVisitor):
-    def __init__(self, functions: SympyMapT) -> None:
-        self.functions = functions
-
     def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
-
-
-class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables: SympyMapT, functions: SympyMapT) -> None:
-        # functions is only used for error type, if someone writes "exp + 2"
-        self.variables = variables
-        self.functions = functions
 
     def visit_Name(self, node: ast.Name) -> None:
         if (
             isinstance(node.ctx, ast.Load)
-            and not is_name_of_function(node)
+            and not self.is_name_of_function(node)
             and node.id not in self.variables
         ):
-            err_node = get_parent_with_location(node)
+            err_node = self.get_parent_with_location(node)
             if node.id in self.functions:
-                raise FunctionNameUsedWithoutArguments(err_node.col_offset, err_node.id)
+                raise FunctionNameWithoutArgumentsError(
+                    err_node.col_offset, err_node.id
+                )
             else:
                 raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
+    def is_name_of_function(self, node: ast.AST) -> bool:
+        # The node is the name of a function if all of the following are true:
+        # 1) it has type ast.Name
+        # 2) its parent has type ast.Call
+        # 3) it is not in the list of parent's args
+        if not isinstance(node, ast.Name):
+            return False
 
-def is_name_of_function(node: ast.AST) -> bool:
-    # The node is the name of a function if all of the following are true:
-    # 1) it has type ast.Name
-    # 2) its parent has type ast.Call
-    # 3) it is not in the list of parent's args
-    return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)  # type: ignore
+        parent = self.__parents[id(node)]
 
+        return isinstance(parent, ast.Call) and (node not in parent.args)
 
-def get_parent_with_location(node: ast.AST) -> Any:
-    if hasattr(node, "col_offset"):
+    def get_parent_with_location(self, node: ast.AST) -> Any:
+        while id(node) in self.__parents:
+            if hasattr(node, "col_offset"):
+                return node
+
+            node = self.__parents[id(node)]
+
         return node
 
-    return get_parent_with_location(node.parent)  # type: ignore
+    def check_expression(self, expr: str) -> None:
+        # Parse (convert string to AST)
+        try:
+            root = ast.parse(expr, mode="eval")
+        except SyntaxError as err:
+            offset = err.offset if err.offset is not None else -1
+            raise HasParseError(offset)
+
+        # Link each node to its parent
+        self.__parents = {
+            id(child): node
+            for node in ast.walk(root)
+            for child in ast.iter_child_nodes(node)
+        }
+
+        self.visit(root)
+
+        # Empty parents dict after execution
+        # dict is only populated during execution
+        self.__parents = dict()
 
 
-def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
+def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -292,26 +319,6 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     ind = expr.find("#")
     if ind != -1:
         raise HasCommentError(ind)
-
-    # Parse (convert string to AST)
-    try:
-        root = ast.parse(expr, mode="eval")
-    except SyntaxError as err:
-        offset = err.offset if err.offset is not None else -1
-        raise HasParseError(offset)
-
-    # Link each node to its parent
-    for node in ast.walk(root):
-        for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore
-
-    # Disallow functions that are not in locals_for_eval
-    CheckFunctions(locals_for_eval["functions"]).visit(root)
-
-    # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"], locals_for_eval["functions"]).visit(
-        root
-    )
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -342,7 +349,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
         ast.Pow,
     )
 
-    CheckWhiteList(whitelist).visit(root)
+    CheckAST(
+        whitelist, locals_for_eval["variables"], locals_for_eval["functions"]
+    ).check_expression(expr)
 
 
 def sympy_check(
@@ -419,7 +428,7 @@ def evaluate_with_source(
         oo=sympy.oo,
     )
 
-    ast_check(code, parsed_locals_to_eval)
+    ast_check_str(code, parsed_locals_to_eval)
 
     # Now that it's safe, get sympy expression
     try:
@@ -671,7 +680,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except FunctionNameUsedWithoutArguments as err:
+    except FunctionNameWithoutArgumentsError as err:
         return (
             f'Your answer mentions the function "{err.text}" without '
             "applying it to anything. "
@@ -743,45 +752,45 @@ def greek_unicode_transform(input_str: str) -> str:
         "\u0397": "Eta",
         "\u0398": "Theta",
         "\u0399": "Iota",
-        "\u039A": "Kappa",
-        "\u039B": "Lamda",
-        "\u039C": "Mu",
-        "\u039D": "Nu",
-        "\u039E": "Xi",
-        "\u039F": "Omicron",
-        "\u03A0": "Pi",
-        "\u03A1": "Rho",
-        "\u03A3": "Sigma",
-        "\u03A4": "Tau",
-        "\u03A5": "Upsilon",
-        "\u03A6": "Phi",
-        "\u03A7": "Chi",
-        "\u03A8": "Psi",
-        "\u03A9": "Omega",
-        "\u03B1": "alpha",
-        "\u03B2": "beta",
-        "\u03B3": "gamma",
-        "\u03B4": "delta",
-        "\u03B5": "epsilon",
-        "\u03B6": "zeta",
-        "\u03B7": "eta",
-        "\u03B8": "theta",
-        "\u03B9": "iota",
-        "\u03BA": "kappa",
-        "\u03BB": "lamda",
-        "\u03BC": "mu",
-        "\u03BD": "nu",
-        "\u03BE": "xi",
-        "\u03BF": "omicron",
-        "\u03C0": "pi",
-        "\u03C1": "rho",
-        "\u03C3": "sigma",
-        "\u03C4": "tau",
-        "\u03C5": "upsilon",
-        "\u03C6": "phi",
-        "\u03C7": "chi",
-        "\u03C8": "psi",
-        "\u03C9": "omega",
+        "\u039a": "Kappa",
+        "\u039b": "Lamda",
+        "\u039c": "Mu",
+        "\u039d": "Nu",
+        "\u039e": "Xi",
+        "\u039f": "Omicron",
+        "\u03a0": "Pi",
+        "\u03a1": "Rho",
+        "\u03a3": "Sigma",
+        "\u03a4": "Tau",
+        "\u03a5": "Upsilon",
+        "\u03a6": "Phi",
+        "\u03a7": "Chi",
+        "\u03a8": "Psi",
+        "\u03a9": "Omega",
+        "\u03b1": "alpha",
+        "\u03b2": "beta",
+        "\u03b3": "gamma",
+        "\u03b4": "delta",
+        "\u03b5": "epsilon",
+        "\u03b6": "zeta",
+        "\u03b7": "eta",
+        "\u03b8": "theta",
+        "\u03b9": "iota",
+        "\u03ba": "kappa",
+        "\u03bb": "lamda",
+        "\u03bc": "mu",
+        "\u03bd": "nu",
+        "\u03be": "xi",
+        "\u03bf": "omicron",
+        "\u03c0": "pi",
+        "\u03c1": "rho",
+        "\u03c3": "sigma",
+        "\u03c4": "tau",
+        "\u03c5": "upsilon",
+        "\u03c6": "phi",
+        "\u03c7": "chi",
+        "\u03c8": "psi",
+        "\u03c9": "omega",
     }
 
     return "".join(greek_alphabet.get(c, c) for c in input_str)

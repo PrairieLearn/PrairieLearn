@@ -1,12 +1,12 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups';
+import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstanceQuestion(req, res) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {

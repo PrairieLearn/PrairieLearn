@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
@@ -9,18 +10,19 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { InstitutionAdministratorSchema } from '../../../lib/db-types.js';
+import { parseUidsString } from '../../../lib/user.js';
+import { insertAuditLog } from '../../../models/audit-log.js';
+import { selectUserByUid } from '../../../models/user.js';
+import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
+
 import {
   InstitutionAdminAdmins,
   InstitutionAdminAdminsRowSchema,
-} from './institutionAdminAdmins.html';
-import { selectUserByUid } from '../../../models/user';
-import { parseUidsString } from '../../../lib/user';
-import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz';
-import { insertAuditLog } from '../../../models/audit-log';
-import { InstitutionAdministratorSchema } from '../../../lib/db-types';
+} from './institutionAdminAdmins.html.js';
 
 const router = Router({ mergeParams: true });
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * The maximum number of UIDs that can be provided in a single request.

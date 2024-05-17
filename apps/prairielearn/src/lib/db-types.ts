@@ -1,5 +1,5 @@
+import parsePostgresInterval from 'postgres-interval';
 import { z } from 'zod';
-import parsePostgresInterval = require('postgres-interval');
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -666,6 +666,8 @@ export const ClientFingerprintSchema = z.object({
   created_at: DateFromISOString,
 });
 
+export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
+
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
@@ -689,7 +691,7 @@ export const JobSchema = z.object({
   number_in_sequence: z.number().nullable(),
   output: z.string().nullable(),
   start_date: DateFromISOString.nullable(),
-  status: z.enum(['Running', 'Success', 'Error']).nullable(),
+  status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
   working_directory: z.string().nullable(),
@@ -924,6 +926,34 @@ export const GradingJobStatusSchema = z.enum([
   'requested',
 ]);
 export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
+
+export const JobSequenceSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  course_request_id: IdSchema.nullable(),
+  description: z.string().nullable(),
+  finish_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  legacy: z.boolean(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  status: EnumJobStatusSchema.nullable(),
+  type: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type JobSequence = z.infer<typeof JobSequenceSchema>;
+
+export const LtiCredentialsSchema = z.object({
+  consumer_key: z.string().nullable(),
+  course_instance_id: z.string().nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  secret: z.string().nullable(),
+});
+export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
 
 export const InstitutionAdministratorSchema = z.object({
   id: IdSchema,

@@ -1,11 +1,12 @@
-import _ = require('lodash');
+import _ from 'lodash';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData, CourseInstance } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
+import { IdSchema } from '../../lib/db-types.js';
+import { CourseData, CourseInstance } from '../course-db.js';
+import * as infofile from '../infofile.js';
+import { makePerformance } from '../performance.js';
 
 const perf = makePerformance('courseInstances');
 
@@ -17,12 +18,12 @@ function getParamsForCourseInstance(courseInstance: CourseInstance | null | unde
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = (courseInstance.allowAccess || [])
-    .filter((accessRule) => !_(accessRule).has('role') || accessRule.role === 'Student')
+    .filter((accessRule) => !_.has(accessRule, 'role') || accessRule.role === 'Student')
     .map((accessRule) => ({
-      uids: _(accessRule).has('uids') ? accessRule.uids : null,
-      start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-      end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-      institution: _(accessRule).has('institution') ? accessRule.institution : null,
+      uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
+      start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
+      end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
+      institution: _.has(accessRule, 'institution') ? accessRule.institution : null,
     }));
 
   return {

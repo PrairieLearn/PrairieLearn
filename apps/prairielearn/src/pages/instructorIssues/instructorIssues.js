@@ -1,21 +1,22 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
-const SearchString = require('search-string');
-const { z } = require('zod');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import SearchString from 'search-string';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import * as paginate from '../../lib/paginate';
-import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { IdSchema } from '../../lib/db-types';
+import * as sqldb from '@prairielearn/postgres';
+
+import { IdSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import * as paginate from '../../lib/paginate.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const PAGE_SIZE = 100;
 
@@ -251,7 +252,7 @@ router.get(
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

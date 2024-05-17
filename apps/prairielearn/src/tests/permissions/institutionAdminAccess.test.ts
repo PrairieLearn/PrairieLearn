@@ -1,13 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+
 import { queryAsync, queryRow } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import helperServer = require('../helperServer');
-import { UserSchema } from '../../lib/db-types';
-import { selectUserByUid } from '../../models/user';
-import { withUser } from '../utils/auth';
+import { config } from '../../lib/config.js';
+import { UserSchema } from '../../lib/db-types.js';
+import { selectUserByUid } from '../../models/user.js';
+import * as helperServer from '../helperServer.js';
+import { withUser } from '../utils/auth.js';
 
 const SITE_URL = `http://localhost:${config.serverPort}`;
 const INSTITUTION_ADMIN_COURSES = `${SITE_URL}/pl/institution/1/admin/courses`;

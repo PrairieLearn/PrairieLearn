@@ -1,12 +1,10 @@
 import * as async from 'async';
-import * as mustache from 'mustache';
-import { sum, sumBy } from 'lodash';
+import _ from 'lodash';
+import mustache from 'mustache';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id';
-import * as markdown from './markdown';
-import * as ltiOutcomes from './ltiOutcomes';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -15,9 +13,12 @@ import {
   RubricItem,
   RubricItemSchema,
   RubricSchema,
-} from './db-types';
+} from './db-types.js';
+import { idsEqual } from './id.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import * as markdown from './markdown.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */
@@ -297,12 +298,10 @@ export async function updateAssessmentQuestionRubric(
         async (item) => {
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
-          const updated =
-            item.id == null
-              ? null
-              : await sqldb.queryOptionalRow(sql.update_rubric_item, item, IdSchema);
-          if (updated == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, item);
+          if (item.id == null) {
+            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+          } else {
+            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -329,7 +328,7 @@ async function recomputeInstanceQuestions(
     // Recompute grades for existing instance questions using this rubric
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions_to_update,
-      { assessment_question_id, authn_user_id },
+      { assessment_question_id },
       InstanceQuestionToUpdateSchema,
     );
 
@@ -369,7 +368,7 @@ async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = sum(
+    const sum_rubric_item_points = _.sum(
       rubric_items?.map(
         (item) =>
           (item.score ?? 1) *
@@ -473,11 +472,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          sumBy(
+          _.sumBy(
             Object.values(score.partial_scores),
             (value) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
-        sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
@@ -639,7 +638,7 @@ export async function updateInstanceQuestionScore(
         true, // allow_decrease
       ]);
 
-      await ltiOutcomes.updateScoreAsync(current_submission.assessment_instance_id);
+      await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 
     return {

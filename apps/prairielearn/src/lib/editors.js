@@ -1,38 +1,42 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import * as path from 'path';
+
+import * as async from 'async';
+import sha256 from 'crypto-js/sha256.js';
+import debugfn from 'debug';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import { contains } from '@prairielearn/path-utils';
-import { createServerJob } from './server-jobs';
 import * as namedLocks from '@prairielearn/named-locks';
-import * as syncFromDisk from '../sync/syncFromDisk';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
+import { escapeRegExp } from '@prairielearn/sanitize';
+
+import * as b64Util from '../lib/base64-util.js';
 import {
   getLockNameForCoursePath,
   getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} from '../models/course';
-import { config } from './config';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import * as fs from 'fs-extra';
-import * as async from 'async';
-import { v4 as uuidv4 } from 'uuid';
-const sha256 = require('crypto-js/sha256');
-import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
-import { EXAMPLE_COURSE_PATH } from './paths';
-import { escapeRegExp } from '@prairielearn/sanitize';
-import * as sqldb from '@prairielearn/postgres';
-import * as b64Util from '../lib/base64-util';
-import { html } from '@prairielearn/html';
+} from '../models/course.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { config } from './config.js';
+import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { createServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:editors');
 
 /**
  * @param {any} course
  * @param {string} startGitHash
- * @param {import('./server-jobs').ServerJob} job
+ * @param {import('./server-jobs.js').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
   const endGitHash = await getCourseCommitHash(course.path);
@@ -85,17 +89,6 @@ export class Editor {
     throw new Error('write must be defined in a subclass');
   }
 
-  canEdit(callback) {
-    try {
-      this.assertCanEdit();
-    } catch (err) {
-      callback(err);
-      return;
-    }
-
-    callback(null);
-  }
-
   assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
@@ -121,7 +114,7 @@ export class Editor {
   }
 
   /**
-   * @param {import('./server-jobs').ServerJobExecutor} serverJob
+   * @param {import('./server-jobs.js').ServerJobExecutor} serverJob
    */
   async executeWithServerJob(serverJob) {
     // We deliberately use `executeUnsafe` here because we want to wait
@@ -249,20 +242,6 @@ export class Editor {
         }
       });
     });
-  }
-
-  doEdit(callback) {
-    this.prepareServerJob().then(
-      (serverJob) => {
-        this.executeWithServerJob(serverJob).then(
-          () => callback(null, serverJob.jobSequenceId),
-          (err) => callback(err, serverJob.jobSequenceId),
-        );
-      },
-      (err) => {
-        callback(err);
-      },
-    );
   }
 
   /**
@@ -523,13 +502,6 @@ export class AssessmentRenameEditor extends Editor {
     this.description = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid}`;
   }
 
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  }
-
   async write() {
     debug('AssessmentRenameEditor: write()');
     const basePath = path.join(
@@ -682,13 +654,6 @@ export class CourseInstanceRenameEditor extends Editor {
     this.description = `Rename course instance ${this.course_instance.short_name}`;
   }
 
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  }
-
   async write() {
     debug('CourseInstanceRenameEditor: write()');
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
@@ -821,13 +786,6 @@ export class QuestionRenameEditor extends Editor {
     super(params);
     this.qid_new = params.qid_new;
     this.description = `Rename question ${this.question.qid}`;
-  }
-
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
   }
 
   async write() {
@@ -1010,9 +968,9 @@ export class FileDeleteEditor extends Editor {
     )}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.deletePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The path of the file to delete</p>
           <div class="container">
@@ -1024,14 +982,13 @@ export class FileDeleteEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.deletePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The path of the file to delete</p>
           <div class="container">
@@ -1041,13 +998,9 @@ export class FileDeleteEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1076,10 +1029,10 @@ export class FileRenameEditor extends Editor {
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     debug('FileRenameEditor: canEdit()');
     if (!contains(this.container.rootPath, this.oldPath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's old path</p>
           <div class="container">
@@ -1091,11 +1044,10 @@ export class FileRenameEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     if (!contains(this.container.rootPath, this.newPath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's new path</p>
           <div class="container">
@@ -1107,7 +1059,6 @@ export class FileRenameEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     let found;
@@ -1116,7 +1067,7 @@ export class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.oldPath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's old path</p>
           <div class="container">
@@ -1126,14 +1077,13 @@ export class FileRenameEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.newPath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file's new path</p>
           <div class="container">
@@ -1143,13 +1093,9 @@ export class FileRenameEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1186,36 +1132,37 @@ export class FileUploadEditor extends Editor {
     return sha256(buffer.toString('utf8')).toString();
   }
 
-  shouldEdit(callback) {
+  async shouldEdit() {
     debug('look for old contents');
-    fs.readFile(this.filePath, (err, contents) => {
-      if (err) {
-        if (err.code === 'ENOENT') {
-          debug('no old contents, so continue with upload');
-          callback(null, true);
-        } else {
-          ERR(err, callback);
-        }
-      } else {
-        debug('get hash of old contents and of new contents');
-        const oldHash = this.getHashFromBuffer(contents);
-        const newHash = this.getHashFromBuffer(this.fileContents);
-        debug('oldHash: ' + oldHash);
-        debug('newHash: ' + newHash);
-        if (oldHash === newHash) {
-          debug('new contents are the same as old contents, so abort upload');
-          callback(null, false);
-        } else {
-          debug('new contents are different from old contents, so continue with upload');
-          callback(null, true);
-        }
+    let contents;
+    try {
+      contents = await fs.readFile(this.filePath);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        debug('no old contents, so continue with upload');
+        return true;
       }
-    });
+
+      throw err;
+    }
+
+    debug('get hash of old contents and of new contents');
+    const oldHash = this.getHashFromBuffer(contents);
+    const newHash = this.getHashFromBuffer(this.fileContents);
+    debug('oldHash: ' + oldHash);
+    debug('newHash: ' + newHash);
+    if (oldHash === newHash) {
+      debug('new contents are the same as old contents, so abort upload');
+      return false;
+    } else {
+      debug('new contents are different from old contents, so continue with upload');
+      return true;
+    }
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1227,14 +1174,13 @@ export class FileUploadEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1244,13 +1190,9 @@ export class FileUploadEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1315,9 +1257,9 @@ export class FileModifyEditor extends Editor {
     }
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1329,14 +1271,13 @@ export class FileModifyEditor extends Editor {
           </div>
         `,
       });
-      return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = new AugmentedError('Invalid file path', {
+      throw new AugmentedError('Invalid file path', {
         info: html`
           <p>The file path</p>
           <div class="container">
@@ -1346,13 +1287,9 @@ export class FileModifyEditor extends Editor {
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `,
       });
-      return callback(err);
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {

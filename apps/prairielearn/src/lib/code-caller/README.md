@@ -7,7 +7,7 @@ A "code caller" is an abstraction for invoking some piece of code in a Python su
 You can obtain and use a code caller with the `withCodeCaller()` function
 
 ```js
-const { withCodeCaller } = require('./index.js');
+import { withCodeCaller } from './index.js';
 
 const course = await selectCourse();
 

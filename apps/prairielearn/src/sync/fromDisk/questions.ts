@@ -1,10 +1,11 @@
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData, Question } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
+import { IdSchema } from '../../lib/db-types.js';
+import { CourseData, Question } from '../course-db.js';
+import * as infofile from '../infofile.js';
+import { makePerformance } from '../performance.js';
 
 const perf = makePerformance('questions');
 

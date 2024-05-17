@@ -1,9 +1,11 @@
 // @ts-check
 import * as path from 'path';
-import { contains } from '@prairielearn/path-utils';
-import { html } from '@prairielearn/html';
+
 import * as error from '@prairielearn/error';
-import { encodePath, decodePath } from './uri-util';
+import { html } from '@prairielearn/html';
+import { contains } from '@prairielearn/path-utils';
+
+import { encodePath, decodePath } from './uri-util.js';
 
 /**
  * For the file path of the current page, this function returns rich
@@ -167,22 +169,4 @@ export function getPaths(req, res) {
     });
 
   return paths;
-}
-
-/**
- * Wrapper around {@link getPaths} to support callback-based usage.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {(err: Error | null | undefined, paths?: any) => void} callback
- */
-export function getPathsCallback(req, res, callback) {
-  let paths;
-  try {
-    paths = getPaths(req, res);
-  } catch (err) {
-    callback(err);
-    return;
-  }
-  callback(null, paths);
 }

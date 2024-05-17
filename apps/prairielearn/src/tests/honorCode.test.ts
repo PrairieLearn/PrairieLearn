@@ -1,11 +1,13 @@
 import { assert } from 'chai';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);

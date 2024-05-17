@@ -1,5 +1,7 @@
 import ClipboardJS from 'clipboard';
 
+import { mathjaxTypeset } from './lib/mathjax.js';
+
 $(() => {
   resetInstructorGradingPanel();
 
@@ -293,6 +295,7 @@ function submitSettings(e, use_rubric) {
         input.value = oldCsrfToken;
       });
       resetInstructorGradingPanel();
+      await mathjaxTypeset();
     });
 }
 

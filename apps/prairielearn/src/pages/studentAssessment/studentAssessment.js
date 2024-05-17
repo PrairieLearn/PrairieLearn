@@ -1,12 +1,12 @@
-const asyncHandler = require('express-async-handler');
+// @ts-check
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess';
-import { makeAssessmentInstance } from '../../lib/assessment';
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
   joinGroup,
   createGroup,
@@ -17,11 +17,12 @@ import {
   leaveGroup,
   GroupOperationError,
   canUserAssignGroupRoles,
-} from '../../lib/groups';
-import { getClientFingerprintId } from '../../middlewares/clientFingerprint';
+} from '../../lib/groups.js';
+import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
+import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -66,7 +67,7 @@ router.get(
           res.locals.start = groupInfo.start;
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
-          if (groupConfig.hasRoles) {
+          if (groupConfig.has_roles) {
             res.locals.userCanAssignRoles = canUserAssignGroupRoles(
               groupInfo,
               res.locals.user.user_id,
@@ -74,7 +75,7 @@ router.get(
           }
         }
       }
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
       const result = await queryAsync(sql.select_single_assessment_instance, params);
       if (result.rowCount === 0) {
@@ -111,7 +112,7 @@ router.get(
               );
             }
           }
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
         } else if (res.locals.assessment.type === 'Homework') {
           const time_limit_min = null;
           const client_fingerprint_id = await getClientFingerprintId(req, res);
@@ -127,7 +128,7 @@ router.get(
           );
           res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         } else {
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       } else {
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
@@ -243,4 +244,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;
