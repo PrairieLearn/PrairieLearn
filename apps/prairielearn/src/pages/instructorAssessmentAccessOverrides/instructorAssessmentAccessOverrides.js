@@ -58,11 +58,10 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
   return user;
 }
 
-function convertToDateTimeLocal(dateStr) {
-  var dateWithoutTimezone = dateStr.slice(0, -6);
-  var formattedDate = dateWithoutTimezone.replace(' ', 'T');
-  return formattedDate;
-}
+
+
+
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -77,11 +76,7 @@ router.get(
       assessment_id: res.locals.assessment.id,
       timezone: res.locals.course_instance.display_timezone,
     });
-    result.rows = result.rows.map(row => {
-        row.start_date = convertToDateTimeLocal(row.start_date);
-        row.end_date = convertToDateTimeLocal(row.end_date);
-        return row;
-    });
+    
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -105,15 +100,17 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
+      console.log(req.body.end_date);
+      console.log('new date: ' + new Date(req.body.end_date));
       await runInTransactionAsync(async () => {
         const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           created_by: res.locals.authn_user.user_id,
           credit: req.body.credit,
-          end_date: new Date(req.body.end_date),
+          end_date: req.body.end_date,
           group_name: req.body.group_name || null,
           note: req.body.note || null,
-          start_date: new Date(req.body.start_date),
+          start_date: req.body.start_date,
           group_id: group_id || null,
           user_id: user_id || null,
           timezone: res.locals.course_instance.display_timezone,
@@ -156,7 +153,6 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_override') {
-
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
@@ -170,15 +166,15 @@ router.post(
           policy_id: req.body.policy_id,
         },
       );
-
+    
       await runInTransactionAsync(async () => {
         const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           credit: req.body.credit,
-          end_date: new Date(req.body.end_date),
+          end_date: req.body.end_date,
           group_name: req.body.group_name || null,
           note: req.body.note || null,
-          start_date: new Date(req.body.start_date),
+          start_date: req.body.start_date,
           group_id: group_id || null,
           user_id: user_id || null,
           assessment_access_policies_id: req.body.policy_id,

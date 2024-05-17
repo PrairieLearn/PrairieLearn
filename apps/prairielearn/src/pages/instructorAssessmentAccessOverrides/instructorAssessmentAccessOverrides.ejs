@@ -28,8 +28,8 @@
         editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
         editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
         editOverrideForm.find('#edit-credit').val(button.data('credit')); 
-        var policy_start_date_string = button.data('start-date');     
-        var policy_end_date_string = button.data('end-date');
+        var policy_start_date_string = button.data('start-date').slice(0,-6).replace(" ", "T");  
+        var policy_end_date_string = button.data('end-date').slice(0,-6).replace(" ", "T");
 
         editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
         editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
