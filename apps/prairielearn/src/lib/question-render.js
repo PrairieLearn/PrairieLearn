@@ -644,6 +644,13 @@ export async function renderPanelsForSubmission({
     formatted_date,
     user_uid,
   } = submissionInfo;
+  const previous_variants =
+    variant.instance_question_id == null || assessment_instance == null
+      ? null
+      : await selectVariantsByInstanceQuestion({
+          assessment_instance_id: assessment_instance.id,
+          instance_question_id: variant.instance_question_id,
+        });
 
   /** @type {SubmissionPanels} */
   const panels = {
@@ -729,7 +736,7 @@ export async function renderPanelsForSubmission({
 
       // The score panel can and should only be rendered for
       // questions that are part of an assessment
-      if (variant.instance_question_id == null || assessment_instance == null) return;
+      if (variant.instance_question_id == null) return;
 
       const renderParams = {
         instance_question,
@@ -741,12 +748,7 @@ export async function renderPanelsForSubmission({
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: {
-          previous_variants: await selectVariantsByInstanceQuestion({
-            assessment_instance_id: assessment_instance.id,
-            instance_question_id: variant.instance_question_id,
-          }),
-        },
+        instance_question_info: { previous_variants },
       };
       const templatePath = path.join(
         import.meta.dirname,
@@ -792,6 +794,7 @@ export async function renderPanelsForSubmission({
         question_context: questionContext,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
+        instance_question_info: { previous_variants },
         ...locals,
       };
 
