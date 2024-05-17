@@ -307,7 +307,7 @@ function coursePermissionsInsertForm({
         </select>
       </div>
 
-      ${courseInstances && courseInstances.length > 0
+      ${courseInstances?.length > 0
         ? html`
             <div class="form-group">
               <label for="addUsersInputCourseInstance"
