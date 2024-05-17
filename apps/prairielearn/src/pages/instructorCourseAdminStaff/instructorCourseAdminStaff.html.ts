@@ -38,7 +38,15 @@ export const CourseUsersRowSchema = z.object({
 });
 type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
 
-let hasUnknownUsers = false;
+function hasUnknownUsers(courseUsers: CourseUsersRow[]) {
+  let hasUnknownUsers = false;
+  courseUsers.forEach((courseUser) => {
+    if (!courseUser.user.name) {
+      hasUnknownUsers = true;
+    }
+  });
+  return hasUnknownUsers;
+}
 
 export function InstructorCourseAdminStaff({
   resLocals,
@@ -93,7 +101,7 @@ export function InstructorCourseAdminStaff({
                     data-placement="auto"
                     title="Remove all student data access"
                     data-content="${escapeHtml(
-                      coursePermissionsRemoveStudentDataAccessForm({
+                      CoursePermissionsRemoveStudentDataAccessForm({
                         csrfToken: resLocals.__csrf_token,
                         id: 'coursePermissionsRemoveStudentDataAccessButton',
                       }),
@@ -114,7 +122,7 @@ export function InstructorCourseAdminStaff({
                     data-placement="auto"
                     title="Delete users with no access"
                     data-content="${escapeHtml(
-                      coursePermissionsDeleteNoAccessForm({
+                      CoursePermissionsDeleteNoAccessForm({
                         csrfToken: resLocals.__csrf_token,
                         id: 'coursePermissionsDeleteNoAccessButton',
                       }),
@@ -156,7 +164,7 @@ export function InstructorCourseAdminStaff({
                     data-placement="auto"
                     title="Add users"
                     data-content="${escapeHtml(
-                      coursePermissionsInsertForm({
+                      CoursePermissionsInsertForm({
                         csrfToken: resLocals.__csrf_token,
                         id: 'coursePermissionsInsertButton',
                         uidsLimit,
@@ -180,7 +188,7 @@ export function InstructorCourseAdminStaff({
               isAdministrator: resLocals.is_administrator,
             })}
             <small class="card-footer">
-              ${hasUnknownUsers
+              ${hasUnknownUsers(courseUsers)
                 ? html`
                     <p class="alert alert-warning">
                       Users with name "<span class="text-danger">Unknown user</span>" either have
@@ -200,7 +208,7 @@ export function InstructorCourseAdminStaff({
   `.toString();
 }
 
-function coursePermissionsRemoveStudentDataAccessForm({
+function CoursePermissionsRemoveStudentDataAccessForm({
   csrfToken,
   id,
 }: {
@@ -229,7 +237,7 @@ function coursePermissionsRemoveStudentDataAccessForm({
   `;
 }
 
-function coursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: string; id: string }) {
+function CoursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: string; id: string }) {
   return html`
     <form name="delete-no-access" method="POST">
       <input type="hidden" name="__action" value="delete_no_access" />
@@ -252,7 +260,7 @@ function coursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: str
   `;
 }
 
-function coursePermissionsInsertForm({
+function CoursePermissionsInsertForm({
   csrfToken,
   id,
   uidsLimit,
@@ -400,7 +408,12 @@ function StaffTable({
       </thead>
       <tbody>
         ${courseUsers.map((courseUser) => {
-          if (!courseUser.user.name) hasUnknownUsers = true;
+          // Cannot change the course role of yourself (or of the
+          // user you are emulating) unless you are an administrator.
+          const canChangeCourseRole =
+            (courseUser.user.user_id !== authnUser.user_id &&
+              courseUser.user.user_id !== user.user_id) ||
+            isAdministrator;
           return html`
             <tr>
               <td class="align-middle">${courseUser.user.uid}</td>
@@ -410,12 +423,8 @@ function StaffTable({
                   : html`<span class="text-danger">Unknown user</span>`}
               </td>
               <td class="align-middle">
-                ${(courseUser.user.user_id === authnUser.user_id ||
-                  courseUser.user.user_id === user.user_id) &&
-                !isAdministrator
-                  ? //     Cannot change the course role of
-                    // yourself (or of the user you are // emulating) unless you are an administrator.
-                    html`
+                ${!canChangeCourseRole
+                  ? html`
                       <button
                         id="courseContentDropdown-${courseUser.user.user_id}"
                         type="button"
