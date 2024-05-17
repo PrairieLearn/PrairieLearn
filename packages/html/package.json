@@ -24,7 +24,7 @@
     "typescript": "^5.4.5"
   },
   "c8": {
-    "reporters": [
+    "reporter": [
       "html",
       "text-summary",
       "cobertura"

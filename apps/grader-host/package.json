@@ -53,7 +53,7 @@
     "typescript-cp": "^0.1.9"
   },
   "c8": {
-    "reporters": [
+    "reporter": [
       "html",
       "text-summary",
       "cobertura"

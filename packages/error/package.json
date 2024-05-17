@@ -28,7 +28,7 @@
     "lodash": "^4.17.21"
   },
   "c8": {
-    "reporters": [
+    "reporter": [
       "html",
       "text-summary",
       "cobertura"

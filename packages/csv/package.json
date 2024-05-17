@@ -30,7 +30,7 @@
     "stream-transform": "^3.3.1"
   },
   "c8": {
-    "reporters": [
+    "reporter": [
       "html",
       "text-summary",
       "cobertura"
