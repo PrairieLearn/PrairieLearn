@@ -228,10 +228,8 @@ router.get(
       assessment_instance_id: res.locals.assessment_instance.id,
     });
     for (const instance_question of res.locals.instance_questions) {
-      instance_question.previous_variants = allPreviousVariants.filter(
-        (variant) =>
-          variant.instance_question_id != null &&
-          idsEqual(variant.instance_question_id, instance_question.id),
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
       );
     }
 
