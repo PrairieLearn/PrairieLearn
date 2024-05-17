@@ -179,7 +179,6 @@ router.post(
 
         // get each instance question
         for (const instance_question of result) {
-          console.log(instance_question.id);
           // get last submission of instance question
           const submission = await queryRow(
             sql.select_last_submission,
@@ -188,7 +187,6 @@ router.post(
           );
 
           // maybe remove some if statements that can never happen
-          console.log(submission.submitted_answer);
           // if nothing submitted
           if (submission.submitted_answer == null) {
             continue;
@@ -210,7 +208,10 @@ router.post(
             instance_question.id,
             submission.id,
             req.body.modified_at,
-            { score_perc: 50 },
+            {
+              score_perc: 50, // replace with LLM score
+              feedback: { manual: 'replace with grader feedback' }, // replace with LLM feedback
+            },
             '1',
           );
           // if (update_result.modified_at_conflict) {
