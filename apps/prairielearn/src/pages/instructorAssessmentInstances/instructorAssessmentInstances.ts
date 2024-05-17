@@ -1,7 +1,5 @@
-// @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,42 +11,13 @@ import {
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
 } from '../../lib/assessment.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
+
+import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
+import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const AssessmentInstanceRowSchema = z.object({
-  assessment_label: z.string(),
-  user_id: IdSchema.nullable(),
-  uid: z.string().nullable(),
-  name: z.string().nullable(),
-  role: z.string().nullable(),
-  group_id: IdSchema.nullable(),
-  group_name: z.string().nullable(),
-  uid_list: z.array(z.string()).nullable(),
-  user_name_list: z.array(z.string()).nullable(),
-  group_roles: z.array(z.string()).nullable(),
-  username: z.string().nullable(),
-  score_perc: z.number().nullable(),
-  points: z.number(),
-  max_points: z.number(),
-  number: z.number(),
-  assessment_instance_id: IdSchema,
-  open: z.boolean(),
-  time_remaining: z.string(),
-  time_remaining_sec: z.number().nullable(),
-  total_time: z.string(),
-  total_time_sec: z.number().nullable(),
-  date: z.date(),
-  date_formatted: z.string(),
-  duration: z.string(),
-  duration_secs: z.number(),
-  duration_mins: z.number(),
-  highest_score: z.boolean(),
-  client_fingerprint_id_change_count: z.number(),
-});
 
 router.get(
   '/raw_data.json',
@@ -69,23 +38,12 @@ router.get(
 );
 
 router.get(
-  '/client.js',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-    res.type('text/javascript');
-    res.render(import.meta.filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
-  }),
-);
-
-router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
   }),
 );
 
