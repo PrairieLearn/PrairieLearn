@@ -92,5 +92,6 @@ typecheck-python:
 
 changeset:
 	@yarn changeset
+	@yarn prettier --write ".changeset/**/*.md"
 
 ci: lint typecheck check-dependencies test

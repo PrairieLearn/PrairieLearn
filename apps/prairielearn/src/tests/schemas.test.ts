@@ -1,6 +1,7 @@
-import Ajv from 'ajv';
+import { Ajv } from 'ajv';
 import { assert } from 'chai';
-import * as schemas from '../schemas';
+
+import * as schemas from '../schemas/index.js';
 
 const isObject = (a) => !!a && a.constructor === Object;
 

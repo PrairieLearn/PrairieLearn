@@ -1,20 +1,23 @@
 // @ts-check
 import * as os from 'node:os';
+import { setTimeout as sleep } from 'node:timers/promises';
+
+import debugfn from 'debug';
 import { createPool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
-import debugfn from 'debug';
-import { setTimeout as sleep } from 'node:timers/promises';
 
 import { logger } from '@prairielearn/logger';
 import { instrumented } from '@prairielearn/opentelemetry';
-import { config } from '../config';
-import * as chunks from '../chunks';
-import { features } from '../features';
-import * as load from '../load';
-import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container';
-import { CodeCallerNative } from './code-caller-native';
-import { FunctionMissingError } from './code-caller-shared';
+import * as Sentry from '@prairielearn/sentry';
+
+import * as chunks from '../chunks.js';
+import { config } from '../config.js';
+import { features } from '../features/index.js';
+import * as load from '../load.js';
+
+import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
+import { CodeCallerNative } from './code-caller-native.js';
+import { FunctionMissingError } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -28,7 +31,7 @@ const debug = debugfn('prairielearn:code-caller');
  * - python_callback_waiting: number of queued jobs/callbacks waiting for an available worker
  */
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
 
 /** @type {import('generic-pool').Pool<CodeCaller> | null} */
 let pool = null;
@@ -173,7 +176,7 @@ export async function finish() {
  * disposes of it once it has been used.
  *
  * @template T
- * @param {import('../db-types').Course} course
+ * @param {import('../db-types.js').Course} course
  * @param {(codeCaller: CodeCaller) => Promise<T>} fn
  * @returns {Promise<T>}
  */

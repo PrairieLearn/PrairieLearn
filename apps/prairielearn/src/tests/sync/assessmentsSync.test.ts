@@ -1,16 +1,19 @@
 // @ts-check
-import { assert } from 'chai';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import { config } from '../../lib/config';
-import { features } from '../../lib/features/index';
+
+import { assert } from 'chai';
+import fs from 'fs-extra';
+
 import * as sqldb from '@prairielearn/postgres';
-import { idsEqual } from '../../lib/id';
 
-import * as util from './util';
-import * as helperDb from '../helperDb';
+import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
+import * as helperDb from '../helperDb.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as util from './util.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Makes an empty assessment.

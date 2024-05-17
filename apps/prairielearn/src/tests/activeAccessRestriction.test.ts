@@ -1,15 +1,16 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import { config } from '../lib/config.js';
+import { IdSchema, AssessmentInstanceSchema } from '../lib/db-types.js';
 
-import { z } from 'zod';
-import { IdSchema, AssessmentInstanceSchema } from '../lib/db-types';
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam and homework assessment with active access restriction', function () {
   this.timeout(60000);

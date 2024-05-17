@@ -1,17 +1,20 @@
 // @ts-check
-import * as _ from 'lodash';
-import * as path from 'node:path';
 import * as child_process from 'node:child_process';
-import { v4 as uuidv4 } from 'uuid';
-import debugfn from 'debug';
 import { createServer } from 'node:net';
+import path from 'node:path';
+
+import debugfn from 'debug';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
 // TODO: is this safe to use in the subprocess version?
 import { trace } from '@prairielearn/opentelemetry';
 
-import { FunctionMissingError, developmentSpanEvent } from './code-caller-shared';
-import { deferredPromise } from '../deferred';
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths';
+import { deferredPromise } from '../deferred.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+
+import { FunctionMissingError, developmentSpanEvent } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller-native');
 
@@ -32,7 +35,7 @@ const EXITED = Symbol('EXITED');
 
 /** @typedef {CREATED | WAITING | IN_CALL | RESTARTING | EXITING | EXITED} CodeCallerState */
 
-/** @typedef {import('./code-caller-native-types').CodeCallerNativeChildProcess} CodeCallerNativeChildProcess */
+/** @typedef {import('./code-caller-native-types.js').CodeCallerNativeChildProcess} CodeCallerNativeChildProcess */
 
 /**
  * @typedef {Object} ErrorData
@@ -76,8 +79,8 @@ const EXITED = Symbol('EXITED');
 
 */
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @param {import('net').Socket | null} socket
@@ -175,7 +178,7 @@ export class CodeCallerNative {
   }
 
   /**
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.debug('enter prepareForCourse()');
@@ -408,7 +411,7 @@ export class CodeCallerNative {
 
     /** @type {import('child_process').SpawnOptions} */
     const options = {
-      cwd: __dirname,
+      cwd: import.meta.dirname,
       // stdin, stdout, stderr, data, and restart confirmations
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       env,

@@ -16,3 +16,6 @@ b5ee36cebacd8c3192dd0e2457ab472cc185a055
 
 # Format YML/CSS/HTML/MJS files with Prettier
 57adaf8cac3ad7f5d8e1fc3d1614f2bd8ac9e881
+
+# Order all imports with the `import/order` ESLint rule
+1b3268b50c71ac447d4f7885259c2a9164cef461

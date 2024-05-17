@@ -1,13 +1,14 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as chunks from '../../lib/chunks';
-import * as filePaths from '../../lib/file-paths';
+import * as chunks from '../../lib/chunks.js';
+import * as filePaths from '../../lib/file-paths.js';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(

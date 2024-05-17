@@ -1,9 +1,10 @@
 import { Socket, io } from 'socket.io-client';
+
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import { mathjaxTypeset } from './lib/mathjax';
-import { setupCountdown } from './lib/countdown';
-import { confirmOnUnload } from './lib/confirmOnUnload';
+import { confirmOnUnload } from './lib/confirmOnUnload.js';
+import { setupCountdown } from './lib/countdown.js';
+import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
@@ -120,12 +121,16 @@ function fetchResults(socket: Socket, submissionId: string) {
       // the instance question is part of the current user's
       // assessment instance (authorized_edit==true) or because the
       // question is open in preview mode (authz_result==undefined)
-      authorized_edit: authorizedEdit,
+      authorized_edit: authorizedEdit === 'true',
     },
     function (msg: any) {
       // We're done with the socket for this incarnation of the page
       socket.close();
-      updateDynamicPanels(msg, submissionId);
+      if (msg) {
+        updateDynamicPanels(msg, submissionId);
+      } else {
+        console.error(`Error retrieving results for submission ${submissionId}`);
+      }
       // Restore modal state if need be
       if (wasModalOpen) {
         $('#submissionInfoModal-' + submissionId).modal('show');

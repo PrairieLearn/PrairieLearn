@@ -1,8 +1,9 @@
 import { logger } from '@prairielearn/logger';
-import * as opsbot from '../lib/opsbot';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as opsbot from '../lib/opsbot.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function run() {
   if (!opsbot.canSendMessages()) return;

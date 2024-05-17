@@ -1,6 +1,24 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { metrics } from '@opentelemetry/api';
+import { hrTimeToMilliseconds } from '@opentelemetry/core';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
+import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
+import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
+import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
+import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
+import {
+  detectResourcesSync,
+  processDetector,
+  envDetector,
+  Resource,
+} from '@opentelemetry/resources';
 import {
   PeriodicExportingMetricReader,
   MeterProvider,
@@ -21,31 +39,8 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import {
-  detectResourcesSync,
-  processDetector,
-  envDetector,
-  Resource,
-} from '@opentelemetry/resources';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { metrics } from '@opentelemetry/api';
-import { hrTimeToMilliseconds } from '@opentelemetry/core';
-
-// Exporters go here.
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
-
-// Instrumentations go here.
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
-import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
-import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-
-// Resource detectors go here.
-import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -92,6 +87,10 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+// When adding new instrumentation here, add the corresponding packages to
+// `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
+// before anything tries to load them via CJS. This is necessary because the
+// instrumentations can't hook into the ESM loader.
 const instrumentations = [
   new AwsInstrumentation(),
   new ConnectInstrumentation(),
@@ -117,6 +116,7 @@ const instrumentations = [
       /\/pl\/webhooks\/ping/,
     ],
   }),
+  new IORedisInstrumentation(),
   new PgInstrumentation(),
   new RedisInstrumentation(),
 ];
@@ -178,11 +178,8 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
         credentials: credentials.createSsl(),
         metadata: getHoneycombMetadata(config),
       });
-      break;
     case 'jaeger':
-      return new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:4317/',
-      });
+      return new OTLPTraceExporterHttp();
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
