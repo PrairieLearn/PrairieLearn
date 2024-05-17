@@ -1,14 +1,17 @@
+import * as crypto from 'crypto';
+
 import express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
+import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
-import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
+
+import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

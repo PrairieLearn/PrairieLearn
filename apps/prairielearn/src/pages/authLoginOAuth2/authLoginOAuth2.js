@@ -1,7 +1,8 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import { OAuth2Client } from 'google-auth-library';
+
 import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from '../../lib/config.js';

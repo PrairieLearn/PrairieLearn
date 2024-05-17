@@ -1,14 +1,16 @@
 import ERR from 'async-stacktrace';
-import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import passport from 'passport';
+
 import * as error from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn.js';
+import { getInstitutionSamlProvider } from '../../lib/institution.js';
+
+import { SamlTest } from './router.html.js';
 
 import { strategy } from './index.js';
-import { SamlTest } from './router.html.js';
-import { getInstitutionSamlProvider } from '../../lib/institution.js';
 
 const router = Router({ mergeParams: true });
 

@@ -1,10 +1,11 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
-import { config } from '../lib/config.js';
 import * as authnLib from '../lib/authn.js';
+import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

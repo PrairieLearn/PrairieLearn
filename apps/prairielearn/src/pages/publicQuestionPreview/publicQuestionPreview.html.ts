@@ -1,6 +1,7 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {

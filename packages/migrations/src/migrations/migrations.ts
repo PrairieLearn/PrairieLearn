@@ -1,10 +1,11 @@
-import fs from 'fs-extra';
 import path from 'path';
 
-import * as namedLocks from '@prairielearn/named-locks';
-import { logger } from '@prairielearn/logger';
-import * as sqldb from '@prairielearn/postgres';
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
 
 import {
   MigrationFile,

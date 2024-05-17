@@ -1,6 +1,7 @@
 // @ts-check
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
+
 import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
@@ -8,8 +9,8 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import * as schemas from '../schemas/index.js';
 import * as jsonLoad from '../lib/json-load.js';
+import * as schemas from '../schemas/index.js';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 

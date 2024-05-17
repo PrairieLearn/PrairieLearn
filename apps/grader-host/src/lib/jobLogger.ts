@@ -1,6 +1,7 @@
+import { Writable, type WritableOptions } from 'node:stream';
+
 import winston from 'winston';
 import Transport from 'winston-transport';
-import { Writable, type WritableOptions } from 'node:stream';
 
 import { config } from './config.js';
 

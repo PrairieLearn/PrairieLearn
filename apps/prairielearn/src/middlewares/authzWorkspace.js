@@ -1,16 +1,17 @@
 // @ts-check
-import _ from 'lodash';
 import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { isEnterprise } from '../lib/license.js';
+
 import { authzCourseOrInstance } from './authzCourseOrInstance.js';
-import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion.js';
-import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance.js';
-import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion.js';
 import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView.js';
-import { HttpStatusError } from '@prairielearn/error';
+import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance.js';
+import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion.js';
+import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

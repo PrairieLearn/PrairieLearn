@@ -1,10 +1,11 @@
 import { assert } from 'chai';
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as news_items from '../news_items/index.js';
 import { config } from '../lib/config.js';
+import * as news_items from '../news_items/index.js';
 
 import * as helperServer from './helperServer.js';
 

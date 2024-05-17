@@ -1,16 +1,23 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
 import * as async from 'async';
 import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  CourseInstancePermissionSchema,
+  CourseInstanceSchema,
+  CoursePermissionSchema,
+  UserSchema,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { parseUidsString } from '../../lib/user.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
@@ -23,13 +30,6 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { parseUidsString } from '../../lib/user.js';
-import {
-  CourseInstancePermissionSchema,
-  CourseInstanceSchema,
-  CoursePermissionSchema,
-  UserSchema,
-} from '../../lib/db-types.js';
 
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
