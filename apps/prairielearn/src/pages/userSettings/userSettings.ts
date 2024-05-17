@@ -3,10 +3,10 @@ import * as crypto from 'crypto';
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types.js';
