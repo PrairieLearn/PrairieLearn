@@ -642,7 +642,7 @@ function StaffTable({
                       `;
                     })
                   : ''}
-                ${courseUser.other_course_instances && courseUser.other_course_instances.length > 0
+                ${courseUser.other_course_instances?.length > 0
                   ? html`
                       <form
                         name="student-data-access-add-${courseUser.user.user_id}"
