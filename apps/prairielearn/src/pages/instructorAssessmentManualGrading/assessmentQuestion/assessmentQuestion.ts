@@ -178,6 +178,7 @@ router.post(
         console.log(result.length);
 
         // get each instance question
+        // TODO: how to get the question prompt?
         for (const instance_question of result) {
           // get last submission of instance question
           const submission = await queryRow(
@@ -211,6 +212,7 @@ router.post(
             {
               score_perc: 50, // replace with LLM score
               feedback: { manual: 'replace with grader feedback' }, // replace with LLM feedback
+              // TODO: rubrics
             },
             '1',
           );
