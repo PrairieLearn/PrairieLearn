@@ -153,7 +153,7 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
     // If the error has a `position` field, we need to use the processed source
     // (where e.g. `$foobar` has been replaced with `$1`) so that the position
     // is accurate.
-    sql: errorHasPosition ? paramsToArray(sql, params).processedSql : sql,
+    sql: errorHasPosition ? paramsToArray(sql, params, false).processedSql : sql,
     sqlParams: params,
   });
 }
