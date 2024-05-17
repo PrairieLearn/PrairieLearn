@@ -5,8 +5,9 @@ import { callbackify } from 'node:util';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { DatabaseError, QueryResult } from 'pg';
+import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
+import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
