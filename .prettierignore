@@ -1,7 +1,7 @@
 node_modules
 .yarn
 
-# Test coverage
+# Coverage reports
 coverage/
 apps/*/coverage/
 packages/*/coverage/
