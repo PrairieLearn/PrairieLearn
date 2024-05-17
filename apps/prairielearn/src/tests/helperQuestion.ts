@@ -222,9 +222,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should create a submission', async function () {
-      const result = await sqldb.queryAsync(sql.select_last_submission, {
-        variant_id: locals.variant?.id,
-      });
+      const result = await sqldb.queryAsync(sql.select_last_submission, {});
       assert.equal(result.rowCount, 1);
       locals.submission = result.rows[0];
     });

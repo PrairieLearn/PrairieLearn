@@ -225,7 +225,6 @@ router.get(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
       },
       InstanceQuestionRowSchema,
     );

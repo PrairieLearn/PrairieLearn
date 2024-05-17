@@ -17,6 +17,10 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
+export interface PostgresPoolConfig extends pg.PoolConfig {
+  errorOnUnusedParameters?: boolean;
+}
+
 const debug = debugfn('@prairielearn/postgres');
 const lastQueryMap = new WeakMap<pg.PoolClient, string>();
 const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
@@ -70,6 +74,7 @@ function debugParams(params: QueryParams): string {
 function paramsToArray(
   sql: string,
   params: QueryParams,
+  errorOnUnusedParameters: boolean,
 ): { processedSql: string; paramsArray: any } {
   if (typeof sql !== 'string') throw new Error('SQL must be a string');
   if (Array.isArray(params)) {
@@ -111,6 +116,12 @@ function paramsToArray(
   }
   processedSql += remainingSql;
   remainingSql = '';
+  if (errorOnUnusedParameters) {
+    const difference = _.difference(Object.keys(params), Object.keys(map));
+    if (difference.length) {
+      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
+    }
+  }
   return { processedSql, paramsArray };
 }
 
@@ -142,7 +153,7 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
     // If the error has a `position` field, we need to use the processed source
     // (where e.g. `$foobar` has been replaced with `$1`) so that the position
     // is accurate.
-    sql: errorHasPosition ? paramsToArray(sql, params).processedSql : sql,
+    sql: errorHasPosition ? paramsToArray(sql, params, false).processedSql : sql,
     sqlParams: params,
   });
 }
@@ -160,14 +171,16 @@ export class PostgresPool {
   private searchSchema: string | null = null;
   /** Tracks the total number of queries executed by this pool. */
   private _queryCount = 0;
+  private errorOnUnusedParameters = false;
 
   /**
    * Creates a new connection pool and attempts to connect to the database.
    */
   async initAsync(
-    pgConfig: pg.PoolConfig,
+    pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
+    this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);
@@ -300,7 +313,7 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
     try {
       lastQueryMap.set(client, processedSql);
       const result = await client.query(processedSql, paramsArray);
@@ -1025,7 +1038,7 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryCursorWithClient()', 'sql:', debugString(sql));
     debug('queryCursorWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
     lastQueryMap.set(client, processedSql);
     return client.query(new Cursor(processedSql, paramsArray));
   }
