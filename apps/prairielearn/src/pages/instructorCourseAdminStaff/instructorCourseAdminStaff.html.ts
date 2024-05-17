@@ -287,9 +287,9 @@ function coursePermissionsInsertForm({
           required
           aria-describedby="addUsersInputUidHelp"
         ></textarea>
-        <small id="addUsersInputUidHelp" class="form-text text-muted"
-          >Enter up to ${uidsLimit} UIDs separated by commas, semicolons, or whitespace.</small
-        >
+        <small id="addUsersInputUidHelp" class="form-text text-muted">
+          Enter up to ${uidsLimit} UIDs separated by commas, semicolons, or whitespace.
+        </small>
       </div>
 
       <div class="form-group">
