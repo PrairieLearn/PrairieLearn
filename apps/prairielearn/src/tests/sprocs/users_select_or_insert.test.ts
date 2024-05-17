@@ -2,9 +2,10 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
 import * as sqldb from '@prairielearn/postgres';
-import * as helperDb from '../helperDb';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperDb from '../helperDb.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getUserParams(user_id) {
   const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';

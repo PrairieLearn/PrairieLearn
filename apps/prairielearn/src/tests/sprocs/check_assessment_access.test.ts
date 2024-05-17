@@ -2,10 +2,11 @@ import { assert } from 'chai';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import * as helperDb from '../helperDb';
-import { type Mode } from '../../lib/db-types';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { type Mode } from '../../lib/db-types.js';
+import * as helperDb from '../helperDb.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkAssessmentAccess(params: {
   assessment_id: string;

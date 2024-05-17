@@ -1,13 +1,13 @@
 // @ts-check
-const unified = require('unified');
-const markdown = require('remark-parse');
-const raw = require('rehype-raw');
-const gfm = require('remark-gfm');
-const remark2rehype = require('remark-rehype');
-const math = require('remark-math');
-const stringify = require('rehype-stringify');
-const sanitize = require('rehype-sanitize');
-const visit = require('unist-util-visit');
+import raw from 'rehype-raw';
+import sanitize from 'rehype-sanitize';
+import stringify from 'rehype-stringify';
+import gfm from 'remark-gfm';
+import math from 'remark-math';
+import markdown from 'remark-parse';
+import remark2rehype from 'remark-rehype';
+import { unified } from 'unified';
+import { visit } from 'unist-util-visit';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -16,9 +16,8 @@ const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
-const visitCodeBlock = (ast, _vFile) => {
+function visitCodeBlock(ast, _vFile) {
   return visit(ast, 'code', (node, index, parent) => {
-    // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.lang & node.value do not exist on type Node<Data>.
     let { lang, value } = node;
     const attrs = [];
 
@@ -44,7 +43,7 @@ const visitCodeBlock = (ast, _vFile) => {
 
     return;
   });
-};
+}
 
 /**
  * This visitor is used for inline markdown processing, particularly for cases where the result is
@@ -52,16 +51,14 @@ const visitCodeBlock = (ast, _vFile) => {
  * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
  * with the content of the paragraph.
  */
-const visitCheckSingleParagraph = (ast, _vFile) => {
+function visitCheckSingleParagraph(ast, _vFile) {
   return visit(ast, 'root', (node, _index, _parent) => {
-    // @ts-expect-error - TODO: resolve after converting file to TypeScript
     if (node.children.length === 1 && node.children[0].tagName === 'p') {
-      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.children does not exist on type Node<Data>.
       node.children = node.children[0].children;
     }
     return;
   });
-};
+}
 
 /**
  * By default, `remark-math` installs compilers to transform the AST back into
@@ -70,21 +67,24 @@ const visitCheckSingleParagraph = (ast, _vFile) => {
  * any `math` or `inlineMath` nodes with raw text values wrapped in the appropriate
  * fences.
  */
-const visitMathBlock = (ast, _vFile) => {
+function visitMathBlock(ast, _vFile) {
   return visit(ast, ['math', 'inlineMath'], (node, index, parent) => {
     const startFence = node.type === 'math' ? '$$\n' : '$';
     const endFence = node.type === 'math' ? '\n$$' : '$';
     const text = {
       type: 'text',
-      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.value does not exist on type Node<Data>.
       value: startFence + node.value + endFence,
     };
     parent?.children.splice(index, 1, text);
     return;
   });
-};
+}
 
-const makeHandler = (visitor) => {
+/**
+ * @param {(ast: any, vfile: import('vfile').VFile) => undefined} visitor
+ * @returns {() => (ast: import('hast').Root, file: import('vfile').VFile) => import('hast').Root}
+ */
+function makeHandler(visitor) {
   return () => (ast, vFile, next) => {
     visitor(ast, vFile);
 
@@ -93,7 +93,7 @@ const makeHandler = (visitor) => {
     }
     return ast;
   };
-};
+}
 
 const handleCode = makeHandler(visitCodeBlock);
 const handleMath = makeHandler(visitMathBlock);
@@ -138,12 +138,12 @@ export function processQuestion(html) {
       return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
     });
     const res = questionProcessor.processSync(decodedContents);
-    return res.contents;
+    return res.value;
   });
 }
 
 export async function processContent(original) {
-  return (await defaultProcessor.process(original)).contents;
+  return (await defaultProcessor.process(original)).value;
 }
 
 /**
@@ -151,5 +151,5 @@ export async function processContent(original) {
  * (paragraph) it will return the content without a `p` tag.
  */
 export async function processContentInline(original) {
-  return (await inlineProcessor.process(original)).contents;
+  return (await inlineProcessor.process(original)).value;
 }

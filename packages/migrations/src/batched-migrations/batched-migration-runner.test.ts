@@ -1,17 +1,19 @@
 import { assert } from 'chai';
-import { makePostgresTestUtils, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
-import * as namedLocks from '@prairielearn/named-locks';
-import * as error from '@prairielearn/error';
 
+import * as error from '@prairielearn/error';
+import * as namedLocks from '@prairielearn/named-locks';
+import { makePostgresTestUtils, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
+
+import { BatchedMigrationJobRowSchema } from './batched-migration-job.js';
+import { BatchedMigrationRunner } from './batched-migration-runner.js';
 import {
   BatchedMigrationRowSchema,
   insertBatchedMigration,
   makeBatchedMigration,
   updateBatchedMigrationStatus,
-} from './batched-migration';
-import { BatchedMigrationJobRowSchema } from './batched-migration-job';
-import { BatchedMigrationRunner } from './batched-migration-runner';
-import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
+} from './batched-migration.js';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',

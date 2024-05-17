@@ -3,11 +3,13 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "declaration": true,
-    // We don't yet make extensive use of ES Modules, so compile
-    // `import`/`export` down to CommonJS.
-    "module": "CommonJS",
     "strict": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    // Use native ESM
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }

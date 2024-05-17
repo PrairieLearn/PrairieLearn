@@ -1,13 +1,15 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import { z } from 'zod';
+
 import { queryRow } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
 import '../helperServer';
-import { config } from '../../lib/config';
-import { AuthUser, withUser } from './auth';
-import { getCsrfToken } from './csrf';
+import { config } from '../../lib/config.js';
+
+import { AuthUser, withUser } from './auth.js';
+import { getCsrfToken } from './csrf.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

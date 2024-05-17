@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import adminsRouter from '../pages/institutionAdminAdmins/institutionAdminAdmins';
-import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses';
+import adminsRouter from '../pages/institutionAdminAdmins/institutionAdminAdmins.js';
+import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses.js';
 
 const router = Router({ mergeParams: true });
 

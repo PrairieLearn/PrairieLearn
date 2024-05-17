@@ -1,4 +1,6 @@
+import { filesize } from 'filesize';
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeFileConfigSource,
@@ -7,7 +9,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -22,12 +24,23 @@ const ConfigSchema = z.object({
       z.boolean(),
       // A subset of the options that can be provided to the `TLSSocket` constructor.
       // https://node-postgres.com/features/ssl
-      z.object({
-        rejectUnauthorized: z.boolean().default(true),
-        ca: z.string().nullable().default(null),
-        key: z.string().nullable().default(null),
-        cert: z.string().nullable().default(null),
-      }),
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
     ])
     .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
@@ -70,7 +83,9 @@ const ConfigSchema = z.object({
   authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  sessionCookieSameSite: z
+    .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
+    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -103,6 +118,7 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -220,9 +236,6 @@ const ConfigSchema = z.object({
   blockedWarnEnable: z.boolean().default(false),
   blockedAtWarnEnable: z.boolean().default(false),
   blockedWarnThresholdMS: z.number().default(100),
-  SEBServerUrl: z.string().nullable().default(null),
-  SEBServerFilter: z.string().nullable().default(null),
-  SEBDownloadUrl: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),
   /**
    * This is populated by `lib/aws.js` later.
@@ -531,6 +544,10 @@ export async function loadConfig(paths: string[]) {
     );
     config.cacheType = config.questionRenderCacheType;
   }
+
+  // TODO: once the usages of this are no longer EJS, we should format the
+  // size on the fly instead of setting it on the global config.
+  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here

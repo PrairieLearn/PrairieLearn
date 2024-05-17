@@ -1,12 +1,13 @@
-import { omit } from 'lodash';
 import { type Request, type Response } from 'express';
+import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 
-import { saveAndGradeSubmission, saveSubmission } from './grading';
-import { idsEqual } from './id';
-import { selectVariantById } from '../models/variant';
-import { type Variant } from './db-types';
+import { selectVariantById } from '../models/variant.js';
+
+import { type Variant } from './db-types.js';
+import { saveAndGradeSubmission, saveSubmission } from './grading.js';
+import { idsEqual } from './id.js';
 
 export async function validateVariantAgainstQuestion(
   unsafe_variant_id: string,
@@ -40,7 +41,7 @@ export async function processSubmission(
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
       throw new error.HttpStatusError(400, 'No postData');

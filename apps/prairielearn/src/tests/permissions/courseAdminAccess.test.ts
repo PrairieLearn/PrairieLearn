@@ -1,13 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as helperServer from '../helperServer';
-import * as helperClient from '../helperClient';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
+import { config } from '../../lib/config.js';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkPermissions(users) {
   const result = await sqldb.queryAsync(sql.select_permissions, {

@@ -1,12 +1,14 @@
 // @ts-check
-import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
+import debugfn from 'debug';
 import { Redis } from 'ioredis';
-import { logger } from '@prairielearn/logger';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import { Server } from 'socket.io';
 
-import { config } from './config';
+import { logger } from '@prairielearn/logger';
+
+import { config } from './config.js';
+
+const debug = debugfn('prairielearn:socket-server');
 
 /**
  * @param {Redis} client

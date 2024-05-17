@@ -1,13 +1,16 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
-import { InstructorSharing } from './instructorCourseAdminSharing.html';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { getCanonicalHost } from '../../lib/url';
+
+import { getCanonicalHost } from '../../lib/url.js';
+
+import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -109,4 +112,4 @@ router.post(
   }),
 );
 
-export = router;
+export default router;

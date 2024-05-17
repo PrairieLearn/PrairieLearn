@@ -1,18 +1,19 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as helperServer from '../helperServer';
-import * as helperClient from '../helperClient';
-import { ensureEnrollment } from '../../models/enrollment';
+import { config } from '../../lib/config.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
-} from '../../models/course-permissions';
+} from '../../models/course-permissions.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('student data access', function () {
   this.timeout(60000);

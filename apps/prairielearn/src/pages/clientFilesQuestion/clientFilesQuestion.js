@@ -1,25 +1,24 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const path = require('path');
-const express = require('express');
+import * as path from 'node:path';
 
-const error = require('@prairielearn/error');
-const chunks = require('../../lib/chunks');
-const { getQuestionCourse } = require('../../lib/question-variant');
-const { selectCourseById } = require('../../models/course');
-const { selectQuestionById } = require('../../models/question');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-module.exports = function (options = { publicEndpoint: false }) {
-  const router = express.Router({ mergeParams: true });
+import { HttpStatusError } from '@prairielearn/error';
+
+import * as chunks from '../../lib/chunks.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
+
+export default function (options = { publicEndpoint: false }) {
+  const router = Router({ mergeParams: true });
   router.get(
     '/*',
     asyncHandler(async function (req, res) {
       const filename = req.params[0];
       if (!filename) {
-        throw new error.HttpStatusError(
-          400,
-          'No filename provided within clientFilesQuestion directory',
-        );
+        throw new HttpStatusError(400, 'No filename provided within clientFilesQuestion directory');
       }
 
       if (options.publicEndpoint) {
@@ -30,7 +29,7 @@ module.exports = function (options = { publicEndpoint: false }) {
           !res.locals.question.shared_publicly ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
-          throw new error.HttpStatusError(404, 'Not Found');
+          throw new HttpStatusError(404, 'Not Found');
         }
       }
 
@@ -52,4 +51,4 @@ module.exports = function (options = { publicEndpoint: false }) {
     }),
   );
   return router;
-};
+}

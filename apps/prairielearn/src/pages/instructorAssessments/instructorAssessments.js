@@ -1,23 +1,26 @@
 // @ts-check
-import * as express from 'express';
-const asyncHandler = require('express-async-handler');
-import AnsiUp from 'ansi_up';
-import * as error from '@prairielearn/error';
-const debug = require('debug')('prairielearn:instructorAssessments');
-import { stringifyStream } from '@prairielearn/csv';
-import * as sqldb from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 
-import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name';
-import { AssessmentAddEditor } from '../../lib/editors';
+import { AnsiUp } from 'ansi_up';
+import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
-} from '../../lib/assessment';
+} from '../../lib/assessment.js';
+import { AssessmentAddEditor } from '../../lib/editors.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 const router = express.Router();
 const ansiUp = new AnsiUp();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:instructorAssessments');
 
 const csvFilename = (locals) => {
   return (
@@ -48,7 +51,7 @@ router.get(
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -75,7 +78,7 @@ router.get(
     }
     res.locals.row = result.rows[0];
 
-    res.render(`${__dirname}/assessmentStats.ejs`, res.locals);
+    res.render(`${import.meta.dirname}/assessmentStats.ejs`, res.locals);
   }),
 );
 

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { compiledScriptTag } from '../../lib/assets';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
   navTitle,
@@ -24,7 +24,7 @@ export function Workspace({
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
       </head>
@@ -216,7 +216,6 @@ export function Workspace({
                               <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Reloading</div><div class="col col-9">Use your browser reload button on this tab at any time, or close and re-open the tab.</div></div></li>
                               <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Rebooting</div> <div class="col col-9">The <span class="badge badge-outline badge-light"><i class="fas fa-sync" aria-hidden="true"></i> Reboot</span> button will restart the virtual machine. Your files will remain intact.</div></div></li>
                               <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Resetting</div> <div class="col col-9">The <span class="badge badge-outline badge-light"><i class="fas fa-trash text-secondary" aria-hidden="true"></i> Reset</span> button will delete all of your file edits and revert the virtual machine to its original state.</div></div></li>
-                              <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Saving</div>    <div class="col col-9">Your files are automatically saved.</div></div></li>
                               <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Grading</div>   <div class="col col-9">Use the <span class="badge badge-outline badge-light">Save &amp; Grade</span> button on the PrairieLearn question page to submit your files for grading.</div></div></li>
                             </ul>'
                 >

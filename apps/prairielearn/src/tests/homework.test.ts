@@ -1,16 +1,17 @@
-import _ = require('lodash');
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
 
-import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperAttachFiles from './helperAttachFiles';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperAttachFiles from './helperAttachFiles.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 

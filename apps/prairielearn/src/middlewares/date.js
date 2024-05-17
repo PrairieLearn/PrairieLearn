@@ -1,4 +1,5 @@
-import { config } from '../lib/config';
+// @ts-check
+import { config } from '../lib/config.js';
 
 /**
  * @param {import('express').Request} req

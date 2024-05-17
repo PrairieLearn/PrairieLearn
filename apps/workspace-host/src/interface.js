@@ -1,40 +1,43 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-import * as util from 'node:util';
-const express = require('express');
-import * as http from 'node:http';
-import fetch from 'node-fetch';
-import * as path from 'node:path';
-import { S3 } from '@aws-sdk/client-s3';
-import { ECRClient } from '@aws-sdk/client-ecr';
-import { Upload } from '@aws-sdk/lib-storage';
-const Docker = require('dockerode');
 import * as fs from 'node:fs';
-import * as async from 'async';
 import * as fsPromises from 'node:fs/promises';
-import { v4 as uuidv4 } from 'uuid';
-const argv = require('yargs-parser')(process.argv.slice(2));
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const archiver = require('archiver');
+import * as http from 'node:http';
 import * as net from 'node:net';
-const asyncHandler = require('express-async-handler');
-const bodyParser = require('body-parser');
+import * as path from 'node:path';
+import * as util from 'node:util';
+
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import archiver from 'archiver';
+import * as async from 'async';
 import { Mutex } from 'async-mutex';
+import ERR from 'async-stacktrace';
+import bodyParser from 'body-parser';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import yargsParser from 'yargs-parser';
+
+import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { cache } from '@prairielearn/cache';
 
-import { config, loadConfig } from './lib/config';
-import { parseDockerLogs } from './lib/docker';
-import * as socketServer from './lib/socket-server';
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { config, loadConfig } from './lib/config.js';
+import { parseDockerLogs } from './lib/docker.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import * as socketServer from './lib/socket-server.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
@@ -119,6 +122,8 @@ async
 
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }

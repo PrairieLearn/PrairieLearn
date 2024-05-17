@@ -1,7 +1,8 @@
 import { assert } from 'chai';
 
-import { flashMiddleware, flash } from './index';
 import { html } from '@prairielearn/html';
+
+import { flashMiddleware, flash } from './index.js';
 
 describe('flash', () => {
   it('throws an error if no session present', () => {
