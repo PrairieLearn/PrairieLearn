@@ -53,6 +53,7 @@
     "@sentry/profiling-node": "^7.114.0",
     "@sentry/tracing": "^7.114.0",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@types/d3": "^7.4.3",
     "@viz-js/viz": "^3.5.0",
     "ace-builds": "^1.33.2",
     "ace-code": "^1.33.2",

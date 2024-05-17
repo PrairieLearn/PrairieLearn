@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
 ## 2.0.0
 
 ### Major Changes
