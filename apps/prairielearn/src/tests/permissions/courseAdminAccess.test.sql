@@ -12,7 +12,7 @@ FROM
 
 -- BLOCK select_non_existent_user
 SELECT
-  'newstaff' || s || '@illinois.edu' AS uid
+  'newstaff' || s || '@example.com' AS uid
 FROM
   generate_series(1, 10000) AS s
 WHERE
@@ -22,7 +22,7 @@ WHERE
     FROM
       users AS u
     WHERE
-      u.uid = 'newstaff' || s || '@illinois.edu'
+      u.uid = 'newstaff' || s || '@example.com'
   )
 LIMIT
   1

@@ -1,5 +1,113 @@
 # @prairielearn/browser-utils
 
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- Updated dependencies [901fce8]
+  - @prairielearn/html@4.0.1
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/html@4.0.0
+
+## 1.1.14
+
+### Patch Changes
+
+- Updated dependencies [c7e6553]
+  - @prairielearn/html@3.1.7
+
+## 1.1.13
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/html@3.1.6
+
+## 1.1.12
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+- Updated dependencies [3395c25]
+  - @prairielearn/html@3.1.5
+
+## 1.1.11
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+- Updated dependencies [dce0fa3]
+  - @prairielearn/html@3.1.4
+
+## 1.1.10
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+- Updated dependencies [abfd5cc]
+  - @prairielearn/html@3.1.3
+
+## 1.1.9
+
+### Patch Changes
+
+- Updated dependencies [2da23ab]
+  - @prairielearn/html@3.1.2
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [1523b97b0]
+  - @prairielearn/html@3.1.1
+
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [3cd0f83fa]
+  - @prairielearn/html@3.1.0
+
+## 1.1.6
+
+### Patch Changes
+
+- Updated dependencies [8dd894623]
+  - @prairielearn/html@3.0.9
+
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [bd0053577]
+  - @prairielearn/html@3.0.8
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [f03853d90]
+  - @prairielearn/html@3.0.7
+
+## 1.1.3
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+- Updated dependencies [6cad75197]
+  - @prairielearn/html@3.0.6
+
 ## 1.1.2
 
 ### Patch Changes

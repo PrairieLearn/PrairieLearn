@@ -1,7 +1,8 @@
-import chai from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+
+import { use as chaiUse, assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { z, ZodError } from 'zod';
 
 import {
@@ -9,13 +10,15 @@ import {
   queryRows,
   queryRow,
   queryOptionalRow,
+  callRows,
+  callRow,
+  callOptionalRow,
   queryCursor,
   queryValidatedCursor,
-} from './default-pool';
-import { makePostgresTestUtils } from './test-utils';
+} from './default-pool.js';
+import { makePostgresTestUtils } from './test-utils.js';
 
-chai.use(chaiAsPromised);
-const { assert } = chai;
+chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',
@@ -26,6 +29,11 @@ const WorkspaceSchema = z.object({
   created_at: z.date(),
 });
 
+const SprocTwoColumnsSchema = z.object({
+  id: z.string(),
+  negative: z.number(),
+});
+
 describe('@prairielearn/postgres', function () {
   before(async () => {
     await postgresTestUtils.createDatabase();
@@ -34,10 +42,50 @@ describe('@prairielearn/postgres', function () {
       {},
     );
     await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
+    await queryAsync(
+      'CREATE FUNCTION test_sproc_one_column(num_entries INT) RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
+      {},
+    );
+    await queryAsync(
+      'CREATE FUNCTION test_sproc_two_columns(num_entries INT) RETURNS TABLE (id BIGINT, negative INT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id, -s AS negative FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
+      {},
+    );
+    await queryAsync(
+      'CREATE FUNCTION test_sproc_one_column_ten_rows() RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, 10) AS s; END; $$ LANGUAGE plpgsql;',
+      {},
+    );
+    await queryAsync(
+      'CREATE FUNCTION test_sproc_one_column_one_row(OUT id BIGINT) AS $$ BEGIN id = 1; END; $$ LANGUAGE plpgsql;',
+      {},
+    );
   });
 
   after(async () => {
     await postgresTestUtils.dropDatabase();
+  });
+
+  describe('paramsToArray', () => {
+    it('enforces SQL must be a string', async () => {
+      // @ts-expect-error SQL must be a string
+      const rows = queryAsync({ invalid: true }, {});
+      await assert.isRejected(rows, 'SQL must be a string');
+    });
+
+    it('enforces params must be array or object', async () => {
+      // @ts-expect-error params must be an array or object
+      const rows = queryAsync('SELECT 33;', 33);
+      await assert.isRejected(rows, 'params must be array or object');
+    });
+
+    it('rejects missing parameters', async () => {
+      const rows = queryAsync('SELECT $missing;', {});
+      await assert.isRejected(rows, 'Missing parameter');
+    });
+
+    it('rejects unused parameters in testing', async () => {
+      const rows = queryAsync('SELECT 33;', { unsed_parameter: true });
+      await assert.isRejected(rows, 'Unused parameter');
+    });
   });
 
   describe('queryRows', () => {
@@ -129,6 +177,86 @@ describe('@prairielearn/postgres', function () {
     });
   });
 
+  describe('callRows', () => {
+    it('handles single column', async () => {
+      const rows = await callRows('test_sproc_one_column_ten_rows', z.string());
+      assert.lengthOf(rows, 10);
+      assert.equal(rows[0], '1');
+    });
+
+    it('handles parameters', async () => {
+      const rows = await callRows('test_sproc_one_column', [10], z.string());
+      assert.lengthOf(rows, 10);
+      assert.equal(rows[0], '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const rows = await callRows('test_sproc_two_columns', [20], SprocTwoColumnsSchema);
+      assert.lengthOf(rows, 20);
+      assert.equal(rows[0].id, '1');
+      assert.equal(rows[0].negative, -1);
+      assert.equal(rows[19].id, '20');
+      assert.equal(rows[19].negative, -20);
+    });
+  });
+
+  describe('callRow', () => {
+    it('handles single column', async () => {
+      const row = await callRow('test_sproc_one_column_one_row', z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles parameters', async () => {
+      const row = await callRow('test_sproc_one_column', [1], z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const row = await callRow('test_sproc_two_columns', [1], SprocTwoColumnsSchema);
+      assert.equal(row.id, '1');
+      assert.equal(row.negative, -1);
+    });
+
+    it('rejects results with zero rows', async () => {
+      const row = callRow('test_sproc_two_columns', [0], SprocTwoColumnsSchema);
+      await assert.isRejected(row, 'Incorrect rowCount: 0');
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const rows = callRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
+      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+    });
+  });
+
+  describe('callOptionalRow', () => {
+    it('handles single column', async () => {
+      const row = await callOptionalRow('test_sproc_one_column_one_row', z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles parameters', async () => {
+      const row = await callOptionalRow('test_sproc_one_column', [1], z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const row = await callOptionalRow('test_sproc_two_columns', [1], SprocTwoColumnsSchema);
+      assert.isNotNull(row);
+      assert.equal(row?.id, '1');
+      assert.equal(row?.negative, -1);
+    });
+
+    it('handles results with zero rows', async () => {
+      const row = await callOptionalRow('test_sproc_two_columns', [0], SprocTwoColumnsSchema);
+      assert.isNull(row);
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const rows = callOptionalRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
+      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+    });
+  });
+
   describe('queryCursor', () => {
     it('returns zero rows', async () => {
       const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', {});
@@ -161,7 +289,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+      const cursor = await queryCursor('NOT VALID SQL', {});
 
       async function readAllRows() {
         const allRows = [];
@@ -174,11 +302,11 @@ describe('@prairielearn/postgres', function () {
       const maybeError = await readAllRows().catch((err) => err);
       assert.instanceOf(maybeError, Error);
       assert.match(maybeError.message, /syntax error/);
-      assert.isDefined(maybeError.data);
-      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
-      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
-      assert.isDefined(maybeError.data.sqlError);
-      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+      assert.isDefined((maybeError as any).data);
+      assert.equal((maybeError as any).data.sql, 'NOT VALID SQL');
+      assert.deepEqual((maybeError as any).data.sqlParams, {});
+      assert.isDefined((maybeError as any).data.sqlError);
+      assert.equal((maybeError as any).data.sqlError.severity, 'ERROR');
     });
   });
 
@@ -274,7 +402,7 @@ describe('@prairielearn/postgres', function () {
         const ac = new AbortController();
         const writable = new Writable({
           objectMode: true,
-          write: function (chunk, _encoding, callback) {
+          write(chunk, _encoding, callback) {
             rows.push(chunk);
 
             // After receiving the first row, abort the stream. This lets us test

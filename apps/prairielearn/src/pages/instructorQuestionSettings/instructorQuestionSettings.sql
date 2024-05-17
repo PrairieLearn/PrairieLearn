@@ -1,6 +1,6 @@
 -- BLOCK qids
 SELECT
-  array_agg(q.qid) AS qids
+  q.qid AS qids
 FROM
   questions AS q
 WHERE
@@ -19,16 +19,14 @@ WHERE
 
 -- BLOCK select_assessments_with_question_for_display
 SELECT
-  jsonb_agg(
-    jsonb_build_object(
-      'title',
-      result.course_title,
-      'course_instance_id',
-      result.course_instance_id,
-      'assessments',
-      result.matched_assessments
-    )
-  ) AS assessments_from_question_id
+  jsonb_build_object(
+    'title',
+    result.course_title,
+    'course_instance_id',
+    result.course_instance_id,
+    'assessments',
+    result.matched_assessments
+  )
 FROM
   (
     SELECT
@@ -91,3 +89,11 @@ WHERE
   ss.course_id = $course_id
   AND ss.id = $unsafe_sharing_set_id
   AND q.id = $question_id;
+
+-- BLOCK update_question_shared_publicly
+UPDATE questions
+SET
+  shared_publicly = TRUE
+WHERE
+  id = $question_id
+  AND course_id = $course_id;

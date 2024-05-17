@@ -1,9 +1,11 @@
 import { z } from 'zod';
+
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Modal } from '../../components/Modal.html';
-import { Course, CourseInstance, Institution } from '../../lib/db-types';
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+
+import { Modal } from '../../components/Modal.html.js';
+import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -34,10 +36,10 @@ export function AdministratorFeatures({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'features',
@@ -71,19 +73,21 @@ export function AdministratorFeatures({
 export function AdministratorFeature({
   feature,
   featureGrants,
+  featureInConfig,
   institutions,
   resLocals,
 }: {
   feature: string;
   institutions: Institution[];
   featureGrants: FeatureGrantRow[];
+  featureInConfig: boolean | null;
   resLocals: Record<string, any>;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
@@ -96,7 +100,7 @@ export function AdministratorFeature({
         </style>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'features',
@@ -114,11 +118,27 @@ export function AdministratorFeature({
                 Grant feature
               </button>
             </div>
-            ${featureGrants.length > 0
+            ${featureGrants.length > 0 || featureInConfig != null
               ? html`
                   <div class="list-group list-group-flush">
+                    ${featureInConfig != null
+                      ? html`
+                          <div class="list-group-item">
+                            <i
+                              class="fa-solid mr-1 ${featureInConfig
+                                ? 'fa-check text-success'
+                                : 'fa-times text-danger'}"
+                            ></i>
+                            Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration
+                            file
+                          </div>
+                        `
+                      : ''}
                     ${featureGrants.map((featureGrant) => {
-                      return FeatureGrant({ featureGrant });
+                      return FeatureGrant({
+                        featureGrant,
+                        overridden: featureInConfig != null,
+                      });
                     })}
                   </div>
                 `
@@ -185,9 +205,17 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
   `;
 }
 
-function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
+function FeatureGrant({
+  featureGrant,
+  overridden,
+}: {
+  featureGrant: FeatureGrantRow;
+  overridden: boolean;
+}) {
   return html`
-    <div class="list-group-item d-flex flex-row align-items-center">
+    <div
+      class="list-group-item d-flex flex-row align-items-center ${overridden ? 'text-muted' : ''}"
+    >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
     </div>
   `;
@@ -248,14 +276,14 @@ export function AddFeatureGrantModalBody({
           id="feature-grant-institution"
           name="institution_id"
         >
-          <option value="">None</option>
+          <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
               <option
                 value="${institution.id}"
                 ${institution.id === institution_id ? 'selected' : ''}
               >
-                ${institution.long_name} (${institution.short_name})
+                ${institution.short_name}: ${institution.long_name} (${institution.id})
               </option>
             `;
           })}
@@ -273,11 +301,11 @@ export function AddFeatureGrantModalBody({
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses in this institution</option>
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
-                ${course.short_name}: ${course.title}
+                ${course.short_name}: ${course.title} (${course.id})
               </option>
             `;
           })}
@@ -295,14 +323,14 @@ export function AddFeatureGrantModalBody({
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses instances in this course</option>
           ${(course_instances ?? []).map((course_instance) => {
             return html`
               <option
                 value="${course_instance.id}"
                 ${course_instance.id === course_instance_id ? 'selected' : ''}
               >
-                ${course_instance.long_name} (${course_instance.short_name})
+                ${course_instance.short_name}: ${course_instance.long_name} (${course_instance.id})
               </option>
             `;
           })}

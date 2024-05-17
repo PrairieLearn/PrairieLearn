@@ -1,9 +1,10 @@
 // @ts-check
 // const sqldb = require('@prairielearn/postgres')
-const path = require('path');
-const sqldb = require('@prairielearn/postgres');
+import * as path from 'path';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as sqldb from '@prairielearn/postgres';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /** @typedef {{ type: 'course' }} CourseInfo */
 /** @typedef {{ type: 'question', qid: string }} QuestionInfo */
@@ -15,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {string} filePath
  * @returns {CourseInfo | QuestionInfo | CourseInstanceInfo | AssessmentInfo | File}
  */
-module.exports.getDetailsForFile = function (filePath) {
+export function getDetailsForFile(filePath) {
   const normalizedPath = path.normalize(filePath);
   const pathComponents = normalizedPath.split(path.posix.sep);
   if (pathComponents.length === 1 && pathComponents[0] === 'infoCourse.json') {
@@ -50,15 +51,15 @@ module.exports.getDetailsForFile = function (filePath) {
   } else {
     return { type: 'file' };
   }
-};
+}
 
 /**
  * @param {any} courseId
  * @param {string} filePath
  * @returns {Promise<{ errors: string | null, warnings: string | null }>}
  */
-module.exports.getErrorsAndWarningsForFilePath = async function (courseId, filePath) {
-  const details = module.exports.getDetailsForFile(filePath);
+export async function getErrorsAndWarningsForFilePath(courseId, filePath) {
+  const details = getDetailsForFile(filePath);
   let queryName = null;
   let queryParams = { course_id: courseId };
   switch (details.type) {
@@ -90,4 +91,4 @@ module.exports.getErrorsAndWarningsForFilePath = async function (courseId, fileP
     errors: res.rows[0].sync_errors,
     warnings: res.rows[0].sync_warnings,
   };
-};
+}

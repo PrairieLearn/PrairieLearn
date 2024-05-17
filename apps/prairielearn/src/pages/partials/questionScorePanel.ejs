@@ -2,16 +2,27 @@
   <div class="card-header bg-secondary text-white">Question <%= instance_question.question_number %></div>
   <table class="table table-sm two-column-description-no-header">
     <tbody>
-      <% if (!assessment.allow_real_time_grading || assessment_question.max_manual_points > 0) { %>
       <tr>
         <td>Submission status:</td>
+        <td><%- include('../partials/examQuestionStatus', {instance_question}); %></td>
+      </tr>
+      <% if (assessment.allow_real_time_grading && (assessment_question.max_auto_points || !assessment_question.max_manual_points)) { %>
+      <tr>
+        <td>Best submission:</td>
         <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
       </tr>
       <% } %>
       <% if (assessment.type == 'Homework') { %>
       <tr>
-        <td>History:</td>
-        <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+        <td colspan="2" class="text-wrap">
+          Previous variants:
+          <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %>
+        </td>
+      </tr>
+      <% } else if (assessment_question.max_auto_points) { %>
+      <tr>
+        <td>Available points:</td>
+        <td><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts] - assessment_question.max_manual_points, points_list: instance_question.points_list.map((p) => (p - assessment_question.max_manual_points)), highest_submission_score: instance_question.highest_submission_score}); %></td>
       </tr>
       <% } %>
       <% let list_grading_method = true; %>
@@ -46,7 +57,7 @@
     </tbody>
   </table>
 
-  <% if (assessment.allow_issue_reporting) { %>
+  <% if (!locals.no_variant_exists && assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
       <div class="alert alert-warning mt-2" role="alert">

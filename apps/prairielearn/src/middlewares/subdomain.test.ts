@@ -2,12 +2,9 @@ import { assert } from 'chai';
 import express = require('express');
 import sinon = require('sinon');
 
-import { config } from '../../lib/config';
-import {
-  allowAccess,
-  validateSubdomainRequest,
-  assertSubdomainOrRedirect,
-} from '../../middlewares/subdomain';
+import { config } from '../lib/config.js';
+
+import { allowAccess, validateSubdomainRequest, assertSubdomainOrRedirect } from './subdomain.js';
 
 describe('subdomain middleware', () => {
   const originalServerCanonicalHost = config.serverCanonicalHost;
@@ -29,8 +26,8 @@ describe('subdomain middleware', () => {
         allowAccess(
           'q1.prairielearn.com',
           'http://q1.prairielearn.com',
-          '/pl/course/1/question/1/preview'
-        )
+          '/pl/course/1/question/1/preview',
+        ),
       );
     });
 
@@ -39,8 +36,8 @@ describe('subdomain middleware', () => {
         allowAccess(
           'q2.prairielearn.com',
           'http://q1.prairielearn.com',
-          '/pl/course/1/question/1/preview'
-        )
+          '/pl/course/1/question/1/preview',
+        ),
       );
     });
 
@@ -53,12 +50,12 @@ describe('subdomain middleware', () => {
         allowAccess(
           'prairielearn.com',
           'http://q1.prairielearn.com',
-          '/cacheable_node_modules/abcd1234/foo/bar.js'
-        )
+          '/cacheable_node_modules/abcd1234/foo/bar.js',
+        ),
       );
 
       assert.isTrue(
-        allowAccess('prairielearn.com', 'http://q1.prairielearn.com', '/assets/abcd1234/bar.js')
+        allowAccess('prairielearn.com', 'http://q1.prairielearn.com', '/assets/abcd1234/bar.js'),
       );
     });
 
@@ -76,19 +73,19 @@ describe('subdomain middleware', () => {
 
     it('allows requests that do not involve subdomains', () => {
       assert.isTrue(
-        allowAccess('prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin')
+        allowAccess('prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin'),
       );
     });
 
     it('does not allow requests to unknown subdomains', () => {
       assert.isFalse(
-        allowAccess('foobar.prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin')
+        allowAccess('foobar.prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin'),
       );
     });
 
     it('does not allow requests from unknown subdomains', () => {
       assert.isFalse(
-        allowAccess('prairielearn.com', 'https://foobar.prairielearn.com', '/pl/course/1/admin')
+        allowAccess('prairielearn.com', 'https://foobar.prairielearn.com', '/pl/course/1/admin'),
       );
     });
   });
@@ -99,7 +96,7 @@ describe('subdomain middleware', () => {
   function makeFakeRequest(
     hostname: string,
     origin: string | null | undefined,
-    originalUrl: string
+    originalUrl: string,
   ) {
     return {
       get(header: string) {
@@ -139,7 +136,7 @@ describe('subdomain middleware', () => {
       const req = makeFakeRequest(
         'q1.prairielearn.com',
         'https://q1.prairielearn.com',
-        '/pl/course/1/question/1/preview'
+        '/pl/course/1/question/1/preview',
       );
       const { res } = makeFakeResponse();
       const next = sinon.spy();
@@ -154,7 +151,7 @@ describe('subdomain middleware', () => {
       const req = makeFakeRequest(
         'q1.prairielearn.com',
         'https://q1.prairielearn.com',
-        '/pl/course/1/admin'
+        '/pl/course/1/admin',
       );
       const { res } = makeFakeResponse();
       const next = sinon.spy();
@@ -180,7 +177,7 @@ describe('subdomain middleware', () => {
       middleware(req, res, next);
 
       assert.isTrue(
-        redirectSpy.calledWith('https://q321.us.prairielearn.com/pl/course/1/question/321/preview')
+        redirectSpy.calledWith('https://q321.us.prairielearn.com/pl/course/1/question/321/preview'),
       );
       assert.isFalse(next.called);
     });
@@ -191,7 +188,7 @@ describe('subdomain middleware', () => {
       const req = makeFakeRequest(
         'q321.us.prairielearn.com',
         null,
-        '/pl/course/1/question/321/preview'
+        '/pl/course/1/question/321/preview',
       );
       const { res, redirectSpy } = makeFakeResponse();
       const next = sinon.spy();

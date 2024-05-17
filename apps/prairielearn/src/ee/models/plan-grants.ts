@@ -1,10 +1,10 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { insertAuditLog } from '../../models/audit-log';
-import { PlanGrant, PlanGrantSchema, EnumPlanGrantType } from '../../lib/db-types';
-import { WithRequiredKeys } from '../../lib/types';
+import { PlanGrant, PlanGrantSchema, EnumPlanGrantType } from '../../lib/db-types.js';
+import { WithRequiredKeys } from '../../lib/types.js';
+import { insertAuditLog } from '../../models/audit-log.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 type NewBasePlanGrant = Omit<PlanGrant, 'created_at' | 'id'>;
 type NewInstitutionPlanGrant = WithRequiredKeys<NewBasePlanGrant, 'institution_id'>;

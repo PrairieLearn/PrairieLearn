@@ -1,60 +1,58 @@
-const ERR = require('async-stacktrace');
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
-const sqldb = require('@prairielearn/postgres');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as sqldb from '@prairielearn/postgres';
 
-router.get('/:news_item_id', function (req, res, next) {
-  const params = {
-    news_item_id: req.params.news_item_id,
-    user_id: res.locals.authn_user.user_id,
-    course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
-    course_id: res.locals.course ? res.locals.course.id : null,
-  };
-  sqldb.queryZeroOrOneRow(sql.select_news_item_for_read, params, function (err, result) {
-    if (ERR(err, next)) return;
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const router = Router();
+
+router.get(
+  '/:news_item_id(\\d+)',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_news_item_for_read, {
+      news_item_id: req.params.news_item_id,
+      user_id: res.locals.authn_user.user_id,
+      course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
+      course_id: res.locals.course ? res.locals.course.id : null,
+    });
     if (result.rowCount === 0) {
-      return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));
+      throw new Error(`invalid news_item_id: ${req.params.news_item_id}`);
     }
 
     res.locals.news_item = result.rows[0];
 
     const indexFilename = path.join(
-      __dirname,
+      import.meta.dirname,
       '..',
       '..',
       'news_items',
       res.locals.news_item.directory,
       'index.html',
     );
-    fs.readFile(indexFilename, (err, news_item_html) => {
-      if (ERR(err, next)) return;
+    res.locals.news_item_html = await fs.readFile(indexFilename, 'utf8');
 
-      res.locals.news_item_html = news_item_html;
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+router.get(
+  '/:news_item_id(\\d+)/*',
+  asyncHandler(async (req, res) => {
+    const filename = req.params[0];
+    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_news_item, {
+      news_item_id: req.params.news_item_id,
     });
-  });
-});
-
-router.get('/:news_item_id/*', function (req, res, next) {
-  const filename = req.params[0];
-  const params = {
-    news_item_id: req.params.news_item_id,
-  };
-  sqldb.queryZeroOrOneRow(sql.select_news_item, params, function (err, result) {
-    if (ERR(err, next)) return;
     if (result.rowCount === 0) {
-      return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));
+      throw new Error(`invalid news_item_id: ${req.params.news_item_id}`);
     }
 
     res.locals.news_item = result.rows[0];
     const news_item_dir = path.join(
-      __dirname,
+      import.meta.dirname,
       '..',
       '..',
       'news_items',
@@ -62,7 +60,7 @@ router.get('/:news_item_id/*', function (req, res, next) {
     );
 
     res.sendFile(filename, { root: news_item_dir });
-  });
-});
+  }),
+);
 
-module.exports = router;
+export default router;

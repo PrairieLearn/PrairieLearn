@@ -120,7 +120,7 @@
         } else {
             var text = `<a href="<%= urlPrefix %>/assessment_instance/${assessment_instance_id}">${Math.floor(score)}%</a>`;
             if (<%= authz_data.has_course_instance_permission_edit %>) {
-                text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
+                text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1"
                                  data-ai-id="${assessment_instance_id}" data-score="${score}"
                                  data-other-users="${other_users}">
                            <i class="bi-pencil-square" aria-hidden="true"></i>

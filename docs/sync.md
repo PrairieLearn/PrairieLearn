@@ -1,50 +1,33 @@
-# Syncing course content to the live website
+# Editing and syncing course content
 
-The model that PrairieLearn uses for course content is that it is developed on your own local copy of PrairieLearn (see the [Installing page](installing.md)) and then pushed to the live website via GitHub.
+All course content in PrairieLearn lives in a [Git](https://git-scm.com/) repository, typically hosted on [GitHub](https://github.com/). That repository is synced to/from PrairieLearn.
 
 ![High level system structure](high-level.png)
 
-The two steps are:
+There are two ways to edit your content: through the in-browser editor in PrairieLearn, and by interacting directly with the repository.
 
-1. On your local computer, sync or push your course content to GitHub.
+## In-browser editor
 
-2. On the live website at [https://us.prairielearn.com](https://us.prairielearn.com), go to your course, select the "Sync" page in the menu bar, and then click the "Pull from remote git repository” button.
+If you don't want to set up Docker on your computer and use Git/GitHub directly, you can access and edit all content directly in PrairieLearn via the "Files" tab that appears on supported pages. When you save an edit to a file, your change is automatically synced to your GitHub repository. Note that you must have "Editor" or "Owner" permissions in the course to edit files.
 
-## Course admin permissions
+The in-browser editor is great for getting started with PrairieLearn and can work well for managing content with a small number of instructors. However, with a large course staff, you may want to exert more control over changes via software engineering best practices like code reviews or continuous integration. For that, you can use Git and GitHub as discussed in the next section.
 
-PrairieLearn controls administrative access to a course and course instance in two distinct places. These are controlled independently to provide flexible access to questions and student data.
+## Git/GitHub
 
-### Course-level access
+Since your course content is a Git repository hosted on GitHub, you can work directly with the underlying repository on your computer. This has a number of benefits:
 
-Course level permissions control the ability to view, edit, and sync course content from GitHub to the production server. These settings are made via the Course / Access page on the production server.
+- You can develop and test content locally without impacting your live questions or assessments.
+- You can require code review to ensure that changes are validated by multiple people on your course staff.
+- If you wish, you can use continuous integration services to automatically test and validate changes yo your content.
 
-The Course / Access page lists who has which course access role, and gives Owners the ability to add a new user/role setting.
+To get started, ensure you have access to your course's repository. You may need to request access from an owner of the repository. Next, follow the [local installation instructions](installing.md) to get PrairieLearn running on your computer. From there, you can edit your course content in your preferred file editor and preview the changes locally.
 
-| Level  | Permissions                                                                                |
-| ------ | ------------------------------------------------------------------------------------------ |
-| Owner  | Can sync content, edit in the browser, and add/remove course permissions for other people. |
-| Editor | Can sync content, edit in the browser, but cannot change other people's permissions.       |
-| Viewer | Can view course level content (questions and issues), but can't edit or sync content.      |
+We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged, an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that your must have "Editor" or "Owner" permissions in the course to sync the repository.
 
-People must have been logged in to PrairieLearn before they can be given course permissions.
-
-Course level access only enables access to Questions and their related issues. Access to course instance data is
-controlled separately.
-
-For completeness, users with roles assigned in courseInstances should probably also be given at least Viewer course level access, but this is not required. A user could have View access with no courseInstance access to see the questions but none of the semester data.
-
-### Course instance-level access
-
-Course instances, with assessments and student results, have their access controlled separately from course-level editing and viewing. To control access to specific course instances you need to add people to the `userRoles` in [`infoCourseInstance.json`](courseInstance.md), and sync with the server.
-
-## Version control with git
-
-PrairieLearn treats your course content as _source code_, and encourages your to develop it with the full power of git as a [version control system](https://en.wikipedia.org/wiki/Version_control).
-
-Some good resources for learning about git are:
+If you're new to Git, the following resources can help get you started:
 
 - [Git book](https://git-scm.com/book/en/v2)
 - [Software Carpentry's git course](https://swcarpentry.github.io/git-novice/)
 - [tryGit tutorial](https://try.github.io/)
 
-You can use any git client you like on your local machine. The [commandline git interface](https://git-scm.com/downloads) is available on all platforms. Some popular graphical clients are [GitHub Desktop](https://desktop.github.com), [TortoiseGit](https://tortoisegit.org), and [SourceTree](https://www.sourcetreeapp.com).
+You can use any Git client you like on your computer. The [`git` CLI](https://git-scm.com/downloads) is available on all platforms. Some popular graphical clients are [GitHub Desktop](https://desktop.github.com) and [SourceTree](https://www.sourcetreeapp.com).

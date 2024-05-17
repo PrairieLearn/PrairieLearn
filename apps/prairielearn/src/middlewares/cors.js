@@ -1,5 +1,7 @@
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import { Router } from 'express';
+
+const router = Router();
 
 router.all('/*', function (req, res, next) {
   // enable CORS on all requests, see http://enable-cors.org/server_expressjs.html
@@ -18,4 +20,4 @@ router.options('/*', function (req, res) {
   res.json({});
 });
 
-module.exports = router;
+export default router;

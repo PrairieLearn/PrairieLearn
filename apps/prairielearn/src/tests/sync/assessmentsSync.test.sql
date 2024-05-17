@@ -81,3 +81,9 @@ FROM
   zones_data,
   alternative_groups_data,
   assessment_questions_data;
+
+-- BLOCK insert_pt_exam
+INSERT INTO
+  pt_exams (uuid)
+VALUES
+  ($uuid);

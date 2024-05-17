@@ -6,13 +6,13 @@ const intervalIDs = [];
 /**
  * Clear all setIntervals. Will allow the process to exit cleanly.
  */
-function close() {
+export function close() {
   for (const intervalID of intervalIDs) {
     clearInterval(intervalID);
   }
 }
 
-class LocalCache {
+export class LocalCache {
   /**
    * @param {number?} expirySec Minimum time to keep keys in cache; null means never expire (optional, default null).
    */
@@ -55,5 +55,3 @@ class LocalCache {
     }
   }
 }
-
-module.exports = { LocalCache, close };

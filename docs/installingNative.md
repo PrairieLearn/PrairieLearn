@@ -1,19 +1,24 @@
 # Running natively
 
-_WARNING:_ The recommended setup for PrairieLearn development is [within Docker](installingLocal.md). The setup described on this page is not recommended or supported.
-
 This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS.
 
 - Install the prerequisites:
 
-  - [Node.js](http://nodejs.org/)
-  - [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/)
-  - [PostgreSQL 15](https://www.postgresql.org)
+  - [Git](https://git-scm.com)
+  - [Node.js](https://nodejs.org)
+  - [Yarn](https://classic.yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [Graphviz](https://graphviz.org/download)
-  - command-line git or [GitHub Desktop](https://desktop.github.com)
+  - [PostgreSQL 15](https://www.postgresql.org)
+  - [Redis](https://redis.io)
+  - [Graphviz](https://graphviz.org)
 
-  On macOS these can be installed with [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distribution.
+  On macOS, these can be installed with [Homebrew](http://brew.sh/). On Linux, these should all be standard packages from the OS distribution.
+
+  On macOS, you should ensure you have installed the XCode command line tools:
+
+  ```sh
+  xcode-select --install
+  ```
 
 - Clone the latest code:
 
@@ -41,18 +46,6 @@ This page describes the procedure to install and run PrairieLearn without any us
   export LDFLAGS="-L$(brew --prefix graphviz)/lib"
   ```
 
-- Create the database (one time only):
-
-  ```sh
-  initdb -D ~/defaultdb
-  ```
-
-- Run the database:
-
-  ```sh
-  pg_ctl -D ~/defaultdb -l ~/logfile start
-  ```
-
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
   ```sh
@@ -63,14 +56,12 @@ This page describes the procedure to install and run PrairieLearn without any us
 - Run the test suite:
 
   ```sh
-  cd PrairieLearn
   make test
   ```
 
 - Run the linters:
 
   ```sh
-  cd PrairieLearn
   make lint # or lint-js for Javascript only, or lint-python for Python only
   ```
 
@@ -83,14 +74,19 @@ This page describes the procedure to install and run PrairieLearn without any us
   }
   ```
 
-- Run the server:
+- Run the server in development mode to automatically restart when changes are detected:
 
   ```sh
-  cd PrairieLearn
+  make dev
+  ```
+
+  Alternatively, you can build and run the code to more closely mimic what will happen in production environments:
+
+  ```sh
   make build
   make start
   ```
 
 - In a web-browser go to [http://localhost:3000](http://localhost:3000).
 
-- To stop the server, use `Ctrl-C`. If you want the server to automatically restart when changes are detected, you can run `make dev` instead of `make start`.
+- To stop the server, use `Ctrl-C`.

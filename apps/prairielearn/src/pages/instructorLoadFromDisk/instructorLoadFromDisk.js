@@ -1,17 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const express = require('express');
-const router = express.Router();
+import * as path from 'path';
 
-const { config } = require('../../lib/config');
-const { createServerJob } = require('../../lib/server-jobs');
-const syncFromDisk = require('../../sync/syncFromDisk');
-const chunks = require('../../lib/chunks');
-const { chalk } = require('../../lib/chalk');
-const { REPOSITORY_ROOT_PATH } = require('../../lib/paths');
+import * as async from 'async';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+
+import { chalk } from '../../lib/chalk.js';
+import * as chunks from '../../lib/chunks.js';
+import { config } from '../../lib/config.js';
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import * as syncFromDisk from '../../sync/syncFromDisk.js';
+
+const router = express.Router();
 
 async function update(locals) {
   const serverJob = await createServerJob({
@@ -32,9 +34,9 @@ async function update(locals) {
         if (index !== config.courseDirs.length - 1) job.info('');
         return;
       }
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(courseDir, job);
+      const result = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
       if (index !== config.courseDirs.length - 1) job.info('');
-      if (!result) throw new Error('syncOrCreateDiskToSqlAsync() returned null');
+      if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
       if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await chunks.updateChunksForCourse({
@@ -67,4 +69,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

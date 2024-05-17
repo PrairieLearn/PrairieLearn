@@ -66,7 +66,7 @@ External grading configuration is done on a per-question basis. All configuratio
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share a standard grading framework between many questions. This property is optional.
 
-- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This is optional and defaults to 30 seconds. This should be as small as is reasonable for your jobs.
+- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This is optional and defaults to 30 seconds. This should be as small as is reasonable for your jobs. This value cannot exceed 600 seconds (10 minutes).
 
 - `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 

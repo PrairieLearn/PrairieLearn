@@ -16,4 +16,3 @@ def generate(data):
         X = np.random.rand(M, M)
         name = "M" + str(i + 1)
         data["params"][name] = pl.to_json(X)
-    return data

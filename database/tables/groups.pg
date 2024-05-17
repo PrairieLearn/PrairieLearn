@@ -2,7 +2,7 @@ columns
     course_instance_id: bigint not null
     date: timestamp with time zone default CURRENT_TIMESTAMP
     deleted_at: timestamp with time zone
-    group_config_id: bigint
+    group_config_id: bigint not null
     id: bigint not null default nextval('groups_id_seq'::regclass)
     join_code: text not null default random_string(4)
     name: text not null
@@ -19,7 +19,7 @@ foreign-key constraints
 
 referenced by
     assessment_instances: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_user_roles: FOREIGN KEY (group_id) REFERENCES groups(id)
+    group_user_roles: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_users: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

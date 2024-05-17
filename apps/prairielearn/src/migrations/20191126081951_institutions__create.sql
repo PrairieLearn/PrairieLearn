@@ -1,10 +1,9 @@
-CREATE TABLE
-  institutions (
-    id bigserial PRIMARY KEY,
-    long_name TEXT NOT NULL UNIQUE,
-    short_name TEXT NOT NULL UNIQUE,
-    uid_pattern TEXT
-  );
+CREATE TABLE institutions (
+  id bigserial PRIMARY KEY,
+  long_name TEXT NOT NULL UNIQUE,
+  short_name TEXT NOT NULL UNIQUE,
+  uid_pattern TEXT
+);
 
 INSERT INTO
   institutions (id, long_name, short_name)

@@ -1,22 +1,29 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
-var sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-router.get('/', function (req, res, next) {
-  var params = {
-    course_instance_id: res.locals.course_instance.id,
-  };
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    res.locals.access_rules = await sqldb.queryRows(
+      sql.course_instance_access_rules,
+      { course_instance_id: res.locals.course_instance.id },
+      z.object({
+        uids: z.string(),
+        start_date: z.string(),
+        end_date: z.string(),
+        institution: z.string(),
+      }),
+    );
 
-  sqldb.query(sql.course_instance_access_rules, params, function (err, result) {
-    if (ERR(err, next)) return;
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
-    res.locals.access_rules = result.rows;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
-
-module.exports = router;
+export default router;

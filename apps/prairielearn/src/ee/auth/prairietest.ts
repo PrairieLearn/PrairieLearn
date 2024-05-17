@@ -1,16 +1,26 @@
-import asyncHandler = require('express-async-handler');
-import { Router } from 'express';
-import * as jose from 'jose';
 import * as crypto from 'node:crypto';
 
-import { config } from '../../lib/config';
-import { AuthPrairieTest } from './prairietest.html';
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import * as jose from 'jose';
+
+import { config } from '../../lib/config.js';
+import { isEnterprise } from '../../lib/license.js';
+import { redirectToTermsPageIfNeeded } from '../lib/terms.js';
+
+import { AuthPrairieTest } from './prairietest.html.js';
 
 const router = Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    // Potentially prompt the user to accept the terms before redirecting to
+    // PrairieTest.
+    if (isEnterprise()) {
+      await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
+    }
+
     const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a

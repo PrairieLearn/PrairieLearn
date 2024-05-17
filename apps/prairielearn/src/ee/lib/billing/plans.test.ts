@@ -1,7 +1,9 @@
 import { assert } from 'chai';
 
-import helperServer = require('../../../tests/helperServer');
-import helperDb = require('../../../tests/helperDb');
+import * as helperDb from '../../../tests/helperDb.js';
+import * as helperServer from '../../../tests/helperServer.js';
+import { ensurePlanGrant } from '../../models/plan-grants.js';
+
 import {
   getPlanGrantsForContext,
   getPlanGrantsForPartialContexts,
@@ -11,8 +13,7 @@ import {
   reconcilePlanGrantsForCourseInstance,
   reconcilePlanGrantsForInstitution,
   updateRequiredPlansForCourseInstance,
-} from './plans';
-import { ensurePlanGrant } from '../../models/plan-grants';
+} from './plans.js';
 
 describe('plans', () => {
   before(helperServer.before());

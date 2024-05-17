@@ -1,9 +1,8 @@
 # Execute commands regardless of physical state of files
-.PHONY: all jsdoc build preview sphinx
+.PHONY: all build preview sphinx
 
 # Overall build scheme
-all: jsdoc \
-	models.pdf \
+all: models.pdf \
 	models.png \
 	simplified-models.pdf \
 	simplified-models.png \
@@ -12,11 +11,6 @@ all: jsdoc \
 	question-flow.pdf \
 	question-flow.png \
 	build
-
-# Generate the documentation for the JavaScript components
-# For details, see: http://usejsdoc.org/about-getting-started.html
-jsdoc:
-	../node_modules/.bin/jsdoc -c jsdoc-config.json
 
 # The mkdocs commands have to be on the same directory level as the mkdocs.yml
 # Thus, we jump one directory up and then run the command.

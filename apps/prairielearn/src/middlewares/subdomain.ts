@@ -1,6 +1,8 @@
-import express = require('express');
-import error = require('@prairielearn/error');
-import { config } from '../lib/config';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
+
+import * as error from '@prairielearn/error';
+
+import { config } from '../lib/config.js';
 
 /**
  * Specifies all routes that should always be accessible from any subdomain.
@@ -186,11 +188,7 @@ export function allowAccess(
  * validate that it's a request that should be able to be made from that
  * particular subdomain. If it is not, we'll error.
  */
-export function validateSubdomainRequest(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) {
+export function validateSubdomainRequest(req: Request, res: Response, next: NextFunction) {
   if (!shouldUseSubdomains()) {
     next();
     return;
@@ -206,11 +204,7 @@ export function validateSubdomainRequest(
   }
 }
 
-export function subdomainRedirect(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction,
-) {
+export function subdomainRedirect(req: Request, res: Response, next: NextFunction) {
   if (!shouldUseSubdomains()) {
     next();
     return;
@@ -246,9 +240,9 @@ export function subdomainRedirect(
 }
 
 export function assertSubdomainOrRedirect(
-  getExpectedSubdomain: (req: express.Request, res: express.Response) => string,
+  getExpectedSubdomain: (req: Request, res: Response) => string,
   active: boolean,
-): express.RequestHandler {
+): RequestHandler {
   return function (req, res, next) {
     if (!shouldUseSubdomains() || !active) {
       next();

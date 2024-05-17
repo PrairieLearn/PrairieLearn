@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/html-ejs",
-  "version": "1.1.7",
+  "version": "2.0.1",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -10,18 +11,31 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "ejs": "^3.1.9"
+    "ejs": "^3.1.10"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/ejs": "^3.1.2",
-    "@types/node": "^18.17.4",
-    "mocha": "^10.2.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "@types/ejs": "^3.1.5",
+    "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
+    "chai": "^5.1.1",
+    "mocha": "^10.4.0",
+    "tsx": "^4.10.4",
+    "typescript": "^5.4.5"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

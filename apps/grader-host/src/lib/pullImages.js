@@ -1,14 +1,19 @@
-const ERR = require('async-stacktrace');
-const async = require('async');
-const Docker = require('dockerode');
-const sqldb = require('@prairielearn/postgres');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+// @ts-check
+import { ECRClient } from '@aws-sdk/client-ecr';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import Docker from 'dockerode';
 
-const logger = require('./logger');
-const sql = sqldb.loadSqlEquiv(__filename);
-const { config } = require('./config');
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import * as sqldb from '@prairielearn/postgres';
 
-module.exports = function (callback) {
+import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import logger from './logger.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export default function pullImages(callback) {
   const docker = new Docker();
   var dockerAuth = {};
 
@@ -24,7 +29,8 @@ module.exports = function (callback) {
       async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
+          const ecr = new ECRClient(makeAwsClientConfig());
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       (callback) => {
@@ -60,6 +66,7 @@ module.exports = function (callback) {
 
               docker.createImage(ourAuth, params, (err, stream) => {
                 if (ERR(err, callback)) return;
+                if (!stream) throw new Error('Missing stream from createImage()');
 
                 docker.modem.followProgress(
                   stream,
@@ -90,4 +97,4 @@ module.exports = function (callback) {
       callback(null);
     },
   );
-};
+}

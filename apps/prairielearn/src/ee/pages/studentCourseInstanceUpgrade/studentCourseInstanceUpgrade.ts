@@ -1,41 +1,43 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import type Stripe from 'stripe';
 import { z } from 'zod';
-import error = require('@prairielearn/error');
+
+import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import {
-  CourseInstanceStudentUpdateSuccess,
-  StudentCourseInstanceUpgrade,
-} from './studentCourseInstanceUpgrade.html';
-import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants';
-import {
-  getMissingPlanGrants,
-  getPlanGrantsForPartialContexts,
-  getRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans';
-import { ensurePlanGrant } from '../../models/plan-grants';
+import { config } from '../../../lib/config.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
   InstitutionSchema,
   UserSchema,
-} from '../../../lib/db-types';
+} from '../../../lib/db-types.js';
+import { getCanonicalHost } from '../../../lib/url.js';
+import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
+import {
+  getMissingPlanGrants,
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+} from '../../lib/billing/plans.js';
 import {
   getOrCreateStripeCustomerId,
   getPriceForPlan,
   getPricesForPlans,
   getStripeClient,
-} from '../../lib/billing/stripe';
-import { config } from '../../../lib/config';
+} from '../../lib/billing/stripe.js';
+import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   insertStripeCheckoutSessionForUserInCourseInstance,
   markStripeCheckoutSessionCompleted,
   updateStripeCheckoutSessionData,
-} from '../../models/stripe-checkout-sessions';
-import { getCanonicalHost } from '../../../lib/url';
+} from '../../models/stripe-checkout-sessions.js';
+
+import {
+  CourseInstanceStudentUpdateSuccess,
+  StudentCourseInstanceUpgrade,
+} from './studentCourseInstanceUpgrade.html.js';
 
 const router = Router({ mergeParams: true });
 
@@ -101,7 +103,7 @@ router.post(
       const body = UpgradeBodySchema.parse(req.body);
 
       if (!body.terms_agreement) {
-        throw error.make(400, 'You must agree to the terms and conditions.');
+        throw new error.HttpStatusError(400, 'You must agree to the terms and conditions.');
       }
 
       const planNames = PlanNamesSchema.parse(body.unsafe_plan_names);
@@ -136,7 +138,7 @@ router.post(
       const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
       const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
       if (!planNames.every((planName) => missingPlans.includes(planName))) {
-        throw error.make(400, 'Invalid plan selection.');
+        throw new error.HttpStatusError(400, 'Invalid plan selection.');
       }
 
       const host = getCanonicalHost(req);
@@ -146,25 +148,29 @@ router.post(
       const customerId = await getOrCreateStripeCustomerId(user.user_id, {
         name: user.name,
       });
+      const metadata = {
+        prairielearn_institution_id: institution.id,
+        prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
+        prairielearn_course_id: course.id,
+        prairielearn_course_name: `${course.short_name}: ${course.title}`,
+        prairielearn_course_instance_id: course_instance.id,
+        prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
+        prairielearn_user_id: user.user_id,
+      };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         customer_update: {
           name: 'auto',
           address: 'auto',
         },
-        metadata: {
-          prairielearn_institution_id: institution.id,
-          prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
-          prairielearn_course_id: course.id,
-          prairielearn_course_name: `${course.short_name}: ${course.title}`,
-          prairielearn_course_instance_id: course_instance.id,
-          prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
-          prairielearn_user_id: user.user_id,
-        },
         line_items: lineItems,
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: urlBase,
+        metadata,
+        payment_intent_data: {
+          metadata,
+        },
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({
@@ -177,11 +183,11 @@ router.post(
         plan_names: planNames,
       });
 
-      if (!session.url) throw error.make(500, 'Stripe session URL not found');
+      if (!session.url) throw new error.HttpStatusError(500, 'Stripe session URL not found');
 
       res.redirect(session.url);
     } else {
-      throw error.make(400, `Unknown action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );
@@ -194,7 +200,7 @@ router.get(
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
     const authn_user = UserSchema.parse(res.locals.authn_user);
 
-    if (!req.query.session_id) throw error.make(400, 'Missing session_id');
+    if (!req.query.session_id) throw new error.HttpStatusError(400, 'Missing session_id');
 
     const stripeSessionId = z.string().parse(req.query.session_id);
 
@@ -225,7 +231,7 @@ router.get(
       localSession.course_instance_id !== course_instance.id ||
       localSession.agent_user_id !== res.locals.authn_user.user_id
     ) {
-      throw error.make(400, 'Invalid session');
+      throw new error.HttpStatusError(400, 'Invalid session');
     }
 
     if (session.payment_status === 'paid') {

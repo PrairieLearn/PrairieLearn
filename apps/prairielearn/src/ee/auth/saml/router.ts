@@ -1,14 +1,16 @@
 import ERR from 'async-stacktrace';
-import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import passport = require('passport');
-import error = require('@prairielearn/error');
+import asyncHandler from 'express-async-handler';
+import passport from 'passport';
 
-import * as authnLib from '../../../lib/authn';
+import * as error from '@prairielearn/error';
 
-import { strategy } from './index';
-import { SamlTest } from './router.html';
-import { getInstitutionSamlProvider } from '../../lib/institution';
+import * as authnLib from '../../../lib/authn.js';
+import { getInstitutionSamlProvider } from '../../lib/institution.js';
+
+import { SamlTest } from './router.html.js';
+
+import { strategy } from './index.js';
 
 const router = Router({ mergeParams: true });
 
@@ -59,7 +61,7 @@ router.post(
     const institutionId = req.params.institution_id;
     const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
     if (!institutionSamlProvider) {
-      throw error.make(404, 'Institution does not support SAML authentication');
+      throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
     const uidAttribute = institutionSamlProvider.uid_attribute;
@@ -115,7 +117,7 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     if (!samlProvider) {
-      throw error.make(404, 'Institution does not support SAML authentication');
+      throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
     strategy.generateServiceProviderMetadata(

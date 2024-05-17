@@ -37,6 +37,7 @@ SELECT
   ) FILTER (
     WHERE
       cip.course_instance_role IS NULL
+      AND ci.id IS NOT NULL
   ) AS other_course_instances
 FROM
   course_permissions AS cp
@@ -57,7 +58,6 @@ FROM
       course_instance_access_rules AS ar
     WHERE
       ar.course_instance_id = ci.id
-      AND ((ar.role > 'Student') IS NOT TRUE)
   ) AS d
 WHERE
   cp.course_id = $course_id

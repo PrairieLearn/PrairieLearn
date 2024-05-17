@@ -27,10 +27,6 @@ WITH
       AND (
         aar.end_date BETWEEN (now() - interval '1 hour') AND (now() + interval '14 days')
       )
-      AND (
-        aar.role IS NULL
-        OR aar.role = 'Student'
-      )
       AND aar.credit >= 100
       AND a.type = 'Exam'
       AND a.deleted_at IS NULL

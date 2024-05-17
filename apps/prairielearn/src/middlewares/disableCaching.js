@@ -1,6 +1,6 @@
-const express = require('express');
+import { Router } from 'express';
 
-const router = express.Router();
+const router = Router();
 
 router.all('/*', function (req, res, next) {
   res.header('Cache-Control', 'max-age=0, no-cache, no-store, must-revalidate');
@@ -8,4 +8,4 @@ router.all('/*', function (req, res, next) {
   next();
 });
 
-module.exports = router;
+export default router;

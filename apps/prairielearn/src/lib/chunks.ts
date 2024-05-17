@@ -1,27 +1,29 @@
+import * as child_process from 'child_process';
+import * as path from 'path';
+import { PassThrough as PassThroughStream } from 'stream';
+import * as util from 'util';
+
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import async = require('async');
-import child_process = require('child_process');
-import fs = require('fs-extra');
-import path = require('path');
-import { PassThrough as PassThroughStream } from 'stream';
-import tar = require('tar');
-import util = require('util');
+import * as async from 'async';
+import fs from 'fs-extra';
+import * as tar from 'tar';
 import { v4 as uuidv4 } from 'uuid';
 
-import namedLocks = require('@prairielearn/named-locks');
-import sqldb = require('@prairielearn/postgres');
-
-import aws = require('./aws');
-import { chalk, chalkDim } from './chalk';
-import { createServerJob, ServerJob } from './server-jobs';
-import courseDB = require('../sync/course-db');
-import type { CourseData } from '../sync/course-db';
-import { config } from './config';
+import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
-import { getLockNameForCoursePath } from './course';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { getLockNameForCoursePath } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
+import { CourseData } from '../sync/course-db.js';
+
+import { downloadFromS3, makeS3ClientConfig } from './aws.js';
+import { chalk, chalkDim } from './chalk.js';
+import { config } from './config.js';
+import { createServerJob, ServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type ChunkType =
   | 'elements'
@@ -109,7 +111,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string | number;
 }
 
-interface QuestionChunk {
+export interface QuestionChunk {
   type: 'question';
   questionId: string | number;
 }
@@ -640,7 +642,7 @@ export async function createAndUploadChunks(
   // upload, we'd face a denial of service if someone changed a sufficient number
   // of chunks in a single commit because we'd be rapidly hammering the EC2 IMDS
   // with requests for credentials and would likely get rate limited.
-  const s3 = new S3(aws.makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig());
 
   await async.eachLimit(chunksToGenerate, config.chunksMaxParallelUpload, async (chunk) => {
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
@@ -828,7 +830,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.info(chalkDim(`Acquired lock`));
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
-    const courseData = await courseDB.loadFullCourse(courseDir);
+    const courseData = await courseDB.loadFullCourse(course_id, courseDir);
     job.info(chalkDim(`Loaded course data`));
 
     job.info(chalk.bold(`Generating all chunks`));
@@ -917,7 +919,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.ensureDir(path.dirname(downloadPath));
-  await aws.downloadFromS3Async(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
@@ -1050,7 +1052,6 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
     }),
   );
 }
-export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
 
 interface QuestionWithTemplateDirectory {
   id: string;
@@ -1063,7 +1064,7 @@ interface QuestionWithTemplateDirectory {
  * @param question A question object.
  * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
-export async function getTemplateQuestionIdsAsync(
+export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
@@ -1073,7 +1074,6 @@ export async function getTemplateQuestionIdsAsync(
   const questionIds = result.rows.map((r) => r.id);
   return questionIds;
 }
-export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsync);
 
 /**
  * Logs the changes to chunks for a given job.
