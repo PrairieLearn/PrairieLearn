@@ -39,13 +39,7 @@ export const CourseUsersRowSchema = z.object({
 type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
 
 function hasUnknownUsers(courseUsers: CourseUsersRow[]) {
-  let hasUnknownUsers = false;
-  courseUsers.forEach((courseUser) => {
-    if (!courseUser.user.name) {
-      hasUnknownUsers = true;
-    }
-  });
-  return hasUnknownUsers;
+  return courseUsers.some(user => courseUser.user.name == null);
 }
 
 export function InstructorCourseAdminStaff({
