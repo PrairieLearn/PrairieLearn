@@ -261,7 +261,7 @@ function coursePermissionsInsertForm({
   csrfToken: string;
   id: string;
   uidsLimit: number;
-  courseInstances: any[];
+  courseInstances: CourseInstance[];
 }) {
   return html`
     <form name="add-users-form" method="POST">
