@@ -39,7 +39,7 @@ export const CourseUsersRowSchema = z.object({
 type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
 
 function hasUnknownUsers(courseUsers: CourseUsersRow[]) {
-  return courseUsers.some(user => courseUser.user.name == null);
+  return courseUsers.some((courseUser) => courseUser.user.name == null);
 }
 
 export function InstructorCourseAdminStaff({
@@ -636,7 +636,7 @@ function StaffTable({
                       `;
                     })
                   : ''}
-                ${courseUser.other_course_instances?.length > 0
+                ${courseUser.other_course_instances && courseUser.other_course_instances.length > 0
                   ? html`
                       <form
                         name="student-data-access-add-${courseUser.user.user_id}"
