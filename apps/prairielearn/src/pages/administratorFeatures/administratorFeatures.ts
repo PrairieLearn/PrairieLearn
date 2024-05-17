@@ -1,26 +1,28 @@
-import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { FeatureName, features } from '../../lib/features';
-import { config } from '../../lib/config';
-import {
-  AdministratorFeatures,
-  AdministratorFeature,
-  FeatureGrantRowSchema,
-  AddFeatureGrantModalBody,
-} from './administratorFeatures.html';
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import { config } from '../../lib/config.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
   IdSchema,
   InstitutionSchema,
-} from '../../lib/db-types';
+} from '../../lib/db-types.js';
+import { FeatureName, features } from '../../lib/features/index.js';
+
+import {
+  AdministratorFeatures,
+  AdministratorFeature,
+  FeatureGrantRowSchema,
+  AddFeatureGrantModalBody,
+} from './administratorFeatures.html.js';
 
 const router = Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 function validateFeature(feature: string): FeatureName {
   if (!features.hasFeature(feature)) {

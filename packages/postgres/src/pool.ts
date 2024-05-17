@@ -1,12 +1,14 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { Readable, Transform } from 'node:stream';
+import { callbackify } from 'node:util';
+
+import debugfn from 'debug';
 import _ from 'lodash';
+import multipipe from 'multipipe';
 import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import debugfn from 'debug';
-import { callbackify } from 'node:util';
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
-import { Readable, Transform } from 'node:stream';
-import multipipe from 'multipipe';
 
 export type QueryParams = Record<string, any> | any[];
 
@@ -87,9 +89,9 @@ function paramsToArray(
   let paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
-    if (!_.has(map, v)) {
-      if (!_.has(params, v)) throw new Error(`Missing parameter: ${v}`);
-      if (_.isArray(params[v])) {
+    if (!(v in map)) {
+      if (!(v in params)) throw new Error(`Missing parameter: ${v}`);
+      if (Array.isArray(params[v])) {
         map[v] =
           'ARRAY[' +
           _.map(_.range(nParams + 1, nParams + params[v].length + 1), function (n) {
@@ -133,9 +135,14 @@ function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // the error object.
   sqlError.message = err.message;
 
+  const errorHasPosition = err instanceof DatabaseError && err.position != null;
+
   return addDataToError(err, {
     sqlError,
-    sql,
+    // If the error has a `position` field, we need to use the processed source
+    // (where e.g. `$foobar` has been replaced with `$1`) so that the position
+    // is accurate.
+    sql: errorHasPosition ? paramsToArray(sql, params).processedSql : sql,
     sqlParams: params,
   });
 }

@@ -1,23 +1,30 @@
 // @ts-check
-import * as _ from 'lodash';
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-import { logPageView } from '../../middlewares/logPageView';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { getQuestionGroupPermissions } from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
+import { insertIssue } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import { gradeAssessmentInstance } from '../../lib/assessment';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { getQuestionGroupPermissions } from '../../lib/groups';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
-import { insertIssue } from '../../lib/issues';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
+} from '../../lib/question-render.js';
+import {
+  processSubmission,
+  validateVariantAgainstQuestion,
+} from '../../lib/question-submission.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const router = express.Router();
 
@@ -280,10 +287,35 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const variant_id =
+    let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
         : req.query.variant_id;
+
+    const isAssessmentAvailable =
+      res.locals.assessment_instance.open && res.locals.authz_result.active;
+
+    if (variant_id === null && !isAssessmentAvailable) {
+      // We can't generate a new variant in this case, so we
+      // fetch and display the most recent non-broken variant.
+      // If no such variant exists, we tell the user that a new variant
+      // cannot be generated.
+      const last_variant_id = await sqldb.queryOptionalRow(
+        sql.select_last_variant_id,
+        { instance_question_id: res.locals.instance_question.id },
+        IdSchema,
+      );
+      if (last_variant_id == null) {
+        res.locals.no_variant_exists = true;
+        res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+        return;
+      }
+
+      // For exams, we leave variant_id as null; getAndRenderVariant will handle it.
+      if (res.locals.assessment.type === 'Homework') {
+        variant_id = last_variant_id;
+      }
+    }
     await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
@@ -309,7 +341,7 @@ router.get(
       }
     }
     setRendererHeader(res);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
-import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types';
-import { features } from '../../lib/features';
-import { getInstitutionAuthenticationProviders } from '../lib/institution';
 
-const sql = loadSqlEquiv(__filename);
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+
+import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
+import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectLti13Instance(lti13_instance_id: string): Promise<Lti13Instance> {
   const lti13_instance = await queryOptionalRow(
