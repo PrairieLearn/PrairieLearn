@@ -102,7 +102,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      email = _get(lti13_claims, lti13_instance.email_attribute);
+      email = _.get(lti13_claims, lti13_instance.email_attribute);
     }
 
     const userInfo = {
