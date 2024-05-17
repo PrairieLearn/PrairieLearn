@@ -3103,7 +3103,7 @@ __metadata:
     node-fetch: ^3.3.2
     pretty-bytes: ^6.1.1
     tmp-promise: ^3.0.3
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   bin:
     compiled-assets: dist/cli.js
@@ -3127,7 +3127,7 @@ __metadata:
     lodash: ^4.17.21
     mocha: ^10.4.0
     tmp-promise: ^3.0.3
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     zod: ^3.23.8
   languageName: unknown
@@ -3146,7 +3146,7 @@ __metadata:
     mocha: ^10.4.0
     multipipe: ^4.0.0
     stream-transform: ^3.3.1
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3163,7 +3163,7 @@ __metadata:
     chai: ^5.1.1
     date-fns: ^3.6.0
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3179,7 +3179,7 @@ __metadata:
     chai: ^5.1.1
     lodash: ^4.17.21
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3213,7 +3213,7 @@ __metadata:
     "@types/node": ^20.12.11
     chai: ^5.1.1
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3253,7 +3253,7 @@ __metadata:
     nodemon: ^3.1.0
     sinon: ^17.0.1
     tmp: ^0.2.3
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     typescript-cp: ^0.1.9
     winston: ^3.13.0
@@ -3273,7 +3273,7 @@ __metadata:
     chai: ^5.1.1
     ejs: ^3.1.10
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3286,7 +3286,7 @@ __metadata:
     "@types/node": ^20.12.11
     chai: ^5.1.1
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3322,7 +3322,7 @@ __metadata:
     mocha: ^10.4.0
     serialize-error: ^11.0.3
     tmp-promise: ^3.0.3
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     typescript-cp: ^0.1.9
     zod: ^3.23.8
@@ -3375,7 +3375,7 @@ __metadata:
     chai: ^5.1.1
     chai-as-promised: ^7.1.2
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3390,7 +3390,7 @@ __metadata:
     "@types/node": ^20.12.11
     chai: ^5.1.1
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3440,7 +3440,7 @@ __metadata:
     pg-cursor: ^2.10.5
     pg-pool: ^3.6.2
     pg-protocol: ^1.6.1
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     zod: ^3.23.8
   languageName: unknown
@@ -3669,7 +3669,7 @@ __metadata:
     three: 0.160.1
     tmp: ^0.2.3
     tmp-promise: ^3.0.3
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     typescript-cp: ^0.1.9
     tzientist: ^3.2.0
@@ -3705,7 +3705,7 @@ __metadata:
     "@types/node": ^20.12.11
     chai: ^5.1.1
     mocha: ^10.4.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3718,7 +3718,7 @@ __metadata:
     "@sentry/node": ^7.114.0
     "@types/node": ^20.12.11
     execa: ^5.1.1
-    tsx: ^4.9.4
+    tsx: ^4.10.4
     typescript: ^5.4.5
   languageName: unknown
   linkType: soft
@@ -3750,7 +3750,7 @@ __metadata:
     on-headers: ^1.0.2
     set-cookie-parser: ^2.6.0
     source-map-support: ^0.5.21
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     uid-safe: ^2.1.5
   languageName: unknown
@@ -3811,7 +3811,7 @@ __metadata:
     mocha: ^10.4.0
     node-fetch: 3.3.2
     nodemon: ^3.1.0
-    tsx: ^4.10.2
+    tsx: ^4.10.4
     typescript: ^5.4.5
     typescript-cp: ^0.1.9
     uuid: ^9.0.1
@@ -10270,7 +10270,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-tsconfig@npm:^4.5.0, get-tsconfig@npm:^4.7.3":
+"get-tsconfig@npm:^4.5.0, get-tsconfig@npm:^4.7.5":
   version: 4.7.5
   resolution: "get-tsconfig@npm:4.7.5"
   dependencies:
@@ -16859,19 +16859,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.10.2, tsx@npm:^4.9.4":
-  version: 4.10.2
-  resolution: "tsx@npm:4.10.2"
+"tsx@npm:^4.10.4":
+  version: 4.10.4
+  resolution: "tsx@npm:4.10.4"
   dependencies:
     esbuild: ~0.20.2
     fsevents: ~2.3.3
-    get-tsconfig: ^4.7.3
+    get-tsconfig: ^4.7.5
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     tsx: dist/cli.mjs
-  checksum: 44c9afd11c8d14f2c0d2fafe3329d18098d991013c05a3b9a743c813df059dd30aa43a72958b5a0f0c09d5f31ae213406105b8bdbe366943c98360f43807d41e
+  checksum: c769898d6efa1a1098f661dccc90f37f468649427d6a78ed0fd646fedf44acf109188a6b0b9151336e7e0efcecd99f96b05c8886a1d97cd9581d470502812e10
   languageName: node
   linkType: hard
 
