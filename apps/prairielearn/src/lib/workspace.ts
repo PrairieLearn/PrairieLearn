@@ -390,7 +390,6 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     params: variant.params,
     correctAnswers: variant.true_answer,
     targetPath: sourcePath,
-    homeDirectory: question.workspace_home || sourcePath,
   });
 
   if (fileGenerationErrors.length > 0) {
@@ -426,13 +425,11 @@ async function generateWorkspaceFiles({
   params,
   correctAnswers,
   targetPath,
-  homeDirectory,
 }: {
   questionBasePath: string;
   params: Record<string, any> | null;
   correctAnswers: Record<string, any> | null;
   targetPath: string;
-  homeDirectory: string;
 }): Promise<{ fileGenerationErrors: FileGenerationError[] }> {
   const localPath = path.join(questionBasePath, 'workspace');
   const templatePath = path.join(questionBasePath, 'workspaceTemplates');
@@ -500,19 +497,15 @@ async function generateWorkspaceFiles({
         }
         try {
           // Discard names with directory traversal outside the home directory
-          if (!contains(homeDirectory, path.resolve(homeDirectory, file.name), false)) {
+          if (!contains(null, file.name, false)) {
             fileGenerationErrors.push({
               file: file.name,
-              msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
+              msg: 'Dynamic workspace file has an absolute path or includes a name that traverses outside the home directory. File ignored.',
               data: file,
             });
             return null;
           }
-          // Ensure the file name is relative to the home directory, since it will be used to store the data in the target directory
-          const resolvedFilename = path.relative(
-            homeDirectory,
-            path.resolve(homeDirectory, file.name),
-          );
+          const normalizedFilename = path.normalize(file.name);
 
           if (file.questionFile) {
             const localPath = path.join(questionBasePath, file.questionFile);
@@ -528,7 +521,7 @@ async function generateWorkspaceFiles({
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
             return {
-              name: resolvedFilename,
+              name: normalizedFilename,
               localPath,
             };
           }
@@ -552,7 +545,7 @@ async function generateWorkspaceFiles({
           }
 
           return {
-            name: resolvedFilename,
+            name: normalizedFilename,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
           };
         } catch (err) {

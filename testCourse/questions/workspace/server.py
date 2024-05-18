@@ -25,7 +25,7 @@ def generate(data):
             "questionFile": "path/with/another/file.txt",
         },
         {
-            "name": "/home/prairie/full_path.txt",
-            "contents": "File identified by full path\n",
+            "name": "path/../not_normalized.txt",
+            "contents": "File identified by path that is not normalized\n",
         },
     ]

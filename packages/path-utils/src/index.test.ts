@@ -50,5 +50,15 @@ describe('File paths', () => {
       assert.ok(contains('/PrairieLearn', 'tests/../exampleCourse'));
       assert.ok(contains('/PrairieLearn', 'tests/..'));
     });
+
+    it('works with null parent directory', async () => {
+      assert.ok(contains(null, 'PrairieLearn'));
+      assert.ok(contains(null, 'PrairieLearn/../etc'));
+      assert.ok(contains(null, 'PrairieLearn/..'));
+      assert.notOk(contains(null, 'PrairieLearn/..', false));
+      assert.notOk(contains(null, '/PrairieLearn'));
+      assert.notOk(contains(null, '../PrairieLearn'));
+      assert.notOk(contains(null, 'PrairieLearn/../../etc'));
+    });
   });
 });

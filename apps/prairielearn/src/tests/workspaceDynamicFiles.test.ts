@@ -102,7 +102,10 @@ describe('Test workspace dynamic files', function () {
       await checkFileContents('blank_file.txt', '');
       await checkFileContents('reference_file.txt', 'This is included in the workspace.\n');
       await checkFileContents('reference_to_subdir.txt', 'Test file.\n');
-      await checkFileContents('full_path.txt', 'File identified by full path\n');
+      await checkFileContents(
+        'not_normalized.txt',
+        'File identified by path that is not normalized\n',
+      );
     });
 
     it('template files override static files', async () => {
@@ -149,7 +152,8 @@ describe('Test workspace dynamic files', function () {
         { file: 'Dynamic file 1', msg: 'does not include a name' },
         { file: 'invalid_encoding.bin', msg: 'unsupported file encoding' },
         { file: '../outside_home.txt', msg: 'traverses outside the home directory' },
-        { file: '/home/otheruser/other_home.txt', msg: 'traverses outside the home directory' },
+        { file: 'path/../../outside_home.txt', msg: 'traverses outside the home directory' },
+        { file: '/home/prairie/absolute.txt', msg: 'has an absolute path' },
         { file: 'server.py', msg: 'local file outside the question directory' },
         { file: 'no_contents.txt', msg: 'has neither "contents" nor "questionFile"', contents: '' },
       ];

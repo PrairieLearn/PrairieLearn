@@ -24,8 +24,13 @@ def generate(data):
             "contents": "This file should not be created\n",
         },
         {
-            # File with absolute path outside the home directory
-            "name": "/home/otheruser/other_home.txt",
+            # File whose normalized version points outside the home directory in name
+            "name": "path/../../outside_home.txt",
+            "contents": "This file should also not be created\n",
+        },
+        {
+            # File with absolute path
+            "name": "/home/prairie/absolute.txt",
             "contents": "This file should also not be created\n",
         },
         {
