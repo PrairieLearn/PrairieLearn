@@ -1,5 +1,13 @@
 # @prairielearn/compiled-assets
 
+## 3.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- Updated dependencies [901fce8]
+  - @prairielearn/html@4.0.1
+
 ## 3.0.0
 
 ### Major Changes

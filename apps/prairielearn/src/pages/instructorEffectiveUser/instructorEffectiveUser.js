@@ -41,7 +41,6 @@ router.get(
     const courseRoles = await sqldb.queryRow(
       sql.select,
       {
-        authn_user_id: res.locals.authn_user.user_id,
         course_id: res.locals.course.id,
         authn_course_role: res.locals.authz_data.authn_course_role,
         authn_course_instance_role: res.locals.authz_data.authn_course_instance_role
