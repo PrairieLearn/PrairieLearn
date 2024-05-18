@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import * as helperDb from '../helperDb.js';

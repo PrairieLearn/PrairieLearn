@@ -1,11 +1,11 @@
 // @ts-check
+import debugfn from 'debug';
+import _ from 'lodash';
 import request from 'request';
 import * as xml2js from 'xml2js';
-import _ from 'lodash';
-import debugfn from 'debug';
 
-import * as sqldb from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:ltiOutcomes');

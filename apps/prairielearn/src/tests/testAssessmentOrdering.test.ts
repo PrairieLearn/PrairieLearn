@@ -1,12 +1,13 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer.js';
 import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 import {
   getCourseData,
   COURSE_INSTANCE_ID,

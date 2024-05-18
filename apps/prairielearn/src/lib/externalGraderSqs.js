@@ -1,13 +1,15 @@
 // @ts-check
-import * as async from 'async';
 import { EventEmitter } from 'events';
-import fs from 'fs-extra';
-import * as tar from 'tar';
-import _ from 'lodash';
-import { Upload } from '@aws-sdk/lib-storage';
-import { S3 } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
+
+import { S3 } from '@aws-sdk/client-s3';
 import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { Upload } from '@aws-sdk/lib-storage';
+import * as async from 'async';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import * as tar from 'tar';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 

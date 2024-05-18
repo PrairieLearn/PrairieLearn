@@ -1,18 +1,20 @@
+import * as path from 'path';
+
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import fs from 'fs-extra';
-import * as path from 'path';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { syncCourseData, type GroupRole } from './sync/util.js';
-
-import * as helperServer from './helperServer.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperServer from './helperServer.js';
+import { syncCourseData, type GroupRole } from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

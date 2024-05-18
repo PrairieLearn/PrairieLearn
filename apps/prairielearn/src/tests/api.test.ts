@@ -1,11 +1,11 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
-import * as helperServer from './helperServer.js';
-import * as helperQuestion from './helperQuestion.js';
 import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const locals: Record<string, any> = {};
 

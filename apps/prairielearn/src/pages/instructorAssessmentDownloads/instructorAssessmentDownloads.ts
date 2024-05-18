@@ -1,13 +1,16 @@
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
-import archiver from 'archiver';
-import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import archiver from 'archiver';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
 import { getGroupConfig } from '../../lib/groups.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+
 import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
@@ -172,7 +175,6 @@ router.get(
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       const columns = identityColumn.concat([
@@ -201,7 +203,6 @@ router.get(
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       // Replace user-friendly column names with upload-friendly names
@@ -249,7 +250,6 @@ router.get(
         include_all,
         include_final,
         include_best,
-        group_work: res.locals.assessment.group_work,
       });
 
       let submissionColumn = identityColumn;

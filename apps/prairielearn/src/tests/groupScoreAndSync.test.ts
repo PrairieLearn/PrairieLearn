@@ -1,12 +1,14 @@
 import ERR from 'async-stacktrace';
-import _ from 'lodash';
 import { assert } from 'chai';
-import request from 'request';
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -293,10 +295,7 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', function (callback) {
-      const params = {
-        assessment_instance_id: locals.assessment_instance_id,
-      };
-      sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
+      sqldb.queryOneRow(sql.select_assessment_instance, {}, function (err, result) {
         if (ERR(err, callback)) return;
         locals.assessment_instance = result.rows[0];
         callback(null);

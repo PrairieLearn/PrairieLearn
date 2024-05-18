@@ -1,14 +1,15 @@
 // @ts-check
-import ERR from 'async-stacktrace';
-import * as async from 'async';
-import Docker from 'dockerode';
 import { ECRClient } from '@aws-sdk/client-ecr';
-import * as sqldb from '@prairielearn/postgres';
-import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import Docker from 'dockerode';
 
-import logger from './logger.js';
-import { config } from './config.js';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import * as sqldb from '@prairielearn/postgres';
+
 import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import logger from './logger.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -1,4 +1,5 @@
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+
 import { Variant, VariantSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

@@ -1,5 +1,6 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
+
 import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';

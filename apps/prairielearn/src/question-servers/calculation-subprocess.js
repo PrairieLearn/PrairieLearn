@@ -1,13 +1,15 @@
 // @ts-check
-import _ from 'lodash';
 import * as path from 'node:path';
+
+import _ from 'lodash';
+
 import { contains } from '@prairielearn/path-utils';
 
-import { config } from '../lib/config.js';
 import * as chunks from '../lib/chunks.js';
+import { withCodeCaller } from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
-import { withCodeCaller } from '../lib/code-caller/index.js';
 
 /** @typedef {import('../lib/chunks.js').Chunk} Chunk */
 

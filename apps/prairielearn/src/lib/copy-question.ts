@@ -1,14 +1,17 @@
+import * as path from 'node:path';
+
 import { type Response } from 'express';
 import fs from 'fs-extra';
-import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import { selectCoursesWithEditAccess } from '../models/course.js';
 
 import { config } from './config.js';
-import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types.js';
-import { selectCoursesWithEditAccess } from '../models/course.js';
 import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

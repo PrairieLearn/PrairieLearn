@@ -1,5 +1,6 @@
-import { assert } from 'chai';
 import { writeFile } from 'node:fs/promises';
+
+import { assert } from 'chai';
 import { withFile } from 'tmp-promise';
 import { z } from 'zod';
 

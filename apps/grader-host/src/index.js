@@ -1,33 +1,35 @@
 // @ts-check
+import { exec } from 'child_process';
+import { pipeline } from 'node:stream/promises';
 import * as util from 'node:util';
-import ERR from 'async-stacktrace';
-import fs from 'fs-extra';
-import * as async from 'async';
-import * as tmp from 'tmp';
-import Docker from 'dockerode';
+import * as path from 'path';
+
+import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { ECRClient } from '@aws-sdk/client-ecr';
 import { Upload } from '@aws-sdk/lib-storage';
-import { exec } from 'child_process';
-import * as path from 'path';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
 import byline from 'byline';
-import { pipeline } from 'node:stream/promises';
-import * as Sentry from '@prairielearn/sentry';
+import Docker from 'dockerode';
+import fs from 'fs-extra';
+import * as tmp from 'tmp';
+
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { sanitizeObject } from '@prairielearn/sanitize';
-import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import * as Sentry from '@prairielearn/sentry';
 
-import globalLogger from './lib/logger.js';
-import { makeJobLogger } from './lib/jobLogger.js';
+import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import * as healthCheck from './lib/healthCheck.js';
+import { makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
+import * as load from './lib/load.js';
+import globalLogger from './lib/logger.js';
 import pullImages from './lib/pullImages.js';
 import receiveFromQueue from './lib/receiveFromQueue.js';
 import * as timeReporter from './lib/timeReporter.js';
-import * as load from './lib/load.js';
-import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

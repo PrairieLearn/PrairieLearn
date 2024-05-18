@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   loadSqlEquiv,
   queryAsync,
@@ -5,7 +7,6 @@ import {
   queryRows,
   queryOptionalRow,
 } from '@prairielearn/postgres';
-import { z } from 'zod';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
