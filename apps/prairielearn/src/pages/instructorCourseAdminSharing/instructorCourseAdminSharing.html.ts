@@ -59,24 +59,33 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
+let sharingNameChoosable = false; // TEST, better safe than sorry, should be set to false by default
 
 // Function to check if any questions have been imported or shared publicly
 async function checkImportedQuestions(resLocals) {
   const formData = new FormData();
-  formData.append('__action', 'check_update_sharing_set_name');
+  formData.append('__action', 'check_imported_questions');
   formData.append('__csrf_token', resLocals.__csrf_token);
 
+  const plainUrlPrefix = "http://localhost:3000/pl"; // TEST, need to get automatically, not hard-coded
+  const URL = `${plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing`;
+
+  console.log(`URL is ${URL}`); // TEST
+
   try {
-    const response = await fetch('', { // TEST, what should the URL be?
+    const response = await fetch(`${URL}`, { // TEST, what should the URL be?
       method: 'POST',
       body: formData,
     });
 
-    const result = await response.json();
+    console.log("before response.json()"); // TEST
 
-    console.log(result); // TEST
+    const importedQuestions = await response.json();
+    sharingNameChoosable = !importedQuestions; // If no questions have been imported or shared publicly, sharing name can be changed
 
-    return result;
+    console.log(sharingNameChoosable); // TEST
+
+    return sharingNameChoosable;
   } catch (error) {
     console.error('Error submitting form:', error);
     return error;
@@ -112,29 +121,41 @@ const updateSharingNameModal = (resLocals) => {
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div class="modal-body">
-          <p class=form-text>
-            Enter the sharing name you would like for your course.
-          </p>
-          <p><strong>Once you choose your course's sharing name, you may not be able to change it</strong>,
-            because doing so would break the assessments of other courses that have imported your questions.
-            It is recommended that you choose something short but descriptive. For example, if you're teaching
-            a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
-            name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
-          </p>
+        ${sharingNameChoosable 
+          ? html`
+          <div class="modal-body">
+            <p class="form-text">
+              Enter the sharing name you would like for your course.
+            </p>
+            <p><strong>Once you choose your course's sharing name, you may not be able to change it</strong>,
+              because doing so would break the assessments of other courses that have imported your questions.
+              It is recommended that you choose something short but descriptive. For example, if you're teaching
+              a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
+              name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
+            </p>
+          <div class="modal-footer">
+            <form name="choose-sharing-name" method="POST">
+              <input type="hidden" name="__action" value="update_sharing_name">
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+              <div class=form-group>
+                <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
+              <div>
+              <div class="text-right mt-4">
+                <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+              </div>
+            </form>
+          </div>
+            ` 
+            : html`
+              <p>
+                <strong>Unable to change your course's sharing name.</strong>
+              </p>
+              <p>
+                Your course's sharing name cannot be changed because at least one question has been imported or shared publicly.
+              </p>
+            `}
         </div>
-        <div class="modal-footer">
-          <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="update_sharing_name">
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-            <div class=form-group>
-              <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-            <div>
-            <div class="text-right mt-4">
-              <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-            </div>
-          </form>
-        </div>
+
       </div>
     </div>
   `;
@@ -154,7 +175,7 @@ export const InstructorSharing = ({
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
-  const sharingNameChoosable = checkImportedQuestions(resLocals);
+  checkImportedQuestions(resLocals);
   return html`
     <!doctype html>
     <html lang="en">
@@ -177,7 +198,7 @@ export const InstructorSharing = ({
                   <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${isCourseOwner && sharingNameChoosable
+                    ${isCourseOwner
                       ? html`
                           <button
                             type="button"
