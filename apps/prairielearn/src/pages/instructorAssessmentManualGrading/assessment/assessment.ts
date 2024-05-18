@@ -1,7 +1,9 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as sqldb from '@prairielearn/postgres';
+
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const router = express.Router();

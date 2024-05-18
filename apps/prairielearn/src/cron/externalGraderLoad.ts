@@ -1,6 +1,7 @@
-import _ from 'lodash';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import _ from 'lodash';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 

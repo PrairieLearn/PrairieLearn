@@ -2,8 +2,10 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
 import * as sqldb from '@prairielearn/postgres';
+
+import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+
 import {
   InstructorAssessmentRegrading,
   RegradingJobSequenceSchema,

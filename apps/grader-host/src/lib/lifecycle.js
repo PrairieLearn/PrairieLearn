@@ -1,10 +1,11 @@
 // @ts-check
 import * as assert from 'node:assert';
+
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
-import logger from './logger.js';
-import { config } from './config.js';
 import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import logger from './logger.js';
 
 /**
  * Stores our current state. We do one-way transitions:

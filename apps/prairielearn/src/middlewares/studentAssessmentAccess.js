@@ -4,6 +4,7 @@ import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
 

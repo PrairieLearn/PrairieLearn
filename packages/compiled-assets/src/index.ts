@@ -1,10 +1,12 @@
+import http from 'node:http';
+import path from 'path';
+
+import esbuild, { Metafile } from 'esbuild';
 import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
-import esbuild, { Metafile } from 'esbuild';
-import path from 'path';
-import { globby } from 'globby';
 import fs from 'fs-extra';
-import http from 'node:http';
+import { globby } from 'globby';
+
 import { html, HtmlSafeString } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {

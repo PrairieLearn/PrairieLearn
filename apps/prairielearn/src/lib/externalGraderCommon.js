@@ -1,11 +1,13 @@
 // @ts-check
-import _ from 'lodash';
-import fs from 'fs-extra';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
+import fs from 'fs-extra';
+import _ from 'lodash';
+
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
+
 import { getRuntimeDirectoryForCourse } from './chunks.js';
 
 /**

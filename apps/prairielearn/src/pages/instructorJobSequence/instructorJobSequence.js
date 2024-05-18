@@ -1,6 +1,7 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { HttpStatusError } from '@prairielearn/error';
 
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';

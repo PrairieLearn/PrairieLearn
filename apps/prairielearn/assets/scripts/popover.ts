@@ -1,5 +1,6 @@
-import { onDocumentReady } from '@prairielearn/browser-utils';
 import { on } from 'delegated-events';
+
+import { onDocumentReady } from '@prairielearn/browser-utils';
 
 /**
  * By default, Bootstrap popovers click when a user clicks inside the body of a popover. This

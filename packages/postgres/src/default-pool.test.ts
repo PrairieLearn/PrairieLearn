@@ -1,6 +1,7 @@
 import { assert } from 'chai';
-import { PostgresPool } from './pool.js';
+
 import * as pgPool from './default-pool.js';
+import { PostgresPool } from './pool.js';
 
 /**
  * Properties on {@link PostgresPool} that should not be available on the default
@@ -14,6 +15,7 @@ const HIDDEN_PROPERTIES = new Set([
   'searchSchema',
   '_queryCount',
   'queryValidatedCursorInternal',
+  'errorOnUnusedParameters',
   // Getters
   'totalCount',
   'idleCount',

@@ -1,20 +1,22 @@
 import * as path from 'path';
-import _ from 'lodash';
-import fs from 'fs-extra';
-import * as async from 'async';
-import jju from 'jju';
+
 import { Ajv, type JSONSchemaType } from 'ajv';
+import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import fs from 'fs-extra';
+import jju from 'jju';
+import _ from 'lodash';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
-import * as schemas from '../schemas/index.js';
-import * as infofile from './infofile.js';
-import { validateJSON } from '../lib/json-load.js';
-import { makePerformance } from './performance.js';
-import { selectInstitutionForCourse } from '../models/institution.js';
 import { features } from '../lib/features/index.js';
+import { validateJSON } from '../lib/json-load.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
+import * as schemas from '../schemas/index.js';
+
+import * as infofile from './infofile.js';
+import { makePerformance } from './performance.js';
 
 const perf = makePerformance('course-db');
 

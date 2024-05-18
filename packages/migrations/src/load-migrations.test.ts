@@ -1,8 +1,9 @@
+import path from 'path';
+
 import { use as chaiUse, assert } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import path from 'path';
-import tmp from 'tmp-promise';
 import fs from 'fs-extra';
+import tmp from 'tmp-promise';
 
 import {
   parseAnnotations,

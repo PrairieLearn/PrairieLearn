@@ -1,11 +1,13 @@
-import * as cheerio from 'cheerio';
 import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
+import * as sqldb from '@prairielearn/postgres';
+
 import { config, type Config } from '../lib/config.js';
+
 import * as helperServer from './helperServer.js';
 
-import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;

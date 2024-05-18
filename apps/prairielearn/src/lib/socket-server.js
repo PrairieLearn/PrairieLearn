@@ -1,9 +1,10 @@
 // @ts-check
-import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { Redis } from 'ioredis';
-import { logger } from '@prairielearn/logger';
 import debugfn from 'debug';
+import { Redis } from 'ioredis';
+import { Server } from 'socket.io';
+
+import { logger } from '@prairielearn/logger';
 
 import { config } from './config.js';
 

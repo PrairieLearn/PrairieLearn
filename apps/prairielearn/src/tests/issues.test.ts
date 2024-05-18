@@ -1,7 +1,8 @@
 import { assert } from 'chai';
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';

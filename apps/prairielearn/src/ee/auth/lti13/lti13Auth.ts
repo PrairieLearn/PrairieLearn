@@ -1,20 +1,23 @@
+import * as crypto from 'crypto';
+import { URL } from 'url';
+import { callbackify } from 'util';
+
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
-import _ from 'lodash';
-import { callbackify } from 'util';
-import * as crypto from 'crypto';
-import { URL } from 'url';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 import { cache } from '@prairielearn/cache';
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+
 import * as authnLib from '../../../lib/authn.js';
-import { selectLti13Instance } from '../../models/lti13Instance.js';
-import { Lti13Test } from './lti13Auth.html.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { selectLti13Instance } from '../../models/lti13Instance.js';
+
+import { Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });

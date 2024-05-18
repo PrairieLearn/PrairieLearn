@@ -1,9 +1,10 @@
 // @ts-check
-import _ from 'lodash';
 import debugfn from 'debug';
+import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+
 import { config } from './config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

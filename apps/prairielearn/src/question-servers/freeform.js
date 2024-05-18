@@ -1,31 +1,32 @@
 // @ts-check
 
-import * as async from 'async';
-import _ from 'lodash';
-import fs from 'fs-extra';
 import * as path from 'path';
-import mustache from 'mustache';
+
+import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
 import * as cheerio from 'cheerio/lib/slim';
-import * as parse5 from 'parse5';
 import debugfn from 'debug';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import mustache from 'mustache';
 import objectHash from 'object-hash';
+import * as parse5 from 'parse5';
 
-import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
-import { logger } from '@prairielearn/logger';
 import { cache } from '@prairielearn/cache';
+import { logger } from '@prairielearn/logger';
+import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
-import * as schemas from '../schemas/index.js';
-import { config } from '../lib/config.js';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
-import * as jsonLoad from '../lib/json-load.js';
-import { getOrUpdateCourseCommitHash } from '../models/course.js';
-import * as markdown from '../lib/markdown.js';
-import * as chunks from '../lib/chunks.js';
 import * as assets from '../lib/assets.js';
-import { APP_ROOT_PATH } from '../lib/paths.js';
+import * as chunks from '../lib/chunks.js';
+import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import * as jsonLoad from '../lib/json-load.js';
+import * as markdown from '../lib/markdown.js';
+import { APP_ROOT_PATH } from '../lib/paths.js';
+import { getOrUpdateCourseCommitHash } from '../models/course.js';
+import * as schemas from '../schemas/index.js';
 
 const debug = debugfn('prairielearn:freeform');
 

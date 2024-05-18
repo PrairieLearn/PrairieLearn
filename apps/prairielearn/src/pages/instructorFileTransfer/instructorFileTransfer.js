@@ -1,12 +1,15 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
 import * as path from 'path';
+
 import debugfn from 'debug';
-import * as sqldb from '@prairielearn/postgres';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { flash } from '@prairielearn/flash';
-import { QuestionTransferEditor } from '../../lib/editors.js';
+import * as sqldb from '@prairielearn/postgres';
+
 import { config } from '../../lib/config.js';
+import { QuestionTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 
 const router = express.Router();
