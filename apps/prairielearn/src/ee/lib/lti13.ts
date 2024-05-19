@@ -3,6 +3,11 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
+import { features } from '../../lib/features/index.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -181,4 +186,24 @@ export class Lti13Claim {
     delete this.req.session['lti13_claims'];
     delete this.req.session['authn_lti13_instance_id'];
   }
+}
+
+export async function validateLti13CourseInstance(
+  resLocals: Record<string, any>,
+): Promise<boolean> {
+  const feature_enabled = await features.enabledFromLocals('lti13', resLocals);
+
+  if (!feature_enabled) {
+    return false;
+  }
+
+  const ci_lti13_connected = await queryRow(
+    sql.select_ci_validation,
+    {
+      course_instance_id: resLocals.course_instance.id,
+    },
+    z.boolean(),
+  );
+
+  return feature_enabled && ci_lti13_connected;
 }
