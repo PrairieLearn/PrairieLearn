@@ -12,9 +12,16 @@ import {
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { IdSchema, InstanceQuestionSchema, SubmissionSchema } from '../../../lib/db-types.js';
+import {
+  InstanceQuestionSchema,
+  QuestionSchema,
+  SubmissionSchema,
+  VariantSchema,
+} from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import * as questionServers from '../../../question-servers/index.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -31,6 +38,50 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
 });
+
+// /**
+//  * Renders the HTML for a variant.
+//  * @protected
+//  *
+//  * @param variant_course - The course for the variant.
+//  * @param renderSelection - Specify which panels should be rendered.
+//  * @param variant - The variant to submit to.
+//  * @param question - The question for the variant.
+//  * @param submission - The current submission to the variant.
+//  * @param submissions - The full list of submissions to the variant.
+//  * @param question_course - The course for the question.
+//  * @param locals - The current locals for the page response.
+//  * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
+//  */
+// async function render(
+//   variant_course,
+//   renderSelection,
+//   variant,
+//   question,
+//   submission,
+//   submissions,
+//   question_course,
+//   locals,
+// ) {
+//   const questionModule = questionServers.getModule(question.type);
+
+//   const { courseIssues, data } = await questionModule.render(
+//     renderSelection,
+//     variant,
+//     question,
+//     submission,
+//     submissions,
+//     question_course,
+//     locals,
+//   );
+
+//   const studentMessage = 'Error rendering question';
+//   const courseData = { variant, question, submission, course: variant_course };
+//   // locals.authn_user may not be populated when rendering a panel
+//   const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+//   // await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
+//   return data;
+// }
 
 router.get(
   '/',
@@ -178,7 +229,6 @@ router.post(
         console.log(result.length);
 
         // get each instance question
-        // TODO: how to get the question prompt?
         for (const instance_question of result) {
           // get last submission of instance question
           const submission = await queryRow(
@@ -201,6 +251,51 @@ router.post(
           }
           const student_answer = atob(submission.submitted_answer._files[0].contents);
           console.log(student_answer);
+
+          // get question prompt
+          const variant = await queryRow(
+            sql.select_last_variant,
+            { instance_question_id: instance_question.id },
+            VariantSchema,
+          );
+          const question = await queryRow(
+            sql.select_question_of_variant,
+            { question_course_id: variant.course_id, question_id: variant.question_id },
+            QuestionSchema,
+          );
+          const question_course = await getQuestionCourse(question, res.locals.course);
+          console.log(question_course.title);
+
+          const questionModule = questionServers.getModule(question.type);
+          console.log(question.qid);
+
+          const { courseIssues, data } = await questionModule.render(
+            { question: true, submissions: false, answer: false },
+            variant,
+            question,
+            submission,
+            [submission],
+            question_course,
+            res.locals,
+          );
+          console.log(data);
+          console.log(courseIssues);
+          // console.log('question: ');
+          // console.log(data.questionHtml);
+          // console.log('answer: ');
+          // console.log(data.answerHtml);
+          // console.log('submissions: ');
+          // console.log(data.submissionHtmls);
+          // const html = render(
+          //   res.locals.course,
+          //   { header: true, question: true, submissions: false, answer: false },
+          //   variant,
+          //   question,
+          //   null,
+          //   null,
+          //   question_course,
+          //   res.locals,
+          // );
 
           // TODO: Call OpenAI API to grade
 

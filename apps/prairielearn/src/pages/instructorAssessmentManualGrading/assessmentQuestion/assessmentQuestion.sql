@@ -85,3 +85,28 @@ ORDER BY
   s.date DESC
 LIMIT
   1;
+
+-- BLOCK select_last_variant
+SELECT
+  v.* AS variant
+FROM
+  variants AS v
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  v.instance_question_id = $instance_question_id
+ORDER BY
+  v.date DESC,
+  s.date DESC
+LIMIT
+  1;
+
+-- BLOCK select_question_of_variant
+SELECT 
+  q.* AS question 
+FROM 
+  questions AS q 
+WHERE 
+  q.course_id = $question_course_id
+  AND q.id = $question_id
+LIMIT
+  1;
