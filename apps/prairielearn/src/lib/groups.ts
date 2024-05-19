@@ -499,7 +499,6 @@ export async function leaveGroup(
         await sqldb.queryAsync(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
-          user_id: userId,
           authn_user_id: authnUserId,
         });
 
