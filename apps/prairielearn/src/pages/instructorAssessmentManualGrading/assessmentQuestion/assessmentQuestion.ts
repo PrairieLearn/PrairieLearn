@@ -13,11 +13,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import {
-  InstanceQuestionSchema,
-  SubmissionSchema,
-  VariantSchema,
-} from '../../../lib/db-types.js';
+import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
@@ -221,7 +217,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         console.log('running grading in background');
 
-        const openai = new OpenAI({apiKey: '', organization: ''});
+        const openai = new OpenAI({ apiKey: '', organization: '' });
         console.log('OpenAI API ready');
 
         // get all instance questions
@@ -243,6 +239,7 @@ router.post(
             { instance_question_id: instance_question.id },
             SubmissionSchema,
           );
+          console.log(submission);
 
           // maybe remove some if statements that can never happen
           // if nothing submitted
@@ -265,7 +262,7 @@ router.post(
             { instance_question_id: instance_question.id },
             VariantSchema,
           );
-          
+
           const questionModule = questionServers.getModule(question.type);
           const { courseIssues, data } = await questionModule.render(
             { question: true, submissions: false, answer: false },
@@ -296,6 +293,17 @@ router.post(
           // );
 
           // TODO: Call OpenAI API to grade
+          const question_prompt = 'abc'; // replace later
+          const messages = [
+            {
+              role: 'system',
+              content: `You are an instructor for a course grading assignments. You are to only respond with an integer between 0 and 100. 0 being the lowest and 100 being the highest. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be the integer you just generated, and the feedback should be why you give this grade. You can say correct or leave blank when the grade is close to 100. `,
+            },
+            {
+              role: 'user',
+              content: `${question_prompt} ${student_answer} + \nHow would you grade this? Please return the json object.`,
+            },
+          ];
 
           const update_result = await manualGrading.updateInstanceQuestionScore(
             res.locals.assessment.id,
