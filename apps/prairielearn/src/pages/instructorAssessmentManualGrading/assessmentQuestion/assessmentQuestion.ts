@@ -1,5 +1,6 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { OpenAI } from 'openai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -14,7 +15,6 @@ import {
 import { config } from '../../../lib/config.js';
 import {
   InstanceQuestionSchema,
-  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from '../../../lib/db-types.js';
@@ -204,6 +204,12 @@ router.post(
       console.log('BOT GRADING THE ASSESSMENT!');
       // res.send({});
       console.log(config.openAiApiKey);
+      // console.log(res.locals);
+
+      const question = res.locals.question;
+      console.log(question.qid);
+      const question_course = await getQuestionCourse(question, res.locals.course);
+      console.log(question_course.title);
 
       // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
       const serverJob = await createServerJob({
@@ -215,7 +221,8 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         console.log('running grading in background');
 
-        // SQL query to get the thing to grade (look at select_variant_with_last_submission in instanceQuestion.sql)
+        const openai = new OpenAI({apiKey: '', organization: ''});
+        console.log('OpenAI API ready');
 
         // get all instance questions
         const result = await queryRows(
@@ -226,7 +233,7 @@ router.post(
           },
           InstanceQuestionRowSchema,
         );
-        console.log(result.length);
+        // console.log(result.length);
 
         // get each instance question
         for (const instance_question of result) {
@@ -258,17 +265,8 @@ router.post(
             { instance_question_id: instance_question.id },
             VariantSchema,
           );
-          const question = await queryRow(
-            sql.select_question_of_variant,
-            { question_course_id: variant.course_id, question_id: variant.question_id },
-            QuestionSchema,
-          );
-          const question_course = await getQuestionCourse(question, res.locals.course);
-          console.log(question_course.title);
-
+          
           const questionModule = questionServers.getModule(question.type);
-          console.log(question.qid);
-
           const { courseIssues, data } = await questionModule.render(
             { question: true, submissions: false, answer: false },
             variant,
@@ -278,8 +276,8 @@ router.post(
             question_course,
             res.locals,
           );
-          console.log(data);
-          console.log(courseIssues);
+          // console.log(data);
+          // console.log(courseIssues);
           // console.log('question: ');
           // console.log(data.questionHtml);
           // console.log('answer: ');
