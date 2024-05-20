@@ -1,0 +1,15 @@
+<pl-question-panel>
+  <p>Select all of the following numbers that are prime.</p>
+</pl-question-panel>
+
+<pl-checkbox
+  answers-name="numbers"
+  number-answers="7"
+  fixed-order="true"
+  partial-credit="true"
+  min-correct="2"
+>
+  {{#params.options}}
+    <pl-answer correct="{{correct}}" feedback="{{feedback}}">{{answer}}</pl-answer>
+  {{/params.options}}
+</pl-checkbox>
