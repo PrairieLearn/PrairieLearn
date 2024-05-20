@@ -229,7 +229,6 @@ router.post(
           },
           InstanceQuestionSchema,
         );
-        // console.log(result.length);
 
         // get each instance question
         for (const instance_question of result) {
@@ -239,7 +238,6 @@ router.post(
             { instance_question_id: instance_question.id },
             SubmissionSchema,
           );
-          console.log(submission);
 
           // maybe remove some if statements that can never happen
           // if nothing submitted
@@ -291,15 +289,16 @@ router.post(
           // console.log(data);
 
           // TODO: Call OpenAI API to grade
-          const question_prompt = data.questionHtml; // replace later
+          const question_prompt = data.questionHtml.split('<script>', 2)[0];
+          console.log(question_prompt);
           const messages = [
             {
               role: 'system',
-              content: `You are an instructor for a course grading assignments. You are to only respond with an integer between 0 and 100. 0 being the lowest and 100 being the highest. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be the integer you just generated, and the feedback should be why you give this grade. You can say correct or leave blank when the grade is close to 100. `,
+              content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
             },
             {
               role: 'user',
-              content: `${question_prompt} ${student_answer} + \nHow would you grade this? Please return the json object.`,
+              content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
             },
           ];
 
