@@ -44,6 +44,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@asamuzakjp/dom-selector@npm:^2.0.1":
+  version: 2.0.2
+  resolution: "@asamuzakjp/dom-selector@npm:2.0.2"
+  dependencies:
+    bidi-js: ^1.0.3
+    css-tree: ^2.3.1
+    is-potential-custom-element-name: ^1.0.1
+  checksum: a454537fcba4f241d3c1303f6068944462fc0ba9cd2c5e3ad639c0acb58ffb7809e5d4cbdac805c8c2525b2450d53a992ff98f07a323c5246044e8e3de3561fe
+  languageName: node
+  linkType: hard
+
 "@aws-crypto/crc32@npm:3.0.0":
   version: 3.0.0
   resolution: "@aws-crypto/crc32@npm:3.0.0"
@@ -8363,6 +8374,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dompurify@npm:^3.0.8":
+  version: 3.1.4
+  resolution: "dompurify@npm:3.1.4"
+  checksum: 7b8d55d6e091c69cccfef73d066bd1bc82de32c81bc050b2c396b502afda0c853152760553aeb4d7ef86e7cf46bf49720fcb0c42a49ce939125cf40d7720ebb8
+  languageName: node
+  linkType: hard
+
 "dompurify@npm:^3.1.3":
   version: 3.1.3
   resolution: "dompurify@npm:3.1.3"
@@ -12050,6 +12068,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"marked@npm:^11.1.1":
+  version: 11.2.0
+  resolution: "marked@npm:11.2.0"
+  bin:
+    marked: bin/marked.js
+  checksum: 80757c268420d58d2fb2dadb8e1f9e80b96160dc667de69fe455cf5fd874e5cfec87a171249f49f28729e90de4bafa1f586562ffaad04836fe6e6c355365f60a
+  languageName: node
+  linkType: hard
+
 "mathjax@npm:^3.2.2":
   version: 3.2.2
   resolution: "mathjax@npm:3.2.2"
@@ -12241,6 +12268,13 @@ __metadata:
   dependencies:
     "@types/mdast": ^4.0.0
   checksum: 35489fb5710d58cbc2d6c8b6547df161a3f81e0f28f320dfb3548a9393555daf07c310c0c497708e67ed4dfea4a06e5655799e7d631ca91420c288b4525d6c29
+  languageName: node
+  linkType: hard
+
+"mdn-data@npm:2.0.30":
+  version: 2.0.30
+  resolution: "mdn-data@npm:2.0.30"
+  checksum: d6ac5ac7439a1607df44b22738ecf83f48e66a0874e4482d6424a61c52da5cde5750f1d1229b6f5fa1b80a492be89465390da685b11f97d62b8adcc6e88189aa
   languageName: node
   linkType: hard
 
