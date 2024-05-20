@@ -1,9 +1,8 @@
 // @ts-check
 import fetch from 'node-fetch';
 import * as path from 'path';
-import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
-import * as fse from 'fs-extra';
+import fs from 'fs-extra';
 import * as async from 'async';
 import debugfn from 'debug';
 import archiver from 'archiver';
@@ -271,7 +270,7 @@ async function startup(workspace_id: string): Promise<void> {
         // could lead to unexpected behavior.
         try {
           const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
-          await fse.move(
+          await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
             { overwrite: true },
@@ -287,7 +286,7 @@ async function startup(workspace_id: string): Promise<void> {
         // Next, move the newly created directory into place. This will be
         // done with a lock held, so we shouldn't worry about other processes
         // trying to work with these directories at the same time.
-        await fse.move(initializeResult.sourcePath, initializeResult.destinationPath, {
+        await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
           overwrite: true,
         });
       }
@@ -505,7 +504,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
   const destinationPath = path.join(root, remotePath);
   const sourcePath = `${destinationPath}-${uuidv4()}`;
 
-  await fse.ensureDir(sourcePath);
+  await fs.ensureDir(sourcePath);
   await fsPromises.chown(
     sourcePath,
     config.workspaceJobsDirectoryOwnerUid,
@@ -516,11 +515,11 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
       const sourceFile = path.join(sourcePath, workspaceFile.name);
       try {
-        await fse.ensureDir(path.dirname(sourceFile));
+        await fs.ensureDir(path.dirname(sourceFile));
         if ('localPath' in workspaceFile) {
-          await fse.copy(workspaceFile.localPath, sourceFile);
+          await fs.copy(workspaceFile.localPath, sourceFile);
         } else {
-          await fse.writeFile(sourceFile, workspaceFile.buffer);
+          await fs.writeFile(sourceFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({

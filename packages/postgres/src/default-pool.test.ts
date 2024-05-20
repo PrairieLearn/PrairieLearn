@@ -7,6 +7,7 @@ import * as pgPool from './default-pool.js';
  * pool's exports.
  */
 const HIDDEN_PROPERTIES = new Set([
+  'constructor',
   // Private members
   'pool',
   'alsClient',

@@ -9,7 +9,7 @@ import yargs from 'yargs';
 
 import { describeDatabase, formatDatabaseDescription, DatabaseDescription } from '../describe.js';
 
-const args = yargs
+const args = yargs(process.argv.slice(2))
   .usage('Usage: $0 <database name> [options]')
   .demandCommand(1)
   .option('output', {

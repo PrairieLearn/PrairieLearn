@@ -4,7 +4,7 @@ import signature from 'cookie-signature';
 import asyncHandler from 'express-async-handler';
 import cookie from 'cookie';
 
-import { SessionStore } from './store.js';
+import { type SessionStore } from './store.js';
 import { beforeEnd } from './before-end.js';
 import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie.js';
 import {
