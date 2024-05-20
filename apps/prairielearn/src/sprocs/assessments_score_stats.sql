@@ -24,7 +24,8 @@ BEGIN
         FROM
             assessment_instances AS ai
             JOIN assessments AS a ON (a.id = ai.assessment_id)
-            LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+            LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
+            LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
             JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
             JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
         WHERE
