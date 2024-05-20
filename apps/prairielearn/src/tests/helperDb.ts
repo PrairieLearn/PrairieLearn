@@ -44,6 +44,7 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     host: POSTGRES_HOST,
     max: 10,
     idleTimeoutMillis: 30000,
+    errorOnUnusedParameters: true,
   };
   function idleErrorHandler(err) {
     throw err;

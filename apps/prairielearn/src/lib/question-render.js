@@ -448,7 +448,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // actually render.
   const submissions = await sqldb.queryRows(
     sql.select_basic_submissions,
-    { variant_id: locals.variant.id, req_date: locals.req_date },
+    { variant_id: locals.variant.id },
     SubmissionBasicSchema,
   );
   const submissionCount = submissions.length;
