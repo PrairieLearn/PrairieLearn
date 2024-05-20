@@ -1,6 +1,10 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
+import {
+  PotentialEnterpriseEnrollmentStatus,
+  checkPotentialEnterpriseEnrollment,
+} from '../ee/models/enrollment.js';
 import {
   Course,
   CourseInstance,
@@ -9,12 +13,8 @@ import {
   Institution,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
-import {
-  PotentialEnterpriseEnrollmentStatus,
-  checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment.js';
-import { assertNever } from '../lib/types.js';
 import { HttpRedirect } from '../lib/redirect.js';
+import { assertNever } from '../lib/types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

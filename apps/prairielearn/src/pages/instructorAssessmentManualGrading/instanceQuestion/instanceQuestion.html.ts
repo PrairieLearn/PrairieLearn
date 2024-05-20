@@ -1,9 +1,11 @@
-import { html, unsafeHtml } from '@prairielearn/html';
 import { z } from 'zod';
+
+import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { GradingJobSchema, User } from '../../../lib/db-types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import { GradingJobSchema, User } from '../../../lib/db-types.js';
+
 import { GradingPanel } from './gradingPanel.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 

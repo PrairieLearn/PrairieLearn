@@ -1,18 +1,23 @@
-// @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import * as sqldb from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { CourseInstanceSchema } from '../../lib/db-types.js';
 
-var router = express.Router();
-var sql = sqldb.loadSqlEquiv(import.meta.url);
+import {
+  InstructorCourseAdminInstances,
+  CourseInstanceAuthzRow,
+} from './instructorCourseAdminInstances.html.js';
+
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -27,7 +32,7 @@ router.get(
       }
     }
 
-    res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
+    const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -37,13 +42,14 @@ router.get(
     const enrollmentCounts = await sqldb.queryRows(
       sql.select_enrollment_counts,
       { course_id: res.locals.course.id },
-      z.object({ course_instance_id: CourseInstanceSchema.shape.id, number: z.string() }),
+      z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
     );
-    res.locals.course_instances.forEach((ci) => {
+    courseInstances.forEach((ci) => {
       const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
-      ci.number = row?.number || 0;
+      ci.enrollment_count = row?.enrollment_count || 0;
     });
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+
+    res.send(InstructorCourseAdminInstances({ resLocals: res.locals, courseInstances }));
   }),
 );
 
@@ -62,14 +68,19 @@ router.post(
         return;
       }
 
-      const result = await sqldb.queryOneRowAsync(sql.select_course_instance_id_from_uuid, {
-        uuid: editor.uuid,
-        course_id: res.locals.course.id,
-      });
+      const courseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance_id_from_uuid,
+        {
+          uuid: editor.uuid,
+          course_id: res.locals.course.id,
+        },
+        IdSchema,
+      );
+
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          result.rows[0].course_instance_id +
+          courseInstanceId +
           '/instructor/instance_admin/settings',
       );
     } else {

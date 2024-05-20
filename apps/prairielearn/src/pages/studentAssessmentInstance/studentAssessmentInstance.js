@@ -1,12 +1,19 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
+import {
+  AssessmentInstanceSchema,
+  DateFromISOString,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -15,13 +22,6 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
-import {
-  AssessmentInstanceSchema,
-  DateFromISOString,
-  IdSchema,
-  InstanceQuestionSchema,
-} from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 
 const router = express.Router();
@@ -225,7 +225,6 @@ router.get(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
       },
       InstanceQuestionRowSchema,
     );

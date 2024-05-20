@@ -1,16 +1,13 @@
 import * as fs from 'fs';
+
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-
-import * as externalGrader from './externalGrader.js';
-import * as ltiOutcomes from './ltiOutcomes.js';
-import { writeCourseIssues } from './issues.js';
-import { getQuestionCourse } from './question-variant.js';
 import * as sqldb from '@prairielearn/postgres';
+
 import * as questionServers from '../question-servers/index.js';
-import * as workspaceHelper from './workspace.js';
+
 import {
   Course,
   DateFromISOString,
@@ -24,7 +21,12 @@ import {
   Variant,
   VariantSchema,
 } from './db-types.js';
+import * as externalGrader from './externalGrader.js';
 import { idsEqual } from './id.js';
+import { writeCourseIssues } from './issues.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { getQuestionCourse } from './question-variant.js';
+import * as workspaceHelper from './workspace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

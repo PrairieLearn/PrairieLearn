@@ -1,9 +1,10 @@
 // @ts-check
-import _ from 'lodash';
 import debugfn from 'debug';
+import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+
 import { config } from './config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -148,7 +149,7 @@ export function startJob(jobType, id, maxJobCount) {
 
 export function endJob(jobType, id) {
   debug(`endJob(): jobType = ${jobType}, id = ${id}`);
-  if (!_.has(estimators, jobType)) throw new Error(`endJob(): no such estimator: ${jobType}`);
+  if (!(jobType in estimators)) throw new Error(`endJob(): no such estimator: ${jobType}`);
   estimators[jobType].endJob(id);
 }
 

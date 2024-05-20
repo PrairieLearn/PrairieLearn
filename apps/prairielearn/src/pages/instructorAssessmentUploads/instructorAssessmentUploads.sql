@@ -1,6 +1,6 @@
 -- BLOCK select_upload_job_sequences
 SELECT
-  js.*,
+  to_jsonb(js) AS job_sequence,
   format_date_full_compact (js.start_date, c.display_timezone) AS start_date_formatted,
   u.uid AS user_uid
 FROM

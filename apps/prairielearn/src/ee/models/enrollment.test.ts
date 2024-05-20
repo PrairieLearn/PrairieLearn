@@ -1,17 +1,19 @@
 import { assert } from 'chai';
 
-import * as helperDb from '../../tests/helperDb.js';
-import * as helperCourse from '../../tests/helperCourse.js';
+import { queryRow } from '@prairielearn/postgres';
+
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
+
 import {
   getEnrollmentCountsForCourse,
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
 } from './enrollment.js';
-import { getOrCreateUser } from '../../tests/utils/auth.js';
 import { ensurePlanGrant } from './plan-grants.js';
-import { queryRow } from '@prairielearn/postgres';
-import { CourseInstanceSchema } from '../../lib/db-types.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {

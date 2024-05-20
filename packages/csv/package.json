@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/csv",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "main": "./dist/index.js",
   "repository": {
@@ -11,21 +11,33 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha src/**/*.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.6",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^20.12.2",
-    "chai": "^4.4.1",
+    "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
+    "chai": "^5.1.1",
     "mocha": "^10.4.0",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.3"
+    "tsx": "^4.10.4",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "csv-stringify": "^6.4.6",
     "multipipe": "^4.0.0",
     "stream-transform": "^3.3.1"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

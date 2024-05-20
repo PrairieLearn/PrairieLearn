@@ -1,6 +1,6 @@
-import passport from 'passport';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import passport from 'passport';
 
 import * as authnLib from '../../../lib/authn.js';
 

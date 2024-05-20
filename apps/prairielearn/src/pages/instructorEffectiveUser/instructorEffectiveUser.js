@@ -1,13 +1,14 @@
 // @ts-check
+import { parseISO, isValid } from 'date-fns';
+import { format, toZonedTime } from 'date-fns-tz';
+import debugfn from 'debug';
+import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
-import * as express from 'express';
-import debugfn from 'debug';
-import { parseISO, isValid } from 'date-fns';
-import { format, utcToZonedTime } from 'date-fns-tz';
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { clearCookie, setCookie } from '../../lib/cookie.js';
 import {
@@ -40,7 +41,6 @@ router.get(
     const courseRoles = await sqldb.queryRow(
       sql.select,
       {
-        authn_user_id: res.locals.authn_user.user_id,
         course_id: res.locals.course.id,
         authn_course_role: res.locals.authz_data.authn_course_role,
         authn_course_instance_role: res.locals.authz_data.authn_course_instance_role
@@ -73,14 +73,14 @@ router.get(
       res.locals.institution.display_timezone;
 
     res.locals.true_req_date_for_display = format(
-      utcToZonedTime(res.locals.true_req_date, displayTimezone),
+      toZonedTime(res.locals.true_req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,
       },
     );
     res.locals.req_date_for_display = format(
-      utcToZonedTime(res.locals.req_date, displayTimezone),
+      toZonedTime(res.locals.req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,

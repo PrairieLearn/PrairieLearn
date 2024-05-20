@@ -23,9 +23,7 @@ export async function getSamlOptions({
   const issuer = `https://${host}/saml/institution/${institution_id}`;
 
   return {
-    host,
-    protocol: 'https://',
-    path: `/pl/auth/institution/${institution_id}/saml/callback`,
+    callbackUrl: `https://${host}/pl/auth/institution/${institution_id}/saml/callback`,
     entryPoint: samlProvider.sso_login_url,
     issuer,
     idpIssuer: samlProvider.issuer,
@@ -41,7 +39,10 @@ export async function getSamlOptions({
     digestAlgorithm: 'sha256',
 
     // Identity Provider's public key.
-    cert: samlProvider.certificate,
+    idpCert: samlProvider.certificate,
+
+    // Service Provider's public key.
+    publicCert: samlProvider.public_key,
 
     // Service Provider's private key.
     privateKey: samlProvider.private_key,

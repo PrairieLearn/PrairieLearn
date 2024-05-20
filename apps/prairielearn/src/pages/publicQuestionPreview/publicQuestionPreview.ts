@@ -1,20 +1,22 @@
 import { Router } from 'express';
-import * as error from '@prairielearn/error';
-import { z } from 'zod';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
-import { selectQuestionById } from '../../models/question.js';
-import { selectCourseById } from '../../models/course.js';
-import { processSubmission } from '../../lib/question-submission.js';
+import * as error from '@prairielearn/error';
+
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema, UserSchema } from '../../lib/db-types.js';
-import { logPageView } from '../../middlewares/logPageView.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
+import { processSubmission } from '../../lib/question-submission.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
+
 import { PublicQuestionPreview } from './publicQuestionPreview.html.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 
 const router = Router({ mergeParams: true });
 

@@ -1,7 +1,8 @@
 // @ts-check
 import { createInterface } from 'node:readline';
-import { FunctionMissingError } from './lib/code-caller/index.js';
+
 import { CodeCallerNative } from './lib/code-caller/code-caller-native.js';
+import { FunctionMissingError } from './lib/code-caller/index.js';
 
 /**
  * @typedef {Object} Request

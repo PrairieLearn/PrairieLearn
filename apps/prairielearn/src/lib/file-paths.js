@@ -1,6 +1,8 @@
 // @ts-check
-import fs from 'fs-extra';
 import * as path from 'path';
+
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
