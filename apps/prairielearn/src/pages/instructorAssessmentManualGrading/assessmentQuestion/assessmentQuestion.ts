@@ -15,6 +15,7 @@ import {
 import { config } from '../../../lib/config.js';
 import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { buildLocals, buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -196,16 +197,15 @@ router.post(
       // if (!res.locals.question_sharing_enabled) {
       //   throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       // }
-      // start a server job to call openai api to grade all the things
+
       console.log('BOT GRADING THE ASSESSMENT!');
       // res.send({});
       console.log(config.openAiApiKey);
-      // console.log(res.locals);
+      const { urlPrefix, assessment, assessment_instance, assessment_question, authz_result } =
+        res.locals;
 
       const question = res.locals.question;
-      console.log(question.qid);
       const question_course = await getQuestionCourse(question, res.locals.course);
-      console.log(question_course.title);
 
       // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
       const serverJob = await createServerJob({
@@ -217,7 +217,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         console.log('running grading in background');
 
-        const openai = new OpenAI({ apiKey: '', organization: '' });
+        // const openai = new OpenAI({ apiKey: '', organization: '' });
         console.log('OpenAI API ready');
 
         // get all instance questions
@@ -227,7 +227,7 @@ router.post(
             assessment_id: res.locals.assessment.id,
             assessment_question_id: res.locals.assessment_question.id,
           },
-          InstanceQuestionRowSchema,
+          InstanceQuestionSchema,
         );
         // console.log(result.length);
 
@@ -263,6 +263,21 @@ router.post(
             VariantSchema,
           );
 
+          // build new locals for the question server
+          const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+          const newLocals = buildLocals(
+            variant,
+            question,
+            instance_question,
+            assessment,
+            assessment_instance,
+            assessment_question,
+            authz_result,
+          );
+          const locals = {};
+          Object.assign(locals, urls);
+          Object.assign(locals, newLocals);
+
           const questionModule = questionServers.getModule(question.type);
           const { courseIssues, data } = await questionModule.render(
             { question: true, submissions: false, answer: false },
@@ -271,29 +286,12 @@ router.post(
             submission,
             [submission],
             question_course,
-            res.locals,
+            locals,
           );
           // console.log(data);
-          // console.log(courseIssues);
-          // console.log('question: ');
-          // console.log(data.questionHtml);
-          // console.log('answer: ');
-          // console.log(data.answerHtml);
-          // console.log('submissions: ');
-          // console.log(data.submissionHtmls);
-          // const html = render(
-          //   res.locals.course,
-          //   { header: true, question: true, submissions: false, answer: false },
-          //   variant,
-          //   question,
-          //   null,
-          //   null,
-          //   question_course,
-          //   res.locals,
-          // );
 
           // TODO: Call OpenAI API to grade
-          const question_prompt = 'abc'; // replace later
+          const question_prompt = data.questionHtml; // replace later
           const messages = [
             {
               role: 'system',
