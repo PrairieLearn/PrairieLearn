@@ -66,19 +66,30 @@ async function checkImportedQuestions(resLocals) {
   const formData = new FormData();
   formData.append('__action', 'check_imported_questions');
   formData.append('__csrf_token', resLocals.__csrf_token);
+  //http://localhost:3000/pl/course/2/course_admin/sharing
+  
+  console.log("serverPort is: ", resLocals.serverPort); // TEST
+
+  const siteUrl = 'http://localhost:' + resLocals.serverPort;
+  const baseUrl = siteUrl + '/pl';
+
+  console.log("baseUrl is: ", baseUrl); // TEST
+
+  // resLocals.urlPrefix = /pl/course/${resLocals.course.id}
+  `${baseUrl}/course/${resLocals.course.id}/course_admin/sharing` // ONE FROM THE TESTS PAGE
+
+  
 
   const plainUrlPrefix = "http://localhost:3000/pl"; // TEST, need to get automatically, not hard-coded
-  const URL = `${plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing`;
-
-  console.log(`URL is ${URL}`); // TEST
-
+  const url = `${plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing`;// TEST
+  
+  console.log(`url is ${url}`); // TEST
+  
   try {
-    const response = await fetch(`${URL}`, { // TEST, what should the URL be?
+    const response = await fetch(url, { // TEST, what should the URL be?
       method: 'POST',
       body: formData,
     });
-
-    console.log("before response.json()"); // TEST
 
     const importedQuestions = await response.json();
     sharingNameChoosable = !importedQuestions; // If no questions have been imported or shared publicly, sharing name can be changed
@@ -94,11 +105,11 @@ async function checkImportedQuestions(resLocals) {
 
 
 
-const updateSharingNameModal = (resLocals) => {
+const chooseSharingNameModal = (resLocals) => {
   return html`
   <div
     class="modal fade"
-    id="updateSharingNameModal"
+    id="chooseSharingNameModal"
     tabindex="-1"
     role="dialog"
     aria-hidden="true"
@@ -135,7 +146,7 @@ const updateSharingNameModal = (resLocals) => {
             </p>
           <div class="modal-footer">
             <form name="choose-sharing-name" method="POST">
-              <input type="hidden" name="__action" value="update_sharing_name">
+              <input type="hidden" name="__action" value="choose_sharing_name">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
               <div class=form-group>
                 <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
@@ -203,16 +214,16 @@ export const InstructorSharing = ({
                           <button
                             type="button"
                             class="btn btn-xs btn-secondary mx-2"
-                            id="updateSharingName"
+                            id="chooseSharingName"
                             title="Choose Sharing Name"
                             data-toggle="modal"
-                            data-target="#updateSharingNameModal"
+                            data-target="#chooseSharingNameModal"
                             data-trigger="manual"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${updateSharingNameModal(resLocals)}
+                          ${chooseSharingNameModal(resLocals)}
                         `
                       : ''}
                   </td>

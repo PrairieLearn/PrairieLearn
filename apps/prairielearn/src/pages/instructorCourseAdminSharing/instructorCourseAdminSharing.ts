@@ -91,19 +91,16 @@ router.post(
         throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
     } else if (req.body.__action === 'check_imported_questions') {
-      console.log("check_imported_questions: ", req.body.__action);//TEST
       const checkResult = await sqldb.queryOptionalRow(
         sql.check_imported_questions, 
-        {
-        course_id: res.locals.course.id,
-        },
+        { course_id: res.locals.course.id },
         z.any().nullable(),
       );
 
       console.log("checkResult: ", checkResult);//TEST
-      return res.JSON(checkResult); // TEST, does return work?
+      return res.json(checkResult); // TEST, does return work?
     
-    } else if (req.body.__action === 'update_sharing_name') {
+    } else if (req.body.__action === 'choose_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
         req.body.course_sharing_name.includes('@') ||
@@ -124,9 +121,9 @@ router.post(
         );
 
         if (!checkResult) {
-          // If no questions have been imported or shared publicly, update the sharing name
+          // If no questions have been imported or shared publicly, choose the sharing name
           await sqldb.queryZeroOrOneRowAsync(
-            sql.update_sharing_name, 
+            sql.choose_sharing_name, 
             {
             sharing_name: req.body.course_sharing_name.trim(),
             course_id: res.locals.course.id,

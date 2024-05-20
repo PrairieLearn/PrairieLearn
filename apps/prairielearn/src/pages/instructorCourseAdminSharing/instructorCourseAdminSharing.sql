@@ -64,7 +64,7 @@ WHERE
 RETURNING
   course_id;
 
--- BLOCK update_sharing_name
+-- BLOCK choose_sharing_name
 UPDATE pl_courses
 SET
   sharing_name = $sharing_name

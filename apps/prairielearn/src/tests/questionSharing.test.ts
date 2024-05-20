@@ -198,6 +198,12 @@ describe('Question Sharing', function () {
       assert(res.status === 400);
     });
 
+    // TEST, is this done and valid?
+    step('Successfully change the sharing name when no questions have been shared', async () => { 
+      let res = await setSharingName(sharingCourse.id, 'Nothing shared yet'); 
+      assert(res.status !== 400); // Since we want it to succeed
+    }); 
+
     step('Set consuming course sharing name', async () => {
       await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(consumingCourse.id));
@@ -373,6 +379,12 @@ describe('Question Sharing', function () {
         SHARING_SET_NAME,
       );
     });
+
+    // TEST, is this done and valid?
+    step('Fail to change the sharing name when a question has been shared', async () => { 
+      let res = await setSharingName(sharingCourse.id, 'Question shared'); 
+      assert(res.status === 400); // Since we want it to fail
+    }); 
   });
 
   describe('Test Sharing a Question Publicly', function () {
