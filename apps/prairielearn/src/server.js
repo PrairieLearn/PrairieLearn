@@ -2340,6 +2340,7 @@ if (esMain(import.meta) && config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
           ssl: config.postgresqlSsl,
+          errorOnUnusedParameters: config.devMode,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);

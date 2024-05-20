@@ -15,6 +15,7 @@ const HIDDEN_PROPERTIES = new Set([
   'searchSchema',
   '_queryCount',
   'queryValidatedCursorInternal',
+  'errorOnUnusedParameters',
   // Getters
   'totalCount',
   'idleCount',
