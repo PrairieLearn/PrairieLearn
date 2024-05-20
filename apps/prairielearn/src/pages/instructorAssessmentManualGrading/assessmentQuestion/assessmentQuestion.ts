@@ -217,7 +217,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         console.log('running grading in background');
 
-        // const openai = new OpenAI({ apiKey: '', organization: '' });
+        const openai = new OpenAI({ apiKey: '', organization: '' }); // TODO: replace with config
         console.log('OpenAI API ready');
 
         // get all instance questions
@@ -291,16 +291,32 @@ router.post(
           // TODO: Call OpenAI API to grade
           const question_prompt = data.questionHtml.split('<script>', 2)[0];
           console.log(question_prompt);
-          const messages = [
-            {
-              role: 'system',
-              content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
-            },
-            {
-              role: 'user',
-              content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
-            },
-          ];
+          // const openai_messages = [
+          //   {
+          //     role: 'system',
+          //     content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
+          //   },
+          //   {
+          //     role: 'user',
+          //     content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+          //   },
+          // ];
+
+          // const completion = await openai.chat.completions.create({
+          //   messages: [
+          //     {
+          //       role: 'system',
+          //       content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
+          //     },
+          //     {
+          //       role: 'user',
+          //       content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+          //     },
+          //   ],
+          //   model: 'gpt-3.5-turbo',
+          // });
+
+          // console.log(completion.choices[0]);
 
           const update_result = await manualGrading.updateInstanceQuestionScore(
             res.locals.assessment.id,
