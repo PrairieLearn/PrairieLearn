@@ -59,6 +59,7 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
+// TEST, ERROR, sometimes must be reloaded to update the value after running checkImportedQuestions
 let sharingNameChoosable = false; // TEST, better safe than sorry, should be set to false by default
 
 // Function to check if any questions have been imported or shared publicly
@@ -70,17 +71,12 @@ async function checkImportedQuestions(resLocals) {
   
   console.log("serverPort is: ", resLocals.serverPort); // TEST
 
-  const siteUrl = 'http://localhost:' + resLocals.serverPort;
-  const baseUrl = siteUrl + '/pl';
-
-  console.log("baseUrl is: ", baseUrl); // TEST
-
-  // resLocals.urlPrefix = /pl/course/${resLocals.course.id}
-  `${baseUrl}/course/${resLocals.course.id}/course_admin/sharing` // ONE FROM THE TESTS PAGE
-
+  const siteUrl = 'http://localhost:' + resLocals.serverPort; // TEST
+  const baseUrl = siteUrl + '/pl'; // TEST
   
+  //`${baseUrl}/course/${resLocals.course.id}/course_admin/sharing` // ONE FROM THE TESTS PAGE
 
-  const plainUrlPrefix = "http://localhost:3000/pl"; // TEST, need to get automatically, not hard-coded
+  const plainUrlPrefix = "http://localhost:3000/pl"; // TEST, UPDATE, need to get automatically, not hard-coded
   const url = `${plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing`;// TEST
   
   console.log(`url is ${url}`); // TEST
@@ -88,7 +84,10 @@ async function checkImportedQuestions(resLocals) {
   try {
     const response = await fetch(url, { // TEST, what should the URL be?
       method: 'POST',
-      body: formData,
+      body: new URLSearchParams({
+        __action: 'check_imported_questions',
+        __csrf_token: resLocals.__csrf_token,
+      }),
     });
 
     const importedQuestions = await response.json();
@@ -144,6 +143,7 @@ const chooseSharingNameModal = (resLocals) => {
               a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
               name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
             </p>
+          </div>
           <div class="modal-footer">
             <form name="choose-sharing-name" method="POST">
               <input type="hidden" name="__action" value="choose_sharing_name">
@@ -158,12 +158,14 @@ const chooseSharingNameModal = (resLocals) => {
           </div>
             ` 
             : html`
-              <p>
+            <div class="modal-body">
+              <p class="form-text">
                 <strong>Unable to change your course's sharing name.</strong>
               </p>
               <p>
                 Your course's sharing name cannot be changed because at least one question has been imported or shared publicly.
               </p>
+            </div>
             `}
         </div>
 

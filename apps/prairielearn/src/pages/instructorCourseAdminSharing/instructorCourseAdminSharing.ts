@@ -91,14 +91,13 @@ router.post(
         throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
     } else if (req.body.__action === 'check_imported_questions') {
-      const checkResult = await sqldb.queryOptionalRow(
+      const importedQuestions = await sqldb.queryOptionalRow(
         sql.check_imported_questions, 
         { course_id: res.locals.course.id },
         z.any().nullable(),
       );
 
-      console.log("checkResult: ", checkResult);//TEST
-      return res.json(checkResult); // TEST, does return work?
+      return res.json(importedQuestions); 
     
     } else if (req.body.__action === 'choose_sharing_name') {
       if (
