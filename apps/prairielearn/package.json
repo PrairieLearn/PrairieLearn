@@ -95,7 +95,7 @@
     "express": "^4.19.2",
     "express-async-handler": "^1.2.0",
     "express-session": "^1.18.0",
-    "fabric": "^4.6.0",
+    "fabric": "4.6.0-browser",
     "fast-glob": "^3.3.2",
     "fetch-cookie": "^3.0.1",
     "file-type": "^19.0.0",
