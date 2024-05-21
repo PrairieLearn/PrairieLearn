@@ -1,12 +1,11 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
   joinGroup,
@@ -20,6 +19,7 @@ import {
   canUserAssignGroupRoles,
 } from '../../lib/groups.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
+import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

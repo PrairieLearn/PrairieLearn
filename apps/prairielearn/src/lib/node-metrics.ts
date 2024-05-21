@@ -1,7 +1,8 @@
-import loopbench from 'loopbench';
 import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
-import * as Sentry from '@prairielearn/sentry';
+import loopbench from 'loopbench';
+
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';

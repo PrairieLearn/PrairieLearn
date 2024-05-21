@@ -1,12 +1,15 @@
-import asyncHandler from 'express-async-handler';
-import * as express from 'express';
-import QR from 'qrcode-svg';
-import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
-import * as error from '@prairielearn/error';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import QR from 'qrcode-svg';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+
+import { IdSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceRenameEditor,
@@ -14,7 +17,7 @@ import {
 } from '../../lib/editors.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
-import { IdSchema } from '../../lib/db-types.js';
+
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
 const router = express.Router();

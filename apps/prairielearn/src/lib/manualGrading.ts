@@ -1,12 +1,10 @@
 import * as async from 'async';
-import mustache from 'mustache';
 import _ from 'lodash';
+import mustache from 'mustache';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id.js';
-import * as markdown from './markdown.js';
-import * as ltiOutcomes from './ltiOutcomes.js';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -16,6 +14,9 @@ import {
   RubricItemSchema,
   RubricSchema,
 } from './db-types.js';
+import { idsEqual } from './id.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import * as markdown from './markdown.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -297,12 +298,10 @@ export async function updateAssessmentQuestionRubric(
         async (item) => {
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
-          const updated =
-            item.id == null
-              ? null
-              : await sqldb.queryOptionalRow(sql.update_rubric_item, item, IdSchema);
-          if (updated == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, item);
+          if (item.id == null) {
+            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+          } else {
+            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -329,7 +328,7 @@ async function recomputeInstanceQuestions(
     // Recompute grades for existing instance questions using this rubric
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions_to_update,
-      { assessment_question_id, authn_user_id },
+      { assessment_question_id },
       InstanceQuestionToUpdateSchema,
     );
 

@@ -1,6 +1,7 @@
 // @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

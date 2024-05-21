@@ -1,38 +1,40 @@
 // @ts-check
-import ERR from 'async-stacktrace';
-import _ from 'lodash';
-import * as util from 'node:util';
-import express from 'express';
-import * as http from 'node:http';
-import fetch from 'node-fetch';
-import * as path from 'node:path';
-import { S3 } from '@aws-sdk/client-s3';
-import { ECRClient } from '@aws-sdk/client-ecr';
-import { Upload } from '@aws-sdk/lib-storage';
-import Docker from 'dockerode';
 import * as fs from 'node:fs';
-import * as async from 'async';
 import * as fsPromises from 'node:fs/promises';
+import * as http from 'node:http';
+import * as net from 'node:net';
+import * as path from 'node:path';
+import * as util from 'node:util';
+
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import archiver from 'archiver';
+import * as async from 'async';
+import { Mutex } from 'async-mutex';
+import ERR from 'async-stacktrace';
+import bodyParser from 'body-parser';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
-import debugfn from 'debug';
-import archiver from 'archiver';
-import * as net from 'node:net';
-import asyncHandler from 'express-async-handler';
-import bodyParser from 'body-parser';
-import { Mutex } from 'async-mutex';
+
+import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { cache } from '@prairielearn/cache';
 
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import { parseDockerLogs } from './lib/docker.js';
-import * as socketServer from './lib/socket-server.js';
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
 import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import * as socketServer from './lib/socket-server.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');

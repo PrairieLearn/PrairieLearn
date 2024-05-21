@@ -1,6 +1,7 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 export const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),

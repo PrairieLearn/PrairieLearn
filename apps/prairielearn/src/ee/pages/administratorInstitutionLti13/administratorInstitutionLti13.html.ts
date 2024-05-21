@@ -1,10 +1,11 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag } from '../../../lib/assets.js';
+import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 export function AdministratorInstitutionLti13({
   institution,

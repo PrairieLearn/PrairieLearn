@@ -1,8 +1,10 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
-import { compiledScriptTag } from '../../lib/assets.js';
+
 import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),

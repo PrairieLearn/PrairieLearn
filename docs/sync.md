@@ -18,7 +18,7 @@ Since your course content is a Git repository hosted on GitHub, you can work dir
 
 - You can develop and test content locally without impacting your live questions or assessments.
 - You can require code review to ensure that changes are validated by multiple people on your course staff.
-- If you wish, you can use continuous integration services to automatically test and validate changes yo your content.
+- If you wish, you can use continuous integration services to automatically test and validate changes to your content.
 
 To get started, ensure you have access to your course's repository. You may need to request access from an owner of the repository. Next, follow the [local installation instructions](installing.md) to get PrairieLearn running on your computer. From there, you can edit your course content in your preferred file editor and preview the changes locally.
 

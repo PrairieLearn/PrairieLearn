@@ -1,12 +1,19 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
+import {
+  AssessmentInstanceSchema,
+  DateFromISOString,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -15,14 +22,8 @@ import {
   leaveGroup,
   updateGroupRoles,
 } from '../../lib/groups.js';
-import {
-  AssessmentInstanceSchema,
-  DateFromISOString,
-  IdSchema,
-  InstanceQuestionSchema,
-} from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -50,12 +51,6 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
-  previous_variants: z.array(
-    z.object({
-      variant_id: IdSchema,
-      max_submission_score: z.number(),
-    }),
-  ),
 });
 
 async function ensureUpToDate(locals) {
@@ -225,10 +220,17 @@ router.get(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
       },
       InstanceQuestionRowSchema,
     );
+    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+    });
+    for (const instance_question of res.locals.instance_questions) {
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
+      );
+    }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,

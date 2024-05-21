@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 2.0.2
+
+### Patch Changes
+
+- fd8f6e6: Use processed SQL when throwing errors with a `position` property
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
 ## 2.0.0
 
 ### Major Changes

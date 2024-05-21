@@ -1,6 +1,7 @@
 import { logger } from '@prairielearn/logger';
-import * as opsbot from '../lib/opsbot.js';
 import * as sqldb from '@prairielearn/postgres';
+
+import * as opsbot from '../lib/opsbot.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -1,7 +1,8 @@
 // @ts-check
-import _ from 'lodash';
 import * as path from 'path';
+
 import jsonStringifySafe from 'json-stringify-safe';
+import _ from 'lodash';
 
 import { formatErrorStack, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -33,11 +34,11 @@ export default function (err, req, res, _next) {
   if (sqlPos != null && sqlQuery != null) {
     const preSql = sqlQuery.substring(0, sqlPos);
     const postSql = sqlQuery.substring(sqlPos);
-    const prevNewline = Math.max(0, preSql.lastIndexOf('\n'));
+    const prevNewline = Math.max(0, preSql.lastIndexOf('\n') + 1);
     let nextNewline = postSql.indexOf('\n');
     if (nextNewline < 0) nextNewline = postSql.length;
     nextNewline += preSql.length;
-    const gap = ' '.repeat(Math.max(0, sqlPos - prevNewline - 2));
+    const gap = ' '.repeat(Math.max(0, sqlPos - prevNewline - 1));
     sqlQuery =
       sqlQuery.substring(0, nextNewline) +
       '\n' +

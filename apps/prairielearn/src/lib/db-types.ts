@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import parsePostgresInterval from 'postgres-interval';
+import { z } from 'zod';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;

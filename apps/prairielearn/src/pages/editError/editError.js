@@ -1,10 +1,12 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
-import { logger } from '@prairielearn/logger';
 
 const router = Router();
 

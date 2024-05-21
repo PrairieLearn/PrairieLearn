@@ -1,10 +1,12 @@
 import { assert } from 'chai';
-import request from 'request';
 import * as cheerio from 'cheerio';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { ensureEnrollment } from '../models/enrollment.js';
+
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

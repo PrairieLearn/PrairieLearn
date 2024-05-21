@@ -1,28 +1,29 @@
 // @ts-check
-import _ from 'lodash';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-import { logPageView } from '../../middlewares/logPageView.js';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { getQuestionGroupPermissions } from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
+import { insertIssue } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
-import { gradeAssessmentInstance } from '../../lib/assessment.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
-import { getQuestionGroupPermissions } from '../../lib/groups.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
-import { idsEqual } from '../../lib/id.js';
-import { insertIssue } from '../../lib/issues.js';
 import {
   processSubmission,
   validateVariantAgainstQuestion,
 } from '../../lib/question-submission.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -320,6 +321,11 @@ router.get(
 
     await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
+
+    res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+    });
 
     if (
       res.locals.assessment.group_config?.has_roles &&
