@@ -1,15 +1,15 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as qs from 'qs';
+import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema, UserSchema } from '../../../lib/db-types.js';
-import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { reportIssueFromForm } from '../../../lib/question-submission.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';

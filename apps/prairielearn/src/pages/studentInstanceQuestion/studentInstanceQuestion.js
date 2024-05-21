@@ -11,7 +11,6 @@ import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
-import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -20,6 +19,7 @@ import {
 import {
   processSubmission,
   validateVariantAgainstQuestion,
+  reportIssueFromForm,
 } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 

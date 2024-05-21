@@ -7,13 +7,12 @@ import * as error from '@prairielearn/error';
 
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
-import { processSubmission } from '../../lib/question-submission.js';
+import { processSubmission, reportIssueFromForm } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 
 const router = express.Router();
