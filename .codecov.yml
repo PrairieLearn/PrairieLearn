@@ -17,3 +17,5 @@ coverage:
       default:
         # Don't fail the status check if coverage decreases.
         informational: true
+github_checks:
+  annotations: false
