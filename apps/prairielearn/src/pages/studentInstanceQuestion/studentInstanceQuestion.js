@@ -1,7 +1,6 @@
 // @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +11,7 @@ import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
-import { insertIssue } from '../../lib/issues.js';
+import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -131,37 +130,6 @@ async function processDeleteFile(req, res) {
   return await getValidVariantId(req, res);
 }
 
-async function processIssue(req, res) {
-  if (!res.locals.assessment.allow_issue_reporting) {
-    throw new error.HttpStatusError(403, 'Issue reporting not permitted for this assessment');
-  }
-  const description = req.body.description;
-  if (!_.isString(description) || description.length === 0) {
-    throw new error.HttpStatusError(400, 'A description of the issue must be provided');
-  }
-
-  const variantId = await getValidVariantId(req, res);
-  await insertIssue({
-    variantId,
-    studentMessage: description,
-    instructorMessage: 'student-reported issue',
-    manuallyReported: true,
-    courseCaused: true,
-    courseData: _.pick(res.locals, [
-      'variant',
-      'instance_question',
-      'question',
-      'assessment_instance',
-      'assessment',
-      'course_instance',
-      'course',
-    ]),
-    systemData: {},
-    authnUserId: res.locals.authn_user.user_id,
-  });
-  return variantId;
-}
-
 async function validateAndProcessSubmission(req, res) {
   if (!res.locals.assessment_instance.open) {
     throw new error.HttpStatusError(400, 'assessment_instance is closed');
@@ -256,7 +224,7 @@ router.post(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
-      const variant_id = await processIssue(req, res);
+      const variant_id = await reportIssueFromForm('student', req, res);
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
