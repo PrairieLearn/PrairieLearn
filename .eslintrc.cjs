@@ -105,6 +105,9 @@ module.exports = {
     // This was enabled when we upgraded to `@typescript-eslint/*` v6.
     // TODO: fix the violations so we can enable this rule.
     '@typescript-eslint/no-dynamic-delete': 'off',
+
+    // This is disabled because eslint is unable to use custom tsconfig files per package/app.
+    'import/default': 'off',
   },
   overrides: [
     {
@@ -114,7 +117,6 @@ module.exports = {
         // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
         'import/named': 'off',
         'import/namespace': 'off',
-        'import/default': 'off',
         'import/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
