@@ -13,8 +13,8 @@
       </tr>
       <% } %>
       <% if (assessment.type == 'Homework') { %>
-        <%# Only show previous variants if the question allows multiple variants, and there is at least one variant other than the current one %>
-        <% if (instance_question_info.previous_variants?.some((previous_variant) => previous_variant.id != locals.variant?.id)) { %>
+        <%# Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point) %>
+        <% if (!question.single_variant || instance_question_info.previous_variants?.length > 1) { %>
         <tr>
           <td colspan="2" class="text-wrap">
             All variants:
