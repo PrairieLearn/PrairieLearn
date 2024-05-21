@@ -743,6 +743,7 @@ export async function renderPanelsForSubmission({
         assessment_question,
         assessment_instance,
         assessment,
+        question,
         variant,
         submission,
         __csrf_token: csrfToken,
