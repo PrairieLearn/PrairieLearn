@@ -1,30 +1,16 @@
 // @ts-check
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 
-/**
- * Reads a JSON file from the schemas directory.
- * @param {string} filePath
- */
-function readSchema(filePath) {
-  return JSON.parse(
-    fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
-  );
-}
-
-export const infoNewsItem = readSchema('./infoNewsItem.json');
-export const infoAssessment = readSchema('./infoAssessment.json');
-export const infoCourse = readSchema('./infoCourse.json');
-export const infoCourseInstance = readSchema('./infoCourseInstance.json');
-export const infoElementCore = readSchema('./infoElementCore.json');
-export const infoElementCourse = readSchema('./infoElementCourse.json');
-export const infoElementExtension = readSchema('./infoElementExtension.json');
-export const infoQuestion = readSchema('./infoQuestion.json');
-export const questionOptionsCalculation = readSchema('./questionOptionsCalculation.json');
-export const questionOptionsCheckbox = readSchema('./questionOptionsCheckbox.json');
-export const questionOptionsFile = readSchema('./questionOptionsFile.json');
-export const questionOptionsMultipleChoice = readSchema('./questionOptionsMultipleChoice.json');
-export const questionOptionsMultipleTrueFalse = readSchema(
-  './questionOptionsMultipleTrueFalse.json',
-);
-export const questionOptionsv3 = readSchema('./questionOptionsv3.json');
+export { default as infoNewsItem } from './schemas/infoNewsItem.json';
+export { default as infoAssessment } from './schemas/infoAssessment.json';
+export { default as infoCourse } from './schemas/infoCourse.json';
+export { default as infoCourseInstance } from './schemas/infoCourseInstance.json';
+export { default as infoElementCore } from './schemas/infoElementCore.json';
+export { default as infoElementCourse } from './schemas/infoElementCourse.json';
+export { default as infoElementExtension } from './schemas/infoElementExtension.json';
+export { default as infoQuestion } from './schemas/infoQuestion.json';
+export { default as questionOptionsCalculation } from './schemas/questionOptionsCalculation.json';
+export { default as questionOptionsCheckbox } from './schemas/questionOptionsCheckbox.json';
+export { default as questionOptionsFile } from './schemas/questionOptionsFile.json';
+export { default as questionOptionsMultipleChoice } from './schemas/questionOptionsMultipleChoice.json';
+export { default as questionOptionsMultipleTrueFalse } from './schemas/questionOptionsMultipleTrueFalse.json';
+export { default as questionOptionsv3 } from './schemas/questionOptionsv3.json';

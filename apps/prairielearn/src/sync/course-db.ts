@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { Ajv, type JSONSchemaType } from 'ajv';
+import { Ajv, type Schema } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
@@ -511,7 +511,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 }: {
   coursePath: string;
   filePath: string;
-  schema?: JSONSchemaType<T>;
+  schema?: Schema;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
 }): Promise<InfoFile<T> | null> {
