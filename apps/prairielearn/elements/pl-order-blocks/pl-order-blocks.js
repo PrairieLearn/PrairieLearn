@@ -8,40 +8,79 @@ window.PLOrderBlocks = function (uuid, options) {
 
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  let currFocusedBlockIdx = 0;
+  let focused = false;
+  let pressedKeys = {};
 
   function initializeKeyboardHandling(optionsElementId, dropzoneElementId) {
     function inDropzone(block) {
       let parentArea = block.closest('.pl-order-blocks-connected-sortable');
       return parentArea.classList.contains('dropzone');
     }
+    function getIndentation(block) {
+      return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    }
     var blocks = Array.from($(optionsElementId)[0].children);
+    if (!focused) {
+      blocks[currFocusedBlockIdx].focus();
+      focused = true;
+    }
+    // TODO: make a single event listener for the whole page (using currFocusedBlockIdx) instead of each individual block
     for (let block of blocks) {
+      block.addEventListener('click', () => block.focus()); // TODO: Delete this line after adding keyboard controls for focusing different blocks
       block.addEventListener(
         'keydown',
-        $.debounce((ev) => {
+        (ev) => {
           console.log(ev.key);
-          if (ev.key === 'ArrowDown') {
-            if (block.nextElementSibling) {
-              block.nextElementSibling.insertAdjacentElement('afterend', block);
-            }
-          } else if (ev.key === 'ArrowUp') {
-            if (block.previousElementSibling) {
-              block.previousElementSibling.insertAdjacentElement('beforebegin', block);
-            }
-          } else if (ev.key === 'ArrowLeft') {
-            // TODO also handle indenting/de-indenting
-            if (inDropzone(block)) {
-              $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
-            }
-          } else if (ev.key === 'ArrowRight') {
-            // TODO also handle indenting/de-indenting
-            if (!inDropzone(block)) {
-              $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
-            }
+          pressedKeys[ev.key] = true;
+          switch (ev.key) {
+            case 'ArrowDown':
+              if (block.nextElementSibling) {
+                block.nextElementSibling.insertAdjacentElement('afterend', block);
+              }
+              ev.preventDefault();
+              break;
+            case 'ArrowUp':
+              if (block.previousElementSibling) {
+                block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+              }
+              ev.preventDefault();
+              break;
+            case 'Backspace':
+              if (inDropzone(block)) {
+                block.style.marginLeft = '0px';
+                $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
+              }
+              ev.preventDefault();
+              break;
+            case 'Enter':
+              if (!inDropzone(block)) {
+                $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
+              }
+              ev.preventDefault();
+              break;
+            case 'Tab':
+              if (inDropzone(block) && enableIndentation) {
+                let currentIndent = getIndentation(block);
+                if (pressedKeys['Shift'] && currentIndent > 0) {
+                  block.style.marginLeft = (currentIndent - 1) * TABWIDTH + 'px';
+                } else if (currentIndent < maxIndent) {
+                  block.style.marginLeft = (currentIndent + 1) * TABWIDTH + 'px';
+                }
+              }
+              ev.preventDefault();
+              break;
+            default:
+              break;
           }
           block.focus();
-        }),
-      );
+        });
+      block.addEventListener(
+        'keyup',
+        (ev) => {
+          pressedKeys[ev.key] = false;
+        }
+      )
     }
   }
 
