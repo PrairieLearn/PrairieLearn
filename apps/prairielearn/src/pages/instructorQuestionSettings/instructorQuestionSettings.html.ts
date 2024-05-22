@@ -57,6 +57,10 @@ export function InstructorQuestionSettings({
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {
+  // Only show assessments on which this question is used when viewing the question
+  // in the context of a course instance.
+  const shouldShowAssessmentsList = !!resLocals.course_instance;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -158,33 +162,34 @@ export function InstructorQuestionSettings({
                     This is a unique identifier for the question. (e.g., "addNumbers")
                   </small>
                 </div>
-                <div>
-                  <h2 class="h4">Topic</h2>
-                  <div class="list-group">
-                    <div class="list-group-item d-flex align-items-center">
-                      <span
-                        class="badge color-${resLocals.topic.color}"
-                        data-toggle="tooltip"
-                        data-html="true"
-                        title="${unsafeHtml(resLocals.topic.description)}"
-                        >${resLocals.topic.name}</span
-                      >
-                    </div>
-                  </div>
-                </div>
-                <hr />
-                <div>
-                  <h2 class="h4">Tags</h2>
-                  <div>${TagRows({ tags: resLocals.tags })}</div>
-                </div>
-                <hr />
-                <div>
-                  <h2 class="h4">Assessments</h2>
-                  <div>
-                    ${AssessmentRows({
-                      assessmentsWithQuestion,
-                    })}
-                  </div>
+
+                <div class="table-responsive card mb-3">
+                  <table class="table two-column-description">
+                    <tr>
+                      <th class="border-top-0">Topic</th>
+                      <td class="border-top-0">
+                        <span
+                          class="badge color-${resLocals.topic.color}"
+                          data-toggle="tooltip"
+                          data-boundary="window"
+                          data-html="true"
+                          title="${unsafeHtml(resLocals.topic.description)}"
+                        >
+                          ${resLocals.topic.name}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Tags</th>
+                      <td>${TagBadges({ tags: resLocals.tags })}</td>
+                    </tr>
+                    ${shouldShowAssessmentsList
+                      ? html`<tr>
+                          <th>Assessments</th>
+                          <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                        </tr>`
+                      : ''}
+                  </table>
                 </div>
               </form>
               ${sharingEnabled
@@ -203,13 +208,13 @@ export function InstructorQuestionSettings({
                         })}
                       </div>
                     </div>
-                    <hr />
                   `
                 : ''}
               ${resLocals.question.type === 'Freeform' &&
               resLocals.question.grading_method !== 'External' &&
               resLocals.authz_data.has_course_permission_view
                 ? html`
+                    <hr />
                     <div>
                       <h2 class="h4">Tests</h2>
                       <div>
@@ -251,12 +256,11 @@ export function InstructorQuestionSettings({
             (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
               ? html`
                   <div class="card-footer">
-                    <div class="row">
-                      ${editableCourses.length > 0 &&
-                      resLocals.authz_data.has_course_permission_view &&
-                      resLocals.question.course_id === resLocals.course.id
-                        ? html`
-                            <div class="col-auto">
+                      ${
+                        editableCourses.length > 0 &&
+                        resLocals.authz_data.has_course_permission_view &&
+                        resLocals.question.course_id === resLocals.course.id
+                          ? html`
                               <button
                                 type="button"
                                 class="btn btn-sm btn-primary"
@@ -281,13 +285,13 @@ export function InstructorQuestionSettings({
                                 <i class="fa fa-clone"></i>
                                 <span>Make a copy of this question</span>
                               </button>
-                            </div>
-                          `
-                        : ''}
-                      ${resLocals.authz_data.has_course_permission_edit &&
-                      !resLocals.course.example_course
-                        ? html`
-                            <div class="col-auto">
+                            `
+                          : ''
+                      }
+                      ${
+                        resLocals.authz_data.has_course_permission_edit &&
+                        !resLocals.course.example_course
+                          ? html`
                               <button
                                 class="btn btn-sm btn-primary"
                                 id
@@ -297,14 +301,14 @@ export function InstructorQuestionSettings({
                               >
                                 <i class="fa fa-times" aria-hidden="true"></i> Delete this question
                               </button>
-                            </div>
-                            ${DeleteQuestionModal({
-                              qid: resLocals.question.qid,
-                              assessmentsWithQuestion,
-                              csrfToken: resLocals.__csrf_token,
-                            })}
-                          `
-                        : ''}
+                              ${DeleteQuestionModal({
+                                qid: resLocals.question.qid,
+                                assessmentsWithQuestion,
+                                csrfToken: resLocals.__csrf_token,
+                              })}
+                            `
+                          : ''
+                      }
                     </div>
                   </div>
                 `
@@ -448,7 +452,7 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <h6>${a_with_q.short_name}</h6>
+                    <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
                     ${a_with_q.assessments.map(function (a) {
                       return html`
                         <a
@@ -517,25 +521,26 @@ function QuestionSharing({
 }) {
   if (questionSharedPublicly) {
     return html`
-      <div class="row">
-        <div class="col-1">
-          <div class="badge color-green3">Public</div>
-        </div>
-        <div class="col-auto">This question is publicly shared.</div>
-      </div>
+      <p>
+        <span class="badge color-green3 mr-1">Public</span>
+        This question is publicly shared.
+      </p>
     `;
   }
 
+  const sharedWithLabel =
+    sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+
   return html`
     ${sharingSetsIn.length === 0
-      ? html`<small class="text-muted px-3">This question is not being shared</small>`
+      ? html`<p>This question is not being shared.</p>`
       : html`
-          <small class="text-muted"
-            >Shared With:
-            ${sharingSetsIn.map(function (sharing_set) {
-              return html` <span class="badge color-gray1"> ${sharing_set?.name} </span> `;
+          <p>
+            Shared with ${sharedWithLabel}:
+            ${sharingSetsIn.map((sharing_set) => {
+              return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
             })}
-          </small>
+          </p>
         `}
     ${hasCoursePermissionOwn
       ? html`
@@ -589,57 +594,58 @@ function QuestionSharing({
   `;
 }
 
-function TagRows({ tags }) {
+function TagBadges({ tags }) {
   if (!tags || tags.length === 0) {
-    return html` <small class="text-muted"> This question does not have any tags. </small>`;
-  } else {
-    return html`
-      <div class="list-group">
-        <div class="list-group-item ">
-          ${tags.map((tag) => {
-            return html`
-              <span
-                class="badge color-${tag.color}"
-                style="white-space: unset; word-break: break-all"
-                data-toggle="tooltip"
-                title="${unsafeHtml(tag.description)}"
-              >
-                ${tag.name}
-              </span>
-            `;
-          })}
-        </div>
-      </div>
-    `;
+    return html`<small class="text-muted">This question does not have any tags.</small>`;
   }
+
+  return tags.map((tag) => {
+    return html`
+      <span
+        class="badge color-${tag.color}"
+        style="white-space: unset; word-break: break-all"
+        data-toggle="tooltip"
+        data-boundary="window"
+        title="${unsafeHtml(tag.description)}"
+      >
+        ${tag.name}
+      </span>
+    `;
+  });
 }
 
-function AssessmentRows({ assessmentsWithQuestion }) {
-  if (assessmentsWithQuestion.length === 0) {
-    return html`<small class="text-muted text-center"
-      >This question is not included in any assessments.</small
-    >`;
-  } else {
-    return assessmentsWithQuestion.map((courseInstance) => {
-      return html`
-        <div class="card pb-2 mb-2">
-          <div class="h6 card-header">
-            ${courseInstance.long_name} (${courseInstance.short_name})
-          </div>
-          <div class="card-body">
-            ${courseInstance.assessments.map((assessment) => {
-              return html`
-                <a
-                  href="/pl/course_instance/${courseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-                  class="badge color-${assessment.color}"
-                >
-                  ${assessment.label}
-                </a>
-              `;
-            })}
-          </div>
-        </div>
-      `;
-    });
+function AssessmentBadges({
+  assessmentsWithQuestion,
+  resLocals,
+}: {
+  assessmentsWithQuestion: SelectedAssessments[];
+  resLocals: Record<string, any>;
+}) {
+  const courseInstanceId = resLocals.course_instance.id;
+
+  const assessmentsInCourseInstance = assessmentsWithQuestion.find((a) =>
+    idsEqual(a.course_instance_id, courseInstanceId),
+  );
+
+  if (
+    !assessmentsInCourseInstance?.assessments ||
+    assessmentsInCourseInstance.assessments.length === 0
+  ) {
+    return html`
+      <small class="text-muted text-center">
+        This question is not included in any assessments in this course instance.
+      </small>
+    `;
   }
+
+  return assessmentsInCourseInstance.assessments.map((assessment) => {
+    return html`
+      <a
+        href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
+        class="badge color-${assessment.color}"
+      >
+        ${assessment.label}
+      </a>
+    `;
+  });
 }

@@ -63,7 +63,9 @@ FROM
       AND ci.deleted_at IS NULL
     GROUP BY
       ci.id
-  ) result;
+    ORDER BY
+      ci.id
+  ) AS result;
 
 -- BLOCK select_sharing_sets
 SELECT
