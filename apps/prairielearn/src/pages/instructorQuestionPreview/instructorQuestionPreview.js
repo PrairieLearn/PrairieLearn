@@ -26,7 +26,7 @@ router.post(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
-      const variant_id = await reportIssueFromForm('instructor', req, res);
+      const variant_id = await reportIssueFromForm(req, res);
       res.redirect(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );

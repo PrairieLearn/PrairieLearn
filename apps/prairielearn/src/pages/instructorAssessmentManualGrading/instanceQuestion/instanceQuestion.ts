@@ -270,7 +270,7 @@ router.post(
         ),
       );
     } else if (body.__action === 'report_issue') {
-      await reportIssueFromForm('instructor', req, res);
+      await reportIssueFromForm(req, res);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

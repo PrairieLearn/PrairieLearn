@@ -105,11 +105,11 @@ export async function processSubmission(
 }
 
 export async function reportIssueFromForm(
-  context: 'student' | 'instructor',
   req: Request,
   res: Response,
+  studentSubmission = false,
 ): Promise<string> {
-  if (context === 'student' && !res.locals.assessment.allow_issue_reporting) {
+  if (studentSubmission && !res.locals.assessment.allow_issue_reporting) {
     throw new HttpStatusError(403, 'Issue reporting not permitted for this assessment');
   }
   const description = req.body.description;
@@ -117,15 +117,13 @@ export async function reportIssueFromForm(
     throw new HttpStatusError(400, 'A description of the issue must be provided');
   }
 
-  const variantId = (
-    await validateVariantAgainstQuestion(
-      req.body.__variant_id,
-      res.locals.question.id,
-      context === 'student' ? res.locals.instance_question?.id : null,
-    )
-  ).id;
+  const variant = await validateVariantAgainstQuestion(
+    req.body.__variant_id,
+    res.locals.question.id,
+    studentSubmission ? res.locals.instance_question?.id : null,
+  );
   await insertIssue({
-    variantId,
+    variantId: variant.id,
     studentMessage: description,
     instructorMessage: `${context}-reported issue`,
     manuallyReported: true,
@@ -135,10 +133,10 @@ export async function reportIssueFromForm(
       'question',
       'course_instance',
       'course',
-      ...(context === 'student' ? ['instance_question', 'assessment_instance', 'assessment'] : []),
+      ...(studentSubmission ? ['instance_question', 'assessment_instance', 'assessment'] : []),
     ]),
     systemData: {},
     authnUserId: res.locals.authn_user.user_id,
   });
-  return variantId;
+  return variant.id;
 }
