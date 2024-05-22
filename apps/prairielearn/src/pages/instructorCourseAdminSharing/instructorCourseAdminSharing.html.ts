@@ -82,8 +82,8 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
             <p class="form-text">
               Enter the sharing name you would like for your course.
             </p>
-            <p><strong>Once you choose your course's sharing name, you may not be able to change it</strong>,
-              because doing so would break the assessments of other courses that have imported your questions.
+            <p><strong>Once you have shared a question either publicly or with another course, you will no longer be able to change your sharing name.</strong>
+              Doing so would break the assessments of other courses that have imported your questions.
               It is recommended that you choose something short but descriptive. For example, if you're teaching
               a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
               name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
@@ -109,7 +109,8 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
                   </p>
                   <p>
                     Your course's sharing name cannot be changed because at least one question has
-                    been imported or shared publicly.
+                    been shared. Doing so would break the assessments of other courses that have
+                    imported your questions.
                   </p>
                 </div>
               `}

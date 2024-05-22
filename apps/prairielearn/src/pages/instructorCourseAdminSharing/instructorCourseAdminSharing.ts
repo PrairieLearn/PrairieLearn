@@ -12,6 +12,19 @@ import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+async function selectCanChooseSharingName(course) {
+  return (
+    course.sharing_name === null ||
+    !(await sqldb.queryOptionalRow(
+      sql.select_shared_question_exists,
+      {
+        course_id: course.id,
+      },
+      z.any().nullable(),
+    ))
+  );
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -46,13 +59,8 @@ router.get(
       host,
     ).href;
 
-    const canChooseSharingName = !(await sqldb.queryOptionalRow(
-      sql.select_shared_question_exists,
-      {
-        course_id: res.locals.course.id,
-      },
-      z.any().nullable(),
-    ));
+    const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
@@ -109,15 +117,8 @@ router.post(
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
       } else {
-        const sharedQuestionExists = await sqldb.queryOptionalRow(
-          sql.select_shared_question_exists,
-          {
-            course_id: res.locals.course.id,
-          },
-          z.any().nullable(),
-        );
-
-        if (!sharedQuestionExists) {
+        const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+        if (canChooseSharingName) {
           await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
             sharing_name: req.body.course_sharing_name.trim(),
             course_id: res.locals.course.id,
