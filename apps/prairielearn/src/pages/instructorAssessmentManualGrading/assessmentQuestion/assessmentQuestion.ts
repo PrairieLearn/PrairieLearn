@@ -4,6 +4,7 @@ import { OpenAI } from 'openai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -201,6 +202,13 @@ router.post(
       console.log('BOT GRADING THE ASSESSMENT!');
       // res.send({});
       console.log(config.openAiApiKey);
+      if (config.openAiApiKey === null || config.openAiOrganization === null) {
+        throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
+      }
+      const openaiconfig = {
+        apiKey: config.openAiApiKey,
+        organization: config.openAiOrganization,
+      };
       const { urlPrefix, assessment, assessment_instance, assessment_question, authz_result } =
         res.locals;
 
@@ -217,7 +225,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         console.log('running grading in background');
 
-        const openai = new OpenAI({ apiKey: '', organization: '' }); // TODO: replace with config
+        const openai = new OpenAI(openaiconfig); // TODO: replace with config
         console.log('OpenAI API ready');
 
         // get all instance questions
@@ -229,6 +237,10 @@ router.post(
           },
           InstanceQuestionSchema,
         );
+
+        let error_count = 0;
+        let output_count = 0;
+        let output: string | null = null;
 
         // get each instance question
         for (const instance_question of result) {
@@ -291,60 +303,66 @@ router.post(
           // TODO: Call OpenAI API to grade
           const question_prompt = data.questionHtml.split('<script>', 2)[0];
           console.log(question_prompt);
-          // const openai_messages = [
-          //   {
-          //     role: 'system',
-          //     content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
-          //   },
-          //   {
-          //     role: 'user',
-          //     content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
-          //   },
-          // ];
 
-          // const completion = await openai.chat.completions.create({
-          //   messages: [
-          //     {
-          //       role: 'system',
-          //       content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
-          //     },
-          //     {
-          //       role: 'user',
-          //       content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
-          //     },
-          //   ],
-          //   model: 'gpt-3.5-turbo',
-          // });
+          const completion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: 'system',
+                content: `You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. `,
+              },
+              {
+                role: 'user',
+                content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+              },
+            ],
+            model: 'gpt-3.5-turbo',
+          });
 
-          // console.log(completion.choices[0]);
-
-          const update_result = await manualGrading.updateInstanceQuestionScore(
-            res.locals.assessment.id,
-            instance_question.id,
-            submission.id,
-            req.body.modified_at,
-            {
-              score_perc: 50, // replace with LLM score
-              feedback: { manual: 'replace with grader feedback' }, // replace with LLM feedback
-              // TODO: rubrics
-            },
-            '1',
-          );
-          // if (update_result.modified_at_conflict) {
-          //   res.send({
-          //     conflict_grading_job_id: update_result.grading_job_id,
-          //     conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${update_result.grading_job_id}`,
-          //   });
-          // } else {
-          //   res.send({});
-          // }
+          console.log(completion.choices[0].message.content);
+          let msg = '';
+          try {
+            if (completion.choices[0].message.content === null) {
+              error_count++;
+              continue;
+            }
+            const gpt_answer = JSON.parse(completion.choices[0].message.content);
+            const update_result = await manualGrading.updateInstanceQuestionScore(
+              res.locals.assessment.id,
+              instance_question.id,
+              submission.id,
+              req.body.modified_at,
+              {
+                score_perc: gpt_answer.grade, // replace with LLM score
+                feedback: { manual: gpt_answer.feedback }, // replace with LLM feedback
+                // TODO: rubrics
+              },
+              '1',
+            );
+            msg = `Bot grades for ${instance_question.id}: gpt_answer.grade`;
+            if (update_result.modified_at_conflict) {
+              error_count++;
+              msg += `ERROR modified at conflict for ${instance_question.id}`;
+            }
+          } catch (err) {
+            logger.error('error while regrading', { err });
+            error_count++;
+            msg = `ERROR bot grading for ${instance_question.id}`;
+          }
+          output = (output == null ? '' : `${output}\n`) + msg;
+          if (output_count >= 100) {
+            job.info(output);
+            output = null;
+            output_count = 0;
+          }
         }
 
-        // call the API to grade the thing
-        // Put the grade in the database (make a new grading_job, assign to user id 1)
-        // Can we just call the function "updateInstanceQuestionScore" from manualGrading.ts?
-
-        job.info('running'); // Do we really need to use the ServerJob interface?
+        if (error_count > 0) {
+          job.error('Number of errors: ' + error_count);
+          job.fail('Errors occurred while regrading, see output for details'); // output?
+        }
+        if (output != null) {
+          job.info(output);
+        }
       });
 
       // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"
