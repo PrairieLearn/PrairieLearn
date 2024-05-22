@@ -46,12 +46,20 @@ router.get(
       host,
     ).href;
 
+    const canChooseSharingName = !(await sqldb.queryOptionalRow(
+      sql.select_shared_question_exists,
+      {
+        course_id: res.locals.course.id,
+      },
+      z.any().nullable(),
+    ));
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
         sharingSets,
         publicSharingLink,
+        canChooseSharingName,
         resLocals: res.locals,
       }),
     );
@@ -90,15 +98,6 @@ router.post(
       if (consuming_course_id === null) {
         throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
       }
-    } else if (req.body.__action === 'check_imported_questions') {
-      const importedQuestions = await sqldb.queryOptionalRow(
-        sql.check_imported_questions, 
-        { course_id: res.locals.course.id },
-        z.any().nullable(),
-      );
-
-      return res.json(importedQuestions); 
-    
     } else if (req.body.__action === 'choose_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
@@ -110,33 +109,26 @@ router.post(
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
       } else {
-        // First, check if any questions have been imported or shared publicly
-        const checkResult = await sqldb.queryOptionalRow(
-          sql.check_imported_questions, 
+        const sharedQuestionExists = await sqldb.queryOptionalRow(
+          sql.select_shared_question_exists,
           {
-          course_id: res.locals.course.id,
+            course_id: res.locals.course.id,
           },
           z.any().nullable(),
         );
 
-        if (!checkResult) {
-          // If no questions have been imported or shared publicly, choose the sharing name
-          await sqldb.queryZeroOrOneRowAsync(
-            sql.choose_sharing_name, 
-            {
+        if (!sharedQuestionExists) {
+          await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
             sharing_name: req.body.course_sharing_name.trim(),
             course_id: res.locals.course.id,
-            }
-          );
+          });
         } else {
-          // If any questions have been imported or shared publicly, do not update and return an error
           throw new error.HttpStatusError(
             400,
-            'Unable to change sharing name. At least one question has been imported or shared publicly.',
+            'Unable to change sharing name. At least one question has been shared.',
           );
         }
       }
-
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -59,80 +59,25 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-// TEST, ERROR, sometimes must be reloaded to update the value after running checkImportedQuestions
-let sharingNameChoosable = false; // TEST, better safe than sorry, should be set to false by default
-
-// Function to check if any questions have been imported or shared publicly
-async function checkImportedQuestions(resLocals) {
-  const formData = new FormData();
-  formData.append('__action', 'check_imported_questions');
-  formData.append('__csrf_token', resLocals.__csrf_token);
-  //http://localhost:3000/pl/course/2/course_admin/sharing
-  
-  console.log("serverPort is: ", resLocals.serverPort); // TEST
-
-  const siteUrl = 'http://localhost:' + resLocals.serverPort; // TEST
-  const baseUrl = siteUrl + '/pl'; // TEST
-  
-  //`${baseUrl}/course/${resLocals.course.id}/course_admin/sharing` // ONE FROM THE TESTS PAGE
-
-  const plainUrlPrefix = "http://localhost:3000/pl"; // TEST, UPDATE, need to get automatically, not hard-coded
-  const url = `${plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing`;// TEST
-  
-  console.log(`url is ${url}`); // TEST
-  
-  try {
-    const response = await fetch(url, { // TEST, what should the URL be?
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'check_imported_questions',
-        __csrf_token: resLocals.__csrf_token,
-      }),
-    });
-
-    const importedQuestions = await response.json();
-    sharingNameChoosable = !importedQuestions; // If no questions have been imported or shared publicly, sharing name can be changed
-
-    console.log(sharingNameChoosable); // TEST
-
-    return sharingNameChoosable;
-  } catch (error) {
-    console.error('Error submitting form:', error);
-    return error;
-  }
-}
-
-
-
-const chooseSharingNameModal = (resLocals) => {
+const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   return html`
-  <div
-    class="modal fade"
-    id="chooseSharingNameModal"
-    tabindex="-1"
-    role="dialog"
-    aria-hidden="true"
-  >
     <div
-      class="modal-dialog modal-dialog-centered"
-      role="document"
+      class="modal fade"
+      id="chooseSharingNameModal"
+      tabindex="-1"
+      role="dialog"
+      aria-hidden="true"
     >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Choose Sharing Name
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        ${sharingNameChoosable 
-          ? html`
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Choose Sharing Name</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          ${canChooseSharingName
+            ? html`
           <div class="modal-body">
             <p class="form-text">
               Enter the sharing name you would like for your course.
@@ -156,19 +101,19 @@ const chooseSharingNameModal = (resLocals) => {
               </div>
             </form>
           </div>
-            ` 
+            `
             : html`
-            <div class="modal-body">
-              <p class="form-text">
-                <strong>Unable to change your course's sharing name.</strong>
-              </p>
-              <p>
-                Your course's sharing name cannot be changed because at least one question has been imported or shared publicly.
-              </p>
-            </div>
-            `}
+                <div class="modal-body">
+                  <p class="form-text">
+                    <strong>Unable to change your course's sharing name.</strong>
+                  </p>
+                  <p>
+                    Your course's sharing name cannot be changed because at least one question has
+                    been imported or shared publicly.
+                  </p>
+                </div>
+              `}
         </div>
-
       </div>
     </div>
   `;
@@ -179,16 +124,17 @@ export const InstructorSharing = ({
   sharingToken,
   sharingSets,
   publicSharingLink,
+  canChooseSharingName,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
   sharingSets: { name: string; id: string; shared_with: string[] }[];
   publicSharingLink: string;
+  canChooseSharingName: boolean;
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
-  checkImportedQuestions(resLocals);
   return html`
     <!doctype html>
     <html lang="en">
@@ -225,7 +171,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(resLocals)}
+                          ${chooseSharingNameModal(canChooseSharingName, resLocals)}
                         `
                       : ''}
                   </td>
