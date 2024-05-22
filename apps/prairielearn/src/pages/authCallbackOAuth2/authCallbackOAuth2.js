@@ -1,16 +1,16 @@
 // @ts-check
-const assert = require('assert');
-const Sentry = require('@prairielearn/sentry');
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const { OAuth2Client } = require('google-auth-library');
-const { logger } = require('@prairielearn/logger');
-const error = require('@prairielearn/error');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import { OAuth2Client } from 'google-auth-library';
 
-const authnLib = require('../../lib/authn');
-const { config } = require('../../lib/config');
+import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
-const router = express.Router();
+import * as authnLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
+
+const router = Router();
 
 router.get(
   '/',
@@ -21,7 +21,7 @@ router.get(
       !config.googleClientSecret ||
       !config.googleRedirectUrl
     ) {
-      throw error.make(404, 'Google login is not enabled');
+      throw new HttpStatusError(404, 'Google login is not enabled');
     }
 
     const code = req.query.code;
@@ -65,7 +65,8 @@ router.get(
     const parts = idToken.split('.');
     identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
     logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
-    assert(identity.email);
+
+    if (!identity.email) throw new Error('Google auth response missing email');
 
     let authnParams = {
       uid: identity.email,
@@ -80,4 +81,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

@@ -1,7 +1,9 @@
-import * as error from '@prairielearn/error';
-import { config } from './config';
-import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
+
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import { config } from './config.js';
 
 export function canSendMessages(): boolean {
   return !!config.secretSlackOpsBotEndpoint;
@@ -20,9 +22,11 @@ export async function sendMessage(msg: string): Promise<null | Response> {
   });
 
   if (!response.ok) {
-    throw error.makeWithData('Error sending message', {
-      responseCode: response.status,
-      responseText: await response.text(),
+    throw new error.AugmentedError('Error sending message', {
+      data: {
+        responseCode: response.status,
+        responseText: await response.text(),
+      },
     });
   }
 
@@ -57,9 +61,11 @@ export async function sendSlackMessage(
   });
 
   if (!response.ok) {
-    throw error.makeWithData(`Error sending message to ${channel}`, {
-      responseCode: response.status,
-      responseText: await response.text(),
+    throw new error.AugmentedError(`Error sending message to ${channel}`, {
+      data: {
+        responseCode: response.status,
+        responseText: await response.text(),
+      },
     });
   }
   return response;

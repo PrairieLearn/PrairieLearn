@@ -1,9 +1,11 @@
+import { z } from 'zod';
+
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types';
-import { z } from 'zod';
-import { Modal } from '../../components/Modal.html';
+
+import { Modal } from '../../components/Modal.html.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -14,23 +16,23 @@ export const GroupUsersRowSchema = z.object({
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
 export function InstructorAssessmentGroups({
-  resLocals,
   groupsCsvFilename,
   groupConfigInfo,
   groups,
   notAssigned,
+  resLocals,
 }: {
-  resLocals: Record<string, any>;
   groupsCsvFilename?: string;
   groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
+  resLocals: Record<string, any>;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
@@ -72,10 +74,10 @@ export function InstructorAssessmentGroups({
             $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -101,7 +103,7 @@ export function InstructorAssessmentGroups({
                         csrfToken: resLocals.__csrf_token,
                       })}
                       ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
-                      ${DeleteGroupModal({
+                      ${DeleteAllGroupsModal({
                         assessmentSetName: resLocals.assessment_set.name,
                         assessmentNumber: resLocals.assessment.number,
                         csrfToken: resLocals.__csrf_token,
@@ -324,14 +326,19 @@ export function InstructorAssessmentGroups({
 function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
   return html`
     <form name="add-member-form" method="POST">
-      UIDs:
-      <input
-        type="text"
-        class="form-control"
-        placeholder="A@ex.com, B@ex.com"
-        name="add_member_uids"
-      />
-      <br />
+      <div class="form-group">
+        <label for="add_member_uids">UIDs</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="student@example.com"
+          name="add_member_uids"
+          aria-describedby="add_member_uids_help"
+        />
+        <small id="add_member_uids_help" class="form-text text-muted">
+          Separate multiple UIDs with commas.
+        </small>
+      </div>
       <input type="hidden" name="__action" value="add_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
@@ -489,19 +496,18 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
         <label for="formName">Group Name</label>
         <input type="text" class="form-control" id="formName" name="group_name" />
       </div>
-      <br />
       <div class="form-group">
-        <label for="formUids">UIDs</label>
+        <label for="addGroupUids">UIDs</label>
         <input
           type="text"
           class="form-control"
-          id="formUids"
+          id="addGroupUids"
           name="uids"
-          placeholder="one@example.com, two@example.com, three@example.com"
+          placeholder="student1@example.com, student2@example.com"
+          aria-describedby="addGroupUidsHelp"
         />
-        <small id="uidHelp" class="form-text text-muted">
-          Separate with "," <br />
-          Please make sure they are not in any other groups
+        <small id="addGroupUidsHelp" class="form-text text-muted">
+          Separate multiple UIDs with commas.
         </small>
       </div>
     `,
@@ -514,7 +520,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function DeleteGroupModal({
+function DeleteAllGroupsModal({
   csrfToken,
   assessmentSetName,
   assessmentNumber,

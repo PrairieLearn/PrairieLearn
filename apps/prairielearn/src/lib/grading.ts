@@ -1,16 +1,13 @@
 import * as fs from 'fs';
+
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-
-import * as externalGrader from './externalGrader';
-import * as ltiOutcomes from './ltiOutcomes';
-import { writeCourseIssues } from './issues';
-import { getQuestionCourse } from './question-variant';
 import * as sqldb from '@prairielearn/postgres';
-import * as questionServers from '../question-servers';
-import * as workspaceHelper from './workspace';
+
+import * as questionServers from '../question-servers/index.js';
+
 import {
   Course,
   DateFromISOString,
@@ -23,10 +20,15 @@ import {
   SubmissionSchema,
   Variant,
   VariantSchema,
-} from './db-types';
-import { idsEqual } from './id';
+} from './db-types.js';
+import * as externalGrader from './externalGrader.js';
+import { idsEqual } from './id.js';
+import { writeCourseIssues } from './issues.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { getQuestionCourse } from './question-variant.js';
+import * as workspaceHelper from './workspace.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const NextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
@@ -93,17 +95,23 @@ export async function insertSubmission({
     );
 
     if (variant.broken_at != null) {
-      throw error.make(400, 'Variant is broken', { variant_id });
+      throw new error.AugmentedError('Variant is broken', { status: 400, data: { variant_id } });
     }
 
     if (!variant.open) {
-      throw error.make(403, 'Variant is not open', { variant_id });
+      throw new error.AugmentedError('Variant is not open', { status: 403, data: { variant_id } });
     }
     if (variant.instance_question_id != null && !variant.instance_question_open) {
-      throw error.make(403, 'Instance question is not open', { variant_id });
+      throw new error.AugmentedError('Instance question is not open', {
+        status: 403,
+        data: { variant_id },
+      });
     }
     if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
-      throw error.make(403, 'Assessment instance is not open', { variant_id });
+      throw new error.AugmentedError('Assessment instance is not open', {
+        status: 403,
+        data: { variant_id },
+      });
     }
 
     const delta = await sqldb.queryOptionalRow(
@@ -269,9 +277,12 @@ async function selectSubmissionForGrading(
     if (submission == null) return null;
 
     if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
-      throw error.make(400, 'Submission ID mismatch', {
-        submission_id: submission.id,
-        check_submission_id,
+      throw new error.AugmentedError('Submission ID mismatch', {
+        status: 400,
+        data: {
+          submission_id: submission.id,
+          check_submission_id,
+        },
       });
     }
 
@@ -389,7 +400,7 @@ export async function gradeVariant(
       IdSchema.nullable(),
     );
     if (assessment_instance_id != null) {
-      await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+      await ltiOutcomes.updateScore(assessment_instance_id);
     }
   }
 }

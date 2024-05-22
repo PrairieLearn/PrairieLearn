@@ -1,15 +1,16 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { copyQuestionBetweenCourses } from '../../lib/copy-question';
-import { idsEqual } from '../../lib/id';
-import { CourseSchema, QuestionSchema } from '../../lib/db-types';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { CourseSchema, QuestionSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 
 const router = Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.post(
   '/',
@@ -17,7 +18,10 @@ router.post(
     // It doesn't make much sense to transfer a template course question to
     // the same template course, so we'll explicitly forbid that.
     if (idsEqual(req.body.course_id, res.locals.course.id)) {
-      throw error.make(400, 'Template course questions cannot be copied to the same course.');
+      throw new error.HttpStatusError(
+        400,
+        'Template course questions cannot be copied to the same course.',
+      );
     }
 
     // This query will implicitly check that the question belongs to the given
@@ -37,7 +41,7 @@ router.post(
     );
 
     if (result.course.template_course === false) {
-      throw error.make(400, 'The given course is not a template course.');
+      throw new error.HttpStatusError(400, 'The given course is not a template course.');
     }
 
     await copyQuestionBetweenCourses(res, {

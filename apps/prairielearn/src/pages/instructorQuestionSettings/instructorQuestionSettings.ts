@@ -1,36 +1,43 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import * as error from '@prairielearn/error';
-import { startTestQuestion } from '../../lib/question-testing';
-import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } from '../../lib/editors';
-import { config } from '../../lib/config';
-import { encodePath } from '../../lib/uri-util';
-import { idsEqual } from '../../lib/id';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question';
+import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { features } from '../../lib/features/index';
-import { getCanonicalHost } from '../../lib/url';
-import { selectCoursesWithEditAccess } from '../../models/course';
-import { IdSchema } from '../../lib/db-types';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import { config } from '../../lib/config.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import {
+  QuestionRenameEditor,
+  QuestionDeleteEditor,
+  QuestionCopyEditor,
+} from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
+import { startTestQuestion } from '../../lib/question-testing.js';
+import { encodePath } from '../../lib/uri-util.js';
+import { getCanonicalHost } from '../../lib/url.js';
+import { selectCoursesWithEditAccess } from '../../models/course.js';
+
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
-  SharingSetSchema,
-} from './instructorQuestionSettings.html';
+  SharingSetRowSchema,
+} from './instructorQuestionSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
     // We use a separate `test/` POST route so that we can always use the
     // route to distinguish between pages that need to execute course code
@@ -38,7 +45,7 @@ router.post(
     // editing (here the plain '/' POST handler).
     if (req.body.__action === 'test_once') {
       if (!res.locals.authz_data.has_course_permission_view) {
-        throw error.make(403, 'Access denied (must be a course Viewer)');
+        throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
       const count = 1;
       const showDetails = true;
@@ -53,7 +60,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
       if (!res.locals.authz_data.has_course_permission_view) {
-        throw error.make(403, 'Access denied (must be a course Viewer)');
+        throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
       if (res.locals.question.grading_method !== 'External') {
         const count = 100;
@@ -71,7 +78,7 @@ router.post(
         throw new Error('Not supported for externally-graded questions');
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -80,12 +87,14 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw error.make(400, `Invalid QID (was falsy): ${req.body.id}`);
+      if (!req.body.id) {
+        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.id}`);
+      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
@@ -94,7 +103,10 @@ router.post(
       try {
         qid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw error.make(400, `Invalid QID (could not be normalized): ${req.body.id}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid QID (could not be normalized): ${req.body.id}`,
+        );
       }
       if (res.locals.question.qid === qid_new) {
         res.redirect(req.originalUrl);
@@ -157,10 +169,10 @@ router.post(
         res.locals,
       );
       if (!questionSharingEnabled) {
-        throw error.make(403, 'Access denied (feature not available)');
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
       if (!res.locals.authz_data.has_course_permission_own) {
-        throw error.make(403, 'Access denied (must be a course Owner)');
+        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
       }
       await sqldb.queryAsync(sql.sharing_set_add, {
         course_id: res.locals.course.id,
@@ -174,10 +186,10 @@ router.post(
         res.locals,
       );
       if (!questionSharingEnabled) {
-        throw error.make(403, 'Access denied (feature not available)');
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
       if (!res.locals.authz_data.has_course_permission_own) {
-        throw error.make(403, 'Access denied (must be a course Owner)');
+        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
       }
       await sqldb.queryAsync(sql.update_question_shared_publicly, {
         course_id: res.locals.course.id,
@@ -185,7 +197,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -194,7 +206,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
     // Construct the path of the question test route. We'll do this based on
     // `originalUrl` so that this router doesn't have to be aware of where it's
@@ -246,7 +258,7 @@ router.get(
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         },
-        SharingSetSchema,
+        SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
       sharingSetsOther = result.filter((row) => !row.in_set);

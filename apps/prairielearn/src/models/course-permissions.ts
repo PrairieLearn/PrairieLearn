@@ -1,3 +1,4 @@
+import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -5,7 +6,6 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 
 import {
   type User,
@@ -13,10 +13,11 @@ import {
   CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
-} from '../lib/db-types';
-import { selectOrInsertUserByUid } from './user';
+} from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+import { selectOrInsertUserByUid } from './user.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function insertCoursePermissionsByUserUid({
   course_id,
@@ -58,7 +59,7 @@ export async function updateCoursePermissionsRole({
     CoursePermissionSchema,
   );
   if (!result) {
-    throw error.make(404, 'No course permissions to update');
+    throw new error.HttpStatusError(404, 'No course permissions to update');
   }
 }
 
@@ -140,7 +141,7 @@ export async function insertCourseInstancePermissions({
     CoursePermissionSchema,
   );
   if (!coursePermission) {
-    throw error.make(
+    throw new error.HttpStatusError(
       404,
       'Cannot add permissions for a course instance without course permissions',
     );
@@ -166,7 +167,7 @@ export async function updateCourseInstancePermissionsRole({
     CourseInstancePermissionSchema,
   );
   if (!result) {
-    throw error.make(404, 'No course instance permissions to update');
+    throw new error.HttpStatusError(404, 'No course instance permissions to update');
   }
 }
 

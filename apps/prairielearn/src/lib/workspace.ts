@@ -1,34 +1,31 @@
 // @ts-check
-import fetch from 'node-fetch';
-import * as path from 'path';
-import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
-import * as fse from 'fs-extra';
+import { ok as assert } from 'node:assert';
+import { setTimeout as sleep } from 'node:timers/promises';
+import * as path from 'path';
+
+import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
-import archiver = require('archiver');
-import klaw = require('klaw');
-import { v4 as uuidv4 } from 'uuid';
-import * as tmp from 'tmp-promise';
-import * as mustache from 'mustache';
-import { setTimeout as sleep } from 'node:timers/promises';
-import { z } from 'zod';
-import { ok as assert } from 'node:assert';
-import type { Socket } from 'socket.io';
 import type { Entry } from 'fast-glob';
+import fs from 'fs-extra';
+import klaw from 'klaw';
+import mustache from 'mustache';
+import fetch from 'node-fetch';
+import type { Socket } from 'socket.io';
+import * as tmp from 'tmp-promise';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { contains } from '@prairielearn/path-utils';
-import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken } from '@prairielearn/signed-token';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { config } from './config';
-import * as socketServer from './socket-server';
-import * as chunks from './chunks';
-import * as workspaceHostUtils from './workspaceHost';
-import * as issues from './issues';
+import * as chunks from './chunks.js';
+import { config } from './config.js';
 import {
   CourseSchema,
   DateFromISOString,
@@ -36,10 +33,13 @@ import {
   VariantSchema,
   WorkspaceHostSchema,
   WorkspaceSchema,
-} from './db-types';
+} from './db-types.js';
+import * as issues from './issues.js';
+import * as socketServer from './socket-server.js';
+import * as workspaceHostUtils from './workspaceHost.js';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:workspace');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const WorkspaceDataSchema = z.object({
   workspace: WorkspaceSchema,
@@ -191,10 +191,17 @@ async function controlContainer(
     body: JSON.stringify(postJson),
     headers: { 'Content-Type': 'application/json' },
   });
+
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError((await res.json()).message);
+      throw new SubmissionFormatError(((await res.json()) as any).message);
     }
+
+    const body = res.body;
+    if (!body) {
+      throw new SubmissionFormatError('No response body');
+    }
+
     const contentDisposition = res.headers.get('content-disposition');
     if (contentDisposition == null) throw new Error(`Content-Disposition is null`);
     const match = contentDisposition.match(/^attachment; filename="(.*)"$/);
@@ -207,7 +214,7 @@ async function controlContainer(
     return new Promise((resolve, reject) => {
       stream
         .on('open', () => {
-          res.body.pipe(stream);
+          body.pipe(stream);
         })
         .on('error', (err) => {
           reject(err);
@@ -217,10 +224,11 @@ async function controlContainer(
         });
     });
   }
+
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = await res.json();
+  const json = (await res.json()) as any;
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
@@ -271,7 +279,7 @@ async function startup(workspace_id: string): Promise<void> {
         // could lead to unexpected behavior.
         try {
           const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
-          await fse.move(
+          await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
             { overwrite: true },
@@ -287,7 +295,7 @@ async function startup(workspace_id: string): Promise<void> {
         // Next, move the newly created directory into place. This will be
         // done with a lock held, so we shouldn't worry about other processes
         // trying to work with these directories at the same time.
-        await fse.move(initializeResult.sourcePath, initializeResult.destinationPath, {
+        await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
           overwrite: true,
         });
       }
@@ -505,7 +513,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
   const destinationPath = path.join(root, remotePath);
   const sourcePath = `${destinationPath}-${uuidv4()}`;
 
-  await fse.ensureDir(sourcePath);
+  await fs.ensureDir(sourcePath);
   await fsPromises.chown(
     sourcePath,
     config.workspaceJobsDirectoryOwnerUid,
@@ -516,11 +524,11 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
       const sourceFile = path.join(sourcePath, workspaceFile.name);
       try {
-        await fse.ensureDir(path.dirname(sourceFile));
+        await fs.ensureDir(path.dirname(sourceFile));
         if ('localPath' in workspaceFile) {
-          await fse.copy(workspaceFile.localPath, sourceFile);
+          await fs.copy(workspaceFile.localPath, sourceFile);
         } else {
-          await fse.writeFile(sourceFile, workspaceFile.buffer);
+          await fs.writeFile(sourceFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({

@@ -1,4 +1,4 @@
-import { FeatureManager } from './manager';
+import { FeatureManager } from './manager.js';
 
 const featureNames = [
   'course-instance-billing',
@@ -10,6 +10,7 @@ const featureNames = [
   'assessment-access-overrides',
   // Can only be applied to institutions.
   'lti13',
+  'terms-clickthrough',
 ] as const;
 
 const features = new FeatureManager(featureNames);

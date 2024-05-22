@@ -1,5 +1,5 @@
+import parsePostgresInterval from 'postgres-interval';
 import { z } from 'zod';
-import parsePostgresInterval = require('postgres-interval');
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -153,6 +153,9 @@ export const SamlProviderSchema = z.object({
   sso_login_url: z.string(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
+  validate_audience: z.boolean(),
+  want_assertions_signed: z.boolean(),
+  want_authn_response_signed: z.boolean(),
 });
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
@@ -186,6 +189,7 @@ export const UserSchema = z.object({
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
   stripe_customer_id: z.string().nullable(),
+  terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,
@@ -662,6 +666,8 @@ export const ClientFingerprintSchema = z.object({
   created_at: DateFromISOString,
 });
 
+export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
+
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
@@ -685,7 +691,7 @@ export const JobSchema = z.object({
   number_in_sequence: z.number().nullable(),
   output: z.string().nullable(),
   start_date: DateFromISOString.nullable(),
-  status: z.enum(['Running', 'Success', 'Error']).nullable(),
+  status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
   working_directory: z.string().nullable(),
@@ -904,6 +910,12 @@ export const ZoneSchema = z.object({
 });
 export type Zone = z.infer<typeof ZoneSchema>;
 
+export const AdministratorSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type Administrator = z.infer<typeof AdministratorSchema>;
+
 // Result of grading_job_status sproc
 export const GradingJobStatusSchema = z.enum([
   'none',
@@ -914,3 +926,31 @@ export const GradingJobStatusSchema = z.enum([
   'requested',
 ]);
 export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
+
+export const JobSequenceSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  course_request_id: IdSchema.nullable(),
+  description: z.string().nullable(),
+  finish_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  legacy: z.boolean(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  status: EnumJobStatusSchema.nullable(),
+  type: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type JobSequence = z.infer<typeof JobSequenceSchema>;
+
+export const LtiCredentialsSchema = z.object({
+  consumer_key: z.string().nullable(),
+  course_instance_id: z.string().nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  secret: z.string().nullable(),
+});
+export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;

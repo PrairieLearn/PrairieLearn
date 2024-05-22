@@ -2,15 +2,16 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 
-import { config } from '../lib/config';
-import * as chunks from '../lib/chunks';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
-import * as helperQuestion from './helperQuestion';
+import * as chunks from '../lib/chunks.js';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperClient from './helperClient.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Generate chunks and use them for a student homework', function () {
   this.timeout(60000);
@@ -47,7 +48,7 @@ describe('Generate chunks and use them for a student homework', function () {
     const course_ids = ['1'];
     const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
-    await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
+    await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
   step('start the homework', async () => {

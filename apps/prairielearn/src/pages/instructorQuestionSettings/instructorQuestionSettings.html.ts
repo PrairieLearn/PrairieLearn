@@ -1,11 +1,13 @@
-import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { Modal } from '../../components/Modal.html';
-import { IdSchema } from '../../lib/db-types';
-import { CourseWithPermissions } from '../../models/course';
-import { isEnterprise } from '../../lib/license';
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import { isEnterprise } from '../../lib/license.js';
+import { CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),
@@ -20,12 +22,12 @@ export const SelectedAssessmentsSchema = z.object({
 });
 type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
 
-export const SharingSetSchema = z.object({
+export const SharingSetRowSchema = z.object({
   id: IdSchema,
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSet = z.infer<typeof SharingSetSchema>;
+type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -47,8 +49,8 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSet[];
-  sharingSetsOther: SharingSet[];
+  sharingSetsIn: SharingSetRow[];
+  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {
@@ -56,7 +58,7 @@ export function InstructorQuestionSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           pageNote: resLocals.question.qid,
           ...resLocals,
         })}
@@ -75,10 +77,10 @@ export function InstructorQuestionSettings({
           });
         </script>
 
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/questionSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -110,7 +112,7 @@ export function InstructorQuestionSettings({
                             data-placement="auto"
                             title="Change QID"
                             data-content="${renderEjs(
-                              __filename,
+                              import.meta.url,
                               "<%= include('../partials/changeIdForm') %>",
                               {
                                 id_label: 'QID',
@@ -167,7 +169,7 @@ export function InstructorQuestionSettings({
                 <tr>
                   <th>Topic</th>
                   <td>
-                    ${renderEjs(__filename, "<%- include('../partials/topic') %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/topic') %>", {
                       topic: resLocals.topic,
                     })}
                   </td>
@@ -175,7 +177,7 @@ export function InstructorQuestionSettings({
                 <tr>
                   <th>Tags</th>
                   <td>
-                    ${renderEjs(__filename, "<%- include('../partials/tags') %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/tags') %>", {
                       tags: resLocals.tags,
                     })}
                   </td>
@@ -183,7 +185,7 @@ export function InstructorQuestionSettings({
                 <tr>
                   <th>Issues</th>
                   <td>
-                    ${renderEjs(__filename, "<%- include('../partials/issueBadge') %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
                       count: resLocals.open_issue_count,
                       issueQid: resLocals.question.qid,
                       suppressLink: resLocals.suppressLink,
@@ -195,7 +197,7 @@ export function InstructorQuestionSettings({
                   <th>Assessments</th>
                   <td>
                     ${resLocals.assessments
-                      ? renderEjs(__filename, "<%- include('../partials/assessments') %>", {
+                      ? renderEjs(import.meta.url, "<%- include('../partials/assessments') %>", {
                           assessments: resLocals.assessments,
                           urlPrefix: resLocals.urlPrefix,
                         })
@@ -427,7 +429,7 @@ function CopyForm({
             : ''}
           ${editableCourses.map((c) => {
             return html`
-              <option value="${c.id}" ${c.id === courseId ? 'selected' : ''}>
+              <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
                 ${c.short_name}
               </option>
             `;

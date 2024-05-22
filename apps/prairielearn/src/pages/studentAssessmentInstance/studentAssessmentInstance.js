@@ -1,12 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import * as assessment from '../../lib/assessment';
+import * as assessment from '../../lib/assessment.js';
+import {
+  AssessmentInstanceSchema,
+  DateFromISOString,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -14,18 +21,12 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups';
-import {
-  AssessmentInstanceSchema,
-  DateFromISOString,
-  IdSchema,
-  InstanceQuestionSchema,
-} from '../../lib/db-types';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
+} from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
@@ -125,7 +126,7 @@ router.post(
       !res.locals.authz_result.authorized_edit &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      throw error.make(403, 'Not authorized');
+      throw new error.HttpStatusError(403, 'Not authorized');
     }
     if (
       !res.locals.authz_result.authorized_edit &&
@@ -133,7 +134,7 @@ router.post(
         req.body.__action,
       )
     ) {
-      throw error.make(403, 'Action is only permitted to students, not staff');
+      throw new error.HttpStatusError(403, 'Action is only permitted to students, not staff');
     }
 
     if (req.body.__action === 'attach_file') {
@@ -150,7 +151,10 @@ router.post(
       var closeExam;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
-          throw error.make(403, 'Real-time grading is not allowed for this assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Real-time grading is not allowed for this assessment',
+          );
         }
         closeExam = false;
       } else if (req.body.__action === 'finish') {
@@ -162,7 +166,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw error.make(400, `unknown __action: ${req.body.__action}`);
+        throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstance(
@@ -179,7 +183,9 @@ router.post(
         res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'leave_group') {
-      if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
+      if (!res.locals.authz_result.active) {
+        throw new error.HttpStatusError(400, 'Unauthorized request.');
+      }
       await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
@@ -199,7 +205,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(error.make(400, `unknown __action: ${req.body.__action}`));
+      next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );
@@ -214,10 +220,17 @@ router.get(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
       },
       InstanceQuestionRowSchema,
     );
+    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+    });
+    for (const instance_question of res.locals.instance_questions) {
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
+      );
+    }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
@@ -278,7 +291,7 @@ router.get(
         }
       }
     }
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

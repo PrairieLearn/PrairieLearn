@@ -1,11 +1,11 @@
 // @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-const { config } = require('../../lib/config');
-const authnLib = require('../../lib/authn');
+import * as authnLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
 
-var router = Router();
+const router = Router();
 
 router.get(
   '/',
@@ -32,4 +32,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

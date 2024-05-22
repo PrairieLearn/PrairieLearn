@@ -1,9 +1,12 @@
-import * as error from '@prairielearn/error';
+import _ from 'lodash';
 import { z } from 'zod';
-import _ = require('lodash');
 
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { idsEqual } from './id';
+
+import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
+
 import {
   GroupSchema,
   IdSchema,
@@ -13,10 +16,9 @@ import {
   type GroupConfig,
   GroupRoleSchema,
   type GroupUserRole,
-} from './db-types';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
-import { selectUserByUid } from '../models/user';
-const sql = sqldb.loadSqlEquiv(__filename);
+} from './db-types.js';
+import { idsEqual } from './id.js';
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
   constructor(message) {
@@ -476,10 +478,13 @@ export async function leaveGroup(
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
-      throw error.make(404, 'User is not part of a group in this assessment');
+      throw new error.HttpStatusError(404, 'User is not part of a group in this assessment');
     }
     if (checkGroupId != null && !idsEqual(groupId, checkGroupId)) {
-      throw error.make(403, 'Group ID does not match the user ID and assessment ID provided');
+      throw new error.HttpStatusError(
+        403,
+        'Group ID does not match the user ID and assessment ID provided',
+      );
     }
 
     const groupConfig = await getGroupConfig(assessmentId);
@@ -494,7 +499,6 @@ export async function leaveGroup(
         await sqldb.queryAsync(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
-          user_id: userId,
           authn_user_id: authnUserId,
         });
 
@@ -555,7 +559,7 @@ export async function updateGroupRoles(
     const groupInfo = await getGroupInfo(groupId, groupConfig);
 
     if (!hasStaffPermission && !canUserAssignGroupRoles(groupInfo, userId)) {
-      throw error.make(403, 'User does not have permission to assign roles');
+      throw new error.HttpStatusError(403, 'User does not have permission to assign roles');
     }
 
     // Convert form data to valid input format for a SQL function
@@ -563,10 +567,10 @@ export async function updateGroupRoles(
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
       if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
-        throw error.make(403, `User ${userId} is not a member of this group`);
+        throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
       }
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
-        throw error.make(403, `Role ${roleId} does not exist for this assessment`);
+        throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
         group_id: groupId,
@@ -610,7 +614,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
     IdSchema,
   );
   if (deleted_group_id == null) {
-    throw error.make(404, 'Group does not exist.');
+    throw new error.HttpStatusError(404, 'Group does not exist.');
   }
 }
 

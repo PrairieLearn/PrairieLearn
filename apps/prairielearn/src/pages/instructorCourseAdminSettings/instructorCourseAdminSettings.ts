@@ -1,17 +1,20 @@
-import * as express from 'express';
 import * as path from 'path';
-import asyncHandler = require('express-async-handler');
-import * as fs from 'fs-extra';
-import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors';
-import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
-import sha256 = require('crypto-js/sha256');
+
+import sha256 from 'crypto-js/sha256.js';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
-import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
-import { getAvailableTimezones } from '../../lib/timezones';
-import { getPaths } from '../../lib/instructorFiles';
-import { b64EncodeUnicode } from '../../lib/base64-util';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { getAvailableTimezones } from '../../lib/timezones.js';
+
+import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
 const router = express.Router();
 
@@ -49,16 +52,16 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied. Must be course editor to make changes.');
+      throw new error.HttpStatusError(403, 'Access denied. Must be course editor to make changes.');
     }
 
     if (res.locals.course.example_course) {
-      throw error.make(403, 'Access denied. Cannot make changes to example course.');
+      throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
     if (req.body.__action === 'update_configuration') {
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
-        throw error.make(400, 'infoCourse.json does not exist');
+        throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
       const paths = getPaths(req, res);
 
@@ -123,7 +126,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -1,9 +1,9 @@
-import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
-import * as _ from 'lodash';
+import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
+import _ from 'lodash';
 
-import { makeAwsClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.

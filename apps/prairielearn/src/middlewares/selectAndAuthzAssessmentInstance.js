@@ -1,11 +1,11 @@
 // @ts-check
-import * as _ from 'lodash';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzAssessmentInstance(req, res) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
@@ -14,7 +14,7 @@ export async function selectAndAuthzAssessmentInstance(req, res) {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if (result.rowCount === 0) throw error.make(403, 'Access denied');
+  if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
   _.assign(res.locals, result.rows[0]);
 }
 

@@ -6,19 +6,20 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
+
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { makeS3ClientConfig, makeAwsClientConfig } from './aws';
-import { config } from './config';
-import { gradingJobStatusUpdated } from './externalGradingSocket';
-import { processGradingResult } from './externalGrader';
-import * as externalGraderCommon from './externalGraderCommon';
-import { deferredPromise } from './deferred';
+import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import { deferredPromise } from './deferred.js';
+import { processGradingResult } from './externalGrader.js';
+import * as externalGraderCommon from './externalGraderCommon.js';
+import { gradingJobStatusUpdated } from './externalGradingSocket.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
@@ -130,7 +131,7 @@ async function loadQueueUrl(sqs) {
 async function processMessage(data) {
   const jobId = Number.parseInt(data.jobId);
   if (Number.isNaN(jobId)) {
-    throw error.makeWithData('Message does not contain a valid grading job id.', data);
+    throw new error.AugmentedError('Message does not contain a valid grading job id.', { data });
   }
 
   logger.verbose('Processing external grading job result message', {
@@ -173,7 +174,7 @@ async function processMessage(data) {
       return;
     }
   } else {
-    throw error.makeWithData(`Unknown grading event: ${data.event}`, data);
+    throw new error.AugmentedError(`Unknown grading event: ${data.event}`, { data });
   }
 }
 

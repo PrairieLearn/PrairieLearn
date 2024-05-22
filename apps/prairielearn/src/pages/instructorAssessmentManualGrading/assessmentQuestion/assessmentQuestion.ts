@@ -1,14 +1,15 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import * as manualGrading from '../../../lib/manualGrading';
-import { InstanceQuestionSchema } from '../../../lib/db-types';
-import { z } from 'zod';
+import { InstanceQuestionSchema } from '../../../lib/db-types.js';
+import * as manualGrading from '../../../lib/manualGrading.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -27,9 +28,9 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(__filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
 
@@ -37,7 +38,7 @@ router.get(
   '/instances.json',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     const result = await queryRows(
@@ -56,13 +57,13 @@ router.get(
   '/next_ungraded',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     if (
       req.query.prior_instance_question_id != null &&
       typeof req.query.prior_instance_question_id !== 'string'
     ) {
-      throw error.make(400, 'prior_instance_question_id must be a single value');
+      throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
     res.redirect(
       await manualGrading.nextUngradedInstanceQuestionUrl(
@@ -80,7 +81,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     if (req.body.__action === 'batch_action') {
       const action_data = JSON.parse(req.body.batch_action_data) || {};
@@ -136,7 +137,7 @@ router.post(
         res.send({});
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

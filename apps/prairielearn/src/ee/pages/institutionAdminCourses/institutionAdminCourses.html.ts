@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Course, type Institution } from '../../../lib/db-types';
+
+import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function InstitutionAdminCourses({
   institution,
@@ -15,14 +16,13 @@ export function InstitutionAdminCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'institution_admin',
-          pageTitle: 'Courses',
+          pageTitle: `Courses — ${institution.short_name}`,
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'institution',
@@ -30,32 +30,17 @@ export function InstitutionAdminCourses({
           navSubPage: 'courses',
         })}
         <main class="container mb-4">
-          <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Effective yearly enrollment limit</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${courses.map((course) => {
-                  return html`
-                    <tr>
-                      <td>
-                        <a href="/pl/institution/${institution.id}/admin/course/${course.id}">
-                          ${course.short_name ?? '—'}: ${course.title ?? '—'}
-                        </a>
-                      </td>
-                      <td>
-                        ${course.yearly_enrollment_limit ?? institution.yearly_enrollment_limit}
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ul class="list-group">
+            ${courses.map(
+              (course) => html`
+                <li class="list-group-item">
+                  <a href="/pl/course/${course.id}/course_admin">
+                    ${course.short_name}: ${course.title}
+                  </a>
+                </li>
+              `,
+            )}
+          </ul>
         </main>
       </body>
     </html>

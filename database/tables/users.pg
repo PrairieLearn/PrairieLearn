@@ -6,6 +6,7 @@ columns
     lti_user_id: text
     name: text
     stripe_customer_id: text
+    terms_accepted_at: timestamp with time zone
     uid: text not null
     uin: text
     user_id: bigint not null default nextval('users_user_id_seq'::regclass)

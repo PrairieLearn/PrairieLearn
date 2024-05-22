@@ -1,26 +1,25 @@
-//@ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-import { checkSignedToken } from '@prairielearn/signed-token';
+// @ts-check
+import ERR from 'async-stacktrace';
+import _ from 'lodash';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken } from '@prairielearn/signed-token';
 
-import { config } from './config';
-import { renderPanelsForSubmission } from './question-render';
-import * as socketServer from './socket-server';
+import { config } from './config.js';
+import { renderPanelsForSubmission } from './question-render.js';
+import * as socketServer from './socket-server.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /** @type {import('socket.io').Namespace} */
 let namespace;
 
 // This module MUST be initialized after socket-server
-export function init(callback) {
+export function init() {
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
-
-  callback(null);
 }
 
 /**
@@ -61,6 +60,7 @@ export function connection(socket) {
         'url_prefix',
         'question_context',
         'csrf_token',
+        'authorized_edit',
       ])
     ) {
       return callback(null);
@@ -85,6 +85,7 @@ export function connection(socket) {
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
+          extraHeadersHtml: panels.extraHeadersHtml,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
           questionPanelFooter: panels.questionPanelFooter,
@@ -94,6 +95,7 @@ export function connection(socket) {
       (err) => {
         logger.error('Error rendering panels for submission', err);
         Sentry.captureException(err);
+        callback(null);
       },
     );
   });

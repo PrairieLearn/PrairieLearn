@@ -1,16 +1,22 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { Course, CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
-import { isEnterprise } from '../lib/license';
 import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment';
-import { assertNever } from '../lib/types';
-import { HttpRedirect } from '../lib/redirect';
+} from '../ee/models/enrollment.js';
+import {
+  Course,
+  CourseInstance,
+  Enrollment,
+  EnrollmentSchema,
+  Institution,
+} from '../lib/db-types.js';
+import { isEnterprise } from '../lib/license.js';
+import { HttpRedirect } from '../lib/redirect.js';
+import { assertNever } from '../lib/types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function ensureEnrollment({
   course_instance_id,
@@ -50,7 +56,7 @@ export async function ensureCheckedEnrollment({
   // If they don't, throw an access denied error. In most cases, this should
   // have already been checked.
   if (!authz_data.has_student_access) {
-    throw error.make(403, 'Access denied');
+    throw new error.HttpStatusError(403, 'Access denied');
   }
 
   if (isEnterprise()) {

@@ -1,15 +1,16 @@
-import * as _ from 'lodash';
+import csvtojson from 'csvtojson';
+import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import csvtojson = require('csvtojson');
-import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { createServerJob } from './server-jobs';
-import * as manualGrading from './manualGrading';
-import { IdSchema } from './db-types';
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { IdSchema } from './db-types.js';
+import * as manualGrading from './manualGrading.js';
+import { createServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
@@ -388,34 +389,47 @@ async function updateInstanceQuestionFromJson(
   });
 }
 
+async function getAssessmentInstanceId(json: Record<string, any>, assessment_id: string) {
+  if ('uid' in json) {
+    return {
+      id: json.uid,
+      assessment_instance_id: await sqldb.queryOptionalRow(
+        sql.select_assessment_instance_uid,
+        {
+          assessment_id,
+          uid: json.uid,
+          instance_number: json.instance,
+        },
+        IdSchema,
+      ),
+    };
+  } else if ('group_name' in json) {
+    return {
+      id: json.group_name,
+      assessment_instance_id: await sqldb.queryOptionalRow(
+        sql.select_assessment_instance_group,
+        {
+          assessment_id,
+          group_name: json.group_name,
+          instance_number: json.instance,
+        },
+        IdSchema,
+      ),
+    };
+  } else {
+    throw new Error('"uid" or "group_name" not found');
+  }
+}
+
 async function updateAssessmentInstanceFromJson(
   json: Record<string, any>,
   assessment_id: string,
   authn_user_id: string,
 ) {
-  let query, id;
-  if (_.has(json, 'uid')) {
-    query = sql.select_assessment_instance_uid;
-    id = json.uid;
-  } else if (_.has(json, 'group_name')) {
-    query = sql.select_assessment_instance_group;
-    id = json.group_name;
-  } else {
-    throw new Error('"uid" or "group_name" not found');
-  }
   if (!_.has(json, 'instance')) throw new Error('"instance" not found');
-
   await sqldb.runInTransactionAsync(async () => {
-    const assessment_instance_id = await sqldb.queryOptionalRow(
-      query,
-      {
-        assessment_id,
-        uid: json.uid,
-        group_name: json.group_name,
-        instance_number: json.instance,
-      },
-      IdSchema,
-    );
+    const { id, assessment_instance_id } = await getAssessmentInstanceId(json, assessment_id);
+
     if (assessment_instance_id == null) {
       throw new Error(`unable to locate instance ${json.instance} for ${id}`);
     }

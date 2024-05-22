@@ -1,24 +1,22 @@
 import { Router } from 'express';
-import * as path from 'path';
-import * as error from '@prairielearn/error';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
-import { promisify } from 'util';
-import asyncHandler = require('express-async-handler');
 
-import { selectQuestionById } from '../../models/question';
-import { selectCourseById } from '../../models/course';
-import { processSubmission } from '../../lib/question-submission';
-import { IdSchema, UserSchema } from '../../lib/db-types';
-import LogPageView = require('../../middlewares/logPageView');
+import * as error from '@prairielearn/error';
+
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema, UserSchema } from '../../lib/db-types.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import { PublicQuestionPreview } from './publicQuestionPreview.html';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
+} from '../../lib/question-render.js';
+import { processSubmission } from '../../lib/question-submission.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
 
-const logPageView = promisify(LogPageView(path.basename(__filename, '.ts')));
+import { PublicQuestionPreview } from './publicQuestionPreview.html.js';
 
 const router = Router({ mergeParams: true });
 
@@ -31,7 +29,7 @@ async function setLocals(req, res) {
     !res.locals.question.shared_publicly ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
-    throw error.make(404, 'Not Found');
+    throw new error.HttpStatusError(404, 'Not Found');
   }
   return;
 }
@@ -49,16 +47,16 @@ router.post(
       // we currently don't report issues for public facing previews
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
-    const { submissionPanel } = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: null,
@@ -69,7 +67,7 @@ router.get(
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
@@ -80,11 +78,11 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
-    await logPageView(req, res);
+    await logPageView('publicQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
     setRendererHeader(res);
     res.send(PublicQuestionPreview({ resLocals: res.locals }));
   }),
 );
 
-export = router;
+export default router;

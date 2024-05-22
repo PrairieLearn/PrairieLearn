@@ -1,15 +1,17 @@
-import ERR = require('async-stacktrace');
-import _ = require('lodash');
+import ERR from 'async-stacktrace';
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import * as helperServer from './helperServer';
+import { config } from '../lib/config.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -293,10 +295,7 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', function (callback) {
-      const params = {
-        assessment_instance_id: locals.assessment_instance_id,
-      };
-      sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
+      sqldb.queryOneRow(sql.select_assessment_instance, {}, function (err, result) {
         if (ERR(err, callback)) return;
         locals.assessment_instance = result.rows[0];
         callback(null);

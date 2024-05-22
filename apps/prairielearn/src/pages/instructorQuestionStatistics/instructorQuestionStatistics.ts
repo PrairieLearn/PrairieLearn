@@ -1,19 +1,22 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { questionFilenamePrefix } from '../../lib/sanitize-name';
+import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
+
 import {
   AssessmentQuestionStatsRowSchema,
   InstructorQuestionStatistics,
-} from './instructorQuestionStatistics.html';
-import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
+} from './instructorQuestionStatistics.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function makeStatsCsvFilename(locals) {
   const prefix = questionFilenamePrefix(locals.question, locals.course);
@@ -26,7 +29,7 @@ router.get(
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
     const rows = await sqldb.queryRows(
       sql.assessment_question_stats,
@@ -52,7 +55,7 @@ router.get(
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
-      throw error.make(403, 'Access denied');
+      throw new error.HttpStatusError(403, 'Access denied');
     }
 
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
@@ -112,7 +115,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );

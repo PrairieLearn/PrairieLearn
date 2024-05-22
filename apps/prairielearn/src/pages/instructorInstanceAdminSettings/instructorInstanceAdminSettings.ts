@@ -1,24 +1,27 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import QR = require('qrcode-svg');
-import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
-import * as error from '@prairielearn/error';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import QR from 'qrcode-svg';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+
+import { IdSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceRenameEditor,
   CourseInstanceDeleteEditor,
-} from '../../lib/editors';
-import { encodePath } from '../../lib/uri-util';
-import { getCanonicalHost } from '../../lib/url';
-import { IdSchema } from '../../lib/db-types';
-import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html';
+} from '../../lib/editors.js';
+import { encodePath } from '../../lib/uri-util.js';
+import { getCanonicalHost } from '../../lib/url.js';
+
+import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -105,9 +108,11 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
-      if (!req.body.id) throw error.make(400, `Invalid CIID (was falsy): ${req.body.id}`);
+      if (!req.body.id) {
+        throw new error.HttpStatusError(400, `Invalid CIID (was falsy): ${req.body.id}`);
+      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
@@ -116,7 +121,10 @@ router.post(
       try {
         ciid_new = path.normalize(req.body.id);
       } catch (err) {
-        throw error.make(400, `Invalid CIID (could not be normalized): ${req.body.id}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid CIID (could not be normalized): ${req.body.id}`,
+        );
       }
       if (res.locals.course_instance.short_name === ciid_new) {
         res.redirect(req.originalUrl);
@@ -135,7 +143,7 @@ router.post(
         }
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

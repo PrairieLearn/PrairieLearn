@@ -1,6 +1,7 @@
-//@ts-check
-import { logger } from '@prairielearn/logger';
+// @ts-check
 import * as path from 'path';
+
+import { logger } from '@prairielearn/logger';
 
 export function encodePath(originalPath) {
   try {

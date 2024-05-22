@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-import * as defaultPool from './default-pool';
+import * as defaultPool from './default-pool.js';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
@@ -72,6 +72,7 @@ async function createDatabase(
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
+        errorOnUnusedParameters: true,
         ...(options.poolConfig ?? {}),
       },
       (err) => {

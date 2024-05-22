@@ -1,19 +1,21 @@
-//@ts-check
+// @ts-check
 /**
  * Require frontend modules.
  *
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-var requirejs = require('requirejs');
-var path = require('node:path');
+import { createRequire } from 'node:module';
+import * as path from 'node:path';
 
-const { logger } = require('@prairielearn/logger');
+import requirejs from 'requirejs';
 
-const { APP_ROOT_PATH } = require('./paths');
+import { logger } from '@prairielearn/logger';
+
+import { APP_ROOT_PATH } from './paths.js';
 
 requirejs.config({
-  nodeRequire: require,
+  nodeRequire: createRequire(import.meta.url),
   baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 
@@ -30,4 +32,4 @@ requirejs.onError = function (err) {
   logger.error('requirejs load error', data);
 };
 
-module.exports = requirejs;
+export default requirejs;
