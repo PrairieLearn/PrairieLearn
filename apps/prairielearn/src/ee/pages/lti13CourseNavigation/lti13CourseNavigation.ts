@@ -9,17 +9,18 @@ import {
   queryOneRowAsync,
 } from '@prairielearn/postgres';
 
-import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
+import { Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
+  CourseInstanceAuthz,
 } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
   Lti13CourseNavigationInstructor,
-  //Lti13CourseNavigationNotReady,
+  Lti13CourseNavigationNotReady,
   Lti13CourseNavigationDone,
 } from './lti13CourseNavigation.html.js';
 
@@ -44,8 +45,8 @@ router.get(
     const role_instructor = ltiClaim.isRoleInstructor();
 
     // Get lti13_course_instance info, if present
-    const lci = await queryOptionalRow(
-      sql.get_course_instance,
+    const lti13_course_instance = await queryOptionalRow(
+      sql.select_course_instance,
       {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
@@ -54,12 +55,13 @@ router.get(
       Lti13CourseInstanceSchema,
     );
 
-    if (lci) {
+    if (lti13_course_instance) {
+      // Update lti13_course_instance on instructor login
+      // helpful as LMS updates or we add features
       if (role_instructor) {
-        // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
-        await queryAsync(sql.upsert_lci, {
+        await queryAsync(sql.update_lti13_course_instance, {
           lti13_instance_id: req.params.lti13_instance_id,
-          course_instance_id: lci.course_instance_id,
+          course_instance_id: lti13_course_instance.course_instance_id,
           deployment_id: ltiClaim.deployment_id,
           context_id: ltiClaim.context?.id,
           context_label: ltiClaim.context?.label,
@@ -74,23 +76,15 @@ router.get(
 
       // Redirect to linked course instance
       res.redirect(
-        `/pl/course_instance/${lci.course_instance_id}/${role_instructor ? 'instructor/' : ''}`,
+        `/pl/course_instance/${lti13_course_instance.course_instance_id}/${
+          role_instructor ? 'instructor/' : ''
+        }`,
       );
       return;
     }
 
+    // Students get a "come back later" message
     if (!role_instructor) {
-      // Students get a "come back later" message
-
-      /*
-       * TODO: to not break things for current testing courses,
-       *       fall back to the previous PR behavior of simply
-       *       redirecting to /pl
-       */
-      res.redirect('/pl/');
-      return;
-
-      /*
       res.send(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
@@ -98,7 +92,6 @@ router.get(
         }),
       );
       return;
-      */
     }
 
     // Instructor so lookup their existing information in PL
@@ -107,7 +100,7 @@ router.get(
       is_administrator: res.locals.authn_is_administrator,
     });
 
-    let course_instances: CourseInstance[] = [];
+    const course_instances: CourseInstanceAuthz[] = [];
 
     for (const course of courses) {
       // Only course owners can link
@@ -115,7 +108,7 @@ router.get(
         continue;
       }
 
-      const loopCI = await selectCourseInstancesWithStaffAccess({
+      const instances = await selectCourseInstancesWithStaffAccess({
         course_id: course.id,
         user_id: res.locals.authn_user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
@@ -123,7 +116,7 @@ router.get(
         authn_is_administrator: res.locals.authn_is_administrator,
       });
 
-      course_instances = [...course_instances, ...loopCI];
+      course_instances.push(...instances);
     }
 
     res.send(
@@ -151,15 +144,11 @@ router.post(
       throw error.make(403, 'Permission denied');
     }
 
-    try {
-      // Map lti13_instance through institution to course instance or fail
-      await queryOneRowAsync(sql.check_lti_ci, {
-        course_instance_id: req.body.ci_id,
-        lti13_instance_id: req.params.lti13_instance_id,
-      });
-    } catch {
-      throw error.make(403, 'Permission denied');
-    }
+    // Map lti13_instance through institution to course instance or fail
+    await queryOneRowAsync(sql.select_lti_course_instance_institution, {
+      course_instance_id: req.body.ci_id,
+      lti13_instance_id: req.params.lti13_instance_id,
+    });
 
     // Check that user is course Owner for this CI
     const ci = await selectCourseInstanceById(req.body.ci_id);
@@ -168,24 +157,25 @@ router.post(
       is_administrator: res.locals.authn_is_administrator,
     });
 
-    const ci_is_owner = courses.find(
-      (x) => x.id === ci?.course_id && x.permissions_course.has_course_permission_own,
+    const is_ci_owner = courses.find(
+      (course) =>
+        course.id === ci?.course_id && course.permissions_course.has_course_permission_own,
     );
 
-    if (!ltiClaim.isRoleInstructor() || !ci_is_owner) {
+    if (ltiClaim.isRoleInstructor() && is_ci_owner) {
+      await queryAsync(sql.insert_lci, {
+        lti13_instance_id: req.params.lti13_instance_id,
+        deployment_id: ltiClaim.deployment_id,
+        context_id: ltiClaim.context?.id,
+        context_label: ltiClaim.context?.label,
+        context_title: ltiClaim.context?.title,
+        course_instance_id: unsafe_course_instance_id,
+      });
+
+      res.redirect(`/pl/lti13_instance/${unsafe_lti13_instance_id}/course_navigation?done`);
+    } else {
       throw error.make(403, 'Permission denied');
     }
-
-    await queryAsync(sql.insert_lci, {
-      lti13_instance_id: req.params.lti13_instance_id,
-      deployment_id: ltiClaim.deployment_id,
-      context_id: ltiClaim.context?.id,
-      context_label: ltiClaim.context?.label,
-      context_title: ltiClaim.context?.title,
-      course_instance_id: unsafe_course_instance_id,
-    });
-
-    res.redirect(`/pl/lti13_instance/${unsafe_lti13_instance_id}/course_navigation?done`);
   }),
 );
 

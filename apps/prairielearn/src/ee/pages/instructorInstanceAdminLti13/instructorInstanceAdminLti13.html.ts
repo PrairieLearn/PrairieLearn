@@ -42,7 +42,7 @@ export function InstructorInstanceAdminLti13({
             <div class="card-header bg-primary text-white d-flex">LTI 1.3 configuration</div>
             <div class="card-body">
               <div class="row">
-                <div class="col-3">
+                <div class="col-2">
                   <select class="custom-select mb-2" id="selectLti13Instance">
                     ${lti13CourseInstances.map((lci) => {
                       return html`
@@ -50,7 +50,7 @@ export function InstructorInstanceAdminLti13({
                           value="${lci.id}"
                           ${lti13CourseInstance.id === lci.id ? 'selected' : ''}
                         >
-                          ${lti13Instance.name} (${lci.id})
+                          ${lti13Instance.name}
                         </option>
                       `;
                     })}
@@ -59,10 +59,9 @@ export function InstructorInstanceAdminLti13({
                   <ul>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
-                </div>
-                <div class="col-9">
                   Created at: ${lti13CourseInstance.created_at.toDateString()}
-                  <br />
+                </div>
+                <div class="col-auto">
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
                     <input type="hidden" name="__action" value="delete_lti13_course_instance" />

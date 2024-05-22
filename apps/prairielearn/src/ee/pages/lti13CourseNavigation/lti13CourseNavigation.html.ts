@@ -75,7 +75,7 @@ export function Lti13CourseNavigationInstructor({
         </div>
 
         <main class="container mb-4">
-          <h1 class="h1">Welcome to PrairieLearn</h1>
+          <h1>Welcome to PrairieLearn</h1>
 
           <p>
             To finish the integration for your course, we need to connect
@@ -116,7 +116,8 @@ export function Lti13CourseNavigationInstructor({
                 It doesn't look like you have any PrairieLearn courses.
                 <a href="/pl/request_course" class="btn btn-success">Go request a course</a>
               </p>`
-            : html`<p>Your courses:</p>
+            : html`
+                <p>Your courses:</p>
                 <ul>
                   ${courses.map((course) => {
                     return html` <li>
@@ -150,7 +151,8 @@ export function Lti13CourseNavigationInstructor({
                     </select>
                   </div>
                   <button class="btn btn-primary btn-lg" id="saveButton" disabled>Save</button>
-                </form> `}
+                </form>
+              `}
         </main>
       </body>
     </html>
@@ -217,8 +219,8 @@ export function Lti13CourseNavigationDone({
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
           <p>
-            <strong>OK, you're all set.</strong> Next time you (or students) click on the link in
-            your LMS, they will be taken directly to your PrairieLearn course instance.
+            <strong>You're all set.</strong> Next time you or students click on the link in your
+            LMS, they will be taken directly to your PrairieLearn course instance.
           </p>
           <ul>
             <li>
@@ -227,15 +229,13 @@ export function Lti13CourseNavigationDone({
             </li>
           </ul>
 
-          <p>
-            To change this connection, go to your course instance "Settings" in the "LTI 1.3" tab.
-          </p>
+          <p>To change this connection, go to your course instance LTI 1.3 page.</p>
 
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
               class="btn btn-success btn-lg"
-              >Click here to continue on to your course instance</a
+              >Continue to your course instance</a
             >
           </p>
         </main>

@@ -1,9 +1,6 @@
-import { z } from 'zod';
-
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -30,22 +27,4 @@ export async function selectLti13Instance(lti13_instance_id: string): Promise<Lt
   }
 
   return lti13_instance;
-}
-
-export async function selectLti13InstancesByCourseInstance(
-  course_instance_id: string,
-): Promise<Lti13Instance[]> {
-  const instances = await queryRows(
-    sql.get_instances_ci,
-    {
-      course_instance_id,
-    },
-    Lti13InstanceSchema,
-  );
-
-  if (!instances?.length) {
-    throw new Error('No LTI 1.3 instances configured for course instance');
-  }
-
-  return instances;
 }

@@ -188,6 +188,8 @@ export class Lti13Claim {
   }
 }
 
+// End class Lti13Claim
+
 export async function validateLti13CourseInstance(
   resLocals: Record<string, any>,
 ): Promise<boolean> {

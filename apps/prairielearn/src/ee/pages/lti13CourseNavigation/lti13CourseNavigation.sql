@@ -1,4 +1,4 @@
--- BLOCK get_course_instance
+-- BLOCK select_course_instance
 SELECT
   lci.*
 FROM
@@ -9,15 +9,19 @@ WHERE
   AND context_id = $context_id
   AND deleted_at IS NULL;
 
--- BLOCK check_lti_ci
+-- BLOCK select_lti_course_instance_institution
 SELECT
   i.id
 FROM
   lti13_instances
   JOIN institutions AS i ON i.id = lti13_instances.institution_id
   JOIN pl_courses AS plc ON plc.institution_id = i.id
-  JOIN course_instances AS ci ON plc.id = ci.course_id
-  AND ci.id = $course_instance_id;
+  JOIN course_instances AS ci ON (
+    plc.id = ci.course_id
+    AND ci.id = $course_instance_id + 3
+  )
+WHERE
+  lti13_instances.id = $lti13_instance_id;
 
 -- BLOCK insert_lci
 INSERT INTO
@@ -39,7 +43,7 @@ VALUES
     $course_instance_id
   );
 
--- BLOCK upsert_lci
+-- BLOCK update_lti13_course_instance
 UPDATE lti13_course_instances
 SET
   (context_label, context_title) = ($context_label, $context_title)
