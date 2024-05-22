@@ -1,4 +1,3 @@
-// @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -7,35 +6,46 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
+import { AssessmentSchema } from '../../lib/db-types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+
+import {
+  AssessmentScoreHistogramByDateSchema,
+  DurationStatSchema,
+  InstructorAssessmentStatistics,
+  UserScoreSchema,
+  Filenames,
+} from './instructorAssessmentStatistics.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const setFilenames = function (locals) {
+function getFilenames(locals: Record<string, any>): Filenames {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
     locals.course,
   );
-  locals.scoreStatsCsvFilename = prefix + 'score_stats.csv';
-  locals.durationStatsCsvFilename = prefix + 'duration_stats.csv';
-  locals.statsByDateCsvFilename = prefix + 'scores_by_date.csv';
-};
+
+  return {
+    scoreStatsCsvFilename: prefix + 'score_stats.csv',
+    durationStatsCsvFilename: prefix + 'duration_stats.csv',
+    statsByDateCsvFilename: prefix + 'scores_by_date.csv',
+  };
+}
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
-
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment = assessmentResult.rows[0].assessment;
+    const assessment = await sqldb.queryRow(
+      sql.select_assessment,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentSchema,
+    );
 
     // get formatted duration statistics
     //
@@ -43,29 +53,41 @@ router.get(
     // instance for each user, so the scatter plot of instance durations vs
     // scores won't include low-scoring instances. It's not clear if we want to
     // change this.
-    const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.duration_stat = durationStatsResult.rows[0];
+    const durationStat = await sqldb.queryRow(
+      sql.select_duration_stats,
+      { assessment_id: res.locals.assessment.id },
+      DurationStatSchema,
+    );
 
-    const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment_score_histogram_by_date = histByDateResult.rows;
+    const assessmentScoreHistogramByDate = await sqldb.queryRows(
+      sql.assessment_score_histogram_by_date,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentScoreHistogramByDateSchema,
+    );
 
-    const userScoresResult = await sqldb.queryAsync(sql.user_scores, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.user_scores = userScoresResult.rows;
+    const userScores = await sqldb.queryRows(
+      sql.user_scores,
+      { assessment_id: res.locals.assessment.id },
+      UserScoreSchema,
+    );
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessmentStatistics({
+        resLocals: res.locals,
+        assessment,
+        durationStat,
+        assessmentScoreHistogramByDate,
+        userScores,
+        filenames: getFilenames(res.locals),
+      }),
+    );
   }),
 );
 
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
-    setFilenames(res.locals);
+    const filenames = getFilenames(res.locals);
 
     await updateAssessmentStatistics(res.locals.assessment.id);
 
@@ -75,7 +97,7 @@ router.get(
     });
     res.locals.assessment = assessmentResult.rows[0].assessment;
 
-    if (req.params.filename === res.locals.scoreStatsCsvFilename) {
+    if (req.params.filename === filenames.scoreStatsCsvFilename) {
       const csvData = [
         [
           res.locals.course.short_name,
@@ -123,7 +145,7 @@ router.get(
           ...res.locals.assessment.score_stat_hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
-    } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
+    } else if (req.params.filename === filenames.durationStatsCsvFilename) {
       // get formatted duration statistics
       const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
         assessment_id: res.locals.assessment.id,
@@ -167,7 +189,7 @@ router.get(
           ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
-    } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
+    } else if (req.params.filename === filenames.statsByDateCsvFilename) {
       const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
         assessment_id: res.locals.assessment.id,
       });
@@ -176,7 +198,7 @@ router.get(
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
-      const csvData = [];
+      const csvData: (string | number)[][] = [];
 
       let groupData = ['Number'];
       for (let day = 0; day < numDays; day++) {

@@ -525,12 +525,26 @@ BEGIN
     FROM (
         SELECT
             tid,
-            row_number() OVER (ORDER BY (
-                SELECT string_agg(convert_to(coalesce(r[2],
-                    length(length(r[1])::text) || length(r[1])::text || r[1]),
-                    'SQL_ASCII'),'\x00')
-                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
-            ) ASC) AS order_by
+            row_number() OVER (
+                ORDER BY (
+                    SELECT
+                        string_agg(
+                            convert_to(
+                                coalesce(
+                                    r[2],
+                                    length(length(r[1])::text) || length(r[1])::text || r[1]
+                                ),
+                                'SQL_ASCII'
+                            ),
+                            '\x00'
+                        )
+                    FROM
+                        regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
+                ) ASC,
+                -- In case two assessments have the same number, fall back to
+                -- ordering by the ID to ensure a stable sort.
+                id ASC
+            ) AS order_by
         FROM assessments
         WHERE
             course_instance_id = syncing_course_instance_id

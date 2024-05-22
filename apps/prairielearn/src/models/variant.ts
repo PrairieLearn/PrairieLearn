@@ -1,6 +1,6 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
-import { Variant, VariantSchema } from '../lib/db-types.js';
+import { IdSchema, SubmissionSchema, Variant, VariantSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -38,4 +38,21 @@ export async function resetVariantsForInstanceQuestion({
     unsafe_instance_question_id,
     authn_user_id,
   });
+}
+
+export async function selectVariantsByInstanceQuestion({
+  assessment_instance_id,
+  instance_question_id,
+}: {
+  assessment_instance_id: string;
+  instance_question_id?: string;
+}) {
+  return await queryRows(
+    sql.select_variant_by_instance_question_id,
+    { assessment_instance_id, instance_question_id },
+    VariantSchema.extend({
+      instance_question_id: IdSchema, // Since only variants assigned to instance questions are returned, this is never null.
+      max_submission_score: SubmissionSchema.shape.score.unwrap(),
+    }),
+  );
 }

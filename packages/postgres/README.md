@@ -22,6 +22,7 @@ await sqldb.initAsync(
     password: '...',
     max: 2,
     idleTimeoutMillis: 30000,
+    errorOnUnusedParameters: false, // defaults to false
   },
   idleErrorHandler,
 );

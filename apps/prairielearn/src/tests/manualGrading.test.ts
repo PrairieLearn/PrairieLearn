@@ -506,9 +506,7 @@ describe('Manual Grading', function () {
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
         const token =
-          $instancesBody('form[name=grade-all-form]')
-            .find('input[name=__csrf_token]')
-            .attr('value') || '';
+          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
         await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },

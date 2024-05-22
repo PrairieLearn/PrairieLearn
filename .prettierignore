@@ -1,10 +1,10 @@
 node_modules
 .yarn
 
-# Test coverage
+# Coverage reports
 coverage/
-apps/*/.nyc_output/
-packages/*/.nyc_output/
+apps/*/coverage/
+packages/*/coverage/
 
 # Transpiled code
 apps/*/dist/
