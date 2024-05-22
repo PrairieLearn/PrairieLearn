@@ -100,8 +100,7 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-      console.log(req.body.end_date);
-      console.log('new date: ' + new Date(req.body.end_date));
+      
       await runInTransactionAsync(async () => {
         const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
