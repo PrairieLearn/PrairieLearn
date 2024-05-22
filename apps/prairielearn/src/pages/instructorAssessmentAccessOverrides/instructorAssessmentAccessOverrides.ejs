@@ -69,10 +69,8 @@
           var policyId = button.data('policy-id'); 
          
           $('form[name="delete-override-form"] input[name="policy_id"]').val(policyId);
-          // Set the __action value to "delete_override"
           $('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
 
-          // Submit the form
           $('form[name="delete-override-form"]').submit();
           
         });
