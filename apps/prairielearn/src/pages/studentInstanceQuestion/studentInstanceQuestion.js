@@ -22,6 +22,7 @@ import {
   reportIssueFromForm,
 } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -288,6 +289,11 @@ router.get(
 
     await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
+
+    res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+    });
 
     if (
       res.locals.assessment.group_config?.has_roles &&
