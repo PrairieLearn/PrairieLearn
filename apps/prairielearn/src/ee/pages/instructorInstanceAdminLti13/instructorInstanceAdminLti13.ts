@@ -16,7 +16,7 @@ router.get(
   '/:unsafe_lti13_course_instance_id?',
   asyncHandler(async (req, res) => {
     const instances = await queryRows(
-      sql.select_lti13_course_instances,
+      sql.select_lti13_instances,
       {
         course_instance_id: res.locals.course_instance.id,
       },
@@ -47,9 +47,8 @@ router.get(
     res.send(
       InstructorInstanceAdminLti13({
         resLocals: res.locals,
-        lti13Instance: instance.lti13_instance,
-        lti13CourseInstance: instance.lti13_course_instance,
-        lti13CourseInstances: instances.map((ci) => ci.lti13_course_instance),
+        instance,
+        instances,
       }),
     );
   }),

@@ -1,4 +1,4 @@
--- BLOCK select_lti13_course_instances
+-- BLOCK select_lti13_instances
 SELECT
   to_jsonb(lci) AS lti13_course_instance,
   to_jsonb(li) AS lti13_instance

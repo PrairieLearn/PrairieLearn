@@ -3,16 +3,19 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types.js';
 
+interface Lti13FullInstance {
+  lti13_course_instance: Lti13CourseInstance;
+  lti13_instance: Lti13Instance;
+}
+
 export function InstructorInstanceAdminLti13({
   resLocals,
-  lti13Instance,
-  lti13CourseInstance,
-  lti13CourseInstances,
+  instance,
+  instances,
 }: {
   resLocals: Record<string, any>;
-  lti13Instance: Lti13Instance;
-  lti13CourseInstance: Lti13CourseInstance;
-  lti13CourseInstances: Lti13CourseInstance[];
+  instance: Lti13FullInstance;
+  instances: Lti13FullInstance[];
 }): string {
   return html`
     <!doctype html>
@@ -44,13 +47,15 @@ export function InstructorInstanceAdminLti13({
               <div class="row">
                 <div class="col-2">
                   <select class="custom-select mb-2" id="selectLti13Instance">
-                    ${lti13CourseInstances.map((lci) => {
+                    ${instances.map((i) => {
                       return html`
                         <option
-                          value="${lci.id}"
-                          ${lti13CourseInstance.id === lci.id ? 'selected' : ''}
+                          value="${i.lti13_course_instance.id}"
+                          ${instance.lti13_course_instance.id === i.lti13_course_instance.id
+                            ? 'selected'
+                            : ''}
                         >
-                          ${lti13Instance.name}
+                          ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
                         </option>
                       `;
                     })}
@@ -59,7 +64,7 @@ export function InstructorInstanceAdminLti13({
                   <ul>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
-                  Created at: ${lti13CourseInstance.created_at.toDateString()}
+                  Created at: ${instance.lti13_course_instance.created_at.toDateString()}
                 </div>
                 <div class="col-auto">
                   <h3 id="connection">Connection to LMS</h3>
@@ -70,8 +75,8 @@ export function InstructorInstanceAdminLti13({
                       class="btn btn-danger btn-sm"
                       onclick="return confirm('Are you sure you want to remove this connection?');"
                     >
-                      Remove LTI 1.3 connection with ${lti13Instance.name}:
-                      ${lti13CourseInstance.context_label}
+                      Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
+                      ${instance.lti13_course_instance.context_label}
                     </button>
                   </form>
                 </div>
