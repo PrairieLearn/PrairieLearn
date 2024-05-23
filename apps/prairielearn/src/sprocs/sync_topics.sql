@@ -10,7 +10,6 @@ AS $$
 DECLARE
     used_topic_names text[];
     inserted_topic_names text[];
-    missing_topic_names text;
 BEGIN
     -- We will use the used_topic_names variable to track all the valid topics
     -- (either existing or new).
