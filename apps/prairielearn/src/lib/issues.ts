@@ -125,7 +125,7 @@ export async function reportIssueFromForm(
   await insertIssue({
     variantId: variant.id,
     studentMessage: description,
-    instructorMessage: `${context}-reported issue`,
+    instructorMessage: `${studentSubmission ? 'student' : 'instructor'}-reported issue`,
     manuallyReported: true,
     courseCaused: true,
     courseData: _.pick(res.locals, [
