@@ -55,7 +55,7 @@ curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Minif
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
-python3 -m pip install --no-cache-dir -r /python_requirements.txt
+python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
 # Clear various caches to minimize the final image size.
 dnf clean all
