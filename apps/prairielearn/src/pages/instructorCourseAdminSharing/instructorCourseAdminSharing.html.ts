@@ -82,6 +82,10 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
             <p class="form-text">
               Enter the sharing name you would like for your course.
             </p>
+            <div>
+              <label for="course_sharing_name">Enter Sharing Name</label>
+              <input class="form-control" type="text" name="course_sharing_name" required/>
+            </div>
             <p><strong>Once you have shared a question either publicly or with another course, you will no longer be able to change your sharing name.</strong>
               Doing so would break the assessments of other courses that have imported your questions.
               It is recommended that you choose something short but descriptive. For example, if you're teaching
@@ -93,9 +97,6 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
             <form name="choose-sharing-name" method="POST">
               <input type="hidden" name="__action" value="choose_sharing_name">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-              <div class=form-group>
-                <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-              </div>
               <div class="text-right mt-4">
                 <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
               </div>
