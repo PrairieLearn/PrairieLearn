@@ -3,36 +3,10 @@ import _ from 'lodash';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { selectVariantById } from '../models/variant.js';
+import { validateVariantAgainstQuestion } from '../models/variant.js';
 
-import { type Variant } from './db-types.js';
 import { saveAndGradeSubmission, saveSubmission } from './grading.js';
-import { idsEqual } from './id.js';
 import { insertIssue } from './issues.js';
-
-export async function validateVariantAgainstQuestion(
-  unsafe_variant_id: string,
-  question_id: string,
-  instance_question_id: string | null = null,
-): Promise<Variant> {
-  const variant = await selectVariantById(unsafe_variant_id);
-  if (variant == null || !idsEqual(variant.question_id, question_id)) {
-    throw new HttpStatusError(
-      400,
-      `Client-provided variant ID ${unsafe_variant_id} is not valid for question ID ${question_id}.`,
-    );
-  }
-  if (
-    instance_question_id != null &&
-    (!variant.instance_question_id || !idsEqual(variant.instance_question_id, instance_question_id))
-  ) {
-    throw new HttpStatusError(
-      400,
-      `Client-provided variant ID ${unsafe_variant_id} is not valid for instance question ID ${instance_question_id}.`,
-    );
-  }
-  return variant;
-}
 
 export async function processSubmission(
   req: Request,

@@ -16,13 +16,12 @@ import {
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
-import {
-  processSubmission,
-  validateVariantAgainstQuestion,
-  reportIssueFromForm,
-} from '../../lib/question-submission.js';
+import { processSubmission, reportIssueFromForm } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
+import {
+  validateVariantAgainstQuestion,
+  selectVariantsByInstanceQuestion,
+} from '../../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
