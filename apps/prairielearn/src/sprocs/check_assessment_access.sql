@@ -63,7 +63,6 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;
