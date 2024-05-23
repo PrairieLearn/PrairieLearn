@@ -16,7 +16,6 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
-import * as b64Util from '../lib/base64-util.js';
 import {
   getLockNameForCoursePath,
   getCourseCommitHash,
@@ -25,20 +24,17 @@ import {
 } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
+import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
+import { Assessment, AssessmentSet, Course, CourseInstance, Question, User } from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
-import { createServerJob } from './server-jobs.js';
+import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
-/**
- * @param {any} course
- * @param {string} startGitHash
- * @param {import('./server-jobs.js').ServerJob} job
- */
-async function syncCourseFromDisk(course, startGitHash, job) {
+async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
   const endGitHash = await getCourseCommitHash(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
@@ -61,7 +57,11 @@ async function syncCourseFromDisk(course, startGitHash, job) {
   }
 }
 
-export async function cleanAndResetRepository(course, env, job) {
+export async function cleanAndResetRepository(
+  course: Course,
+  env: NodeJS.ProcessEnv,
+  job: ServerJob,
+) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
@@ -71,15 +71,23 @@ export async function cleanAndResetRepository(course, env, job) {
   });
 }
 
+interface BaseEditorOptions {
+  locals: Record<string, any>;
+}
+
 export class Editor {
-  constructor(params) {
+  protected authz_data: Record<string, any>;
+  protected course: Course;
+  protected user: User;
+  protected assessment_set: AssessmentSet;
+  protected description: string | null;
+  protected pathsToAdd: string[] | null;
+  protected commitMessage: string | null;
+
+  constructor(params: BaseEditorOptions) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
     this.user = params.locals.user;
-    this.course_instance = params.locals.course_instance;
-    this.assessment = params.locals.assessment;
-    this.assessment_set = params.locals.assessment_set;
-    this.question = params.locals.question;
     this.description = null;
     this.pathsToAdd = null;
     this.commitMessage = null;
@@ -113,10 +121,7 @@ export class Editor {
     return serverJob;
   }
 
-  /**
-   * @param {import('./server-jobs.js').ServerJobExecutor} serverJob
-   */
-  async executeWithServerJob(serverJob) {
+  async executeWithServerJob(serverJob: ServerJobExecutor) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
@@ -247,10 +252,10 @@ export class Editor {
   /**
    * Remove empty preceding subfolders for a question, assessment, etc. based on its ID.
    * This should be run after renames or deletes to prevent syncing issues.
-   * @param {string} rootDirectory Root directory that the items are being stored in.
-   * @param {string} id Item to delete root subfolders for, relative from the root directory.
+   * @param rootDirectory Root directory that the items are being stored in.
+   * @param id Item to delete root subfolders for, relative from the root directory.
    */
-  async removeEmptyPrecedingSubfolders(rootDirectory, id) {
+  async removeEmptyPrecedingSubfolders(rootDirectory: string, id: string) {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
@@ -284,13 +289,13 @@ export class Editor {
    * @param rootDirectory Directory to start searching from.
    * @param infoFile Name of the info file, will stop recursing once a directory contains this.
    */
-  async getExistingShortNames(rootDirectory, infoFile) {
-    let files = [];
+  async getExistingShortNames(rootDirectory: string, infoFile: string) {
+    const files = [];
     const walk = async (relativeDir) => {
       const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
         // If the directory doesn't exist, then we have nothing to load
         if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return /** @type {string[]} */ ([]);
+          return /** @type {string[]} */ [];
         }
         throw err;
       });
@@ -420,8 +425,14 @@ export class Editor {
 }
 
 export class AssessmentCopyEditor extends Editor {
-  constructor(params) {
+  private assessment: Assessment;
+  private course_instance: CourseInstance;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.assessment = params.locals.assessment;
+    this.course_instance = params.locals.course_instance;
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
   }
 
@@ -444,7 +455,7 @@ export class AssessmentCopyEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug(`Generate TID and Title`);
-    let names = this.getNamesForCopy(
+    const names = this.getNamesForCopy(
       this.assessment.tid,
       oldNamesShort,
       this.assessment.title,
@@ -475,8 +486,14 @@ export class AssessmentCopyEditor extends Editor {
 }
 
 export class AssessmentDeleteEditor extends Editor {
-  constructor(params) {
+  private course_instance: CourseInstance;
+  private assessment: Assessment;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.course_instance = params.locals.course_instance;
+    this.assessment = params.locals.assessment;
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
   }
 
@@ -496,9 +513,16 @@ export class AssessmentDeleteEditor extends Editor {
 }
 
 export class AssessmentRenameEditor extends Editor {
-  constructor(params) {
+  private tid_new: string;
+  private course_instance: CourseInstance;
+  private assessment: Assessment;
+
+  constructor(params: BaseEditorOptions & { tid_new: string }) {
     super(params);
+
     this.tid_new = params.tid_new;
+    this.course_instance = params.locals.course_instance;
+    this.assessment = params.locals.assessment;
     this.description = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid}`;
   }
 
@@ -521,8 +545,12 @@ export class AssessmentRenameEditor extends Editor {
 }
 
 export class AssessmentAddEditor extends Editor {
-  constructor(params) {
+  private course_instance: CourseInstance;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.course_instance = params.locals.course_instance;
     this.description = `${this.course_instance.short_name}: add assessment`;
   }
 
@@ -545,7 +573,7 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug(`Generate TID and Title`);
-    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
@@ -556,7 +584,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
 
-    let infoJson = {
+    const infoJson = {
       uuid: this.uuid,
       type: 'Homework',
       title: assessmentTitle,
@@ -577,8 +605,12 @@ export class AssessmentAddEditor extends Editor {
 }
 
 export class CourseInstanceCopyEditor extends Editor {
-  constructor(params) {
+  private course_instance: CourseInstance;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.course_instance = params.locals.course_instance;
     this.description = `Copy course instance ${this.course_instance.short_name}`;
   }
 
@@ -599,7 +631,7 @@ export class CourseInstanceCopyEditor extends Editor {
     );
 
     debug(`Generate short_name and long_name`);
-    let names = this.getNamesForCopy(
+    const names = this.getNamesForCopy(
       this.course_instance.short_name,
       oldNamesShort,
       this.course_instance.long_name,
@@ -632,8 +664,12 @@ export class CourseInstanceCopyEditor extends Editor {
 }
 
 export class CourseInstanceDeleteEditor extends Editor {
-  constructor(params) {
+  private course_instance: CourseInstance;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.course_instance = params.locals.course_instance;
     this.description = `Delete course instance ${this.course_instance.short_name}`;
   }
 
@@ -648,9 +684,13 @@ export class CourseInstanceDeleteEditor extends Editor {
 }
 
 export class CourseInstanceRenameEditor extends Editor {
-  constructor(params) {
+  private ciid_new: string;
+  private course_instance: CourseInstance;
+
+  constructor(params: BaseEditorOptions & { ciid_new: string }) {
     super(params);
     this.ciid_new = params.ciid_new;
+    this.course_instance = params.locals.course_instance;
     this.description = `Rename course instance ${this.course_instance.short_name}`;
   }
 
@@ -671,8 +711,9 @@ export class CourseInstanceRenameEditor extends Editor {
 }
 
 export class CourseInstanceAddEditor extends Editor {
-  constructor(params) {
+  constructor(params: BaseEditorOptions) {
     super(params);
+
     this.description = `Add course instance`;
   }
 
@@ -693,7 +734,7 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug(`Generate short_name and long_name`);
-    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     this.short_name = names.shortName;
     this.long_name = names.longName;
     this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
@@ -704,7 +745,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
 
-    let infoJson = {
+    const infoJson = {
       uuid: this.uuid,
       longName: this.long_name,
       allowAccess: [],
@@ -721,8 +762,9 @@ export class CourseInstanceAddEditor extends Editor {
 }
 
 export class QuestionAddEditor extends Editor {
-  constructor(params) {
+  constructor(params: BaseEditorOptions) {
     super(params);
+
     this.description = `Add question`;
   }
 
@@ -740,7 +782,7 @@ export class QuestionAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
-    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     this.qid = names.shortName;
     this.questionTitle = names.longName;
     this.questionPath = path.join(questionsPath, this.qid);
@@ -764,8 +806,12 @@ export class QuestionAddEditor extends Editor {
 }
 
 export class QuestionDeleteEditor extends Editor {
-  constructor(params) {
+  private question: Question;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.question = params.locals.question;
     this.description = `Delete question ${this.question.qid}`;
   }
 
@@ -782,9 +828,14 @@ export class QuestionDeleteEditor extends Editor {
 }
 
 export class QuestionRenameEditor extends Editor {
-  constructor(params) {
+  private qid_new: string;
+  private question: Question;
+
+  constructor(params: BaseEditorOptions & { qid_new: string }) {
     super(params);
+
     this.qid_new = params.qid_new;
+    this.question = params.locals.question;
     this.description = `Rename question ${this.question.qid}`;
   }
 
@@ -810,7 +861,7 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      let infoPath = path.join(
+      const infoPath = path.join(
         this.course.path,
         'courseInstances',
         assessment.course_instance_directory,
@@ -850,8 +901,12 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
-  constructor(params) {
+  private question: Question;
+
+  constructor(params: BaseEditorOptions) {
     super(params);
+
+    this.question = params.locals.question;
     this.description = `Copy question ${this.question.qid}`;
   }
 
@@ -869,7 +924,7 @@ export class QuestionCopyEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
-    let names = this.getNamesForCopy(
+    const names = this.getNamesForCopy(
       this.question.qid,
       oldNamesShort,
       this.question.title,
@@ -898,8 +953,19 @@ export class QuestionCopyEditor extends Editor {
 }
 
 export class QuestionTransferEditor extends Editor {
-  constructor(params) {
+  private from_qid: string;
+  private from_course_short_name: string;
+  private from_path: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      from_qid: string;
+      from_course_short_name: string;
+      from_path: string;
+    },
+  ) {
     super(params);
+
     this.from_qid = params.from_qid;
     this.from_course_short_name = params.from_course_short_name;
     this.from_path = params.from_path;
@@ -925,7 +991,12 @@ export class QuestionTransferEditor extends Editor {
 
     debug(`Generate qid and title`);
     if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(this.from_title)) {
-      let names = this.getNamesForCopy(this.from_qid, oldNamesShort, this.from_title, oldNamesLong);
+      const names = this.getNamesForCopy(
+        this.from_qid,
+        oldNamesShort,
+        this.from_title,
+        oldNamesLong,
+      );
       this.qid = names.shortName;
       this.questionTitle = names.longName;
     } else {
@@ -953,19 +1024,26 @@ export class QuestionTransferEditor extends Editor {
 }
 
 export class FileDeleteEditor extends Editor {
-  constructor(params) {
+  private container: { rootPath: string; invalidRootPaths: string[] };
+  private deletePath: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      container: { rootPath: string; invalidRootPaths: string[] };
+      deletePath: string;
+    },
+  ) {
     super(params);
+
     this.container = params.container;
     this.deletePath = params.deletePath;
-    if (this.course.path === this.container.rootPath) {
-      this.prefix = '';
-    } else {
-      this.prefix = `${path.basename(this.container.rootPath)}: `;
+
+    let prefix = '';
+    if (this.course.path !== this.container.rootPath) {
+      prefix = `${path.basename(this.container.rootPath)}: `;
     }
-    this.description = `${this.prefix}delete ${path.relative(
-      this.container.rootPath,
-      this.deletePath,
-    )}`;
+
+    this.description = `${prefix}delete ${path.relative(this.container.rootPath, this.deletePath)}`;
   }
 
   assertCanEdit() {
@@ -1013,17 +1091,28 @@ export class FileDeleteEditor extends Editor {
 }
 
 export class FileRenameEditor extends Editor {
-  constructor(params) {
+  private container: { rootPath: string; invalidRootPaths: string[] };
+  private oldPath: string;
+  private newPath: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      container: { rootPath: string; invalidRootPaths: string[] };
+      oldPath: string;
+      newPath: string;
+    },
+  ) {
     super(params);
     this.container = params.container;
     this.oldPath = params.oldPath;
     this.newPath = params.newPath;
-    if (this.course.path === this.container.rootPath) {
-      this.prefix = '';
-    } else {
-      this.prefix = `${path.basename(this.container.rootPath)}: `;
+
+    let prefix = '';
+    if (this.course.path !== this.container.rootPath) {
+      prefix = `${path.basename(this.container.rootPath)}: `;
     }
-    this.description = `${this.prefix}rename ${path.relative(
+
+    this.description = `${prefix}rename ${path.relative(
       this.container.rootPath,
       this.oldPath,
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
@@ -1112,23 +1201,31 @@ export class FileRenameEditor extends Editor {
 }
 
 export class FileUploadEditor extends Editor {
-  constructor(params) {
+  private container: { rootPath: string; invalidRootPaths: string[] };
+  private filePath: string;
+  private fileContents: Buffer;
+
+  constructor(
+    params: BaseEditorOptions & {
+      container: { rootPath: string; invalidRootPaths: string[] };
+      filePath: string;
+      fileContents: Buffer;
+    },
+  ) {
     super(params);
     this.container = params.container;
     this.filePath = params.filePath;
     this.fileContents = params.fileContents;
-    if (this.course.path === this.container.rootPath) {
-      this.prefix = '';
-    } else {
-      this.prefix = `${path.basename(this.container.rootPath)}: `;
+
+    let prefix = '';
+    if (this.course.path !== this.container.rootPath) {
+      prefix = `${path.basename(this.container.rootPath)}: `;
     }
-    this.description = `${this.prefix}upload ${path.relative(
-      this.container.rootPath,
-      this.filePath,
-    )}`;
+
+    this.description = `${prefix}upload ${path.relative(this.container.rootPath, this.filePath)}`;
   }
 
-  getHashFromBuffer(buffer) {
+  getHashFromBuffer(buffer: Buffer) {
     return sha256(buffer.toString('utf8')).toString();
   }
 
