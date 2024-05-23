@@ -219,7 +219,7 @@ For the `n`-th submission attempt made by a student, the scoring algorithm is as
 1. Set the `question value` to `autoPoints[n]`.
 2. Add `max(0, submission percentage score - best current score) / 100 * question value` to `question points`.
 3. If the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
-4. If the `submission percentage score` is 100% or `n` is the last attempt, then prohibit further submissions to the question.
+4. If the `submission percentage score` is 100% and there are no manual points, or `n` is the last attempt, then prohibit further submissions to the question.
 
 As an example, suppose a student makes 4 submissions of varying degrees of correctness to a question which has `autoPoints` set to `[10, 7, 5, 2]`. The student's submissions are as follows:
 
