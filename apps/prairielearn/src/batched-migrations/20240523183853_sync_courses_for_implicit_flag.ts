@@ -33,7 +33,7 @@ export default makeBatchedMigration({
 /**
  * Re-syncs an existing course. Does NOT pull new changes from the remote repository.
  */
-export async function syncCourse(course: Course) {
+async function syncCourse(course: Course) {
   const serverJob = await createServerJob({
     courseId: course.id,
     type: 'sync',
