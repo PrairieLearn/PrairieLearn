@@ -197,12 +197,6 @@ export async function withCodeCaller(course, fn) {
     });
   }
 
-  // Determine if this course is allowed to use `rpy2`.
-  const allowRpy2 = await features.enabled('allow-rpy2', {
-    institution_id: course.institution_id,
-    course_id: course.id,
-  });
-
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
 
@@ -212,7 +206,7 @@ export async function withCodeCaller(course, fn) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     await codeCaller.prepareForCourse({
       coursePath,
-      forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+      forbiddenModules: [],
     });
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is
