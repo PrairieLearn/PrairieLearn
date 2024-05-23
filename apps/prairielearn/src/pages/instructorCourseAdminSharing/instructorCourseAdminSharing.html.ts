@@ -95,7 +95,7 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
               <div class=form-group>
                 <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-              <div>
+              </div>
               <div class="text-right mt-4">
                 <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
               </div>
