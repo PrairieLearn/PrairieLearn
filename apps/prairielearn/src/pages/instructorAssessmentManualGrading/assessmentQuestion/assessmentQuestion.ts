@@ -208,7 +208,6 @@ router.post(
             continue;
           }
           const student_answer = atob(submission.submitted_answer._files[0].contents);
-          console.log(student_answer);
 
           // get question prompt
           const variant = await queryRow(
@@ -250,7 +249,6 @@ router.post(
           }
 
           const question_prompt = data.questionHtml.split('<script>', 2)[0];
-          console.log(question_prompt);
 
           // Call OpenAI API
           const completion = await openai.chat.completions.create({
@@ -267,7 +265,6 @@ router.post(
             model: 'gpt-3.5-turbo',
           });
 
-          console.log(completion.choices[0].message.content);
           let msg = '';
           try {
             if (completion.choices[0].message.content === null) {
