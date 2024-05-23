@@ -79,7 +79,10 @@ router.get(
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
 
-    res.render('instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides', res.locals);
+    res.render(
+      'instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides',
+      res.locals,
+    );
   }),
 );
 
