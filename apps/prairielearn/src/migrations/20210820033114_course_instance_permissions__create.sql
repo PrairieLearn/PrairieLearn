@@ -4,14 +4,13 @@ CREATE TYPE enum_course_instance_role AS ENUM(
   'Student Data Editor'
 );
 
-CREATE TABLE
-  course_instance_permissions (
-    id BIGSERIAL PRIMARY KEY,
-    course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
-    course_instance_role enum_course_instance_role,
-    course_permission_id BIGINT NOT NULL REFERENCES course_permissions ON DELETE CASCADE ON UPDATE CASCADE,
-    UNIQUE (course_permission_id, course_instance_id)
-  );
+CREATE TABLE course_instance_permissions (
+  id BIGSERIAL PRIMARY KEY,
+  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
+  course_instance_role enum_course_instance_role,
+  course_permission_id BIGINT NOT NULL REFERENCES course_permissions ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE (course_permission_id, course_instance_id)
+);
 
 -- Give course_permissions with course_role of at least 'None' to all users with
 -- enrollments of role Instructor.

@@ -1,24 +1,36 @@
-const _ = require('lodash');
-const asyncHandler = require('express-async-handler');
-const { promisify } = require('util');
+// @ts-check
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const { isEnterprise } = require('../lib/license');
-const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
-const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));
-const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
-const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
-const authzHasCoursePreviewOrInstanceView = promisify(
-  require('./authzHasCoursePreviewOrInstanceView'),
-);
+import { isEnterprise } from '../lib/license.js';
 
-module.exports = asyncHandler(async (req, res, next) => {
+import { authzCourseOrInstance } from './authzCourseOrInstance.js';
+import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView.js';
+import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance.js';
+import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion.js';
+import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export default asyncHandler(async (req, res, next) => {
   // We rely on having res.locals.workspace_id already set to the correct value here
-  const result = await sqldb.queryOneRowAsync(sql.select_auth_data_from_workspace, {
+  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_auth_data_from_workspace, {
     workspace_id: res.locals.workspace_id,
   });
+
+  if (result.rows.length === 0) {
+    // We couldn't find the workspace. Someone could have put in a bad workspace ID,
+    // or there could be a dangling workspace after a variant was deleted. Either way,
+    // translate this to a 403 the error out of our monitoring.
+    //
+    // We use a 403 instead of a 404 to avoid leaking information about the existence
+    // of particular workspace IDs.
+    throw new HttpStatusError(403, 'Access denied');
+  }
+
   _.assign(res.locals, result.rows[0]);
 
   if (res.locals.course_instance_id) {
@@ -29,8 +41,13 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
-      const checkPlanGrants = promisify(require('../ee/middlewares/checkPlanGrants').default);
-      await checkPlanGrants(req, res);
+      const { checkPlanGrantsForLocals } = await import('../ee/lib/billing/plan-grants.js');
+      const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
+      if (!hasPlanGrants) {
+        // TODO: Show a fancier error page explaining what happened and prompting
+        // the user to contact their instructor.
+        throw new HttpStatusError(403, 'Access denied');
+      }
     }
 
     if (res.locals.instance_question_id) {

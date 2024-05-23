@@ -1,10 +1,9 @@
-import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
-import { callbackify } from 'util';
-import * as _ from 'lodash';
+import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
+import _ from 'lodash';
 
-import { makeAwsClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.
@@ -12,7 +11,7 @@ const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
 
-export const run = callbackify(async () => {
+export async function run() {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
@@ -161,7 +160,7 @@ export const run = callbackify(async () => {
   });
 
   await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, desiredInstances);
-});
+}
 
 /**
  * Sets the desired capacity of the given autoscaling group.

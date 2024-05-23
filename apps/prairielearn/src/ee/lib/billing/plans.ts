@@ -1,21 +1,24 @@
 import { z } from 'zod';
+
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+
 import {
   EnumPlanGrantType,
   Institution,
   InstitutionSchema,
   PlanGrant,
   PlanGrantSchema,
-} from '../../../lib/db-types';
-import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types';
-import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
+} from '../../../lib/db-types.js';
+import { WithRequiredKeys } from '../../../lib/types.js';
 import {
   insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
-} from '../../models/course-instance-required-plans';
-import { WithRequiredKeys } from '../../../lib/types';
+} from '../../models/course-instance-required-plans.js';
+import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants.js';
 
-const sql = loadSqlEquiv(__filename);
+import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export interface DesiredPlan {
   plan: PlanName;
@@ -107,7 +110,7 @@ export function getPlanNamesFromPlanGrants(planGrants: PlanGrant[]): PlanName[] 
 export async function getRequiredPlansForCourseInstance(
   course_instance_id: string,
 ): Promise<PlanName[]> {
-  return queryRows(
+  return await queryRows(
     sql.select_required_plans_for_course_instance,
     { course_instance_id },
     z.enum(PLAN_NAMES),
@@ -230,7 +233,7 @@ export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], required
 }
 
 async function getInstitutionForCourseInstance(course_instance_id: string): Promise<Institution> {
-  return queryRow(
+  return await queryRow(
     sql.select_institution_for_course_instance,
     { course_instance_id },
     InstitutionSchema,

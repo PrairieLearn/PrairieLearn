@@ -1,8 +1,9 @@
-import winston = require('winston');
-import Transport = require('winston-transport');
 import { Writable, type WritableOptions } from 'node:stream';
 
-import { config } from './config';
+import winston from 'winston';
+import Transport from 'winston-transport';
+
+import { config } from './config.js';
 
 interface WinstonBufferedLogger extends winston.Logger {
   getBuffer(): Buffer;

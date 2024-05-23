@@ -1,16 +1,18 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const sqldb = require('@prairielearn/postgres');
-const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
+import asyncHandler from 'express-async-handler';
 
-const { config } = require('../lib/config');
-const authnLib = require('../lib/authn');
+import * as sqldb from '@prairielearn/postgres';
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as authnLib from '../lib/authn.js';
+import { config } from '../lib/config.js';
+import { clearCookie, setCookie } from '../lib/cookie.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-module.exports = asyncHandler(async (req, res, next) => {
+export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
   res.locals.news_item_notification_count = 0;
 
@@ -39,7 +41,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     });
 
     if (!data || !data.uuid || typeof data.uuid !== 'string' || !data.uuid.match(UUID_REGEXP)) {
-      return next(new Error('invalid load_test_token'));
+      throw new Error('invalid load_test_token');
     }
 
     const uuid = data.uuid;
@@ -85,11 +87,11 @@ module.exports = asyncHandler(async (req, res, next) => {
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
     if (req.cookies.pl_test_user === 'test_student') {
-      uid = 'student@illinois.edu';
+      uid = 'student@example.com';
       name = 'Student User';
       uin = '000000001';
     } else if (req.cookies.pl_test_user === 'test_instructor') {
-      uid = 'instructor@illinois.edu';
+      uid = 'instructor@example.com';
       name = 'Instructor User';
       uin = '100000000';
     }
@@ -111,18 +113,30 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
 
   var authnData = null;
-  if (req.cookies.pl_authn) {
-    // if we have a authn cookie then we try and unpack it
+
+  // `authnLib.loadUser` will migrate data into the session. If that data is
+  // already available, use it instead of the cookie.
+  if (req.session.user_id && req.session.authn_provider_name) {
+    authnData = {
+      user_id: req.session.user_id,
+      authn_provider_name: req.session.authn_provider_name,
+    };
+  }
+
+  if (!authnData && req.cookies.pl_authn) {
+    // If we have a authn cookie then we try and unpack it. If we fail to
+    // unpack the cookie's data, then authnData will be null and we'll
+    // treat the user as though they're not authenticated.
     authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
-    // if the cookie unpacking failed then authnData will be null
   }
+
   if (authnData == null) {
     // We failed to authenticate.
 
-    // Clear the pl_authn cookie in case it was bad
-    res.clearCookie('pl_authn');
+    // Clear the auth cookie in case it was bad
+    clearCookie(res, ['pl_authn', 'pl2_authn']);
 
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.
@@ -132,9 +146,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       next();
       return;
     } else {
-      // we aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page
-      // first set the preAuthUrl cookie for redirection after authn
-      res.cookie('preAuthUrl', req.originalUrl);
+      // We aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page.
 
       // If we're in the middle of a PrairieTest login flow, propagate that to
       // the login page so we can show a message to the user.
@@ -142,7 +154,34 @@ module.exports = asyncHandler(async (req, res, next) => {
       if (req.path === '/pl/prairietest/auth') {
         query = '?service=PrairieTest';
       }
-      res.redirect(`/pl/login${query}`);
+
+      const loginUrl = `/pl/login${query}`;
+
+      // If this request is being made by HTMX, use the special `HX-Redirect`
+      // header to redirect the page as a whole, not just the response.
+      if (req.get('HX-Request')) {
+        // Instead of redirecting to `req.originalUrl`, we redirect back to the
+        // page from which the HTMX request was made. This ensures that users
+        // don't end up redirected to a route that renders HTML that's meant to
+        // be embedded in another page.
+        //
+        // Fall back to the home page if we're somehow missing this header.
+        setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
+        res.set('HX-Redirect', loginUrl);
+
+        // Note that Node doesn't allow us to set headers if the response is a
+        // redirect, so we send this as a 200 response. HTMX will perform the
+        // redirect on the client.
+        //
+        // https://stackoverflow.com/questions/39997413/how-to-pass-headers-while-doing-res-redirect-in-express-js
+        res.send();
+        return;
+      }
+
+      // first set the preAuthUrl cookie for redirection after authn
+      setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.originalUrl);
+
+      res.redirect(loginUrl);
       return;
     }
   }
@@ -157,5 +196,5 @@ module.exports = asyncHandler(async (req, res, next) => {
     pl_authn_cookie: true,
   });
 
-  return next();
+  next();
 });

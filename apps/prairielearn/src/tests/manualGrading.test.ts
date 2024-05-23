@@ -1,16 +1,21 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config';
-import { features } from '../lib/features/index';
-import * as helperServer from './helperServer';
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
+
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -22,6 +27,7 @@ const defaultUser: User = {
 
 type MockUser = User & {
   user_id?: string;
+  authUid: string;
 };
 
 interface RubricItem {
@@ -30,6 +36,7 @@ interface RubricItem {
   description: string;
   explanation?: string;
   grader_note?: string;
+  always_show_to_students: boolean;
   description_render?: string;
   explanation_render?: string;
   grader_note_render?: string;
@@ -106,6 +113,7 @@ async function submitGradeForm(
   const params = new URLSearchParams({
     __action: 'add_manual_grade',
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    submission_id: form.find('input[name=submission_id]').attr('value') || '',
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
     score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
     score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
@@ -189,11 +197,17 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     setUser(mockStaff[0]);
     let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
     assert.equal(nextUngraded.status, 302);
-    assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    assert.equal(
+      nextUngraded.headers.get('location'),
+      new URL(manualGradingAssessmentQuestionUrl).pathname,
+    );
     setUser(mockStaff[1]);
     nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
     assert.equal(nextUngraded.status, 302);
-    assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    assert.equal(
+      nextUngraded.headers.get('location'),
+      new URL(manualGradingAssessmentQuestionUrl).pathname,
+    );
   });
 
   step('student view should have the new score/feedback/rubric', async () => {
@@ -226,26 +240,30 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     } else {
       rubric_items.forEach((item, index) => {
         const container = feedbackBlock.find(`[data-testid="rubric-item-container-${item.id}"]`);
-        assert.equal(container.length, 1);
-        assert.equal(
-          container.find('input[type="checkbox"]').is(':checked'),
-          selected_rubric_items.includes(index),
-        );
-        assert.equal(
-          container.find('[data-testid="rubric-item-points"]').text().trim(),
-          `[${item.points >= 0 ? '+' : ''}${item.points}]`,
-        );
-        assert.equal(
-          container.find('[data-testid="rubric-item-description"]').html()?.trim(),
-          item.description_render ?? item.description,
-        );
-        if (item.explanation) {
+        if (item.always_show_to_students || selected_rubric_items.includes(index)) {
+          assert.equal(container.length, 1);
           assert.equal(
-            container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
-            item.explanation_render ?? `<p>${item.explanation}</p>`,
+            container.find('input[type="checkbox"]').is(':checked'),
+            selected_rubric_items.includes(index),
           );
+          assert.equal(
+            container.find('[data-testid="rubric-item-points"]').text().trim(),
+            `[${item.points >= 0 ? '+' : ''}${item.points}]`,
+          );
+          assert.equal(
+            container.find('[data-testid="rubric-item-description"]').html()?.trim(),
+            item.description_render ?? item.description,
+          );
+          if (item.explanation) {
+            assert.equal(
+              container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+              item.explanation_render ?? `<p>${item.explanation}</p>`,
+            );
+          } else {
+            assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
+          }
         } else {
-          assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
+          assert.equal(container.length, 0);
         }
       });
     }
@@ -299,6 +317,10 @@ function checkSettingsResults(
         `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
       );
       assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
+      const always_show_to_students = form.find(
+        `[name="rubric_item[cur${item.id}][always_show_to_students]"]:checked`,
+      );
+      assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
   });
 
@@ -351,10 +373,6 @@ describe('Manual Grading', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  before('ensure course has manual grading enabled', async () => {
-    await features.enable('manual-grading-rubrics');
-  });
-
   before('build assessment manual grading page URL', async () => {
     const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
@@ -365,19 +383,20 @@ describe('Manual Grading', function () {
   before('add staff users', async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const courseStaffParams = [1, staff.authUid, 'None', 1];
-        const courseStaffResult = await sqldb.callAsync(
-          'course_permissions_insert_by_user_uid',
-          courseStaffParams,
-        );
-        assert.equal(courseStaffResult.rowCount, 1);
-        staff.user_id = courseStaffResult.rows[0].user_id;
-        const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqldb.callAsync(
-          'course_instance_permissions_insert',
-          ciStaffParams,
-        );
-        assert.equal(ciStaffResult.rowCount, 1);
+        const { user_id } = await insertCoursePermissionsByUserUid({
+          course_id: '1',
+          uid: staff.authUid,
+          course_role: 'None',
+          authn_user_id: '1',
+        });
+        staff.user_id = user_id;
+        await insertCourseInstancePermissions({
+          course_id: '1',
+          user_id: staff.user_id,
+          course_instance_id: '1',
+          course_instance_role: 'Student Data Editor',
+          authn_user_id: '1',
+        });
       }),
     );
   });
@@ -487,9 +506,7 @@ describe('Manual Grading', function () {
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
         const token =
-          $instancesBody('form[name=grade-all-form]')
-            .find('input[name=__csrf_token]')
-            .attr('value') || '';
+          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
         await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
@@ -536,15 +553,16 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        console.log(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[0]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[1]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+        assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
       });
     });
 
@@ -619,7 +637,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         },
       );
 
@@ -629,7 +647,10 @@ describe('Manual Grading', function () {
           setUser(mockStaff[1]);
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+          assert.equal(
+            nextUngraded.headers.get('location'),
+            new URL(manualGradingAssessmentQuestionUrl).pathname,
+          );
         },
       );
     });
@@ -690,7 +711,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 6, description: 'First rubric item' },
+            { points: 6, description: 'First rubric item', always_show_to_students: true },
             {
               points: 3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -699,6 +720,7 @@ describe('Manual Grading', function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
+              always_show_to_students: false,
             },
             {
               points: 0.4,
@@ -710,14 +732,17 @@ describe('Manual Grading', function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
+              always_show_to_students: true,
             },
             {
               points: -1.6,
               description: 'Penalty rubric item (negative points, floating point)',
+              always_show_to_students: false,
             },
             {
               points: 0,
               description: 'Rubric item with no value (zero points)',
+              always_show_to_students: true,
             },
           ];
 
@@ -729,6 +754,7 @@ describe('Manual Grading', function () {
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
+              replace_auto_points: 'false',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -770,6 +796,48 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              use_rubric: 'true',
+              replace_auto_points: 'false',
+              starting_points: '0', // Positive grading
+              min_points: '-0.5',
+              max_extra_points: '0.5',
+              ...buildRubricItemFields(rubric_items),
+            }).toString(),
+          });
+
+          assert.equal(response.ok, true);
+        });
+
+        checkSettingsResults(0, -0.5, 0.5);
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+      });
+
+      describe('Grading without rubric items', () => {
+        step('submit a grade using a positive rubric', async () => {
+          setUser(mockStaff[0]);
+          selected_rubric_items = [];
+          score_points = 0;
+          score_percent = 0;
+          feedback_note = 'Test feedback note without any rubric items';
+          await submitGradeForm();
+        });
+
+        checkGradingResults(mockStaff[0], mockStaff[0]);
+
+        step('update rubric items should succeed', async () => {
+          setUser(mockStaff[0]);
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
+
+          const response = await fetch(manualGradingIQUrl, {
+            method: 'POST',
+            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -839,6 +907,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -873,7 +942,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 0, description: 'First rubric item' },
+            { points: 0, description: 'First rubric item', always_show_to_students: true },
             {
               points: -3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -882,6 +951,7 @@ describe('Manual Grading', function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
+              always_show_to_students: true,
             },
             {
               points: -4,
@@ -893,15 +963,18 @@ describe('Manual Grading', function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
+              always_show_to_students: false,
             },
             {
               points: 1.6,
               description:
                 'Positive rubric item in negative grading (positive points, floating point)',
+              always_show_to_students: false,
             },
             {
               points: 6,
               description: 'Rubric item with positive reaching maximum',
+              always_show_to_students: true,
             },
           ];
 
@@ -912,6 +985,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',

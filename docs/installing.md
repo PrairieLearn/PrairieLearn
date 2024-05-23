@@ -14,9 +14,9 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
 - On the shell of your WSL 2 instance, make sure the instance has the `docker` command installed. The installation process may depend on your distribution, but most distributions provide a `docker` package. For example, if you are using Debian, Ubuntu or similar distributions, you may install it with:
 
-```sh
-sudo apt install docker
-```
+  ```sh
+  sudo apt install docker
+  ```
 
 **NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
@@ -30,7 +30,7 @@ If you are using Windows, you have two options to store your course repository(i
 
 - Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
 
-- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
+- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/mwest/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
 
 ## Running instructions
 
@@ -60,7 +60,25 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+### Running on Apple silicon and other ARM64 hardware
+
+If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+To fix this, add `--platform linux/amd64` before the image in any `docker run` commands. For example:
+
+```sh
+docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
+```
+
+When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+
+If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
+
+_Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
 ### Support for external graders and workspaces
 
@@ -69,6 +87,8 @@ In production, PrairieLearn runs external grading jobs and workspaces on a distr
 - Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
 - Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
 - Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+
+#### Preparation
 
 In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
 
@@ -81,7 +101,9 @@ To run PrairieLearn locally with external grader and workspace support, create a
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, and you are using Linux or Mac OS X, the new command is as follows:
+#### Running Docker with the extended features
+
+Now, we can run PrairieLearn with additional options to allow the external grading or workspaces features. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -89,20 +111,16 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
+    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
     prairielearn/prairielearn
 ```
 
-If you are on Windows, you can use the following command on the WSL 2 shell:
+###### Troubleshooting the --add-host option and network timeouts
 
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
-    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --add-host=host.docker.internal:172.17.0.1 \
-    prairielearn/prairielearn
-```
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+
+If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 
 ## Upgrading your Docker's version of PrairieLearn
 

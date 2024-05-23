@@ -1,15 +1,16 @@
 // @ts-check
-const assert = require('assert');
-const Sentry = require('@prairielearn/sentry');
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const { OAuth2Client } = require('google-auth-library');
-const { logger } = require('@prairielearn/logger');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import { OAuth2Client } from 'google-auth-library';
 
-const authnLib = require('../../lib/authn');
-const { config } = require('../../lib/config');
+import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
-const router = express.Router();
+import * as authnLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
+
+const router = Router();
 
 router.get(
   '/',
@@ -20,7 +21,7 @@ router.get(
       !config.googleClientSecret ||
       !config.googleRedirectUrl
     ) {
-      throw new Error('Google login is not enabled');
+      throw new HttpStatusError(404, 'Google login is not enabled');
     }
 
     const code = req.query.code;
@@ -43,11 +44,10 @@ router.get(
         // This is probably a detailed error from the Google API client. We'll
         // pick off the useful bits and attach them to the Sentry scope so that
         // they'll be included with the error event.
-        Sentry.configureScope((scope) => {
-          scope.setContext('OAuth', {
-            code: err.code,
-            data: err.response.data,
-          });
+        const scope = Sentry.getCurrentScope();
+        scope.setContext('OAuth', {
+          code: err.code,
+          data: err.response.data,
         });
       }
       throw err;
@@ -65,7 +65,8 @@ router.get(
     const parts = idToken.split('.');
     identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
     logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
-    assert(identity.email);
+
+    if (!identity.email) throw new Error('Google auth response missing email');
 
     let authnParams = {
       uid: identity.email,
@@ -80,4 +81,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

@@ -81,6 +81,32 @@
           }
         }
       }
+    },
+    "dynamicDependencies": {
+      "description": "The element's client-side dynamic dependencies.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+        },
+        "nodeModulesScripts": {
+          "description": "The scripts required by this element from /node_modules as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "clientFilesCourseScripts": {
+          "description": "The styles required by this element from clientFilesCourse as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "extensionScripts": {
+          "description": "The scripts required by this extension from the extension's directory.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
     }
   }
 }

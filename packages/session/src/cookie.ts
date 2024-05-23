@@ -1,4 +1,3 @@
-import cookie from 'cookie';
 import signature from 'cookie-signature';
 import type { Request } from 'express';
 
@@ -17,20 +16,16 @@ export function shouldSecureCookie(req: Request, secure: CookieSecure): boolean 
 }
 
 export function getSessionIdFromCookie(
-  req: Request,
-  cookieName: string,
+  sessionCookie: string | null | undefined,
   secrets: string[],
-): string | null {
-  const cookies = cookie.parse(req.headers.cookie ?? '');
-  const sessionCookie = cookies[cookieName];
-
-  if (!sessionCookie) return null;
-
+) {
   // Try each secret until we find one that works.
-  for (const secret of secrets) {
-    const value = signature.unsign(sessionCookie, secret);
-    if (value !== false) {
-      return value;
+  if (sessionCookie) {
+    for (const secret of secrets) {
+      const value = signature.unsign(sessionCookie, secret);
+      if (value !== false) {
+        return value;
+      }
     }
   }
 

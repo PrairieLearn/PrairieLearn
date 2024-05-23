@@ -1,14 +1,19 @@
 // @ts-check
-const _ = require('lodash');
-const path = require('path');
-const child_process = require('child_process');
-const { v4: uuidv4 } = require('uuid');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as child_process from 'node:child_process';
+import * as path from 'node:path';
 
-const { FunctionMissingError } = require('./code-caller-shared');
-const { logger } = require('@prairielearn/logger');
-const { deferredPromise } = require('../deferred');
-const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('../paths');
+import debugfn from 'debug';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
+import { logger } from '@prairielearn/logger';
+
+import { deferredPromise } from '../deferred.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
+
+const debug = debugfn('prairielearn:code-caller-native');
 
 const CREATED = Symbol('CREATED');
 const WAITING = Symbol('WAITING');
@@ -27,7 +32,7 @@ const EXITED = Symbol('EXITED');
 
 /** @typedef {CREATED | WAITING | IN_CALL | RESTARTING | EXITING | EXITED} CodeCallerState */
 
-/** @typedef {import('./code-caller-native-types').CodeCallerNativeChildProcess} CodeCallerNativeChildProcess */
+/** @typedef {import('./code-caller-native-types.js').CodeCallerNativeChildProcess} CodeCallerNativeChildProcess */
 
 /**
  * @typedef {Object} ErrorData
@@ -71,13 +76,13 @@ const EXITED = Symbol('EXITED');
 
 */
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
  */
-class CodeCallerNative {
+export class CodeCallerNative {
   /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    *
@@ -124,6 +129,9 @@ class CodeCallerNative {
     // for error logging
     this.lastCallData = null;
 
+    this.coursePath = null;
+    this.forbiddenModules = [];
+
     this._checkState();
 
     this.debug('exit constructor()');
@@ -139,9 +147,13 @@ class CodeCallerNative {
     debug(`[${this.uuid} ${paddedState}] ${message}`);
   }
 
-  async prepareForCourse(coursePath) {
+  /**
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
+   */
+  async prepareForCourse({ coursePath, forbiddenModules }) {
     this.debug('enter prepareForCourse()');
     this.coursePath = coursePath;
+    this.forbiddenModules = forbiddenModules;
     this.debug('exit prepareForCourse()');
   }
 
@@ -169,6 +181,7 @@ class CodeCallerNative {
     const paths = [path.join(APP_ROOT_PATH, 'python')];
     if (type === 'question') {
       if (!directory) throw new Error('Missing directory');
+      if (!this.coursePath) throw new Error('Missing course path');
       cwd = path.join(this.coursePath, 'questions', directory);
       paths.push(path.join(this.coursePath, 'serverFilesCourse'));
     } else if (type === 'v2-question') {
@@ -177,6 +190,7 @@ class CodeCallerNative {
       cwd = REPOSITORY_ROOT_PATH;
     } else if (type === 'course-element') {
       if (!directory) throw new Error('Missing directory');
+      if (!this.coursePath) throw new Error('Missing course path');
       cwd = path.join(this.coursePath, 'elements', directory);
       paths.push(path.join(this.coursePath, 'serverFilesCourse'));
     } else if (type === 'core-element') {
@@ -188,7 +202,7 @@ class CodeCallerNative {
       throw new Error(`Unknown function call type: ${type}`);
     }
 
-    const callData = { file, fcn, args, cwd, paths };
+    const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
     const deferred = deferredPromise();
@@ -241,6 +255,8 @@ class CodeCallerNative {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      this.coursePath = null;
+      this.forbiddenModules = [];
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);
       this.debug('exit restart()');
       this.state = RESTARTING;
@@ -324,7 +340,7 @@ class CodeCallerNative {
 
     /** @type {import('child_process').SpawnOptions} */
     const options = {
-      cwd: __dirname,
+      cwd: import.meta.dirname,
       // stdin, stdout, stderr, data, and restart confirmations
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       env,
@@ -687,5 +703,3 @@ class CodeCallerNative {
     return true;
   }
 }
-
-module.exports.CodeCallerNative = CodeCallerNative;

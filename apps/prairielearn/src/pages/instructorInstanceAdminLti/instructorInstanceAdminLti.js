@@ -1,20 +1,22 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import ERR from 'async-stacktrace';
+import * as express from 'express';
+import _ from 'lodash';
 
-const { getCourseOwners } = require('../../lib/course');
-const error = require('@prairielearn/error');
-var sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+import { getCourseOwners } from '../../lib/course.js';
+
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
     getCourseOwners(res.locals.course.id)
       .then((owners) => {
         res.locals.course_owners = owners;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => next(err));
     return;
@@ -27,13 +29,13 @@ router.get('/', function (req, res, next) {
     if (ERR(err, next)) return;
     _.assign(res.locals, result.rows[0]);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   });
 });
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
   }
   var params;
   if (req.body.__action === 'lti_new_cred') {
@@ -71,16 +73,11 @@ router.post('/', function (req, res, next) {
       res.redirect(req.originalUrl);
     });
   } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
   }
 });
 
-module.exports = router;
+export default router;
 
 function randomString() {
   var len = 10;

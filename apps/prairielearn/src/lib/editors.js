@@ -1,69 +1,77 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const { logger } = require('@prairielearn/logger');
-const { contains } = require('@prairielearn/path-utils');
-const { createServerJob } = require('./server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const syncFromDisk = require('../sync/syncFromDisk');
-const courseUtil = require('../lib/courseUtil');
-const requireFrontend = require('../lib/require-frontend');
-const { config } = require('../lib/config');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const fs = require('fs-extra');
-const async = require('async');
-const { v4: uuidv4 } = require('uuid');
-const sha256 = require('crypto-js/sha256');
-const util = require('util');
-const chunks = require('./chunks');
-const { EXAMPLE_COURSE_PATH } = require('./paths');
-const { escapeRegExp } = require('@prairielearn/sanitize');
-const sqldb = require('@prairielearn/postgres');
-const { getLockNameForCoursePath } = require('./course');
+import * as path from 'path';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as async from 'async';
+import sha256 from 'crypto-js/sha256.js';
+import debugfn from 'debug';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
+import * as namedLocks from '@prairielearn/named-locks';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
+import { escapeRegExp } from '@prairielearn/sanitize';
+
+import * as b64Util from '../lib/base64-util.js';
+import {
+  getLockNameForCoursePath,
+  getCourseCommitHash,
+  updateCourseCommitHash,
+  getOrUpdateCourseCommitHash,
+} from '../models/course.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
+
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { config } from './config.js';
+import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { createServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:editors');
 
 /**
  * @param {any} course
  * @param {string} startGitHash
- * @param {import('./server-jobs').ServerJob} job
+ * @param {import('./server-jobs.js').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await courseUtil.getCommitHashAsync(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
+  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
   if (config.chunksGenerator) {
-    const chunkChanges = await chunks.updateChunksForCourse({
+    const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
       courseData: result.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
-    chunks.logChunkChangesToJob(chunkChanges, job);
+    logChunkChangesToJob(chunkChanges, job);
   }
 
-  await courseUtil.updateCourseCommitHashAsync(course);
+  await updateCourseCommitHash(course);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
-
-  await util.promisify(requireFrontend.undefQuestionServers)(course.path, job);
 }
 
-async function cleanAndResetRepository(course, env, job) {
+export async function cleanAndResetRepository(course, env, job) {
+  job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
+  job.info('Reset state to remote git repository');
   await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
     cwd: course.path,
     env,
   });
 }
 
-class Editor {
+export class Editor {
   constructor(params) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
@@ -81,131 +89,159 @@ class Editor {
     throw new Error('write must be defined in a subclass');
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
-      return callback(error.make(403, 'Access denied (must be course editor)'));
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     // Do not allow users to edit the exampleCourse
     if (this.course.example_course) {
-      return callback(new Error(`Access denied (cannot edit the example course)`));
+      throw new HttpStatusError(403, `Access denied (cannot edit the example course)`);
     }
-
-    callback(null);
   }
 
-  doEdit(callback) {
-    let jobSequenceId = null;
-    async.series(
-      [
-        async () => {
-          const serverJob = await createServerJob({
-            courseId: this.course.id,
-            userId: this.user.user_id,
-            authnUserId: this.authz_data.authn_user.user_id,
-            type: 'sync',
-            description: this.description,
+  async prepareServerJob() {
+    this.assertCanEdit();
+    const serverJob = await createServerJob({
+      courseId: this.course.id,
+      userId: this.user.user_id,
+      authnUserId: this.authz_data.authn_user.user_id,
+      type: 'sync',
+      description: this.description,
+    });
+    return serverJob;
+  }
+
+  /**
+   * @param {import('./server-jobs.js').ServerJobExecutor} serverJob
+   */
+  async executeWithServerJob(serverJob) {
+    // We deliberately use `executeUnsafe` here because we want to wait
+    // for the edit to complete during the request during which it was
+    // made. We use `executeUnsafe` instead of `execute` because we want
+    // errors to be thrown and handled by the caller.
+    await serverJob.executeUnsafe(async (job) => {
+      const gitEnv = process.env;
+      if (config.gitSshCommand != null) {
+        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+      }
+
+      const lockName = getLockNameForCoursePath(this.course.path);
+      await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
+
+        if (!config.fileEditorUseGit) {
+          // If we are not using git (e.g., if we are running locally), then we:
+          //
+          // - Write changes to disk
+          // - Sync changes from disk
+          //
+          // Either the job ends with a thrown error or with the return statement.
+
+          job.info('Write changes to disk');
+          job.data.saveAttempted = true;
+          await this.write();
+          job.data.saveSucceeded = true;
+
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
+
+          return;
+        }
+
+        // If we are using git (e.g., if we are running in production), then we:
+        //
+        // - Pull from remote (then clean and reset)
+        // - Write changes to disk
+        // - Push to remote (then clean and reset)
+        // - Sync changes from disk
+        //
+        // If anything goes wrong in the pull, we error and exit.
+        //
+        // If anything goes wrong in the write or push, we make sure to clean/reset
+        // (removing changes made by this edit) and sync (because changes were made
+        // by the pull) before we error and exit.
+
+        // Safety check: make sure the course has a defined branch and repository.
+        if (!this.course.branch || !this.course.repository) {
+          job.fail('Git repository or branch are not set for this course. Exiting...');
+          return;
+        }
+
+        job.info('Update to latest remote origin address');
+        await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        job.info('Fetch from remote git repository');
+        await job.exec('git', ['fetch'], {
+          cwd: this.course.path,
+          env: gitEnv,
+        });
+
+        await cleanAndResetRepository(this.course, gitEnv, job);
+
+        try {
+          job.data.saveAttempted = true;
+          job.info('Write changes to disk');
+          await this.write();
+
+          job.info('Commit changes');
+          await job.exec('git', ['add', ...this.pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
           });
-          jobSequenceId = serverJob.jobSequenceId;
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.uid}"`,
+              'commit',
+              '-m',
+              this.commitMessage,
+            ],
+            {
+              cwd: this.course.path,
+              env: gitEnv,
+            },
+          );
 
-          // We deliberately use `executeUnsafe` here because we want to wait
-          // for the edit to complete during the request during which it was
-          // made. We use `executeUnsafe` instead of `execute` because we want
-          // errors to be thrown and handled by the caller.
-          await serverJob.executeUnsafe(async (job) => {
-            const gitEnv = process.env;
-            if (config.gitSshCommand != null) {
-              gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-            }
-
-            const lockName = getLockNameForCoursePath(this.course.path);
-            await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
-
-              if (config.fileEditorUseGit) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-              }
-
-              try {
-                job.info('Write changes to disk');
-                await this.write();
-              } catch (err) {
-                if (config.fileEditorUseGit) {
-                  await cleanAndResetRepository(this.course, gitEnv, job);
-                }
-
-                throw err;
-              }
-
-              if (!config.fileEditorUseGit) {
-                await syncCourseFromDisk(this.course, startGitHash, job);
-                return;
-              }
-
-              try {
-                await job.exec('git', ['add', ...this.pathsToAdd], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-                await job.exec(
-                  'git',
-                  [
-                    '-c',
-                    `user.name="${this.user.name}"`,
-                    '-c',
-                    `user.email="${this.user.uid}"`,
-                    'commit',
-                    '-m',
-                    this.commitMessage,
-                  ],
-                  {
-                    cwd: this.course.path,
-                    env: gitEnv,
-                  },
-                );
-              } catch (err) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-                throw err;
-              }
-
-              try {
-                job.data.pushAttempted = true;
-
-                await job.exec('git', ['push'], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-
-                // We'll look for this flag on the `editError` page to know if
-                // we need to display instructions to recover from a failed push.
-                job.data.pushSucceeded = true;
-              } finally {
-                // Regardless of whether we error, we'll do a clean and reset:
-                //
-                // If pushing succeeded, the clean will remove any empty directories
-                // that might have been left behind by operations like renames.
-                //
-                // If pushing errored, the reset will get us back to a known good state.
-                await cleanAndResetRepository(this.course, gitEnv, job);
-              }
-
-              job.data.syncAttempted = true;
-
-              await syncCourseFromDisk(this.course, startGitHash, job);
-
-              // As with `job.data.pushSucceeded` above, we'll check this flag
-              // on the `editError` page to know if syncing failed so we can
-              // display appropriate instructions.
-              job.data.syncSucceeded = true;
-            });
+          job.info('Push changes to remote git repository');
+          await job.exec('git', ['push'], {
+            cwd: this.course.path,
+            env: gitEnv,
           });
-        },
-      ],
-      (err) => {
-        callback(err, jobSequenceId);
-      },
-    );
+          job.data.saveSucceeded = true;
+        } finally {
+          // Whether or not we error, we'll do a clean and reset.
+          //
+          // If pushing succeeded, the clean will remove any empty directories
+          // that might have been left behind by operations like renames.
+          //
+          // If pushing (or anything before pushing) failed, the reset will get
+          // us back to a known good state.
+          await cleanAndResetRepository(this.course, gitEnv, job);
+
+          // Similarly, whether or not we error, we'll a course sync.
+          //
+          // If pushing succeeded, then we will be syncing the changes made
+          // by this edit.
+          //
+          // If pushing (or anything before pushing) failed, then we will be
+          // syncing the changes we pulled from the remote git repository.
+          job.info('Sync changes from disk');
+          job.data.syncAttempted = true;
+          await syncCourseFromDisk(this.course, startGitHash, job);
+          job.data.syncSucceeded = true;
+        }
+      });
+    });
   }
 
   /**
@@ -383,7 +419,7 @@ class Editor {
   }
 }
 
-class AssessmentCopyEditor extends Editor {
+export class AssessmentCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
@@ -438,7 +474,7 @@ class AssessmentCopyEditor extends Editor {
   }
 }
 
-class AssessmentDeleteEditor extends Editor {
+export class AssessmentDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
@@ -459,18 +495,11 @@ class AssessmentDeleteEditor extends Editor {
   }
 }
 
-class AssessmentRenameEditor extends Editor {
+export class AssessmentRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.tid_new = params.tid_new;
     this.description = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid}`;
-  }
-
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
   }
 
   async write() {
@@ -491,7 +520,7 @@ class AssessmentRenameEditor extends Editor {
   }
 }
 
-class AssessmentAddEditor extends Editor {
+export class AssessmentAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: add assessment`;
@@ -547,7 +576,7 @@ class AssessmentAddEditor extends Editor {
   }
 }
 
-class CourseInstanceCopyEditor extends Editor {
+export class CourseInstanceCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy course instance ${this.course_instance.short_name}`;
@@ -602,7 +631,7 @@ class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-class CourseInstanceDeleteEditor extends Editor {
+export class CourseInstanceDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete course instance ${this.course_instance.short_name}`;
@@ -618,18 +647,11 @@ class CourseInstanceDeleteEditor extends Editor {
   }
 }
 
-class CourseInstanceRenameEditor extends Editor {
+export class CourseInstanceRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.ciid_new = params.ciid_new;
     this.description = `Rename course instance ${this.course_instance.short_name}`;
-  }
-
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
   }
 
   async write() {
@@ -648,7 +670,7 @@ class CourseInstanceRenameEditor extends Editor {
   }
 }
 
-class CourseInstanceAddEditor extends Editor {
+export class CourseInstanceAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add course instance`;
@@ -698,7 +720,7 @@ class CourseInstanceAddEditor extends Editor {
   }
 }
 
-class QuestionAddEditor extends Editor {
+export class QuestionAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add question`;
@@ -741,7 +763,7 @@ class QuestionAddEditor extends Editor {
   }
 }
 
-class QuestionDeleteEditor extends Editor {
+export class QuestionDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete question ${this.question.qid}`;
@@ -759,18 +781,11 @@ class QuestionDeleteEditor extends Editor {
   }
 }
 
-class QuestionRenameEditor extends Editor {
+export class QuestionRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.qid_new = params.qid_new;
     this.description = `Rename question ${this.question.qid}`;
-  }
-
-  canEdit(callback) {
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
   }
 
   async write() {
@@ -834,7 +849,7 @@ class QuestionRenameEditor extends Editor {
   }
 }
 
-class QuestionCopyEditor extends Editor {
+export class QuestionCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy question ${this.question.qid}`;
@@ -882,7 +897,7 @@ class QuestionCopyEditor extends Editor {
   }
 }
 
-class QuestionTransferEditor extends Editor {
+export class QuestionTransferEditor extends Editor {
   constructor(params) {
     super(params);
     this.from_qid = params.from_qid;
@@ -937,7 +952,7 @@ class QuestionTransferEditor extends Editor {
   }
 }
 
-class FileDeleteEditor extends Editor {
+export class FileDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -953,37 +968,39 @@ class FileDeleteEditor extends Editor {
     )}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.deletePath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The path of the file to delete</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `,
+      });
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.deletePath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The path of the file to delete</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `,
+      });
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -995,7 +1012,7 @@ class FileDeleteEditor extends Editor {
   }
 }
 
-class FileRenameEditor extends Editor {
+export class FileRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1012,28 +1029,36 @@ class FileRenameEditor extends Editor {
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     debug('FileRenameEditor: canEdit()');
     if (!contains(this.container.rootPath, this.oldPath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file's old path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `,
+      });
     }
 
     if (!contains(this.container.rootPath, this.newPath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file's new path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `,
+      });
     }
 
     let found;
@@ -1042,34 +1067,35 @@ class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.oldPath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file's old path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `,
+      });
     }
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.newPath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file's new path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `,
+      });
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1085,7 +1111,7 @@ class FileRenameEditor extends Editor {
   }
 }
 
-class FileUploadEditor extends Editor {
+export class FileUploadEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1106,63 +1132,67 @@ class FileUploadEditor extends Editor {
     return sha256(buffer.toString('utf8')).toString();
   }
 
-  shouldEdit(callback) {
+  async shouldEdit() {
     debug('look for old contents');
-    fs.readFile(this.filePath, (err, contents) => {
-      if (err) {
-        if (err.code === 'ENOENT') {
-          debug('no old contents, so continue with upload');
-          callback(null, true);
-        } else {
-          ERR(err, callback);
-        }
-      } else {
-        debug('get hash of old contents and of new contents');
-        const oldHash = this.getHashFromBuffer(contents);
-        const newHash = this.getHashFromBuffer(this.fileContents);
-        debug('oldHash: ' + oldHash);
-        debug('newHash: ' + newHash);
-        if (oldHash === newHash) {
-          debug('new contents are the same as old contents, so abort upload');
-          callback(null, false);
-        } else {
-          debug('new contents are different from old contents, so continue with upload');
-          callback(null, true);
-        }
+    let contents;
+    try {
+      contents = await fs.readFile(this.filePath);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        debug('no old contents, so continue with upload');
+        return true;
       }
-    });
+
+      throw err;
+    }
+
+    debug('get hash of old contents and of new contents');
+    const oldHash = this.getHashFromBuffer(contents);
+    const newHash = this.getHashFromBuffer(this.fileContents);
+    debug('oldHash: ' + oldHash);
+    debug('newHash: ' + newHash);
+    if (oldHash === newHash) {
+      debug('new contents are the same as old contents, so abort upload');
+      return false;
+    } else {
+      debug('new contents are different from old contents, so continue with upload');
+      return true;
+    }
   }
 
-  canEdit(callback) {
+  assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `,
+      });
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
       contains(invalidRootPath, this.filePath),
     );
     if (found) {
-      const err = error.makeWithInfo(
-        'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
-      );
-      return callback(err);
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `,
+      });
     }
 
-    super.canEdit((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+    super.assertCanEdit();
   }
 
   async write() {
@@ -1178,53 +1208,128 @@ class FileUploadEditor extends Editor {
   }
 }
 
-class CourseInfoEditor extends Editor {
+export class FileModifyEditor extends Editor {
+  // Naming convention for contents and hashes in FileModifyEditor:
+  //
+  //    xyzContentsUTF - contents of xyz file as utf8
+  //
+  //    xyzContents - contents of xyz file as utf8 that is base64-encoded
+  //
+  //    xyzHash - hash of contents of xyz file as utf8 that is base64-encoded
+  //
+  // The base64 encoding and its corresponding hash are used by the file editor.
+  // If this weren't the case, then we wouldn't use it here either. For example,
+  // FileUploadEditor - which is used by the file browser - doesn't require any
+  // base64 encoding. In that case, contents/hashes are just utf8.
+
+  constructor(params) {
+    super(params);
+    this.container = params.container;
+    this.filePath = params.filePath;
+    this.editContents = params.editContents;
+    this.origHash = params.origHash;
+    if (this.course.path === this.container.rootPath) {
+      this.prefix = '';
+    } else {
+      this.prefix = `${path.basename(this.container.rootPath)}: `;
+    }
+    this.description = `${this.prefix}modify ${path.relative(
+      this.container.rootPath,
+      this.filePath,
+    )}`;
+  }
+
+  getHash(contents) {
+    return sha256(contents).toString();
+  }
+
+  shouldEdit() {
+    debug('get hash of edit contents');
+    const editHash = this.getHash(this.editContents);
+    debug('editHash: ' + editHash);
+    debug('origHash: ' + this.origHash);
+    if (this.origHash === editHash) {
+      debug('edit contents are the same as orig contents, so abort');
+      return false;
+    } else {
+      debug('edit contents are different from orig contents, so continue');
+      return true;
+    }
+  }
+
+  assertCanEdit() {
+    if (!contains(this.container.rootPath, this.filePath)) {
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
+        `,
+      });
+    }
+
+    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+      contains(invalidRootPath, this.filePath),
+    );
+    if (found) {
+      throw new AugmentedError('Invalid file path', {
+        info: html`
+          <p>The file path</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `,
+      });
+    }
+
+    super.assertCanEdit();
+  }
+
+  async write() {
+    debug('FileModifyEditor: write()');
+
+    debug(`ensure path exists`);
+    await fs.ensureDir(path.dirname(this.filePath));
+
+    debug(`verify disk hash matches orig hash`);
+    const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
+    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskHash = this.getHash(diskContents);
+    if (this.origHash !== diskHash) {
+      throw new Error('Another user made changes to the file you were editing.');
+    }
+
+    debug(`write file`);
+    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    this.pathsToAdd = [this.filePath];
+    this.commitMessage = this.description;
+  }
+}
+
+export class CourseInfoCreateEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Create infoCourse.json`;
+    this.infoJson = params.infoJson;
   }
 
   async write() {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
-    let infoJson = {
-      uuid: uuidv4(),
-      name: path.basename(this.course.path),
-      title: path.basename(this.course.path),
-      options: {
-        useNewQuestionRenderer: true,
-      },
-      tags: [],
-      topics: [],
-    };
-
     // This will error if:
     // - this.course.path does not exist (use of writeJson)
-    // - infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, infoJson, { spaces: 4, flag: 'wx' });
+    // - Creating a new file and infoPath does exist (use of 'wx')
+    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
 
     this.pathsToAdd = [infoPath];
     this.commitMessage = `create infoCourse.json`;
   }
 }
-
-module.exports = {
-  AssessmentCopyEditor,
-  AssessmentDeleteEditor,
-  AssessmentRenameEditor,
-  AssessmentAddEditor,
-  CourseInstanceCopyEditor,
-  CourseInstanceDeleteEditor,
-  CourseInstanceRenameEditor,
-  CourseInstanceAddEditor,
-  QuestionCopyEditor,
-  QuestionDeleteEditor,
-  QuestionRenameEditor,
-  QuestionAddEditor,
-  QuestionTransferEditor,
-  FileDeleteEditor,
-  FileRenameEditor,
-  FileUploadEditor,
-  CourseInfoEditor,
-};

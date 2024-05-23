@@ -5,7 +5,6 @@ import chevron
 
 def prepare(element_html, data):
     data["params"]["random_number"] = random.random()
-    return data
 
 
 def render(element_html, data):

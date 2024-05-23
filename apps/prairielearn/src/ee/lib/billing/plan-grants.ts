@@ -7,15 +7,16 @@ import {
   InstitutionSchema,
   QuestionSchema,
   UserSchema,
-} from '../../../lib/db-types';
+} from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import {
   getPlanGrantsForPartialContexts,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
   planGrantsMatchFeatures,
-} from '../../lib/billing/plans';
-import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types';
-import { features } from '../../../lib/features';
+} from '../../lib/billing/plans.js';
+
+import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types.js';
 
 type ResLocals = Record<string, any>;
 

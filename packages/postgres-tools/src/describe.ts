@@ -1,9 +1,10 @@
 // @ts-check
 import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
+
 import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 interface ColumnDescription {
   name: string;
@@ -130,10 +131,10 @@ async function describeWithPool(
     });
 
     output.tables[table.name] = {
-      columns: columns,
+      columns,
       indexes: indexResults.rows,
       foreignKeyConstraints: foreignKeyConstraintResults.rows,
-      references: references,
+      references,
       checkConstraints: checkConstraintResults.rows,
     };
   }

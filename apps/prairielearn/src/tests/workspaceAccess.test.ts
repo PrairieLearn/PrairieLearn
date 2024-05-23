@@ -1,12 +1,14 @@
-import * as cheerio from 'cheerio';
 import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
-import { Config, config } from '../lib/config';
-import * as helperServer from './helperServer';
-
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+
+import { config, type Config } from '../lib/config.js';
+
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -19,17 +21,17 @@ interface UserConfig {
 }
 
 const studentOne: UserConfig = {
-  uid: 'student1@illinois.edu',
+  uid: 'student1@example.com',
   uin: '000000001',
   name: 'Student One',
 };
 const studentTwo: UserConfig = {
-  uid: 'student2@illinois.edu',
+  uid: 'student2@example.com',
   uin: '000000002',
   name: 'Student Two',
 };
 const studentNotEnrolled: UserConfig = {
-  uid: 'student_not_enrolled@illinois.edu',
+  uid: 'student_not_enrolled@example.com',
   uin: '000000003',
   name: 'Not Enrolled',
 };

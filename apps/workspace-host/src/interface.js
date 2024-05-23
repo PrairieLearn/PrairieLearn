@@ -1,39 +1,43 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const util = require('util');
-const express = require('express');
-const http = require('http');
-const fetch = require('node-fetch').default;
-const path = require('path');
-const { S3 } = require('@aws-sdk/client-s3');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const { Upload } = require('@aws-sdk/lib-storage');
-const Docker = require('dockerode');
-const fs = require('fs');
-const async = require('async');
-const fsPromises = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
-const argv = require('yargs-parser')(process.argv.slice(2));
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const archiver = require('archiver');
-const net = require('net');
-const asyncHandler = require('express-async-handler');
-const bodyParser = require('body-parser');
-const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
-const workspaceUtils = require('@prairielearn/workspace-utils');
+import * as fs from 'node:fs';
+import * as fsPromises from 'node:fs/promises';
+import * as http from 'node:http';
+import * as net from 'node:net';
+import * as path from 'node:path';
+import * as util from 'node:util';
 
-const { config, loadConfig } = require('./lib/config');
-const { parseDockerLogs } = require('./lib/docker');
-const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig, makeAwsClientConfig } = require('./lib/aws');
-const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import archiver from 'archiver';
+import * as async from 'async';
+import { Mutex } from 'async-mutex';
+import ERR from 'async-stacktrace';
+import bodyParser from 'body-parser';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import yargsParser from 'yargs-parser';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { cache } from '@prairielearn/cache';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
+
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { config, loadConfig } from './lib/config.js';
+import { parseDockerLogs } from './lib/docker.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import * as socketServer from './lib/socket-server.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
@@ -118,6 +122,8 @@ async
 
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }
@@ -178,10 +184,15 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => socketServer.init(server),
+    async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of running containers
+      // Set up a periodic pruning of containers that shouldn't exist.
+      //
+      // Note that this updates the load count. The cron job that kills workspace
+      // hosts will only kill hosts that have a load count of 0. This should ensure
+      // that we never kill a host before its had a chance to spin down all its
+      // containers (and flush their logs and record their disk usage).
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
@@ -228,7 +239,7 @@ async
           });
           try {
             const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-            await dockerAttemptKillAndRemove(container);
+            await killAndRemoveWorkspace(ws.id, container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
           }
@@ -239,7 +250,7 @@ async
       // don't correspond to any known workspace. Clean them up.
       const allContainers = await docker.listContainers({
         all: true,
-        filters: { label: ['prairielearn.workspace-id'] },
+        filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
@@ -248,8 +259,15 @@ async
         logger.info(
           `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`,
         );
-        await dockerAttemptKillAndRemove(docker.getContainer(container.Id));
+        await killAndRemoveWorkspace(containerWorkspaceId, docker.getContainer(container.Id));
       }
+    },
+    async () => {
+      await cache.init({
+        type: config.cacheType,
+        keyPrefix: config.cacheKeyPrefix,
+        redisUrl: config.redisUrl,
+      });
     },
   ])
   .then(() => {
@@ -288,7 +306,7 @@ async function pruneStoppedContainers() {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
-    await dockerAttemptKillAndRemove(container);
+    await killAndRemoveWorkspace(ws.id, container);
   });
 }
 
@@ -317,7 +335,9 @@ async function pruneRunawayContainers() {
     const name = container_info.Names[0].substring(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
-    await dockerAttemptKillAndRemove(container);
+    const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
+
+    await killAndRemoveWorkspace(containerWorkspaceId, container);
   });
 }
 
@@ -341,41 +361,50 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 }
 
 /**
- * Attempts to kill and remove a container.  Will fail silently if the container
- * is already stopped or does not exist.  Also removes the container's home directory.
+ * Attempts to kill and remove a container. Will fail silently if the container
+ * is already stopped or does not exist.
  *
+ * After the container is removed, the workspace's disk usage will be updated.
+ *
+ * @param {string} workspace_id
  * @param {import('dockerode').Container} container
  */
-async function dockerAttemptKillAndRemove(container) {
+async function killAndRemoveWorkspace(workspace_id, container) {
   try {
     await container.inspect();
+
+    try {
+      await container.kill();
+    } catch (err) {
+      logger.error('Error killing container', err);
+    }
+
+    // Flush all logs from this container to S3. We must do this before the
+    // container is removed, otherwise any remaining logs will be lost.
+    try {
+      await flushLogsToS3(container);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error flushing container logs to S3', err);
+    }
+
+    try {
+      await container.remove();
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error removing stopped container', err);
+    }
   } catch (err) {
     // This container doesn't exist on this machine.
     logger.error('Could not inspect container', err);
     Sentry.captureException(err);
-    return;
   }
 
   try {
-    await container.kill();
+    await workspaceUtils.updateWorkspaceDiskUsage(workspace_id, config.workspaceHostHomeDirRoot);
   } catch (err) {
-    logger.error('Error killing container', err);
-  }
-
-  // Flush all logs from this container to S3. We must do this before the
-  // container is removed, otherwise any remaining logs will be lost.
-  try {
-    await flushLogsToS3(container);
-  } catch (err) {
+    logger.error('Error updating workspace disk usage', err);
     Sentry.captureException(err);
-    logger.error('Error flushing container logs to S3', err);
-  }
-
-  try {
-    await container.remove();
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error('Error removing stopped container', err);
   }
 }
 
@@ -602,8 +631,13 @@ async function _pullImage(workspace) {
   // decreases. It has the disadvantage that the percentage
   // will tend to go faster at the start (when we only know
   // about a few layers) and slow down at the end (when we
-  // know about all layers).
-  let progressDetails = {};
+  // know about all layers). To allow for more accurate
+  // progress reporting, we cache the layer details after
+  // the first successful pull. This allows us to reference
+  // the previously pulled layers and provide a more accurate
+  // percantage calculation on any subsequent pulls.
+  let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
+  let progressDetailsInit = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
@@ -628,6 +662,11 @@ async function _pullImage(workspace) {
         }
 
         const toDatabase = false;
+        cache.set(
+          `workspaceProgressInit:${workspace_image}`,
+          progressDetailsInit,
+          1000 * 60 * 60 * 24 * 30, // 30 days
+        );
         workspaceUtils
           .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
           .catch((err) => {
@@ -643,6 +682,7 @@ async function _pullImage(workspace) {
           // separately by making them separate keys
           const key = `${output.id}/${output.status}`;
           progressDetails[key] = output.progressDetail;
+          progressDetailsInit[key] = { ...output.progressDetail, current: 0 };
         }
         current = Object.values(progressDetails).reduce(
           (current, detail) => detail.current + current,
@@ -742,9 +782,6 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
-          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
-          // second argument with a `cause` property. Once we're running on
-          // Node 18, we can bump to ES2022 and this will no longer error.
           throw Error('Could not access workspace files.', { cause: err });
         }
       },
@@ -920,11 +957,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, {
-        workspace_id,
-        hostname,
-      });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
@@ -940,7 +972,46 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+
+      // Before we transition this workspace to running, check that the container
+      // we just launched is the same one that this workspace is still assigned to.
+      // To be more precise, we'll check that the container's launch_uuid matches
+      // the current launch_uuid for this workspace. If they don't match, then
+      // the workspace was relaunched while we were initializing it, and we should
+      // abandon it.
+      //
+      // We don't have to explicitly kill the container here - our usual
+      // background maintenance processes will soon notice that this container
+      // should not be running on this host and kill it.
+      const hostname = await sqldb.runInTransactionAsync(async () => {
+        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
+          workspace_id: workspace.id,
+        });
+        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        if (launch_uuid !== workspace.launch_uuid) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+          );
+          return null;
+        }
+
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+        await sqldb.queryAsync(sql.update_workspace_hostname, {
+          workspace_id,
+          hostname,
+        });
+        return hostname;
+      });
+
+      // If we successfully updated the workspace's hostname, we can transition
+      // it to running. Note that this MUST be done outside of the above transaction,
+      // since this send a websocket message to the client to make it load the
+      // workspace. If we do this inside the transaction, there's a chance that the
+      // websocket message will reach the client before the state change is committed,
+      // which would cause the client to try to load the workspace before it's ready.
+      if (hostname) {
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
@@ -951,7 +1022,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
       // Immediately kill and remove the container, which will flush any
       // logs to S3 for better debugging.
-      await dockerAttemptKillAndRemove(workspace.container);
+      await killAndRemoveWorkspace(workspace.id, workspace.container);
 
       // Don't set host to unhealthy.
       return;
@@ -992,6 +1063,17 @@ async function sendGradedFilesArchive(workspace_id, res) {
   res.attachment(zipName).status(200);
   const archive = archiver('zip');
   archive.pipe(res);
+
+  archive.on('error', (err) => {
+    logger.error('Error creating archive', err);
+    Sentry.captureException(err);
+
+    // Since we've probably already sent some data to the client, we can't do
+    // anything to gracefully let them know that we encountered an error.
+    // Instead, we'll just destroy the socket so that they pick up an error
+    // and handle that however they want.
+    res.socket?.destroy();
+  });
 
   for (const file of gradedFiles) {
     try {

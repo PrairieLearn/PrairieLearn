@@ -1,0 +1,23 @@
+{
+  "uuid": "501bde6d-d8c4-4ac4-be35-1cda5fab8cf3",
+  "type": "Exam",
+  "title": "Exam to test manually breaking variants",
+  "set": "Exam",
+  "number": "15",
+  "requireHonorCode": false,
+  "allowAccess": [
+    {
+      "mode": "Public",
+      "credit": 100
+    }
+  ],
+  "zones": [
+    {
+      "title": "Questions",
+      "questions": [
+        {"id": "partialCredit1", "points": [5, 4, 3, 2, 1]},
+        {"id": "partialCredit2", "points": [5, 4, 3, 2, 1]}
+      ]
+    }
+  ]
+}

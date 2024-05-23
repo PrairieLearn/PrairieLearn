@@ -1,23 +1,24 @@
-const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const router = Router();
 
-router.get('/', function (req, res, next) {
-  const params = {
-    user_id: res.locals.authn_user.user_id,
-    course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
-    course_id: res.locals.course ? res.locals.course.id : null,
-  };
-  sqldb.query(sql.select_news_items, params, function (err, result) {
-    if (ERR(err, next)) return;
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryAsync(sql.select_news_items, {
+      user_id: res.locals.authn_user.user_id,
+      course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
+      course_id: res.locals.course ? res.locals.course.id : null,
+    });
     res.locals.news_items = result.rows;
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
-module.exports = router;
+export default router;

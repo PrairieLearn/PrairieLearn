@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+from typing import Literal
 
 import lxml.etree as ET
 
@@ -47,6 +48,9 @@ INVALID_SYMBOLS = frozenset(
 INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
+
+
+OutputMatchingOption = Literal["all", "partial", "any"]
 
 
 TIMEOUT_MESSAGE = """
@@ -218,9 +222,9 @@ class CGrader:
         if ungradable_if_failed and not all(
             os.path.isfile(f) for f in objs + std_obj_files
         ):
-            self.result[
-                "message"
-            ] += f"Compilation errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Compilation errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
@@ -292,9 +296,9 @@ class CGrader:
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, "755")
         elif ungradable_if_failed:
-            self.result[
-                "message"
-            ] += f"Linker errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Linker errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
@@ -370,7 +374,7 @@ class CGrader:
         command,
         input=None,
         exp_output=None,
-        must_match_all_outputs=False,
+        must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output=None,
         field=None,
         ignore_case=True,
@@ -408,6 +412,11 @@ class CGrader:
         elif not isinstance(reject_output, list):
             reject_output = [reject_output]
 
+        if must_match_all_outputs is True:
+            must_match_all_outputs = "all"
+        elif must_match_all_outputs is False:
+            must_match_all_outputs = "any"
+
         def compile_re(t):
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
@@ -416,9 +425,11 @@ class CGrader:
             return (
                 t.strip(),
                 re.compile(
-                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
-                    if ignore_consec_spaces
-                    else re.escape(t),
+                    (
+                        "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                        if ignore_consec_spaces
+                        else re.escape(t)
+                    ),
                     re.I if ignore_case else 0,
                 ),
             )
@@ -445,18 +456,16 @@ class CGrader:
             out += "\n(NO ENDING LINE BREAK)"
 
         if msg is None and exp_output:
-            comment = (
-                ""
-                if len(exp_output) == 1
-                else " all of"
-                if must_match_all_outputs
-                else " one of"
-            )
+            quantifier = ""
+            if len(exp_output) > 1:
+                quantifier = " one of" if must_match_all_outputs == "any" else " all of"
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
-            msg = f"Expected{comment}:{join_str}" + join_str.join(
-                f"\033[32m{t}\033[0m"
-                if highlight_matches and r.search(outcmp) is not None
-                else t
+            msg = f"Expected{quantifier}:{join_str}" + join_str.join(
+                (
+                    f"\033[32m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                )
                 for t, r in exp_output
             )
             if reject_output:
@@ -464,28 +473,38 @@ class CGrader:
                     "\n\n" if any("\n" in t for t, _ in reject_output) else "\n\t"
                 )
                 msg += f"\nBut not:{join_str}" + join_str.join(
-                    f"\033[31m{t}\033[0m"
-                    if highlight_matches and r.search(outcmp) is not None
-                    else t
+                    (
+                        f"\033[31m{t}\033[0m"
+                        if highlight_matches and r.search(outcmp) is not None
+                        else t
+                    )
                     for t, r in reject_output
                 )
         elif msg is None:
             msg = ""
 
-        points = True
+        points = max_points
         if timeout and "TIMEOUT" in outcmp:
-            points = False
+            points = 0
         elif size_limit and len(outcmp) > size_limit:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
-            points = False
-        elif not (all if must_match_all_outputs else any)(
+            points = 0
+        elif any(r.search(outcmp) is not None for _, r in reject_output):
+            points = 0
+        elif must_match_all_outputs == "partial":
+            points = (
+                max_points
+                * sum(1 if r.search(outcmp) is not None else 0 for _, r in exp_output)
+                / len(exp_output)
+            )
+        elif not (all if must_match_all_outputs == "all" else any)(
             r.search(outcmp) is not None for _, r in exp_output
-        ) or any(r.search(outcmp) is not None for _, r in reject_output):
-            points = False
+        ):
+            points = 0
 
         return self.add_test_result(
             name,
-            points=max_points if points else 0,
+            points=points,
             msg=msg,
             output=out,
             max_points=max_points,
@@ -612,9 +631,9 @@ class CGrader:
                         output=test.findtext("{*}message"),
                     )
         except FileNotFoundError:
-            self.result[
-                "message"
-            ] += "Test suite log file not found. Consult the instructor.\n"
+            self.result["message"] += (
+                "Test suite log file not found. Consult the instructor.\n"
+            )
             raise UngradableException()
         except ET.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"

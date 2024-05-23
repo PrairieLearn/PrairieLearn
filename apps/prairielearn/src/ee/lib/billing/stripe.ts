@@ -1,19 +1,21 @@
 import Stripe from 'stripe';
+
+import { cache } from '@prairielearn/cache';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import * as cache from '../../../lib/cache';
-import { config } from '../../../lib/config';
-import { selectAndLockUserById, selectUserById } from '../../../models/user';
-import { PlanName } from './plans-types';
+import { config } from '../../../lib/config.js';
+import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
 
-const sql = loadSqlEquiv(__filename);
+import { PlanName } from './plans-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export function getStripeClient() {
   if (!config.stripeSecretKey) {
     throw new Error('Stripe is not configured.');
   }
 
-  return new Stripe(config.stripeSecretKey, { apiVersion: '2023-08-16' });
+  return new Stripe(config.stripeSecretKey, { apiVersion: '2024-04-10' });
 }
 
 export async function getOrCreateStripeCustomerId(

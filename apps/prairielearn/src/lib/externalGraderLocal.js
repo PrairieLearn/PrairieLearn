@@ -1,21 +1,22 @@
 // @ts-check
-const path = require('path');
-const Docker = require('dockerode');
-const os = require('os');
-const EventEmitter = require('events');
-const fs = require('fs-extra');
-const byline = require('byline');
-const execa = require('execa');
+import EventEmitter from 'events';
+import * as os from 'os';
+import * as path from 'path';
 
-const { logger } = require('@prairielearn/logger');
-const externalGraderCommon = require('./externalGraderCommon');
-const { config } = require('./config');
-const sqldb = require('@prairielearn/postgres');
-const { promisify } = require('util');
+import byline from 'byline';
+import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
 
-class Grader {
+import { config } from './config.js';
+import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export class ExternalGraderLocal {
   handleGradingRequest(grading_job, submission, variant, question, course) {
     const emitter = new EventEmitter();
 
@@ -23,7 +24,10 @@ class Grader {
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
-    const timeout = question.external_grading_timeout || config.externalGradingDefaultTimeout;
+    const timeout = Math.min(
+      question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+      config.externalGradingMaximumTimeout,
+    );
 
     const docker = new Docker();
 
@@ -40,13 +44,7 @@ class Grader {
       results.received_time = new Date().toISOString();
       emitter.emit('received', results.received_time);
 
-      await promisify(externalGraderCommon.buildDirectory)(
-        dir,
-        submission,
-        variant,
-        question,
-        course,
-      );
+      await buildDirectory(dir, submission, variant, question, course);
 
       if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.
@@ -185,7 +183,7 @@ class Grader {
         }
       }
 
-      return externalGraderCommon.makeGradingResult(grading_job.id, results);
+      return makeGradingResult(grading_job.id, results);
     })()
       .then((res) => {
         emitter.emit('results', res);
@@ -238,5 +236,3 @@ function getDevHostJobDirectory(jobId) {
     return getDevJobDirectory(jobId);
   }
 }
-
-module.exports = Grader;

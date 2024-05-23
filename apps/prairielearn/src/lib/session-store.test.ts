@@ -1,11 +1,13 @@
 import { assert } from 'chai';
+
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import helperDb = require('../tests/helperDb');
-import { PostgresSessionStore } from './session-store';
-import { UserSchema, UserSessionSchema } from './db-types';
+import * as helperDb from '../tests/helperDb.js';
 
-const sql = loadSqlEquiv(__filename);
+import { UserSchema, UserSessionSchema } from './db-types.js';
+import { PostgresSessionStore } from './session-store.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 describe('PostgresSessionStore', () => {
   before(helperDb.before);

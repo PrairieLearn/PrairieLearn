@@ -48,7 +48,7 @@ export function setupCountdown(options: {
   serverUpdateURL?: string;
   onTimerOut?: () => void;
   onServerUpdateFail?: () => void;
-  getBackgroundColor?: (number) => string;
+  getBackgroundColor?: (remainingSec: number) => string;
 }) {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
   const countdownProgress = document.querySelector<HTMLElement>(options.progressSelector);
@@ -59,7 +59,7 @@ export function setupCountdown(options: {
   let serverTimeLimitMS: number;
   let clientStart: number;
   let updateServerIfExpired = true;
-  let nextCountdownDisplay: number | null = null;
+  let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
@@ -74,7 +74,7 @@ export function setupCountdown(options: {
     window.setInterval(updateServerRemainingMS, 60000);
   }
 
-  function handleServerResponseRemainingMS(data) {
+  function handleServerResponseRemainingMS(data: any) {
     serverRemainingMS = data.serverRemainingMS;
     serverTimeLimitMS = data.serverTimeLimitMS;
     clientStart = Date.now();
@@ -102,6 +102,8 @@ export function setupCountdown(options: {
   }
 
   function displayCountdown() {
+    if (!countdownProgressBar || !countdownDisplay) return;
+
     const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
     const remainingSec = Math.floor(remainingMS / 1000);
     const remainingMin = Math.floor(remainingSec / 60);

@@ -1,6 +1,7 @@
-import { html } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types';
+import { html } from '@prairielearn/html';
+
+import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
 interface InstructorInstanceAdminBillingInput {
   initialRequiredPlans: PlanName[];
@@ -124,8 +125,8 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
   const enrollmentLimitProgressBarColor = enrollmentLimitExceeded
     ? 'bg-danger'
     : enrollmentLimitPercentage > 90
-    ? 'bg-warning'
-    : 'bg-primary';
+      ? 'bg-warning'
+      : 'bg-primary';
 
   return html`
     <form method="POST" class="js-billing-form">
@@ -258,7 +259,11 @@ function pluralizeQuestionCount(count: number) {
   return count === 1 ? `${count} question` : `${count} questions`;
 }
 
-function formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled) {
+function formatEnrollmentCount(
+  enrollmentCount: number,
+  enrollmentLimit: number,
+  studentBillingEnabled: boolean,
+) {
   if (studentBillingEnabled) {
     const pluralizedEnrollments = enrollmentCount === 1 ? 'enrollment' : 'enrollments';
 

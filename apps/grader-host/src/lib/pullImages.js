@@ -1,18 +1,19 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const async = require('async');
-const Docker = require('dockerode');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const sqldb = require('@prairielearn/postgres');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import Docker from 'dockerode';
 
-const logger = require('./logger');
-const { config } = require('./config');
-const { makeAwsClientConfig } = require('./aws');
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { makeAwsClientConfig } from './aws.js';
+import { config } from './config.js';
+import logger from './logger.js';
 
-module.exports = function (callback) {
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export default function pullImages(callback) {
   const docker = new Docker();
   var dockerAuth = {};
 
@@ -96,4 +97,4 @@ module.exports = function (callback) {
       callback(null);
     },
   );
-};
+}
