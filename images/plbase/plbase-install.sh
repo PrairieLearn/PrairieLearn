@@ -45,6 +45,9 @@ echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
 
+# TODO: use standard OS Python installation? The only reason we switched to Conda
+# was to support R and `rpy2`, but now that we've removed those, we might not
+# get any benefit from Conda.
 echo "setting up conda..."
 cd /
 arch=`uname -m`
