@@ -203,7 +203,7 @@ The basic idea is that `autoPoints` is set to a decreasing sequence of points, s
 The details of how scoring works are made more complex by the fact that a student may receive partial credit for any given submission attempt. PrairieLearn uses a scoring system that has four key properties, assuming that `autoPoints` is a list of decreasing values:
 
 1. A student can never lose points by attempting a question again.
-2. If a student submits a more correct answer than their previous answers, they will always receive some additional points for it.
+2. If a student submits an answer with a higher score than their previous best answer, they will always receive some additional points for it.
 3. Taking more attempts to answer correctly will always be worth less points than answering in fewer attempts, so students are always incentivized to answer questions correctly as soon as possible.
 4. The total number of submission attempts that a student can make is limited by the number of entries in `autoPoints`.
 
