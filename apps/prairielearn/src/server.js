@@ -1008,6 +1008,7 @@ export async function initExpress() {
         .default,
     ],
   );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
     [
@@ -1365,6 +1366,20 @@ export async function initExpress() {
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
   ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access_overrides',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'access_overrides';
+        next();
+      },
+      (
+        await import(
+          './pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides.js'
+        )
+      ).default,
+    ],
+  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
     function (req, res, next) {
       res.locals.navSubPage = 'assessments';
