@@ -1,15 +1,18 @@
 // @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
-import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment';
-import { selectUserByUid } from '../../models/user';
-import { insertAuditLog } from '../../models/audit-log';
+
+import { insertAuditLog } from '../../models/audit-log.js';
+import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
+import { selectUserByUid } from '../../models/user.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getUserOrGroupId({ course_instance_id, assessment, uid, group_name }) {
   if (assessment.group_work) {
@@ -58,10 +61,6 @@ async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
   return user;
 }
 
-
-
-
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -76,10 +75,11 @@ router.get(
       assessment_id: res.locals.assessment.id,
       timezone: res.locals.course_instance.display_timezone,
     });
-    
+
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+    res.render('instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides', res.locals);
   }),
 );
 
@@ -100,14 +100,13 @@ router.post(
         uid: req.body.student_uid,
         group_name: req.body.group_name,
       });
-      
+
       await runInTransactionAsync(async () => {
         const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           created_by: res.locals.authn_user.user_id,
           credit: req.body.credit,
           end_date: req.body.end_date,
-          group_name: req.body.group_name || null,
           note: req.body.note || null,
           start_date: req.body.start_date,
           group_id: group_id || null,
@@ -165,13 +164,12 @@ router.post(
           policy_id: req.body.policy_id,
         },
       );
-    
+
       await runInTransactionAsync(async () => {
         const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
           assessment_id: res.locals.assessment.id,
           credit: req.body.credit,
           end_date: req.body.end_date,
-          group_name: req.body.group_name || null,
           note: req.body.note || null,
           start_date: req.body.start_date,
           group_id: group_id || null,
