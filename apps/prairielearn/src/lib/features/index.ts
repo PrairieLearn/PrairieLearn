@@ -7,6 +7,7 @@ const featureNames = [
   'process-questions-in-worker',
   'question-sharing',
   'allow-rpy2',
+  'bot-grading',
   // Can only be applied to institutions.
   'lti13',
   'terms-clickthrough',

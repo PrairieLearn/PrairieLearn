@@ -5,13 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../../../lib/db-types.js';
@@ -36,50 +30,6 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
 });
-
-// /**
-//  * Renders the HTML for a variant.
-//  * @protected
-//  *
-//  * @param variant_course - The course for the variant.
-//  * @param renderSelection - Specify which panels should be rendered.
-//  * @param variant - The variant to submit to.
-//  * @param question - The question for the variant.
-//  * @param submission - The current submission to the variant.
-//  * @param submissions - The full list of submissions to the variant.
-//  * @param question_course - The course for the question.
-//  * @param locals - The current locals for the page response.
-//  * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
-//  */
-// async function render(
-//   variant_course,
-//   renderSelection,
-//   variant,
-//   question,
-//   submission,
-//   submissions,
-//   question_course,
-//   locals,
-// ) {
-//   const questionModule = questionServers.getModule(question.type);
-
-//   const { courseIssues, data } = await questionModule.render(
-//     renderSelection,
-//     variant,
-//     question,
-//     submission,
-//     submissions,
-//     question_course,
-//     locals,
-//   );
-
-//   const studentMessage = 'Error rendering question';
-//   const courseData = { variant, question, submission, course: variant_course };
-//   // locals.authn_user may not be populated when rendering a panel
-//   const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-//   // await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
-//   return data;
-// }
 
 router.get(
   '/',
@@ -194,14 +144,12 @@ router.post(
         res.send({});
       }
     } else if (req.body.__action === 'bot_grade_assessment') {
-      // TODO check if bot grading is enabled
-      // if (!res.locals.question_sharing_enabled) {
-      //   throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      // }
+      // check if bot grading is enabled
+      if (!res.locals.bot_grading_enabled) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+      console.log('Bot grading the assessment question');
 
-      console.log('BOT GRADING THE ASSESSMENT!');
-      // res.send({});
-      console.log(config.openAiApiKey);
       if (config.openAiApiKey === null || config.openAiOrganization === null) {
         throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
       }
@@ -209,13 +157,12 @@ router.post(
         apiKey: config.openAiApiKey,
         organization: config.openAiOrganization,
       };
+
       const { urlPrefix, assessment, assessment_instance, assessment_question, authz_result } =
         res.locals;
-
       const question = res.locals.question;
       const question_course = await getQuestionCourse(question, res.locals.course);
 
-      // Do something like the following (look at instructorLoadFromDisk.js to see how it works)
       const serverJob = await createServerJob({
         courseId: res.locals.course ? res.locals.course.id : null,
         type: 'botGrading',
@@ -223,10 +170,7 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        console.log('running grading in background');
-
-        const openai = new OpenAI(openaiconfig); // TODO: replace with config
-        console.log('OpenAI API ready');
+        const openai = new OpenAI(openaiconfig);
 
         // get all instance questions
         const result = await queryRows(
@@ -288,6 +232,7 @@ router.post(
           Object.assign(locals, urls);
           Object.assign(locals, newLocals);
 
+          // get question html
           const questionModule = questionServers.getModule(question.type);
           const { courseIssues, data } = await questionModule.render(
             { question: true, submissions: false, answer: false },
@@ -298,12 +243,16 @@ router.post(
             question_course,
             locals,
           );
-          // console.log(data);
+          if (courseIssues.length) {
+            job.info(courseIssues.toString());
+            job.error('Error occurred');
+            job.fail('Errors occurred while bot grading, see output for details');
+          }
 
-          // TODO: Call OpenAI API to grade
           const question_prompt = data.questionHtml.split('<script>', 2)[0];
           console.log(question_prompt);
 
+          // Call OpenAI API
           const completion = await openai.chat.completions.create({
             messages: [
               {
@@ -332,16 +281,16 @@ router.post(
               submission.id,
               req.body.modified_at,
               {
-                score_perc: gpt_answer.grade, // replace with LLM score
-                feedback: { manual: gpt_answer.feedback }, // replace with LLM feedback
-                // TODO: rubrics
+                score_perc: gpt_answer.grade,
+                feedback: { manual: gpt_answer.feedback },
+                // NEXT STEPS: rubrics
               },
               '1',
             );
-            msg = `Bot grades for ${instance_question.id}: gpt_answer.grade`;
+            msg = `Bot grades for ${instance_question.id}: ${gpt_answer.grade}`;
             if (update_result.modified_at_conflict) {
               error_count++;
-              msg += `ERROR modified at conflict for ${instance_question.id}`;
+              msg += `\nERROR modified at conflict for ${instance_question.id}`;
             }
           } catch (err) {
             logger.error('error while regrading', { err });
@@ -349,6 +298,7 @@ router.post(
             msg = `ERROR bot grading for ${instance_question.id}`;
           }
           output = (output == null ? '' : `${output}\n`) + msg;
+          output_count++;
           if (output_count >= 100) {
             job.info(output);
             output = null;
@@ -356,12 +306,12 @@ router.post(
           }
         }
 
-        if (error_count > 0) {
-          job.error('Number of errors: ' + error_count);
-          job.fail('Errors occurred while regrading, see output for details'); // output?
-        }
         if (output != null) {
           job.info(output);
+        }
+        if (error_count > 0) {
+          job.error('Number of errors: ' + error_count);
+          job.fail('Errors occurred while bot grading, see output for details');
         }
       });
 

@@ -115,6 +115,8 @@ export async function authzCourseOrInstance(req, res) {
     res.locals,
   );
 
+  res.locals.bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
+
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];
   if (req.cookies.pl_requested_uid) {
