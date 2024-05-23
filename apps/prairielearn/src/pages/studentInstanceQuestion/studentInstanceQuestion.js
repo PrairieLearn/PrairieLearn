@@ -11,12 +11,13 @@ import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
 } from '../../lib/question-render.js';
-import { processSubmission, reportIssueFromForm } from '../../lib/question-submission.js';
+import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import {
   validateVariantAgainstQuestion,
