@@ -1,4 +1,5 @@
 // @ts-check
+import assert from 'node:assert';
 import * as path from 'path';
 
 import * as async from 'async';
@@ -27,7 +28,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
-import { Assessment, AssessmentSet, Course, CourseInstance, Question, User } from './db-types.js';
+import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
 
@@ -79,8 +80,7 @@ export class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
   protected user: User;
-  protected assessment_set: AssessmentSet;
-  protected description: string | null;
+  protected description: string;
   protected pathsToAdd: string[] | null;
   protected commitMessage: string | null;
 
@@ -88,7 +88,6 @@ export class Editor {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
     this.user = params.locals.user;
-    this.description = null;
     this.pathsToAdd = null;
     this.commitMessage = null;
   }
@@ -195,6 +194,14 @@ export class Editor {
           job.info('Write changes to disk');
           await this.write();
 
+          if (this.pathsToAdd == null) {
+            throw new Error('pathsToAdd must be set in write()');
+          }
+
+          if (this.commitMessage == null) {
+            throw new Error('commitMessage must be set in write()');
+          }
+
           job.info('Commit changes');
           await job.exec('git', ['add', ...this.pathsToAdd], {
             cwd: this.course.path,
@@ -290,12 +297,12 @@ export class Editor {
    * @param infoFile Name of the info file, will stop recursing once a directory contains this.
    */
   async getExistingShortNames(rootDirectory: string, infoFile: string) {
-    const files = [];
+    const files: string[] = [];
     const walk = async (relativeDir) => {
       const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
         // If the directory doesn't exist, then we have nothing to load
         if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return /** @type {string[]} */ [];
+          return [] as string[];
         }
         throw err;
       });
@@ -428,15 +435,22 @@ export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
 
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.assessment = params.locals.assessment;
     this.course_instance = params.locals.course_instance;
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+    assert(this.assessment.tid, 'assessment.tid is required');
+
     debug('AssessmentCopyEditor: write()');
     const assessmentsPath = path.join(
       this.course.path,
@@ -477,7 +491,6 @@ export class AssessmentCopyEditor extends Editor {
 
     debug(`Write infoAssessment.json with new title and uuid`);
     infoJson.title = assessmentTitle;
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
       spaces: 4,
@@ -498,6 +511,9 @@ export class AssessmentDeleteEditor extends Editor {
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+    assert(this.assessment.tid, 'assessment.tid is required');
+
     debug('AssessmentDeleteEditor: write()');
     const deletePath = path.join(
       this.course.path,
@@ -527,6 +543,9 @@ export class AssessmentRenameEditor extends Editor {
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+    assert(this.assessment.tid, 'assessment.tid is required');
+
     debug('AssessmentRenameEditor: write()');
     const basePath = path.join(
       this.course.path,
@@ -547,14 +566,20 @@ export class AssessmentRenameEditor extends Editor {
 export class AssessmentAddEditor extends Editor {
   private course_instance: CourseInstance;
 
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.course_instance = params.locals.course_instance;
     this.description = `${this.course_instance.short_name}: add assessment`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
     debug('AssessmentAddEditor: write()');
     const assessmentsPath = path.join(
       this.course.path,
@@ -582,8 +607,6 @@ export class AssessmentAddEditor extends Editor {
 
     debug(`Write infoAssessment.json`);
 
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
-
     const infoJson = {
       uuid: this.uuid,
       type: 'Homework',
@@ -607,14 +630,20 @@ export class AssessmentAddEditor extends Editor {
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
 
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.course_instance = params.locals.course_instance;
     this.description = `Copy course instance ${this.course_instance.short_name}`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
     debug('CourseInstanceCopyEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
@@ -637,27 +666,23 @@ export class CourseInstanceCopyEditor extends Editor {
       this.course_instance.long_name,
       oldNamesLong,
     );
-    this.short_name = names.shortName;
-    this.long_name = names.longName;
-    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-    this.pathsToAdd = [this.courseInstancePath];
-    this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${this.short_name}`;
+    const short_name = names.shortName;
+    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    this.pathsToAdd = [courseInstancePath];
+    this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${short_name}`;
 
     const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
-    const toPath = this.courseInstancePath;
+    const toPath = courseInstancePath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug(`Read infoCourseInstance.json`);
-    const infoJson = await fs.readJson(
-      path.join(this.courseInstancePath, 'infoCourseInstance.json'),
-    );
+    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
     debug(`Write infoCourseInstance.json with new longName and uuid`);
-    infoJson.longName = this.long_name;
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+    infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {
+    await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
       spaces: 4,
     });
   }
@@ -674,6 +699,8 @@ export class CourseInstanceDeleteEditor extends Editor {
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
     debug('CourseInstanceDeleteEditor: write()');
     const deletePath = path.join(this.course.path, 'courseInstances');
     await fs.remove(path.join(deletePath, this.course_instance.short_name));
@@ -695,6 +722,8 @@ export class CourseInstanceRenameEditor extends Editor {
   }
 
   async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
     debug('CourseInstanceRenameEditor: write()');
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
     const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
@@ -711,10 +740,14 @@ export class CourseInstanceRenameEditor extends Editor {
 }
 
 export class CourseInstanceAddEditor extends Editor {
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.description = `Add course instance`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
@@ -735,26 +768,23 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug(`Generate short_name and long_name`);
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    this.short_name = names.shortName;
-    this.long_name = names.longName;
-    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-    this.pathsToAdd = [this.courseInstancePath];
-    this.commitMessage = `add course instance ${this.short_name}`;
+    const short_name = names.shortName;
+    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    this.pathsToAdd = [courseInstancePath];
+    this.commitMessage = `add course instance ${short_name}`;
 
     debug(`Write infoCourseInstance.json`);
 
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
-
     const infoJson = {
       uuid: this.uuid,
-      longName: this.long_name,
+      longName: names.longName,
       allowAccess: [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
-    await fs.outputJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {
+    await fs.outputJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
       spaces: 4,
       flag: 'wx',
     });
@@ -762,10 +792,14 @@ export class CourseInstanceAddEditor extends Editor {
 }
 
 export class QuestionAddEditor extends Editor {
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.description = `Add question`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
@@ -783,25 +817,23 @@ export class QuestionAddEditor extends Editor {
 
     debug(`Generate qid and title`);
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    this.qid = names.shortName;
-    this.questionTitle = names.longName;
-    this.questionPath = path.join(questionsPath, this.qid);
-    this.pathsToAdd = [this.questionPath];
-    this.commitMessage = `add question ${this.qid}`;
+    const qid = names.shortName;
+    const questionPath = path.join(questionsPath, qid);
+    this.pathsToAdd = [questionPath];
+    this.commitMessage = `add question ${qid}`;
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
-    const toPath = this.questionPath;
+    const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug(`Read info.json`);
-    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug(`Write info.json with new title and uuid`);
-    infoJson.title = this.questionTitle;
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
@@ -816,6 +848,8 @@ export class QuestionDeleteEditor extends Editor {
   }
 
   async write() {
+    assert(this.question.qid, 'question.qid is required');
+
     debug('QuestionDeleteEditor: write()');
     await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
     await this.removeEmptyPrecedingSubfolders(
@@ -840,6 +874,8 @@ export class QuestionRenameEditor extends Editor {
   }
 
   async write() {
+    assert(this.question.qid, 'question.qid is required');
+
     debug('QuestionRenameEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
@@ -903,14 +939,20 @@ export class QuestionRenameEditor extends Editor {
 export class QuestionCopyEditor extends Editor {
   private question: Question;
 
+  public readonly uuid: string;
+
   constructor(params: BaseEditorOptions) {
     super(params);
 
     this.question = params.locals.question;
     this.description = `Copy question ${this.question.qid}`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
+    assert(this.question.qid, 'question.qid is required');
+
     debug('QuestionCopyEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
 
@@ -930,25 +972,23 @@ export class QuestionCopyEditor extends Editor {
       this.question.title,
       oldNamesLong,
     );
-    this.qid = names.shortName;
-    this.questionTitle = names.longName;
-    this.questionPath = path.join(questionsPath, this.qid);
-    this.pathsToAdd = [this.questionPath];
-    this.commitMessage = `copy question ${this.question.qid} to ${this.qid}`;
+    const qid = names.shortName;
+    const questionPath = path.join(questionsPath, qid);
+    this.pathsToAdd = [questionPath];
+    this.commitMessage = `copy question ${this.question.qid} to ${qid}`;
 
     const fromPath = path.join(questionsPath, this.question.qid);
-    const toPath = this.questionPath;
+    const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug(`Read info.json`);
-    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug(`Write info.json with new title and uuid`);
-    infoJson.title = this.questionTitle;
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
@@ -956,6 +996,8 @@ export class QuestionTransferEditor extends Editor {
   private from_qid: string;
   private from_course_short_name: string;
   private from_path: string;
+
+  public readonly uuid: string;
 
   constructor(
     params: BaseEditorOptions & {
@@ -970,6 +1012,8 @@ export class QuestionTransferEditor extends Editor {
     this.from_course_short_name = params.from_course_short_name;
     this.from_path = params.from_path;
     this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
+
+    this.uuid = uuidv4();
   }
 
   async write() {
@@ -978,7 +1022,7 @@ export class QuestionTransferEditor extends Editor {
 
     debug(`Get title of question that is being copied`);
     const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
-    this.from_title = sourceInfoJson.title || 'Empty Title';
+    const from_title = sourceInfoJson.title || 'Empty Title';
 
     debug('Get all existing long names');
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
@@ -990,36 +1034,29 @@ export class QuestionTransferEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
-    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(this.from_title)) {
-      const names = this.getNamesForCopy(
-        this.from_qid,
-        oldNamesShort,
-        this.from_title,
-        oldNamesLong,
-      );
-      this.qid = names.shortName;
-      this.questionTitle = names.longName;
-    } else {
-      this.qid = this.from_qid;
-      this.questionTitle = this.from_title;
+    let qid = this.from_qid;
+    let questionTitle = from_title;
+    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
+      const names = this.getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
+      qid = names.shortName;
+      questionTitle = names.longName;
     }
-    this.questionPath = path.join(questionsPath, this.qid);
-    this.pathsToAdd = [this.questionPath];
-    this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
+    const questionPath = path.join(questionsPath, qid);
+    this.pathsToAdd = [questionPath];
+    this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`;
 
     const fromPath = this.from_path;
-    const toPath = this.questionPath;
+    const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug(`Read info.json`);
-    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug(`Write info.json with new title and uuid`);
-    infoJson.title = this.questionTitle;
-    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
@@ -1319,24 +1356,35 @@ export class FileModifyEditor extends Editor {
   // FileUploadEditor - which is used by the file browser - doesn't require any
   // base64 encoding. In that case, contents/hashes are just utf8.
 
-  constructor(params) {
+  private container: { rootPath: string; invalidRootPaths: string[] };
+  private filePath: string;
+  private editContents: string;
+  private origHash: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      container: { rootPath: string; invalidRootPaths: string[] };
+      filePath: string;
+      editContents: string;
+      origHash: string;
+    },
+  ) {
     super(params);
+
     this.container = params.container;
     this.filePath = params.filePath;
     this.editContents = params.editContents;
     this.origHash = params.origHash;
-    if (this.course.path === this.container.rootPath) {
-      this.prefix = '';
-    } else {
-      this.prefix = `${path.basename(this.container.rootPath)}: `;
+
+    let prefix = '';
+    if (this.course.path !== this.container.rootPath) {
+      prefix = `${path.basename(this.container.rootPath)}: `;
     }
-    this.description = `${this.prefix}modify ${path.relative(
-      this.container.rootPath,
-      this.filePath,
-    )}`;
+
+    this.description = `${prefix}modify ${path.relative(this.container.rootPath, this.filePath)}`;
   }
 
-  getHash(contents) {
+  getHash(contents: string) {
     return sha256(contents).toString();
   }
 
@@ -1411,8 +1459,11 @@ export class FileModifyEditor extends Editor {
 }
 
 export class CourseInfoCreateEditor extends Editor {
-  constructor(params) {
+  private infoJson: any;
+
+  constructor(params: BaseEditorOptions & { infoJson: any }) {
     super(params);
+
     this.description = `Create infoCourse.json`;
     this.infoJson = params.infoJson;
   }
