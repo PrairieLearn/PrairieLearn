@@ -20,7 +20,7 @@ async function selectCanChooseSharingName(course) {
       {
         course_id: course.id,
       },
-      z.any().nullable(),
+      z.boolean().nullable(),
     ))
   );
 }
