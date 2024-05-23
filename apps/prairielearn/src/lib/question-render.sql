@@ -166,40 +166,6 @@ WITH
       gj.id DESC
     LIMIT
       1
-  ),
-  -- The following two CTEs are copied from `selectAndAuthzInstanceQuestion`.
-  variant_max_submission_scores AS (
-    SELECT
-      v.id AS variant_id,
-      max(s.score) AS max_submission_score
-    FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND s.score IS NOT NULL
-    GROUP BY
-      v.id
-  ),
-  instance_question_variants AS (
-    SELECT
-      jsonb_agg(
-        jsonb_build_object(
-          'variant_id',
-          v.id,
-          'max_submission_score',
-          COALESCE(vmss.max_submission_score, 0)
-        )
-        ORDER BY
-          v.date
-      ) AS variants
-    FROM
-      variants AS v
-      LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND NOT v.open
-      AND NOT v.broken
   )
 SELECT
   to_jsonb(lgj) AS grading_job,
@@ -243,8 +209,7 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-  ) AS submission_count,
-  iqv.variants AS previous_variants
+  ) AS submission_count
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -261,7 +226,6 @@ FROM
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
-  LEFT JOIN instance_question_variants AS iqv ON (TRUE)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id
