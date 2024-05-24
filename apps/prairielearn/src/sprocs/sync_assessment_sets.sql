@@ -21,26 +21,29 @@ BEGIN
     IF valid_course_info THEN
         WITH new_assessment_sets AS (
             INSERT INTO assessment_sets (
+                course_id,
                 name,
                 abbreviation,
                 heading,
                 color,
                 number,
-                course_id
+                implicit
             ) SELECT
+                syncing_course_id,
                 aset->>0,
                 aset->>1,
                 aset->>2,
                 aset->>3,
                 number,
-                syncing_course_id
+                FALSE
             FROM UNNEST(course_info_assessment_sets) WITH ORDINALITY AS t(aset, number)
-            ON CONFLICT (name, course_id) DO UPDATE
+            ON CONFLICT (course_id, name) DO UPDATE
             SET
                 abbreviation = EXCLUDED.abbreviation,
                 heading = EXCLUDED.heading,
                 color = EXCLUDED.color,
-                number = EXCLUDED.number
+                number = EXCLUDED.number,
+                implicit = EXCLUDED.implicit
             RETURNING name
         )
         SELECT array_agg(name) INTO used_assessment_set_names FROM new_assessment_sets;
@@ -69,29 +72,32 @@ BEGIN
     -- we have data for. We auto-create assessment sets where needed.
     WITH new_assessment_sets AS (
         INSERT INTO assessment_sets (
+            course_id,
             name,
             abbreviation,
             heading,
             color,
             number,
-            course_id
+            implicit
         ) SELECT
+            syncing_course_id,
             name,
             name,
             concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'),
             'gray1',
             (array_length(used_assessment_set_names, 1) + (row_number() OVER ())),
-            syncing_course_id
+            TRUE
         FROM
             (SELECT UNNEST(assessment_set_names) EXCEPT SELECT UNNEST(used_assessment_set_names))
             AS t(name)
         ORDER BY name
-        ON CONFLICT (name, course_id) DO UPDATE
+        ON CONFLICT (course_id, name) DO UPDATE
         SET
             abbreviation = EXCLUDED.abbreviation,
             heading = EXCLUDED.heading,
             color = EXCLUDED.color,
-            number = EXCLUDED.number
+            number = EXCLUDED.number,
+            implicit = EXCLUDED.implicit
         RETURNING name
     )
     SELECT array_agg(name) INTO inserted_assessment_set_names FROM new_assessment_sets;
