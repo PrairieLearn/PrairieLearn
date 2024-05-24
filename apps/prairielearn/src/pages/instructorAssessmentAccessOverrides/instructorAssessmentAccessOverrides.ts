@@ -1,11 +1,11 @@
-// @ts-check
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { Assessment } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
 import { selectUserByUid } from '../../models/user.js';
@@ -14,10 +14,20 @@ const router = express.Router();
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getUserOrGroupId({ course_instance_id, assessment, uid, group_name }) {
+async function getUserOrGroupId({
+  course_instance_id,
+  assessment,
+  uid,
+  group_name,
+}: {
+  course_instance_id: string;
+  assessment: Assessment;
+  uid: string | null;
+  group_name: string | null;
+}) {
   if (assessment.group_work) {
     if (!group_name || uid) {
-      throw error.make(400, 'Group name is required for group work assessments.');
+      throw new HttpStatusError(400, 'Group name is required for group work assessments.');
     }
     const group_result = await sqldb.queryZeroOrOneRowAsync(sql.select_group_in_assessment, {
       group_name,
@@ -27,28 +37,34 @@ async function getUserOrGroupId({ course_instance_id, assessment, uid, group_nam
     if (group_result.rows.length > 0) {
       return { user_id: null, group_id: group_result.rows[0].id };
     } else {
-      throw error.make(400, 'Group not found in this assessment.');
+      throw new HttpStatusError(400, 'Group not found in this assessment.');
     }
   }
   if (uid) {
     if (group_name) {
-      throw error.make(400, 'Student UID is required for individual work assessments.');
+      throw new HttpStatusError(400, 'Student UID is required for individual work assessments.');
     }
     const user = await selectUserEnrolledInCourseInstance({
       uid,
       course_instance_id,
     });
     if (!user) {
-      throw error.make(400, `User ${uid} is not enrolled in this course instance.`);
+      throw new HttpStatusError(400, `User ${uid} is not enrolled in this course instance.`);
     }
 
     return { user_id: user.user_id, group_id: null };
   } else {
-    throw error.make(400, 'Student UID or Group Name is required.');
+    throw new HttpStatusError(400, 'Student UID or Group Name is required.');
   }
 }
 
-async function selectUserEnrolledInCourseInstance({ uid, course_instance_id }) {
+async function selectUserEnrolledInCourseInstance({
+  uid,
+  course_instance_id,
+}: {
+  uid: string;
+  course_instance_id: string;
+}) {
   const user = await selectUserByUid(uid);
   if (!user) return null;
 
@@ -65,10 +81,10 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     if (!res.locals.assessment_access_overrides_enabled) {
-      throw error.make(403, 'Access denied (feature not available)');
+      throw new HttpStatusError(403, 'Access denied (feature not available)');
     }
 
     const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
@@ -79,10 +95,7 @@ router.get(
     res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
 
-    res.render(
-      'instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides',
-      res.locals,
-    );
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -90,10 +103,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     if (!res.locals.assessment_access_overrides_enabled) {
-      throw error.make(403, 'Access denied (feature not available)');
+      throw new HttpStatusError(403, 'Access denied (feature not available)');
     }
 
     if (req.body.__action === 'add_new_override') {
