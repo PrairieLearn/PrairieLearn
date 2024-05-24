@@ -139,6 +139,9 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
   for (const prop of props) {
     if (!Object.hasOwn(data, prop)) {
       logger.error(`socket.io external grader connected without ${prop}`);
+      Sentry.captureException(
+        new Error(`socket.io external grader connected without property ${prop}`),
+      );
       return false;
     }
   }
@@ -150,6 +153,7 @@ function checkToken(token: string, variantId: string): boolean {
   const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
   if (!valid) {
     logger.error(`CSRF token for variant ${variantId} failed validation.`);
+    Sentry.captureException(new Error(`CSRF token for variant ${variantId} failed validation.`));
   }
   return valid;
 }
