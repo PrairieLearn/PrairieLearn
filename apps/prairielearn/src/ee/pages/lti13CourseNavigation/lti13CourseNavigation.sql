@@ -18,7 +18,7 @@ FROM
   JOIN pl_courses AS plc ON plc.institution_id = i.id
   JOIN course_instances AS ci ON (
     plc.id = ci.course_id
-    AND ci.id = $course_instance_id + 3
+    AND ci.id = $course_instance_id
   )
 WHERE
   lti13_instances.id = $lti13_instance_id;
