@@ -101,11 +101,11 @@ LIMIT
   1;
 
 -- BLOCK select_question_of_variant
-SELECT 
-  q.* AS question 
-FROM 
-  questions AS q 
-WHERE 
+SELECT
+  q.* AS question
+FROM
+  questions AS q
+WHERE
   q.course_id = $question_course_id
   AND q.id = $question_id
 LIMIT
