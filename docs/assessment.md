@@ -108,7 +108,7 @@ An assessment is broken down in to a list of zones, like this:
 
 ## Question points for `Homework` assessments
 
-Assessments with `"type": "Homework"` are designed to allow students to repeatedly practice different variants of questions (that is, different random values in the question) until they achieve mastery. The assumption here is that any student should be able to receive full points for a homework question if they work long enough on it. See [Question scoring details for `Homework` assessments] for details on the exact scoring algorithm.
+Assessments with `"type": "Homework"` are designed to allow students to repeatedly practice different variants of questions (that is, different random values in the question) until they achieve mastery. The assumption here is that any student should be able to receive full points for a homework question if they work long enough on it. See [Question scoring details for `Homework` assessments](#question-scoring-details-for-homework-assessments) for details on the exact scoring algorithm.
 
 Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](manualGrading/index.md)).
 
