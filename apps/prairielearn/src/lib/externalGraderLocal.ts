@@ -1,5 +1,5 @@
-// @ts-check
 import EventEmitter from 'events';
+import assert from 'node:assert';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -12,15 +12,23 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
+import { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class ExternalGraderLocal {
-  handleGradingRequest(grading_job, submission, variant, question, course) {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+  ) {
     const emitter = new EventEmitter();
 
-    const results = {};
+    // TODO Better type?
+    const results: Record<string, any> = {};
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
@@ -46,7 +54,7 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
+      if (question.external_grading_entrypoint?.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.
         // If it is living in the docker container then we don't have access to it before
         // we actually run it.
@@ -59,6 +67,9 @@ export class ExternalGraderLocal {
           logger.error('Could not make file executable; continuing execution anyways');
         }
       }
+
+      // TODO Better handling of null external grading image
+      assert(question.external_grading_image != null);
 
       if (config.externalGradingPullImagesFromDockerHub) {
         try {
@@ -105,7 +116,7 @@ export class ExternalGraderLocal {
             },
           ],
         },
-        Entrypoint: question.external_grading_entrypoint.split(' '),
+        Entrypoint: question.external_grading_entrypoint?.split(' '),
       });
 
       const stream = await container.attach({
@@ -205,7 +216,7 @@ export class ExternalGraderLocal {
  *
  * On Windows, we use $USERPROFILE instead of $HOME.
  */
-function getDevJobDirectory(jobId) {
+function getDevJobDirectory(jobId: string): string {
   if (process.env.HOST_JOBS_DIR) {
     // We're probably running in Docker
     return path.join('/jobs', `job_${jobId}`);
@@ -227,7 +238,7 @@ function getDevJobDirectory(jobId) {
  * If we're running natively, this should simply return getDevJobDirectory(...).
  * If we're running in Docker, this should return $HOST_JOBS_DIR/job_<jobId>.
  */
-function getDevHostJobDirectory(jobId) {
+function getDevHostJobDirectory(jobId: string): string {
   if (process.env.HOST_JOBS_DIR) {
     // We're probably running in Docker
     return path.resolve(path.join(process.env.HOST_JOBS_DIR, `job_${jobId}`));
