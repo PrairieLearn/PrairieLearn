@@ -8,7 +8,7 @@ import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 
 import { getRuntimeDirectoryForCourse } from './chunks.js';
-import { Course, Question, Submission, Variant } from './db-types.js';
+import type { Course, Question, Submission, Variant } from './db-types.js';
 
 /**
  * Returns the directory where job files should be written to while running
