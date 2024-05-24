@@ -3,6 +3,7 @@ columns
     course_id: bigint not null
     description: text
     id: bigint not null default nextval('topics_id_seq'::regclass)
+    implicit: boolean not null default false
     name: text
     number: integer
 
