@@ -53,15 +53,21 @@ window.PLDrawingApi = {
   _idCounter: 0,
 
   // This will be used to load `.svg` files from the `clientFilesElement` directory.
-  //
-  // This URL is constructed by striping off any trailing query parameters or
-  // hash fragments from the URL, then stripping off the last component of the
-  // URL (the script filename).
-  clientFilesBase: window.document.currentScript.src
-    .split(/[?#]/)[0]
-    .split('/')
-    .slice(0, -1)
-    .join('/'),
+  clientFilesBase: (() => {
+    const url = new URL(window.document.currentScript.src);
+
+    // Strip any search or hash parameters from the URL.
+    url.search = '';
+    url.hash = '';
+
+    // Strip off the last component of the URL (the script filename).
+    url.pathname = url.pathname.split('/').slice(0, -1).join('/');
+
+    // Add the clientFilesElement directory.
+    url.pathname += '/clientFilesElement/';
+
+    return url.toString();
+  })(),
 
   /**
    * Generates a new numeric ID for a submission object.
@@ -165,6 +171,7 @@ window.PLDrawingApi = {
     // Set all button icons
     let drawing_btns = $(root_elem).find('button');
     const element_base_url = elem_options['element_client_files'];
+    const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
       let img = btn.children[0];
       const opts = parseElemOptions(img.parentNode);
@@ -176,7 +183,7 @@ window.PLDrawingApi = {
           if (!image_filename.endsWith('.svg')) {
             image_filename += '.svg';
           }
-          let base = this.clientFilesBase;
+          let base = clientFilesBase;
           if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
             base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
