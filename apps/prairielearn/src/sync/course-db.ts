@@ -394,7 +394,10 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
-export async function loadFullCourse(courseId: string, courseDir: string): Promise<CourseData> {
+export async function loadFullCourse(
+  courseId: string | null,
+  courseDir: string,
+): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
@@ -629,7 +632,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 }
 
 export async function loadCourseInfo(
-  courseId: string,
+  courseId: string | null,
   coursePath: string,
 ): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
@@ -705,25 +708,34 @@ export async function loadCourseInfo(
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
   if (devModeFeatures.length > 0) {
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
-
-    for (const feature of new Set(devModeFeatures)) {
-      // Check if the feature even exists.
-      if (!features.hasFeature(feature)) {
-        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
-        continue;
+    if (courseId == null) {
+      if (!config.devMode) {
+        infofile.addWarning(
+          loadedData,
+          `Loading course ${coursePath} without an ID, features cannot be validated.`,
+        );
       }
+    } else {
+      const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      // If we're in dev mode, any feature is allowed.
-      if (config.devMode) continue;
+      for (const feature of new Set(devModeFeatures)) {
+        // Check if the feature even exists.
+        if (!features.hasFeature(feature)) {
+          infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+          continue;
+        }
 
-      // If the feature exists, check if it's granted to the course and warn if not.
-      const featureEnabled = await features.enabled(feature, {
-        institution_id: institution.id,
-        course_id: courseId,
-      });
-      if (!featureEnabled) {
-        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        // If we're in dev mode, any feature is allowed.
+        if (config.devMode) continue;
+
+        // If the feature exists, check if it's granted to the course and warn if not.
+        const featureEnabled = await features.enabled(feature, {
+          institution_id: institution.id,
+          course_id: courseId,
+        });
+        if (!featureEnabled) {
+          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        }
       }
     }
   }
