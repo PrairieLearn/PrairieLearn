@@ -301,7 +301,6 @@ function getElementClientFiles(data, elementName, context) {
       data.options.base_url,
       `${elementName}/clientFilesElement`,
     );
-    console.log(dataCopy.options.client_files_element_url);
     dataCopy.options.client_files_extensions_url = {};
 
     if (_.has(context.course_element_extensions, elementName)) {
