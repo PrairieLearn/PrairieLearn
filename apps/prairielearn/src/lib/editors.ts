@@ -189,7 +189,7 @@ export class Editor {
 
         await cleanAndResetRepository(this.course, gitEnv, job);
 
-        async function writeAndCommitChanges() {
+        const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
           job.info('Write changes to disk');
           await this.write();
@@ -223,7 +223,7 @@ export class Editor {
               env: gitEnv,
             },
           );
-        }
+        };
 
         try {
           await writeAndCommitChanges();
