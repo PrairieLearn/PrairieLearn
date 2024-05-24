@@ -15,7 +15,6 @@ import {
   IdSchema,
   IntervalSchema,
   Question,
-  QuestionSchema,
   Submission,
   SubmissionSchema,
   Variant,
@@ -38,7 +37,7 @@ const NextAllowedGradeSchema = z.object({
 
 const VariantDataSchema = z.object({
   instance_question_id: z.string().nullable(),
-  grading_method: QuestionSchema.shape.grading_method,
+  manual_perc: z.number(),
   max_auto_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
 });
@@ -261,7 +260,7 @@ async function selectSubmissionForGrading(
     // for these cases, since the grade button is not shown to students, so this
     // is an extra precaution.
     if (variantData.instance_question_id == null) {
-      if (variantData.grading_method === 'Manual') return null;
+      if (variantData.manual_perc >= 100) return null;
     } else {
       if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;

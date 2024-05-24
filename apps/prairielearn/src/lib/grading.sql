@@ -21,7 +21,13 @@ WHERE
 -- BLOCK select_variant_data
 SELECT
   v.instance_question_id,
-  q.grading_method,
+  COALESCE(
+    q.manual_perc,
+    CASE
+      WHEN q.grading_method = 'Manual' THEN 100
+      ELSE 0
+    END
+  ) AS manual_perc,
   aq.max_auto_points,
   aq.max_manual_points
 FROM
