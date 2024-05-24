@@ -1,4 +1,4 @@
-import { Namespace, Socket } from 'socket.io';
+import type { Namespace, Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
