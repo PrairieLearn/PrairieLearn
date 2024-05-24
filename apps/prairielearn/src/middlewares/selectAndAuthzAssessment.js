@@ -5,9 +5,15 @@ import _ from 'lodash';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { features } from '../lib/features';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
+  res.locals.assessment_access_overrides_enabled = await features.enabledFromLocals(
+    'assessment-access-overrides',
+    res.locals,
+  );
+ 
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth, {
     assessment_id: req.params.assessment_id,
     course_instance_id: res.locals.course_instance.id,
