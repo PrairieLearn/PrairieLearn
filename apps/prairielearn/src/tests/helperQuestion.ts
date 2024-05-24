@@ -222,9 +222,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should create a submission', async function () {
-      const result = await sqldb.queryAsync(sql.select_last_submission, {
-        variant_id: locals.variant?.id,
-      });
+      const result = await sqldb.queryAsync(sql.select_last_submission, {});
       assert.equal(result.rowCount, 1);
       locals.submission = result.rows[0];
     });
@@ -513,9 +511,7 @@ export function uploadInstanceQuestionScores(locals: Record<string, any>) {
     });
     it('should have a CSRF token', function () {
       assert(locals.$);
-      const elemList = locals.$(
-        'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]',
-      );
+      const elemList = locals.$('#upload-instance-question-scores-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -555,7 +551,7 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
     it('should have a CSRF token', function () {
       assert(locals.$);
       const elemList = locals.$(
-        'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]',
+        '#upload-assessment-instance-scores-form input[name="__csrf_token"]',
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');

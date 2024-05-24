@@ -59,55 +59,66 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-const chooseSharingNameModal = (resLocals) => {
+const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   return html`
-  <div
-    class="modal fade"
-    id="chooseSharingNameModal"
-    tabindex="-1"
-    role="dialog"
-    aria-hidden="true"
-  >
     <div
-      class="modal-dialog modal-dialog-centered"
-      role="document"
+      class="modal fade"
+      id="chooseSharingNameModal"
+      tabindex="-1"
+      role="dialog"
+      aria-hidden="true"
     >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Choose Sharing Name
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class=form-text>
-            Enter the sharing name you would like for your course.
-          </p>
-          <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
-            because doing so would break the assessments of other courses that have imported your questions.
-            It is recommended that you choose something short but descriptive. For example, if you're teaching
-            a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
-            name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="choose_sharing_name">
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-            <div class=form-group>
-              <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-            <div>
-            <div class="text-right mt-4">
-              <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-            </div>
-          </form>
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Choose Sharing Name</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          ${canChooseSharingName
+            ? html`
+                <div class="modal-body">
+                  <p class="form-text">Enter the sharing name you would like for your course.</p>
+                  <div>
+                    <label for="course_sharing_name">Enter Sharing Name</label>
+                    <input class="form-control" type="text" name="course_sharing_name" required />
+                  </div>
+                  <p>
+                    <strong
+                      >Once you have shared a question either publicly or with another course, you
+                      will no longer be able to change your sharing name.</strong
+                    >
+                    Doing so would break the assessments of other courses that have imported your
+                    questions. It is recommended that you choose something short but descriptive.
+                    For example, if you're teaching a calculus course at a university that goes by
+                    the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'.
+                    Then other courses will import questions from your course with the syntax
+                    '@xyz-calculus/qid'.
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <form name="choose-sharing-name" method="POST">
+                    <input type="hidden" name="__action" value="choose_sharing_name" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <div class="text-right mt-4">
+                      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+                    </div>
+                  </form>
+                </div>
+              `
+            : html`
+                <div class="modal-body">
+                  <p class="form-text">
+                    <strong>Unable to change your course's sharing name.</strong>
+                  </p>
+                  <p>
+                    Your course's sharing name cannot be changed because at least one question has
+                    been shared. Doing so would break the assessments of other courses that have
+                    imported your questions.
+                  </p>
+                </div>
+              `}
         </div>
       </div>
     </div>
@@ -119,12 +130,14 @@ export const InstructorSharing = ({
   sharingToken,
   sharingSets,
   publicSharingLink,
+  canChooseSharingName,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
   sharingSets: { name: string; id: string; shared_with: string[] }[];
   publicSharingLink: string;
+  canChooseSharingName: boolean;
   resLocals: Record<string, any>;
 }) => {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
@@ -147,10 +160,10 @@ export const InstructorSharing = ({
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>
-                  <th>Sharing Name</th>
+                  <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${!sharingName && isCourseOwner
+                    ${isCourseOwner
                       ? html`
                           <button
                             type="button"
@@ -164,7 +177,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(resLocals)}
+                          ${chooseSharingNameModal(canChooseSharingName, resLocals)}
                         `
                       : ''}
                   </td>

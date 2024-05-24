@@ -1,5 +1,12 @@
 # @prairielearn/named-locks
 
+## 3.0.2
+
+### Patch Changes
+
+- Updated dependencies [fd8f6e6]
+  - @prairielearn/postgres@2.0.2
+
 ## 3.0.1
 
 ### Patch Changes

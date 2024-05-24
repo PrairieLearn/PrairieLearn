@@ -257,6 +257,7 @@ export async function addUserToGroup({
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
+      assessment_id,
       authn_user_id,
       group_role_id: groupRoleId,
     });
@@ -499,7 +500,6 @@ export async function leaveGroup(
         await sqldb.queryAsync(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
-          user_id: userId,
           authn_user_id: authnUserId,
         });
 
@@ -518,6 +518,7 @@ export async function leaveGroup(
 
     // Delete user from group and log
     await sqldb.queryAsync(sql.delete_group_users, {
+      assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
       authn_user_id: authnUserId,
