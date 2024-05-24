@@ -957,3 +957,17 @@ export const LtiCredentialsSchema = z.object({
   secret: z.string().nullable(),
 });
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
+
+export const AssessmentAccessPolicySchema = z.object({
+  assessment_id: IdSchema,
+  created_at: DateFromISOString,
+  created_by: IdSchema,
+  credit: z.number(),
+  end_date: DateFromISOString,
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  note: z.string().nullable(),
+  start_date: DateFromISOString,
+  user_id: IdSchema.nullable(),
+});
+export type AssessmentAccessPolicy = z.infer<typeof AssessmentAccessPolicySchema>;

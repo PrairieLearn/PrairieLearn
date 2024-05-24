@@ -59,12 +59,10 @@ WHERE
 
 -- BLOCK select_group_in_assessment
 SELECT
-  g.id,
-  g.name,
-  g.group_config_id
+  g.id
 FROM
-  groups g
-  JOIN group_configs gc ON g.group_config_id = gc.id
+  groups AS g
+  JOIN group_configs AS gc ON (g.group_config_id = gc.id)
 WHERE
   g.course_instance_id = $course_instance_id
   AND g.name = $group_name

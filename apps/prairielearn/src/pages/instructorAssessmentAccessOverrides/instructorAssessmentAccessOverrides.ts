@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { Assessment } from '../../lib/db-types.js';
+import { Assessment, AssessmentAccessPolicySchema, IdSchema } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
 import { selectUserByUid } from '../../models/user.js';
@@ -29,25 +29,33 @@ async function getUserOrGroupId({
     if (!group_name || uid) {
       throw new HttpStatusError(400, 'Group name is required for group work assessments.');
     }
-    const group_result = await sqldb.queryZeroOrOneRowAsync(sql.select_group_in_assessment, {
-      group_name,
-      course_instance_id,
-      assessment_id: assessment.id,
-    });
-    if (group_result.rows.length > 0) {
-      return { user_id: null, group_id: group_result.rows[0].id };
-    } else {
+
+    const group_id = await sqldb.queryOptionalRow(
+      sql.select_group_in_assessment,
+      {
+        group_name,
+        course_instance_id,
+        assessment_id: assessment.id,
+      },
+      IdSchema,
+    );
+
+    if (group_id == null) {
       throw new HttpStatusError(400, 'Group not found in this assessment.');
     }
+
+    return { user_id: null, group_id };
   }
   if (uid) {
     if (group_name) {
       throw new HttpStatusError(400, 'Student UID is required for individual work assessments.');
     }
+
     const user = await selectUserEnrolledInCourseInstance({
       uid,
       course_instance_id,
     });
+
     if (!user) {
       throw new HttpStatusError(400, `User ${uid} is not enrolled in this course instance.`);
     }
@@ -87,12 +95,15 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const result = await sqldb.queryAsync(sql.select_assessment_access_policies, {
-      assessment_id: res.locals.assessment.id,
-      timezone: res.locals.course_instance.display_timezone,
-    });
+    res.locals.policies = await sqldb.queryRows(
+      sql.select_assessment_access_policies,
+      {
+        assessment_id: res.locals.assessment.id,
+        timezone: res.locals.course_instance.display_timezone,
+      },
+      AssessmentAccessPolicySchema,
+    );
 
-    res.locals.policies = result.rows;
     res.locals.timezone = res.locals.course_instance.display_timezone;
 
     res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -110,25 +121,28 @@ router.post(
     }
 
     if (req.body.__action === 'add_new_override') {
-      const { user_id, group_id } = await getUserOrGroupId({
-        course_instance_id: res.locals.course_instance.id,
-        assessment: res.locals.assessment,
-        uid: req.body.student_uid,
-        group_name: req.body.group_name,
-      });
-
       await runInTransactionAsync(async () => {
-        const inserted = await sqldb.queryOneRowAsync(sql.insert_assessment_access_policy, {
-          assessment_id: res.locals.assessment.id,
-          created_by: res.locals.authn_user.user_id,
-          credit: req.body.credit,
-          end_date: req.body.end_date,
-          note: req.body.note || null,
-          start_date: req.body.start_date,
-          group_id: group_id || null,
-          user_id: user_id || null,
-          timezone: res.locals.course_instance.display_timezone,
+        const { user_id, group_id } = await getUserOrGroupId({
+          course_instance_id: res.locals.course_instance.id,
+          assessment: res.locals.assessment,
+          uid: req.body.student_uid,
+          group_name: req.body.group_name,
         });
+        const inserted = await sqldb.queryRow(
+          sql.insert_assessment_access_policy,
+          {
+            assessment_id: res.locals.assessment.id,
+            created_by: res.locals.authn_user.user_id,
+            credit: req.body.credit,
+            end_date: req.body.end_date,
+            note: req.body.note || null,
+            start_date: req.body.start_date,
+            group_id: group_id || null,
+            user_id: user_id || null,
+            timezone: res.locals.course_instance.display_timezone,
+          },
+          AssessmentAccessPolicySchema,
+        );
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'assessment_access_policies',
@@ -136,33 +150,9 @@ router.post(
           institution_id: res.locals.institution.id,
           course_id: res.locals.course.id,
           course_instance_id: res.locals.course_instance.id,
-          new_state: JSON.stringify(inserted.rows[0]),
-          row_id: inserted.rows[0].id,
+          new_state: JSON.stringify(inserted),
+          row_id: inserted.id,
         });
-      });
-
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_override') {
-      await runInTransactionAsync(async () => {
-        const deletedAccessPolicy = await sqldb.queryZeroOrOneRowAsync(
-          sql.delete_assessment_access_policy,
-          {
-            assessment_id: res.locals.assessment.id,
-            unsafe_assessment_access_policies_id: req.body.policy_id,
-          },
-        );
-        if (deletedAccessPolicy.rows.length > 0) {
-          await insertAuditLog({
-            authn_user_id: res.locals.authn_user.user_id,
-            table_name: 'assessment_access_policies',
-            action: 'delete',
-            institution_id: res.locals.institution.id,
-            course_id: res.locals.course.id,
-            course_instance_id: res.locals.course_instance.id,
-            old_state: JSON.stringify(deletedAccessPolicy.rows[0]),
-            row_id: deletedAccessPolicy.rows[0].id,
-          });
-        }
       });
 
       res.redirect(req.originalUrl);
@@ -174,39 +164,72 @@ router.post(
         group_name: req.body.group_name,
       });
 
-      const oldStateAccessPolicy = await sqldb.queryOneRowAsync(
-        sql.select_assessment_access_policy,
-        {
-          policy_id: req.body.policy_id,
-        },
-      );
-
       await runInTransactionAsync(async () => {
-        const editAccessPolicy = await sqldb.queryOneRowAsync(sql.update_assessment_access_policy, {
-          assessment_id: res.locals.assessment.id,
-          credit: req.body.credit,
-          end_date: req.body.end_date,
-          note: req.body.note || null,
-          start_date: req.body.start_date,
-          group_id: group_id || null,
-          user_id: user_id || null,
-          assessment_access_policies_id: req.body.policy_id,
-          timezone: res.locals.course_instance.display_timezone,
-        });
-        await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
-          table_name: 'assessment_access_policies',
-          action: 'update',
-          institution_id: res.locals.institution.id,
-          course_id: res.locals.course.id,
-          course_instance_id: res.locals.course_instance.id,
-          new_state: JSON.stringify(editAccessPolicy.rows[0]),
-          old_state: JSON.stringify(oldStateAccessPolicy.rows[0]),
-          row_id: editAccessPolicy.rows[0].id,
-        });
+        const oldStateAccessPolicy = await sqldb.queryRow(
+          sql.select_assessment_access_policy,
+          {
+            policy_id: req.body.policy_id,
+          },
+          AssessmentAccessPolicySchema,
+        );
+        const editAccessPolicy = await sqldb.queryOptionalRow(
+          sql.update_assessment_access_policy,
+          {
+            assessment_id: res.locals.assessment.id,
+            credit: req.body.credit,
+            end_date: req.body.end_date,
+            note: req.body.note || null,
+            start_date: req.body.start_date,
+            group_id: group_id || null,
+            user_id: user_id || null,
+            assessment_access_policies_id: req.body.policy_id,
+            timezone: res.locals.course_instance.display_timezone,
+          },
+          AssessmentAccessPolicySchema,
+        );
+        if (editAccessPolicy) {
+          await insertAuditLog({
+            authn_user_id: res.locals.authn_user.user_id,
+            table_name: 'assessment_access_policies',
+            action: 'update',
+            institution_id: res.locals.institution.id,
+            course_id: res.locals.course.id,
+            course_instance_id: res.locals.course_instance.id,
+            new_state: JSON.stringify(editAccessPolicy),
+            old_state: JSON.stringify(oldStateAccessPolicy),
+            row_id: editAccessPolicy.id,
+          });
+        }
       });
 
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_override') {
+      await runInTransactionAsync(async () => {
+        const deletedAccessPolicy = await sqldb.queryOptionalRow(
+          sql.delete_assessment_access_policy,
+          {
+            assessment_id: res.locals.assessment.id,
+            unsafe_assessment_access_policies_id: req.body.policy_id,
+          },
+          AssessmentAccessPolicySchema,
+        );
+        if (deletedAccessPolicy) {
+          await insertAuditLog({
+            authn_user_id: res.locals.authn_user.user_id,
+            table_name: 'assessment_access_policies',
+            action: 'delete',
+            institution_id: res.locals.institution.id,
+            course_id: res.locals.course.id,
+            course_instance_id: res.locals.course_instance.id,
+            old_state: JSON.stringify(deletedAccessPolicy),
+            row_id: deletedAccessPolicy.id,
+          });
+        }
+      });
+
+      res.redirect(req.originalUrl);
+    } else {
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
