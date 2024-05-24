@@ -152,7 +152,7 @@ A question may also set a value to `points` instead of `autoPoints` and `manualP
 
 ## Question scoring details for `Homework` assessments
 
-This section describes in detail how repeated attempts are scored for `Homework` questions, assuming that the question has `autoPoints`. See [Question points for `Homework` assessments](#question-points-for-homework-assessments) for a high-level overview.
+This section describes in detail how repeated attempts are scored for `Homework` questions, assuming that the question has `autoPoints`. See [Question points for `Homework` assessments](#question-points-for-homework-assessments) for a high-level overview. Scoring for `manualPoints` is handled separately.
 
 The two important question configuration settings are:
 
@@ -192,7 +192,7 @@ After the eight submissions above the student has achieved maximum points for th
 
 ## Question scoring details for `Exam` assessments
 
-This section describes in detail how repeated attempts are scored for `Exam` questions, assuming that the question has `autoPoints` set to a list of values. See [Question points for `Exam` assessments](#question-points-for-exam-assessments) for a high-level overview.
+This section describes in detail how repeated attempts are scored for `Exam` questions, assuming that the question has `autoPoints` set to a list of values. See [Question points for `Exam` assessments](#question-points-for-exam-assessments) for a high-level overview. Scoring for `manualPoints` is handled separately.
 
 The important question configuration setting is:
 
