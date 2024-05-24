@@ -2468,16 +2468,6 @@ if (esMain(import.meta) && config.startServer) {
         });
       },
       async () => {
-        if (config.runBatchedMigrations) {
-          // Now that all migrations have been run, we can start executing any
-          // batched migrations that may have been enqueued by migrations.
-          startBatchedMigrations({
-            workDurationMs: config.batchedMigrationsWorkDurationMs,
-            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-          });
-        }
-      },
-      async () => {
         // We create and activate a random DB schema name
         // (https://www.postgresql.org/docs/12/ddl-schemas.html)
         // after we have run the migrations but before we create
@@ -2505,6 +2495,19 @@ if (esMain(import.meta) && config.startServer) {
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
         await sprocs.init();
+      },
+      async () => {
+        if (config.runBatchedMigrations) {
+          // Now that all migrations have been run, we can start executing any
+          // batched migrations that may have been enqueued by migrations.
+          //
+          // Note that we don't do this until sprocs have been created because
+          // some batched migrations may depend on sprocs.
+          startBatchedMigrations({
+            workDurationMs: config.batchedMigrationsWorkDurationMs,
+            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+          });
+        }
       },
       async () => {
         if ('sync-course' in argv) {

@@ -392,6 +392,7 @@ export const TagSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -402,6 +403,7 @@ export const TopicSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -870,6 +872,7 @@ export const AssessmentSetSchema = z.object({
   course_id: IdSchema,
   heading: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });

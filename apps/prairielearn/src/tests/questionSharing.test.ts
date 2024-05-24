@@ -208,12 +208,6 @@ describe('Question Sharing', function () {
       );
     });
 
-    // TODO: fix this test?
-    step('Fail if trying to set sharing name again.', async () => {
-      const result = await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
-      assert.equal(result.status, 200);
-    });
-
     step('Set sharing course sharing name', async () => {
       await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
@@ -222,6 +216,14 @@ describe('Question Sharing', function () {
         sharingPage.$('[data-testid="sharing-name"]').text(),
         SHARING_COURSE_SHARING_NAME,
       );
+    });
+
+    step('Successfully change the sharing name when no questions have been shared', async () => {
+      let res = await setSharingName(sharingCourse.id, 'Nothing shared yet');
+      assert(res.status === 200);
+
+      res = await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
+      assert(res.status === 200);
     });
 
     step('Generate and get sharing token for sharing course', async () => {
@@ -372,6 +374,11 @@ describe('Question Sharing', function () {
         settingsPageResponse.$('[data-testid="shared-with"]').text(),
         SHARING_SET_NAME,
       );
+    });
+
+    step('Fail to change the sharing name when a question has been shared', async () => {
+      const res = await setSharingName(sharingCourse.id, 'Question shared');
+      assert(res.status === 400);
     });
   });
 
