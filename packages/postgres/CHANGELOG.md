@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 2.0.2
+
+### Patch Changes
+
+- fd8f6e6: Use processed SQL when throwing errors with a `position` property
+
 ## 2.0.1
 
 ### Patch Changes

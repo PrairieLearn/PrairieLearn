@@ -1,24 +1,20 @@
-// @ts-check
 import * as async from 'async';
 import debugfn from 'debug';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { html } from '@prairielearn/html';
+import { HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  CourseInstancePermissionSchema,
-  CourseInstanceSchema,
-  CoursePermissionSchema,
-  UserSchema,
-} from '../../lib/db-types.js';
+import { User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import {
+  CourseInstanceAuthz,
+  selectCourseInstancesWithStaffAccess,
+} from '../../models/course-instances.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,
@@ -31,6 +27,11 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 
+import {
+  InstructorCourseAdminStaff,
+  CourseUsersRowSchema,
+} from './instructorCourseAdminStaff.html.js';
+
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -41,32 +42,6 @@ const router = express.Router();
  */
 const MAX_UIDS = 100;
 
-const CourseUsersRowSchema = z.object({
-  user_id: UserSchema.shape.user_id,
-  uid: UserSchema.shape.uid,
-  name: UserSchema.shape.name,
-  course_role: CoursePermissionSchema.shape.course_role,
-  course_instance_roles: z
-    .array(
-      z.object({
-        id: CourseInstanceSchema.shape.id,
-        short_name: CourseInstanceSchema.shape.short_name,
-        course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
-        course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
-        course_instance_role_formatted: z.string(),
-      }),
-    )
-    .nullable(),
-  other_course_instances: z
-    .array(
-      z.object({
-        id: CourseInstanceSchema.shape.id,
-        short_name: CourseInstanceSchema.shape.short_name,
-      }),
-    )
-    .nullable(),
-});
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -74,7 +49,7 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
 
-    const course_instances = await selectCourseInstancesWithStaffAccess({
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -82,7 +57,7 @@ router.get(
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
-    const course_users = await sqldb.queryRows(
+    const courseUsers = await sqldb.queryRows(
       sql.select_course_users,
       {
         course_id: res.locals.course.id,
@@ -90,12 +65,14 @@ router.get(
       CourseUsersRowSchema,
     );
 
-    res.locals.course_users = course_users;
-    res.locals.course_instances = course_instances;
-
-    res.locals.uids_limit = MAX_UIDS;
-
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorCourseAdminStaff({
+        resLocals: res.locals,
+        courseInstances,
+        courseUsers,
+        uidsLimit: MAX_UIDS,
+      }),
+    );
   }),
 );
 
@@ -130,7 +107,7 @@ router.post(
         is_administrator: res.locals.is_administrator,
         authn_is_administrator: res.locals.authz_data.authn_is_administrator,
       });
-      let course_instance = null;
+      let course_instance: CourseInstanceAuthz | undefined;
       if (req.body.course_instance_id) {
         course_instance = course_instances.find((ci) =>
           idsEqual(ci.id, req.body.course_instance_id),
@@ -154,12 +131,16 @@ router.post(
       const result = await async.reduce(
         uids,
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
-        /**
-         * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
-         */
-        async (memo, uid) => {
-          /** @type {import('../../lib/db-types.js').User} */
-          let user;
+        async (
+          memo: {
+            given_cp: string[];
+            not_given_cp: string[];
+            not_given_cip: string[];
+            errors: string[];
+          },
+          uid,
+        ) => {
+          let user: User;
           try {
             user = await insertCoursePermissionsByUserUid({
               course_id: res.locals.course.id,
@@ -197,8 +178,7 @@ router.post(
       );
 
       if (result.errors.length > 0) {
-        /** @type {import('@prairielearn/html').HtmlSafeString[]} */
-        const info = [];
+        const info: HtmlSafeString[] = [];
         const given_cp_and_cip = result.given_cp.filter(
           (uid) => !result.not_given_cip.includes(uid),
         );

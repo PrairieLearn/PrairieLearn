@@ -64,6 +64,30 @@ describe('@prairielearn/postgres', function () {
     await postgresTestUtils.dropDatabase();
   });
 
+  describe('paramsToArray', () => {
+    it('enforces SQL must be a string', async () => {
+      // @ts-expect-error SQL must be a string
+      const rows = queryAsync({ invalid: true }, {});
+      await assert.isRejected(rows, 'SQL must be a string');
+    });
+
+    it('enforces params must be array or object', async () => {
+      // @ts-expect-error params must be an array or object
+      const rows = queryAsync('SELECT 33;', 33);
+      await assert.isRejected(rows, 'params must be array or object');
+    });
+
+    it('rejects missing parameters', async () => {
+      const rows = queryAsync('SELECT $missing;', {});
+      await assert.isRejected(rows, 'Missing parameter');
+    });
+
+    it('rejects unused parameters in testing', async () => {
+      const rows = queryAsync('SELECT 33;', { unsed_parameter: true });
+      await assert.isRejected(rows, 'Unused parameter');
+    });
+  });
+
   describe('queryRows', () => {
     it('handles single column', async () => {
       const rows = await queryRows('SELECT id FROM workspaces WHERE id <= 10;', z.string());
@@ -265,7 +289,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+      const cursor = await queryCursor('NOT VALID SQL', {});
 
       async function readAllRows() {
         const allRows = [];
@@ -280,7 +304,7 @@ describe('@prairielearn/postgres', function () {
       assert.match(maybeError.message, /syntax error/);
       assert.isDefined((maybeError as any).data);
       assert.equal((maybeError as any).data.sql, 'NOT VALID SQL');
-      assert.deepEqual((maybeError as any).data.sqlParams, { foo: 'bar' });
+      assert.deepEqual((maybeError as any).data.sqlParams, {});
       assert.isDefined((maybeError as any).data.sqlError);
       assert.equal((maybeError as any).data.sqlError.severity, 'ERROR');
     });
