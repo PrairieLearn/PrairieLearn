@@ -2,81 +2,9 @@
 <html lang="en">
 <head>
   <%- include('../partials/head'); %>
+  <%- compiled_script_tag('instructorAssessmentAccessOverridesClient.ts') %>
 </head>
 <body>
-  <script>
-    $(function () {
-      $('[data-toggle="popover"]').popover({ sanitize: false,   container: 'body' });
-
-      $('#add_new_override').on('submit', function (event) {
-        var startDate = new Date($('#start_date').val());
-        var endDate = new Date($('#end_date').val());
-      
-        if (startDate >= endDate) {
-          event.preventDefault();
-          $('#end_date').addClass('is-invalid');
-          $('#end_date_error').text('End date should be greater than the start date.').show();
-        }
-        
-        
-      });
-      $('.edit-override-button').on('click', function (event) {
-        event.preventDefault();
-        var button = $(this);
-        var editOverrideForm = $('#edit-override-form');
-        editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
-        editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
-        editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
-        editOverrideForm.find('#edit-credit').val(button.data('credit')); 
-        var policy_start_date_string = button.data('start-date').slice(0,-6).replace(" ", "T");  
-        var policy_end_date_string = button.data('end-date').slice(0,-6).replace(" ", "T");
-
-        editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
-        editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
-        editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
-        editOverrideForm.find('#edit-note').val(button.data('note'));
-        editOverrideForm.find('#edit-type').val(button.data('type'));
-        var policyId = $(this).data('policy-id');
-        $('#edit-override-form input[name="policy_id"]').val(policyId);	
-        var groupName = $(this).data('group-name');
-        $('#edit-group_name').val(groupName);	
-        $('#editPolicyModal').modal('show'); 
-      });
-        // Event listener for delete button
-        $('.delete-button').on('click', function () {
-          var button = $(this);
-          var policyId = $(this).data('policy-id');
-          var csrfToken = button.data('__csrf_token');
-          var action = button.data('__action');
-          
-          // Set the values of the form's hidden input fields
-          $('#deleteModal input[name="policy_id"]').val(policyId);
-          $('#deleteModal input[name="csrf_token"]').val(csrfToken);
-          $('#confirmDeleteButton').data('policy-id', policyId);
-
-          $('#deleteModal input[name="__action"]').val(action);
-
-          
-          
-          // Show the modal confirmation dialog
-          $('#deleteModal').modal('show');
-        });
-
-        // Event listener for confirm delete button in the modal
-        $('#confirmDeleteButton').on('click', function () {
-          
-          var button = $(this);
-          var policyId = button.data('policy-id'); 
-         
-          $('form[name="delete-override-form"] input[name="policy_id"]').val(policyId);
-          $('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
-
-          $('form[name="delete-override-form"]').submit();
-          
-        });
-    });
-
-  </script>
   <%- include('../partials/navbar'); %>
   <main id="content" class="container-fluid">
     <div class="card mb-4">
