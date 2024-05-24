@@ -168,7 +168,9 @@ The exact details of how PrairieLearn awards points are as follows. First, a num
 - **Question value** is the current maximum number of points that the question is worth. This starts at `autoPoints` and increases by `autoPoints` for each consecutive correct submission. This is initialized to `autoPoints`.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
-For each submission attempt made by a student, the scoring algorithm is as follows:
+When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if was the last submission when the assessment was closed.
+
+For each graded answer submission made by a student, the scoring algorithm is as follows:
 
 1. If the `submission percentage score` is more than `best current score`, add `(submission percentage score - best current score) / 100 * question value` to `question points`, capping `question points` at `maxAutoPoints`.
 2. If the `submission percentage score` is 100%, then reset `best current score` to zero. Otherwise, if the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
@@ -214,7 +216,9 @@ The exact details of how PrairieLearn awards points are as follows. First, a num
 - **Question value** is the current maximum number of points that the question is worth. This is equal to `autoPoints[n]` for the `n`-th attempt at the question.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
-For the `n`-th submission attempt made by a student, the scoring algorithm is as follows:
+When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if was the last submission when the assessment was closed.
+
+For the `n`-th graded answer submission made by a student, the scoring algorithm is as follows:
 
 1. Set the `question value` to `autoPoints[n]`.
 2. If the `submission percentage score` is more than `best current score`, add `(submission percentage score - best current score) / 100 * question value` to `question points`.
