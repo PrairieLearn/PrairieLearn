@@ -1,5 +1,6 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -85,6 +86,19 @@ async function selectUserEnrolledInCourseInstance({
   return user;
 }
 
+const AssessmentAccessPolicyRowSchema = z.object({
+  // TODO: do date formatting in JS
+  created_at: z.string(),
+  created_by: z.string(),
+  credit: z.string(),
+  end_date: z.string(),
+  note: z.string().nullable(),
+  start_date: z.string(),
+  group_name: z.string().nullable(),
+  student_uid: z.string().nullable(),
+  id: IdSchema,
+});
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -101,12 +115,12 @@ router.get(
         assessment_id: res.locals.assessment.id,
         timezone: res.locals.course_instance.display_timezone,
       },
-      AssessmentAccessPolicySchema,
+      AssessmentAccessPolicyRowSchema,
     );
 
     res.locals.timezone = res.locals.course_instance.display_timezone;
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
 
