@@ -43,8 +43,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "yarn@3.5.0",
-  "dependencies": {
-    "openai": "^4.47.1"
-  }
+  "packageManager": "yarn@3.5.0"
 }
