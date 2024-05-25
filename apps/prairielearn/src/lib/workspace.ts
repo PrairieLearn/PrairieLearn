@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { contains } from '@prairielearn/path-utils';
+import { contains, isContainedRelativePath } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
@@ -497,7 +497,7 @@ async function generateWorkspaceFiles({
         }
         try {
           // Discard names with directory traversal outside the home directory
-          if (!contains(null, file.name, false)) {
+          if (!isContainedRelativePath(file.name, false)) {
             fileGenerationErrors.push({
               file: file.name,
               msg: 'Dynamic workspace file has an absolute path or includes a name that traverses outside the home directory. File ignored.',
