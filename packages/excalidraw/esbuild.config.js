@@ -1,4 +1,5 @@
 import {promises} from 'fs'
+import {parse} from 'path'
 
 import * as esbuild from 'esbuild'
 
@@ -6,12 +7,12 @@ import * as esbuild from 'esbuild'
 // const distDir = resolve(join(modulePath, "..", "..", "browser", "prod", "excalidraw-assets"))
 // await promises.cp(distDir, "./dist/excalidraw-dist", {recursive: true, errorOnExist: false})
 
-const CustomJsonLoader = {
-    name: 'custom-json-loader',
-    setup({ onLoad }) {
-        onLoad({ filter: /\.json$/ }, async args => {
+const JSONLoader = {
+    name: 'json-loader',
+    setup({onLoad}) {
+        onLoad({filter: /\.json$/}, async args => {
             const text = await promises.readFile(args.path, 'utf8')
-            return { contents: `export default ${text}` }
+            return {contents: `export default ${text}`, loader: 'js'}
         })
     }
 }
@@ -22,24 +23,25 @@ const TextReplacer = ({include, pattern, loader}) => ({
         onLoad({filter: include}, async args => {
             let contents = await promises.readFile(args.path, 'utf-8')
             for (const [from, to] of pattern) {
-               contents = contents.replaceAll(from, to)
+                contents = contents.replaceAll(from, to)
             }
-            return { contents, loader }
+            return {contents, loader}
         })
     }
 })
 
 await esbuild.build({
     entryPoints: ["./src/index.js"],
-    outfile: "./dist/index.js",
+    outdir: './dist',
     bundle: true,
+    splitting: true,
     minify: true,
     format: "esm",
     define: {
         "process.env.IS_PREACT": "false",
         "window.EXCALIDRAW_ASSET_PATH": '"/node_modules/@prairielearn/excalidraw/dist/excalidraw-dist/"',
     },
-    plugins: [CustomJsonLoader, TextReplacer({
+    plugins: [JSONLoader, TextReplacer({
         include: /.js$/,
         loader: 'js',
         pattern: [
@@ -50,10 +52,11 @@ await esbuild.build({
 })
 
 await esbuild.build({
-    entryPoints: ["@excalidraw/excalidraw/index.css"],
-    outfile: "./dist/index.css",
+    entryPoints: ["./src/index.css"],
+    outdir: './dist',
     bundle: true,
-    loader: { '.woff2': 'dataurl' },
+    minify: true,
+    loader: {'.woff2': 'dataurl'},
     plugins: [TextReplacer({
         include: /.css$/,
         loader: 'css',
