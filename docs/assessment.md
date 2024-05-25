@@ -168,7 +168,7 @@ The exact details of how PrairieLearn awards points are as follows. First, a num
 - **Question value** is the current maximum number of points that the question is worth. This starts at `autoPoints` and increases by `autoPoints` for each consecutive correct submission. This is initialized to `autoPoints`.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
-When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if was the last submission when the assessment was closed.
+When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if it is the last submission when the assessment is closed.
 
 For each graded answer submission made by a student, the scoring algorithm is as follows:
 
@@ -217,7 +217,7 @@ The exact details of how PrairieLearn awards points are as follows. First, a num
 - **Question value** is the current maximum number of points that the question is worth. This is equal to `autoPoints[n]` for the `n`-th attempt at the question.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
-When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if was the last submission when the assessment was closed.
+When a student submits an answer to a question, the submission is first checked for validity. For example, the `pl-number-input` element considers a non-numeric input to be invalid. If the submission is valid then it is next determined whether it should be graded. A submission is only graded if explicitly requested by the student using the "Save & Grade" button, or if it is the last submission when the assessment is closed.
 
 For the `n`-th graded answer submission made by a student, the scoring algorithm is as follows:
 
