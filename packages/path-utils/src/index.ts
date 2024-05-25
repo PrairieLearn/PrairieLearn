@@ -33,7 +33,7 @@ export function contains(parentPath: string, childPath: string, includeSelf = tr
  * otherwise.
  */
 export function isContainedRelativePath(relPath: string, includeSelf = true): boolean {
-  relPath = relPath ? path.normalize(relPath) : '.';
+  relPath = path.normalize(relPath);
   if (relPath === '.') return includeSelf;
   return !(relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath));
 }
