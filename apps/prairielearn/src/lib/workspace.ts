@@ -572,13 +572,13 @@ async function generateWorkspaceFiles({
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
-      const sourceFile = path.join(targetPath, workspaceFile.name);
+      const targetFile = path.join(targetPath, workspaceFile.name);
       try {
-        await fs.ensureDir(path.dirname(sourceFile));
+        await fs.ensureDir(path.dirname(targetFile));
         if ('localPath' in workspaceFile) {
-          await fs.copy(workspaceFile.localPath, sourceFile);
+          await fs.copy(workspaceFile.localPath, targetFile);
         } else {
-          await fs.writeFile(sourceFile, workspaceFile.buffer);
+          await fs.writeFile(targetFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({
