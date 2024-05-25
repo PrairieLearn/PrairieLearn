@@ -224,7 +224,7 @@ function getDevJobDirectory(jobId: string): string {
     // We're probably running natively
     if (process.env.JOBS_DIR) {
       // The user wants to use a custom jobs dir
-      return process.env.JOBS_DIR;
+      return path.join(process.env.JOBS_DIR, `job_${jobId}`);
     } else {
       return path.resolve(path.join(os.homedir(), '.pljobs', `job_${jobId}`));
     }
