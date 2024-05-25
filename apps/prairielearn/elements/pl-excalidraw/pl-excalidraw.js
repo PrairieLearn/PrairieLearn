@@ -43,9 +43,8 @@ const DrawWidget = ({sketchName, metadata, setHiddenInput}) => {
 
     const props = {
         name: sketchName,
-        /* The "Exit Zen Mode" button does not have type=button and triggers form submission.
-        * https://github.com/excalidraw/excalidraw/issues/8029 */
         zenModeEnabled: false,
+        aiEnabled: false,
         initialData: metadata.scene || {},
         isCollaborating: false,
         excalidrawAPI: (it) => setLib(it),

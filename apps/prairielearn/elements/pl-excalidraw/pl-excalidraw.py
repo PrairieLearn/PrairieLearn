@@ -8,18 +8,26 @@ from pathlib import Path
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ["name"], ["width", "height", "file"])
+    pl.check_attribs(element, ["name"], ["width", "height", "file", "file_dir"])
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         drawing_name = pl.get_string_attrib(element, "name")
-        submission = ""
-        if data["panel"] == "answer" and pl.has_attrib(element, "file"):
-            file = Path(data["options"]["question_path"]) / pl.get_string_attrib(element, "file")
-            assert file.exists()
-            submission = file.read_text(encoding="utf-8")
+        submission: str
+        if data["panel"] == "answer":
+            if pl.has_attrib(element, "file"):
+                file_dir = pl.get_string_attrib(element, "file_dir", "client_files_question_path")
+                if file_dir not in data["options"]:
+                    path_suffixes = [key for key in data["options"].keys() if key.endswith("_path")]
+                    raise RuntimeError(f"{file_dir=} not a valid key ({path_suffixes})")
+                file = Path(data["options"][file_dir]) / pl.get_string_attrib(element, "file")
+                if not file.exists():
+                    raise RuntimeError(f"Drawing named {drawing_name} at {file} cannot be found")
+                submission = file.read_text(encoding="utf-8")
+            else:
+                raise RuntimeError(f"Answer drawing '{drawing_name}' does not have a `file` argument")
         else:
             submission = data["submitted_answers"].get(drawing_name, "")
         bytes = json.dumps({
