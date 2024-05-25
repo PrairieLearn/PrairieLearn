@@ -78,6 +78,7 @@ describe('Question syncing', () => {
     let syncedTags = await util.dumpTable('tags');
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
+    assert.isTrue(syncedTag.implicit);
     assert.isNotEmpty(syncedTag?.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
@@ -85,6 +86,7 @@ describe('Question syncing', () => {
     syncedTags = await util.dumpTable('tags');
     syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
+    assert.isTrue(syncedTag.implicit);
 
     // When missing tags are no longer used in any questions, they should
     // be removed from the DB
@@ -105,6 +107,7 @@ describe('Question syncing', () => {
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
+    assert.isTrue(syncedTopic.implicit);
     assert.isNotEmpty(syncedTopic?.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
@@ -112,6 +115,7 @@ describe('Question syncing', () => {
     syncedTopics = await util.dumpTable('topics');
     syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
+    assert.isTrue(syncedTopic.implicit);
 
     // When missing topics are no longer used in any questions, they should
     // be removed from the DB
@@ -183,6 +187,7 @@ describe('Question syncing', () => {
     const syncedTopics = await util.dumpTable('topics');
     const syncedTopic = syncedTopics.find((t) => t.name === newTopic.name);
     assert.equal(newSyncedQuestion?.topic_id, syncedTopic?.id);
+    assert.isTrue(syncedTopic?.implicit);
   });
 
   it('preserves question tag even if question tag is deleted', async () => {
@@ -211,6 +216,7 @@ describe('Question syncing', () => {
     const syncedQuestionTag = syncedQuestionTags.find(
       (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag?.id),
     );
+    assert.isTrue(syncedTag?.implicit);
     assert.ok(syncedQuestionTag);
   });
 
