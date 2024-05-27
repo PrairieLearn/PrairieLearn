@@ -340,7 +340,6 @@ export function testElementClientFiles(
 
     it('should download a file with the contents of course-element.js', async function () {
       const fileUrl = locals.siteUrl + elemList[0].attribs.src;
-      console.log(fileUrl);
       const response = await fetch(fileUrl);
       assert.equal(response.status, 200);
       const fileContents = await response.text();
