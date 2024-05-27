@@ -9,6 +9,7 @@ import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config.js';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
@@ -58,6 +59,10 @@ export class ExternalGraderLocal {
       let output = '';
 
       if (question.external_grading_image == null) {
+        // This code should not be reached in most cases, since this scenario
+        // would cause a sync error. The check is necessary, though, to avoid
+        // typing errors in following lines.
+        Sentry.captureMessage('No external grading image specified');
         throw new Error('No external grading image specified.');
       }
 
