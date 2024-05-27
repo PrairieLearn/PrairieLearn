@@ -73,7 +73,7 @@ describe('Shared Question Preview', function () {
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
-  describe('Test Public Question Previews', function () {
+  describe('Public Question Previews', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -90,7 +90,7 @@ describe('Shared Question Preview', function () {
     // testElementClientFiles(previewPageInfo, customElement);
   });
 
-  describe('Test Shared Question Previews Within a Course', function () {
+  describe('Shared Question Previews Within a Course', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -104,5 +104,21 @@ describe('Shared Question Preview', function () {
     testFileDownloads(previewPageInfo, downloadFile, false);
 
     testElementClientFiles(previewPageInfo, customElement);
+  });
+
+  describe('Shared Question Previews Within a Course Instance', function () {
+    const previewPageInfo = {
+      siteUrl,
+      baseUrl,
+      questionBaseUrl: baseUrl + `/course_instance/2/instructor/question`,
+      questionPreviewTabUrl: '/preview',
+      isStudentPage: false,
+    };
+
+    testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+
+    testFileDownloads(previewPageInfo, downloadFile, false);
+
+    // testElementClientFiles(previewPageInfo, customElement);
   });
 });

@@ -335,7 +335,7 @@ export function testElementClientFiles(
       elemList = locals.$('script[src*="course-element.js"]');
       assert.lengthOf(elemList, 1);
     });
-    let page;
+    let fileContents;
     it('should download something with the link to course-element.js', function (callback) {
       const fileUrl = locals.siteUrl + elemList[0].attribs.src;
       request(fileUrl, function (error, response, body) {
@@ -345,12 +345,12 @@ export function testElementClientFiles(
         if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
-        page = body;
+        fileContents = body;
         callback(null);
       });
     });
     it('should have downloaded a file with the contents of course-element.js', function () {
-      assert(page.includes('This text was added by a script.'));
+      assert(fileContents.includes('This text was added by a script.'));
     });
   });
 }
