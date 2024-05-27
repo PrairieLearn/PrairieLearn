@@ -1,10 +1,12 @@
 import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { isEnterprise } from '../../lib/license';
-import { InstitutionSchema } from '../../lib/db-types';
-import { type Timezone, formatTimezone } from '../../lib/timezones';
-import { Modal } from '../../components/Modal.html';
+
+import { Modal } from '../../components/Modal.html.js';
+import { InstitutionSchema } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export const InstitutionRowSchema = z.object({
   institution: InstitutionSchema,
@@ -25,7 +27,7 @@ export function AdministratorInstitutions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: 'Institutions',
         })}
@@ -36,7 +38,7 @@ export function AdministratorInstitutions({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'institutions',

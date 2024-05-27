@@ -1,12 +1,13 @@
 import { z } from 'zod';
+
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { Institution, Course, CourseInstance } from '../../lib/db-types';
-import { checkPlanGrants } from '../lib/billing/plan-grants';
-import { getPlanGrantsForContext, getPlanNamesFromPlanGrants } from '../lib/billing/plans';
-import { planGrantsMatchPlanFeatures } from '../lib/billing/plans-types';
+import { Institution, Course, CourseInstance } from '../../lib/db-types.js';
+import { checkPlanGrants } from '../lib/billing/plan-grants.js';
+import { planGrantsMatchPlanFeatures } from '../lib/billing/plans-types.js';
+import { getPlanGrantsForContext, getPlanNamesFromPlanGrants } from '../lib/billing/plans.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const EnrollmentCountsSchema = z.object({
   paid: z.number().nullable(),

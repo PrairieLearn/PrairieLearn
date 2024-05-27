@@ -4,6 +4,7 @@ columns
     course_id: bigint not null
     heading: text
     id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
+    implicit: boolean not null default false
     name: text
     number: integer
 

@@ -1,4 +1,5 @@
 import { type Socket } from 'node:net';
+
 import * as opentelemetry from '@prairielearn/opentelemetry';
 
 export class SocketActivityMetrics {

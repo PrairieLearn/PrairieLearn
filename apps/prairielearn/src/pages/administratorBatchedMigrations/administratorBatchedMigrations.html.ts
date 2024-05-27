@@ -18,10 +18,10 @@ export function AdministratorBatchedMigrations({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'batchedMigrations',
@@ -70,10 +70,10 @@ export function AdministratorBatchedMigration({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'batchedMigrations',

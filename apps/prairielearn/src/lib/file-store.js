@@ -1,18 +1,20 @@
 // @ts-check
-import * as path from 'path';
-import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
+
 import debugfn from 'debug';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config';
-import { uploadToS3, getFromS3 } from '../lib/aws';
-import { IdSchema } from './db-types';
+import { uploadToS3, getFromS3 } from '../lib/aws.js';
+
+import { config } from './config.js';
+import { IdSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const StorageTypes = Object.freeze({
   S3: 'S3',

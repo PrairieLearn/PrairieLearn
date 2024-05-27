@@ -1,20 +1,21 @@
-import * as _ from 'lodash';
-import * as fg from 'fast-glob';
+import fg from 'fast-glob';
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 
-import * as questionServers from '../question-servers';
-import { writeCourseIssues } from './issues';
-import { selectCourseById } from '../models/course';
-import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
-import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types';
-import { idsEqual } from './id';
-import { selectCourseInstanceById } from '../models/course-instances';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
+import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
+import * as questionServers from '../question-servers/index.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types.js';
+import { idsEqual } from './id.js';
+import { writeCourseIssues } from './issues.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),

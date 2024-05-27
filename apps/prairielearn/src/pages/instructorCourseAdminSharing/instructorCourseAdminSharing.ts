@@ -1,13 +1,29 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
-import { InstructorSharing } from './instructorCourseAdminSharing.html';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { getCanonicalHost } from '../../lib/url';
+
+import { getCanonicalHost } from '../../lib/url.js';
+
+import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function selectCanChooseSharingName(course) {
+  return (
+    course.sharing_name === null ||
+    !(await sqldb.queryOptionalRow(
+      sql.select_shared_question_exists,
+      {
+        course_id: course.id,
+      },
+      z.boolean().nullable(),
+    ))
+  );
+}
 
 router.get(
   '/',
@@ -43,12 +59,15 @@ router.get(
       host,
     ).href;
 
+    const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
         sharingSets,
         publicSharingLink,
+        canChooseSharingName,
         resLocals: res.locals,
       }),
     );
@@ -97,11 +116,20 @@ router.post(
           400,
           'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
         );
+      } else {
+        const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+        if (canChooseSharingName) {
+          await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
+            sharing_name: req.body.course_sharing_name.trim(),
+            course_id: res.locals.course.id,
+          });
+        } else {
+          throw new error.HttpStatusError(
+            400,
+            'Unable to change sharing name. At least one question has been shared.',
+          );
+        }
       }
-      await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
-        sharing_name: req.body.course_sharing_name.trim(),
-        course_id: res.locals.course.id,
-      });
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

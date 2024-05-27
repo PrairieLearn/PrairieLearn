@@ -1,5 +1,44 @@
 # @prairielearn/migrations
 
+## 3.0.2
+
+### Patch Changes
+
+- Updated dependencies [fd8f6e6]
+  - @prairielearn/postgres@2.0.2
+  - @prairielearn/named-locks@3.0.2
+
+## 3.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- Updated dependencies [901fce8]
+  - @prairielearn/named-locks@3.0.1
+  - @prairielearn/postgres@2.0.1
+  - @prairielearn/logger@2.0.1
+  - @prairielearn/error@2.0.1
+
+## 3.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/named-locks@3.0.0
+  - @prairielearn/postgres@2.0.0
+  - @prairielearn/logger@2.0.0
+  - @prairielearn/error@2.0.0
+
+## 2.1.0
+
+### Minor Changes
+
+- 30d559d: Export `retryFailedBatchedMigrationJobs` function
+
 ## 2.0.21
 
 ### Patch Changes

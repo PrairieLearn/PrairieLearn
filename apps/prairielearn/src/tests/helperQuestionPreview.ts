@@ -1,9 +1,12 @@
 import { assert } from 'chai';
-import request = require('request');
-import * as helperQuestion from './helperQuestion';
+import fetch from 'node-fetch';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperQuestion from './helperQuestion.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface QuestionPreviewPageInfo {
   siteUrl: string;
@@ -310,6 +313,37 @@ export function testFileDownloads(
           throw new Error(`found ${result.rowCount} issues (expected zero issues)`);
         }
       });
+    });
+  });
+}
+
+export function testElementClientFiles(
+  previewPageInfo: QuestionPreviewPageInfo,
+  customElement: QuestionInfo,
+) {
+  const locals: any = previewPageInfo;
+
+  describe('setting up the submission data', function () {
+    it('should succeed', function () {
+      locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+      locals.question = customElement;
+    });
+  });
+
+  helperQuestion.getInstanceQuestion(locals);
+  describe('downloading course text file', function () {
+    let elemList;
+    it('should contain a script tag for course-element.js', function () {
+      elemList = locals.$('script[src*="course-element.js"]');
+      assert.lengthOf(elemList, 1);
+    });
+
+    it('should download a file with the contents of course-element.js', async function () {
+      const fileUrl = locals.siteUrl + elemList[0].attribs.src;
+      const response = await fetch(fileUrl);
+      assert.equal(response.status, 200);
+      const fileContents = await response.text();
+      assert(fileContents.includes('This text was added by a script.'));
     });
   });
 }

@@ -1,9 +1,10 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 
-import { decodePath } from '../../lib/uri-util';
+import { decodePath } from '../../lib/uri-util.js';
 
 const router = express.Router();
 

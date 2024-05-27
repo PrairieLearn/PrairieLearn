@@ -1,0 +1,39 @@
+{
+  "name": "@prairielearn/formatter",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/formatter"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "c8 mocha src/**/*.test.ts"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.12.11",
+    "c8": "^9.1.0",
+    "chai": "^5.1.1",
+    "mocha": "^10.4.0",
+    "tsx": "^4.10.4",
+    "typescript": "^5.4.5"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
+  }
+}

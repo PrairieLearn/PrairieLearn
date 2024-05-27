@@ -1,13 +1,13 @@
 // @ts-check
-const request = require('request');
-import * as xml2js from 'xml2js';
-import * as _ from 'lodash';
 import debugfn from 'debug';
+import _ from 'lodash';
+import request from 'request';
+import * as xml2js from 'xml2js';
 
-import * as sqldb from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:ltiOutcomes');
 const parser = new xml2js.Parser({ explicitArray: false });
 const builder = new xml2js.Builder();

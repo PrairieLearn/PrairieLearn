@@ -1,21 +1,23 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
 import * as path from 'path';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import * as opsbot from '../../lib/opsbot';
-import * as github from '../../lib/github';
-import { config } from '../../lib/config';
-import { IdSchema } from '../../lib/db-types';
-import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html';
+import { config } from '../../lib/config.js';
+import { IdSchema } from '../../lib/db-types.js';
+import * as github from '../../lib/github.js';
+import * as opsbot from '../../lib/opsbot.js';
+
+import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

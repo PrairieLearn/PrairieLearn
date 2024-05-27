@@ -1,19 +1,21 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as async from 'async';
-import * as fs from 'fs-extra';
+import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
-import Ajv from 'ajv';
+
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
-import * as Sentry from '@prairielearn/sentry';
-import { setTimeout as sleep } from 'node:timers/promises';
+import { Ajv } from 'ajv';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import fs from 'fs-extra';
 
-import globalLogger from './logger';
-import { config } from './config';
+import * as Sentry from '@prairielearn/sentry';
+
+import { config } from './config.js';
+import globalLogger from './logger.js';
 
 let messageSchema = null;
 
@@ -110,7 +112,7 @@ export default function (sqs, queueUrl, receiveCallback, doneCallback) {
       },
       (callback) => {
         if (!messageSchema) {
-          fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
+          fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'), (err, data) => {
             if (ERR(err, (err) => globalLogger.error(err))) {
               globalLogger.error('Failed to read message schema; exiting process.');
               process.exit(1);
