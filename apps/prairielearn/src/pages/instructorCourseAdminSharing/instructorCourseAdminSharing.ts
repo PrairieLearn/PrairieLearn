@@ -25,7 +25,7 @@ async function selectCanChooseSharingName(course) {
   );
 }
 
-// TESTING
+// TESTING, combine TEST calls into one function/call, or use all?
 async function selectCanDeleteSharingSet(sharing_set) {
   const can_delete = ! (await sqldb.queryOptionalRow(
     sql.select_set_shared,
@@ -36,9 +36,9 @@ async function selectCanDeleteSharingSet(sharing_set) {
   ));
   console.log(`Can delete sharing set ${sharing_set.name}:`, can_delete); // TEST
   
-  // DELETE BELOW, test
+  // DELETE BELOW, TEST
   const shared_question = await sqldb.queryOptionalRow(
-    sql.select_sharing_set_has_question,
+    sql.select_sharing_set_has_question_TEST,
     {
       sharing_set_id: sharing_set.id,
     },
@@ -46,6 +46,28 @@ async function selectCanDeleteSharingSet(sharing_set) {
   );
 
   console.log(`Shared question for ${sharing_set.name}:`, shared_question); // TEST
+
+  //TEST BELOW, delete
+  const shared_set = await sqldb.queryOptionalRow(
+    sql.select_sharing_set_shared_TEST,
+    {
+      sharing_set_id: sharing_set.id,
+    },
+    z.boolean().nullable(),
+  );
+  console.log(`Shared set for ${sharing_set.name}:`, shared_set); // TEST
+
+  // TEST BELOW, delete
+  const shared_question_used = await sqldb.queryOptionalRow(
+    sql.select_sharing_set_question_is_used_TEST,
+    {
+      sharing_set_id: sharing_set.id,
+    },
+    z.boolean().nullable(),
+  );
+
+  console.log(`Shared question used for ${sharing_set.name}:`, shared_question_used); // TEST
+
   
   return (
     can_delete
@@ -104,7 +126,6 @@ router.get(
 
     for (const sharingSet of sharingSets) {
       sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet);
-      console.log(`Can delete sharing set ${sharingSet.name}:`, sharingSet.deletable);
     }
     
 

@@ -102,8 +102,20 @@ SELECT
     ELSE FALSE
   END AS can_not_delete;
 
--- BLOCK select_sharing_set_has_question
-SELECT -- DELETE, this is a test
+-- BLOCK select_sharing_set_question_is_used_TEST
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      sharing_set_questions AS ssq
+      JOIN sharing_set_courses AS ssc ON ssq.sharing_set_id = ssc.sharing_set_id
+    WHERE
+      ssq.sharing_set_id = $sharing_set_id
+  ) AS question_is_used;
+
+-- BLOCK select_sharing_set_has_question_TEST
+SELECT
   EXISTS (
     SELECT
       1
@@ -115,8 +127,18 @@ SELECT -- DELETE, this is a test
       ss.id = $sharing_set_id
   );
 
+-- BLOCK select_sharing_set_shared_TEST
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      sharing_set_courses
+    WHERE
+      sharing_set_id = $sharing_set_id
+  );
+
 -- BLOCK delete_sharing_set
-DELETE FROM
-  sharing_sets, sharing_set_courses, sharing_set_questions
-WHERE
-  id = $sharing_set_id;
+DELETE 
+  FROM sharing_sets 
+  WHERE id = $sharing_set_id;
