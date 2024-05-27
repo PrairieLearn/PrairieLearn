@@ -26,8 +26,19 @@ export class ExternalGraderLocal {
   ) {
     const emitter = new EventEmitter();
 
-    // TODO Better type?
-    const results: Record<string, any> = {};
+    const results: {
+      succeeded: boolean;
+      received_time?: string;
+      start_time?: string;
+      end_time?: string;
+      job_id: string;
+      timedOut?: boolean;
+      message?: string;
+      results?: Record<string, any> | null;
+    } = {
+      succeeded: false,
+      job_id: grading_job.id,
+    };
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
@@ -160,8 +171,6 @@ export class ExternalGraderLocal {
         grading_job_id: grading_job.id,
         output,
       });
-
-      results.job_id = grading_job.id;
 
       // Now that the job has completed, let's extract the results from `results.json`.
       if (results.succeeded) {
