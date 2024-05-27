@@ -1,7 +1,9 @@
 import { assert } from 'chai';
 import request from 'request';
-import * as helperQuestion from './helperQuestion.js';
+
 import * as sqldb from '@prairielearn/postgres';
+
+import * as helperQuestion from './helperQuestion.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -2,13 +2,14 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 
-import { config } from '../lib/config.js';
-import * as chunks from '../lib/chunks.js';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer.js';
+import * as chunks from '../lib/chunks.js';
+import { config } from '../lib/config.js';
+
 import * as helperClient from './helperClient.js';
 import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

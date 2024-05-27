@@ -1,13 +1,15 @@
-import express from 'express';
 import { assert } from 'chai';
-import fetch from 'node-fetch';
-import fetchCookie from 'fetch-cookie';
-import setCookie from 'set-cookie-parser';
+import express from 'express';
 import asyncHandler from 'express-async-handler';
+import fetchCookie from 'fetch-cookie';
+import fetch from 'node-fetch';
+import setCookie from 'set-cookie-parser';
+
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { createSessionMiddleware } from './index.js';
 import { MemoryStore } from './memory-store.js';
+
+import { createSessionMiddleware } from './index.js';
 
 const TEST_SECRET = 'test-secret';
 

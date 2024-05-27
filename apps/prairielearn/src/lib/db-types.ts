@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import parsePostgresInterval from 'postgres-interval';
+import { z } from 'zod';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -389,6 +389,7 @@ export const TagSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -399,6 +400,7 @@ export const TopicSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -867,6 +869,7 @@ export const AssessmentSetSchema = z.object({
   course_id: IdSchema,
   heading: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });

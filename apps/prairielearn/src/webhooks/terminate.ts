@@ -1,6 +1,8 @@
+import * as crypto from 'crypto';
+
 import { Router } from 'express';
 import * as jose from 'jose';
-import * as crypto from 'crypto';
+
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../lib/config.js';

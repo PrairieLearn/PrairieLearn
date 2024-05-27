@@ -1,24 +1,27 @@
 // @ts-check
+import * as os from 'node:os';
 import * as path from 'node:path';
+
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Mutex } from 'async-mutex';
 import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
 import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
-import { Mutex } from 'async-mutex';
-import * as os from 'node:os';
-import fs from 'fs-extra';
-import { execa } from 'execa';
-import { ECRClient } from '@aws-sdk/client-ecr';
+import { v4 as uuidv4 } from 'uuid';
+
 import * as bindMount from '@prairielearn/bind-mount';
-import { instrumented } from '@prairielearn/opentelemetry';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
 
-import { config } from '../config.js';
-import { FunctionMissingError } from './code-caller-shared.js';
-import { deferredPromise } from '../deferred.js';
 import { makeAwsClientConfig } from '../aws.js';
+import { config } from '../config.js';
+import { deferredPromise } from '../deferred.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');

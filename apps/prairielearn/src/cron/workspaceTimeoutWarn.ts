@@ -1,7 +1,8 @@
-import { config } from '../lib/config.js';
 import { logger } from '@prairielearn/logger';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
+
+import { config } from '../lib/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

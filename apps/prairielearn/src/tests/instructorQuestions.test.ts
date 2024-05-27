@@ -1,17 +1,19 @@
-import _ from 'lodash';
 import { assert } from 'chai';
-import request from 'request';
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import * as helperServer from './helperServer.js';
 import { idsEqual } from '../lib/id.js';
+
 import {
   testElementClientFiles,
   testFileDownloads,
   testQuestionPreviews,
 } from './helperQuestionPreview.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

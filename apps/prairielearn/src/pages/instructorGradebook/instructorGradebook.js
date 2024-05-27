@@ -1,18 +1,20 @@
 // @ts-check
+import { pipeline } from 'node:stream/promises';
+
+import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
-import * as express from 'express';
+
 import { stringifyStream } from '@prairielearn/csv';
-import { pipeline } from 'node:stream/promises';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
   getCourseOwners,
   checkAssessmentInstanceBelongsToCourseInstance,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

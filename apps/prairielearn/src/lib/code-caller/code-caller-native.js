@@ -1,14 +1,17 @@
 // @ts-check
-import _ from 'lodash';
-import * as path from 'node:path';
 import * as child_process from 'node:child_process';
-import { v4 as uuidv4 } from 'uuid';
-import debugfn from 'debug';
+import * as path from 'node:path';
 
-import { FunctionMissingError } from './code-caller-shared.js';
+import debugfn from 'debug';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
+
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller-native');
 

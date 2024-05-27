@@ -1,15 +1,17 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
 import * as path from 'node:path';
+
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
+import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
-import { HttpStatusError } from '@prairielearn/error';
 import { selectCourseById } from '../../models/course.js';
-import * as sqldb from '@prairielearn/postgres';
 
 const router = Router({ mergeParams: true });
 const sql = sqldb.loadSqlEquiv(import.meta.url);

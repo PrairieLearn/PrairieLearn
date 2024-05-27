@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { createServerJob } from './server-jobs.js';
-import * as ltiOutcomes from './ltiOutcomes.js';
 import { IdSchema } from './db-types.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

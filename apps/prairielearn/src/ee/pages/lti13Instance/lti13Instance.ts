@@ -1,10 +1,12 @@
+import { URL } from 'url';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import jose from 'node-jose';
-import { getCanonicalHost } from '../../../lib/url.js';
-import { URL } from 'url';
-import { selectLti13Instance } from '../../models/lti13Instance.js';
 import _ from 'lodash';
+import jose from 'node-jose';
+
+import { getCanonicalHost } from '../../../lib/url.js';
+import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 const router = Router({ mergeParams: true });
 
