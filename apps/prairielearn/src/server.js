@@ -869,7 +869,7 @@ export async function initExpress() {
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/instructor/elements',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/elements',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(

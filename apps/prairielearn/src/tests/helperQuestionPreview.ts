@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import fetch from 'node-fetch';
 import request from 'request';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -328,6 +329,7 @@ export function testElementClientFiles(
       locals.question = customElement;
     });
   });
+
   helperQuestion.getInstanceQuestion(locals);
   describe('downloading course text file', function () {
     let elemList;
@@ -335,21 +337,13 @@ export function testElementClientFiles(
       elemList = locals.$('script[src*="course-element.js"]');
       assert.lengthOf(elemList, 1);
     });
-    let fileContents;
-    it('should download something with the link to course-element.js', function (callback) {
+
+    it('should download a file with the contents of course-element.js', async function () {
       const fileUrl = locals.siteUrl + elemList[0].attribs.src;
-      request(fileUrl, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        fileContents = body;
-        callback(null);
-      });
-    });
-    it('should have downloaded a file with the contents of course-element.js', function () {
+      console.log(fileUrl);
+      const response = await fetch(fileUrl);
+      assert.equal(response.status, 200);
+      const fileContents = await response.text();
       assert(fileContents.includes('This text was added by a script.'));
     });
   });

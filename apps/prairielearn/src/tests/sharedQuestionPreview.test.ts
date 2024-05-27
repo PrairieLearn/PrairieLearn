@@ -119,6 +119,6 @@ describe('Shared Question Preview', function () {
 
     testFileDownloads(previewPageInfo, downloadFile, false);
 
-    // testElementClientFiles(previewPageInfo, customElement);
+    testElementClientFiles(previewPageInfo, customElement);
   });
 });
