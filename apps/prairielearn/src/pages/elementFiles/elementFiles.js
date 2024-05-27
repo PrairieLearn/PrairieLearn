@@ -73,7 +73,6 @@ export default function (options = { publicEndpoint: false, static: false }) {
 
         elementFilesDir = path.join(coursePath, 'elements');
       } else if (!options.publicEndpoint && !options.static) {
-        // Files should be served from the course directory
         let question_course;
         if (req.params.producing_course_id) {
           const producing_course_id = z.string().parse(req.params.producing_course_id);

@@ -1988,7 +1988,7 @@ export async function initExpress() {
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
   ]);
   app.use(
-    '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    '/pl/public/course/:course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default({
       publicEndpoint: true,
       static: false,
