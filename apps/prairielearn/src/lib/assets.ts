@@ -182,7 +182,7 @@ export async function applyMiddleware(app: express.Application) {
   router.use(
     '/elements/:cachebuster',
     (await import('../pages/elementFiles/elementFiles.js')).default({
-      publicEndpoint: false,
+      publicQuestionEndpoint: false,
       static: true,
     }),
   );

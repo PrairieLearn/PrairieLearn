@@ -1990,14 +1990,14 @@ export async function initExpress() {
   app.use(
     '/pl/public/course/:course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default({
-      publicEndpoint: true,
+      publicQuestionEndpoint: true,
       static: false,
     }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/elements',
     (await import('./pages/elementFiles/elementFiles.js')).default({
-      publicEndpoint: true,
+      publicQuestionEndpoint: true,
       static: false,
     }),
   );
