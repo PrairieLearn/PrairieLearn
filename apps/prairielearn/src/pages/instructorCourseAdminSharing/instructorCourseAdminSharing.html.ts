@@ -125,6 +125,49 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   `;
 };
 
+const deleteSharingSetModal = (sharing_set, resLocals) => {
+  return html`
+    <div
+      class="modal fade"
+      id="deleteSharingSetModal"
+      tabindex="-1"
+      role="dialog"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete Sharing Set</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          ${sharing_set.deletable
+            ? html`
+                <div class="modal-body">
+                  <p>
+                    <strong>Delete sharing set?</strong>
+                    Once you do so, the sharing set can't be restored.
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <form name="delete_sharing_set" method="POST">
+                    <input type="hidden" name="__action" value="delete_sharing_set" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+                    <div class="text-right mt-4">
+                      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+                    </div>
+                  </form>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
 export const InstructorSharing = ({
   sharingName,
   sharingToken,
@@ -135,7 +178,7 @@ export const InstructorSharing = ({
 }: {
   sharingName: string | null;
   sharingToken: string;
-  sharingSets: { name: string; id: string; shared_with: string[] }[];
+  sharingSets: { name: string; id: string; shared_with: string[]; deletable?: boolean }[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
   resLocals: Record<string, any>;
@@ -261,8 +304,9 @@ export const InstructorSharing = ({
                           (course_shared_with) => html`
                             <span class="badge color-gray1"> ${course_shared_with} </span>
                           `,
-                        )}${isCourseOwner
-                          ? html` <div class="btn-group btn-group-sm" role="group">
+                        )} ${isCourseOwner
+                          ? html`
+                            <div class="btn-group btn-group-sm" role="group">
                               <button
                                 type="button"
                                 class="btn btn-sm btn-outline-dark"
@@ -272,16 +316,36 @@ export const InstructorSharing = ({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Add Course to Sharing Set"
-                                data-content="${addCourseToSharingSetPopover(
-                                  resLocals,
-                                  sharing_set,
-                                )}"
+                                data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
                               >
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>
                               </button>
-                            </div>`
-                          : ''}
+
+                              ${sharing_set.deletable
+                                ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    id="deleteSharingSet-${sharing_set.id}"
+                                    title="Delete Sharing Set"
+                                    data-toggle="modal"
+                                    data-target="#deleteSharingSetModal"
+                                    data-trigger="manual"
+                                    
+                                    data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
+                                  >
+                                    <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                                    <span>Delete Sharing Set</span>
+                                  </button>
+                                  ${deleteSharingSetModal(sharing_set, resLocals)}
+                                `
+                                : ''
+                              }
+                            </div>
+                          `
+                          : ''
+                        }
                       </td>
                     </tr>
                   `,

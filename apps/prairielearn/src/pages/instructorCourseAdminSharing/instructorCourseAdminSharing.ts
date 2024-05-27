@@ -25,6 +25,47 @@ async function selectCanChooseSharingName(course) {
   );
 }
 
+// TESTING
+async function selectCanDeleteSharingSet(sharing_set) {
+  const can_delete = ! (await sqldb.queryOptionalRow(
+    sql.select_set_shared,
+    {
+      sharing_set_id: sharing_set.id,
+    },
+    z.boolean().nullable(),
+  ));
+  console.log(`Can delete sharing set ${sharing_set.name}:`, can_delete); // TEST
+  
+  // DELETE BELOW, test
+  const shared_question = await sqldb.queryOptionalRow(
+    sql.select_sharing_set_has_question,
+    {
+      sharing_set_id: sharing_set.id,
+    },
+    z.boolean().nullable(),
+  );
+
+  console.log(`Shared question for ${sharing_set.name}:`, shared_question); // TEST
+  
+  return (
+    can_delete
+  );
+
+}
+/*
+async function selectCanDeleteSharingSet(sharing_set) {
+  return (
+    (await sqldb.queryOptionalRow(
+      sql.select_set_shared,
+      {
+        sharing_set_id: sharing_set.id,
+      },
+      z.boolean().nullable(),
+    ))
+  );
+}
+*/
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -60,6 +101,12 @@ router.get(
     ).href;
 
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+
+    for (const sharingSet of sharingSets) {
+      sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet);
+      console.log(`Can delete sharing set ${sharingSet.name}:`, sharingSet.deletable);
+    }
+    
 
     res.send(
       InstructorSharing({
@@ -130,6 +177,11 @@ router.post(
           );
         }
       }
+    } else if (req.body.__action === 'delete_sharing_set') {
+      console.log('Deleting sharing set:', req.body.sharing_set_id); // TEST
+      await sqldb.queryZeroOrOneRowAsync(sql.delete_sharing_set, {
+        sharing_set_id: req.body.sharing_set_id,
+      });
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -90,3 +90,33 @@ SELECT
     WHERE
       ss.course_id = $course_id
   );
+
+-- BLOCK select_set_shared
+SELECT
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM sharing_set_courses WHERE sharing_set_id = $sharing_set_id
+    ) OR EXISTS (
+      SELECT 1 FROM sharing_set_questions WHERE sharing_set_id = $sharing_set_id
+    ) THEN TRUE
+    ELSE FALSE
+  END AS can_not_delete;
+
+-- BLOCK select_sharing_set_has_question
+SELECT -- DELETE, this is a test
+  EXISTS (
+    SELECT
+      1
+    FROM
+      sharing_sets AS ss
+      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
+      JOIN questions AS q ON q.id = ssq.question_id
+    WHERE
+      ss.id = $sharing_set_id
+  );
+
+-- BLOCK delete_sharing_set
+DELETE FROM
+  sharing_sets, sharing_set_courses, sharing_set_questions
+WHERE
+  id = $sharing_set_id;
