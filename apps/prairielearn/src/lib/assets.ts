@@ -1,3 +1,4 @@
+// @ts-check
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -10,7 +11,6 @@ import * as compiledAssets from '@prairielearn/compiled-assets';
 import { HtmlSafeString } from '@prairielearn/html';
 
 import staticNodeModules from '../middlewares/staticNodeModules.js';
-import elementFiles from '../pages/elementFiles/elementFiles.js';
 
 import { config } from './config.js';
 import { APP_ROOT_PATH } from './paths.js';
@@ -153,7 +153,7 @@ export async function close() {
 /**
  * Applies middleware to the given Express app to serve static assets.
  */
-export function applyMiddleware(app: express.Application) {
+export async function applyMiddleware(app: express.Application) {
   const assetsPrefix = assertAssetsPrefix();
   const router = express.Router();
 
@@ -179,7 +179,13 @@ export function applyMiddleware(app: express.Application) {
       immutable: !config.devMode,
     }),
   );
-  router.use('/elements/:cachebuster', elementFiles);
+  router.use(
+    '/elements/:cachebuster',
+    (await import('../pages/elementFiles/elementFiles.js')).default({
+      publicEndpoint: false,
+      static: true,
+    }),
+  );
 
   app.use(assetsPrefix, router);
 }
