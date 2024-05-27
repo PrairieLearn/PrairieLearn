@@ -1,18 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as path from 'node:path';
+
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import * as chunks from '../../lib/chunks';
-import { config } from '../../lib/config';
-import { APP_ROOT_PATH } from '../../lib/paths';
-import { selectCourseById } from '../../models/course';
 import { HttpStatusError } from '@prairielearn/error';
-import { getQuestionCourse } from '../../lib/question-variant';
-import { selectQuestionById } from '../../models/question';
-import { selectVariantById } from '../../models/variant';
-import { idsEqual } from '../../lib/id';
+import * as sqldb from '@prairielearn/postgres';
+
+import * as chunks from '../../lib/chunks.js';
+import { config } from '../../lib/config.js';
+import { APP_ROOT_PATH } from '../../lib/paths.js';
+import { selectCourseById } from '../../models/course.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
@@ -58,28 +59,34 @@ export default function (options = { publicEndpoint: false, static: false }) {
 
       let elementFilesDir;
       if (options.publicEndpoint && !options.static) {
-        const variant = await selectVariantById(z.string().parse(req.query.variant_id));
-        if (!variant) throw new HttpStatusError(404, 'Not Found');
-
-        const question = await selectQuestionById(variant.question_id);
-        if (!question.shared_publicly) throw new HttpStatusError(404, 'Not Found');
-
+        const has_publicy_shared_question = await sqldb.queryRow(
+          sql.select_has_publicly_shared_question,
+          { course_id: req.params.course_id },
+          z.boolean(),
+        );
+        if (!has_publicy_shared_question) {
+          throw new HttpStatusError(404, 'Not Found');
+        }
         const course = await selectCourseById(req.params.course_id);
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         await chunks.ensureChunksForCourseAsync(course.id, { type: 'elements' });
 
         elementFilesDir = path.join(coursePath, 'elements');
       } else if (!options.publicEndpoint && !options.static) {
+        // Files should be served from the course directory
         let question_course;
-        if (req.query.variant_id) {
-          const variant = await selectVariantById(z.string().parse(req.query.variant_id));
-          if (!variant || !idsEqual(variant.course_id, res.locals.course.id)) {
+        if (req.params.producing_course_id) {
+          const producing_course_id = z.string().parse(req.params.producing_course_id);
+          const has_shared_question = await sqldb.queryRow(
+            sql.select_has_shared_question,
+            { consuming_course_id: res.locals.course.id, producing_course_id },
+            z.boolean(),
+          );
+          if (!has_shared_question) {
             throw new HttpStatusError(404, 'Not Found');
           }
 
-          // the existence of the variant within the course validates that this course has sharing permissions on this question
-          const question = await selectQuestionById(variant.question_id);
-          question_course = await getQuestionCourse(question, res.locals.course);
+          question_course = await selectCourseById(producing_course_id);
         } else {
           question_course = res.locals.course;
         }

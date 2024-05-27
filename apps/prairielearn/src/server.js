@@ -1989,11 +1989,17 @@ export async function initExpress() {
   ]);
   app.use(
     '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true, static: false }),
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicEndpoint: true,
+      static: false,
+    }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/elements',
-    require('./pages/elementFiles/elementFiles').default({ publicEndpoint: true, static: false }),
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicEndpoint: true,
+      static: false,
+    }),
   );
 
   // Client files for questions
