@@ -28,7 +28,7 @@ async function selectCanChooseSharingName(course) {
 // TESTING, combine TEST calls into one function/call, or use all?
 async function selectCanDeleteSharingSet(sharing_set) {
   const can_delete = ! (await sqldb.queryOptionalRow(
-    sql.select_set_shared,
+    sql.UNION_OF_ALL_TEST,
     {
       sharing_set_id: sharing_set.id,
     },
@@ -45,7 +45,7 @@ async function selectCanDeleteSharingSet(sharing_set) {
     z.boolean().nullable(),
   );
 
-  console.log(`Shared question for ${sharing_set.name}:`, shared_question); // TEST
+  console.log(`Sharing set ${sharing_set.name} has question:`, shared_question); // TEST
 
   //TEST BELOW, delete
   const shared_set = await sqldb.queryOptionalRow(
@@ -55,7 +55,7 @@ async function selectCanDeleteSharingSet(sharing_set) {
     },
     z.boolean().nullable(),
   );
-  console.log(`Shared set for ${sharing_set.name}:`, shared_set); // TEST
+  console.log(`${sharing_set.name} shared with another course:`, shared_set); // TEST
 
   // TEST BELOW, delete
   const shared_question_used = await sqldb.queryOptionalRow(
@@ -65,8 +65,8 @@ async function selectCanDeleteSharingSet(sharing_set) {
     },
     z.boolean().nullable(),
   );
-
-  console.log(`Shared question used for ${sharing_set.name}:`, shared_question_used); // TEST
+  // TEST, THIS IS BROKEN, JUST HAVING A QUESTION IN THE SHARING SET IS ENOUGH TO MAKE THIS TRUE WHEN IT SHOULDN'T BE
+  console.log(`Shared question used in another course from ${sharing_set.name}:`, shared_question_used); // TEST
 
   
   return (
