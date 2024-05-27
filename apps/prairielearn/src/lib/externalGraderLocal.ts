@@ -1,5 +1,4 @@
 import EventEmitter from 'events';
-import assert from 'node:assert';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -44,9 +43,13 @@ export class ExternalGraderLocal {
       emitter.emit('submit');
     }, 0);
 
-    let output = '';
-
     (async () => {
+      let output = '';
+
+      if (question.external_grading_image == null) {
+        throw new Error('No external grading image specified.');
+      }
+
       await docker.ping();
 
       results.received_time = new Date().toISOString();
@@ -67,9 +70,6 @@ export class ExternalGraderLocal {
           logger.error('Could not make file executable; continuing execution anyways');
         }
       }
-
-      // TODO Better handling of null external grading image
-      assert(question.external_grading_image != null);
 
       if (config.externalGradingPullImagesFromDockerHub) {
         try {
