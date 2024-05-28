@@ -1,4 +1,6 @@
 import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
+import { z } from 'zod';
 
 import { config } from '../lib/config';
 import * as courseDB from './course-db';
@@ -14,8 +16,10 @@ import { flushElementCache } from '../question-servers/freeform';
 import { makePerformance } from './performance';
 import { chalk, chalkDim } from '../lib/chalk';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course';
+import { IdSchema } from '../lib/db-types';
 
 const perf = makePerformance('sync');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
@@ -42,6 +46,33 @@ export async function syncDiskToSqlWithLock(
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
+
+  const sharedQuestions = await sqldb.queryRows(
+    sql.select_shared_questions,
+    { course_id: courseId },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+    }),
+  );
+  const qids = Object.entries(courseData.questions).map(([qid, _]) => qid);
+  const invalidRenames: string[] = [];
+  sharedQuestions.forEach((question) => {
+    if (qids.indexOf(question.qid) === -1) {
+      invalidRenames.push(question.qid);
+    }
+  });
+  if (invalidRenames.length > 0) {
+    logger.info(chalk.red(`✖ Course sync completely failed. Not allowed to move or rename shared Questions. Shared questions that were moved or renamed: ${invalidRenames.join(', ')}`));
+    perf.end('sync');
+    return {
+      hadJsonErrors: true,
+      hadJsonErrorsOrWarnings: true,
+      courseId,
+      courseData,
+    };
+  }
+
   logger.info('Syncing info to database');
   await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
