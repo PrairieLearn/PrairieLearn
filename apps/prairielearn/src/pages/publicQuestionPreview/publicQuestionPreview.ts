@@ -81,6 +81,7 @@ router.get(
     await logPageView('publicQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
     setRendererHeader(res);
+    res.locals.public_question_preview = true;
     res.send(PublicQuestionPreview({ resLocals: res.locals }));
   }),
 );
