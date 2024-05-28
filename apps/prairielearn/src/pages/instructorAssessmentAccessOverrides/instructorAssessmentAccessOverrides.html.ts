@@ -114,7 +114,9 @@ export function InstructorAssessmentAccessOverrides({
                                     <button
                                       type="button"
                                       class="dropdown-item edit-override-button"
-                                      data-user-id="${policy.student_uid}"
+                                      data-toggle="modal"
+                                      data-target="#editPolicyModal"
+                                      data-user-uid="${policy.student_uid}"
                                       data-group-name="${policy.group_name}"
                                       data-credit="${policy.credit}"
                                       data-start-date="${policy.start_date}"
@@ -166,28 +168,23 @@ function AddAccessOverrideModal({
     id: 'addPolicyModal',
     title: 'Add new access override',
     body: html`
-      <input type="hidden" name="__action" value="add_new_override" />
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      ${resLocals.assessment.group_work
-        ? html`
-            <div class="form-group">
-              <label for="group_id">Group Name</label>
-              <input type="text" class="form-control" id="group_name" name="group_name" required />
-            </div>
-          `
-        : html`
-            <div class="form-group">
-              <label for="student_uid">Student UID</label>
-              <input
-                type="text"
-                class="form-control"
-                id="student_uid"
-                name="student_uid"
-                placeholder="student@example.com"
-                required
-              />
-            </div>
-          `}
+      <div class="form-group ${resLocals.assessment.group_work ? '' : 'd-none'}">
+        <label for="group_id">Group Name</label>
+        <input type="text" class="form-control" id="group_name" name="group_name" required />
+      </div>
+
+      <div class="form-group ${resLocals.assessment.group_work ? 'd-none' : ''}">
+        <label for="student_uid">Student UID</label>
+        <input
+          type="text"
+          class="form-control"
+          id="student_uid"
+          name="student_uid"
+          placeholder="student@example.com"
+          required
+        />
+      </div>
+
       <div class="form-group">
         <label for="start_date">Start Date</label>
         <div class="input-group">
@@ -204,6 +201,7 @@ function AddAccessOverrideModal({
           </div>
         </div>
       </div>
+
       <div class="form-group">
         <label for="end_date">End Date</label>
         <div class="input-group">
@@ -221,6 +219,7 @@ function AddAccessOverrideModal({
         </div>
         <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
       </div>
+
       <div class="form-group">
         <label for="credit">Credit</label>
         <div class="input-group">
@@ -230,12 +229,15 @@ function AddAccessOverrideModal({
           </div>
         </div>
       </div>
+
       <div class="form-group">
         <label for="note">Note</label>
         <textarea class="form-control" id="note" name="note"></textarea>
       </div>
     `,
     footer: html`
+      <input type="hidden" name="__action" value="add_new_override" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <button class="btn btn-primary">Add access override</button>
     `,
@@ -253,24 +255,20 @@ function EditAccessOverrideModal({
     id: 'editPolicyModal',
     title: 'Edit access override',
     body: html`
-      ${resLocals.assessment.group_work
-        ? html`
-            <div class="form-group">
-              <label for="group_name">Group Name</label>
-              <input type="text" class="form-control" id="edit-group_name" name="group_name" />
-              <div
-                id="edit-group_name_error"
-                class="invalid-feedback"
-                style="display: none; color: red;"
-              ></div>
-            </div>
-          `
-        : html`
-            <div class="form-group">
-              <label for="student_uid">Student UID</label>
-              <input type="text" class="form-control" id="edit-student_uid" name="student_uid" />
-            </div>
-          `}
+      <div class="form-group ${resLocals.assessment.group_work ? '' : 'd-none'}">
+        <label for="group_name">Group Name</label>
+        <input type="text" class="form-control" id="edit-group_name" name="group_name" />
+        <div
+          id="edit-group_name_error"
+          class="invalid-feedback"
+          style="display: none; color: red;"
+        ></div>
+      </div>
+
+      <div class="form-group ${resLocals.assessment.group_work ? 'd-none' : ''}">
+        <label for="student_uid">Student UID</label>
+        <input type="text" class="form-control" id="edit-student_uid" name="student_uid" />
+      </div>
 
       <div class="form-group">
         <label for="edit-start_date">Start Date</label>
@@ -288,6 +286,7 @@ function EditAccessOverrideModal({
           </div>
         </div>
       </div>
+
       <div class="form-group">
         <label for="edit-end_date">End Date</label>
         <div class="input-group">
@@ -309,10 +308,12 @@ function EditAccessOverrideModal({
           style="display: none; color: red;"
         ></div>
       </div>
+
       <div class="form-group">
         <label for="edit-credit">Credit</label>
         <input type="number" class="form-control" id="edit-credit" name="credit" />
       </div>
+
       <div class="form-group">
         <label for="edit-note">Note</label>
         <textarea class="form-control" id="edit-note" name="note"></textarea>

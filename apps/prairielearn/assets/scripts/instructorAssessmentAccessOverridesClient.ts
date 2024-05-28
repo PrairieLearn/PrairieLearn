@@ -25,13 +25,8 @@ onDocumentReady(() => {
   document.querySelectorAll<HTMLButtonElement>('.edit-override-button').forEach((button) => {
     button.addEventListener('click', () => {
       templateFromAttributes(button, editModal, {
-        'data-assessment-id': '#edit-assessment_id',
-
-        // TODO: fix naming of this
-        'data-user-id': '#edit-student_uid',
-
+        'data-user-uid': '#edit-student_uid',
         'data-group-name': '#edit-group_name',
-        'data-group-id': '#edit-group_id',
         'data-credit': '#edit-credit',
         'data-note': '#edit-note',
         'data-policy-id': 'input[name="policy_id"]',
