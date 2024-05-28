@@ -809,7 +809,7 @@ export async function initExpress() {
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/instructor/cacheableElements/:cachebuster',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(
