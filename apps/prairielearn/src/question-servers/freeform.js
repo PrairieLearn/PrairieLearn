@@ -22,6 +22,7 @@ import * as chunks from '../lib/chunks.js';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { idsEqual } from '../lib/id.js';
 import * as jsonLoad from '../lib/json-load.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
@@ -1539,11 +1540,20 @@ export async function render(
       dependencies.coreElementScripts.forEach((file) =>
         scriptUrls.push(assets.coreElementAssetPath(file)),
       );
+      const courseElementUrlPrefix =
+        locals.urlPrefix +
+        (!idsEqual(question.course_id, variant.course_id)
+          ? `/sharedElements/course/${course.id}`
+          : '');
       dependencies.courseElementStyles.forEach((file) =>
-        styleUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        styleUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
+        ),
       );
       dependencies.courseElementScripts.forEach((file) =>
-        scriptUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        scriptUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
+        ),
       );
       dependencies.extensionStyles.forEach((file) =>
         styleUrls.push(
@@ -1569,7 +1579,7 @@ export async function render(
             assets.coreElementAssetPath(file),
           ),
           ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-            assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+            assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),

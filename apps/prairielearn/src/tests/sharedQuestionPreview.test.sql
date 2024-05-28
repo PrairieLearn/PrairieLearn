@@ -4,7 +4,8 @@ SELECT
 FROM
   questions
 WHERE
-  qid = $qid;
+  qid = $qid
+  AND course_id = 1;
 
 -- BLOCK update_shared_publicly
 UPDATE questions
