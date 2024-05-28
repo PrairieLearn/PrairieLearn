@@ -227,8 +227,6 @@ export class ExternalGraderLocal {
  *
  * If we're running natively, this should return $HOME/.pl_ag_jobs/job_<jobId>.
  * If we're running in Docker, this should return /jobs.
- *
- * On Windows, we use $USERPROFILE instead of $HOME.
  */
 function getDevJobDirectory(jobId: string): string {
   if (process.env.HOST_JOBS_DIR) {
