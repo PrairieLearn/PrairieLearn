@@ -1,14 +1,31 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { compiledScriptTag } from '../../lib/assets.js';
+import { IdSchema } from '../../lib/db-types.js';
+
+export const AssessmentAccessPolicyRowSchema = z.object({
+  // TODO: do date formatting in JS
+  created_at: z.string(),
+  created_by: z.string(),
+  credit: z.string(),
+  end_date: z.string(),
+  note: z.string().nullable(),
+  start_date: z.string(),
+  group_name: z.string().nullable(),
+  student_uid: z.string().nullable(),
+  id: IdSchema,
+});
+export type AssessmentAccessPolicyRow = z.infer<typeof AssessmentAccessPolicyRowSchema>;
 
 export function InstructorAssessmentAccessOverrides({
   policies,
   timezone,
   resLocals,
 }: {
-  policies: Record<string, any>[];
+  policies: AssessmentAccessPolicyRow[];
   timezone: string;
   resLocals: Record<string, any>;
 }) {
@@ -17,11 +34,17 @@ export function InstructorAssessmentAccessOverrides({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
+          ...resLocals,
+          pageTitle: 'Access overrides',
+        })}
         ${compiledScriptTag('instructorAssessmentAccessOverridesClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+          ...resLocals,
+          navSubPage: 'access_overrides',
+        })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div

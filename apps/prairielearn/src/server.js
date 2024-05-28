@@ -1368,17 +1368,11 @@ export async function initExpress() {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access_overrides',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'access_overrides';
-        next();
-      },
-      (
-        await import(
-          './pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides.js'
-        )
-      ).default,
-    ],
+    (
+      await import(
+        './pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides.js'
+      )
+    ).default,
   );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
     function (req, res, next) {

@@ -1,6 +1,5 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -11,7 +10,10 @@ import { insertAuditLog } from '../../models/audit-log.js';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
 import { selectUserByUid } from '../../models/user.js';
 
-import { InstructorAssessmentAccessOverrides } from './instructorAssessmentAccessOverrides.html.js';
+import {
+  AssessmentAccessPolicyRowSchema,
+  InstructorAssessmentAccessOverrides,
+} from './instructorAssessmentAccessOverrides.html.js';
 
 const router = express.Router();
 
@@ -88,19 +90,6 @@ async function selectUserEnrolledInCourseInstance({
   return user;
 }
 
-const AssessmentAccessPolicyRowSchema = z.object({
-  // TODO: do date formatting in JS
-  created_at: z.string(),
-  created_by: z.string(),
-  credit: z.string(),
-  end_date: z.string(),
-  note: z.string().nullable(),
-  start_date: z.string(),
-  group_name: z.string().nullable(),
-  student_uid: z.string().nullable(),
-  id: IdSchema,
-});
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -111,7 +100,7 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    res.locals.policies = await sqldb.queryRows(
+    const policies = await sqldb.queryRows(
       sql.select_assessment_access_policies,
       {
         assessment_id: res.locals.assessment.id,
@@ -120,13 +109,10 @@ router.get(
       AssessmentAccessPolicyRowSchema,
     );
 
-    res.locals.timezone = res.locals.course_instance.display_timezone;
-
-    // res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
     res.send(
       InstructorAssessmentAccessOverrides({
-        policies: res.locals.policies,
-        timezone: res.locals.timezone,
+        policies,
+        timezone: res.locals.course_instance.display_timezone,
         resLocals: res.locals,
       }),
     );
