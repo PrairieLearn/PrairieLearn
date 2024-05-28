@@ -49,30 +49,36 @@ export async function syncDiskToSqlWithLock(
     courseDB.loadFullCourse(courseId, courseDir),
   );
 
-  const sharedQuestions = await sqldb.queryRows(
-    sql.select_shared_questions,
-    { course_id: courseId },
-    z.object({
-      id: IdSchema,
-      qid: z.string(),
-    }),
-  );
-  const qids = Object.entries(courseData.questions).map(([qid, _]) => qid);
-  const invalidRenames: string[] = [];
-  sharedQuestions.forEach((question) => {
-    if (qids.indexOf(question.qid) === -1) {
-      invalidRenames.push(question.qid);
+  if (config.checkSharingOnSync) {
+    const sharedQuestions = await sqldb.queryRows(
+      sql.select_shared_questions,
+      { course_id: courseId },
+      z.object({
+        id: IdSchema,
+        qid: z.string(),
+      }),
+    );
+    const qids = Object.entries(courseData.questions).map(([qid, _]) => qid);
+    const invalidRenames: string[] = [];
+    sharedQuestions.forEach((question) => {
+      if (qids.indexOf(question.qid) === -1) {
+        invalidRenames.push(question.qid);
+      }
+    });
+    if (invalidRenames.length > 0) {
+      logger.info(
+        chalk.red(
+          `✖ Course sync completely failed. Not allowed to move or rename shared Questions. Shared questions that were moved or renamed: ${invalidRenames.join(', ')}`,
+        ),
+      );
+      perf.end('sync');
+      return {
+        hadJsonErrors: true,
+        hadJsonErrorsOrWarnings: true,
+        courseId,
+        courseData,
+      };
     }
-  });
-  if (invalidRenames.length > 0) {
-    logger.info(chalk.red(`✖ Course sync completely failed. Not allowed to move or rename shared Questions. Shared questions that were moved or renamed: ${invalidRenames.join(', ')}`));
-    perf.end('sync');
-    return {
-      hadJsonErrors: true,
-      hadJsonErrorsOrWarnings: true,
-      courseId,
-      courseData,
-    };
   }
 
   logger.info('Syncing info to database');

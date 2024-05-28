@@ -458,5 +458,22 @@ describe('Question Sharing', function () {
       );
       assert(publiclySharedQuestionRes.ok);
     });
+
+    step('Fail to sync if shared question is renamed', async () => {
+      const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
+      const questionTempPath = questionPath + '_temp';
+      await fs.rename(questionPath, questionTempPath);
+      await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      const question_id = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      if (!question_id) {
+        throw new Error(
+          `Sync of consuming course should not have allowed renaming a shared question.`,
+        );
+      }
+      await fs.rename(questionTempPath, questionPath);
+    });
   });
 });
