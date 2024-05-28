@@ -2974,7 +2974,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/formatter@workspace:packages/formatter":
+"@prairielearn/formatter@workspace:^, @prairielearn/formatter@workspace:packages/formatter":
   version: 0.0.0-use.local
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
@@ -3250,6 +3250,7 @@ __metadata:
     "@prairielearn/error": "workspace:^"
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/flash": "workspace:^"
+    "@prairielearn/formatter": "workspace:^"
     "@prairielearn/html": "workspace:^"
     "@prairielearn/html-ejs": "workspace:^"
     "@prairielearn/logger": "workspace:^"

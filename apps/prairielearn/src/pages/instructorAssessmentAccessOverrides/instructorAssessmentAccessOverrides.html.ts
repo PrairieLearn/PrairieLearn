@@ -1,20 +1,21 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { DateFromISOString, IdSchema } from '../../lib/db-types.js';
 
 export const AssessmentAccessPolicyRowSchema = z.object({
   // TODO: do date formatting in JS
-  created_at: z.string(),
+  created_at: DateFromISOString,
   created_by: z.string(),
   credit: z.string(),
-  end_date: z.string(),
+  end_date: DateFromISOString,
   note: z.string().nullable(),
-  start_date: z.string(),
+  start_date: DateFromISOString,
   group_name: z.string().nullable(),
   student_uid: z.string().nullable(),
   id: IdSchema,
@@ -88,9 +89,9 @@ export function InstructorAssessmentAccessOverrides({
                             ? policy.group_name
                             : policy.student_uid}
                         </td>
-                        <td>${policy.created_at}</td>
-                        <td>${policy.start_date}</td>
-                        <td>${policy.end_date}</td>
+                        <td>${formatDate(policy.created_at, timezone)}</td>
+                        <td>${formatDate(policy.start_date, timezone)}</td>
+                        <td>${formatDate(policy.end_date, timezone)}</td>
                         <td>${policy.created_by}</td>
                         <td>${policy.credit + '%'}</td>
                         <td>${policy.note ?? html`&mdash;`}</td>
@@ -119,8 +120,12 @@ export function InstructorAssessmentAccessOverrides({
                                       data-user-uid="${policy.student_uid}"
                                       data-group-name="${policy.group_name}"
                                       data-credit="${policy.credit}"
-                                      data-start-date="${policy.start_date}"
-                                      data-end-date="${policy.end_date}"
+                                      data-start-date="${formatDate(policy.start_date, timezone, {
+                                        includeTz: false,
+                                      })}"
+                                      data-end-date="${formatDate(policy.end_date, timezone, {
+                                        includeTz: false,
+                                      })}"
                                       data-note="${policy.note}"
                                       data-policy-id="${policy.id}"
                                     >
@@ -164,6 +169,7 @@ function AddAccessOverrideModal({
   timezone: string;
   resLocals: Record<string, any>;
 }) {
+  // TODO: figure out how to handle templating of group name/UID with conditionally rendered inputs.
   return Modal({
     id: 'addPolicyModal',
     title: 'Add new access override',
@@ -251,6 +257,7 @@ function EditAccessOverrideModal({
   timezone: string;
   resLocals: Record<string, any>;
 }) {
+  // TODO: figure out how to handle templating of group name/UID with conditionally rendered inputs.
   return Modal({
     id: 'editPolicyModal',
     title: 'Edit access override',
@@ -324,7 +331,7 @@ function EditAccessOverrideModal({
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input type="hidden" name="policy_id" id="policy_id" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      <button class="btn btn-primary" form="edit-override-form">Save</button>
+      <button class="btn btn-primary">Save</button>
     `,
   });
 }
@@ -333,7 +340,7 @@ function DeleteAccessOverrideModal({ resLocals }: { resLocals: Record<string, an
   return Modal({
     id: 'deleteModal',
     title: 'Delete access override',
-    body: html`<p>Are you sure you want to delete this Access Override?</p>`,
+    body: html`<p>Are you sure you want to delete this access override?</p>`,
     footer: html`
       <input type="hidden" name="__action" value="delete_override" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

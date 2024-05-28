@@ -102,10 +102,7 @@ router.get(
 
     const policies = await sqldb.queryRows(
       sql.select_assessment_access_policies,
-      {
-        assessment_id: res.locals.assessment.id,
-        timezone: res.locals.course_instance.display_timezone,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentAccessPolicyRowSchema,
     );
 

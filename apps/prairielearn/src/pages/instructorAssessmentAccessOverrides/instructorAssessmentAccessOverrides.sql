@@ -1,9 +1,6 @@
 -- BLOCK select_assessment_access_policies
 SELECT
-  format_date_full_compact (
-    aap.created_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS created_at,
+  aap.created_at,
   (
     SELECT
       uid
@@ -12,16 +9,10 @@ SELECT
     WHERE
       user_id = aap.created_by
   ) AS created_by,
-  aap.credit::text AS credit,
-  format_date_full_compact (
-    aap.end_date::timestamp AT TIME ZONE $timezone,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS end_date,
+  aap.start_date,
+  aap.end_date,
   aap.note AS note,
-  format_date_full_compact (
-    aap.start_date::timestamp AT TIME ZONE $timezone,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS start_date,
+  aap.credit::text AS credit,
   (
     SELECT
       name

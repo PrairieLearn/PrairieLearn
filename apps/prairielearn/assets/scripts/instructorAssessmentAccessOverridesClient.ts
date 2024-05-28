@@ -4,8 +4,12 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 onDocumentReady(() => {
   $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
 
-  const newOverrideForm = document.querySelector('#add-new-override');
-  newOverrideForm?.addEventListener('submit', (event) => {
+  console.log('form?', document.querySelector('#addPolicyModal form'));
+
+  // TODO: add check for edit modal as well.
+  // TODO: unify add/edit modals, since they're the same.
+  document.querySelector('#addPolicyModal form')?.addEventListener('submit', (event) => {
+    console.log('CHECKING DATES');
     // We always parse the date as UTC since it's not trivial to parse the
     // date in the course's timezone. All we care about is their relative
     // ordering.
@@ -13,6 +17,8 @@ onDocumentReady(() => {
     // TODO: this will probably break around Daylight Saving Time changes.
     const startDate = new Date($('#start_date').val() + 'Z');
     const endDate = new Date($('#end_date').val() + 'Z');
+
+    console.log('comparing', startDate, endDate);
 
     if (startDate >= endDate) {
       event.preventDefault();
@@ -27,23 +33,12 @@ onDocumentReady(() => {
       templateFromAttributes(button, editModal, {
         'data-user-uid': '#edit-student_uid',
         'data-group-name': '#edit-group_name',
+        'data-start-date': '#edit-start_date',
+        'data-end-date': '#edit-end_date',
         'data-credit': '#edit-credit',
         'data-note': '#edit-note',
         'data-policy-id': 'input[name="policy_id"]',
       });
-
-      // TODO: update things such that we can use `templateFromAttributes` above.
-      const policy_start_date_string = (button.getAttribute('data-start-date') as string)
-        .slice(0, -6)
-        .replace(' ', 'T');
-      const policy_end_date_string = (button.getAttribute('data-end-date') as string)
-        .slice(0, -6)
-        .replace(' ', 'T');
-
-      (editModal.querySelector('#edit-start_date') as HTMLInputElement).value =
-        policy_start_date_string;
-      (editModal.querySelector('#edit-end_date') as HTMLInputElement).value =
-        policy_end_date_string;
     });
   });
 
