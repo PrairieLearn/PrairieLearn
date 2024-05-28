@@ -1574,8 +1574,8 @@ export async function initExpress() {
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./middlewares/clientFingerprint.js')).default,
       // don't use logPageView here, we load it inside the page so it can get the variant_id
-      await enterpriseOnlyMiddleware(
-        async () => (await import('./ee/middlewares/checkPlanGrantsForQuestion.js')).default,
+      await enterpriseOnlyMiddleware(async () =>
+        (await import('./ee/middlewares/checkPlanGrantsForQuestion.js')).default(),
       ),
       (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
     ],
@@ -1952,6 +1952,11 @@ export async function initExpress() {
       res.locals.navSubPage = 'preview';
       next();
     },
+    await enterpriseOnlyMiddleware(async () =>
+      (await import('./ee/middlewares/checkPlanGrantsForQuestion.js')).default({
+        publicEndpoint: true,
+      }),
+    ),
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/questions', [
