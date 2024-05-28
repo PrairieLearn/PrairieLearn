@@ -11,6 +11,8 @@ import { insertAuditLog } from '../../models/audit-log.js';
 import { getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
 import { selectUserByUid } from '../../models/user.js';
 
+import { InstructorAssessmentAccessOverrides } from './instructorAssessmentAccessOverrides.html.js';
+
 const router = express.Router();
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -120,7 +122,14 @@ router.get(
 
     res.locals.timezone = res.locals.course_instance.display_timezone;
 
-    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    // res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessmentAccessOverrides({
+        policies: res.locals.policies,
+        timezone: res.locals.timezone,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
