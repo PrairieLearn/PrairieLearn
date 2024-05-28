@@ -87,11 +87,11 @@ matplotlib.use("PDF")
 prairielearn.get_unit_registry()
 
 
-# We want to conditionally allow/block importing specific modules, namely `rpy2`.
+# We want to conditionally allow/block importing specific modules.
 # This custom importer will allow us to do so, and throw a custom error message.
 #
 # While this won't prevent anything more complex than an `import` statement, it
-# will make it clear to the user that they're not allowed to use `rpy2`. If they
+# will make it clear to the user that they're not allowed to use. If they
 # try to bypass the block, it's up to them to deal with the consequences.
 class ForbidModuleMetaPathFinder(MetaPathFinder):
     def __init__(self) -> None:

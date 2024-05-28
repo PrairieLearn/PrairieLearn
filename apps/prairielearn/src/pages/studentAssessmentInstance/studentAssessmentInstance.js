@@ -23,6 +23,7 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -50,12 +51,6 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
-  previous_variants: z.array(
-    z.object({
-      variant_id: IdSchema,
-      max_submission_score: z.number(),
-    }),
-  ),
 });
 
 async function ensureUpToDate(locals) {
@@ -228,6 +223,14 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
+    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+    });
+    for (const instance_question of res.locals.instance_questions) {
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
+      );
+    }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
