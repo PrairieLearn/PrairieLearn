@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { IdSchema } from '../../lib/db-types.js';
 
@@ -63,229 +64,6 @@ export function InstructorAssessmentAccessOverrides({
                     </button>
                   `
                 : ''}
-            </div>
-            <div
-              class="modal fade"
-              id="addPolicyModal"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="addPolicyModalLabel"
-              aria-hidden="true"
-            >
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <form id="add-new-override" method="POST">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="addPolicyModalLabel">Add New Override</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <input type="hidden" name="__action" value="add_new_override" />
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      ${resLocals.assessment.group_work
-                        ? html`
-                            <div class="form-group">
-                              <label for="group_id">Group Name</label>
-                              <input
-                                type="text"
-                                class="form-control"
-                                id="group_name"
-                                name="group_name"
-                                required
-                              />
-                            </div>
-                          `
-                        : html`
-                            <div class="form-group">
-                              <label for="student_uid">Student UID</label>
-                              <input
-                                type="text"
-                                class="form-control"
-                                id="student_uid"
-                                name="student_uid"
-                                placeholder="student@example.com"
-                                required
-                              />
-                            </div>
-                          `}
-                      <div class="form-group">
-                        <label for="start_date">Start Date</label>
-                        <div class="input-group">
-                          <input
-                            type="datetime-local"
-                            class="form-control"
-                            id="start_date"
-                            name="start_date"
-                            step="1"
-                            required
-                          />
-                          <div class="input-group-append">
-                            <span class="input-group-text">(${timezone})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-group">
-                        <label for="end_date">End Date</label>
-                        <div class="input-group">
-                          <input
-                            type="datetime-local"
-                            class="form-control"
-                            id="end_date"
-                            name="end_date"
-                            step="1"
-                            required
-                          />
-                          <div class="input-group-append">
-                            <span class="input-group-text">(${timezone})</span>
-                          </div>
-                        </div>
-                        <div
-                          id="end_date_error"
-                          class="invalid-feedback"
-                          style="display: none; color: red;"
-                        ></div>
-                      </div>
-                      <div class="form-group">
-                        <label for="credit">Credit</label>
-                        <div class="input-group">
-                          <input
-                            type="number"
-                            class="form-control"
-                            id="credit"
-                            name="credit"
-                            min="0"
-                            required
-                          />
-                          <div class="input-group-append">
-                            <span class="input-group-text">%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-group">
-                        <label for="note">Note</label>
-                        <textarea class="form-control" id="note" name="note"></textarea>
-                      </div>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        Close
-                      </button>
-                      <button type="submit" class="btn btn-primary">Submit</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-            <div
-              class="modal fade"
-              id="editPolicyModal"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="editPolicyModalLabel"
-              aria-hidden="true"
-            >
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <form id="edit-override-form" method="POST">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="editPolicyModalLabel">Edit Override</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <input type="hidden" name="__action" value="edit_override" />
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <input type="hidden" name="policy_id" id="policy_id" />
-
-                      ${resLocals.assessment.group_work
-                        ? html`
-                            <div class="form-group">
-                              <label for="group_name">Group Name</label>
-                              <input
-                                type="text"
-                                class="form-control"
-                                id="edit-group_name"
-                                name="group_name"
-                              />
-                              <div
-                                id="edit-group_name_error"
-                                class="invalid-feedback"
-                                style="display: none; color: red;"
-                              ></div>
-                            </div>
-                          `
-                        : html`
-                            <div class="form-group">
-                              <label for="student_uid">Student UID</label>
-                              <input
-                                type="text"
-                                class="form-control"
-                                id="edit-student_uid"
-                                name="student_uid"
-                              />
-                            </div>
-                          `}
-
-                      <div class="form-group">
-                        <label for="edit-start_date">Start Date</label>
-                        <div class="input-group">
-                          <input
-                            type="datetime-local"
-                            class="form-control"
-                            id="edit-start_date"
-                            name="start_date"
-                            step="1"
-                            required
-                          />
-                          <div class="input-group-append">
-                            <span class="input-group-text">(${timezone})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-group">
-                        <label for="edit-end_date">End Date</label>
-                        <div class="input-group">
-                          <input
-                            type="datetime-local"
-                            class="form-control"
-                            id="edit-end_date"
-                            name="end_date"
-                            step="1"
-                            required
-                          />
-                          <div class="input-group-append">
-                            <span class="input-group-text">(${timezone})</span>
-                          </div>
-                        </div>
-                        <div
-                          id="edit-end_date_error"
-                          class="invalid-feedback"
-                          style="display: none; color: red;"
-                        ></div>
-                      </div>
-                      <div class="form-group">
-                        <label for="edit-credit">Credit</label>
-                        <input type="number" class="form-control" id="edit-credit" name="credit" />
-                      </div>
-                      <div class="form-group">
-                        <label for="edit-note">Note</label>
-                        <textarea class="form-control" id="edit-note" name="note"></textarea>
-                      </div>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        Close
-                      </button>
-                      <button type="submit" class="btn btn-primary" form="edit-override-form">
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
             </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover">
@@ -368,42 +146,199 @@ export function InstructorAssessmentAccessOverrides({
               </table>
             </div>
           </div>
-          <!-- Modal dialog for delete confirmation -->
-          <div
-            class="modal fade"
-            id="deleteModal"
-            tabindex="-1"
-            role="dialog"
-            aria-labelledby="deleteModalLabel"
-            aria-hidden="true"
-          >
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <form name="delete-override-form" method="POST">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <p>Are you sure you want to delete this Access Override?</p>
-                  </div>
-                  <div class="modal-footer">
-                    <input type="hidden" name="__action" value="delete_override" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input type="hidden" name="policy_id" class="js-policy-id" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                      Cancel
-                    </button>
-                    <button class="btn btn-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+          ${AddAccessOverrideModal({ timezone, resLocals })}
+          ${EditAccessOverrideModal({ timezone, resLocals })}
+          ${DeleteAccessOverrideModal({ resLocals })}
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function AddAccessOverrideModal({
+  timezone,
+  resLocals,
+}: {
+  timezone: string;
+  resLocals: Record<string, any>;
+}) {
+  return Modal({
+    id: 'addPolicyModal',
+    title: 'Add new access override',
+    body: html`
+      <input type="hidden" name="__action" value="add_new_override" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      ${resLocals.assessment.group_work
+        ? html`
+            <div class="form-group">
+              <label for="group_id">Group Name</label>
+              <input type="text" class="form-control" id="group_name" name="group_name" required />
+            </div>
+          `
+        : html`
+            <div class="form-group">
+              <label for="student_uid">Student UID</label>
+              <input
+                type="text"
+                class="form-control"
+                id="student_uid"
+                name="student_uid"
+                placeholder="student@example.com"
+                required
+              />
+            </div>
+          `}
+      <div class="form-group">
+        <label for="start_date">Start Date</label>
+        <div class="input-group">
+          <input
+            type="datetime-local"
+            class="form-control"
+            id="start_date"
+            name="start_date"
+            step="1"
+            required
+          />
+          <div class="input-group-append">
+            <span class="input-group-text">(${timezone})</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="end_date">End Date</label>
+        <div class="input-group">
+          <input
+            type="datetime-local"
+            class="form-control"
+            id="end_date"
+            name="end_date"
+            step="1"
+            required
+          />
+          <div class="input-group-append">
+            <span class="input-group-text">(${timezone})</span>
+          </div>
+        </div>
+        <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
+      </div>
+      <div class="form-group">
+        <label for="credit">Credit</label>
+        <div class="input-group">
+          <input type="number" class="form-control" id="credit" name="credit" min="0" required />
+          <div class="input-group-append">
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="note">Note</label>
+        <textarea class="form-control" id="note" name="note"></textarea>
+      </div>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button class="btn btn-primary">Add access override</button>
+    `,
+  });
+}
+
+function EditAccessOverrideModal({
+  timezone,
+  resLocals,
+}: {
+  timezone: string;
+  resLocals: Record<string, any>;
+}) {
+  return Modal({
+    id: 'editPolicyModal',
+    title: 'Edit access override',
+    body: html`
+      ${resLocals.assessment.group_work
+        ? html`
+            <div class="form-group">
+              <label for="group_name">Group Name</label>
+              <input type="text" class="form-control" id="edit-group_name" name="group_name" />
+              <div
+                id="edit-group_name_error"
+                class="invalid-feedback"
+                style="display: none; color: red;"
+              ></div>
+            </div>
+          `
+        : html`
+            <div class="form-group">
+              <label for="student_uid">Student UID</label>
+              <input type="text" class="form-control" id="edit-student_uid" name="student_uid" />
+            </div>
+          `}
+
+      <div class="form-group">
+        <label for="edit-start_date">Start Date</label>
+        <div class="input-group">
+          <input
+            type="datetime-local"
+            class="form-control"
+            id="edit-start_date"
+            name="start_date"
+            step="1"
+            required
+          />
+          <div class="input-group-append">
+            <span class="input-group-text">(${timezone})</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="edit-end_date">End Date</label>
+        <div class="input-group">
+          <input
+            type="datetime-local"
+            class="form-control"
+            id="edit-end_date"
+            name="end_date"
+            step="1"
+            required
+          />
+          <div class="input-group-append">
+            <span class="input-group-text">(${timezone})</span>
+          </div>
+        </div>
+        <div
+          id="edit-end_date_error"
+          class="invalid-feedback"
+          style="display: none; color: red;"
+        ></div>
+      </div>
+      <div class="form-group">
+        <label for="edit-credit">Credit</label>
+        <input type="number" class="form-control" id="edit-credit" name="credit" />
+      </div>
+      <div class="form-group">
+        <label for="edit-note">Note</label>
+        <textarea class="form-control" id="edit-note" name="note"></textarea>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="edit_override" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="policy_id" id="policy_id" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button class="btn btn-primary" form="edit-override-form">Save</button>
+    `,
+  });
+}
+
+function DeleteAccessOverrideModal({ resLocals }: { resLocals: Record<string, any> }) {
+  return Modal({
+    id: 'deleteModal',
+    title: 'Delete access override',
+    body: html`<p>Are you sure you want to delete this Access Override?</p>`,
+    footer: html`
+      <input type="hidden" name="__action" value="delete_override" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="policy_id" class="js-policy-id" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button class="btn btn-danger">Delete</button>
+    `,
+  });
 }
