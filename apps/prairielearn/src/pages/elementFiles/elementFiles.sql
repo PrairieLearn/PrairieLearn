@@ -8,6 +8,7 @@ SELECT
     WHERE
       q.shared_publicly
       AND course_id = $producing_course_id
+      AND q.deleted_at IS NULL
     UNION
     SELECT
       1
@@ -19,4 +20,5 @@ SELECT
     WHERE
       ss.course_id = $producing_course_id
       AND ssc.course_id = $consuming_course_id
+      AND q.deleted_at IS NULL
   );
