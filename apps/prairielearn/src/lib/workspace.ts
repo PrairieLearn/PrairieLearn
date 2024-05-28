@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { contains } from '@prairielearn/path-utils';
+import { contains, isContainedRelativePath } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
@@ -75,6 +75,13 @@ interface DynamicWorkspaceFile {
 interface InitializeResult {
   sourcePath: string;
   destinationPath: string;
+}
+
+interface FileGenerationError {
+  file: string;
+  msg: string;
+  err?: any;
+  data?: Record<string, any>;
 }
 
 /**
@@ -352,7 +359,7 @@ async function startup(workspace_id: string): Promise<void> {
  * workspace. This is mostly important on NFS volumes, where renames (moves)
  * are not atomic.
  */
-async function initialize(workspace_id: string): Promise<InitializeResult> {
+export async function initialize(workspace_id: string): Promise<InitializeResult> {
   const { workspace, variant, question, course } = await sqldb.queryRow(
     sql.select_workspace_data,
     { workspace_id },
@@ -367,21 +374,67 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     questionId: question.id,
   });
 
-  const fileGenerationErrors: {
-    file: string;
-    msg: string;
-    err?: any;
-    data?: Record<string, any>;
-  }[] = [];
-
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
-  const localPath = path.join(questionBasePath, 'workspace');
-  const templatePath = path.join(questionBasePath, 'workspaceTemplates');
 
   // base workspace directory wherever we are uploading to
   const remoteDirName = `workspace-${workspace_id}-${workspace.version}`;
   const remotePath = path.join(remoteDirName, 'current');
+
+  const root = config.workspaceHomeDirRoot;
+  const destinationPath = path.join(root, remotePath);
+  const sourcePath = `${destinationPath}-${uuidv4()}`;
+
+  const { fileGenerationErrors } = await generateWorkspaceFiles({
+    questionBasePath,
+    params: variant.params,
+    correctAnswers: variant.true_answer,
+    targetPath: sourcePath,
+  });
+
+  if (fileGenerationErrors.length > 0) {
+    const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
+    await issues.insertIssue({
+      variantId: variant.id,
+      studentMessage: 'Error initializing workspace files',
+      instructorMessage: 'Error initializing workspace files',
+      manuallyReported: false,
+      courseCaused: true,
+      courseData: { workspace, variant, question, course },
+      systemData: {
+        courseErrData: {
+          // This is shown in the console log of the issue
+          outputBoth: output,
+          // This data is only shown if user is admin (e.g., in dev mode).
+          errors: fileGenerationErrors.map((error) => ({
+            ...error,
+            // Since error is typically not serializable, a custom object is created.
+            err: serializeError(error.err),
+          })),
+        },
+      },
+      authnUserId: null,
+    });
+  }
+
+  return { sourcePath, destinationPath };
+}
+
+async function generateWorkspaceFiles({
+  questionBasePath,
+  params,
+  correctAnswers,
+  targetPath,
+}: {
+  questionBasePath: string;
+  params: Record<string, any> | null;
+  correctAnswers: Record<string, any> | null;
+  targetPath: string;
+}): Promise<{ fileGenerationErrors: FileGenerationError[] }> {
+  const localPath = path.join(questionBasePath, 'workspace');
+  const templatePath = path.join(questionBasePath, 'workspaceTemplates');
+
+  const fileGenerationErrors: FileGenerationError[] = [];
 
   const staticFiles: WorkspaceFile[] = (
     await async
@@ -396,7 +449,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
       })
   ).filter((file): file is WorkspaceFile => !!file);
 
-  const mustacheParams = { params: variant.params, correct_answers: variant.true_answer };
+  const mustacheParams = { params, correct_answers: correctAnswers };
 
   const templateFiles: WorkspaceFile[] = (
     await async
@@ -431,7 +484,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
   ).filter((file): file is WorkspaceFile => !!file);
 
   const dynamicFiles: WorkspaceFile[] =
-    (variant.params?._workspace_files as DynamicWorkspaceFile[] | null)
+    (params?._workspace_files as DynamicWorkspaceFile[] | null)
       ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
         if (!file?.name) {
@@ -444,14 +497,15 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
         }
         try {
           // Discard names with directory traversal outside the home directory
-          if (!contains(remotePath, path.join(remotePath, file.name), false)) {
+          if (!isContainedRelativePath(file.name, false)) {
             fileGenerationErrors.push({
               file: file.name,
-              msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
+              msg: 'Dynamic workspace file has an absolute path or includes a name that traverses outside the home directory. File ignored.',
               data: file,
             });
             return null;
           }
+          const normalizedFilename = path.normalize(file.name);
 
           if (file.questionFile) {
             const localPath = path.join(questionBasePath, file.questionFile);
@@ -467,7 +521,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
             return {
-              name: file.name,
+              name: normalizedFilename,
               localPath,
             };
           }
@@ -491,7 +545,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
           }
 
           return {
-            name: file.name,
+            name: normalizedFilename,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
           };
         } catch (err) {
@@ -509,26 +563,22 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
-  const root = config.workspaceHomeDirRoot;
-  const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${uuidv4()}`;
-
-  await fs.ensureDir(sourcePath);
+  await fs.ensureDir(targetPath);
   await fsPromises.chown(
-    sourcePath,
+    targetPath,
     config.workspaceJobsDirectoryOwnerUid,
     config.workspaceJobsDirectoryOwnerGid,
   );
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
-      const sourceFile = path.join(sourcePath, workspaceFile.name);
+      const targetFile = path.join(targetPath, workspaceFile.name);
       try {
-        await fs.ensureDir(path.dirname(sourceFile));
+        await fs.ensureDir(path.dirname(targetFile));
         if ('localPath' in workspaceFile) {
-          await fs.copy(workspaceFile.localPath, sourceFile);
+          await fs.copy(workspaceFile.localPath, targetFile);
         } else {
-          await fs.writeFile(sourceFile, workspaceFile.buffer);
+          await fs.writeFile(targetFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({
@@ -542,7 +592,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     });
 
     // Update permissions so that the directory and all contents are owned by the workspace user
-    for await (const file of klaw(sourcePath)) {
+    for await (const file of klaw(targetPath)) {
       await fsPromises.chown(
         file.path,
         config.workspaceJobsDirectoryOwnerUid,
@@ -550,36 +600,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
       );
     }
   }
-
-  if (fileGenerationErrors.length > 0) {
-    const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
-    issues.insertIssue({
-      variantId: variant.id,
-      studentMessage: 'Error initializing workspace files',
-      instructorMessage: 'Error initializing workspace files',
-      manuallyReported: false,
-      courseCaused: true,
-      courseData: { workspace, variant, question, course },
-      systemData: {
-        courseErrData: {
-          // This is shown in the console log of the issue
-          outputBoth: output,
-          // This data is only shown if user is admin (e.g., in dev mode).
-          errors: fileGenerationErrors.map((error) => ({
-            ...error,
-            // Since error is typically not serializable, a custom object is created.
-            err: serializeError(error.err),
-          })),
-        },
-      },
-      authnUserId: null,
-    });
-  }
-
-  return {
-    sourcePath,
-    destinationPath,
-  };
+  return { fileGenerationErrors };
 }
 
 /**
