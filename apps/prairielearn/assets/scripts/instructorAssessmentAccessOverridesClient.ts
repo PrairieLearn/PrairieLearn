@@ -1,4 +1,5 @@
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
+
 // TODO: convert this all to standard JS instead of jQuery.
 onDocumentReady(() => {
   $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
@@ -20,54 +21,43 @@ onDocumentReady(() => {
     }
   });
 
-  $('.edit-override-button').on('click', function (event) {
-    event.preventDefault();
-    const button = $(this);
-    const editOverrideForm = $('#edit-override-form');
-    editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
-    editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
-    editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
-    editOverrideForm.find('#edit-credit').val(button.data('credit'));
-    const policy_start_date_string = button.data('start-date').slice(0, -6).replace(' ', 'T');
-    const policy_end_date_string = button.data('end-date').slice(0, -6).replace(' ', 'T');
+  const editModal = document.querySelector('#editPolicyModal') as HTMLFormElement;
+  document.querySelectorAll<HTMLButtonElement>('.edit-override-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      templateFromAttributes(button, editModal, {
+        'data-assessment-id': '#edit-assessment_id',
 
-    editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
-    editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
-    editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
-    editOverrideForm.find('#edit-note').val(button.data('note'));
-    editOverrideForm.find('#edit-type').val(button.data('type'));
-    const policyId = $(this).data('policy-id');
-    $('#edit-override-form input[name="policy_id"]').val(policyId);
-    const groupName = $(this).data('group-name');
-    $('#edit-group_name').val(groupName);
-    $('#editPolicyModal').modal('show');
+        // TODO: fix naming of this
+        'data-user-id': '#edit-student_uid',
+
+        'data-group-name': '#edit-group_name',
+        'data-group-id': '#edit-group_id',
+        'data-credit': '#edit-credit',
+        'data-note': '#edit-note',
+        'data-policy-id': 'input[name="policy_id"]',
+      });
+
+      // TODO: update things such that we can use `templateFromAttributes` above.
+      const policy_start_date_string = (button.getAttribute('data-start-date') as string)
+        .slice(0, -6)
+        .replace(' ', 'T');
+      const policy_end_date_string = (button.getAttribute('data-end-date') as string)
+        .slice(0, -6)
+        .replace(' ', 'T');
+
+      (editModal.querySelector('#edit-start_date') as HTMLInputElement).value =
+        policy_start_date_string;
+      (editModal.querySelector('#edit-end_date') as HTMLInputElement).value =
+        policy_end_date_string;
+    });
   });
 
-  $('.delete-button').on('click', function () {
-    const button = $(this);
-    const policyId = $(this).data('policy-id');
-    const csrfToken = button.data('__csrf_token');
-    const action = button.data('__action');
-
-    // Set the values of the form's hidden input fields
-    $('#deleteModal input[name="policy_id"]').val(policyId);
-    $('#deleteModal input[name="csrf_token"]').val(csrfToken);
-    $('#confirmDeleteButton').data('policy-id', policyId);
-
-    $('#deleteModal input[name="__action"]').val(action);
-
-    // Show the modal confirmation dialog
-    $('#deleteModal').modal('show');
-  });
-
-  // Event listener for confirm delete button in the modal
-  $('#confirmDeleteButton').on('click', function () {
-    const button = $(this);
-    const policyId = button.data('policy-id');
-
-    $('form[name="delete-override-form"] input[name="policy_id"]').val(policyId);
-    $('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
-
-    $('form[name="delete-override-form"]').submit();
+  const deleteModal = document.querySelector('#deleteModal') as HTMLFormElement;
+  document.querySelectorAll<HTMLButtonElement>('.delete-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      templateFromAttributes(button, deleteModal, {
+        'data-policy-id': '.js-policy-id',
+      });
+    });
   });
 });
