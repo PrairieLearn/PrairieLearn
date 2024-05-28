@@ -1821,9 +1821,8 @@ export function initExpress() {
   // question transfer machinery relies on access to course repositories on disk,
   // which don't exist on chunk servers
   app.use(
-    '/pl/course/:course_id(\\d+)/copy_template_course_question',
-    require('./pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion')
-      .default,
+    '/pl/course/:course_id(\\d+)/copy_public_question',
+    require('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion').default,
   );
 
   // Global client files
