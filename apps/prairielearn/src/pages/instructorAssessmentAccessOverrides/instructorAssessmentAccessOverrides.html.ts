@@ -9,7 +9,6 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { DateFromISOString, IdSchema } from '../../lib/db-types.js';
 
 export const AssessmentAccessPolicyRowSchema = z.object({
-  // TODO: do date formatting in JS
   created_at: DateFromISOString,
   created_by: z.string(),
   credit: z.string(),
@@ -17,7 +16,7 @@ export const AssessmentAccessPolicyRowSchema = z.object({
   note: z.string().nullable(),
   start_date: DateFromISOString,
   group_name: z.string().nullable(),
-  student_uid: z.string().nullable(),
+  user_uid: z.string().nullable(),
   id: IdSchema,
 });
 export type AssessmentAccessPolicyRow = z.infer<typeof AssessmentAccessPolicyRowSchema>;
@@ -31,7 +30,6 @@ export function InstructorAssessmentAccessOverrides({
   timezone: string;
   resLocals: Record<string, any>;
 }) {
-  // TODO: inline the page name and such for the head/nav partials.
   return html`
     <!doctype html>
     <html lang="en">
@@ -70,11 +68,11 @@ export function InstructorAssessmentAccessOverrides({
               <table class="table table-sm table-hover">
                 <thead>
                   <tr>
-                    <th>${resLocals.assessment.group_work ? 'Group Name' : 'Student UID'}</th>
+                    <th>${resLocals.assessment.group_work ? 'Group Name' : 'UID'}</th>
                     <th>Created At</th>
+                    <th>Created By</th>
                     <th>Start Date</th>
                     <th>End Date</th>
-                    <th>Created By</th>
                     <th>Credit</th>
                     <th>Note</th>
                     <th>Action</th>
@@ -85,14 +83,12 @@ export function InstructorAssessmentAccessOverrides({
                     (policy) => html`
                       <tr>
                         <td>
-                          ${resLocals.assessment.group_work
-                            ? policy.group_name
-                            : policy.student_uid}
+                          ${resLocals.assessment.group_work ? policy.group_name : policy.user_uid}
                         </td>
                         <td>${formatDate(policy.created_at, timezone)}</td>
+                        <td>${policy.created_by}</td>
                         <td>${formatDate(policy.start_date, timezone)}</td>
                         <td>${formatDate(policy.end_date, timezone)}</td>
-                        <td>${policy.created_by}</td>
                         <td>${policy.credit + '%'}</td>
                         <td>${policy.note ?? html`&mdash;`}</td>
                         <td>
@@ -117,7 +113,7 @@ export function InstructorAssessmentAccessOverrides({
                                       class="dropdown-item edit-override-button"
                                       data-toggle="modal"
                                       data-target="#editPolicyModal"
-                                      data-user-uid="${policy.student_uid}"
+                                      data-user-uid="${policy.user_uid}"
                                       data-group-name="${policy.group_name}"
                                       data-credit="${policy.credit}"
                                       data-start-date="${formatDate(policy.start_date, timezone, {
@@ -163,13 +159,98 @@ export function InstructorAssessmentAccessOverrides({
 }
 
 function AccessOverrideForm({
+  idPrefix,
   timezone,
   resLocals,
 }: {
+  idPrefix: string;
   timezone: string;
   resLocals: Record<string, any>;
 }) {
-  return html``;
+  return html`
+    ${resLocals.assessment.group_work
+      ? html`
+          <div class="form-group">
+            <label for="${idPrefix}group_name">Group Name</label>
+            <input
+              type="text"
+              class="form-control js-group-name"
+              id="${idPrefix}group_name"
+              name="group_name"
+              required
+            />
+          </div>
+        `
+      : html`
+          <div class="form-group">
+            <label for="${idPrefix}user_uid">UID</label>
+            <input
+              type="text"
+              class="form-control js-user-uid"
+              id="${idPrefix}user_uid"
+              name="user_uid"
+              placeholder="student@example.com"
+              required
+            />
+          </div>
+        `}
+
+    <div class="form-group">
+      <label for="${idPrefix}start_date">Start Date</label>
+      <div class="input-group">
+        <input
+          type="datetime-local"
+          class="form-control js-start-date"
+          id="${idPrefix}start_date"
+          name="start_date"
+          step="1"
+          required
+        />
+        <div class="input-group-append">
+          <span class="input-group-text">(${timezone})</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="${idPrefix}end_date">End Date</label>
+      <div class="input-group">
+        <input
+          type="datetime-local"
+          class="form-control js-end-date"
+          id="${idPrefix}end_date"
+          name="end_date"
+          step="1"
+          required
+        />
+        <div class="input-group-append">
+          <span class="input-group-text">(${timezone})</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="${idPrefix}credit">Credit</label>
+      <div class="input-group">
+        <input
+          type="number"
+          class="form-control js-credit"
+          id="${idPrefix}credit"
+          name="credit"
+          min="0"
+          required
+        />
+        <div class="input-group-append">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="${idPrefix}note">Note</label>
+      <textarea class="form-control js-note" id="${idPrefix}note" name="note"></textarea>
+    </div>
+  `;
 }
 
 function AddAccessOverrideModal({
@@ -179,81 +260,14 @@ function AddAccessOverrideModal({
   timezone: string;
   resLocals: Record<string, any>;
 }) {
-  // TODO: figure out how to handle templating of group name/UID with conditionally rendered inputs.
   return Modal({
     id: 'addPolicyModal',
     title: 'Add new access override',
-    body: html`
-      ${resLocals.assessment.group_work
-        ? html`
-            <div class="form-group">
-              <label for="group_name">Group Name</label>
-              <input type="text" class="form-control" id="group_name" name="group_name" required />
-            </div>
-          `
-        : html`
-            <div class="form-group">
-              <label for="student_uid">Student UID</label>
-              <input
-                type="text"
-                class="form-control"
-                id="student_uid"
-                name="student_uid"
-                placeholder="student@example.com"
-                required
-              />
-            </div>
-          `}
-
-      <div class="form-group">
-        <label for="start_date">Start Date</label>
-        <div class="input-group">
-          <input
-            type="datetime-local"
-            class="form-control"
-            id="start_date"
-            name="start_date"
-            step="1"
-            required
-          />
-          <div class="input-group-append">
-            <span class="input-group-text">(${timezone})</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="end_date">End Date</label>
-        <div class="input-group">
-          <input
-            type="datetime-local"
-            class="form-control"
-            id="end_date"
-            name="end_date"
-            step="1"
-            required
-          />
-          <div class="input-group-append">
-            <span class="input-group-text">(${timezone})</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="credit">Credit</label>
-        <div class="input-group">
-          <input type="number" class="form-control" id="credit" name="credit" min="0" required />
-          <div class="input-group-append">
-            <span class="input-group-text">%</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="note">Note</label>
-        <textarea class="form-control" id="note" name="note"></textarea>
-      </div>
-    `,
+    body: AccessOverrideForm({
+      idPrefix: 'add_',
+      timezone,
+      resLocals,
+    }),
     footer: html`
       <input type="hidden" name="__action" value="add_new_override" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -273,93 +287,15 @@ function EditAccessOverrideModal({
   return Modal({
     id: 'editPolicyModal',
     title: 'Edit access override',
-    body: html`
-      ${resLocals.assessment.group_work
-        ? html`
-            <div class="form-group">
-              <label for="group_name">Group Name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="edit-group_name"
-                name="group_name"
-                required
-              />
-            </div>
-          `
-        : html`
-            <div class="form-group">
-              <label for="student_uid">Student UID</label>
-              <input
-                type="text"
-                class="form-control"
-                id="edit-student_uid"
-                name="student_uid"
-                required
-              />
-            </div>
-          `}
-
-      <div class="form-group">
-        <label for="edit-start_date">Start Date</label>
-        <div class="input-group">
-          <input
-            type="datetime-local"
-            class="form-control"
-            id="edit-start_date"
-            name="start_date"
-            step="1"
-            required
-          />
-          <div class="input-group-append">
-            <span class="input-group-text">(${timezone})</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="edit-end_date">End Date</label>
-        <div class="input-group">
-          <input
-            type="datetime-local"
-            class="form-control"
-            id="edit-end_date"
-            name="end_date"
-            step="1"
-            required
-          />
-          <div class="input-group-append">
-            <span class="input-group-text">(${timezone})</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="edit-credit">Credit</label>
-        <div class="input-group">
-          <input
-            type="number"
-            class="form-control"
-            id="edit-credit"
-            name="credit"
-            min="0"
-            required
-          />
-          <div class="input-group-append">
-            <span class="input-group-text">%</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="edit-note">Note</label>
-        <textarea class="form-control" id="edit-note" name="note"></textarea>
-      </div>
-    `,
+    body: AccessOverrideForm({
+      idPrefix: 'edit_',
+      timezone,
+      resLocals,
+    }),
     footer: html`
       <input type="hidden" name="__action" value="edit_override" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      <input type="hidden" name="policy_id" id="policy_id" />
+      <input type="hidden" name="policy_id" id="policy_id" class="js-policy-id" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <button class="btn btn-primary">Save</button>
     `,

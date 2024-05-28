@@ -28,7 +28,7 @@ SELECT
       users
     WHERE
       user_id = aap.user_id
-  ) AS student_uid,
+  ) AS user_uid,
   aap.id AS id
 FROM
   assessment_access_policies AS aap

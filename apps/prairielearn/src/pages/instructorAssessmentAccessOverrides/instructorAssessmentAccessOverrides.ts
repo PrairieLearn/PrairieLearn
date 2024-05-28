@@ -131,7 +131,7 @@ router.post(
         const { user_id, group_id } = await getUserOrGroupId({
           course_instance_id: res.locals.course_instance.id,
           assessment: res.locals.assessment,
-          uid: req.body.student_uid,
+          uid: req.body.user_uid,
           group_name: req.body.group_name,
         });
         const inserted = await sqldb.queryRow(
@@ -166,7 +166,7 @@ router.post(
       const { user_id, group_id } = await getUserOrGroupId({
         course_instance_id: res.locals.course_instance.id,
         assessment: res.locals.assessment,
-        uid: req.body.student_uid,
+        uid: req.body.user_uid,
         group_name: req.body.group_name,
       });
 
