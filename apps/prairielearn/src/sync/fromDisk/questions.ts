@@ -57,8 +57,6 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
-
-
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
