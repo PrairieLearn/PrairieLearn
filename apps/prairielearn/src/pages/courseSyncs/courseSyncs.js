@@ -1,19 +1,20 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as _ from 'lodash';
 import { ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import { formatISO } from 'date-fns';
 import { Router } from 'express';
-import * as sqldb from '@prairielearn/postgres';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+
 import { DockerName } from '@prairielearn/docker-utils';
-
-import * as syncHelpers from '../shared/syncHelpers';
-import { makeAwsClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
 import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
+import * as syncHelpers from '../shared/syncHelpers.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
@@ -100,7 +101,7 @@ router.get(
       }
     }
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

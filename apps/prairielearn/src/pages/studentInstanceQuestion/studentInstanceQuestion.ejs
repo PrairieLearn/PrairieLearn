@@ -18,6 +18,7 @@
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
+    <% if (!locals.no_variant_exists) { %>
     <% if (question.type != 'Freeform') { %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= asset_path('javascripts/require.js') %>"></script>
@@ -25,6 +26,7 @@
     <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
+    <% } %>
   </head>
   <body>
     <script>
@@ -39,7 +41,18 @@
     <main id="content" class="container">
       <div class="row">
         <div class="col-lg-9 col-sm-12">
+          <% if (locals.no_variant_exists) { %>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <%- include('../partials/questionTitle', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
+            </div>
+            <div class="card-body">
+              This question was not viewed while the assessment was open, so no variant was created.
+            </div>
+          </div>
+          <% } else { %>
           <%- include('../partials/question', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
+          <% } %>
         </div>
 
         <div class="col-lg-3 col-sm-12">

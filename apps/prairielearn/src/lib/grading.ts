@@ -1,16 +1,13 @@
 import * as fs from 'fs';
+
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-
-import * as externalGrader from './externalGrader';
-import * as ltiOutcomes from './ltiOutcomes';
-import { writeCourseIssues } from './issues';
-import { getQuestionCourse } from './question-variant';
 import * as sqldb from '@prairielearn/postgres';
-import * as questionServers from '../question-servers';
-import * as workspaceHelper from './workspace';
+
+import * as questionServers from '../question-servers/index.js';
+
 import {
   Course,
   DateFromISOString,
@@ -23,10 +20,15 @@ import {
   SubmissionSchema,
   Variant,
   VariantSchema,
-} from './db-types';
-import { idsEqual } from './id';
+} from './db-types.js';
+import * as externalGrader from './externalGrader.js';
+import { idsEqual } from './id.js';
+import { writeCourseIssues } from './issues.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { getQuestionCourse } from './question-variant.js';
+import * as workspaceHelper from './workspace.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const NextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),

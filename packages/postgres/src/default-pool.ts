@@ -1,4 +1,4 @@
-import { PostgresPool, type CursorIterator, type QueryParams } from './pool';
+import { PostgresPool, type CursorIterator, type QueryParams } from './pool.js';
 
 const defaultPool = new PostgresPool();
 export { defaultPool, type CursorIterator, type QueryParams };

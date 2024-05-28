@@ -1,13 +1,14 @@
 import { z } from 'zod';
+
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   CourseInstanceSchema,
   CourseSchema,
   StripeCheckoutSessionSchema,
-} from '../../../lib/db-types';
+} from '../../../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * A `Purchase` contains a Stripe checkout session and possible the course and

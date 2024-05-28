@@ -510,13 +510,13 @@ def parse(element_html, data):
     n_submitted = len(submitted_key)
     if n_submitted > max_options_to_select or n_submitted < min_options_to_select:
         if min_options_to_select != max_options_to_select:
-            data["format_errors"][
-                name
-            ] = f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
+            data["format_errors"][name] = (
+                f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
+            )
         else:
-            data["format_errors"][
-                name
-            ] = f"You must select exactly <b>{min_options_to_select}</b> options."
+            data["format_errors"][name] = (
+                f"You must select exactly <b>{min_options_to_select}</b> options."
+            )
         return
 
 

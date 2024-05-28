@@ -1,8 +1,8 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { Institution, InstitutionSchema } from '../lib/db-types';
+import { Institution, InstitutionSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectInstitutionForCourse({
   course_id,

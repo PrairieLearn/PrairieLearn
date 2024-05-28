@@ -1,27 +1,29 @@
+import { SAML } from '@node-saml/passport-saml';
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 // We import from this instead of `pem` directly because the latter includes
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
-import * as pem from 'pem/lib/pem';
-import { SAML } from '@node-saml/passport-saml';
+import * as pem from 'pem/lib/pem.js';
+import formatXml from 'xml-formatter';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
-import formatXml from 'xml-formatter';
 
-import {
-  AdministratorInstitutionSaml,
-  DecodedAssertion,
-} from './administratorInstitutionSaml.html';
+import { getSamlOptions } from '../../auth/saml/index.js';
 import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} from '../../lib/institution';
-import { getSamlOptions } from '../../auth/saml';
+} from '../../lib/institution.js';
 
-const sql = loadSqlEquiv(__filename);
+import {
+  AdministratorInstitutionSaml,
+  DecodedAssertion,
+} from './administratorInstitutionSaml.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 function createCertificate(
@@ -124,6 +126,7 @@ router.post(
 
       let xml: string;
       try {
+        // @ts-expect-error https://github.com/chrisbottin/xml-formatter/issues/72
         xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
       } catch (err) {
         res.send(DecodedAssertion({ xml: err.message, profile: '' }));

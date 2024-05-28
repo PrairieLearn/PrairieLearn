@@ -1,6 +1,7 @@
 /* eslint-env browser, jquery */
 
 import _ from 'lodash';
+
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 

@@ -1,14 +1,17 @@
-import chai, { assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import path from 'node:path';
-import { makePostgresTestUtils } from '@prairielearn/postgres';
+
+import { use as chaiUse, assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+
 import * as namedLocks from '@prairielearn/named-locks';
+import { makePostgresTestUtils } from '@prairielearn/postgres';
 
-import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
-import { BatchedMigrationsRunner } from './batched-migrations-runner';
-import { selectAllBatchedMigrations } from './batched-migration';
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
 
-chai.use(chaiAsPromised);
+import { selectAllBatchedMigrations } from './batched-migration.js';
+import { BatchedMigrationsRunner } from './batched-migrations-runner.js';
+
+chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
@@ -35,7 +38,7 @@ describe('BatchedMigrationsRunner', () => {
   it('enqueues migrations', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -49,7 +52,7 @@ describe('BatchedMigrationsRunner', () => {
     assert.equal(migrations[0].filename, '20230406184103_successful_migration.ts');
     assert.equal(migrations[0].status, 'pending');
     assert.equal(migrations[1].timestamp, '20230406184107');
-    assert.equal(migrations[1].filename, '20230406184107_failing_migration.js');
+    assert.equal(migrations[1].filename, '20230406184107_failing_migration.ts');
     assert.equal(migrations[1].status, 'pending');
     assert.equal(migrations[2].timestamp, '20230407230446');
     assert.equal(migrations[2].filename, '20230407230446_no_rows_migration.ts');
@@ -59,7 +62,7 @@ describe('BatchedMigrationsRunner', () => {
   it('safely enqueues migrations multiple times', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -74,7 +77,7 @@ describe('BatchedMigrationsRunner', () => {
   it('finalizes a successful migration', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
@@ -91,7 +94,7 @@ describe('BatchedMigrationsRunner', () => {
   it('finalizes a failing migration', async () => {
     const runner = new BatchedMigrationsRunner({
       project: 'test',
-      directories: [path.join(__dirname, 'fixtures')],
+      directories: [path.join(import.meta.dirname, 'fixtures')],
     });
 
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');

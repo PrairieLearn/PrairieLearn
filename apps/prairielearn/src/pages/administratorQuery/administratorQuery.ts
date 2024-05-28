@@ -1,25 +1,28 @@
-import express = require('express');
-const router = express.Router();
-import asyncHandler = require('express-async-handler');
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 import hljs from 'highlight.js';
-import { stringify } from '@prairielearn/csv';
 import { z } from 'zod';
 
-import * as jsonLoad from '../../lib/json-load';
+import { stringify } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
+
+import * as jsonLoad from '../../lib/json-load.js';
+
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
   AdministratorQueryQueryRunSchema,
   AdministratorQueryRunParams,
   AdministratorQueryQueryRun,
-} from './administratorQuery.html';
+} from './administratorQuery.html.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
+const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 const AdministratorQueryQueryRunIDSchema = z.string();
 

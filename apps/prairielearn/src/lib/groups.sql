@@ -245,6 +245,14 @@ WITH
       $group_role_id::bigint IS NOT NULL
     RETURNING
       *
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action, roles)
@@ -276,6 +284,14 @@ WITH
     WHERE
       user_id = $user_id
       AND group_id = $group_id
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
@@ -402,6 +418,14 @@ WITH
       'delete'
     FROM
       deleted_group
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
   )
 SELECT
   id
@@ -455,6 +479,16 @@ WITH
       g.id = ag.id
     RETURNING
       g.id
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    FROM
+      deleted_groups AS dg
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = dg.id
   )
 INSERT INTO
   group_logs (authn_user_id, group_id, action)

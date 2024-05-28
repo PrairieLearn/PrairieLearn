@@ -1,4 +1,4 @@
-import { FeatureManager } from './manager';
+import { FeatureManager } from './manager.js';
 
 const featureNames = [
   'course-instance-billing',
@@ -6,7 +6,6 @@ const featureNames = [
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',
-  'allow-rpy2',
   // Can only be applied to institutions.
   'lti13',
   'terms-clickthrough',

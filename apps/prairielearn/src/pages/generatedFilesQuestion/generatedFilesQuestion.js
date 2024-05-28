@@ -1,14 +1,15 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getDynamicFile } from '../../lib/question-variant';
-import { selectCourseById } from '../../models/course';
-import { selectQuestionById } from '../../models/question';
-import { HttpStatusError } from '@prairielearn/error';
+import { getDynamicFile } from '../../lib/question-variant.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default function (options = { publicEndpoint: false }) {
   const router = Router({ mergeParams: true });

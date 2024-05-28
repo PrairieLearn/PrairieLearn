@@ -1,15 +1,19 @@
 import * as crypto from 'node:crypto';
-import express = require('express');
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { hashElement, type HashElementNode } from 'folder-hash';
-import * as compiledAssets from '@prairielearn/compiled-assets';
 
-import { config } from './config';
-import { APP_ROOT_PATH } from './paths';
-import staticNodeModules from '../middlewares/staticNodeModules';
-import elementFiles from '../pages/elementFiles/elementFiles';
+import express from 'express';
+import { hashElement, type HashElementNode } from 'folder-hash';
+
+import * as compiledAssets from '@prairielearn/compiled-assets';
 import { HtmlSafeString } from '@prairielearn/html';
+
+import staticNodeModules from '../middlewares/staticNodeModules.js';
+import elementFiles from '../pages/elementFiles/elementFiles.js';
+
+import { config } from './config.js';
+import { APP_ROOT_PATH } from './paths.js';
 
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;
@@ -64,8 +68,9 @@ function getPackageNameForAssetPath(assetPath: string): string {
  * Returns the version of the given package within `node_modules`.
  */
 function getPackageVersion(packageName: string): string {
+  const require = createRequire(import.meta.url);
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require(`${packageName}/package.json`).version;
   } catch (e) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
