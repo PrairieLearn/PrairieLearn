@@ -162,6 +162,16 @@ export function InstructorAssessmentAccessOverrides({
   `.toString();
 }
 
+function AccessOverrideForm({
+  timezone,
+  resLocals,
+}: {
+  timezone: string;
+  resLocals: Record<string, any>;
+}) {
+  return html``;
+}
+
 function AddAccessOverrideModal({
   timezone,
   resLocals,
@@ -174,22 +184,26 @@ function AddAccessOverrideModal({
     id: 'addPolicyModal',
     title: 'Add new access override',
     body: html`
-      <div class="form-group ${resLocals.assessment.group_work ? '' : 'd-none'}">
-        <label for="group_id">Group Name</label>
-        <input type="text" class="form-control" id="group_name" name="group_name" required />
-      </div>
-
-      <div class="form-group ${resLocals.assessment.group_work ? 'd-none' : ''}">
-        <label for="student_uid">Student UID</label>
-        <input
-          type="text"
-          class="form-control"
-          id="student_uid"
-          name="student_uid"
-          placeholder="student@example.com"
-          required
-        />
-      </div>
+      ${resLocals.assessment.group_work
+        ? html`
+            <div class="form-group">
+              <label for="group_name">Group Name</label>
+              <input type="text" class="form-control" id="group_name" name="group_name" required />
+            </div>
+          `
+        : html`
+            <div class="form-group">
+              <label for="student_uid">Student UID</label>
+              <input
+                type="text"
+                class="form-control"
+                id="student_uid"
+                name="student_uid"
+                placeholder="student@example.com"
+                required
+              />
+            </div>
+          `}
 
       <div class="form-group">
         <label for="start_date">Start Date</label>
@@ -223,7 +237,6 @@ function AddAccessOverrideModal({
             <span class="input-group-text">(${timezone})</span>
           </div>
         </div>
-        <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
       </div>
 
       <div class="form-group">
@@ -257,25 +270,35 @@ function EditAccessOverrideModal({
   timezone: string;
   resLocals: Record<string, any>;
 }) {
-  // TODO: figure out how to handle templating of group name/UID with conditionally rendered inputs.
   return Modal({
     id: 'editPolicyModal',
     title: 'Edit access override',
     body: html`
-      <div class="form-group ${resLocals.assessment.group_work ? '' : 'd-none'}">
-        <label for="group_name">Group Name</label>
-        <input type="text" class="form-control" id="edit-group_name" name="group_name" />
-        <div
-          id="edit-group_name_error"
-          class="invalid-feedback"
-          style="display: none; color: red;"
-        ></div>
-      </div>
-
-      <div class="form-group ${resLocals.assessment.group_work ? 'd-none' : ''}">
-        <label for="student_uid">Student UID</label>
-        <input type="text" class="form-control" id="edit-student_uid" name="student_uid" />
-      </div>
+      ${resLocals.assessment.group_work
+        ? html`
+            <div class="form-group">
+              <label for="group_name">Group Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="edit-group_name"
+                name="group_name"
+                required
+              />
+            </div>
+          `
+        : html`
+            <div class="form-group">
+              <label for="student_uid">Student UID</label>
+              <input
+                type="text"
+                class="form-control"
+                id="edit-student_uid"
+                name="student_uid"
+                required
+              />
+            </div>
+          `}
 
       <div class="form-group">
         <label for="edit-start_date">Start Date</label>
@@ -309,16 +332,23 @@ function EditAccessOverrideModal({
             <span class="input-group-text">(${timezone})</span>
           </div>
         </div>
-        <div
-          id="edit-end_date_error"
-          class="invalid-feedback"
-          style="display: none; color: red;"
-        ></div>
       </div>
 
       <div class="form-group">
         <label for="edit-credit">Credit</label>
-        <input type="number" class="form-control" id="edit-credit" name="credit" />
+        <div class="input-group">
+          <input
+            type="number"
+            class="form-control"
+            id="edit-credit"
+            name="credit"
+            min="0"
+            required
+          />
+          <div class="input-group-append">
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
       </div>
 
       <div class="form-group">
