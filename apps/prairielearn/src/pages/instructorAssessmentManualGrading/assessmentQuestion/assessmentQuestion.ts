@@ -9,6 +9,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import { config } from '../../../lib/config.js';
 import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildLocals, buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
@@ -37,6 +38,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+    res.locals.bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
     res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
@@ -145,7 +147,8 @@ router.post(
       }
     } else if (req.body.__action === 'bot_grade_assessment') {
       // check if bot grading is enabled
-      if (!res.locals.bot_grading_enabled) {
+      const bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
+      if (!bot_grading_enabled) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
       console.log('Bot grading the assessment question');
@@ -153,6 +156,9 @@ router.post(
       if (config.openAiApiKey === null || config.openAiOrganization === null) {
         throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
       }
+
+      // everything after this goes into the function
+
       const openaiconfig = {
         apiKey: config.openAiApiKey,
         organization: config.openAiOrganization,
