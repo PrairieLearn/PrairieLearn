@@ -30,24 +30,30 @@ DECLARE
     credit_from_override integer;
     start_date_from_override TIMESTAMP WITH TIME ZONE;
 BEGIN
-    SELECT g.id  
-    INTO override_group_id
-    FROM groups as g JOIN group_configs AS gc 
-                ON g.group_config_id = gc.id 
-        JOIN group_users AS gu 
-                ON gu.group_id = g.id 
-    WHERE gc.assessment_id = check_assessment_access.assessment_id 
-        AND gu.user_id = check_assessment_access.user_id 
+    SELECT
+        g.id
+    INTO
+        override_group_id
+    FROM
+        groups as g
+        JOIN group_configs AS gc ON (g.group_config_id = gc.id)
+        JOIN group_users AS gu ON (gu.group_id = g.id)
+    WHERE
+        gc.assessment_id = check_assessment_access.assessment_id
+        AND gu.user_id = check_assessment_access.user_id
         AND g.deleted_at IS NULL;
         
     -- Check if the user has an entry in the assessment_access_policies table for this assessment_id.
     -- If yes, get the end_date from the assessment_access_policies table, otherwise, use the end_date from the assessment_access_rules table.
-    SELECT aap.end_date , aap.credit , aap.start_date
-    INTO end_date_from_override , credit_from_override , start_date_from_override
+    SELECT aap.end_date, aap.credit, aap.start_date
+    INTO end_date_from_override, credit_from_override, start_date_from_override
     FROM assessment_access_policies as aap
-    WHERE aap.assessment_id = check_assessment_access.assessment_id
-        AND ((aap.user_id= check_assessment_access.user_id) 
-        OR (aap.group_id = override_group_id))
+    WHERE
+        aap.assessment_id = check_assessment_access.assessment_id
+        AND (
+            (aap.user_id = check_assessment_access.user_id)
+            OR (aap.group_id = override_group_id)
+        )
         AND aap.start_date <= check_assessment_access.date
         AND aap.end_date >= check_assessment_access.date
     ORDER BY end_date DESC
