@@ -332,13 +332,10 @@ export function testElementClientFiles(
 
   helperQuestion.getInstanceQuestion(locals);
   describe('downloading course text file', function () {
-    let elemList;
-    it('should contain a script tag for course-element.js', function () {
-      elemList = locals.$('script[src*="course-element.js"]');
-      assert.lengthOf(elemList, 1);
-    });
-
     it('should download a file with the contents of course-element.js', async function () {
+      const elemList = locals.$('script[src*="course-element.js"]');
+      assert.lengthOf(elemList, 1);
+
       const fileUrl = locals.siteUrl + elemList[0].attribs.src;
       const response = await fetch(fileUrl);
       assert.equal(response.status, 200);

@@ -1540,28 +1540,19 @@ export async function render(
       dependencies.coreElementScripts.forEach((file) =>
         scriptUrls.push(assets.coreElementAssetPath(file)),
       );
+      const courseElementUrlPrefix =
+        locals.urlPrefix +
+        (!idsEqual(question.course_id, variant.course_id)
+          ? `/sharedElements/course/${course.id}`
+          : '');
       dependencies.courseElementStyles.forEach((file) =>
         styleUrls.push(
-          assets.courseElementAssetPath(
-            course.commit_hash,
-            locals.urlPrefix +
-              (!idsEqual(question.course_id, variant.course_id)
-                ? `/sharedElements/course/${course.id}`
-                : ''),
-            file,
-          ),
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
         ),
       );
       dependencies.courseElementScripts.forEach((file) =>
         scriptUrls.push(
-          assets.courseElementAssetPath(
-            course.commit_hash,
-            locals.urlPrefix +
-              (!idsEqual(question.course_id, variant.course_id)
-                ? `/sharedElements/course/${course.id}`
-                : ''),
-            file,
-          ),
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
         ),
       );
       dependencies.extensionStyles.forEach((file) =>
@@ -1588,14 +1579,7 @@ export async function render(
             assets.coreElementAssetPath(file),
           ),
           ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-            assets.courseElementAssetPath(
-              course.commit_hash,
-              locals.urlPrefix +
-                (!idsEqual(question.course_id, variant.course_id)
-                  ? `/sharedElements/course/${course.id}`
-                  : ''),
-              file,
-            ),
+            assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),

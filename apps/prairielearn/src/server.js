@@ -804,6 +804,9 @@ export async function initExpress() {
     },
   ]);
 
+  // Serve element statics. As with core PrairieLearn assets and files served
+  // from `node_modules`, we include a cachebuster in the URL. This allows
+  // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default,
@@ -816,10 +819,6 @@ export async function initExpress() {
     '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
-
-  // Serve element statics. As with core PrairieLearn assets and files served
-  // from `node_modules`, we include a cachebuster in the URL. This allows
-  // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default,

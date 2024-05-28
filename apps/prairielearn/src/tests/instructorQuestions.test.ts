@@ -67,7 +67,7 @@ describe('Instructor questions', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let page, elemList, questionData;
+  let page, questionData;
 
   describe('the database', function () {
     let questions;
@@ -113,7 +113,7 @@ describe('Instructor questions', function () {
 
     for (const testQuestion of testQuestions) {
       it(`should include ${testQuestion.qid} question`, function () {
-        elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
+        const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
         assert.lengthOf(elemList, 1);
         assert.equal(testQuestion.qid, elemList[0].qid);
         assert.equal(testQuestion.title, elemList[0].title);
@@ -145,7 +145,7 @@ describe('Instructor questions', function () {
     });
     for (const testQuestion of testQuestions) {
       it(`should include ${testQuestion.qid} question`, function () {
-        elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
+        const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
         assert.lengthOf(elemList, 1);
         assert.equal(testQuestion.qid, elemList[0].qid);
         assert.equal(testQuestion.title, elemList[0].title);
