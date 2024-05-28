@@ -1,44 +1,22 @@
 // @ts-check
-import * as _ from 'lodash';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
-const asyncHandler = require('express-async-handler');
 
 import * as error from '@prairielearn/error';
 
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import * as issues from '../../lib/issues';
-import { logPageView } from '../../middlewares/logPageView';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
-import { IdSchema } from '../../lib/db-types';
+} from '../../lib/question-render.js';
+import { processSubmission } from '../../lib/question-submission.js';
+import { logPageView } from '../../middlewares/logPageView.js';
 
 const router = express.Router();
-
-async function processIssue(req, res) {
-  const description = req.body.description;
-  if (!_.isString(description) || description.length === 0) {
-    throw new error.HttpStatusError(400, 'A description of the issue must be provided');
-  }
-
-  const variantId = req.body.__variant_id;
-  await validateVariantAgainstQuestion(variantId, res.locals.question.id);
-  await issues.insertIssue({
-    variantId,
-    studentMessage: description,
-    instructorMessage: 'instructor-reported issue',
-    manuallyReported: true,
-    courseCaused: true,
-    courseData: _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']),
-    systemData: {},
-    authnUserId: res.locals.authn_user.user_id,
-  });
-  return variantId;
-}
 
 router.post(
   '/',
@@ -49,7 +27,7 @@ router.post(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
-      const variant_id = await processIssue(req, res);
+      const variant_id = await reportIssueFromForm(req, res);
       res.redirect(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
@@ -88,7 +66,7 @@ router.get(
     await setQuestionCopyTargets(res);
 
     setRendererHeader(res);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

@@ -55,6 +55,7 @@ EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
+SIZE_DEFAULT = None
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
@@ -394,11 +395,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "display",
         "hide-score-badge",
         "allow-blank",
+        "size",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
-
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
+
+    if (
+        pl.has_attrib(element, "size")
+        and get_display_type(element) is not DisplayType.DROPDOWN
+    ):
+        raise ValueError(
+            f'"size" attribute on "{name}" should only be set if display is "dropdown".'
+        )
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
@@ -506,11 +515,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             answerset.append(answer_html)
 
+        size = SIZE_DEFAULT
+        if pl.has_attrib(element, "size"):
+            # Convert from character width to pixels for consistency with other elements
+            # https://www.unitconverters.net/typography/character-x-to-pixel-x.htm
+            size = pl.get_integer_attrib(element, "size") * 8
+
         html_params = {
             "question": True,
             "inline": inline,
             "feedback": feedback,
             "radio": display_radio,
+            "size": size,
             "uuid": pl.get_uuid(),
             "name": name,
             "editable": editable,
@@ -601,9 +617,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     if submitted_key not in all_keys and submitted_key is not None:
-        data["format_errors"][
-            name
-        ] = f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        data["format_errors"][name] = (
+            f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        )
         return
 
 

@@ -1,7 +1,7 @@
 // @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function reportTime(sqlBlockName) {
   return async function (jobId) {

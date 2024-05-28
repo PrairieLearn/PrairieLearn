@@ -13,12 +13,15 @@
       </tr>
       <% } %>
       <% if (assessment.type == 'Homework') { %>
-      <tr>
-        <td colspan="2" class="text-wrap">
-          Previous variants:
-          <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %>
-        </td>
-      </tr>
+        <%# Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point) %>
+        <% if (!question.single_variant || instance_question_info.previous_variants?.length > 1) { %>
+        <tr>
+          <td colspan="2" class="text-wrap">
+            All variants:
+            <%- include('../partials/questionAwardedPoints', {instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants, current_variant_id: locals.variant?.id});  %>
+          </td>
+        </tr>
+        <% } %>
       <% } else if (assessment_question.max_auto_points) { %>
       <tr>
         <td>Available points:</td>
@@ -57,7 +60,7 @@
     </tbody>
   </table>
 
-  <% if (assessment.allow_issue_reporting) { %>
+  <% if (!locals.no_variant_exists && assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
       <div class="alert alert-warning mt-2" role="alert">

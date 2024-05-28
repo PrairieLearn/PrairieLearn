@@ -24,13 +24,20 @@
     <% } %>
     <% for (var i = 0; i < previous_variants.length; i++) { %>
         <a
-            class="badge badge-secondary <%= collapseClass %>"
+            class="badge <%= previous_variants[i].id == current_variant_id ? 'badge-info' : 'badge-secondary' %> <%= collapseClass %>"
             <% if (i < previous_variants.length - MAX_DISPLAYED_VARIANTS) { %>
                 style="display: none"
             <% } %>
-            href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"
+            href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].id %>"
         >
-            <%= Math.floor(previous_variants[i].max_submission_score * 100) + "%"  %>
+            <% if (previous_variants[i].open) { %>
+                Open
+            <% } else { %>
+                <%= Math.floor(Number(previous_variants[i].max_submission_score) * 100) %>%
+            <% } %>
+            <% if (previous_variants[i].id == current_variant_id) { %>
+                <span class="sr-only">(current)</span>
+            <% } %>
         </a>
     <% } %>
 <% } %>

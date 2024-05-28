@@ -7,45 +7,6 @@ WHERE
   ai.id = $assessment_instance_id;
 
 -- BLOCK select_instance_questions
-WITH
-  variant_max_submission_scores AS (
-    SELECT
-      v.id AS variant_id,
-      max(s.score) AS max_submission_score
-    FROM
-      instance_questions AS iq
-      JOIN variants AS v ON (v.instance_question_id = iq.id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      iq.assessment_instance_id = $assessment_instance_id
-      AND s.score IS NOT NULL
-    GROUP BY
-      v.id
-  ),
-  instance_question_variants AS (
-    SELECT
-      iq.id AS instance_question_id,
-      jsonb_agg(
-        jsonb_build_object(
-          'variant_id',
-          v.id,
-          'max_submission_score',
-          COALESCE(vmss.max_submission_score, 0)
-        )
-        ORDER BY
-          v.date
-      ) AS variants
-    FROM
-      instance_questions AS iq
-      JOIN variants AS v ON (v.instance_question_id = iq.id)
-      LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
-    WHERE
-      iq.assessment_instance_id = $assessment_instance_id
-      AND NOT v.open
-      AND NOT v.broken
-    GROUP BY
-      iq.id
-  )
 SELECT
   iq.*,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
@@ -78,8 +39,7 @@ SELECT
     ELSE 'Question '
   END || (lag(qo.question_number) OVER w) AS prev_title,
   (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
-  iqnag.*,
-  COALESCE(iqv.variants, '[]'::jsonb) AS previous_variants
+  iqnag.*
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -90,7 +50,6 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
   JOIN instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
-  LEFT JOIN instance_question_variants AS iqv ON (iqv.instance_question_id = iq.id)
 WHERE
   ai.id = $assessment_instance_id
   AND (

@@ -1,6 +1,7 @@
-import asyncHandler = require('express-async-handler');
-import { idsEqual } from '../lib/id';
-import { ensureCheckedEnrollment } from '../models/enrollment';
+import asyncHandler from 'express-async-handler';
+
+import { idsEqual } from '../lib/id.js';
+import { ensureCheckedEnrollment } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if

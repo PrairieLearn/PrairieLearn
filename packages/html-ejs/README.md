@@ -9,14 +9,14 @@ If you have an EJS partial that you'd like to use inside of an `html` tagged tem
 Hello, <%= name %>!
 ```
 
-```js
+```ts
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 console.log(
   html`
     <div>Hello, world!</div>
-    <div>${renderEjs(__filename, "<%- include('./hello'); %>", { name: 'Anjali' })}</div>
+    <div>${renderEjs(import.meta.url, "<%- include('./hello'); %>", { name: 'Anjali' })}</div>
   `.toString(),
 );
 ```

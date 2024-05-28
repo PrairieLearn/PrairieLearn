@@ -1,20 +1,22 @@
 import * as path from 'path';
-import * as _ from 'lodash';
-import * as fs from 'fs-extra';
+
+import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
-import * as jju from 'jju';
-import Ajv, { type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import fs from 'fs-extra';
+import jju from 'jju';
+import _ from 'lodash';
 
-import { chalk } from '../lib/chalk';
-import { config } from '../lib/config';
-import * as schemas from '../schemas';
-import * as infofile from './infofile';
-import { validateJSON } from '../lib/json-load';
-import { makePerformance } from './performance';
-import { selectInstitutionForCourse } from '../models/institution';
-import { features } from '../lib/features';
+import { chalk } from '../lib/chalk.js';
+import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { validateJSON } from '../lib/json-load.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
+import * as schemas from '../schemas/index.js';
+
+import * as infofile from './infofile.js';
+import { makePerformance } from './performance.js';
 
 const perf = makePerformance('course-db');
 
@@ -392,7 +394,10 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
-export async function loadFullCourse(courseId: string, courseDir: string): Promise<CourseData> {
+export async function loadFullCourse(
+  courseId: string | null,
+  courseDir: string,
+): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
@@ -627,7 +632,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 }
 
 export async function loadCourseInfo(
-  courseId: string,
+  courseId: string | null,
   coursePath: string,
 ): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
@@ -703,25 +708,34 @@ export async function loadCourseInfo(
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
   if (devModeFeatures.length > 0) {
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
-
-    for (const feature of new Set(devModeFeatures)) {
-      // Check if the feature even exists.
-      if (!features.hasFeature(feature)) {
-        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
-        continue;
+    if (courseId == null) {
+      if (!config.devMode) {
+        infofile.addWarning(
+          loadedData,
+          `Loading course ${coursePath} without an ID, features cannot be validated.`,
+        );
       }
+    } else {
+      const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      // If we're in dev mode, any feature is allowed.
-      if (config.devMode) continue;
+      for (const feature of new Set(devModeFeatures)) {
+        // Check if the feature even exists.
+        if (!features.hasFeature(feature)) {
+          infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+          continue;
+        }
 
-      // If the feature exists, check if it's granted to the course and warn if not.
-      const featureEnabled = await features.enabled(feature, {
-        institution_id: institution.id,
-        course_id: courseId,
-      });
-      if (!featureEnabled) {
-        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        // If we're in dev mode, any feature is allowed.
+        if (config.devMode) continue;
+
+        // If the feature exists, check if it's granted to the course and warn if not.
+        const featureEnabled = await features.enabled(feature, {
+          institution_id: institution.id,
+          course_id: courseId,
+        });
+        if (!featureEnabled) {
+          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        }
       }
     }
   }
