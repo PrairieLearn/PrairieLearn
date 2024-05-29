@@ -40,49 +40,34 @@ BEGIN
     -- ############################################################
     -- check access with PrairieTest
 
-    << prairietest_access >>
-    BEGIN
-        -- If we're in Exam mode because of PrairieTest and the access rule
-        -- does not have an `exam_uuid`, we'll deny access.
-        IF (
-            assessment_access_rule.mode = 'Exam'
-            AND assessment_access_rule.exam_uuid IS NULL
-            AND check_assessment_access_rule.mode_reason = 'PrairieTest'
-        ) THEN
+    IF (assessment_access_rule.exam_uuid IS NULL AND mode = 'Exam' AND mode_reason = 'PrairieTest') THEN
+        -- Assessments without an exam_uuid are not allowed when the user is
+        -- in exam mode because of a PrairieTest reservation.
+        authorized := FALSE;
+    END IF;
+
+    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode IS DISTINCT FROM 'Exam') THEN
+        -- Exam mode is required for this access rule.
+        authorized := FALSE;
+    END IF;
+
+    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode = 'Exam' AND mode_reason = 'PrairieTest') THEN
+        -- Look for a checked-in PrairieTest reservation.
+        SELECT r.access_end
+        INTO exam_access_end
+        FROM
+            pt_reservations AS r
+            JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
+            JOIN pt_exams AS x ON (x.id = r.exam_id)
+        WHERE
+            (date BETWEEN r.access_start AND r.access_end)
+            AND e.user_id = check_assessment_access_rule.user_id
+            AND x.uuid = assessment_access_rule.exam_uuid;
+
+        IF NOT FOUND THEN
+            -- No reservation found; block access.
             authorized := FALSE;
-            EXIT prairietest_access;
         END IF;
-
-        -- is an exam_id hardcoded into the access rule? Check that first
-        IF assessment_access_rule.exam_uuid IS NOT NULL THEN
-
-            -- require exam mode
-            IF check_assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
-                authorized := FALSE;
-                EXIT prairietest_access;
-            END IF;
-
-            -- is there a checked-in pt_reservation?
-            SELECT r.access_end
-            INTO exam_access_end
-            FROM
-                pt_reservations AS r
-                JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
-                JOIN pt_exams AS x ON (x.id = r.exam_id)
-            WHERE
-                (date BETWEEN r.access_start AND r.access_end)
-                AND e.user_id = check_assessment_access_rule.user_id
-                AND x.uuid = assessment_access_rule.exam_uuid;
-
-            IF FOUND THEN
-                -- we have a valid reservation, don't keep going to "authorized := FALSE"
-                EXIT prairietest_access;
-            END IF;
-
-            -- we only get here if we don't have a reservation, so block access
-            authorized := FALSE;
-
-        END IF;
-    END prairietest_access;
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

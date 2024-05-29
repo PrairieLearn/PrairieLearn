@@ -60,6 +60,20 @@ describe('sproc check_assessment_access* tests', function () {
       assert.isTrue(authorized);
     });
 
+    it('show allow access in Exam mode without an exam_uuid', async () => {
+      const authorized = await checkAssessmentAccess({
+        assessment_id: '10',
+        authz_mode: 'Exam',
+        course_role: 'None',
+        course_instance_role: 'None',
+        user_id: '1000',
+        uid: 'valid@example.com',
+        date: '2010-07-07 06:06:06-00',
+        display_timezone: 'US/Central',
+      });
+      assert.isTrue(authorized);
+    });
+
     it('should not allow access when mode does not match', async () => {
       const authorized = await checkAssessmentAccess({
         assessment_id: '50',
