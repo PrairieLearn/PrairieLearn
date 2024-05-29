@@ -227,7 +227,6 @@ const verifyFileData = [
     clientFilesDir: 'clientFilesQuestion',
     serverFilesDir: 'serverFilesQuestion',
     testFilesDir: 'tests',
-    index: 3,
   },
   {
     title: 'assessment',
@@ -235,7 +234,6 @@ const verifyFileData = [
     path: assessmentPath,
     clientFilesDir: 'clientFilesAssessment',
     serverFilesDir: 'serverFilesAssessment',
-    index: 1,
   },
   {
     title: 'course instance',
@@ -243,7 +241,6 @@ const verifyFileData = [
     path: courseInstancePath,
     clientFilesDir: 'clientFilesCourseInstance',
     serverFilesDir: 'serverFilesCourseInstance',
-    index: 2,
   },
   {
     title: 'course (through course instance)',
@@ -251,7 +248,6 @@ const verifyFileData = [
     path: '',
     clientFilesDir: 'clientFilesCourse',
     serverFilesDir: 'serverFilesCourse',
-    index: 5,
   },
   {
     title: 'course',
@@ -259,7 +255,6 @@ const verifyFileData = [
     path: '',
     clientFilesDir: 'clientFilesCourse',
     serverFilesDir: 'serverFilesCourse',
-    index: 5,
   },
 ];
 
@@ -943,14 +938,21 @@ function waitForJobSequence(locals, expectedResult) {
   });
 }
 
-function doFiles(data) {
+function doFiles(data: {
+  title: string;
+  url: string;
+  path: string;
+  clientFilesDir: string;
+  serverFilesDir: string;
+  testFilesDir?: string;
+}) {
   describe(`test file handlers for ${data.title}`, function () {
     describe('Files', function () {
       testUploadFile({
         adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
-        id: 'New',
+        newButtonId: 'New',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
@@ -959,7 +961,6 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
-        id: data.index,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
@@ -981,7 +982,7 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
-        id: 'NewClient',
+        newButtonId: 'NewClient',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
@@ -990,7 +991,6 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
-        id: 0,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
@@ -1012,7 +1012,7 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        id: 'NewServer',
+        newButtonId: 'NewServer',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
@@ -1021,7 +1021,6 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        id: 0,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
@@ -1040,35 +1039,36 @@ function doFiles(data) {
     });
     if (data.testFilesDir) {
       describe('Test Files', function () {
-        testUploadFile({
-          adminUrl: data.url,
-          url: data.url,
-          path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
-          id: 'NewTest',
-          contents: 'This is a line of text.',
-          filename: 'testfile.txt',
-        });
+        if (data.testFilesDir) {
+          testUploadFile({
+            adminUrl: data.url,
+            url: data.url,
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            newButtonId: 'NewTest',
+            contents: 'This is a line of text.',
+            filename: 'testfile.txt',
+          });
 
-        testUploadFile({
-          adminUrl: data.url,
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
-          path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
-          id: 0,
-          contents: 'This is a different line of text.',
-          filename: 'anotherfile.txt',
-        });
+          testUploadFile({
+            adminUrl: data.url,
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            filename: 'anotherfile.txt',
+          });
 
-        testRenameFile({
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
-          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
-          contents: 'This is a different line of text.',
-          new_file_name: path.join('subdir', 'testfile.txt'),
-        });
+          testRenameFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            new_file_name: path.join('subdir', 'testfile.txt'),
+          });
 
-        testDeleteFile({
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
-          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
-        });
+          testDeleteFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+          });
+        }
       });
     }
     describe('Files with % in name', function () {
@@ -1076,8 +1076,16 @@ function doFiles(data) {
         adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'test%file.txt'),
-        id: 'New',
+        newButtonId: 'New',
         contents: 'This is a line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      testUploadFile({
+        adminUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        contents: 'This is a different line of text in a file with percent.',
         filename: 'test%file.txt',
       });
 
@@ -1087,7 +1095,6 @@ function doFiles(data) {
 
       // testRenameFile({
       //   url: data.url,
-      //   id: data.index,
       //   path: path.join(data.path, 'sub%dir', 'test%file.txt'),
       //   contents: 'This is a line of text in a file with percent.',
       //   new_file_name: path.join('sub%dir', 'test%file.txt'),
@@ -1105,7 +1112,7 @@ function testUploadFile(params: {
   adminUrl: string;
   url: string;
   path: string;
-  id: string | number;
+  newButtonId?: string;
   contents: string;
   filename: string;
 }) {
@@ -1116,28 +1123,29 @@ function testUploadFile(params: {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and either a file_path or a working_path', () => {
-      elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
+      if (params.newButtonId) {
+        elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      } else {
+        const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+        elemList = row.find(`button[id^="instructorFileUploadForm-"]`);
+      }
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path or working_path
-      elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`);
-      if (elemList.length > 0) {
+      if (!params.newButtonId) {
+        elemList = $(`input[name="file_path"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.file_path = elemList[0].attribs.value;
         locals.working_path = undefined;
       } else {
-        elemList = $(
-          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`,
-        );
+        elemList = $(`input[name="working_path"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.working_path = elemList[0].attribs.value;
