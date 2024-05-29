@@ -966,7 +966,6 @@ function doFiles(data) {
 
       testRenameFile({
         url: data.url,
-        id: data.index,
         path: path.join(data.path, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -998,7 +997,6 @@ function doFiles(data) {
 
       testRenameFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
-        id: 0,
         path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -1030,7 +1028,6 @@ function doFiles(data) {
 
       testRenameFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        id: 0,
         path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -1063,7 +1060,6 @@ function doFiles(data) {
 
         testRenameFile({
           url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
-          id: 0,
           path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
           contents: 'This is a different line of text.',
           new_file_name: path.join('subdir', 'testfile.txt'),
@@ -1194,7 +1190,6 @@ function testUploadFile(params: {
 
 function testRenameFile(params: {
   url: string;
-  id: string | number;
   path: string;
   contents: string;
   new_file_name: string;
@@ -1206,28 +1201,24 @@ function testRenameFile(params: {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
-      elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find(`button[id^="instructorFileRenameForm-"]`);
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // old_file_name
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`,
-      );
+      elemList = $(`input[name="old_file_name"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.old_file_name = elemList[0].attribs.value;
+      assert.equal(locals.old_file_name, params.path.split('/').pop());
       // working_path
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`,
-      );
+      elemList = $(`input[name="working_path"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.working_path = elemList[0].attribs.value;
