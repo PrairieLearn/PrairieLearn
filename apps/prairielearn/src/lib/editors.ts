@@ -200,41 +200,42 @@ export abstract class Editor {
         await cleanAndResetRepository(this.course, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
-          if (await this.shouldEdit()) {
-            job.data.saveAttempted = true;
-            job.info('Write changes to disk');
-            await this.write();
+          job.data.saveAttempted = true;
 
-            if (this.pathsToAdd == null) {
-              throw new Error('pathsToAdd must be set in write()');
-            }
+          if (!(await this.shouldEdit())) return;
 
-            if (this.commitMessage == null) {
-              throw new Error('commitMessage must be set in write()');
-            }
+          job.info('Write changes to disk');
+          await this.write();
 
-            job.info('Commit changes');
-            await job.exec('git', ['add', ...this.pathsToAdd], {
+          if (this.pathsToAdd == null) {
+            throw new Error('pathsToAdd must be set in write()');
+          }
+
+          if (this.commitMessage == null) {
+            throw new Error('commitMessage must be set in write()');
+          }
+
+          job.info('Commit changes');
+          await job.exec('git', ['add', ...this.pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.email || this.user.uid}"`,
+              'commit',
+              '-m',
+              this.commitMessage,
+            ],
+            {
               cwd: this.course.path,
               env: gitEnv,
-            });
-            await job.exec(
-              'git',
-              [
-                '-c',
-                `user.name="${this.user.name}"`,
-                '-c',
-                `user.email="${this.user.email || this.user.uid}"`,
-                'commit',
-                '-m',
-                this.commitMessage,
-              ],
-              {
-                cwd: this.course.path,
-                env: gitEnv,
-              },
-            );
-          }
+            },
+          );
         };
 
         try {
