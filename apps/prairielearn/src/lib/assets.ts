@@ -159,7 +159,7 @@ export async function close() {
 /**
  * Applies middleware to the given Express app to serve static assets.
  */
-export async function applyMiddleware(app: express.Application) {
+export function applyMiddleware(app: express.Application) {
   const assetsPrefix = assertAssetsPrefix();
   const router = express.Router();
 
