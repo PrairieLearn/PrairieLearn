@@ -18,11 +18,11 @@ SELECT
   END AS end_date,
   CASE
     WHEN aar.credit IS NULL THEN '—'
-    ELSE aar.credit::text || '%'
+    ELSE aar.credit::text
   END AS credit,
   CASE
     WHEN aar.time_limit_min IS NULL THEN '—'
-    ELSE aar.time_limit_min::text || ' min'
+    ELSE aar.time_limit_min::text
   END AS time_limit,
   CASE
     WHEN aar.password IS NULL THEN '—'

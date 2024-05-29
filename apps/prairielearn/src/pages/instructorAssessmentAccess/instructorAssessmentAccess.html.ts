@@ -1,27 +1,13 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
-export const AssessmentAccessRulesSchema = z.object({
-  mode: z.string(),
-  uids: z.string(),
-  start_date: z.string(),
-  end_date: z.string(),
-  credit: z.string(),
-  time_limit: z.string(),
-  password: z.string(),
-  exam_uuid: z.string().nullable(),
-  pt_course_id: z.string().nullable(),
-  pt_course_name: z.string().nullable(),
-  pt_exam_id: z.string().nullable(),
-  pt_exam_name: z.string().nullable(),
-  active: z.string(),
-});
-type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
+import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
 
 export function InstructorAssessmentAccess({
   resLocals,
@@ -30,6 +16,7 @@ export function InstructorAssessmentAccess({
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];
 }) {
+  console.log(resLocals.course_instance);
   return html`
     <!doctype html>
     <html lang="en">
@@ -38,6 +25,7 @@ export function InstructorAssessmentAccess({
         ${compiledScriptTag('instructorAssessmentAccessClient.js')}
       </head>
       <body>
+        ${EncodedData(accessRules, 'access-rules-data')}
         <script>
           $(function () {
             $('[data-toggle="popover"]').popover({ sanitize: false });
@@ -50,6 +38,7 @@ export function InstructorAssessmentAccess({
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
+          <div class="js-edit-access-rule-modal"></div>
 
           <div class="card mb-4">
             <div
@@ -58,98 +47,28 @@ export function InstructorAssessmentAccess({
               <div class="col-auto">
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
               </div>
-              <div class="col-auto">
-                <button id="enableEditButton" class="btn btn-sm btn-light">
-                  <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
-                </button>
-                <button id="saveEditButton" class="btn btn-sm btn-light" style="display: none">
-                  <i class="fa fa-save" aria-hidden="true"></i> Save and sync
-                </button>
-              </div>
+              ${
+                resLocals.authz_data.has_course_instance_permission_edit
+                  ? html`
+                      <div class="col-auto">
+                        <button id="enableEditButton" class="btn btn-sm btn-light">
+                          <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
+                        </button>
+                        <span id="editModeButtons" style="display: none">
+                          <button class="btn btn-sm btn-light">
+                            <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                          </button>
+                          <button class="btn btn-sm btn-light" onclick="window.location.reload()">
+                            Cancel
+                          </button>
+                          <p class="mb-0"></p
+                        ></span>
+                      </div>
+                    `
+                  : ''
+              }
             </div>
-
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr id="tableHeaderRow">
-                    <th>Mode</th>
-                    <th>UIDs</th>
-                    <th>Start date</th>
-                    <th>End date</th>
-                    <th>Active</th>
-                    <th>Credit</th>
-                    <th>Time limit</th>
-                    <th>Password</th>
-                    <th>PrairieTest</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${accessRules.map((access_rule, i) => {
-                    // Only users with permission to view student data are allowed
-                    // to see the list of uids associated with an access rule. Note,
-                    // however, that any user with permission to view course code
-                    // (or with access to the course git repository) will be able to
-                    // see the list of uids, because these access rules are defined
-                    // in course code. This should be changed in future, to protect
-                    // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
-                    return html`
-                      <tr class="tableDataRow">
-                        ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? editAccessRuleModal({ access_rule, i })
-                          : ''}
-                        <td>${access_rule.mode}</td>
-                        <td>
-                          ${access_rule.uids === '—' ||
-                          resLocals.authz_data.has_course_instance_permission_view
-                            ? access_rule.uids
-                            : html`
-                                <a
-                                  role="button"
-                                  class="btn btn-xs btn-warning"
-                                  tabindex="0"
-                                  data-toggle="popover"
-                                  data-trigger="focus"
-                                  data-container="body"
-                                  data-placement="auto"
-                                  title="Hidden UIDs"
-                                  data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
-                                >
-                                  Hidden
-                                </a>
-                              `}
-                        </td>
-                        <td>${access_rule.start_date}</td>
-                        <td>${access_rule.end_date}</td>
-                        <td>${access_rule.active}</td>
-                        <td>${access_rule.credit}</td>
-                        <td>${access_rule.time_limit}</td>
-                        <td>${access_rule.password}</td>
-                        <td>
-                          ${access_rule.pt_exam_name
-                            ? html`
-                                <a
-                                  href="${resLocals.config
-                                    .ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
-                                >
-                                  ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
-                                </a>
-                              `
-                            : access_rule.exam_uuid
-                              ? resLocals.devMode
-                                ? access_rule.exam_uuid
-                                : html`
-                                    <span class="text-danger">
-                                      Exam not found: ${access_rule.exam_uuid}
-                                    </span>
-                                  `
-                              : html`&mdash;`}
-                        </td>
-                      </tr>
-                    `;
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <div class="table-responsive js-access-rules-table" id="table-responsive" data-pt-host="${resLocals.config.ptHost}" data-dev-mode="${resLocals.devMode}" data-has-course-instance-permission-view="${resLocals.authz_data.has_course_instance_permission_view}" data-timezone="${resLocals.course_instance.display_timezone}">
             <div class="card-footer">
               <small>
                 Instructions on how to change the access rules can be found in the
@@ -169,102 +88,4 @@ export function InstructorAssessmentAccess({
       </body>
     </html>
   `.toString();
-}
-
-function editAccessRuleModal({
-  access_rule,
-  i,
-}: {
-  access_rule: AssessmentAccessRules;
-  i: number;
-}) {
-  return Modal({
-    id: 'editAccessRuleModal',
-    title: 'Edit Access Rule',
-    body: html`
-      <input type="hidden" name="access_rule_number" value="${i}" />
-      <div class="form-group">
-        <label for="mode">Mode</label>
-        <select class="form-control" id="mode" name="mode">
-          <option value="" ${access_rule.mode === '' ? html`selected` : ''}>—</option>
-          <option value="Exam" ${access_rule.mode === 'Exam' ? html`selected` : ''}>Exam</option>
-          <option value="Public" ${access_rule.mode === 'Public' ? html`selected` : ''}>
-            Public
-          </option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="uids">UIDs</label>
-        <input type="text" class="form-control" id="uids" name="uids" value="${access_rule.uids}" />
-      </div>
-      <div class="form-group">
-        <label for="start_date">Start date</label>
-        <input
-          type="text"
-          class="form-control"
-          id="start_date"
-          name="start_date"
-          value=${access_rule.start_date}
-        />
-      </div>
-      <div class="form-group">
-        <label for="end_date">End date</label>
-        <input
-          type="text"
-          class="form-control"
-          id="end_date"
-          name="end_date"
-          value="${access_rule.end_date}"
-        />
-      </div>
-      <div class="form-group">
-        <label for="active">Active</label>
-        <select class="form-control" id="active" name="active">
-          <option value="true" ${access_rule.active === 'True' ? html`selected` : ''}>True</option>
-          <option value="false">False</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="credit">Credit</label>
-        <input
-          type="text"
-          class="form-control"
-          id="credit"
-          name="credit"
-          value="${access_rule.credit}"
-        />
-      </div>
-      <div class="form-group">
-        <label for="time_limit">Time limit</label>
-        <input
-          type="text"
-          class="form-control"
-          id="time_limit"
-          name="time_limit"
-          value="${access_rule.time_limit}"
-        />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input
-          type="text"
-          class="form-control"
-          id="password"
-          name="password"
-          value="${access_rule.password}"
-        />
-      </div>
-    `,
-    footer: html`
-      <button
-        type="button"
-        class="btn btn-primary"
-        id="updateAccessRuleButton"
-        data-row-number="${i}"
-      >
-        Update Access Rule
-      </button>
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-    `,
-  });
 }
