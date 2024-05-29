@@ -1,21 +1,15 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { OpenAI } from 'openai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
+import { botGrade } from '../../../lib/bot-grading.js';
 import { config } from '../../../lib/config.js';
-import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../../../lib/db-types.js';
+import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { buildLocals, buildQuestionUrls } from '../../../lib/question-render.js';
-import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
-import * as questionServers from '../../../question-servers/index.js';
-import { botGrade } from '../../../lib/bot-grading.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

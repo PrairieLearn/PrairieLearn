@@ -1,13 +1,9 @@
 import { type Request, type Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
-import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../lib/config.js';
 import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import * as manualGrading from '../lib/manualGrading.js';
 import { buildLocals, buildQuestionUrls } from '../lib/question-render.js';
