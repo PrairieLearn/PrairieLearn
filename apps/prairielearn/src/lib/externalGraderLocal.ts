@@ -1,4 +1,3 @@
-// @ts-check
 import EventEmitter from 'events';
 import * as os from 'os';
 import * as path from 'path';
@@ -12,15 +11,34 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
+import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class ExternalGraderLocal {
-  handleGradingRequest(grading_job, submission, variant, question, course) {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+  ) {
     const emitter = new EventEmitter();
 
-    const results = {};
+    const results: {
+      succeeded: boolean;
+      received_time?: string;
+      start_time?: string;
+      end_time?: string;
+      job_id: string;
+      timedOut?: boolean;
+      message?: string;
+      results?: Record<string, any> | null;
+    } = {
+      succeeded: false,
+      job_id: grading_job.id,
+    };
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
@@ -36,9 +54,16 @@ export class ExternalGraderLocal {
       emitter.emit('submit');
     }, 0);
 
-    let output = '';
-
     (async () => {
+      let output = '';
+
+      if (question.external_grading_image == null) {
+        // This code should not be reached in most cases, since this scenario
+        // would cause a sync error. The check is necessary, though, to avoid
+        // typing errors in following lines.
+        throw new Error('No external grading image specified.');
+      }
+
       await docker.ping();
 
       results.received_time = new Date().toISOString();
@@ -46,7 +71,7 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
+      if (question.external_grading_entrypoint?.includes('serverFilesCourse')) {
         // Mark the entrypoint as executable if it lives in serverFilesCourse.
         // If it is living in the docker container then we don't have access to it before
         // we actually run it.
@@ -105,7 +130,7 @@ export class ExternalGraderLocal {
             },
           ],
         },
-        Entrypoint: question.external_grading_entrypoint.split(' '),
+        Entrypoint: question.external_grading_entrypoint?.split(' '),
       });
 
       const stream = await container.attach({
@@ -149,8 +174,6 @@ export class ExternalGraderLocal {
         grading_job_id: grading_job.id,
         output,
       });
-
-      results.job_id = grading_job.id;
 
       // Now that the job has completed, let's extract the results from `results.json`.
       if (results.succeeded) {
@@ -202,10 +225,8 @@ export class ExternalGraderLocal {
  *
  * If we're running natively, this should return $HOME/.pl_ag_jobs/job_<jobId>.
  * If we're running in Docker, this should return /jobs.
- *
- * On Windows, we use $USERPROFILE instead of $HOME.
  */
-function getDevJobDirectory(jobId) {
+function getDevJobDirectory(jobId: string): string {
   if (process.env.HOST_JOBS_DIR) {
     // We're probably running in Docker
     return path.join('/jobs', `job_${jobId}`);
@@ -213,7 +234,7 @@ function getDevJobDirectory(jobId) {
     // We're probably running natively
     if (process.env.JOBS_DIR) {
       // The user wants to use a custom jobs dir
-      return process.env.JOBS_DIR;
+      return path.join(process.env.JOBS_DIR, `job_${jobId}`);
     } else {
       return path.resolve(path.join(os.homedir(), '.pljobs', `job_${jobId}`));
     }
@@ -227,7 +248,7 @@ function getDevJobDirectory(jobId) {
  * If we're running natively, this should simply return getDevJobDirectory(...).
  * If we're running in Docker, this should return $HOST_JOBS_DIR/job_<jobId>.
  */
-function getDevHostJobDirectory(jobId) {
+function getDevHostJobDirectory(jobId: string): string {
   if (process.env.HOST_JOBS_DIR) {
     // We're probably running in Docker
     return path.resolve(path.join(process.env.HOST_JOBS_DIR, `job_${jobId}`));
