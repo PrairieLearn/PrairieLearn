@@ -75,6 +75,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
+  user_email: z.string().nullable(),
 });
 
 const SubmissionInfoSchema = z.object({

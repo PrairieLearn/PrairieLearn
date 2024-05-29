@@ -62,16 +62,20 @@ export function UserSettings({
             <table class="table table-sm two-column-description">
               <tbody>
                 <tr>
-                  <th>User ID (UID)</th>
+                  <th>UID</th>
                   <td>${authn_user.uid}</td>
                 </tr>
                 <tr>
-                  <th>User Name</th>
+                  <th>Name</th>
                   <td>${authn_user.name}</td>
                 </tr>
                 <tr>
                   <th>Unique Identifier (UIN)</th>
                   <td>${authn_user.uin}</td>
+                </tr>
+                <tr>
+                  <th>Email</th>
+                  <td>${authn_user.email}</td>
                 </tr>
                 <tr>
                   <th>Institution</th>

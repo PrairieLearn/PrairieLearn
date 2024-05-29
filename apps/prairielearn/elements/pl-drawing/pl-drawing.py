@@ -296,7 +296,6 @@ def render(element_html, data):
         "grid_size": grid_size,
         "editable": (data["panel"] == "question" and not preview_mode),
         "base_url": data["options"]["base_url"],
-        "client_files": "/pl/static/elements/pl-drawing/clientFilesElement/",
         "element_client_files": data["options"]["client_files_extensions_url"],
         "render_scale": pl.get_float_attrib(
             element, "render-scale", defaults.element_defaults["render-scale"]

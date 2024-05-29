@@ -97,6 +97,7 @@ router.post(
           uin_attribute: req.body.uin_attribute || null,
           uid_attribute: req.body.uid_attribute || null,
           name_attribute: req.body.name_attribute || null,
+          email_attribute: req.body.email_attribute || null,
           // The upsert query is configured to ignore these values if they're null.
           public_key: publicKey,
           private_key: privateKey,

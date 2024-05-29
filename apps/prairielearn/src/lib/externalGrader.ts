@@ -154,7 +154,7 @@ async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
     grading_job_id,
     grading_submitted_at: new Date().toISOString(),
   });
-  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
+  await externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
 async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
@@ -162,7 +162,7 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
     grading_job_id,
     grading_received_at: receivedTime,
   });
-  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
+  await externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
 /**
@@ -256,6 +256,6 @@ export async function processGradingResult(content: any): Promise<void> {
       await ltiOutcomes.updateScore(assessment_instance_id);
     }
   } finally {
-    externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
+    await externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
   }
 }
