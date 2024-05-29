@@ -11,9 +11,15 @@ import * as compiledAssets from '@prairielearn/compiled-assets';
 import { HtmlSafeString } from '@prairielearn/html';
 
 import staticNodeModules from '../middlewares/staticNodeModules.js';
+import elementFiles from '../pages/elementFiles/elementFiles.js';
 
 import { config } from './config.js';
 import { APP_ROOT_PATH } from './paths.js';
+
+const coreElementFiles = elementFiles({
+  publicQuestionEndpoint: false,
+  coreElement: true,
+});
 
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;
@@ -179,13 +185,7 @@ export async function applyMiddleware(app: express.Application) {
       immutable: !config.devMode,
     }),
   );
-  router.use(
-    '/elements/:cachebuster',
-    (await import('../pages/elementFiles/elementFiles.js')).default({
-      publicQuestionEndpoint: false,
-      coreElement: true,
-    }),
-  );
+  router.use('/elements/:cachebuster', coreElementFiles);
 
   app.use(assetsPrefix, router);
 }
