@@ -76,7 +76,7 @@ interface BaseEditorOptions {
   locals: Record<string, any>;
 }
 
-export class Editor {
+export abstract class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
   protected user: User;
@@ -92,11 +92,21 @@ export class Editor {
     this.commitMessage = null;
   }
 
-  async write() {
-    throw new Error('write must be defined in a subclass');
+  /**
+   * Write changes to disk. Should set `this.pathsToAdd` and `this.commitMessage`.
+   */
+  protected abstract write(): Promise<void>;
+
+  /**
+   * Determines whether or not the edit should be executed. For instance, this
+   * can check if the edit would actually modify a file and skip the write/commit/push
+   * steps if it would not.
+   */
+  protected async shouldEdit() {
+    return true;
   }
 
-  assertCanEdit() {
+  protected assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
@@ -190,46 +200,48 @@ export class Editor {
         await cleanAndResetRepository(this.course, gitEnv, job);
 
         try {
-          job.data.saveAttempted = true;
-          job.info('Write changes to disk');
-          await this.write();
+          if (await this.shouldEdit()) {
+            job.data.saveAttempted = true;
+            job.info('Write changes to disk');
+            await this.write();
 
-          if (this.pathsToAdd == null) {
-            throw new Error('pathsToAdd must be set in write()');
-          }
+            if (this.pathsToAdd == null) {
+              throw new Error('pathsToAdd must be set in write()');
+            }
 
-          if (this.commitMessage == null) {
-            throw new Error('commitMessage must be set in write()');
-          }
+            if (this.commitMessage == null) {
+              throw new Error('commitMessage must be set in write()');
+            }
 
-          job.info('Commit changes');
-          await job.exec('git', ['add', ...this.pathsToAdd], {
-            cwd: this.course.path,
-            env: gitEnv,
-          });
-          await job.exec(
-            'git',
-            [
-              '-c',
-              `user.name="${this.user.name}"`,
-              '-c',
-              `user.email="${this.user.email || this.user.uid}"`,
-              'commit',
-              '-m',
-              this.commitMessage,
-            ],
-            {
+            job.info('Commit changes');
+            await job.exec('git', ['add', ...this.pathsToAdd], {
               cwd: this.course.path,
               env: gitEnv,
-            },
-          );
+            });
+            await job.exec(
+              'git',
+              [
+                '-c',
+                `user.name="${this.user.name}"`,
+                '-c',
+                `user.email="${this.user.email || this.user.uid}"`,
+                'commit',
+                '-m',
+                this.commitMessage,
+              ],
+              {
+                cwd: this.course.path,
+                env: gitEnv,
+              },
+            );
 
-          job.info('Push changes to remote git repository');
-          await job.exec('git', ['push'], {
-            cwd: this.course.path,
-            env: gitEnv,
-          });
-          job.data.saveSucceeded = true;
+            job.info('Push changes to remote git repository');
+            await job.exec('git', ['push'], {
+              cwd: this.course.path,
+              env: gitEnv,
+            });
+            job.data.saveSucceeded = true;
+          }
         } finally {
           // Whether or not we error, we'll do a clean and reset.
           //
@@ -1388,7 +1400,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  shouldEdit() {
+  async shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
