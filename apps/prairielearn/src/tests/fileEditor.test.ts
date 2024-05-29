@@ -947,6 +947,7 @@ function doFiles(data) {
   describe(`test file handlers for ${data.title}`, function () {
     describe('Files', function () {
       testUploadFile({
+        adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
         id: 'New',
@@ -955,6 +956,7 @@ function doFiles(data) {
       });
 
       testUploadFile({
+        adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
         id: data.index,
@@ -977,6 +979,7 @@ function doFiles(data) {
     });
     describe('Client Files', function () {
       testUploadFile({
+        adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
         id: 'NewClient',
@@ -985,6 +988,7 @@ function doFiles(data) {
       });
 
       testUploadFile({
+        adminUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
         id: 0,
@@ -1007,6 +1011,7 @@ function doFiles(data) {
     });
     describe('Server Files', function () {
       testUploadFile({
+        adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
         id: 'NewServer',
@@ -1015,6 +1020,7 @@ function doFiles(data) {
       });
 
       testUploadFile({
+        adminUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
         id: 0,
@@ -1038,6 +1044,7 @@ function doFiles(data) {
     if (data.testFilesDir) {
       describe('Test Files', function () {
         testUploadFile({
+          adminUrl: data.url,
           url: data.url,
           path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
           id: 'NewTest',
@@ -1046,6 +1053,7 @@ function doFiles(data) {
         });
 
         testUploadFile({
+          adminUrl: data.url,
           url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
           path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
           id: 0,
@@ -1069,6 +1077,7 @@ function doFiles(data) {
     }
     describe('Files with % in name', function () {
       testUploadFile({
+        adminUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'test%file.txt'),
         id: 'New',
@@ -1097,6 +1106,7 @@ function doFiles(data) {
 }
 
 function testUploadFile(params: {
+  adminUrl: string;
   url: string;
   path: string;
   id: string | number;
@@ -1161,10 +1171,34 @@ function testUploadFile(params: {
     });
   });
 
+  describe(`Uploaded file is available`, function () {
+    it('file view should match contents', async () => {
+      const res = await fetch(`${params.adminUrl}/${encodePath(params.path)}`);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+      const pre = locals.$('.card-body pre');
+      assert.lengthOf(pre, 1);
+      assert.strictEqual(pre.text(), params.contents);
+    });
+
+    it('file download should match contents', async () => {
+      const downloadUrl = locals.$('.card-header a:contains("Download")').attr('href');
+      const res = await fetch(`${siteUrl}${downloadUrl}`);
+      assert.isOk(res.ok);
+      assert.strictEqual(await res.text(), params.contents);
+    });
+  });
+
   pullAndVerifyFileInDev(params.path, params.contents);
 }
 
-function testRenameFile(params) {
+function testRenameFile(params: {
+  url: string;
+  id: string | number;
+  path: string;
+  contents: string;
+  new_file_name: string;
+}) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
