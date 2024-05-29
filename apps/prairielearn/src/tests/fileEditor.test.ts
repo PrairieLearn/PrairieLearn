@@ -972,7 +972,6 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
-        id: 0,
         path: path.join(data.path, 'subdir', 'testfile.txt'),
       });
     });
@@ -1003,7 +1002,6 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
-        id: 0,
         path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
       });
     });
@@ -1034,7 +1032,6 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
-        id: 0,
         path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
       });
     });
@@ -1066,15 +1063,46 @@ function doFiles(data) {
 
         testDeleteFile({
           url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
-          id: 0,
           path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
         });
       });
     }
+    describe('Files with % in name', function () {
+      testUploadFile({
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        id: 'New',
+        contents: 'This is a line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      // TODO Rename currently has very restrictive naming conventions that
+      // don't allow for this kind of name. Once this is removed it should be
+      // possible to enable the test below.
+
+      // testRenameFile({
+      //   url: data.url,
+      //   id: data.index,
+      //   path: path.join(data.path, 'sub%dir', 'test%file.txt'),
+      //   contents: 'This is a line of text in a file with percent.',
+      //   new_file_name: path.join('sub%dir', 'test%file.txt'),
+      // });
+
+      testDeleteFile({
+        url: data.url + '/' + encodePath(data.path),
+        path: path.join(data.path, 'test%file.txt'),
+      });
+    });
   });
 }
 
-function testUploadFile(params) {
+function testUploadFile(params: {
+  url: string;
+  path: string;
+  id: string | number;
+  contents: string;
+  filename: string;
+}) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
@@ -1190,7 +1218,7 @@ function testRenameFile(params) {
   pullAndVerifyFileInDev(params.path, params.contents);
 }
 
-function testDeleteFile(params) {
+function testDeleteFile(params: { url: string; path: string }) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
@@ -1198,22 +1226,22 @@ function testDeleteFile(params) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and a file_path', () => {
-      elemList = locals.$(`button[id="instructorFileDeleteForm-${params.id}"]`);
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find(`button[id^="instructorFileDeleteForm-"]`);
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path
-      elemList = $(`form[name="instructor-file-delete-form-${params.id}"] input[name="file_path"]`);
+      elemList = $(`input[name="file_path"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.file_path = elemList[0].attribs.value;
+      assert.equal(locals.file_path, params.path);
     });
   });
 
