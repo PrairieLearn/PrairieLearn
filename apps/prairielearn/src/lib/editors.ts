@@ -213,7 +213,7 @@ export class Editor {
               '-c',
               `user.name="${this.user.name}"`,
               '-c',
-              `user.email="${this.user.uid}"`,
+              `user.email="${this.user.email || this.user.uid}"`,
               'commit',
               '-m',
               this.commitMessage,

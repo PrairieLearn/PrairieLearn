@@ -24,6 +24,7 @@ const studentUser: AuthUser = {
   uid: 'student@example.com',
   name: 'Example Student',
   uin: 'student',
+  email: 'student@example.com',
 };
 
 describe('studentCourseInstanceUpgrade', () => {

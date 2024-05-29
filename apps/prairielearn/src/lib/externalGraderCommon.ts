@@ -1,4 +1,3 @@
-// @ts-check
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
@@ -9,25 +8,26 @@ import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
 
 import { getRuntimeDirectoryForCourse } from './chunks.js';
+import type { Course, Question, Submission, Variant } from './db-types.js';
 
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.
  */
-export function getJobDirectory(jobId) {
+export function getJobDirectory(jobId: string) {
   return `/jobs/job_${jobId}`;
 }
 
 /**
  * Constructs a directory of files to be used for grading.
- *
- * @param {string} dir
- * @param {import('./db-types.js').Submission} submission
- * @param {import('./db-types.js').Variant} variant
- * @param {import('./db-types.js').Question} question
- * @param {import('./db-types.js').Course} course
  */
-export async function buildDirectory(dir, submission, variant, question, course) {
+export async function buildDirectory(
+  dir: string,
+  submission: Submission,
+  variant: Variant,
+  question: Question,
+  course: Course,
+) {
   const coursePath = getRuntimeDirectoryForCourse(course);
   try {
     // Attempt to remove existing directory first
@@ -68,7 +68,7 @@ export async function buildDirectory(dir, submission, variant, question, course)
       }
 
       // Files are expected to be base-64 encoded
-      let decodedContents = Buffer.from(file.contents, 'base64');
+      const decodedContents = Buffer.from(file.contents, 'base64');
       // Check that the file name does not try to navigate up in
       // the directory hierarchy
       const fullPath = path.join(dir, 'student', file.name);
@@ -109,26 +109,26 @@ export async function buildDirectory(dir, submission, variant, question, course)
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
- * @param {Object|string|Buffer} rawData - The grading results
+ * @param rawData - The grading results
  */
-export function makeGradingResult(jobId, rawData) {
-  let data = rawData;
-
+export function makeGradingResult(jobId: string, rawData: Record<string, any> | string | Buffer) {
   // Convert objects or buffers to strings so that we can remove null bytes,
   // which Postgres doesn't like
-  if (Buffer.isBuffer(rawData)) {
-    data = rawData.toString('utf-8');
-  } else if (_.isObject(rawData)) {
-    data = JSON.stringify(rawData);
-  }
+  const dataStr = Buffer.isBuffer(rawData)
+    ? rawData.toString('utf-8')
+    : _.isObject(rawData)
+      ? JSON.stringify(rawData)
+      : rawData;
+
+  let data: Record<string, any>;
   try {
     // replace NULL with unicode replacement character
-    data = JSON.parse(data.replace(/\0/g, '\ufffd'));
+    data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
   } catch (e) {
-    return makeGradingFailureWithMessage(jobId, data, 'Could not parse the grading results.');
+    return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
 
-  function replaceNull(d) {
+  function replaceNull(d: any) {
     if (_.isString(d)) {
       // replace NULL with unicode replacement character
       return d.replace(/\0/g, '\ufffd');
@@ -175,7 +175,7 @@ export function makeGradingResult(jobId, rawData) {
     );
   }
 
-  let format_errors = [];
+  let format_errors: string[] = [];
   if (typeof data.results.format_errors === 'string') {
     format_errors = [data.results.format_errors];
   } else if (Array.isArray(data.results.format_errors)) {
@@ -195,7 +195,7 @@ export function makeGradingResult(jobId, rawData) {
   };
 }
 
-function makeGradingFailureWithMessage(jobId, data, message) {
+function makeGradingFailureWithMessage(jobId: string, data: any, message: string) {
   return {
     gradingId: jobId,
     grading: {
