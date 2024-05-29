@@ -39,11 +39,8 @@ router.post(
     const lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
-    let uid: string;
-    let uin: string | null;
-    let name: string | null;
-
     // UID checking
+    let uid: string;
     if (!lti13_instance.uid_attribute) {
       throw new error.HttpStatusError(
         500,
@@ -76,7 +73,7 @@ router.post(
     }
 
     // UIN checking, if attribute defined value must be present
-    uin = null;
+    let uin: string | null = null;
     if (lti13_instance.uin_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
@@ -92,7 +89,7 @@ router.post(
     // Name checking, not an error
     // LTI 1.3 spec defines sharing name as a MAY https://www.imsglobal.org/spec/lti/v1p3#users-and-roles
     // but discourages (MUST NOT) using other attributes for unique identifier
-    name = null;
+    let name: string | null = null;
     if (lti13_instance.name_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "name"
@@ -100,10 +97,19 @@ router.post(
       name = _.get(lti13_claims, lti13_instance.name_attribute);
     }
 
+    let email: string | null = null;
+    if (lti13_instance.email_attribute) {
+      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+      // Reasonable default is "email"
+      // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+      email = _.get(lti13_claims, lti13_instance.email_attribute);
+    }
+
     const userInfo = {
       uid,
       uin,
       name,
+      email,
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
     };

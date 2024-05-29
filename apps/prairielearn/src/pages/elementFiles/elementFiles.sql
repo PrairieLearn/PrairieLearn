@@ -8,6 +8,7 @@ SELECT
     WHERE
       q.shared_publicly
       AND course_id = $producing_course_id
+      AND q.deleted_at IS NULL
     UNION
     SELECT
       1
@@ -19,16 +20,5 @@ SELECT
     WHERE
       ss.course_id = $producing_course_id
       AND ssc.course_id = $consuming_course_id
-  );
-
--- BLOCK select_has_publicly_shared_question
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      questions AS q
-    WHERE
-      q.shared_publicly
-      AND course_id = $course_id
+      AND q.deleted_at IS NULL
   );
