@@ -95,7 +95,7 @@ export abstract class Editor {
   /**
    * Write changes to disk. Should set `this.pathsToAdd` and `this.commitMessage`.
    */
-  abstract write(): Promise<void>;
+  protected abstract write(): Promise<void>;
 
   /**
    * Determines whether or not the edit should be executed. For instance, this
@@ -106,7 +106,7 @@ export abstract class Editor {
     return true;
   }
 
-  assertCanEdit() {
+  protected assertCanEdit() {
     // Do not allow users to edit without permission
     if (!this.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
@@ -1400,7 +1400,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  shouldEdit() {
+  async shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
