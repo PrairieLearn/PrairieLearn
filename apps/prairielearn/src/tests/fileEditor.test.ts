@@ -949,7 +949,7 @@ function doFiles(data: {
   describe(`test file handlers for ${data.title}`, function () {
     describe('Files', function () {
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
         newButtonId: 'New',
@@ -958,7 +958,7 @@ function doFiles(data: {
       });
 
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
         contents: 'This is a different line of text.',
@@ -979,7 +979,7 @@ function doFiles(data: {
     });
     describe('Client Files', function () {
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
         newButtonId: 'NewClient',
@@ -988,7 +988,7 @@ function doFiles(data: {
       });
 
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
         contents: 'This is a different line of text.',
@@ -1009,7 +1009,7 @@ function doFiles(data: {
     });
     describe('Server Files', function () {
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
         newButtonId: 'NewServer',
@@ -1018,7 +1018,7 @@ function doFiles(data: {
       });
 
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
         contents: 'This is a different line of text.',
@@ -1041,7 +1041,7 @@ function doFiles(data: {
       describe('Test Files', function () {
         if (data.testFilesDir) {
           testUploadFile({
-            adminUrl: data.url,
+            fileViewBaseUrl: data.url,
             url: data.url,
             path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
             newButtonId: 'NewTest',
@@ -1050,7 +1050,7 @@ function doFiles(data: {
           });
 
           testUploadFile({
-            adminUrl: data.url,
+            fileViewBaseUrl: data.url,
             url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
             path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
             contents: 'This is a different line of text.',
@@ -1073,7 +1073,7 @@ function doFiles(data: {
     }
     describe('Files with % in name', function () {
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'test%file.txt'),
         newButtonId: 'New',
@@ -1082,7 +1082,7 @@ function doFiles(data: {
       });
 
       testUploadFile({
-        adminUrl: data.url,
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'test%file.txt'),
         contents: 'This is a different line of text in a file with percent.',
@@ -1109,7 +1109,7 @@ function doFiles(data: {
 }
 
 function testUploadFile(params: {
-  adminUrl: string;
+  fileViewBaseUrl: string;
   url: string;
   path: string;
   newButtonId?: string;
@@ -1177,7 +1177,7 @@ function testUploadFile(params: {
 
   describe(`Uploaded file is available`, function () {
     it('file view should match contents', async () => {
-      const res = await fetch(`${params.adminUrl}/${encodePath(params.path)}`);
+      const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(params.path)}`);
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
       const pre = locals.$('.card-body pre');
