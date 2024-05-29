@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import * as manualGrading from '../lib/manualGrading.js';
-import { buildLocals, buildQuestionUrls } from '../lib/question-render.js';
+import { buildQuestionUrls } from '../lib/question-render.js';
 import { getQuestionCourse } from '../lib/question-variant.js';
 import { createServerJob } from '../lib/server-jobs.js';
 import * as questionServers from '../question-servers/index.js';
@@ -18,8 +18,6 @@ export async function botGrade(
   res: Response,
   openaiconfig: Record<'apiKey' | 'organization', string>,
 ): Promise<string> {
-  const { urlPrefix, assessment, assessment_instance, assessment_question, authz_result } =
-    res.locals;
   const question = res.locals.question;
   const question_course = await getQuestionCourse(question, res.locals.course);
 
@@ -79,20 +77,8 @@ export async function botGrade(
         VariantSchema,
       );
 
-      // build new locals for the question server
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
-      const newLocals = buildLocals(
-        variant,
-        question,
-        instance_question,
-        assessment,
-        assessment_instance,
-        assessment_question,
-        authz_result,
-      );
-      const locals = {};
-      Object.assign(locals, urls);
-      Object.assign(locals, newLocals);
+      // build urls for the question server
+      const urls = buildQuestionUrls(res.locals.urlPrefix, variant, question, instance_question);
 
       // get question html
       const questionModule = questionServers.getModule(question.type);
@@ -103,7 +89,7 @@ export async function botGrade(
         submission,
         [submission],
         question_course,
-        locals,
+        urls,
       );
       if (courseIssues.length) {
         job.info(courseIssues.toString());
