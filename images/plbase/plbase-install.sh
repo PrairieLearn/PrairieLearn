@@ -58,6 +58,7 @@ make
 make install
 rm -rf /tmp/pgvector
 dnf -y remove postgresql15-server-devel
+dnf -y autoremove
 
 # TODO: use standard OS Python installation? The only reason we switched to Conda
 # was to support R and `rpy2`, but now that we've removed those, we might not
