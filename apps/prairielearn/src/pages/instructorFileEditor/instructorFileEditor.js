@@ -215,11 +215,6 @@ router.post(
         origHash: req.body.file_edit_orig_hash,
       });
 
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
-
       editor.assertCanEdit();
 
       debug('Write draft file edit to db and to file store');
