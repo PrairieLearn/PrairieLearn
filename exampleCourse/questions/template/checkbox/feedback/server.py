@@ -21,7 +21,7 @@ def generate(data):
     # Select 5 random distractors. Each item is a (city, country) tuple.
     distractors = random.sample(
         [
-            (city, country)
+            {"city": city, "country": country}
             for country, cities in COUNTRIES.items()
             for city in cities
             if country != prompt_country
@@ -31,7 +31,4 @@ def generate(data):
 
     data["params"]["country"] = prompt_country
     data["params"]["correct_cities"] = COUNTRIES[prompt_country]
-
-    data["params"]["distractor_cities"] = [
-        {"city": city, "country": country} for city, country in distractors
-    ]
+    data["params"]["distractor_cities"] = distractors
