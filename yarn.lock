@@ -2974,6 +2974,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/formatter@workspace:packages/formatter":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/formatter@workspace:packages/formatter"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": ^20.12.11
+    c8: ^9.1.0
+    chai: ^5.1.1
+    lodash: ^4.17.21
+    mocha: ^10.4.0
+    tsx: ^4.10.4
+    typescript: ^5.4.5
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/grader-host@workspace:apps/grader-host":
   version: 0.0.0-use.local
   resolution: "@prairielearn/grader-host@workspace:apps/grader-host"
