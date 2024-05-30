@@ -36,7 +36,7 @@ export async function setQuestionCopyTargets(res: Response) {
         !idsEqual(course.id, res.locals.course.id),
     )
     .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+      const copyUrl = `/pl/course/${course.id}/copy_public_question`;
 
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
