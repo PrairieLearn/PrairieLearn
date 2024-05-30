@@ -1,15 +1,17 @@
 <pl-question-panel>
-  <p>Select all of the following numbers that are prime.</p>
+  <p>Which of the following cities are located in {{params.country}}?</p>
 </pl-question-panel>
 
 <pl-checkbox
-  answers-name="numbers"
-  number-answers="7"
-  fixed-order="true"
+  answers-name="cities"
+  number-answers="6"
   partial-credit="true"
   min-correct="2"
 >
-  {{#params.options}}
-    <pl-answer correct="{{correct}}" feedback="{{feedback}}">{{answer}}</pl-answer>
-  {{/params.options}}
+  {{#params.correct_cities}}
+    <pl-answer correct="true">{{.}}</pl-answer>
+  {{/params.correct_cities}}
+  {{#params.distractor_cities}}
+    <pl-answer correct="false" feedback="{{city}} is in {{country}}.">{{city}}</pl-answer>
+  {{/params.distractor_cities}}
 </pl-checkbox>

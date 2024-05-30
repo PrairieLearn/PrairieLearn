@@ -1,34 +1,37 @@
-MAX_NUMBER = 20
+import random
 
-# For the same of this example, we use a hardcoded list of all primes up to 20.
-# Update this list if you change `MAX_NUMBER` above.
-PRIME_NUMBERS_UNDER_20 = {2, 3, 5, 7, 11, 13, 17, 19}
-
-
-def factors(n):
-    factors = set()
-    for i in range(1, n + 1):
-        if n % i == 0:
-            factors.add(i)
-    return factors
-
-
-def feedback_for_number(number):
-    if number in PRIME_NUMBERS_UNDER_20:
-        return f"Correct! {number} is a prime number."
-    elif number == 1:
-        return "Incorrect; 1 is neither prime nor composite."
-    else:
-        factors_hint = ", ".join(str(factor) for factor in factors(number))
-        return f"Incorrect; {number} has the following factors: {factors_hint}"
+COUNTRIES = {
+    "United States": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"],
+    "Canada": ["Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa"],
+    "United Kingdom": ["London", "Manchester", "Birmingham", "Glasgow", "Liverpool"],
+    "Australia": ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide"],
+    "Germany": ["Berlin", "Munich", "Frankfurt", "Hamburg", "Cologne"],
+    "France": ["Paris", "Marseille", "Lyon", "Toulouse", "Nice"],
+    "Italy": ["Rome", "Milan", "Naples", "Turin", "Palermo"],
+    "Japan": ["Tokyo", "Osaka", "Nagoya", "Sapporo", "Fukuoka"],
+    "Brazil": ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza"],
+    "India": ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai"],
+}
 
 
 def generate(data):
-    data["params"]["options"] = [
-        {
-            "correct": num in PRIME_NUMBERS_UNDER_20,
-            "answer": str(num),
-            "feedback": feedback_for_number(num),
-        }
-        for num in range(1, MAX_NUMBER + 1)
+    # Select a random country for the prompt.
+    prompt_country = random.choice(list(COUNTRIES.keys()))
+
+    # Select 5 random distractors. Each item is a (city, country) tuple.
+    distractors = random.sample(
+        [
+            (city, country)
+            for country, cities in COUNTRIES.items()
+            for city in cities
+            if country != prompt_country
+        ],
+        5,
+    )
+
+    data["params"]["country"] = prompt_country
+    data["params"]["correct_cities"] = COUNTRIES[prompt_country]
+
+    data["params"]["distractor_cities"] = [
+        {"city": city, "country": country} for city, country in distractors
     ]

@@ -1,1 +1,1 @@
-This question demonstrates how to create a question that provides feedback for all answers.
+This question demonstrates how to create a question that provides dynamic feedback for incorrect answers.
