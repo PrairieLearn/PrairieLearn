@@ -36,6 +36,10 @@
     "turbo": "^1.13.3",
     "typescript": "^5.4.5"
   },
+  "resolutions": {
+    "notebookjs/jsdom": "^24.0.0",
+    "fabric/jsdom": "^24.0.0"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
