@@ -1869,7 +1869,7 @@ export async function initExpress() {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // This route is used to initiate a copy of a question with publicly shared source
+  // These routes are used to initiate a copy of a question with publicly shared source
   // or a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
@@ -1878,6 +1878,11 @@ export async function initExpress() {
   // which don't exist on chunk servers
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
+    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+  // TODO: remove this route once all links are updated to reference the one above
+  app.use(
+    '/pl/course/:course_id(\\d+)/copy_template_course_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 

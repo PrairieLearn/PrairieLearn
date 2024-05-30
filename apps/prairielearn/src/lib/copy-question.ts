@@ -19,7 +19,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 export async function setQuestionCopyTargets(res: Response) {
   // Avoid querying for editable courses if we won't be able to copy this
   // question anyways.
-  if (!(res.locals.course.template_course || res.locals.question.shared_publicly_source)) {
+  if (!(res.locals.course.template_course || res.locals.question.shared_publicly_with_source)) {
     return;
   }
 
@@ -36,7 +36,7 @@ export async function setQuestionCopyTargets(res: Response) {
         !idsEqual(course.id, res.locals.course.id),
     )
     .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/copy_public_question`;
+      const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
 
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
