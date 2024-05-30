@@ -1,4 +1,3 @@
-// @ts-check
 import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
 
