@@ -84,13 +84,13 @@ describe('effective user', function () {
 
     const staff = await sqldb.callValidatedOneRow(
       'users_select_or_insert',
-      ['staff03@example.com', 'Staff Three', null, 'staff03@example.com', 'dev'],
+      ['staff@example.com', 'Staff Three', null, 'staff@example.com', 'dev'],
       UserWithIdSchema,
     );
     staffId = staff.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
-      uid: 'staff03@example.com',
+      uid: 'staff@example.com',
       course_role: 'Editor',
       authn_user_id: '2',
     });
@@ -289,7 +289,7 @@ describe('effective user', function () {
   step('can request uid of course editor as course owner', async () => {
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@example.com',
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff@example.com',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, { headers });
     assert.equal(res.status, 200);
@@ -304,7 +304,7 @@ describe('effective user', function () {
     });
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@example.com',
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff@example.com',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, { headers });
     assert.equal(res.status, 403);
@@ -326,7 +326,7 @@ describe('effective user', function () {
     });
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@example.com',
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff@example.com',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, { headers });
     assert.equal(res.status, 200);
@@ -349,7 +349,7 @@ describe('effective user', function () {
     });
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@example.com',
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff@example.com',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, { headers });
     assert.equal(res.status, 403);
