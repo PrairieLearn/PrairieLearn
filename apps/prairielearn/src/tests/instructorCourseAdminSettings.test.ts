@@ -111,6 +111,7 @@ describe('Editing course settings', () => {
       uid: 'viewer@example.com',
       name: 'Viewer User',
       uin: 'viewer',
+      email: 'viewer@example.com',
     });
     await insertCoursePermissionsByUserUid({
       course_id: '1',
