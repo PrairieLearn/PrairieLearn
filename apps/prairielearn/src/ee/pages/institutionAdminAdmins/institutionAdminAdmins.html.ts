@@ -124,9 +124,7 @@ function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken
 
       <div class="alert alert-warning mb-0" role="alert">
         Institution administrators will have full read and write access to all content within this
-        institution. They will also be able to add and remove other administrators. Be careful and
-        deliberate with who you add as an administrator, and make sure that they know to use their
-        powers responsibly.
+        institution. They will also be able to add and remove other administrators.
       </div>
     `,
     footer: html`
