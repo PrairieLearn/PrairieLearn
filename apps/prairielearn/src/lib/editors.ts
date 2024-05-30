@@ -37,13 +37,13 @@ const debug = debugfn('prairielearn:editors');
 async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
-      courseData: result.courseData,
+      courseData: syncResult.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
@@ -52,7 +52,7 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
 
   await updateCourseCommitHash(course);
 
-  if (result.hadJsonErrors) {
+  if (syncResult.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
 }

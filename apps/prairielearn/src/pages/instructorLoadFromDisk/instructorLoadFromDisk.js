@@ -34,15 +34,15 @@ async function update(locals) {
         if (index !== config.courseDirs.length - 1) job.info('');
         return;
       }
-      const result = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
       if (index !== config.courseDirs.length - 1) job.info('');
-      if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
-      if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
+      if (!syncResult) throw new Error('syncOrCreateDiskToSql() returned null');
+      if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await chunks.updateChunksForCourse({
           coursePath: courseDir,
-          courseId: result.courseId,
-          courseData: result.courseData,
+          courseId: syncResult.courseId,
+          courseData: syncResult.courseData,
           oldHash: 'HEAD~1',
           newHash: 'HEAD',
         });
