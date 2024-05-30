@@ -76,33 +76,35 @@ interface BaseEditorOptions {
   locals: Record<string, any>;
 }
 
+interface WriteResult {
+  pathsToAdd: string[];
+  commitMessage: string;
+}
+
 export abstract class Editor {
   protected authz_data: Record<string, any>;
   protected course: Course;
   protected user: User;
   protected description: string;
-  protected pathsToAdd: string[] | null;
-  protected commitMessage: string | null;
 
   constructor(params: BaseEditorOptions) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
     this.user = params.locals.user;
-    this.pathsToAdd = null;
-    this.commitMessage = null;
   }
 
   /**
-   * Write changes to disk. Should set `this.pathsToAdd` and `this.commitMessage`.
+   * Write changes to disk. Returns an object with that paths that `git` should
+   * add and the commit message that should be used.
    */
-  protected abstract write(): Promise<void>;
+  protected abstract write(): Promise<WriteResult>;
 
   /**
    * Determines whether or not the edit should be executed. For instance, this
    * can check if the edit would actually modify a file and skip the write/commit/push
    * steps if it would not.
    */
-  protected async shouldEdit() {
+  protected async shouldEdit(): Promise<boolean> {
     return true;
   }
 
@@ -203,18 +205,10 @@ export abstract class Editor {
           if (await this.shouldEdit()) {
             job.data.saveAttempted = true;
             job.info('Write changes to disk');
-            await this.write();
-
-            if (this.pathsToAdd == null) {
-              throw new Error('pathsToAdd must be set in write()');
-            }
-
-            if (this.commitMessage == null) {
-              throw new Error('commitMessage must be set in write()');
-            }
+            const { pathsToAdd, commitMessage } = await this.write();
 
             job.info('Commit changes');
-            await job.exec('git', ['add', ...this.pathsToAdd], {
+            await job.exec('git', ['add', ...pathsToAdd], {
               cwd: this.course.path,
               env: gitEnv,
             });
@@ -227,7 +221,7 @@ export abstract class Editor {
                 `user.email="${this.user.email || this.user.uid}"`,
                 'commit',
                 '-m',
-                this.commitMessage,
+                commitMessage,
               ],
               {
                 cwd: this.course.path,
@@ -490,8 +484,6 @@ export class AssessmentCopyEditor extends Editor {
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
-    this.pathsToAdd = [assessmentPath];
-    this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${tid}`;
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
     const toPath = assessmentPath;
@@ -507,6 +499,11 @@ export class AssessmentCopyEditor extends Editor {
     await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
       spaces: 4,
     });
+
+    return {
+      pathsToAdd: [assessmentPath],
+      commitMessage: `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${tid}`,
+    };
   }
 }
 
@@ -535,8 +532,11 @@ export class AssessmentDeleteEditor extends Editor {
     );
     await fs.remove(path.join(deletePath, this.assessment.tid));
     await this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid);
-    this.pathsToAdd = [path.join(deletePath, this.assessment.tid)];
-    this.commitMessage = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
+
+    return {
+      pathsToAdd: [path.join(deletePath, this.assessment.tid)],
+      commitMessage: `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`,
+    };
   }
 }
 
@@ -570,8 +570,11 @@ export class AssessmentRenameEditor extends Editor {
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
-    this.pathsToAdd = [oldPath, newPath];
-    this.commitMessage = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`;
+
+    return {
+      pathsToAdd: [oldPath, newPath],
+      commitMessage: `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`,
+    };
   }
 }
 
@@ -614,8 +617,6 @@ export class AssessmentAddEditor extends Editor {
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
-    this.pathsToAdd = [assessmentPath];
-    this.commitMessage = `${this.course_instance.short_name}: add assessment ${tid}`;
 
     debug(`Write infoAssessment.json`);
 
@@ -636,6 +637,11 @@ export class AssessmentAddEditor extends Editor {
       spaces: 4,
       flag: 'wx',
     });
+
+    return {
+      pathsToAdd: [assessmentPath],
+      commitMessage: `${this.course_instance.short_name}: add assessment ${tid}`,
+    };
   }
 }
 
@@ -680,8 +686,6 @@ export class CourseInstanceCopyEditor extends Editor {
     );
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
-    this.pathsToAdd = [courseInstancePath];
-    this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${short_name}`;
 
     const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const toPath = courseInstancePath;
@@ -697,6 +701,11 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
       spaces: 4,
     });
+
+    return {
+      pathsToAdd: [courseInstancePath],
+      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
+    };
   }
 }
 
@@ -717,8 +726,11 @@ export class CourseInstanceDeleteEditor extends Editor {
     const deletePath = path.join(this.course.path, 'courseInstances');
     await fs.remove(path.join(deletePath, this.course_instance.short_name));
     await this.removeEmptyPrecedingSubfolders(deletePath, this.course_instance.short_name);
-    this.pathsToAdd = [path.join(deletePath, this.course_instance.short_name)];
-    this.commitMessage = `delete course instance ${this.course_instance.short_name}`;
+
+    return {
+      pathsToAdd: [path.join(deletePath, this.course_instance.short_name)],
+      commitMessage: `delete course instance ${this.course_instance.short_name}`,
+    };
   }
 }
 
@@ -746,8 +758,10 @@ export class CourseInstanceRenameEditor extends Editor {
       this.course_instance.short_name,
     );
 
-    this.pathsToAdd = [oldPath, newPath];
-    this.commitMessage = `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`;
+    return {
+      pathsToAdd: [oldPath, newPath],
+      commitMessage: `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`,
+    };
   }
 }
 
@@ -782,8 +796,6 @@ export class CourseInstanceAddEditor extends Editor {
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
-    this.pathsToAdd = [courseInstancePath];
-    this.commitMessage = `add course instance ${short_name}`;
 
     debug(`Write infoCourseInstance.json`);
 
@@ -800,6 +812,11 @@ export class CourseInstanceAddEditor extends Editor {
       spaces: 4,
       flag: 'wx',
     });
+
+    return {
+      pathsToAdd: [courseInstancePath],
+      commitMessage: `add course instance ${short_name}`,
+    };
   }
 }
 
@@ -831,8 +848,6 @@ export class QuestionAddEditor extends Editor {
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
-    this.pathsToAdd = [questionPath];
-    this.commitMessage = `add question ${qid}`;
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
@@ -846,6 +861,11 @@ export class QuestionAddEditor extends Editor {
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: `add question ${qid}`,
+    };
   }
 }
 
@@ -868,8 +888,11 @@ export class QuestionDeleteEditor extends Editor {
       path.join(this.course.path, 'questions'),
       this.question.qid,
     );
-    this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
-    this.commitMessage = `delete question ${this.question.qid}`;
+
+    return {
+      pathsToAdd: [path.join(this.course.path, 'questions', this.question.qid)],
+      commitMessage: `delete question ${this.question.qid}`,
+    };
   }
 }
 
@@ -896,14 +919,14 @@ export class QuestionRenameEditor extends Editor {
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
-    this.pathsToAdd = [oldPath, newPath];
-    this.commitMessage = `rename question ${this.question.qid} to ${this.qid_new}`;
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
       question_id: this.question.id,
     });
     const assessments = result.rows;
+
+    const pathsToAdd = [oldPath, newPath];
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
@@ -917,7 +940,7 @@ export class QuestionRenameEditor extends Editor {
         assessment.assessment_directory,
         'infoAssessment.json',
       );
-      this.pathsToAdd.push(infoPath);
+      pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
       const infoJson = await fs.readJson(infoPath);
@@ -945,6 +968,11 @@ export class QuestionRenameEditor extends Editor {
       debug(`Write ${infoPath}`);
       await fs.writeJson(infoPath, infoJson, { spaces: 4 });
     }
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+    };
   }
 }
 
@@ -986,8 +1014,6 @@ export class QuestionCopyEditor extends Editor {
     );
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
-    this.pathsToAdd = [questionPath];
-    this.commitMessage = `copy question ${this.question.qid} to ${qid}`;
 
     const fromPath = path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
@@ -1001,6 +1027,11 @@ export class QuestionCopyEditor extends Editor {
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: `copy question ${this.question.qid} to ${qid}`,
+    };
   }
 }
 
@@ -1054,8 +1085,6 @@ export class QuestionTransferEditor extends Editor {
       questionTitle = names.longName;
     }
     const questionPath = path.join(questionsPath, qid);
-    this.pathsToAdd = [questionPath];
-    this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`;
 
     const fromPath = this.from_path;
     const toPath = questionPath;
@@ -1069,6 +1098,11 @@ export class QuestionTransferEditor extends Editor {
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`,
+    };
   }
 }
 
@@ -1134,8 +1168,11 @@ export class FileDeleteEditor extends Editor {
     debug('FileDeleteEditor: write()');
     // This will silently do nothing if deletePath no longer exists.
     await fs.remove(this.deletePath);
-    this.pathsToAdd = [this.deletePath];
-    this.commitMessage = this.description;
+
+    return {
+      pathsToAdd: [this.deletePath],
+      commitMessage: this.description,
+    };
   }
 }
 
@@ -1244,8 +1281,11 @@ export class FileRenameEditor extends Editor {
 
     debug(`rename file`);
     await fs.rename(this.oldPath, this.newPath);
-    this.pathsToAdd = [this.oldPath, this.newPath];
-    this.commitMessage = this.description;
+
+    return {
+      pathsToAdd: [this.oldPath, this.newPath],
+      commitMessage: this.description,
+    };
   }
 }
 
@@ -1349,8 +1389,11 @@ export class FileUploadEditor extends Editor {
 
     debug(`write file`);
     await fs.writeFile(this.filePath, this.fileContents);
-    this.pathsToAdd = [this.filePath];
-    this.commitMessage = this.description;
+
+    return {
+      pathsToAdd: [this.filePath],
+      commitMessage: this.description,
+    };
   }
 }
 
@@ -1465,8 +1508,11 @@ export class FileModifyEditor extends Editor {
 
     debug(`write file`);
     await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
-    this.pathsToAdd = [this.filePath];
-    this.commitMessage = this.description;
+
+    return {
+      pathsToAdd: [this.filePath],
+      commitMessage: this.description,
+    };
   }
 }
 
@@ -1489,7 +1535,9 @@ export class CourseInfoCreateEditor extends Editor {
     // - Creating a new file and infoPath does exist (use of 'wx')
     await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
 
-    this.pathsToAdd = [infoPath];
-    this.commitMessage = `create infoCourse.json`;
+    return {
+      pathsToAdd: [infoPath],
+      commitMessage: `create infoCourse.json`,
+    };
   }
 }
