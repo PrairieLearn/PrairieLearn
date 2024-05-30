@@ -86,8 +86,7 @@ describe('Shared Question Preview', function () {
 
     testFileDownloads(previewPageInfo, downloadFile, false);
 
-    // TODO: implement
-    // testElementClientFiles(previewPageInfo, customElement);
+    testElementClientFiles(previewPageInfo, customElement);
   });
 
   describe('Shared Question Previews Within a Course', function () {

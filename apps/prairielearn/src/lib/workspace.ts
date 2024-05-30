@@ -1,4 +1,3 @@
-// @ts-check
 import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
