@@ -6,6 +6,7 @@ import { queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { UserSchema } from '../../lib/db-types.js';
+import { insertInstitutionAdministrator } from '../../models/institution-administrator.js';
 import { selectUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';
@@ -105,13 +106,11 @@ describe('institution administrators', () => {
   step('grant institution admin permissions', async () => {
     const user = await selectUserByUid(INSTITUTION_ADMIN_USER.uid);
     assert(user);
-    await queryAsync(
-      `INSERT INTO institution_administrators (institution_id, user_id) VALUES ($institution_id, $user_id);`,
-      {
-        institution_id: '1',
-        user_id: user.user_id,
-      },
-    );
+    await insertInstitutionAdministrator({
+      institution_id: '1',
+      user_id: user.user_id,
+      authn_user_id: '1',
+    });
   });
 
   step('institution admin can access institution admin courses', async () => {
