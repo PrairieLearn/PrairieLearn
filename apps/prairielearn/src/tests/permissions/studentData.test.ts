@@ -40,12 +40,14 @@ describe('student data access', function () {
       'instructor@example.com',
       'Instructor User',
       '100000000',
+      'instructor@example.com',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@example.com',
       'Student User',
       '000000001',
+      'student@example.com',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({
