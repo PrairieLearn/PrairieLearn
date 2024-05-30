@@ -419,14 +419,18 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  const cell = event.target.closest('label');
+  const container = event.target.closest('td');
+  const label = container.querySelector('label');
+
   const input = document.createElement('textarea');
   input.classList.add('form-control');
-  input.name = cell.dataset.inputName;
+  input.name = label.dataset.inputName;
   input.setAttribute('maxlength', 10000);
-  input.innerText = cell.dataset.currentValue || '';
-  cell.parentNode.insertBefore(input, cell);
-  cell.remove();
+  input.textContent = label.dataset.currentValue || '';
+
+  container.insertBefore(input, label);
+  label.remove();
+  container.querySelector('button')?.remove();
   input.focus();
 }
 

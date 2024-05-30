@@ -316,27 +316,37 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
       </td>
       <td>
         <label
+          ${item ? html`for="rubric-item-explanation-button-${item.id}"` : ''}
           class="js-rubric-item-explanation"
+          style="white-space: pre-wrap;"
           data-input-name="${namePrefix}[explanation]"
           data-current-value="${item?.explanation}"
+          >${item?.explanation}</label
         >
-          ${item?.explanation}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+        <button
+          ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field"
+        >
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
         <label
+          ${item ? html`for="rubric-item-grader-note-button-${item.id}"` : ''}
           class="js-rubric-item-grader-note"
+          style="white-space: pre-wrap;"
           data-input-name="${namePrefix}[grader_note]"
           data-current-value="${item?.grader_note}"
+          >${item?.grader_note}</label
         >
-          ${item?.grader_note}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+        <button
+          ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field"
+        >
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
         <div class="form-check form-check-inline">
