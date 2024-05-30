@@ -3,14 +3,18 @@ import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
+import { selectCourseById } from '../../models/course.js';
 
 const router = Router({ mergeParams: true });
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
@@ -55,8 +59,25 @@ router.get(
     let elementFilesDir;
     if (res.locals.course) {
       // Files should be served from the course directory
-      const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-      await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'elements' });
+      let question_course;
+      if (req.params.producing_course_id) {
+        const producing_course_id = z.string().parse(req.params.producing_course_id);
+        const has_shared_question = await sqldb.queryRow(
+          sql.select_has_shared_question,
+          { consuming_course_id: res.locals.course.id, producing_course_id },
+          z.boolean(),
+        );
+        if (!has_shared_question) {
+          throw new HttpStatusError(404, 'Not Found');
+        }
+
+        question_course = await selectCourseById(producing_course_id);
+      } else {
+        question_course = res.locals.course;
+      }
+      const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+      await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
+
       elementFilesDir = path.join(coursePath, 'elements');
       res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
     } else {

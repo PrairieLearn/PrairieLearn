@@ -53,6 +53,7 @@ export default function (err, req, res, _next) {
 
   const templateData = {
     error: err,
+    errorStack: config.devMode && err.stack ? formatErrorStack(err) : null,
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
@@ -67,7 +68,6 @@ export default function (err, req, res, _next) {
   if (config.devMode) {
     // development error handler
     // will print stacktrace
-    templateData.errorStack = err.stack ? formatErrorStack(err) : null;
     res.render(path.join(import.meta.dirname, 'error'), templateData);
   } else {
     // production error handler

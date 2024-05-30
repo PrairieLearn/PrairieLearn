@@ -808,6 +808,18 @@ export async function initExpress() {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
@@ -849,6 +861,18 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
     (await import('./pages/elementFiles/elementFiles.js')).default,
   );
   app.use(
@@ -2468,16 +2492,6 @@ if (esMain(import.meta) && config.startServer) {
         });
       },
       async () => {
-        if (config.runBatchedMigrations) {
-          // Now that all migrations have been run, we can start executing any
-          // batched migrations that may have been enqueued by migrations.
-          startBatchedMigrations({
-            workDurationMs: config.batchedMigrationsWorkDurationMs,
-            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-          });
-        }
-      },
-      async () => {
         // We create and activate a random DB schema name
         // (https://www.postgresql.org/docs/12/ddl-schemas.html)
         // after we have run the migrations but before we create
@@ -2505,6 +2519,19 @@ if (esMain(import.meta) && config.startServer) {
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
         await sprocs.init();
+      },
+      async () => {
+        if (config.runBatchedMigrations) {
+          // Now that all migrations have been run, we can start executing any
+          // batched migrations that may have been enqueued by migrations.
+          //
+          // Note that we don't do this until sprocs have been created because
+          // some batched migrations may depend on sprocs.
+          startBatchedMigrations({
+            workDurationMs: config.batchedMigrationsWorkDurationMs,
+            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+          });
+        }
       },
       async () => {
         if ('sync-course' in argv) {

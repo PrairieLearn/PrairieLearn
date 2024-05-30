@@ -54,7 +54,13 @@ describe('effective user', function () {
   before('insert users', async function () {
     const institutionAdmin = await sqldb.callValidatedOneRow(
       'users_select_or_insert',
-      ['institution-admin@example.com', 'Institution Admin', null, 'dev'],
+      [
+        'institution-admin@example.com',
+        'Institution Admin',
+        null,
+        'institution-admin@example.com',
+        'dev',
+      ],
       UserWithIdSchema,
     );
     institutionAdminId = institutionAdmin.user_id;
@@ -65,7 +71,7 @@ describe('effective user', function () {
 
     const instructor = await sqldb.callValidatedOneRow(
       'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'dev'],
+      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
       UserWithIdSchema,
     );
     instructorId = instructor.user_id;
@@ -78,7 +84,7 @@ describe('effective user', function () {
 
     const staff = await sqldb.callValidatedOneRow(
       'users_select_or_insert',
-      ['staff03@example.com', 'Staff Three', null, 'dev'],
+      ['staff03@example.com', 'Staff Three', null, 'staff03@example.com', 'dev'],
       UserWithIdSchema,
     );
     staffId = staff.user_id;
@@ -91,7 +97,7 @@ describe('effective user', function () {
 
     const student = await sqldb.callValidatedOneRow(
       'users_select_or_insert',
-      ['student@example.com', 'Student User', '000000001', 'dev'],
+      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
       UserWithIdSchema,
     );
     studentId = student.user_id;

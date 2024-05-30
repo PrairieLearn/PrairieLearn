@@ -16,7 +16,7 @@ async function getUserParams(user_id) {
 }
 
 async function usersSelectOrInsert(
-  user: { uid: string; name: string; uin?: string | null },
+  user: { uid: string; name: string; uin?: string | null; email?: string | null },
   authn_provider_name: string | null = null,
   institution_id: string | null = null,
 ) {
@@ -24,6 +24,7 @@ async function usersSelectOrInsert(
     user.uid,
     user.name,
     user.uin,
+    user.email,
     authn_provider_name,
     institution_id,
   ]);
