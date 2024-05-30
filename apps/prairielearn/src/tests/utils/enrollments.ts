@@ -55,6 +55,7 @@ export async function enrollRandomUsers(courseInstanceId: string, count: number)
       name: `Student ${i}`,
       uid: `student${number}@example.com`,
       uin: `student-${i}`,
+      email: `student${number}@example.com`,
     });
     assert.isOk(res.ok);
   }

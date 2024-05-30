@@ -47,7 +47,7 @@ If a sharing course attempts to share a question which accesses client or server
 
 See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
 
-Just as anyone with access to a question in your course can access any the `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion`. These means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions.
+Just as anyone with access to a question in your course can access any file in `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion` files. This means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions. Additionally, anyone with access to a question shared from your course will be able to access the client assets in your custom course elements, just as any students with access to your course can access the client assets in your custom course elements.
 
 ## Steps to share a question to a course, using a sharing set
 
