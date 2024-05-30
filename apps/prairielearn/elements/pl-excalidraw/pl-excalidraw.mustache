@@ -1,8 +1,8 @@
 <script>
     $(async () => {
-        const module = (await import("pl-excalidraw-js"))
-        await module.init_sketch("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")))
-    })
+        const module = await import("pl-excalidraw-js");
+        await module.init_sketch("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+    });
 </script>
 
 <div id="excalidraw-host-{{uuid}}">

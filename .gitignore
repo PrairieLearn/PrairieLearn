@@ -107,6 +107,3 @@ packages/*/coverage
 ## Question HTML snapshots
 /new-renderer/
 /old-renderer/
-
-## Venv
-/venv/
