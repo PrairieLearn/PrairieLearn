@@ -169,8 +169,6 @@ describe('Workspace dynamic files', function () {
       targetPath: targetPath.path,
     });
 
-    assert.lengthOf(fileGenerationErrors, 7);
-
     // Valid files should still have been created.
     await checkFileContents(targetPath.path, 'static.txt', 'Static content\n');
     await checkFileContents(targetPath.path, 'template.txt', 'A is STRING, while B is 53\n');
@@ -199,5 +197,7 @@ describe('Workspace dynamic files', function () {
         );
       }
     }
+
+    assert.lengthOf(fileGenerationErrors, 7);
   });
 });
