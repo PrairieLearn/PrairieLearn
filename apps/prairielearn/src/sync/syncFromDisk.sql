@@ -9,7 +9,7 @@ WHERE
   AND shared_publicly
 UNION
 SELECT DISTINCT
-  (q.id),
+  q.id,
   q.qid
 FROM
   questions AS q
