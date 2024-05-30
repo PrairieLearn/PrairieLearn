@@ -1,11 +1,13 @@
 import { assert } from 'chai';
+import fs from 'fs-extra';
 import { step } from 'mocha-steps';
+import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { TEST_COURSE_PATH, EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -34,22 +36,25 @@ describe('effective user', function () {
   context.pageUrlExampleCourseInstance = `${context.baseUrl}/course_instance/2/instructor`;
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
 
-  before(
-    'set up testing server',
-    helperServer
-      .before([
-        // We need two courses for this test so that we can validate behavior of
-        // institution administrators.
-        TEST_COURSE_PATH,
-        EXAMPLE_COURSE_PATH,
-      ])
-      .bind(this),
-  );
+  before('set up testing server', async function () {
+    // We need two courses for this test so that we can validate behavior of
+    // institution administrators, specifically what happens when an instructor
+    // in one course tries to emulate an institution administrator and then
+    // access another course.
+    //
+    // However, we want to avoid using the example course, which has all sorts of
+    // weird special-cased permissions that make it harder to assert the expected
+    // behavior. So, we make a copy of the test course for our second course.
+    const secondCourseDir = await tmp.dir({ unsafeCleanup: true });
+    await fs.copy(TEST_COURSE_PATH, secondCourseDir.path);
 
-  let institutionAdminId;
-  let instructorId;
-  let staffId;
-  let studentId;
+    await helperServer.before([TEST_COURSE_PATH, secondCourseDir.path]).call(this);
+  });
+
+  let institutionAdminId: string;
+  let instructorId: string;
+  let staffId: string;
+  let studentId: string;
 
   before('insert users', async function () {
     const institutionAdmin = await sqldb.callValidatedOneRow(
