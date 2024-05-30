@@ -809,15 +809,15 @@ export async function initExpress() {
   // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
@@ -850,7 +850,7 @@ export async function initExpress() {
   // traffic in the future, we can delete these.
   //
   // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
-  app.use('/pl/static/elements', (await import('./pages/elementFiles/elementFiles.js')).default);
+  app.use('/pl/static/elements', (await import('./pages/elementFiles/elementFiles.js')).default());
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elements',
     (await import('./pages/elementFiles/elementFiles.js')).default(),
@@ -865,11 +865,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',

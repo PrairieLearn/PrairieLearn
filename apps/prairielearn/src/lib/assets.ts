@@ -16,11 +16,6 @@ import elementFiles from '../pages/elementFiles/elementFiles.js';
 import { config } from './config.js';
 import { APP_ROOT_PATH } from './paths.js';
 
-const coreElementFiles = elementFiles({
-  publicQuestionEndpoint: false,
-  coreElements: true,
-});
-
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;
 let publicHash: HashElementNode | null = null;
@@ -185,7 +180,13 @@ export function applyMiddleware(app: express.Application) {
       immutable: !config.devMode,
     }),
   );
-  router.use('/elements/:cachebuster', coreElementFiles);
+  router.use(
+    '/elements/:cachebuster',
+    elementFiles({
+      publicQuestionEndpoint: false,
+      coreElements: true,
+    }),
+  );
 
   app.use(assetsPrefix, router);
 }

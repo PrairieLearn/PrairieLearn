@@ -58,13 +58,15 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
       }
 
       let elementFilesDir;
-      if (options.publicQuestionEndpoint && !options.coreElements) {
-        const has_publicy_shared_question = await sqldb.queryRow(
+      if (options.coreElements) {
+        elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
+      } else if (options.publicQuestionEndpoint) {
+        const has_publicly_shared_question = await sqldb.queryRow(
           sql.select_has_publicly_shared_question,
           { course_id: req.params.course_id },
           z.boolean(),
         );
-        if (!has_publicy_shared_question) {
+        if (!has_publicly_shared_question) {
           throw new HttpStatusError(404, 'Not Found');
         }
         const course = await selectCourseById(req.params.course_id);
@@ -72,7 +74,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
         await chunks.ensureChunksForCourseAsync(course.id, { type: 'elements' });
 
         elementFilesDir = path.join(coursePath, 'elements');
-      } else if (!options.publicQuestionEndpoint && !options.coreElements) {
+      } else {
         let question_course;
         if (req.params.producing_course_id) {
           const producing_course_id = z.string().parse(req.params.producing_course_id);
@@ -93,9 +95,8 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
         await chunks.ensureChunksForCourseAsync(question_course.id, { type: 'elements' });
 
         elementFilesDir = path.join(coursePath, 'elements');
-      } else {
-        elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
       }
+
       res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
     }),
   );
