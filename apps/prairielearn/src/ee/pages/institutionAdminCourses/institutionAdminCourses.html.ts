@@ -29,31 +29,35 @@ export function InstitutionAdminCourses({
           navPage: 'institution_admin',
           navSubPage: 'courses',
         })}
-        <main class="container mb-4">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">Courses</div>
-            ${courses.length === 0
-              ? html`
-                  <div class="card-body">
-                    <div class="text-center text-muted">No courses</div>
-                  </div>
-                `
-              : html`
-                  <ul class="list-group list-group-flush">
-                    ${courses.map(
-                      (course) => html`
-                        <li class="list-group-item">
-                          <a href="/pl/course/${course.id}/course_admin">
-                            ${course.short_name}: ${course.title}
-                          </a>
-                        </li>
-                      `,
-                    )}
-                  </ul>
-                `}
-          </div>
-        </main>
+        <main class="container mb-4">${CoursesCard({ courses })}</main>
       </body>
     </html>
   `.toString();
+}
+
+function CoursesCard({ courses }: { courses: Course[] }) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">Courses</div>
+      ${courses.length === 0
+        ? html`
+            <div class="card-body">
+              <div class="text-center text-muted">No courses</div>
+            </div>
+          `
+        : html`
+            <ul class="list-group list-group-flush">
+              ${courses.map(
+                (course) => html`
+                  <li class="list-group-item">
+                    <a href="/pl/course/${course.id}/course_admin">
+                      ${course.short_name}: ${course.title}
+                    </a>
+                  </li>
+                `,
+              )}
+            </ul>
+          `}
+    </div>
+  `;
 }

@@ -47,58 +47,64 @@ export function InstitutionAdminAdmins({
           navSubPage: 'admins',
         })}
         <main class="container mb-4">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              Administrators
-              <button
-                type="button"
-                class="btn btn-sm btn-light ml-auto"
-                data-toggle="modal"
-                data-target="#addAdminsModal"
-              >
-                <i class="fa fa-user-plus" aria-hidden="true"></i>
-                Add administrators
-              </button>
-            </div>
-
-            ${rows.length === 0
-              ? html`
-                  <div class="card-body">
-                    <div class="text-center text-muted">No institution administrators</div>
-                  </div>
-                `
-              : html`
-                  <ul class="list-group list-group-flush">
-                    ${rows.map(
-                      (row) => html`
-                        <li class="list-group-item d-flex flex-row align-items-center">
-                          <div class="d-flex flex-column">
-                            <span>${row.user.name}</span>
-                            <span class="text-muted">${row.user.uid}</span>
-                          </div>
-
-                          <button
-                            class="btn btn-sm btn-outline-danger ml-auto js-remove-admin"
-                            data-toggle="modal"
-                            data-target="#removeAdminModal"
-                            type="button"
-                            data-name-and-uid="${row.user.name} (${row.user.uid})"
-                            data-institution-administrator-id="${row.institution_administrator.id}"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      `,
-                    )}
-                  </ul>
-                `}
-          </div>
+          ${AdminsCard({ rows })}
+          ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
+          ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
         </main>
-        ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
-        ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
       </body>
     </html>
   `.toString();
+}
+
+function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        Administrators
+        <button
+          type="button"
+          class="btn btn-sm btn-light ml-auto"
+          data-toggle="modal"
+          data-target="#addAdminsModal"
+        >
+          <i class="fa fa-user-plus" aria-hidden="true"></i>
+          Add administrators
+        </button>
+      </div>
+
+      ${rows.length === 0
+        ? html`
+            <div class="card-body">
+              <div class="text-center text-muted">No institution administrators</div>
+            </div>
+          `
+        : html`
+            <ul class="list-group list-group-flush">
+              ${rows.map(
+                (row) => html`
+                  <li class="list-group-item d-flex flex-row align-items-center">
+                    <div class="d-flex flex-column">
+                      <span>${row.user.name}</span>
+                      <span class="text-muted">${row.user.uid}</span>
+                    </div>
+
+                    <button
+                      class="btn btn-sm btn-outline-danger ml-auto js-remove-admin"
+                      data-toggle="modal"
+                      data-target="#removeAdminModal"
+                      type="button"
+                      data-name-and-uid="${row.user.name} (${row.user.uid})"
+                      data-institution-administrator-id="${row.institution_administrator.id}"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                `,
+              )}
+            </ul>
+          `}
+    </div>
+  `;
 }
 
 function AddAdminsModal({ uidsLimit, csrfToken }: { uidsLimit: number; csrfToken: string }) {
