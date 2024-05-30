@@ -3,16 +3,13 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryRow,
-  queryValidatedRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryValidatedRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdministratorSchema } from '../../../lib/db-types.js';
 import { parseUidsString } from '../../../lib/user.js';
-import { insertAuditLog } from '../../../models/audit-log.js';
+import {
+  deleteInstitutionAdministrator,
+  insertInstitutionAdministrator,
+} from '../../../models/institution-administrator.js';
 import { selectUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 
@@ -79,25 +76,13 @@ router.post(
             continue;
           }
 
-          const admin = await queryRow(
-            sql.insert_institution_admin,
-            {
-              institution_id: institution.id,
-              user_id: user.user_id,
-            },
-            InstitutionAdministratorSchema,
-          );
-          validUids.push(uid);
-
-          await insertAuditLog({
+          await insertInstitutionAdministrator({
+            user_id: user.user_id,
+            institution_id: institution.id,
             authn_user_id: res.locals.authn_user.user_id,
-            table_name: 'institution_administrators',
-            action: 'insert',
-            institution_id: admin.institution_id,
-            user_id: admin.user_id,
-            row_id: admin.id,
-            new_state: admin,
           });
+
+          validUids.push(uid);
         }
       });
 
@@ -114,25 +99,10 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'removeAdmin') {
-      await runInTransactionAsync(async () => {
-        const admin = await queryRow(
-          sql.delete_institution_admin,
-          {
-            institution_id: institution.id,
-            institution_administrator_id: req.body.unsafe_institution_administrator_id,
-          },
-          InstitutionAdministratorSchema,
-        );
-
-        await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
-          table_name: 'institution_administrators',
-          action: 'delete',
-          institution_id: admin.institution_id,
-          user_id: admin.user_id,
-          row_id: admin.id,
-          old_state: admin,
-        });
+      await deleteInstitutionAdministrator({
+        institution_id: institution.id,
+        unsafe_institution_administrator_id: req.body.unsafe_institution_administrator_id,
+        authn_user_id: res.locals.authn_user.user_id,
       });
       flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);
