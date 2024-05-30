@@ -1880,11 +1880,6 @@ export async function initExpress() {
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
-  // TODO: remove this route once all links are updated to reference the one above
-  app.use(
-    '/pl/course/:course_id(\\d+)/copy_template_course_question',
-    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
-  );
 
   // Global client files
   app.use(
