@@ -18,7 +18,7 @@ import { APP_ROOT_PATH } from './paths.js';
 
 const coreElementFiles = elementFiles({
   publicQuestionEndpoint: false,
-  coreElement: true,
+  coreElements: true,
 });
 
 let assetsPrefix: string | null = null;

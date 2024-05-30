@@ -23,7 +23,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const EXTENSION_WHITELIST = ['.js', '.css'];
 const CLIENT_FOLDER = 'clientFilesElement';
 
-export default function (options = { publicQuestionEndpoint: false, coreElement: false }) {
+export default function (options = { publicQuestionEndpoint: false, coreElements: false }) {
   const router = Router({ mergeParams: true });
   router.get(
     '/*',
@@ -58,7 +58,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElement:
       }
 
       let elementFilesDir;
-      if (options.publicQuestionEndpoint && !options.coreElement) {
+      if (options.publicQuestionEndpoint && !options.coreElements) {
         const has_publicy_shared_question = await sqldb.queryRow(
           sql.select_has_publicly_shared_question,
           { course_id: req.params.course_id },
@@ -72,7 +72,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElement:
         await chunks.ensureChunksForCourseAsync(course.id, { type: 'elements' });
 
         elementFilesDir = path.join(coursePath, 'elements');
-      } else if (!options.publicQuestionEndpoint && !options.coreElement) {
+      } else if (!options.publicQuestionEndpoint && !options.coreElements) {
         let question_course;
         if (req.params.producing_course_id) {
           const producing_course_id = z.string().parse(req.params.producing_course_id);
