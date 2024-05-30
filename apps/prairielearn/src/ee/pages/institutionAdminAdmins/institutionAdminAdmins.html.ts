@@ -57,7 +57,7 @@ export function InstitutionAdminAdmins({
                 data-target="#addAdminsModal"
               >
                 <i class="fa fa-user-plus" aria-hidden="true"></i>
-                Add administrator
+                Add administrators
               </button>
             </div>
 
