@@ -1,5 +1,6 @@
 import { type Request, type Response } from 'express';
-import { OpenAI } from 'openai';
+import { OpenAI, type ClientOptions } from 'openai';
+// import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
@@ -13,10 +14,15 @@ import * as questionServers from '../question-servers/index.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// const SubmissionVariantSchema = z.object({
+//   variant: VariantSchema,
+//   submission: SubmissionSchema
+// });
+
 export async function botGrade(
   req: Request,
   res: Response,
-  openaiconfig: Record<'apiKey' | 'organization', string>,
+  openaiconfig: ClientOptions,
 ): Promise<string> {
   const question = res.locals.question;
   const question_course = await getQuestionCourse(question, res.locals.course);
