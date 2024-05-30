@@ -45,7 +45,7 @@
     if (contents && renderer) contents = renderer.makeHtml(contents);
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
-    quill.setContents(quill.clipboard.convert(contents));
+    quill.clipboard.dangerouslyPasteHTML(contents);
 
     quill.on('text-change', function () {
       let contents = rtePurify.sanitize(quill.root.innerHTML, rtePurifyConfig);
@@ -63,7 +63,7 @@
 
   // Override default implementation of 'formula'
 
-  var Embed = Quill.imports.parchment.Embed;
+  var Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
     static create(value) {
