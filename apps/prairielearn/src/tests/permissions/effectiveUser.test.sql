@@ -13,9 +13,3 @@ INSERT INTO
   administrators (user_id)
 VALUES
   ($user_id);
-
--- BLOCK insert_institution_administrator
-INSERT INTO
-  institution_administrators (user_id, institution_id)
-VALUES
-  ($user_id, $institution_id);

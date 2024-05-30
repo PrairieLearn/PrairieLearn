@@ -15,6 +15,7 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
+import { insertInstitutionAdministrator } from '../../models/institution-administrator.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
@@ -69,9 +70,10 @@ describe('effective user', function () {
       UserWithIdSchema,
     );
     institutionAdminId = institutionAdmin.user_id;
-    await sqldb.queryAsync(sql.insert_institution_administrator, {
+    await insertInstitutionAdministrator({
+      institution_id: '1',
       user_id: institutionAdminId,
-      institution_id: 1,
+      authn_user_id: '1',
     });
 
     const instructor = await sqldb.callValidatedOneRow(
