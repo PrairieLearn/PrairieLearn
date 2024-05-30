@@ -27,6 +27,7 @@ const ADMIN_USER = {
   name: 'Admin',
   uid: 'admin@example.com',
   uin: 'admin',
+  email: 'admin@example.com',
   isAdministrator: true,
 };
 
@@ -34,6 +35,7 @@ const INSTITUTION_ADMIN_USER = {
   name: 'Institution Admin',
   uid: 'institution-admin@example.com',
   uin: 'institution-admin',
+  email: 'institution-admin@example.com',
 };
 
 async function insertUser(user: AuthUser) {
