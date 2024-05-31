@@ -4,6 +4,7 @@ import _ from 'lodash';
 import { formatErrorStack } from '@prairielearn/error';
 import { HtmlSafeString, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 
@@ -37,27 +38,7 @@ export function ErrorPage({
     ...restData
   } = error.data ?? {};
 
-  const sqlPosition = error.data?.sqlError?.position;
-  let formattedSqlQuery = sqlQuery;
-  if (sqlPosition != null && sqlQuery != null) {
-    const preSql = sqlQuery.substring(0, sqlPosition);
-    const postSql = sqlQuery.substring(sqlPosition);
-    const prevNewline = Math.max(0, preSql.lastIndexOf('\n') + 1);
-    let nextNewline = postSql.indexOf('\n');
-    if (nextNewline < 0) nextNewline = postSql.length;
-    nextNewline += preSql.length;
-    const gap = ' '.repeat(Math.max(0, sqlPosition - prevNewline - 1));
-    formattedSqlQuery =
-      sqlQuery.substring(0, nextNewline) +
-      '\n' +
-      gap +
-      '^\n' +
-      gap +
-      '|\n' +
-      gap +
-      '+ ERROR POSITION SHOWN ABOVE\n' +
-      sqlQuery.substring(nextNewline);
-  }
+  const formattedSqlQuery = formatQueryWithErrorPosition(sqlQuery, sqlError?.position);
 
   return html`
     <!doctype html>
