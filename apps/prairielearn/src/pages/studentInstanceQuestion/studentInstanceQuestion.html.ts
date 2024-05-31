@@ -75,6 +75,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                           import.meta.url,
                           "<%- include('../partials/questionTitle') %>",
                           {
+                            ...resLocals,
                             question_context:
                               resLocals.assessment.type === 'Exam'
                                 ? 'student_exam'
