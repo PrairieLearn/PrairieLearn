@@ -1,11 +1,16 @@
-import { type Request, type Response } from 'express';
 import { OpenAI, type ClientOptions } from 'openai';
 import { z } from 'zod';
 
-import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { InstanceQuestionSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
+import {
+  InstanceQuestionSchema,
+  SubmissionSchema,
+  VariantSchema,
+  Question,
+  Course,
+  AssessmentQuestion,
+} from '../lib/db-types.js';
 import * as manualGrading from '../lib/manualGrading.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { getQuestionCourse } from '../lib/question-variant.js';
@@ -19,16 +24,23 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 
-export async function botGrade(
-  req: Request,
-  res: Response,
-  openaiconfig: ClientOptions,
-): Promise<string> {
-  const question = res.locals.question;
-  const question_course = await getQuestionCourse(question, res.locals.course);
+export async function botGrade({
+  openaiconfig,
+  question,
+  course,
+  assessment_question,
+  urlPrefix,
+}: {
+  openaiconfig: ClientOptions;
+  question: Question;
+  course: Course;
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+}): Promise<string> {
+  const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
-    courseId: res.locals.course ? res.locals.course.id : null,
+    courseId: course.id,
     type: 'botGrading',
     description: 'Use LLM to grade assessment question',
   });
@@ -41,8 +53,8 @@ export async function botGrade(
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
-        assessment_id: res.locals.assessment.id,
-        assessment_question_id: res.locals.assessment_question.id,
+        assessment_id: assessment_question.assessment_id,
+        assessment_question_id: assessment_question.id,
       },
       InstanceQuestionSchema,
     );
@@ -82,7 +94,7 @@ export async function botGrade(
       const variant = variant_submission.variant;
 
       // build urls for the question server
-      const urls = buildQuestionUrls(res.locals.urlPrefix, variant, question, instance_question);
+      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
 
       // get question html
       const questionModule = questionServers.getModule(question.type);
@@ -126,10 +138,10 @@ export async function botGrade(
         }
         const gpt_answer = JSON.parse(completion.choices[0].message.content);
         const update_result = await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment.id,
+          assessment_question.assessment_id,
           instance_question.id,
           submission.id,
-          req.body.modified_at,
+          null, // modified_at
           {
             score_perc: gpt_answer.grade,
             feedback: { manual: gpt_answer.feedback },
@@ -139,13 +151,13 @@ export async function botGrade(
         );
         msg = `Bot grades for ${instance_question.id}: ${gpt_answer.grade}`;
         if (update_result.modified_at_conflict) {
+          job.error(`ERROR modified at conflict for ${instance_question.id}`);
           error_count++;
-          msg += `\nERROR modified at conflict for ${instance_question.id}`;
         }
       } catch (err) {
-        logger.error('error while regrading', { err });
+        job.error(`ERROR bot grading for ${instance_question.id}`);
+        job.error(err);
         error_count++;
-        msg = `ERROR bot grading for ${instance_question.id}`;
       }
       output = (output == null ? '' : `${output}\n`) + msg;
       output_count++;

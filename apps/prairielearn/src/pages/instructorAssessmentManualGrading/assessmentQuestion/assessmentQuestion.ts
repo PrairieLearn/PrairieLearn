@@ -152,12 +152,16 @@ router.post(
         throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
       }
 
-      const openaiconfig = {
-        apiKey: config.openAiApiKey,
-        organization: config.openAiOrganization,
-      };
-
-      const jobSequenceId = await botGrade(req, res, openaiconfig);
+      const jobSequenceId = await botGrade({
+        openaiconfig: {
+          apiKey: config.openAiApiKey,
+          organization: config.openAiOrganization,
+        },
+        question: res.locals.question,
+        course: res.locals.course,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
 
       // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"
