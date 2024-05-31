@@ -1,5 +1,3 @@
-import keyBy from 'lodash/keyBy.js';
-
 export function formatFloat(x: number | null, numDecDigits = 2) {
   if (Number.isFinite(x) && typeof x === 'number') {
     return x.toFixed(numDecDigits);
