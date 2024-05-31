@@ -8,6 +8,7 @@
   partial-credit="true"
   min-correct="2"
 >
+  {{! Use Mustache sections to render the lists of correct answers and distractors. }}
   {{#params.correct_cities}}
     <pl-answer correct="true">{{.}}</pl-answer>
   {{/params.correct_cities}}
