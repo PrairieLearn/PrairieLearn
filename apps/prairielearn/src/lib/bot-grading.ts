@@ -1,6 +1,6 @@
 import { type Request, type Response } from 'express';
 import { OpenAI, type ClientOptions } from 'openai';
-// import { z } from 'zod';
+import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
@@ -14,10 +14,10 @@ import * as questionServers from '../question-servers/index.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-// const SubmissionVariantSchema = z.object({
-//   variant: VariantSchema,
-//   submission: SubmissionSchema
-// });
+const SubmissionVariantSchema = z.object({
+  variant: VariantSchema,
+  submission: SubmissionSchema,
+});
 
 export async function botGrade(
   req: Request,
@@ -55,12 +55,14 @@ export async function botGrade(
 
     // get each instance question
     for (const instance_question of result) {
-      // get last submission of instance question
-      const submission = await queryRow(
-        sql.select_last_submission,
+      const variant_submission = await await queryRow(
+        sql.select_last_variant_and_submission,
         { instance_question_id: instance_question.id },
-        SubmissionSchema,
+        SubmissionVariantSchema,
       );
+
+      // // get last submission of instance question
+      const submission = variant_submission.submission;
 
       // maybe remove some if statements that can never happen
       // if nothing submitted
@@ -77,11 +79,7 @@ export async function botGrade(
       const student_answer = atob(submission.submitted_answer._files[0].contents);
 
       // get question prompt
-      const variant = await queryRow(
-        sql.select_last_variant,
-        { instance_question_id: instance_question.id },
-        VariantSchema,
-      );
+      const variant = variant_submission.variant;
 
       // build urls for the question server
       const urls = buildQuestionUrls(res.locals.urlPrefix, variant, question, instance_question);

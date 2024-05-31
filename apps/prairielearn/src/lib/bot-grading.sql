@@ -15,38 +15,10 @@ ORDER BY
   user_or_group_name,
   iq.id;
 
--- BLOCK select_last_submission
-SELECT
-  s.* AS submission
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
--- BLOCK select_last_variant
-SELECT
-  v.* AS variant
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
 -- BLOCK select_last_variant_and_submission
 SELECT
-  v.* AS variant,
-  s.* AS submission
+  to_jsonb(v.*) AS variant,
+  to_jsonb(s.*) AS submission
 FROM
   variants AS v
   JOIN submissions AS s ON (s.variant_id = v.id)
