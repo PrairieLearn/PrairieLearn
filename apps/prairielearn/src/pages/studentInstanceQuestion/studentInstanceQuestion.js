@@ -278,7 +278,7 @@ router.get(
       );
       if (last_variant_id == null) {
         res.locals.no_variant_exists = true;
-        res.send(StudentInstanceQuestion({ resLocals: res.locals }));
+        res.status(403).send(StudentInstanceQuestion({ resLocals: res.locals }));
         return;
       }
 
