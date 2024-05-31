@@ -88,7 +88,7 @@ export function getPaths(req, res) {
         path: paths.clientDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.clientDir,
-        )}</code> and will be accessible from the student's webbrowser.`,
+        )}</code> and will be accessible from the student's web browser.`,
       });
     }
     if (paths.serverDir) {
@@ -97,7 +97,7 @@ export function getPaths(req, res) {
         path: paths.serverDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.serverDir,
-        )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
+        )}</code> and will be accessible only from the server. It will not be accessible from the student's web browser.`,
       });
     }
     if (paths.testsDir) {
@@ -106,7 +106,7 @@ export function getPaths(req, res) {
         path: paths.testsDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.testsDir,
-        )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
+        )}</code> and will be accessible only from the server. It will not be accessible from the student's web browser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
       });
     }
   }
