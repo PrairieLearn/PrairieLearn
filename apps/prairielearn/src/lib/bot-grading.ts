@@ -26,7 +26,6 @@ const SubmissionVariantSchema = z.object({
 
 export async function botGrade({
   course,
-  course_instance_id,
   openaiconfig,
   question,
   assessment_question,
@@ -35,7 +34,6 @@ export async function botGrade({
   openaiconfig: ClientOptions;
   question: Question;
   course: Course;
-  course_instance_id: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
 }): Promise<string> {
@@ -43,7 +41,6 @@ export async function botGrade({
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    courseInstanceId: course_instance_id,
     assessmentId: assessment_question.assessment_id,
     authnUserId: '1',
     type: 'botGrading',
