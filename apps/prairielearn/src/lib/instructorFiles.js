@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-import { encodePath, decodePath } from './uri-util.js';
+import { encodePath } from './uri-util.js';
 
 /**
  * For the file path of the current page, this function returns rich
@@ -69,7 +69,7 @@ export function getPaths(req, res) {
 
   if (req.params[0]) {
     try {
-      paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
+      paths.workingPath = path.join(res.locals.course.path, req.params[0]);
     } catch (err) {
       throw new Error(`Invalid path: ${req.params[0]}`);
     }
