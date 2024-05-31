@@ -1,4 +1,3 @@
-// @ts-check
 import assert from 'node:assert';
 import * as path from 'path';
 
