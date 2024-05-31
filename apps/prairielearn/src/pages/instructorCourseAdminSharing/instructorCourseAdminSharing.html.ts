@@ -59,6 +59,125 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
+interface SharingSetModalProps {
+  feature: string;
+  institution_id?: string | null;
+  course_id?: string | null;
+  course_instance_id?: string | null;
+  csrfToken: string;
+}
+/*
+function deleteSharingSetModal(props: SharingSetModalProps) {
+  return Modal({
+    title: 'Delete sharing set',
+    id: 'delete-sharing-set-modal',
+    body: DeleteSharingSetModalBody(props),
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+    `,
+  });
+}
+
+export function DeleteSharingSetModalBody({
+  feature,
+  institutions,
+  institution_id,
+  courses,
+  course_id,
+  course_instances,
+  course_instance_id,
+}: Omit<FeatureGrantModalProps, 'csrfToken'>) {
+  const modalUrl = `/pl/administrator/features/${feature}/modal`;
+  return html`
+    <fieldset
+      hx-get="${modalUrl}"
+      hx-trigger="change"
+      hx-target="this"
+      hx-include="closest .modal-body"
+      hx-ext="loading-states,morphdom-swap"
+      hx-swap="morphdom"
+      data-loading-disable
+      data-loading-delay="200"
+    >
+      <div class="form-group">
+        <label for="feature-grant-institution">
+          Institution
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-institution"
+          name="institution_id"
+        >
+          <option value="">All institutions</option>
+          ${institutions.map((institution) => {
+            return html`
+              <option
+                value="${institution.id}"
+                ${institution.id === institution_id ? 'selected' : ''}
+              >
+                ${institution.short_name}: ${institution.long_name} (${institution.id})
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="feature-grant-course">
+          Course
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-course"
+          name="course_id"
+          ${!institution_id ? 'disabled' : ''}
+        >
+          <option value="">All courses in this institution</option>
+          ${(courses ?? []).map((course) => {
+            return html`
+              <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
+                ${course.short_name}: ${course.title} (${course.id})
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="feature-grant-course-instance">
+          Course instance
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-course-instance"
+          name="course_instance_id"
+          ${!course_id ? 'disabled' : ''}
+        >
+          <option value="">All courses instances in this course</option>
+          ${(course_instances ?? []).map((course_instance) => {
+            return html`
+              <option
+                value="${course_instance.id}"
+                ${course_instance.id === course_instance_id ? 'selected' : ''}
+              >
+                ${course_instance.short_name}: ${course_instance.long_name} (${course_instance.id})
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+    </fieldset>
+  `;
+}
+
+
+*/
+
 const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   return html`
     <div
@@ -146,8 +265,8 @@ const deleteSharingSetModal = (sharing_set, resLocals) => {
             ? html`
                 <div class="modal-body">
                   <p>
-                    <strong>Delete sharing set?</strong>
-                    Once you do so, the sharing set can't be restored.
+                    <strong>Delete sharing set ${sharing_set.name}?</strong>
+                    If you do so, <strong>this sharing set can't be restored.</strong>
                   </p>
                 </div>
                 <div class="modal-footer">
@@ -161,7 +280,17 @@ const deleteSharingSetModal = (sharing_set, resLocals) => {
                   </form>
                 </div>
               `
-            : ''}
+            : html`
+            <div class="modal-body">
+              <p>
+                <strong>Unable to delete sharing set because the sharing set has been shared and 
+                at least one question has been added</strong>.
+                Doing so would break the assessments of other courses that have
+                imported your questions.
+              </p>
+            </div>
+            `
+          }
         </div>
       </div>
     </div>
@@ -178,7 +307,7 @@ export const InstructorSharing = ({
 }: {
   sharingName: string | null;
   sharingToken: string;
-  sharingSets: { name: string; id: string; shared_with: string[]; deletable?: boolean }[];
+  sharingSets: { name: string; id: string; shared_with: string[]; deletable: boolean }[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
   resLocals: Record<string, any>;
@@ -321,31 +450,30 @@ export const InstructorSharing = ({
                                 Add...
                                 <i class="fas fa-plus" aria-hidden="true"></i>
                               </button>
-
-                              ${sharing_set.deletable
-                                ? html`
-                                  <button
-                                    type="button"
-                                    class="btn btn-sm btn-outline-danger"
-                                    id="deleteSharingSet-${sharing_set.id}"
-                                    title="Delete Sharing Set"
-                                    data-toggle="modal"
-                                    data-target="#deleteSharingSetModal"
-                                    data-trigger="manual"
-                                    
-                                    data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
-                                  >
-                                    <i class="fas fa-share-nodes" aria-hidden="true"></i>
-                                    <span>Delete Sharing Set</span>
-                                  </button>
-                                  ${deleteSharingSetModal(sharing_set, resLocals)}
-                                `
-                                : ''
-                              }
                             </div>
                           `
                           : ''
-                        }
+                        } 
+                        <style>
+                          .align-right {
+                            float: right;
+                          }
+                        </style>
+                        <div class="align-right">
+                          <button
+                            type="button"
+                            class="btn btn-sm text-danger"
+                            id="deleteSharingSet-${sharing_set.id}"
+                            title="Delete Sharing Set"
+                            data-toggle="modal"
+                            data-target="#deleteSharingSetModal"
+                            data-trigger="manual"
+                          >
+                            <i class="fas fa-trash"></i>
+                            <span class="sr-only">Delete</span>
+                          </button>
+                          ${deleteSharingSetModal(sharing_set, resLocals)}
+                        </div>
                       </td>
                     </tr>
                   `,

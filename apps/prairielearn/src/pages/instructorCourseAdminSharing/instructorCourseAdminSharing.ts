@@ -25,68 +25,22 @@ async function selectCanChooseSharingName(course) {
   );
 }
 
-// TESTING, combine TEST calls into one function/call, or use all?
-async function selectCanDeleteSharingSet(sharing_set) {
+async function selectCanDeleteSharingSet(sharing_set_id) {
   const can_delete = ! (await sqldb.queryOptionalRow(
-    sql.UNION_OF_ALL_TEST,
+    sql.select_sharing_set_shared_and_has_question,
     {
-      sharing_set_id: sharing_set.id,
+      sharing_set_id: sharing_set_id,
     },
     z.boolean().nullable(),
   ));
-  console.log(`Can delete sharing set ${sharing_set.name}:`, can_delete); // TEST
-  
-  // DELETE BELOW, TEST
-  const shared_question = await sqldb.queryOptionalRow(
-    sql.select_sharing_set_has_question_TEST,
-    {
-      sharing_set_id: sharing_set.id,
-    },
-    z.boolean().nullable(),
-  );
-
-  console.log(`Sharing set ${sharing_set.name} has question:`, shared_question); // TEST
-
-  //TEST BELOW, delete
-  const shared_set = await sqldb.queryOptionalRow(
-    sql.select_sharing_set_shared_TEST,
-    {
-      sharing_set_id: sharing_set.id,
-    },
-    z.boolean().nullable(),
-  );
-  console.log(`${sharing_set.name} shared with another course:`, shared_set); // TEST
-
-  // TEST BELOW, delete
-  const shared_question_used = await sqldb.queryOptionalRow(
-    sql.select_sharing_set_question_is_used_TEST,
-    {
-      sharing_set_id: sharing_set.id,
-    },
-    z.boolean().nullable(),
-  );
-  // TEST, THIS IS BROKEN, JUST HAVING A QUESTION IN THE SHARING SET IS ENOUGH TO MAKE THIS TRUE WHEN IT SHOULDN'T BE
-  console.log(`Shared question used in another course from ${sharing_set.name}:`, shared_question_used); // TEST
-
+  console.log(`Can delete sharing set ${sharing_set_id}:`, can_delete); // TEST
   
   return (
     can_delete
   );
 
 }
-/*
-async function selectCanDeleteSharingSet(sharing_set) {
-  return (
-    (await sqldb.queryOptionalRow(
-      sql.select_set_shared,
-      {
-        sharing_set_id: sharing_set.id,
-      },
-      z.boolean().nullable(),
-    ))
-  );
-}
-*/
+
 
 router.get(
   '/',
@@ -125,7 +79,7 @@ router.get(
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
     for (const sharingSet of sharingSets) {
-      sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet);
+      sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet.id);
     }
     
 
@@ -199,10 +153,16 @@ router.post(
         }
       }
     } else if (req.body.__action === 'delete_sharing_set') {
-      console.log('Deleting sharing set:', req.body.sharing_set_id); // TEST
-      await sqldb.queryZeroOrOneRowAsync(sql.delete_sharing_set, {
-        sharing_set_id: req.body.sharing_set_id,
-      });
+      const canDelete = selectCanDeleteSharingSet(req.body.sharing_set_id);
+      if (canDelete) {
+        await sqldb.queryZeroOrOneRowAsync(sql.delete_sharing_set, {
+          sharing_set_id: req.body.sharing_set_id,
+        });
+      } else {
+        throw new error.HttpStatusError(
+          400, 
+          'Unable to delete sharing set. The sharing set has been shared and at least one question has been added.');
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

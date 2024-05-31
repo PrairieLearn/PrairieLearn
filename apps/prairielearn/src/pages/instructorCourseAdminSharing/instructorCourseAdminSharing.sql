@@ -102,8 +102,7 @@ SELECT
     ELSE FALSE
   END AS can_not_delete;
 
-
--- BLOCK UNION_OF_ALL_TEST
+-- BLOCK select_sharing_set_shared_and_has_question
 SELECT
   EXISTS (
     SELECT -- set shared?
@@ -116,55 +115,9 @@ SELECT
     SELECT -- set has question(s)?
       1
     FROM
-      sharing_sets AS ss
-      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
-      JOIN questions AS q ON q.id = ssq.question_id
-    WHERE
-      ss.id = $sharing_set_id
-  ) AND EXISTS (
-    SELECT -- question(s) is/are used?
-      1
-    FROM
-      sharing_set_questions AS ssq
-      JOIN sharing_set_courses AS ssc ON ssq.sharing_set_id = ssc.sharing_set_id
-    WHERE
-      ssq.sharing_set_id = $sharing_set_id
-  );
-
--- BLOCK select_sharing_set_shared_TEST
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      sharing_set_courses
+      sharing_set_questions
     WHERE
       sharing_set_id = $sharing_set_id
-  );
-
--- BLOCK select_sharing_set_question_is_used_TEST
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      sharing_set_questions AS ssq
-      JOIN sharing_set_courses AS ssc ON ssq.sharing_set_id = ssc.sharing_set_id
-    WHERE
-      ssq.sharing_set_id = $sharing_set_id
-  ) AS question_is_used;
-
--- BLOCK select_sharing_set_has_question_TEST
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      sharing_sets AS ss
-      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
-      JOIN questions AS q ON q.id = ssq.question_id
-    WHERE
-      ss.id = $sharing_set_id
   );
 
 -- BLOCK delete_sharing_set
