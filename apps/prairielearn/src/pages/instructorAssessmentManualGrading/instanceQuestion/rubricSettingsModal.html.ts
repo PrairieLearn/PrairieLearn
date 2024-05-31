@@ -315,35 +315,37 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         />
       </td>
       <td>
-        <label
-          ${item ? html`for="rubric-item-explanation-button-${item.id}"` : ''}
-          class="js-rubric-item-explanation"
-          style="white-space: pre-wrap;"
-          data-input-name="${namePrefix}[explanation]"
-          data-current-value="${item?.explanation}"
-          >${item?.explanation}</label
-        >
+        ${item?.explanation
+          ? html` <label
+              for="rubric-item-explanation-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.explanation}</label
+            >`
+          : ''}
         <button
           ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
           type="button"
-          class="btn btn-sm js-rubric-item-long-text-field"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-explanation"
+          data-input-name="${namePrefix}[explanation]"
+          data-current-value="${item?.explanation}"
         >
           <i class="fas fa-pencil"></i>
         </button>
       </td>
       <td>
-        <label
-          ${item ? html`for="rubric-item-grader-note-button-${item.id}"` : ''}
-          class="js-rubric-item-grader-note"
-          style="white-space: pre-wrap;"
-          data-input-name="${namePrefix}[grader_note]"
-          data-current-value="${item?.grader_note}"
-          >${item?.grader_note}</label
-        >
+        ${item?.grader_note
+          ? html`<label
+              for="rubric-item-grader-note-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.grader_note}</label
+            > `
+          : ''}
         <button
           ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
           type="button"
-          class="btn btn-sm js-rubric-item-long-text-field"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-grader-note"
+          data-input-name="${namePrefix}[grader_note]"
+          data-current-value="${item?.grader_note}"
         >
           <i class="fas fa-pencil"></i>
         </button>
