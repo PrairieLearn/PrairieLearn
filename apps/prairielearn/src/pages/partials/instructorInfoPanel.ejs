@@ -43,15 +43,16 @@
   <div class="d-flex flex-wrap">
     <div class="pr-1">QID:</div>
     <div>
+      <% const query = typeof variant !== "undefined" ? `?variant_seed=${variant.variant_seed}` : "" %>
       <% if (locals.course_instance) { %>
-      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
+      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %><%= query %>"><%= question.qid %></a>
       <% } else { %>
-      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
+      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %><%= query %>"><%= question.qid %></a>
       <% } %>
     </div>
   </div>
 
-  <% if (question_is_shared && course.sharing_name) { %>
+  <% if (typeof question_is_shared !== "undefined" && question_is_shared && course.sharing_name) { %>
   <div class="d-flex flex-wrap">
     <div class="pr-1">Shared As:</div>
     <% if (question.shared_publicly) { %>
@@ -67,6 +68,7 @@
     <div class="pr-1">Title:</div>
     <div><%= question.title %></div>
   </div>
+  <% if (typeof variant !== "undefined") { %>
   <div class="d-flex flex-wrap">
     <div class="pr-1">Started at: </div>
     <div><%= variant.formatted_date %></div>
@@ -83,8 +85,9 @@
         <code><%= JSON.stringify(variant.true_answer); %></code>
     </div>
   </div>
+  <% } %>
 
-  <% if ((typeof question_context !== "undefined") && (question_context == "instructor" || question_context == "manual_grading")) { %>
+  <% if ((typeof variant !== "undefined") && (typeof question_context !== "undefined") && (question_context == "instructor" || question_context == "manual_grading")) { %>
   <div class="row">
     <div class="col-auto">
       <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
