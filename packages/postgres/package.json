@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.1",
+    "@types/lodash": "^4.17.4",
     "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
     "pg": "^8.11.5",
@@ -28,12 +28,12 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.6",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.13.0",
     "c8": "^9.1.0",
     "chai": "^5.1.1",
     "chai-as-promised": "^7.1.2",
     "mocha": "^10.4.0",
-    "tsx": "^4.10.4",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },
   "c8": {
