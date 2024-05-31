@@ -6,6 +6,9 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/as
 import { config } from '../../lib/config.js';
 
 export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
+  const question_context =
+    resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -19,11 +22,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 {
                   serverRemainingMS: resLocals.assessment_instance_remaining_ms,
                   serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-                  serverUpdateURL:
-                    resLocals.urlPrefix +
-                    '/assessment_instance/' +
-                    resLocals.assessment_instance.id +
-                    '/time_remaining',
+                  serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
                   csrfToken: resLocals.__csrf_token,
                 },
@@ -76,10 +75,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                           "<%- include('../partials/questionTitle') %>",
                           {
                             ...resLocals,
-                            question_context:
-                              resLocals.assessment.type === 'Exam'
-                                ? 'student_exam'
-                                : 'student_homework',
+                            question_context,
                           },
                         )}
                       </div>
@@ -91,8 +87,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                   `
                 : renderEjs(import.meta.url, "<%- include('../partials/question'); %>", {
                     ...resLocals,
-                    question_context:
-                      resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
+                    question_context,
                   })}
             </div>
 
