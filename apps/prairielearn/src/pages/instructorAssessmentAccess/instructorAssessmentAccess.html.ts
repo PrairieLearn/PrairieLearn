@@ -1,10 +1,7 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
 import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
@@ -12,11 +9,12 @@ import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
 export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];
+  origHash: string;
 }) {
-  console.log(resLocals.course_instance);
   return html`
     <!doctype html>
     <html lang="en">
@@ -39,7 +37,17 @@ export function InstructorAssessmentAccess({
             resLocals,
           )}
           <div class="js-edit-access-rule-modal"></div>
-
+          <div class="js-delete-access-rule-modal"></div>
+          <form method="POST" id="accessRulesForm">
+            <input type="hidden" name="__action" value="edit_access_rules" />
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__orig_hash" value="${origHash}" />
+            <input
+              type="hidden"
+              name="assessment_access_rules"
+              value="${JSON.stringify(accessRules)}"
+            />
+          </form>
           <div class="card mb-4">
             <div
               class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
@@ -47,28 +55,34 @@ export function InstructorAssessmentAccess({
               <div class="col-auto">
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
               </div>
-              ${
-                resLocals.authz_data.has_course_instance_permission_edit
-                  ? html`
-                      <div class="col-auto">
-                        <button id="enableEditButton" class="btn btn-sm btn-light">
-                          <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
+              ${resLocals.authz_data.has_course_instance_permission_edit
+                ? html`
+                    <div class="col-auto">
+                      <button id="enableEditButton" class="btn btn-sm btn-light">
+                        <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
+                      </button>
+                      <span id="editModeButtons" style="display: none">
+                        <button id="saveAndSyncButton" class="btn btn-sm btn-light" type="button">
+                          <i class="fa fa-save" aria-hidden="true"></i> Save and sync
                         </button>
-                        <span id="editModeButtons" style="display: none">
-                          <button class="btn btn-sm btn-light">
-                            <i class="fa fa-save" aria-hidden="true"></i> Save and sync
-                          </button>
-                          <button class="btn btn-sm btn-light" onclick="window.location.reload()">
-                            Cancel
-                          </button>
-                          <p class="mb-0"></p
-                        ></span>
-                      </div>
-                    `
-                  : ''
-              }
+                        <button class="btn btn-sm btn-light" onclick="window.location.reload()">
+                          Cancel
+                        </button>
+                        <p class="mb-0"></p
+                      ></span>
+                    </div>
+                  `
+                : ''}
             </div>
-            <div class="table-responsive js-access-rules-table" id="table-responsive" data-pt-host="${resLocals.config.ptHost}" data-dev-mode="${resLocals.devMode}" data-has-course-instance-permission-view="${resLocals.authz_data.has_course_instance_permission_view}" data-timezone="${resLocals.course_instance.display_timezone}">
+            <div
+              class="table-responsive js-access-rules-table"
+              id="table-responsive"
+              data-pt-host="${resLocals.config.ptHost}"
+              data-dev-mode="${resLocals.devMode}"
+              data-has-course-instance-permission-view="${resLocals.authz_data
+                .has_course_instance_permission_view}"
+              data-timezone="${resLocals.course_instance.display_timezone}"
+            ></div>
             <div class="card-footer">
               <small>
                 Instructions on how to change the access rules can be found in the
