@@ -9,8 +9,8 @@
     "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.574.0",
-    "@aws-sdk/client-secrets-manager": "^3.574.0",
+    "@aws-sdk/client-ec2": "^3.588.0",
+    "@aws-sdk/client-secrets-manager": "^3.588.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.2.0",
     "lodash": "^4.17.21",
@@ -19,14 +19,14 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.1",
+    "@types/lodash": "^4.17.4",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.13.0",
     "c8": "^9.1.0",
     "chai": "^5.1.1",
     "mocha": "^10.4.0",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.10.4",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },
   "c8": {
