@@ -26,6 +26,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 export interface SyncResults {
+  hardFail: boolean;
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
@@ -58,10 +59,9 @@ export async function syncDiskToSqlWithLock(
         qid: z.string(),
       }),
     );
-    const qids = Object.entries(courseData.questions).map(([qid, _]) => qid);
     const invalidRenames: string[] = [];
     sharedQuestions.forEach((question) => {
-      if (qids.indexOf(question.qid) === -1) {
+      if (!courseData.questions[question.qid]) {
         invalidRenames.push(question.qid);
       }
     });
@@ -72,9 +72,12 @@ export async function syncDiskToSqlWithLock(
         ),
       );
       perf.end('sync');
+      const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+      const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
       return {
-        hadJsonErrors: true,
-        hadJsonErrorsOrWarnings: true,
+        hardFail: true,
+        hadJsonErrors: courseDataHasErrors,
+        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
         courseId,
         courseData,
       };
@@ -130,6 +133,7 @@ export async function syncDiskToSqlWithLock(
 
   perf.end('sync');
   return {
+    hardFail: false,
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
     courseId,

@@ -1,18 +1,19 @@
 -- BLOCK select_shared_questions
 SELECT
-  id,
-  qid
-FROM
-  questions
-WHERE
-  course_id = $course_id
-  AND shared_publicly
-UNION
-SELECT DISTINCT
   q.id,
   q.qid
 FROM
   questions AS q
-  JOIN sharing_set_questions AS ssq ON ssq.question_id = q.id
 WHERE
-  q.course_id = $course_id;
+  q.course_id = $course_id
+  AND (
+    q.shared_publicly
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        sharing_set_questions
+      WHERE
+        question_id = q.id
+    )
+  );
