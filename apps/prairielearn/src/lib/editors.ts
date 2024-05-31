@@ -251,6 +251,8 @@ export abstract class Editor {
               env: gitEnv,
             });
 
+            // This will both discard the commit we made locally and also pull
+            // in any new changes from the remote.
             await cleanAndResetRepository(this.course, gitEnv, job);
 
             await writeAndCommitChanges();
