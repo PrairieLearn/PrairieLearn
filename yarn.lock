@@ -3280,7 +3280,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@sa11y/format": ^6.7.0
+    "@sa11y/format": ^6.9.4
     "@sentry/profiling-node": ^7.116.0
     "@sentry/tracing": ^7.116.0
     "@socket.io/redis-adapter": ^8.3.0
@@ -3705,32 +3705,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sa11y/common@npm:6.7.0":
-  version: 6.7.0
-  resolution: "@sa11y/common@npm:6.7.0"
+"@sa11y/common@npm:6.9.4":
+  version: 6.9.4
+  resolution: "@sa11y/common@npm:6.9.4"
   dependencies:
     axe-core: 4.9.0
-  checksum: 8a9a454e9d329feaae1b459ef8c4867cad4ecc127de917b5a1885fb84519de74cad2068423012a06b49e45c8d0f2f613e67d6ce4d90456408e59898574369b88
+  checksum: 6fd20197b6bf5b9529a61a32bb1bf331a53e3540e00a84490241d686a80639ff4809fc1b4e2784018627a24a45cdcf5b06df13f00a491bc794c2704956620e48
   languageName: node
   linkType: hard
 
-"@sa11y/format@npm:^6.7.0":
-  version: 6.7.0
-  resolution: "@sa11y/format@npm:6.7.0"
+"@sa11y/format@npm:^6.9.4":
+  version: 6.9.4
+  resolution: "@sa11y/format@npm:6.9.4"
   dependencies:
-    "@sa11y/common": 6.7.0
-    "@sa11y/preset-rules": 6.7.0
+    "@sa11y/common": 6.9.4
+    "@sa11y/preset-rules": 6.9.4
     axe-core: 4.9.0
-  checksum: f8a31e71ac5dbe463f6fbb8bfac34065cf1e442cc5750e218d745f009bacfe24916c72989fc4d7f4ea9cc1923b68d0d11c6e361fa88c20eee47b6871373944a9
+  checksum: 915c02c0169306d1b64fa1c854a3c18e673e0f9c7f653d94243a6ea569221f7b0a12108008c8a31c4e72bffc031fa85ced01a58291e6a4f6b2399987c18dbade
   languageName: node
   linkType: hard
 
-"@sa11y/preset-rules@npm:6.7.0":
-  version: 6.7.0
-  resolution: "@sa11y/preset-rules@npm:6.7.0"
+"@sa11y/preset-rules@npm:6.9.4":
+  version: 6.9.4
+  resolution: "@sa11y/preset-rules@npm:6.9.4"
   dependencies:
-    "@sa11y/common": 6.7.0
-  checksum: 0b1fa7492392cfbc26955b1c1b179d690059d2b28492d96148d396155d82c6911fdafb8239d70c7cb95e16a9bcd51d89f4bdbf2f9bdce9e1256663ae5e45605c
+    "@sa11y/common": 6.9.4
+  checksum: a80ec4a99bf8f38a0c7dea3b81dbbf69fbf15ed6c81853f7b6df8908f69fa1c99c1e6863cc9135b267ee452e3445fa8bae98ea0baa9688d86fd9afa40fbb353f
   languageName: node
   linkType: hard
 
