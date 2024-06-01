@@ -158,6 +158,7 @@ router.post(
         },
         question: res.locals.question,
         course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
       });
