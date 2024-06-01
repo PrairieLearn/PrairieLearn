@@ -146,7 +146,6 @@ router.post(
       if (!bot_grading_enabled) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
-      console.log('Bot grading the assessment question');
 
       if (config.openAiApiKey === null || config.openAiOrganization === null) {
         throw new error.HttpStatusError(501, 'Not implemented (feature not available)');

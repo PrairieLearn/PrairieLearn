@@ -29,12 +29,25 @@
          autoRefresh: true,
          autoRefreshStatus: false,
          autoRefreshInterval: 30,
-         buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status'],
+         buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
          theadClasses: 'thead-light',
          stickyHeader: true,
          filterControl: true,
          rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
          buttons: {
+           botGrade:{
+             text: 'Bot Grade All',
+             icon: 'fa-pen',
+             render: <%= bot_grading_enabled %>,
+             attributes: {
+               id: 'js-bot-grade-button', 
+               title: 'Bot grade all instances'
+             },
+             event: () => {
+               let form = document.getElementById("bot-grading");
+               form.submit();
+             }
+           },
            showStudentInfo: {
              text: 'Show student info',
              icon: 'fa-eye',
@@ -339,15 +352,10 @@
         Back to <%= assessment_set.name %> <%= assessment.number %> Overview
       </a>
       <%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>
-      <% if (bot_grading_enabled) { %>
-      <form name="start-bot-grading" method="POST">
+      <form name="start-bot-grading" method="POST" id="bot-grading">
         <input type="hidden" name="__action" value="bot_grade_assessment" />
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">Bot Grade!</button>
-        </div>
       </form>
-      <% } %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
