@@ -1,6 +1,9 @@
 import { MultiSamlStrategy, type SamlConfig } from '@node-saml/passport-saml';
 
-import {getInstitutionAuthenticationProviders, getInstitutionSamlProvider} from '../../lib/institution.js';
+import {
+  getInstitutionAuthenticationProviders,
+  getInstitutionSamlProvider,
+} from '../../lib/institution.js';
 
 export async function getSamlOptions({
   institution_id,
@@ -13,7 +16,8 @@ export async function getSamlOptions({
 }): Promise<SamlConfig> {
   const samlProvider = await getInstitutionSamlProvider(institution_id);
   const InstitutionProvider = await getInstitutionAuthenticationProviders(institution_id);
-  if (!samlProvider || !InstitutionProvider.some((p)=> p.name === "SAML")) throw new Error('No SAML provider found for given institution');
+  if (!samlProvider || !InstitutionProvider.some((p) => p.name === 'SAML'))
+    throw new Error('No SAML provider found for given institution');
 
   // It's most convenient if folks can pass in `req.headers.host` directly,
   // but that's typed as `string | undefined`. So, we'll accept that type
