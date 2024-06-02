@@ -23,7 +23,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     try {
-      fs.access(res.locals.course.path);
+      await fs.access(res.locals.course.path);
     } catch (err) {
       if (err.code === 'ENOENT') {
         res.locals.needToSync = true;
