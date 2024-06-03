@@ -1,27 +1,17 @@
 import path from 'node:path';
 
 import { AnsiUp } from 'ansi_up';
-
 import sha256 from 'crypto-js/sha256.js';
-
 import * as express from 'express';
-
 import asyncHandler from 'express-async-handler';
-
 import fs from 'fs-extra';
-
 import * as error from '@prairielearn/error';
-
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-
 import { FileModifyEditor } from '../../lib/editors.js';
-
 import { getPaths } from '../../lib/instructorFiles.js';
-
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
