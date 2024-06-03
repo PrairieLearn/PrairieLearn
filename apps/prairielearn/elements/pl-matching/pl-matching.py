@@ -1,16 +1,9 @@
 import math
 import random
-from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
-
-
-class OptionsPlacementType(Enum):
-    RIGHT = "right"
-    BOTTOM = "bottom"
-    TOP = "top"
 
 WEIGHT_DEFAULT = 1
 FIXED_STATEMENTS_ORDER_DEFAULT = False
@@ -138,9 +131,9 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    options_placement = pl.get_enum_attrib(
-        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
-    )
+    options_placement = pl.get_string_attrib(element, "options-placement", "right")
+    options_placement_right = options_placement == "right"
+    options_placement_bottom = options_placement == "bottom"
 
     options, statements = categorize_matches(element, data)
 
@@ -251,7 +244,8 @@ def prepare(element_html, data):
         data["params"][name] = {
             "statements": display_statements,
             "options": display_options,
-            "options_placement": options_placement.value  
+            "options_placement_right": options_placement_right,
+            "options_placement_bottom": options_placement_bottom
         }
         data["correct_answers"][name] = correct_matches
 
@@ -292,7 +286,8 @@ def render(element_html, data):
     params = data["params"].get(name, {})
     display_statements = params.get("statements", [])
     display_options = params.get("options", [])
-    options_placement = params.get("options_placement", "right")
+    options_placement_right = params.get("options_placement_right", True)
+    options_placement_bottom = params.get("options_placement_bottom", False)
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(
@@ -301,9 +296,6 @@ def render(element_html, data):
     blank_start = pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT)
     show_answer_feedback = not hide_score_badge
     no_counters = counter_type == "full-text"
-
-    options_placement_top = options_placement == "top"
-    options_placement_bottom = options_placement == "bottom"
 
     if not no_counters:
         dropdown_options = [
@@ -353,7 +345,7 @@ def render(element_html, data):
             "options": option_set,
             "counter_type": counter_type,
             "no_counters": no_counters,
-            "options_placement_top": options_placement_top,
+            "options_placement_right": options_placement_right,
             "options_placement_bottom": options_placement_bottom
         }
 
