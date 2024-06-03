@@ -67,11 +67,18 @@ router.post(
         throw new Error('Assessment infoAssessment.json can not access');
       }
 
-      let infoAssessment = await fs.readFile(infoAssessmentPath, 'utf-8');
-      const origin_hash = sha256(b64EncodeUnicode(infoAssessment)).toString();
+      interface Assessment {
+        zones: any[];
+        [key: string]: any;
+      }
+
+      const infoAssessmentString = await fs.readFile(infoAssessmentPath, 'utf-8');
+      const origin_hash = sha256(b64EncodeUnicode(infoAssessmentString)).toString();
+
+      let infoAssessment: Assessment;
 
       try {
-        infoAssessment = JSON.parse(infoAssessment);
+        infoAssessment = JSON.parse(infoAssessmentString);
       } catch (err) {
         throw new Error('Assessment infoAssessment.json can not parse');
       }
