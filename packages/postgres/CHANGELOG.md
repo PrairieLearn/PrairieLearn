@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 2.1.0
+
+### Minor Changes
+
+- 1de33d9: Add `formatQueryWithErrorPosition` function
+
 ## 2.0.3
 
 ### Patch Changes
