@@ -87,6 +87,29 @@ export function InstructorAssessmentQuestions({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${Modal({
+            id: 'deleteQuestionModal',
+            title: 'Confirm delete question',
+            body: html`
+              <p>
+                Are your sure you want to delete this question from this assessment?
+
+                <strong class="delete-question-modal-qid"></strong>
+              </p>
+            `,
+            footer: html`
+              <input type="hidden" name="__action" value="delete_question_from_assessment" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <input
+                type="hidden"
+                name="unsafe_question_qid"
+                class="js-unsafe_question_qid"
+                value=""
+              />
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Delete Question</button>
+            `,
+          })}
+          ${Modal({
             id: 'resetQuestionVariantsModal',
             title: 'Confirm reset question variants',
             body: html`
@@ -369,6 +392,15 @@ function AssessmentQuestionsTable({
                               data-assessment-question-id="${question.id}"
                             >
                               Reset question variants
+                            </button>
+                            <button
+                              class="dropdown-item text-danger"
+                              data-toggle="modal"
+                              data-target="#deleteQuestionModal"
+                              data-assessment-question-id="${question.id}"
+                              data-assessment-qid="${question.qid}"
+                            >
+                              Delete question from this assessment
                             </button>
                           `
                         : html`
