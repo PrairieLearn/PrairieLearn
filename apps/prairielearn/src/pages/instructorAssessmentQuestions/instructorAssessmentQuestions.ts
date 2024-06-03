@@ -1,27 +1,24 @@
+import path from 'node:path';
+import fs from 'fs-extra';
+import sha256 from 'crypto-js/sha256.js';
 import { AnsiUp } from 'ansi_up';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-
 import * as error from '@prairielearn/error';
+
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
-
+import { getPaths } from '../../lib/instructorFiles.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
 } from './instructorAssessmentQuestions.html.js';
-import path from 'node:path';
-import fs from 'fs-extra';
-import { FileModifyEditor } from '../../lib/editors.js';
-import { getPaths } from '../../lib/instructorFiles.js';
-import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
-import sha256 from 'crypto-js/sha256.js';
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -110,7 +107,9 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (error) {}
+      } catch (error) {
+        res.redirect(req.originalUrl);
+      }
 
       res.redirect(req.originalUrl);
     } else {
