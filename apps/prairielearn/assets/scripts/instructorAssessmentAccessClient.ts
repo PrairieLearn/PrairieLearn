@@ -1,5 +1,3 @@
-import { access } from 'fs';
-
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import morphdom from 'morphdom';
@@ -61,9 +59,9 @@ onDocumentReady(() => {
       'input[name="assessment_access_rules"]',
     ) as HTMLInputElement;
     if (!assessmentAccessRulesInput) return;
-    accessRulesData.forEach((accessRule) => {
-      accessRule.startDate = dateFromString(accessRule.start_date).toISOString().slice(0, 19);
-      accessRule.endDate = dateFromString(accessRule.end_date).toISOString().slice(0, 19);
+    accessRulesData.forEach((accessRule: Record<string, any>) => {
+      accessRule.startDate = adjustedDate(accessRule.start_date).toISOString().slice(0, 19);
+      accessRule.endDate = adjustedDate(accessRule.end_date).toISOString().slice(0, 19);
       accessRule.timeLimitMin = parseInt(accessRule.time_limit);
       accessRule.uids = accessRule.uids.split(',').map((uid: string) => uid.trim());
       accessRule.credit = parseInt(accessRule.credit);
@@ -90,13 +88,13 @@ onDocumentReady(() => {
     form.submit();
   });
 
-  function dateFromString(dateString) {
+  function adjustedDate(dateString: string | Date) {
     const date = new Date(dateString);
     const timezoneOffset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - timezoneOffset);
   }
 
-  let timeZoneName;
+  let timeZoneName: string | undefined;
   // To use Temporal polyfill, we need to check if Temporal is available in the environment
   if (typeof Temporal !== 'undefined') {
     const now = Temporal.Now.zonedDateTimeISO(timezone);
@@ -111,11 +109,11 @@ onDocumentReady(() => {
     console.error('Temporal API is not available in this environment.');
   }
 
-  function handleUpdateAccessRule({ form, row }) {
+  function handleUpdateAccessRule({ form, row }: { form: HTMLFormElement; row: number }) {
     const formData = new FormData(form);
     const updatedAccessRules = Object.fromEntries(formData);
-    const startDate = dateFromString(updatedAccessRules.start_date);
-    const endDate = dateFromString(updatedAccessRules.end_date);
+    const startDate = adjustedDate(updatedAccessRules.start_date.toString());
+    const endDate = adjustedDate(updatedAccessRules.end_date.toString());
     updatedAccessRules.start_date =
       formatDate(startDate, 'UTC', { includeTz: false }) + ` (${timeZoneName})`;
     updatedAccessRules.end_date =
@@ -127,10 +125,13 @@ onDocumentReady(() => {
   on('click', '.editButton', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
     const accessRule = accessRulesData[row];
-    accessRule.formatted_start_date = dateFromString(accessRule.start_date)
+    accessRule.formatted_start_date = adjustedDate(accessRule.start_date)
       .toISOString()
       .slice(0, 19);
-    accessRule.formatted_end_date = dateFromString(accessRule.end_date).toISOString().slice(0, 19);
+    accessRule.formatted_end_date = adjustedDate(accessRule.end_date).toISOString().slice(0, 19);
+    if (!timeZoneName) {
+      throw new Error('Course instance time zone is not available.');
+    }
     morphdom(
       editAccessRuleModal as Node,
       EditAccessRuleModal({ accessRule, i: row, timeZoneName }).toString(),
@@ -141,6 +142,7 @@ onDocumentReady(() => {
   on('click', '#updateAccessRuleButton', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
     const form = (e.target as HTMLElement).closest('form');
+    if (!form) return;
     handleUpdateAccessRule({ form, row });
   });
 
@@ -164,8 +166,11 @@ onDocumentReady(() => {
   });
 
   on('click', '#addRuleButton', () => {
-    const formatted_start_date = dateFromString(new Date()).toISOString().slice(0, 19);
-    const formatted_end_date = dateFromString(new Date()).toISOString().slice(0, 19);
+    const formatted_start_date = adjustedDate(new Date()).toISOString().slice(0, 19);
+    const formatted_end_date = adjustedDate(new Date()).toISOString().slice(0, 19);
+    if (!timeZoneName) {
+      throw new Error('Course instance time zone is not available.');
+    }
     morphdom(
       editAccessRuleModal as Node,
       EditAccessRuleModal({
