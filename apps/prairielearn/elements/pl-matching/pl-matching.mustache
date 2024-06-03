@@ -13,7 +13,16 @@
 }
 </style>
 {{#question}}
-<div id="pl-matching-{{uuid}}" class="pl-matching-container">
+<div id="pl-matching-{{uuid}}" class="pl-matching-container {{options_placement}}">
+    {{#options_placement_top}}
+    <div class="pl-matching-options">
+        <ol>
+            {{#options}}
+            <li class="pl-matching-option">{{{html}}}</li>
+            {{/options}}
+        </ol>
+    </div>
+    {{/options_placement_top}}
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
@@ -41,6 +50,7 @@
 {{/statements}}
 </div>
 {{^no_counters}}
+{{#options_placement_bottom}}
 <div class="pl-matching-options">
 <ol>
 {{#options}}
@@ -48,6 +58,7 @@
 {{/options}}
 </ol>
 </div>
+{{/options_placement_bottom}}
 {{/no_counters}}
 </div>
 {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}

@@ -1,3 +1,17 @@
+.pl-matching-container.right .pl-matching-statements {
+  display: flex;
+}
+
+.pl-matching-container.top .pl-matching-options {
+  order: -1;
+  width: 100%;
+}
+
+.pl-matching-container.bottom .pl-matching-options {
+  order: 1;
+  width: 100%;
+}
+
 .pl-matching-container {
   display: flex;
   margin-bottom: 1em;
