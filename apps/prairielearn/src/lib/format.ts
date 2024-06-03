@@ -19,7 +19,7 @@ export function formatPoints(x: number | null, numDecDigits = 2) {
 
 export function formatPointsOrList(v: number | number[] | null) {
   if (Array.isArray(v)) {
-    return v.map(formatPoints).join(', ');
+    return v.map((p) => formatPoints(p)).join(', ');
   } else {
     return formatPoints(v);
   }
