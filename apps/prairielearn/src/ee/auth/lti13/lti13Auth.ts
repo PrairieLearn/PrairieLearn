@@ -4,6 +4,7 @@ import { callbackify } from 'util';
 
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
