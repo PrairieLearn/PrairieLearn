@@ -1,4 +1,5 @@
 <%
+/* This function is used in EJS functions to format points, and remains in place until EJS is fully migrated. Any new code using this function should use the equivalent functions in lib/format.ts instead (either formatPoints or formatPointsOrList). */
 getStringFromFloat = function(v) {
   if (v == null) {
     return '—';
