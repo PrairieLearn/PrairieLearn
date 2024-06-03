@@ -29,7 +29,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   sync_errors: QuestionSchema.shape.sync_errors,
   sync_warnings_ansified: z.string().optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema.nullable(),
+  topic: TopicSchema,
   qid: QuestionSchema.shape.qid,
   start_new_zone: z.boolean().nullable(),
   start_new_alternative_group: z.boolean().nullable(),
