@@ -63,7 +63,6 @@ export function StudentAssessmentAccess({
                   `
                 : AssessmentStatusDescription({ assessment_instance, authz_result })}
             </div>
-            <!-- panel-body -->
           </div>
         </main>
       </body>
@@ -80,11 +79,13 @@ function AssessmentStatusDescription({
   authz_result: any;
   extraClasses?: string;
 }) {
-  return html`<div class="test-suite-assessment-closed-message ${extraClasses}">
-    ${assessment_instance?.open === false
-      ? html`Assessment is <strong>closed</strong> and is no longer available.`
-      : authz_result.next_active_time == null
-        ? html`Assessment is no longer available.`
-        : html`Assessment will become available on ${authz_result.next_active_time}.`}
-  </div>`;
+  return html`
+    <div class="test-suite-assessment-closed-message ${extraClasses}">
+      ${assessment_instance?.open === false
+        ? html`Assessment is <strong>closed</strong> and is no longer available.`
+        : authz_result.next_active_time == null
+          ? html`Assessment is no longer available.`
+          : html`Assessment will become available on ${authz_result.next_active_time}.`}
+    </div>
+  `;
 }
