@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -271,11 +272,7 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>
-                  ${renderEjs(import.meta.url, "<%- include('../partials/topic'); %>", {
-                    topic: question.topic,
-                  })}
-                </td>
+                <td>${TopicBadge(question.topic)}</td>
                 <td>
                   ${renderEjs(import.meta.url, "<%- include('../partials/tags'); %>", {
                     tags: question.tags,
