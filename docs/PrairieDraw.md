@@ -141,7 +141,7 @@ Draw an arrow out of the screen (circle with center dot) at `vector`.
 Draw an arrow into the screen (circle with center x) at `vector`.
 
 `circleArrow(center, radius, startAngle, endAngle [, type, fixedRad, idealSegmentSize])`
-Draw an arrow arc centerd at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians). The `fixedRad` option (default false) specifies if a constant radius should be used (as opposed to curling in the beginning/end).
+Draw an arrow arc centered at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians). The `fixedRad` option (default false) specifies if a constant radius should be used (as opposed to curling in the beginning/end).
 
 `circleArrowCentered(center, radius, centerAngle, extentAngle [, type, fixedRad])`
 Draw an arrow arc centered at `center`, with radius `radius`, centerd at `centerAngle` and spanning `extentAngle` (in radians).

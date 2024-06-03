@@ -29,7 +29,6 @@ router.get(
       sql.select_assessment_instances,
       {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       },
       AssessmentInstanceRowSchema,
     );

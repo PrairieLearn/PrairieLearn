@@ -48,7 +48,7 @@
 
         %>
         <% let body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
-        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_email || issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else if (authz_data.has_course_permission_preview) { %>
@@ -99,7 +99,7 @@
         <%- include('questionTitle'); %>
         <% // Show even when question_copy_targets is empty. %>
         <% // We'll show a CTA to request a course if the user isn't an editor of any course. %>
-        <% if (typeof question_copy_targets !== 'undefined' && course.template_course && question_context != 'manual_grading') { %>
+        <% if (typeof question_copy_targets !== 'undefined' && (course.template_course || (question.shared_publicly_with_source && question_context == 'public')) && question_context != 'manual_grading') { %>
           <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
             <i class="fa fa-clone"></i>
             Copy question

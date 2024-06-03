@@ -211,6 +211,7 @@ router.post(
         name_attribute: req.body.name_attribute,
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
+        email_attribute: req.body.email_attribute,
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
