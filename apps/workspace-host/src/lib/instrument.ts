@@ -1,6 +1,8 @@
-import * as Sentry from '@prairielearn/sentry';
 import path from 'node:path';
+
 import yargsParser from 'yargs-parser';
+
+import * as Sentry from '@prairielearn/sentry';
 
 import { loadConfig, config } from './config.js';
 import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './paths.js';
