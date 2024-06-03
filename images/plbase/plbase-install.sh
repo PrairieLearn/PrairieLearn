@@ -56,7 +56,7 @@ git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
 cd pgvector
 # This Docker image will be built in GitHub Actions but must run on a variety
 # of platforms, so we need to build it without machine-specific instructions.
-# https://github.com/pgvector/pgvector/issues/143
+# https://github.com/pgvector/pgvector/issues/130
 # https://github.com/pgvector/pgvector/issues/143
 make OPTFLAGS=""
 make install
