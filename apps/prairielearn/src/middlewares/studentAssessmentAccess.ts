@@ -11,8 +11,6 @@ import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 const router = Router();
 
-const timeout = 24; // hours
-
 router.all('/', function (req, res, next) {
   if (
     typeof res.locals.assessment_instance === 'undefined' &&
@@ -72,7 +70,7 @@ export function checkPasswordOrRedirect(req: Request, res: Response): boolean {
   }
 
   const pwData = getCheckedSignedTokenData(req.cookies.pl_assessmentpw, config.secretKey, {
-    maxAge: timeout * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000,
   });
   if (pwData == null || pwData.password !== res.locals.authz_result.password) {
     // The password is incorrect or the cookie is expired.
