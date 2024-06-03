@@ -30,7 +30,7 @@ router.all('/', function (req, res, next) {
     res.status(403).send(
       StudentAssessmentAccess({
         resLocals: res.locals,
-        showClosedScore: _.get(res.locals, 'authz_result.show_closed_assessment_score', true),
+        showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
       }),
     );
     return;
