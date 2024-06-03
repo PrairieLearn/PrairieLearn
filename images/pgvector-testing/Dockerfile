@@ -4,7 +4,7 @@ RUN dnf install -y postgresql15 postgresql15-server postgresql15-contrib postgre
     cd /tmp && \
     git clone https://github.com/pgvector/pgvector.git && \
     cd pgvector && \
-    make && \
+    make OPTFLAGS="" && \
     make install && \
     rm -rf /tmp/pgvector && \
     dnf -y remove postgresql15-server-devel && \
