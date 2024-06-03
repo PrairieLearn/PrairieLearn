@@ -21,10 +21,10 @@ export function StudentAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../pages/partials/head') %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
         })}
