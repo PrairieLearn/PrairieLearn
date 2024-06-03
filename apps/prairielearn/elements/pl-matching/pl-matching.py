@@ -125,10 +125,15 @@ def prepare(element_html, data):
         "counter-type",
         "fixed-options-order",
         "hide-score-badge",
+        "options-placement"
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
+
+    options_placement = pl.get_string_attrib(element, "options-placement", "right")
+    options_placement_right = options_placement == "right"
+    options_placement_bottom = options_placement == "bottom"
 
     options, statements = categorize_matches(element, data)
 
@@ -236,8 +241,13 @@ def prepare(element_html, data):
         display_statements.append(keyed_statement)
         correct_matches.append(match_index)
 
-    data["params"][name] = (display_statements, display_options)
-    data["correct_answers"][name] = correct_matches
+        data["params"][name] = {
+            "statements": display_statements,
+            "options": display_options,
+            "options_placement_right": options_placement_right,
+            "options_placement_bottom": options_placement_bottom
+        }
+        data["correct_answers"][name] = correct_matches
 
 
 def parse(element_html, data):
@@ -273,7 +283,11 @@ def parse(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    display_statements, display_options = data["params"].get(name, ([], []))
+    params = data["params"].get(name, {})
+    display_statements = params.get("statements", [])
+    display_options = params.get("options", [])
+    options_placement_right = params.get("options_placement_right", True)
+    options_placement_bottom = params.get("options_placement_bottom", False)
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(
@@ -331,6 +345,8 @@ def render(element_html, data):
             "options": option_set,
             "counter_type": counter_type,
             "no_counters": no_counters,
+            "options_placement_right": options_placement_right,
+            "options_placement_bottom": options_placement_bottom
         }
 
         if score is not None:
