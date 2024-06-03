@@ -3412,7 +3412,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@sa11y/format": ^6.7.0
-    "@sentry/profiling-node": ^8.2.1
+    "@sentry/profiling-node": ^8.7.0
     "@socket.io/redis-adapter": ^8.3.0
     "@types/archiver": ^6.0.2
     "@types/async": ^3.2.24
@@ -3640,7 +3640,7 @@ __metadata:
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@sentry/node": ^8.2.1
+    "@sentry/node": ^8.7.0
     "@types/node": ^20.13.0
     execa: ^9.1.0
     tsx: ^4.11.0
@@ -3892,7 +3892,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:8.7.0, @sentry/node@npm:^8.2.1":
+"@sentry/node@npm:8.7.0, @sentry/node@npm:^8.7.0":
   version: 8.7.0
   resolution: "@sentry/node@npm:8.7.0"
   dependencies:
@@ -3947,7 +3947,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/profiling-node@npm:^8.2.1":
+"@sentry/profiling-node@npm:^8.7.0":
   version: 8.7.0
   resolution: "@sentry/profiling-node@npm:8.7.0"
   dependencies:
