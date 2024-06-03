@@ -1,9 +1,9 @@
 import { assert } from 'chai';
 
-import { contains } from './index.js';
+import { contains, isContainedRelativePath } from './index.js';
 
 describe('File paths', () => {
-  describe('parentContainsChild function', () => {
+  describe('contains function', () => {
     it('works with valid absolute paths', async () => {
       assert.ok(contains('/PrairieLearn', '/PrairieLearn/tests'));
       assert.ok(contains('/', '/PrairieLearn/tests'));
@@ -49,6 +49,21 @@ describe('File paths', () => {
       assert.ok(contains('/PrairieLearn', '/PrairieLearn/tests/..'));
       assert.ok(contains('/PrairieLearn', 'tests/../exampleCourse'));
       assert.ok(contains('/PrairieLearn', 'tests/..'));
+    });
+  });
+
+  describe('isContainedRelativePath function', () => {
+    it('works if path is contained', async () => {
+      assert.ok(isContainedRelativePath('PrairieLearn'));
+      assert.ok(isContainedRelativePath('PrairieLearn/../etc'));
+      assert.ok(isContainedRelativePath('PrairieLearn/..'));
+    });
+
+    it('works if path is not contained', async () => {
+      assert.notOk(isContainedRelativePath('PrairieLearn/..', false));
+      assert.notOk(isContainedRelativePath('/PrairieLearn'));
+      assert.notOk(isContainedRelativePath('../PrairieLearn'));
+      assert.notOk(isContainedRelativePath('PrairieLearn/../../etc'));
     });
   });
 });

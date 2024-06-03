@@ -99,6 +99,7 @@ SELECT
   q.directory AS question_qid,
   u.uid AS user_uid,
   u.name AS user_name,
+  u.email AS user_email,
   i.student_message,
   i.variant_id,
   v.variant_seed,

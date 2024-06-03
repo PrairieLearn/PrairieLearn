@@ -12,6 +12,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -75,6 +76,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
+  user_email: z.string().nullable(),
 });
 
 const SubmissionInfoSchema = z.object({
@@ -765,23 +767,14 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       // As usual, only render if this variant is part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
-      const renderParams = {
-        assessment_instance,
+      panels.assessmentScorePanel = AssessmentScorePanel({
+        urlPrefix,
         assessment,
         assessment_set,
-        urlPrefix,
-      };
-
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'assessmentScorePanel.ejs',
-      );
-      panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
+        assessment_instance,
+      }).toString();
     },
     async () => {
       // Render the question panel footer
