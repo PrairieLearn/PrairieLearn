@@ -26,7 +26,7 @@ export function AssessmentScorePanel({
         <div class="d-flex justify-content-center">
           <a
             class="btn btn-info"
-            href="${urlPrefix}/assessment_instance/$ {assessment_instance.id}/"
+            href="${urlPrefix}/assessment_instance/${assessment_instance.id}/"
           >
             Assessment overview
           </a>
