@@ -72,14 +72,11 @@ export async function botGrade({
 
     // get each instance question
     for (const instance_question of result) {
-      const variant_submission = await await queryRow(
+      const { variant, submission } = await queryRow(
         sql.select_last_variant_and_submission,
         { instance_question_id: instance_question.id },
         SubmissionVariantSchema,
       );
-
-      // // get last submission of instance question
-      const submission = variant_submission.submission;
 
       // maybe remove some if statements that can never happen
       // if nothing submitted
@@ -93,10 +90,10 @@ export async function botGrade({
       ) {
         continue;
       }
-      const student_answer = atob(submission.submitted_answer._files[0].contents);
-
-      // get question prompt
-      const variant = variant_submission.variant;
+      const student_answer = Buffer.from(
+        submission.submitted_answer._files[0].contents,
+        'base64',
+      ).toString();
 
       // build urls for the question server
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
@@ -142,7 +139,7 @@ export async function botGrade({
           continue;
         }
         const gpt_answer = JSON.parse(completion.choices[0].message.content);
-        const update_result = await manualGrading.updateInstanceQuestionScore(
+        await manualGrading.updateInstanceQuestionScore(
           assessment_question.assessment_id,
           instance_question.id,
           submission.id,
@@ -155,10 +152,6 @@ export async function botGrade({
           '1',
         );
         msg = `Bot grades for ${instance_question.id}: ${gpt_answer.grade}`;
-        if (update_result.modified_at_conflict) {
-          job.error(`ERROR modified at conflict for ${instance_question.id}`);
-          error_count++;
-        }
       } catch (err) {
         job.error(`ERROR bot grading for ${instance_question.id}`);
         job.error(err);
