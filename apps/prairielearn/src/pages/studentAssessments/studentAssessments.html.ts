@@ -21,7 +21,7 @@ const AuthzAccessRuleSchema = z.object({
   time_limit_min: z.string(),
   start_date: z.string(),
   end_date: z.string(),
-  mode: ModeSchema,
+  mode: ModeSchema.nullable(),
   active: z.boolean().nullable(),
 });
 
