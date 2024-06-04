@@ -65,11 +65,6 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
           navPage: '',
         })}
         <main id="content" class="container">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/studentAssessmentAsInstructor'); %>",
-            resLocals,
-          )}
           <div class="row">
             <div class="col-lg-9 col-sm-12">
               ${resLocals.no_variant_exists

@@ -78,12 +78,23 @@
     <% } // showTimeLimitExpiredModal %>
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <main id="content" class="container">
-      <%- include('../partials/studentAssessmentAsInstructor'); %>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
           <% if (assessment.group_work) { %>
             <i class="fas fa-users"></i>
+          <% } %>
+
+          <% // TODO: limit to current user %>
+          <% if (instance_role === 'Staff' && authz_data.has_course_instance_permission_edit) { %>
+            <form method="POST" class="ml-auto">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <input type="hidden" name="__action" value="delete_instance">
+              <button type="submit" class="btn btn-sm btn-light">
+                <i class="fas fa-trash"></i>
+                Delete assessment instance
+              </button>
+            </form>
           <% } %>
         </div>
 

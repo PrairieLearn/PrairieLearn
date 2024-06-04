@@ -20,7 +20,6 @@ import {
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import { getCourseLastSync } from '../../models/course.js';
 import {
   validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
@@ -233,19 +232,6 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
-    } else if (req.body.__action === 'delete_instance') {
-      if (
-        res.locals.instance_role === 'Staff' &&
-        res.locals.authz_data.has_course_instance_permission_edit
-      ) {
-        await callAsync('assessment_instances_delete', [
-          res.locals.assessment_instance.id,
-          res.locals.authn_user.user_id,
-        ]);
-        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/`);
-      } else {
-        throw error.make(403, `permission denied: delete_instance`);
-      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
@@ -332,17 +318,6 @@ router.get(
       }
     }
     setRendererHeader(res);
-
-    if (
-      res.locals.instance_role === 'Staff' &&
-      res.locals.authz_data.has_course_instance_permission_edit
-    ) {
-      const course_last_sync = await getCourseLastSync(res.locals.course.id);
-      const instance_date = new Date(res.locals.assessment_instance.date);
-      if (course_last_sync > instance_date) {
-        res.locals.warn_newer_than_sync = `Instance question is older than latest content sync.`;
-      }
-    }
 
     res.send(StudentInstanceQuestion({ resLocals: res.locals }));
   }),

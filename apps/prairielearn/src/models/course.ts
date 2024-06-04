@@ -137,9 +137,3 @@ export async function selectCoursesWithEditAccess({
 export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
   return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
 }
-
-export async function getCourseLastSync(course_id: string) {
-  const syncDate = await queryOptionalRow(sql.select_course_last_sync, { course_id }, z.date());
-
-  return syncDate ?? new Date(0); // epoch
-}

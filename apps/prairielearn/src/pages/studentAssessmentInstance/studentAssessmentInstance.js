@@ -23,7 +23,6 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
-import { getCourseLastSync } from '../../models/course.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const router = express.Router();
@@ -303,18 +302,6 @@ router.get(
             );
           }
         }
-      }
-    }
-
-    if (
-      res.locals.instance_role === 'Staff' &&
-      res.locals.authz_data.has_course_instance_permission_edit
-    ) {
-      const course_last_sync = await getCourseLastSync(res.locals.course.id);
-      const instance_date = new Date(res.locals.assessment_instance.date);
-      if (course_last_sync > instance_date) {
-        res.locals.warn_newer_than_sync = `Assessment instance is older than
-        latest content sync.`;
       }
     }
 
