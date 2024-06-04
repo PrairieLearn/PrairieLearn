@@ -33,7 +33,7 @@ async function setLocals(req, res) {
   );
 
   if (res.locals.question.workspace_image && disablePublicWorkspaces) {
-    throw new HttpStatusError(403, 'Access denied');
+    throw new error.HttpStatusError(403, 'Access denied');
   }
 
   if (
