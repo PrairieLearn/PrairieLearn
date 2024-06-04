@@ -358,7 +358,7 @@ async function startup(workspace_id: string): Promise<void> {
  * workspace. This is mostly important on NFS volumes, where renames (moves)
  * are not atomic.
  */
-export async function initialize(workspace_id: string): Promise<InitializeResult> {
+async function initialize(workspace_id: string): Promise<InitializeResult> {
   const { workspace, variant, question, course } = await sqldb.queryRow(
     sql.select_workspace_data,
     { workspace_id },
@@ -391,6 +391,15 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
     targetPath: sourcePath,
   });
 
+  // Update permissions so that the directory and all contents are owned by the workspace user
+  for await (const file of klaw(sourcePath)) {
+    await fsPromises.chown(
+      file.path,
+      config.workspaceJobsDirectoryOwnerUid,
+      config.workspaceJobsDirectoryOwnerGid,
+    );
+  }
+
   if (fileGenerationErrors.length > 0) {
     const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
     await issues.insertIssue({
@@ -419,7 +428,7 @@ export async function initialize(workspace_id: string): Promise<InitializeResult
   return { sourcePath, destinationPath };
 }
 
-async function generateWorkspaceFiles({
+export async function generateWorkspaceFiles({
   questionBasePath,
   params,
   correctAnswers,
@@ -563,11 +572,6 @@ async function generateWorkspaceFiles({
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
   await fs.ensureDir(targetPath);
-  await fsPromises.chown(
-    targetPath,
-    config.workspaceJobsDirectoryOwnerUid,
-    config.workspaceJobsDirectoryOwnerGid,
-  );
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
@@ -589,16 +593,8 @@ async function generateWorkspaceFiles({
         debug(`File ${workspaceFile.name} could not be written`, err);
       }
     });
-
-    // Update permissions so that the directory and all contents are owned by the workspace user
-    for await (const file of klaw(targetPath)) {
-      await fsPromises.chown(
-        file.path,
-        config.workspaceJobsDirectoryOwnerUid,
-        config.workspaceJobsDirectoryOwnerGid,
-      );
-    }
   }
+
   return { fileGenerationErrors };
 }
 

@@ -16,6 +16,8 @@ import {
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 
+import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
+
 const router = express.Router();
 
 router.post(
@@ -66,7 +68,7 @@ router.get(
     await setQuestionCopyTargets(res);
 
     setRendererHeader(res);
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorQuestionPreview({ resLocals: res.locals }));
   }),
 );
 

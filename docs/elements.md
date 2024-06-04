@@ -58,7 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.

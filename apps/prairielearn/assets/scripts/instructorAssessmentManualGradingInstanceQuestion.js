@@ -100,18 +100,8 @@ function resetInstructorGradingPanel() {
   });
 
   document.querySelectorAll('.js-submission-feedback').forEach((input) => {
-    input.addEventListener('input', function () {
-      // Adjusts the height based on the feedback content. If the feedback changes, the height
-      // changes as well. This is done by resetting the height (so the scrollHeight is computed
-      // based on the minimum height) and then using the scrollHeight plus padding as the new height.
-      this.style.height = '';
-      if (this.scrollHeight) {
-        const style = window.getComputedStyle(this);
-        this.style.height =
-          this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
-      }
-    });
-    input.dispatchEvent(new Event('input'));
+    input.addEventListener('input', () => adjustHeightFromContent(input));
+    adjustHeightFromContent(input);
   });
 
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
@@ -177,6 +167,22 @@ function resetInstructorGradingPanel() {
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+/**
+ * Adjusts the height based on the content. If the content changes, the height
+ * changes as well. This is done by resetting the height (so the scrollHeight is
+ * computed based on the minimum height) and then using the scrollHeight plus
+ * padding as the new height.
+ * @param {HTMLElement} element
+ */
+function adjustHeightFromContent(element) {
+  element.style.height = '';
+  if (element.scrollHeight) {
+    const style = window.getComputedStyle(element);
+    element.style.height =
+      element.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+  }
 }
 
 function updateSettingsPointValues() {
@@ -419,15 +425,22 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  const cell = event.target.closest('label');
+  const container = event.target.closest('td');
+  const label = container.querySelector('label');
+  const button = container.querySelector('button');
+
   const input = document.createElement('textarea');
   input.classList.add('form-control');
-  input.name = cell.dataset.inputName;
+  input.name = button.dataset.inputName;
   input.setAttribute('maxlength', 10000);
-  input.innerText = cell.dataset.currentValue || '';
-  cell.parentNode.insertBefore(input, cell);
-  cell.remove();
+  input.textContent = button.dataset.currentValue || '';
+
+  container.insertBefore(input, label);
+  label?.remove();
+  button.remove();
   input.focus();
+  input.addEventListener('input', () => adjustHeightFromContent(input));
+  adjustHeightFromContent(input);
 }
 
 function updateRubricItemOrderField() {
