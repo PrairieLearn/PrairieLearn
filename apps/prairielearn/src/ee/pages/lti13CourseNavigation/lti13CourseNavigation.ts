@@ -27,6 +27,20 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
+function prettyCourseName(ltiClaim) {
+  const context = ltiClaim.context;
+
+  if (context.label && context.title) {
+    return `${context.label}: ${context.title}`;
+  } else if (context.label) {
+    return context.label;
+  } else if (context.title) {
+    return context.title;
+  } else {
+    return 'your course';
+  }
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -41,12 +55,12 @@ router.get(
     }
 
     const ltiClaim = new Lti13Claim(req);
-    const courseName = `${ltiClaim.context?.label}: ${ltiClaim.context?.title}`;
+    const courseName = prettyCourseName(ltiClaim);
     const role_instructor = ltiClaim.isRoleInstructor();
 
     // Get lti13_course_instance info, if present
     const lti13_course_instance = await queryOptionalRow(
-      sql.select_course_instance,
+      sql.select_lti13_course_instance,
       {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
@@ -133,25 +147,20 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const unsafe_course_instance_id = req.body.ci_id;
-    const unsafe_lti13_instance_id = req.params.lti13_instance_id;
+    const unsafe_course_instance_id = req.body.unsafe_course_instance_id;
 
     const ltiClaim = new Lti13Claim(req);
     const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
-    // Validate user login matches this lti13_instance
-    if (unsafe_lti13_instance_id !== authn_lti13_instance_id) {
-      throw error.make(403, 'Permission denied');
-    }
-
-    // Map lti13_instance through institution to course instance or fail
-    await queryOneRowAsync(sql.select_lti_course_instance_institution, {
-      course_instance_id: req.body.ci_id,
+    // Map passed and auth lti13_instance_id through institution to course instance, or fail
+    await queryOneRowAsync(sql.select_lti13_course_instance_institution, {
+      course_instance_id: unsafe_course_instance_id,
       lti13_instance_id: req.params.lti13_instance_id,
+      authn_lti13_instance_id,
     });
 
-    // Check that user is course Owner for this CI
-    const ci = await selectCourseInstanceById(req.body.ci_id);
+    // Check that user is course Owner for this course instance
+    const course_instance = await selectCourseInstanceById(unsafe_course_instance_id);
     const courses = await selectCoursesWithEditAccess({
       user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.authn_is_administrator,
@@ -159,7 +168,8 @@ router.post(
 
     const is_ci_owner = courses.find(
       (course) =>
-        course.id === ci?.course_id && course.permissions_course.has_course_permission_own,
+        course.id === course_instance?.course_id &&
+        course.permissions_course.has_course_permission_own,
     );
 
     if (ltiClaim.isRoleInstructor() && is_ci_owner) {
@@ -172,9 +182,9 @@ router.post(
         course_instance_id: unsafe_course_instance_id,
       });
 
-      res.redirect(`/pl/lti13_instance/${unsafe_lti13_instance_id}/course_navigation?done`);
+      res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
     } else {
-      throw error.make(403, 'Permission denied');
+      throw new error.HttpStatusError(403, 'Permission denied');
     }
   }),
 );

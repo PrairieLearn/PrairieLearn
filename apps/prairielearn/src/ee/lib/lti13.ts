@@ -2,7 +2,7 @@ import type { Request } from 'express';
 import _ from 'lodash';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { features } from '../../lib/features/index.js';
@@ -90,7 +90,10 @@ export class Lti13Claim {
     try {
       this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
     } catch {
-      throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
+      throw new HttpStatusError(
+        403,
+        'LTI session invalid or timed out, please try logging in again.',
+      );
     }
     this.valid = true;
     this.req = req;
@@ -127,7 +130,10 @@ export class Lti13Claim {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
       delete this.req.session['lti13_claims'];
-      throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
+      throw new HttpStatusError(
+        403,
+        'LTI session invalid or timed out, please try logging in again.',
+      );
     }
   }
 
@@ -188,8 +194,6 @@ export class Lti13Claim {
   }
 }
 
-// End class Lti13Claim
-
 export async function validateLti13CourseInstance(
   resLocals: Record<string, any>,
 ): Promise<boolean> {
@@ -199,13 +203,11 @@ export async function validateLti13CourseInstance(
     return false;
   }
 
-  const ci_lti13_connected = await queryRow(
+  return await queryRow(
     sql.select_ci_validation,
     {
       course_instance_id: resLocals.course_instance.id,
     },
     z.boolean(),
   );
-
-  return feature_enabled && ci_lti13_connected;
 }

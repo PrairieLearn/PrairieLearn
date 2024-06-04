@@ -4,18 +4,17 @@ import { callbackify } from 'util';
 
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
-import * as error from '@prairielearn/error';
+import { HttpStatusError, AugmentedError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import * as authnLib from '../../../lib/authn.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import { Lti13ClaimType, Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
+import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13Test } from './lti13Auth.html.js';
@@ -49,25 +48,24 @@ router.post(
     // UID checking
     let uid: string;
     if (!lti13_instance.uid_attribute) {
-      throw new error.HttpStatusError(
+      throw new HttpStatusError(
         500,
         'LTI 1.3 instance configuration missing required UID attribute',
       );
     } else {
-      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
       uid = ltiClaim.get(lti13_instance.uid_attribute);
       if (!uid) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (ltiClaim.isRoleTestUser()) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             403,
             `Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.`,
           );
         } else {
           // Error about missing UID
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             500,
             `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
           );
@@ -82,7 +80,7 @@ router.post(
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
       uin = ltiClaim.get(lti13_instance.uin_attribute);
       if (!uin) {
-        throw new error.HttpStatusError(
+        throw new HttpStatusError(
           500,
           `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
         );
@@ -105,7 +103,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      email = _.get(lti13_claims, lti13_instance.email_attribute);
+      email = ltiClaim.get(lti13_instance.email_attribute);
     }
 
     const userInfo = {
@@ -187,7 +185,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // The authentication libraries under openid-connect will fail (silently) if the key length
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
-          new error.AugmentedError('Authentication failed, before user validation.', {
+          new AugmentedError('Authentication failed, before user validation.', {
             status: 400,
             data: {
               info_raw: info,
@@ -247,7 +245,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims: Lti13ClaimType = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
+  const lti13_claims = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;

@@ -1,4 +1,4 @@
--- BLOCK select_course_instance
+-- BLOCK select_lti13_course_instance
 SELECT
   lci.*
 FROM
@@ -9,7 +9,7 @@ WHERE
   AND context_id = $context_id
   AND deleted_at IS NULL;
 
--- BLOCK select_lti_course_instance_institution
+-- BLOCK select_lti13_course_instance_institution
 SELECT
   i.id
 FROM
@@ -21,7 +21,8 @@ FROM
     AND ci.id = $course_instance_id
   )
 WHERE
-  lti13_instances.id = $lti13_instance_id;
+  lti13_instances.id = $lti13_instance_id
+  AND lti13_instances.id = $authn_lti13_instance_id;
 
 -- BLOCK insert_lci
 INSERT INTO

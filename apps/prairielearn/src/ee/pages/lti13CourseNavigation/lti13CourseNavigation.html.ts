@@ -76,10 +76,11 @@ export function Lti13CourseNavigationInstructor({
 
         <main class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
-
           <p>
             To finish the integration for your course, we need to connect
             <code>${courseName}</code> with a PrairieLearn course instance.
+          </p>
+          <p>
             <button
               type="button"
               class="btn btn-sm btn-info"
@@ -127,10 +128,9 @@ export function Lti13CourseNavigationInstructor({
                 </ul>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <input type="hidden" name="__action" value="connect_ci" />
-                  <label for="onepicker"><h3>Connect ${courseName} with:</h3></label>
-                  <div class="input-group input-group-lg">
-                    <select class="custom-select" id="onepicker" name="ci_id">
+                  <label>Connect ${courseName} with:
+                  <div class="input-group">
+                    <select class="custom-select" id="onepicker" name="unsafe_course_instance_id">
                       <option value="" disabled selected>
                         Select an existing course instance...
                       </option>
@@ -149,8 +149,9 @@ export function Lti13CourseNavigationInstructor({
                         `;
                       })}
                     </select>
+                    </label>
                   </div>
-                  <button class="btn btn-primary btn-lg" id="saveButton" disabled>Save</button>
+                  <button class="btn btn-primary" id="saveButton" disabled>Save</button>
                 </form>
               `}
         </main>
@@ -234,7 +235,7 @@ export function Lti13CourseNavigationDone({
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
-              class="btn btn-success btn-lg"
+              class="btn btn-success"
               >Continue to your course instance</a
             >
           </p>
