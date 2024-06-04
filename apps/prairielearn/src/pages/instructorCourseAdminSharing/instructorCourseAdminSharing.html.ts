@@ -61,79 +61,97 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
 };
 
 interface SharingSetModalProps {
-  course_id?: string | null;
   csrfToken: string;
-  body?: HtmlSafeString | string;
-  content?: HtmlSafeString | string;
-  footer?: HtmlSafeString | string;
-  id: string;
   title: string;
-  size?: 'default' | 'modal-sm' | 'modal-lg' | 'modal-xl';
-  formMethod?: string;
-  formAction?: string;
-  sharing_set?: { name: string; id: string; deletable: boolean };
+  sharing_set: { name: string; id: string; deletable: boolean };
 }
 
-function deleteSharingSetModal(props: SharingSetModalProps) {
-  console.log('in deleteSharingSetModal with props:', props) // TEST
+/*
+ * TEST, better way to choose body and footer based on deletable?
+ * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
+*/
+function deleteSharingSetModal(sharing_set, csrfToken) {
+  console.log('in deleteSharingSetModal with sharing_set:', sharing_set); // TEST
+  let body = '';
+  let footer = '';
+  if (sharing_set.deletable) {
+    body = html`
+      Are you sure you would like to delete the sharing set "${sharing_set.name}"?
+    `;
+    footer = html`
+      <input type="hidden" name="__action" value="delete_sharing_set" />
+      <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+    `;
+  } else {
+    footer = html`
+      <p>
+        Unable to delete sharing set because the sharing set has been shared 
+        and at least one question has been added. Doing so would break the 
+        assessments of other courses that have imported your questions.
+      </p>
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    `;
+  }
   return Modal({
     title: 'Delete Sharing Set',
-    id: 'delete-sharing-set-modal',
-    body: DeleteSharingSetModalBody(props),
-    footer: html`
-      <input type="hidden" name="__action" value="delete_sharing_set" />
-      <input type="hidden" name="sharing_set_id" value="${props.sharing_set.id}" />
-      <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <div class="text-right mt-4">
-        <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
-      </div>
-    `,
+    id: `deleteSharingSetModal-${sharing_set.id}`,
+    body: body,
+    footer: footer,
   });
 }
 
-export function DeleteSharingSetModalBody({
-  course_id,
-  csrfToken,
-  body,
-  content,
-  footer,
-  id,
-  title,
-  size,
-  formMethod,
-  formAction,
-  sharing_set,
-}: SharingSetModalProps): HtmlSafeString {
-  const titleId = `${id}-title`;
-  let showFooter = false;
-  let showBodyOne = false;
-  if (sharing_set.deletable) {
-    showFooter = true;
-    showBodyOne = true;
-  } 
-  console.log('in DeleteSharingSetModalBody with shared/new props:', { title, id, titleId, showFooter, showBodyOne, size, formMethod, formAction, body, content, footer }) // TEST
-  return html`
-    <div class="modal fade" tabindex="-1" role="dialog" id="${id}" aria-labelledby="${titleId}">
-      <div class="modal-dialog ${size === 'default' ? '' : size}" role="document">
-        <div class="modal-content">
-          <form
-            method="${formMethod}"
-            autocomplete="off"
-            ${formAction ? html`action="${formAction}"` : ''}
-          >
-            <div class="modal-header">
-              <h4 class="modal-title" id=${titleId}>${title}</h4>
-            </div>
-            ${showBodyOne ? html`<div class="modal-body">${body}</div>` : ''} ${content ? content : ''}
-            ${showFooter ? html`<div class="modal-footer">${footer}</div>` : ''}
-          </form>
-        </div>
+/*
+ * TEST, better way to choose body and footer based on deletable?
+ * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
+*/ /*
+function chooseSharingNameModal(canChooseSharingName, csrfToken) {
+  let body = '';
+  let footer = '';
+  if (canChooseSharingName) {
+    body = html`
+      <p class="form-text">Enter the sharing name you would like for your course.</p>
+      <div>
+        <label for="course_sharing_name">Enter Sharing Name</label>
+        <input class="form-control" type="text" name="course_sharing_name" required />
       </div>
-    </div>
-  `;
-}
-
+      <p>
+        <strong
+          >Once you have shared a question either publicly or with another course, you
+          will no longer be able to change your sharing name.</strong
+        >
+        Doing so would break the assessments of other courses that have imported your
+        questions. It is recommended that you choose something short but descriptive.
+        For example, if you're teaching a calculus course at a university that goes by
+        the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'.
+        Then other courses will import questions from your course with the syntax
+        '@xyz-calculus/qid'.
+      </p>
+    `;
+    footer = html`
+      <input type="hidden" name="__action" value="choose_sharing_name" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+    `;
+  } else {
+    footer = html`
+      <p>
+        Unable to delete sharing set because the sharing set has been shared 
+        and at least one question has been added. Doing so would break the 
+        assessments of other courses that have imported your questions.
+      </p>
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    `;
+  }
+  return Modal({
+    title: 'Choose Sharing Name',
+    id: `deleteSharingSetModal-${sharing_set.id}`,
+    body: body,
+    footer: footer,
+  });
+}*/
 
 const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   return html`
@@ -423,37 +441,13 @@ export const InstructorSharing = ({
                             id="deleteSharingSet-${sharing_set.id}"
                             title="Delete Sharing Set"
                             data-toggle="modal"
-                            data-target="#deleteSharingSetModal"
+                            data-target="#deleteSharingSetModal-${sharing_set.id}"
                             data-trigger="manual"
                           >
                             <i class="fas fa-trash"></i>
                             <span class="sr-only">Delete</span>
                           </button>
-                          <script>
-                            try {
-                            const deleteSharingSetModalProps = {
-                              course_id: resLocals.course.id, 
-                              csrfToken: resLocals.__csrf_token, 
-                              body: '', 
-                              content: '', 
-                              footer: '', 
-                              id: 'delete-sharing-set-modal', 
-                              title: 'Delete Sharing Set', 
-                              size: 'modal-lg', 
-                              formMethod: 'POST', 
-                              formAction: 'delete_sharing_set', 
-                              sharing_set: sharing_set 
-                            };
-                          
-                            document.getElementById('deleteSharingSet-' + sharing_set.id).addEventListener('click', () => {
-                              console.log('in deleteSharingSetModal button click for sharing_set', sharing_set.name) // TEST
-                              deleteSharingSetModal(deleteSharingSetModalProps);
-                            });
-                            } catch (e) {
-                              console.error('Error in deleteSharingSetModal button click for sharing_set', sharing_set.name, e) // TEST
-                            }
-                          
-                          </script>
+                          ${deleteSharingSetModal(sharing_set, resLocals.__csrf_token)}
                         </div>
                       </td>
                     </tr>
