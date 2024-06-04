@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { callAsync } from '@prairielearn/postgres';
 
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
@@ -318,7 +317,6 @@ router.get(
       }
     }
     setRendererHeader(res);
-
     res.send(StudentInstanceQuestion({ resLocals: res.locals }));
   }),
 );
