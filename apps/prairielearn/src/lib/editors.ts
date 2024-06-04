@@ -169,12 +169,18 @@ export abstract class Editor {
 
         // If we are using git (e.g., if we are running in production), then we:
         //
-        // - Pull from remote (then clean and reset)
+        // - Clean and reset the repository
         // - Write changes to disk
-        // - Push to remote (then clean and reset)
+        // - Commit changes to the repository
+        // - Push to remote
+        //   - If the push fails, pull from remote, clean, reset, write, commit, and push
+        // - Clean and reset the repository
         // - Sync changes from disk
         //
-        // If anything goes wrong in the pull, we error and exit.
+        // Note that we only fetch from the remote if the push fails. This avoids an
+        // expensive `fetch` operation in the majority of cases where the local course
+        // repository is up to date with the remote. If the push fails, we assume that
+        // the remote has changes that we need to pull in before we can push.
         //
         // If anything goes wrong in the write or push, we make sure to clean/reset
         // (removing changes made by this edit) and sync (because changes were made
@@ -192,41 +198,64 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        job.info('Fetch from remote git repository');
-        await job.exec('git', ['fetch'], {
-          cwd: this.course.path,
-          env: gitEnv,
-        });
-
         await cleanAndResetRepository(this.course, gitEnv, job);
 
-        try {
-          if (await this.shouldEdit()) {
-            job.data.saveAttempted = true;
-            job.info('Write changes to disk');
-            const { pathsToAdd, commitMessage } = await this.write();
+        const writeAndCommitChanges = async () => {
+          job.data.saveAttempted = true;
 
-            job.info('Commit changes');
-            await job.exec('git', ['add', ...pathsToAdd], {
+          if (!(await this.shouldEdit())) return;
+
+          job.info('Write changes to disk');
+          const { pathsToAdd, commitMessage } = await this.write();
+
+          job.info('Commit changes');
+          await job.exec('git', ['add', ...pathsToAdd], {
+            cwd: this.course.path,
+            env: gitEnv,
+          });
+          await job.exec(
+            'git',
+            [
+              '-c',
+              `user.name="${this.user.name}"`,
+              '-c',
+              `user.email="${this.user.email || this.user.uid}"`,
+              'commit',
+              '-m',
+              commitMessage,
+            ],
+            {
+              cwd: this.course.path,
+              env: gitEnv,
+            },
+          );
+        };
+
+        try {
+          await writeAndCommitChanges();
+
+          try {
+            job.info('Push changes to remote git repository');
+            await job.exec('git', ['push'], {
               cwd: this.course.path,
               env: gitEnv,
             });
-            await job.exec(
-              'git',
-              [
-                '-c',
-                `user.name="${this.user.name}"`,
-                '-c',
-                `user.email="${this.user.email || this.user.uid}"`,
-                'commit',
-                '-m',
-                commitMessage,
-              ],
-              {
-                cwd: this.course.path,
-                env: gitEnv,
-              },
-            );
+            job.data.saveSucceeded = true;
+          } catch (err) {
+            job.info('Failed to push changes to remote git repository');
+            job.info('Pulling changes from remote git repository and trying again');
+
+            job.info('Fetch from remote git repository');
+            await job.exec('git', ['fetch'], {
+              cwd: this.course.path,
+              env: gitEnv,
+            });
+
+            // This will both discard the commit we made locally and also pull
+            // in any new changes from the remote.
+            await cleanAndResetRepository(this.course, gitEnv, job);
+
+            await writeAndCommitChanges();
 
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {

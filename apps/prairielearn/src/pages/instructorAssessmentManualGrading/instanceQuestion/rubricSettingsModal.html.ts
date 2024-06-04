@@ -315,28 +315,40 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         />
       </td>
       <td>
-        <label
-          class="js-rubric-item-explanation"
+        ${item?.explanation
+          ? html` <label
+              for="rubric-item-explanation-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.explanation}</label
+            >`
+          : ''}
+        <button
+          ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-explanation"
           data-input-name="${namePrefix}[explanation]"
           data-current-value="${item?.explanation}"
         >
-          ${item?.explanation}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
-        <label
-          class="js-rubric-item-grader-note"
+        ${item?.grader_note
+          ? html`<label
+              for="rubric-item-grader-note-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.grader_note}</label
+            > `
+          : ''}
+        <button
+          ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-grader-note"
           data-input-name="${namePrefix}[grader_note]"
           data-current-value="${item?.grader_note}"
         >
-          ${item?.grader_note}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
         <div class="form-check form-check-inline">

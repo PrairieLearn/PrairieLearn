@@ -128,7 +128,7 @@ The following list of standardized assessments sets is automatically included in
 | abbreviation | name            | purpose                                                 |
 | ------------ | --------------- | ------------------------------------------------------- |
 | `HW`         | Homework        | Weekly homeworks done at home.                          |
-| `MP`         | Machine Problem | Weekly coding assisgnments done outside of class.       |
+| `MP`         | Machine Problem | Weekly coding assignments done outside of class.        |
 | `Q`          | Quiz            | Short frequent quizzes.                                 |
 | `PQ`         | Practice Quiz   | Practice quizzes.                                       |
 | `E`          | Exam            | Long-form midterm or final exams.                       |
@@ -260,9 +260,9 @@ Each question in the course has a topic from the list specified in the `infoCour
 
 | Property      | Description                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------- |
-| `name`        | Brief name for the topic. Shorter is better. Should be in sentence case (leading captial letter). |
+| `name`        | Brief name for the topic. Shorter is better. Should be in sentence case (leading capital letter). |
 | `color`       | The color scheme for this topic (see below for choices).                                          |
-| `description` | An explanation of what the topic includes, for human referance.                                   |
+| `description` | An explanation of what the topic includes, for human reference.                                   |
 
 For example, topics could be listed like:
 
@@ -291,7 +291,7 @@ Each question can have zero, one, or many tags associated with it. The propertie
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`        | Brief name for the tag. Tags should have very short names (preferably just a single word) because there might be many of them on one question. Should typically be in lower case (e.g., `drawing`) or an uppercase abbreviation (e.g., `MC`). |
 | `color`       | The color scheme for this tag (see below for choices).                                                                                                                                                                                        |
-| `description` | An explanation of what the tag means, for human referance.                                                                                                                                                                                    |
+| `description` | An explanation of what the tag means, for human reference.                                                                                                                                                                                    |
 
 ### Standardized tag names
 
