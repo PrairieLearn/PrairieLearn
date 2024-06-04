@@ -128,19 +128,6 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    const pl_authn = generateSignedToken(
-      {
-        user_id: userResult.user_id,
-        authn_provider_name: 'LTI',
-      },
-      config.secretKey,
-    );
-    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: shouldSecureCookie(req),
-    });
-
     // Dual-write information to the session so that we can start reading
     // it instead of the cookie in the future.
     req.session.user_id = userResult.user_id;

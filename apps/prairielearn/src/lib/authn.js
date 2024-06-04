@@ -16,7 +16,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * @typedef {Object} LoadUserOptions
- * @property {boolean} [pl_authn_cookie] - Create the cookie?
  * @property {boolean} [redirect] - Redirect after processing?
  */
 /**
@@ -36,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param {LoadUserOptions} [optionsParams]
  */
 export async function loadUser(req, res, authnParams, optionsParams = {}) {
-  let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
+  let options = { redirect: false, ...optionsParams };
 
   let user_id;
   if ('user_id' in authnParams) {
@@ -84,23 +83,10 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
 
-  if (options.pl_authn_cookie) {
-    var tokenData = {
-      user_id,
-      authn_provider_name: authnParams.provider || null,
-    };
-    var pl_authn = generateSignedToken(tokenData, config.secretKey);
-    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: shouldSecureCookie(req),
-    });
-
-    // After explicitly authenticating, clear the cookie that disables
-    // automatic authentication.
-    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
-      clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
-    }
+  // After explicitly authenticating, clear the cookie that disables
+  // automatic authentication.
+  if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+    clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
   }
 
   if (options.redirect) {
