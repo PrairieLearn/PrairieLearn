@@ -138,7 +138,6 @@ export function StudentAssessments({
                           import.meta.url,
                           "<%- include('../partials/studentAccessRulesPopover'); %>",
                           {
-                            ...resLocals,
                             accessRules: row.access_rules,
                             assessmentSetName: row.assessment_set_name,
                             assessmentNumber: row.assessment_number,
