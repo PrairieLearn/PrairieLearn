@@ -1,5 +1,6 @@
-import { html } from '@prairielearn/html';
+import { html, HtmlSafeString } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { Modal } from '../../components/Modal.html.js';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -60,123 +61,79 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
 };
 
 interface SharingSetModalProps {
-  feature: string;
-  institution_id?: string | null;
   course_id?: string | null;
-  course_instance_id?: string | null;
   csrfToken: string;
+  body?: HtmlSafeString | string;
+  content?: HtmlSafeString | string;
+  footer?: HtmlSafeString | string;
+  id: string;
+  title: string;
+  size?: 'default' | 'modal-sm' | 'modal-lg' | 'modal-xl';
+  formMethod?: string;
+  formAction?: string;
+  sharing_set?: { name: string; id: string; deletable: boolean };
 }
-/*
+
 function deleteSharingSetModal(props: SharingSetModalProps) {
+  console.log('in deleteSharingSetModal with props:', props) // TEST
   return Modal({
-    title: 'Delete sharing set',
+    title: 'Delete Sharing Set',
     id: 'delete-sharing-set-modal',
     body: DeleteSharingSetModalBody(props),
     footer: html`
+      <input type="hidden" name="__action" value="delete_sharing_set" />
+      <input type="hidden" name="sharing_set_id" value="${props.sharing_set.id}" />
       <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+      <div class="text-right mt-4">
+        <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+      </div>
     `,
   });
 }
 
 export function DeleteSharingSetModalBody({
-  feature,
-  institutions,
-  institution_id,
-  courses,
   course_id,
-  course_instances,
-  course_instance_id,
-}: Omit<FeatureGrantModalProps, 'csrfToken'>) {
-  const modalUrl = `/pl/administrator/features/${feature}/modal`;
+  csrfToken,
+  body,
+  content,
+  footer,
+  id,
+  title,
+  size,
+  formMethod,
+  formAction,
+  sharing_set,
+}: SharingSetModalProps): HtmlSafeString {
+  const titleId = `${id}-title`;
+  let showFooter = false;
+  let showBodyOne = false;
+  if (sharing_set.deletable) {
+    showFooter = true;
+    showBodyOne = true;
+  } 
+  console.log('in DeleteSharingSetModalBody with shared/new props:', { title, id, titleId, showFooter, showBodyOne, size, formMethod, formAction, body, content, footer }) // TEST
   return html`
-    <fieldset
-      hx-get="${modalUrl}"
-      hx-trigger="change"
-      hx-target="this"
-      hx-include="closest .modal-body"
-      hx-ext="loading-states,morphdom-swap"
-      hx-swap="morphdom"
-      data-loading-disable
-      data-loading-delay="200"
-    >
-      <div class="form-group">
-        <label for="feature-grant-institution">
-          Institution
-          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
-        </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-institution"
-          name="institution_id"
-        >
-          <option value="">All institutions</option>
-          ${institutions.map((institution) => {
-            return html`
-              <option
-                value="${institution.id}"
-                ${institution.id === institution_id ? 'selected' : ''}
-              >
-                ${institution.short_name}: ${institution.long_name} (${institution.id})
-              </option>
-            `;
-          })}
-        </select>
+    <div class="modal fade" tabindex="-1" role="dialog" id="${id}" aria-labelledby="${titleId}">
+      <div class="modal-dialog ${size === 'default' ? '' : size}" role="document">
+        <div class="modal-content">
+          <form
+            method="${formMethod}"
+            autocomplete="off"
+            ${formAction ? html`action="${formAction}"` : ''}
+          >
+            <div class="modal-header">
+              <h4 class="modal-title" id=${titleId}>${title}</h4>
+            </div>
+            ${showBodyOne ? html`<div class="modal-body">${body}</div>` : ''} ${content ? content : ''}
+            ${showFooter ? html`<div class="modal-footer">${footer}</div>` : ''}
+          </form>
+        </div>
       </div>
-
-      <div class="form-group">
-        <label for="feature-grant-course">
-          Course
-          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
-        </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-course"
-          name="course_id"
-          ${!institution_id ? 'disabled' : ''}
-        >
-          <option value="">All courses in this institution</option>
-          ${(courses ?? []).map((course) => {
-            return html`
-              <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
-                ${course.short_name}: ${course.title} (${course.id})
-              </option>
-            `;
-          })}
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="feature-grant-course-instance">
-          Course instance
-          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
-        </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-course-instance"
-          name="course_instance_id"
-          ${!course_id ? 'disabled' : ''}
-        >
-          <option value="">All courses instances in this course</option>
-          ${(course_instances ?? []).map((course_instance) => {
-            return html`
-              <option
-                value="${course_instance.id}"
-                ${course_instance.id === course_instance_id ? 'selected' : ''}
-              >
-                ${course_instance.short_name}: ${course_instance.long_name} (${course_instance.id})
-              </option>
-            `;
-          })}
-        </select>
-      </div>
-    </fieldset>
+    </div>
   `;
 }
 
-
-*/
 
 const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
   return html`
@@ -243,7 +200,7 @@ const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
     </div>
   `;
 };
-
+/*
 const deleteSharingSetModal = (sharing_set, resLocals) => {
   return html`
     <div
@@ -295,7 +252,7 @@ const deleteSharingSetModal = (sharing_set, resLocals) => {
       </div>
     </div>
   `;
-};
+};*/
 
 export const InstructorSharing = ({
   sharingName,
@@ -472,12 +429,37 @@ export const InstructorSharing = ({
                             <i class="fas fa-trash"></i>
                             <span class="sr-only">Delete</span>
                           </button>
-                          ${deleteSharingSetModal(sharing_set, resLocals)}
+                          <script>
+                            try {
+                            const deleteSharingSetModalProps = {
+                              course_id: resLocals.course.id, 
+                              csrfToken: resLocals.__csrf_token, 
+                              body: '', 
+                              content: '', 
+                              footer: '', 
+                              id: 'delete-sharing-set-modal', 
+                              title: 'Delete Sharing Set', 
+                              size: 'modal-lg', 
+                              formMethod: 'POST', 
+                              formAction: 'delete_sharing_set', 
+                              sharing_set: sharing_set 
+                            };
+                          
+                            document.getElementById('deleteSharingSet-' + sharing_set.id).addEventListener('click', () => {
+                              console.log('in deleteSharingSetModal button click for sharing_set', sharing_set.name) // TEST
+                              deleteSharingSetModal(deleteSharingSetModalProps);
+                            });
+                            } catch (e) {
+                              console.error('Error in deleteSharingSetModal button click for sharing_set', sharing_set.name, e) // TEST
+                            }
+                          
+                          </script>
                         </div>
                       </td>
                     </tr>
                   `,
                 )}
+              }
               </tbody>
             </table>
           </div>
