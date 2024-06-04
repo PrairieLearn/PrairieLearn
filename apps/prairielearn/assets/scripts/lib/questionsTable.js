@@ -85,7 +85,7 @@ onDocumentReady(() => {
   };
 
   window.tagsFormatter = function (tags, question) {
-    return TagBadgeList(question.tags);
+    return TagBadgeList(question.tags).toString();
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
