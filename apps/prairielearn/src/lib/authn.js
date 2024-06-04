@@ -2,12 +2,10 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
-import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie.js';
+import { clearCookie } from '../lib/cookie.js';
 
-import { config } from './config.js';
 import { InstitutionSchema, UserSchema } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';

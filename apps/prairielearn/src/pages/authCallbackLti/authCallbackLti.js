@@ -8,10 +8,8 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../lib/config.js';
-import { shouldSecureCookie, setCookie } from '../../lib/cookie.js';
 import { IdSchema, LtiCredentialsSchema } from '../../lib/db-types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
