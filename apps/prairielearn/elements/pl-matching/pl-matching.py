@@ -125,7 +125,7 @@ def prepare(element_html, data):
         "counter-type",
         "fixed-options-order",
         "hide-score-badge",
-        "options-placement"
+        "options-placement",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -245,7 +245,7 @@ def prepare(element_html, data):
             "statements": display_statements,
             "options": display_options,
             "options_placement_right": options_placement_right,
-            "options_placement_bottom": options_placement_bottom
+            "options_placement_bottom": options_placement_bottom,
         }
         data["correct_answers"][name] = correct_matches
 
@@ -346,7 +346,7 @@ def render(element_html, data):
             "counter_type": counter_type,
             "no_counters": no_counters,
             "options_placement_right": options_placement_right,
-            "options_placement_bottom": options_placement_bottom
+            "options_placement_bottom": options_placement_bottom,
         }
 
         if score is not None:
