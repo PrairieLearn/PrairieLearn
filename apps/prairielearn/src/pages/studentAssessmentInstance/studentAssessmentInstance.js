@@ -25,6 +25,8 @@ import {
 import { idsEqual } from '../../lib/id.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
+
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -291,7 +293,8 @@ router.get(
         }
       }
     }
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+
+    res.send(StudentAssessmentInstance({ resLocals: res.locals }));
   }),
 );
 
