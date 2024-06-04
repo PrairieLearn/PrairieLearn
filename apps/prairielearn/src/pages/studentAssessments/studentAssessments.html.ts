@@ -146,26 +146,8 @@ export function StudentAssessments({
                       </td>
                       <td class="text-center align-middle">
                         ${row.multiple_instance_header
-                          ? row.active
-                            ? html`
-                                <a href="${urlPrefix}${row.link}" class="btn btn-primary btn-sm">
-                                  New instance
-                                </a>
-                              `
-                            : html`
-                                <button type="button" disabled class="btn btn-primary btn-sm">
-                                  New instance
-                                </button>
-                              `
-                          : row.assessment_instance_id
-                            ? row.show_closed_assessment_score
-                              ? renderEjs(
-                                  import.meta.url,
-                                  "<%- include('../partials/scorebar'); %>",
-                                  { score: row.assessment_instance_score_perc },
-                                )
-                              : 'Score not shown'
-                            : 'Not started'}
+                          ? NewInstanceButton({ urlPrefix, row })
+                          : AssessmentScore(row)}
                       </td>
                     </tr>
                   `,
@@ -185,4 +167,22 @@ export function StudentAssessments({
       </body>
     </html>
   `.toString();
+}
+
+function AssessmentScore(row: StudentAssessmentsRow) {
+  if (row.assessment_instance_id == null) return 'Not started';
+  if (!row.show_closed_assessment_score) return 'Score not shown';
+  return renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
+    score: row.assessment_instance_score_perc,
+  });
+}
+
+function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {
+  if (row.active) {
+    return html`<a href="${urlPrefix}${row.link}" class="btn btn-primary btn-sm">New instance</a>`;
+  } else {
+    return html`<button type="button" disabled class="btn btn-primary btn-sm">
+      New instance
+    </button>`;
+  }
 }
