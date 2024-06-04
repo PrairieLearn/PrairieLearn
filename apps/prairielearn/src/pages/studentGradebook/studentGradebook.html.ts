@@ -7,7 +7,7 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AssessmentAccessRulesSchema,
+  AssessmentAccessRuleSchema,
 } from '../../lib/db-types.js';
 
 export const StudentGradebookRowSchema = z.object({
@@ -17,7 +17,7 @@ export const StudentGradebookRowSchema = z.object({
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc,
-  show_closed_assessment_score: AssessmentAccessRulesSchema.shape.show_closed_assessment_score,
+  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   start_new_set: z.boolean(),
 });
 type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;

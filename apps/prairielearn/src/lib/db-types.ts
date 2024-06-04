@@ -962,7 +962,7 @@ export const LtiCredentialsSchema = z.object({
 });
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
 
-export const AssessmentAccessRulesSchema = z.object({
+export const AssessmentAccessRuleSchema = z.object({
   active: z.boolean(),
   assessment_id: IdSchema,
   credit: z.number().nullable(),
@@ -979,4 +979,4 @@ export const AssessmentAccessRulesSchema = z.object({
   time_limit_min: z.number().nullable(),
   uids: z.string().array().nullable(),
 });
-export type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
+export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
