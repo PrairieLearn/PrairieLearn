@@ -22,10 +22,12 @@ SELECT
     ),
     '[]'
   ) AS shared_with
+  -- TEST # ANY (ssc.course_id NOT NULL) AND ANY(ssq.sharing_set_id NOT NULL) AS deletable
 FROM
   sharing_sets AS ss
-  LEFT JOIN sharing_set_courses AS css on css.sharing_set_id = ss.id
-  LEFT JOIN pl_courses AS c on c.id = css.course_id
+  LEFT JOIN sharing_set_courses AS ssc on ssc.sharing_set_id = ss.id
+  -- TEST # LEFT JOIN sharing_set_questions AS ssq on ssq.sharing_set_id = ss.id
+  LEFT JOIN pl_courses AS c on c.id = ssc.course_id
 WHERE
   ss.course_id = $course_id
 GROUP BY
@@ -90,17 +92,6 @@ SELECT
     WHERE
       ss.course_id = $course_id
   );
-
--- BLOCK select_set_shared
-SELECT
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM sharing_set_courses WHERE sharing_set_id = $sharing_set_id
-    ) OR EXISTS (
-      SELECT 1 FROM sharing_set_questions WHERE sharing_set_id = $sharing_set_id
-    ) THEN TRUE
-    ELSE FALSE
-  END AS can_not_delete;
 
 -- BLOCK select_sharing_set_shared_and_has_question
 SELECT
