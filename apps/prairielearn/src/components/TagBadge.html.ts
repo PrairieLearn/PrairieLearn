@@ -1,4 +1,4 @@
-import { html } from '@prairielearn/html';
+import { html, joinHtml } from '@prairielearn/html';
 
 import type { Tag } from '../lib/db-types.js';
 
@@ -7,5 +7,5 @@ export function TagBadge(tag: Pick<Tag, 'color' | 'name'>) {
 }
 
 export function TagBadgeList(tags: Pick<Tag, 'color' | 'name'>[] | null) {
-  return html`${tags?.map(TagBadge) ?? ''}`;
+  return joinHtml(tags?.map(TagBadge) ?? [], ' ');
 }
