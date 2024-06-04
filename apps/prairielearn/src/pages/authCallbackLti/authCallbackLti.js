@@ -128,8 +128,7 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Dual-write information to the session so that we can start reading
-    // it instead of the cookie in the future.
+    // Persist the user's authentication data in the session.
     req.session.user_id = userResult.user_id;
     req.session.authn_provider_name = 'LTI';
 
