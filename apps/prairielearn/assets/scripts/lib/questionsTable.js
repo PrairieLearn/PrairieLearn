@@ -6,6 +6,7 @@ import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
   const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
@@ -79,9 +80,7 @@ onDocumentReady(() => {
   };
 
   window.topicFormatter = function (topic, question) {
-    return html`<span class="badge color-${question.topic.color}"
-      >${question.topic.name}</span
-    >`.toString();
+    return TopicBadge(question.topic).toString();
   };
 
   window.tagsFormatter = function (tags, question) {
