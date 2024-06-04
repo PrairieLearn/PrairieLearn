@@ -35,6 +35,7 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/flash": "workspace:^",
+    "@prairielearn/formatter": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/html-ejs": "workspace:^",
     "@prairielearn/logger": "workspace:^",

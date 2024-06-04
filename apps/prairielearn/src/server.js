@@ -971,6 +971,14 @@ export async function initExpress() {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access_overrides',
+    (
+      await import(
+        './pages/instructorAssessmentAccessOverrides/instructorAssessmentAccessOverrides.js'
+      )
+    ).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
     [
       function (req, res, next) {
@@ -1038,6 +1046,7 @@ export async function initExpress() {
         .default,
     ],
   );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
     [

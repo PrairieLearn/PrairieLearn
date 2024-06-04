@@ -1,4 +1,5 @@
-type AttributeMap = Record<string, string>;
+type Attribute = string | { selector: string; allowMissing?: boolean };
+type AttributeMap = Record<string, Attribute>;
 
 /**
  * For each key in `attributes`, copies that attribute's value from `source`
@@ -20,15 +21,18 @@ export function templateFromAttributes(
   target: HTMLElement,
   attributes: AttributeMap,
 ) {
-  Object.entries(attributes).forEach(([sourceAttribute, targetSelector]) => {
+  Object.entries(attributes).forEach(([sourceAttribute, targetInfo]) => {
     const attributeValue = source.getAttribute(sourceAttribute);
     if (attributeValue == null) {
       console.error(`Attribute "${sourceAttribute}" not found on source element`);
       return;
     }
 
+    const targetSelector = typeof targetInfo === 'string' ? targetInfo : targetInfo.selector;
+    const allowMissingTarget = typeof targetInfo === 'string' ? false : targetInfo.allowMissing;
+
     const targets = target.querySelectorAll(targetSelector);
-    if (targets.length === 0) {
+    if (targets.length === 0 && !allowMissingTarget) {
       console.error(`No elements found matching selector "${targetSelector}"`);
       return;
     }
