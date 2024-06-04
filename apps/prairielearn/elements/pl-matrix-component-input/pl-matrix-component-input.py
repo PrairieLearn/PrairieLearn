@@ -505,9 +505,9 @@ def test(element_html, data):
                 raise Exception("invalid result: %s" % result)
 
     if result == "invalid":
-        data["format_errors"][
-            name
-        ] = "At least one of the entries has invalid format (empty entries or not a double precision floating point number)"
+        data["format_errors"][name] = (
+            "At least one of the entries has invalid format (empty entries or not a double precision floating point number)"
+        )
 
     if number_of_correct == m * n:
         data["partial_scores"][name] = {"score": 1, "weight": weight}

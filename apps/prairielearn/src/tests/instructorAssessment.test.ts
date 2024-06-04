@@ -1,11 +1,11 @@
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
-import _ = require('lodash');
+import _ from 'lodash';
+import request from 'request';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
+import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const locals: Record<string, any> = {};
 
@@ -176,7 +176,7 @@ describe('Instructor assessment editing', function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = _.filter(locals.pageData, (row) => row.uid === 'dev@illinois.edu');
+      elemList = _.filter(locals.pageData, (row) => row.uid === 'dev@example.com');
       assert.lengthOf(elemList, 1);
       locals.instructorAssessmentInstanceUrl =
         locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
@@ -252,7 +252,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -330,7 +330,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -407,7 +407,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -484,7 +484,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorAssessmentInstanceUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {
@@ -554,7 +554,7 @@ describe('Instructor assessment editing', function () {
     it('should contain a row for the dev user', function () {
       locals.gradebookDataRow = _.filter(
         locals.gradebookData,
-        (row) => row.uid === 'dev@illinois.edu',
+        (row) => row.uid === 'dev@example.com',
       );
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
@@ -580,7 +580,7 @@ describe('Instructor assessment editing', function () {
       request.post(
         {
           url: locals.instructorGradebookUrl,
-          form: form,
+          form,
           followAllRedirects: true,
         },
         function (error, response, body) {

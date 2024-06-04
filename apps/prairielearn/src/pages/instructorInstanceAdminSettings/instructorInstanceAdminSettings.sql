@@ -1,6 +1,6 @@
 -- BLOCK short_names
 SELECT
-  array_agg(ci.short_name) AS short_names
+  ci.short_name
 FROM
   course_instances AS ci
 WHERE

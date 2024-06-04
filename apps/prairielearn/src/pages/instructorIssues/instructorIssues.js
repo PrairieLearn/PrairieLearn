@@ -1,19 +1,22 @@
-//@ts-check
-const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
+// @ts-check
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
-const SearchString = require('search-string');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import SearchString from 'search-string';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import * as paginate from '../../lib/paginate';
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { closeAllIssuesForCourse } from '../../lib/issues';
+
+import { IdSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import * as paginate from '../../lib/paginate.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const PAGE_SIZE = 100;
 
@@ -96,6 +99,26 @@ function parseRawQuery(str) {
   }
 
   return filters;
+}
+
+/**
+ * @param {string} issue_id
+ * @param {boolean} new_open
+ * @param {string} course_id
+ * @param {string} authn_user_id
+ */
+async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
+  const result = await sqldb.queryOptionalRow(
+    sql.update_issue_open,
+    { issue_id, new_open, course_id, authn_user_id },
+    IdSchema,
+  );
+  if (!result) {
+    throw new error.HttpStatusError(
+      403,
+      `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
+    );
+  }
 }
 
 router.get(
@@ -221,11 +244,15 @@ router.get(
     res.locals.filterQuery = req.query.q;
     res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
     res.locals.filters = filters;
+    res.locals.openFilteredIssuesCount = issues.rows.reduce(
+      (acc, row) => (row.open ? acc + 1 : acc),
+      0,
+    );
 
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -233,32 +260,40 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be a course editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
     }
 
     if (req.body.__action === 'open') {
-      let params = [
+      await updateIssueOpen(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open', params);
+      );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
-      let params = [
+      await updateIssueOpen(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
         res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open', params);
+      );
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'close_all') {
-      await closeAllIssuesForCourse(res.locals.course.id, res.locals.authn_user.user_id);
+    } else if (req.body.__action === 'close_matching') {
+      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
+      const closedCount = await sqldb.queryRow(
+        sql.close_issues,
+        {
+          issue_ids: issueIds,
+          course_id: res.locals.course.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        },
+        z.number(),
+      );
+      flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

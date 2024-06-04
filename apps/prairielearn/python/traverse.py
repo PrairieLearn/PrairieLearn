@@ -36,12 +36,13 @@ def traverse_and_execute(
 ) -> None:
     elements = lxml.html.fragments_fromstring(html)
 
-    # If there's leading text, the first element of the array will be a string.
-    # We can just discard that.
-    if isinstance(elements[0], str):
-        del elements[0]
-
-    for e in chain.from_iterable(element.iter() for element in elements):
+    for e in chain.from_iterable(
+        element.iter()
+        for element in elements
+        # If there's leading text, the first element of the array will be a string.
+        # We can just discard that.
+        if isinstance(element, lxml.html.HtmlElement)
+    ):
         fn(e)
 
 
@@ -110,11 +111,7 @@ def traverse_and_replace(
 
             if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
-                # NOTE ignore comment needed because the HtmlProcessingInstruction class
-                # is missing from the upstream type stubs package. Can be removed once the
-                # following issue gets resolved upstream.
-                # https://github.com/abelcheung/types-lxml/issues/28
-            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):  # type: ignore
+            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
                 # that produce SVG documents.
                 #

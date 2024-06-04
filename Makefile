@@ -6,7 +6,7 @@ python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:
 	@yarn
-	@make python-deps build
+	@$(MAKE) python-deps build
 
 migrate:
 	@yarn migrate
@@ -22,6 +22,8 @@ dev: start-support
 	@yarn dev
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
+dev-all: start-support
+	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
 	@yarn start
@@ -29,6 +31,8 @@ start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
 	@node apps/prairielearn/dist/executor.js
+start-all: start-support
+	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:
 	@yarn workspace @prairielearn/prairielearn pg-describe postgres -o ../../database
@@ -47,10 +51,7 @@ test-js: start-support
 test-js-dist: start-support
 	@yarn turbo run test:dist
 test-python:
-# `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
-# pytest uses to discover tests, but it isn't actually a test file itself. We
-# explicitly exclude it here.
-	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py --cov=apps
+	@python3 -m pytest
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
@@ -62,7 +63,8 @@ lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
-	@python3 -m flake8 ./
+	@python3 -m ruff check ./
+	@python3 -m ruff format --check ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
@@ -73,8 +75,8 @@ format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 format-python:
-	@python3 -m isort ./
-	@python3 -m black ./
+	@python3 -m ruff check --fix ./
+	@python3 -m ruff format ./
 
 typecheck: typecheck-js typecheck-python
 # This is just an alias to our build script, which will perform typechecking
@@ -90,5 +92,6 @@ typecheck-python:
 
 changeset:
 	@yarn changeset
+	@yarn prettier --write ".changeset/**/*.md"
 
 ci: lint typecheck check-dependencies test

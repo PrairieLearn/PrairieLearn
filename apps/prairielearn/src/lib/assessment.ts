@@ -1,25 +1,25 @@
 import * as async from 'async';
-import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
+import * as ejs from 'ejs';
 import { z } from 'zod';
-import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import { gradeVariant } from './grading';
 import * as sqldb from '@prairielearn/postgres';
-import * as ltiOutcomes from './ltiOutcomes';
-import { createServerJob } from './server-jobs';
+
 import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
   VariantSchema,
   ClientFingerprintSchema,
-} from './db-types';
+  AssessmentInstanceSchema,
+} from './db-types.js';
+import { gradeVariant } from './grading.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:assessment');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export const InstanceLogSchema = z.object({
   event_name: z.string(),
@@ -49,7 +49,7 @@ export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
  * @param assessment_id - The assessment it should belong to.
  * @returns Throws an error if the assessment instance doesn't belong to the assessment.
  */
-export async function checkBelongsAsync(
+export async function checkBelongs(
   assessment_instance_id: string,
   assessment_id: string,
 ): Promise<void> {
@@ -60,10 +60,9 @@ export async function checkBelongsAsync(
       IdSchema,
     )) == null
   ) {
-    throw error.make(403, 'access denied');
+    throw new error.HttpStatusError(403, 'access denied');
   }
 }
-export const checkBelongs = callbackify(checkBelongsAsync);
 
 /**
  * Render the "text" property of an assessment.
@@ -136,7 +135,6 @@ export async function update(
 ): Promise<boolean> {
   debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
     const updateResult = await sqldb.callOneRowAsync('assessment_instances_update', [
       assessment_instance_id,
       authn_user_id,
@@ -157,7 +155,7 @@ export async function update(
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
-    await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   }
   return updated;
 }
@@ -175,7 +173,7 @@ export async function update(
  * @param close - Whether to close the assessment instance after grading.
  * @param overrideGradeRate - Whether to override grade rate limits.
  */
-export async function gradeAssessmentInstanceAsync(
+export async function gradeAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string | null,
   requireOpen: boolean,
@@ -188,8 +186,17 @@ export async function gradeAssessmentInstanceAsync(
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
-      await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
-      await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+      const assessmentInstance = await sqldb.queryOptionalRow(
+        sql.select_and_lock_assessment_instance,
+        { assessment_instance_id },
+        AssessmentInstanceSchema,
+      );
+      if (assessmentInstance == null) {
+        throw new error.HttpStatusError(404, 'Assessment instance not found');
+      }
+      if (!assessmentInstance.open) {
+        throw new error.HttpStatusError(403, 'Assessment instance is not open');
+      }
 
       if (close) {
         // If we're supposed to close the assessment, do it *before* we
@@ -240,7 +247,6 @@ export async function gradeAssessmentInstanceAsync(
   // that's acceptable.
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
-export const gradeAssessmentInstance = callbackify(gradeAssessmentInstanceAsync);
 
 const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
@@ -300,7 +306,7 @@ export async function gradeAllAssessmentInstances(
     await async.eachSeries(instances, async (row) => {
       job.info(`Grading assessment instance #${row.instance_number} for ${row.username}`);
       const requireOpen = true;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         row.assessment_instance_id,
         authn_user_id,
         requireOpen,
@@ -360,12 +366,12 @@ export async function updateAssessmentInstanceScore(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const max_points = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance_max_points,
+    const { max_points } = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      z.number(),
+      AssessmentInstanceSchema,
     );
-    const points = (score_perc * max_points) / 100;
+    const points = (score_perc * (max_points ?? 0)) / 100;
     await sqldb.queryAsync(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
@@ -381,12 +387,12 @@ export async function updateAssessmentInstancePoints(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const max_points = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance_max_points,
+    const { max_points } = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      z.number(),
+      AssessmentInstanceSchema,
     );
-    const score_perc = (points / (max_points > 0 ? max_points : 1)) * 100;
+    const score_perc = (points / (max_points != null && max_points > 0 ? max_points : 1)) * 100;
     await sqldb.queryAsync(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
@@ -453,5 +459,33 @@ export async function updateAssessmentQuestionStatsForAssessment(
     );
     await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
     await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
+  });
+}
+
+export async function deleteAssessmentInstance(
+  assessment_id: string,
+  assessment_instance_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  const deleted_id = await sqldb.queryOptionalRow(
+    sql.delete_assessment_instance,
+    { assessment_id, assessment_instance_id, authn_user_id },
+    IdSchema,
+  );
+  if (deleted_id == null) {
+    throw new error.HttpStatusError(
+      403,
+      'This assessment instance does not exist in this assessment.',
+    );
+  }
+}
+
+export async function deleteAllAssessmentInstancesForAssessment(
+  assessment_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+    assessment_id,
+    authn_user_id,
   });
 }

@@ -1,7 +1,184 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { compiledScriptTag } from '../../lib/assets.js';
+import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+
 export function InstructorCourseAdminSettings({
+  resLocals,
+  coursePathExists,
+  courseInfoExists,
+  availableTimezones,
+  origHash,
+}: {
+  resLocals: Record<string, any>;
+  coursePathExists: boolean;
+  courseInfoExists: boolean;
+  availableTimezones: Timezone[];
+  origHash: string;
+}) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
+          ...resLocals,
+        })}
+        ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
+      </head>
+      <body>
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+          ...resLocals,
+        })}
+        <main id="content" class="container">
+          ${renderEjs(
+            import.meta.url,
+            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
+            {
+              ...resLocals,
+            },
+          )}
+          <div class="card  mb-4">
+            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <div class="card-body">
+              ${!courseInfoExists || !coursePathExists
+                ? CourseDirectoryMissingAlert({
+                    resLocals,
+                    coursePathExists,
+                    courseInfoExists,
+                  })
+                : ''}
+              <form name="edit-course-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
+                <div class="form-group">
+                  <label for="short_name">Short Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="short_name"
+                    name="short_name"
+                    value="${resLocals.course.short_name}"
+                    required
+                    ${courseInfoExists &&
+                    resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? ''
+                      : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The short name of the course. Often this is the course rubric and number (e.g.,
+                    "MATH 101" or "PHYS 440").
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="title">Title</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="title"
+                    name="title"
+                    value="${resLocals.course.title}"
+                    required
+                    ${courseInfoExists &&
+                    resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? ''
+                      : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    This is the official title of the course, as given in the course catalog.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="display_timezone">Timezone</label>
+                  <select
+                    class="form-control"
+                    id="display_timezone"
+                    name="display_timezone"
+                    ${courseInfoExists &&
+                    resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? ''
+                      : 'disabled'}
+                  >
+                    ${availableTimezones.map(
+                      (tz) => html`
+                        <option
+                          value="${tz.name}"
+                          ${tz.name === resLocals.course.display_timezone ? 'selected' : ''}
+                        >
+                          ${formatTimezone(tz)}
+                        </option>
+                      `,
+                    )}
+                  </select>
+                  <small class="form-text text-muted">
+                    The allowable timezones are from the tz database. It's best to use a city-based
+                    timezone that has the same times as you.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="institution">Institution</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="institution"
+                    name="institution"
+                    value="${resLocals.institution.short_name} (${resLocals.institution.long_name})"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    This is your academic institution (e.g., "University of Illinois").
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="path">Path</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="path"
+                    name="path"
+                    value="${resLocals.course.path}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    The path where course files can be found.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="repository">Repository</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="repository"
+                    name="repository"
+                    value="${resLocals.course.repository}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    The Github repository that can be used to sync course files.
+                  </small>
+                </div>
+                ${EditActions({
+                  coursePathExists,
+                  courseInfoExists,
+                  hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
+                  hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
+                  exampleCourse: resLocals.course.example_course,
+                  urlPrefix: resLocals.urlPrefix,
+                  navPage: resLocals.navPage,
+                })}
+              </form>
+            </div>
+          </div>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
+
+function CourseDirectoryMissingAlert({
   resLocals,
   coursePathExists,
   courseInfoExists,
@@ -10,119 +187,91 @@ export function InstructorCourseAdminSettings({
   coursePathExists: boolean;
   courseInfoExists: boolean;
 }) {
+  if (!resLocals.authz_data.has_course_permission_edit || resLocals.course.example_course) {
+    return;
+  }
+  if (!coursePathExists) {
+    return html`
+      <div class="alert alert-danger">
+        Course directory not found. You must
+        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
+        .
+      </div>
+    `;
+  } else if (!courseInfoExists) {
+    return html`
+      <form name="add-configuration-form" method="POST" class="alert alert-danger">
+        <code>infoCourse.json</code> is missing. You must
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          name="__action"
+          value="add_configuration"
+          class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+        >
+          create this file
+        </button>
+        to edit your course settings.
+      </form>
+    `;
+  }
+}
+
+function EditActions({
+  coursePathExists,
+  courseInfoExists,
+  hasCoursePermissionView,
+  hasCoursePermissionEdit,
+  exampleCourse,
+  urlPrefix,
+  navPage,
+}: {
+  coursePathExists: boolean;
+  courseInfoExists: boolean;
+  hasCoursePermissionView: boolean;
+  hasCoursePermissionEdit: boolean;
+  exampleCourse: boolean;
+  urlPrefix: string;
+  navPage: string;
+}) {
+  if (!coursePathExists || !courseInfoExists || !hasCoursePermissionView) {
+    return '';
+  }
+
+  if (!hasCoursePermissionEdit || exampleCourse) {
+    return html`
+      <p class="mb-0">
+        <a href="${urlPrefix}/${navPage}/file_view/infoCourse.json"> View course configuration </a>
+        in <code>infoCourse.json</code>
+      </p>
+    `;
+  }
+
   return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
-      </head>
-      <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", { ...resLocals })}
-        <main id="content" class="container-fluid">
-          ${renderEjs(__filename, "<%- include('../partials/courseSyncErrorsAndWarnings'); %>", {
-            ...resLocals,
-          })}
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Settings</div>
-            <table class="table table-sm table-hover two-column-description">
-              <tbody>
-                <tr>
-                  <th>Short Name</th>
-                  <td>${resLocals.course.short_name}</td>
-                </tr>
-                <tr>
-                  <th>Title</th>
-                  <td>${resLocals.course.title}</td>
-                </tr>
-                <tr>
-                  <th>Institution</th>
-                  <td>${resLocals.institution.short_name} (${resLocals.institution.long_name})</td>
-                </tr>
-                <tr>
-                  <th>Timezone</th>
-                  <td>${resLocals.course.display_timezone}</td>
-                </tr>
-                <tr>
-                  <th>Path</th>
-                  <td>${resLocals.course.path}</td>
-                </tr>
-                <tr>
-                  <th>Repository</th>
-                  <td>${resLocals.course.repository}</td>
-                </tr>
-                <tr>
-                  <th>Configuration</th>
-                  <td>
-                    ${!coursePathExists
-                      ? resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
-                        ? html`
-                            <span class="text-danger">
-                              You must
-                              <a href="<%= urlPrefix %>/<%= navPage %>/syncs">sync your course</a>
-                              before viewing or editing its configuration
-                            </span>
-                          `
-                        : html`
-                            <span class="text-danger">
-                              A course editor must sync this course before anyone can view or edit
-                              its configuration
-                            </span>
-                          `
-                      : ''}
-                    ${coursePathExists && !courseInfoExists
-                      ? html`<span class="text-danger">Missing configuration file</span>
-                          ${resLocals.authz_data.has_course_permission_edit &&
-                          !resLocals.course.example_course
-                            ? html`
-                                <form name="add-configuration-form" class="d-inline" method="POST">
-                                  <input
-                                    type="hidden"
-                                    name="__csrf_token"
-                                    value="${resLocals.__csrf_token}"
-                                  />
-                                  <button
-                                    name="__action"
-                                    value="add_configuration"
-                                    class="btn btn-xs btn-secondary mx-2"
-                                  >
-                                    <i class="fa fa-edit"></i>
-                                    <span class="d-none d-sm-inline">Create infoCourse.json</span>
-                                  </button>
-                                </form>
-                              `
-                            : ''} `
-                      : ''}
-                    ${coursePathExists && courseInfoExists
-                      ? resLocals.authz_data.has_course_permission_view
-                        ? html`
-                            <a
-                              href="${resLocals.urlPrefix}/${resLocals.navPage}/file_view/infoCourse.json"
-                            >
-                              infoCourse.json
-                            </a>
-                            ${resLocals.authz_data.has_course_permission_edit &&
-                            !resLocals.course.example_course
-                              ? html`
-                                  <a
-                                    class="btn btn-xs btn-secondary mx-2"
-                                    href="${resLocals.urlPrefix}/${resLocals.navPage}/file_edit/infoCourse.json"
-                                  >
-                                    <i class="fa fa-edit"></i>
-                                    <span>Edit</span>
-                                  </a>
-                                `
-                              : ''}
-                          `
-                        : 'infoCourse.json'
-                      : ''}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+    <button
+      id="save-button"
+      type="submit"
+      class="btn btn-primary mb-2"
+      name="__action"
+      value="update_configuration"
+    >
+      Save
+    </button>
+    <button
+      id="cancel-button"
+      type="button"
+      class="btn btn-secondary mb-2"
+      onclick="window.location.reload()"
+    >
+      Cancel
+    </button>
+    <p class="mb-0">
+      <a
+        data-testid="edit-course-configuration-link"
+        href="${urlPrefix}/${navPage}/file_edit/infoCourse.json"
+      >
+        Edit course configuration
+      </a>
+      in <code>infoCourse.json</code>
+    </p>
+  `;
 }

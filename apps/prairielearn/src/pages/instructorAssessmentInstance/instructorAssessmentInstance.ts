@@ -1,29 +1,32 @@
-import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
-import asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
-import { stringifyStream } from '@prairielearn/csv';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name';
-import * as ltiOutcomes from '../../lib/ltiOutcomes';
-import { updateInstanceQuestionScore } from '../../lib/manualGrading';
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
   updateAssessmentInstanceScore,
-} from '../../lib/assessment';
-import { resetVariantsForInstanceQuestion } from '../../models/variant';
+} from '../../lib/assessment.js';
+import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
+import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
+import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
+
 import {
   InstructorAssessmentInstance,
   AssessmentInstanceStatsSchema,
   InstanceQuestionRowSchema,
-} from './instructorAssessmentInstance.html';
+} from './instructorAssessmentInstance.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const DateDurationResultSchema = z.object({
   assessment_instance_date_formatted: z.string(),
@@ -50,7 +53,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
@@ -103,7 +106,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
@@ -153,7 +156,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
@@ -162,7 +165,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'edit_total_points') {
@@ -171,7 +174,7 @@ router.post(
         req.body.points,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
       await updateAssessmentInstanceScore(
@@ -179,7 +182,7 @@ router.post(
         req.body.score_perc,
         res.locals.authn_user.user_id,
       );
-      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
@@ -223,7 +226,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

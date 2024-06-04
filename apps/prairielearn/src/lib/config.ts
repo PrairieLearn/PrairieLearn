@@ -1,4 +1,6 @@
+import { filesize } from 'filesize';
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeFileConfigSource,
@@ -7,7 +9,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -22,12 +24,23 @@ const ConfigSchema = z.object({
       z.boolean(),
       // A subset of the options that can be provided to the `TLSSocket` constructor.
       // https://node-postgres.com/features/ssl
-      z.object({
-        rejectUnauthorized: z.boolean().default(true),
-        ca: z.string().nullable().default(null),
-        key: z.string().nullable().default(null),
-        cert: z.string().nullable().default(null),
-      }),
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
     ])
     .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
@@ -61,15 +74,19 @@ const ConfigSchema = z.object({
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
-  authUid: z.string().nullable().default('dev@illinois.edu'),
+  authUid: z.string().nullable().default('dev@example.com'),
   /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
+  /** Sets the default user email in development. */
+  authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
-  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  sessionCookieSameSite: z
+    .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
+    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -101,6 +118,7 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -218,9 +236,6 @@ const ConfigSchema = z.object({
   blockedWarnEnable: z.boolean().default(false),
   blockedAtWarnEnable: z.boolean().default(false),
   blockedWarnThresholdMS: z.number().default(100),
-  SEBServerUrl: z.string().nullable().default(null),
-  SEBServerFilter: z.string().nullable().default(null),
-  SEBDownloadUrl: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),
   /**
    * This is populated by `lib/aws.js` later.
@@ -301,7 +316,6 @@ const ConfigSchema = z.object({
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
-  workspaceJobsParallelLimit: z.number().default(5),
   workspaceHeartbeatIntervalSec: z.number().default(60),
   workspaceHeartbeatTimeoutSec: z.number().default(10 * 60),
   workspaceVisibilityTimeoutSec: z.number().default(30 * 60),
@@ -383,7 +397,7 @@ const ConfigSchema = z.object({
    * Note that the `console` exporter should almost definitely NEVER be used in
    * production environments.
    */
-  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).default('console'),
+  openTelemetryExporter: z.enum(['console', 'honeycomb', 'jaeger']).nullable().default(null),
   openTelemetryMetricExporter: z.enum(['console', 'honeycomb']).nullable().default(null),
   openTelemetryMetricExportIntervalMillis: z.number().default(30_000),
   openTelemetrySamplerType: z
@@ -504,18 +518,6 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
-  /**
-   * PrairieLearn is currently in the process of migrating to new cookie names.
-   * This is necessary so that we can re-scope them to a specific domain. We
-   * have middleware that will automatically rewrite the old cookie names to
-   * the new ones, which is currently disabled until we also deploy code that
-   * sets the new cookies with domains. When that code is in place, we can
-   * toggle this setting to `true`.
-   *
-   * Note that the middleware also provides forward compatibility so that old
-   * versions of PrairieLearn can still function with the new cookie names.
-   */
-  rewriteCookies: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -535,11 +537,29 @@ export async function loadConfig(paths: string[]) {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
+
   if (config.questionRenderCacheType !== null) {
     logger.warn(
       'The field "questionRenderCacheType" is deprecated. Please move the cache type configuration to the field "cacheType".',
     );
     config.cacheType = config.questionRenderCacheType;
+  }
+
+  // TODO: once the usages of this are no longer EJS, we should format the
+  // size on the fly instead of setting it on the global config.
+  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
+
+  // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
+  // since we parse the schema to get defaults. Instead, we do the checks here
+  // after the config has been completely loaded.
+  if (process.env.NODE_ENV === 'production') {
+    if (!config.cookieDomain) {
+      throw new Error('cookieDomain must be set in production environments');
+    }
+
+    if (!config.cookieDomain.startsWith('.')) {
+      throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
+    }
   }
 }
 

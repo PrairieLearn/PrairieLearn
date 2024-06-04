@@ -1,14 +1,20 @@
 // @ts-check
-import * as path from 'path';
-import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import * as sqldb from '@prairielearn/postgres';
-import { config } from './config';
-import { uploadToS3Async, getFromS3Async } from '../lib/aws';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import debugfn from 'debug';
+import { v4 as uuidv4 } from 'uuid';
+
+import * as sqldb from '@prairielearn/postgres';
+
+import { uploadToS3, getFromS3 } from '../lib/aws.js';
+
+import { config } from './config.js';
+import { IdSchema } from './db-types.js';
+
+const debug = debugfn('prairielearn:socket-server');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const StorageTypes = Object.freeze({
   S3: 'S3',
@@ -18,26 +24,29 @@ const StorageTypes = Object.freeze({
 /**
  * Upload a file into the file store.
  *
- * @param {string} display_filename - The display_filename of the file.
- * @param {Buffer} contents - The file contents.
- * @param {string} type - The file type.
- * @param {number|null} assessment_instance_id - The assessment instance for the file.
- * @param {number|null} instance_question_id - The instance question for the file.
- * @param {number} user_id - The current user performing the update.
- * @param {number} authn_user_id - The current authenticated user.
- * @param {string} [storage_type] - AWS 'S3' or 'FileSystem' storage options.
- * @return {Promise<number>} The file_id of the newly created file.
+ * @param {object} options - The options for the file upload.
+ * @param {string} options.display_filename - The display_filename of the file.
+ * @param {Buffer} options.contents - The file contents.
+ * @param {string} options.type - The file type.
+ * @param {string|null} options.assessment_id = The assessment for the file.
+ * @param {string|null} options.assessment_instance_id - The assessment instance for the file.
+ * @param {string|null} options.instance_question_id - The instance question for the file.
+ * @param {string} options.user_id - The current user performing the update.
+ * @param {string} options.authn_user_id - The current authenticated user.
+ * @param {string} [options.storage_type] - AWS 'S3' or 'FileSystem' storage options.
+ * @return {Promise<string>} The file_id of the newly created file.
  */
-export async function uploadFile(
+export async function uploadFile({
   display_filename,
   contents,
   type,
+  assessment_id,
   assessment_instance_id,
   instance_question_id,
   user_id,
   authn_user_id,
   storage_type,
-) {
+}) {
   storage_type = storage_type || config.fileStoreStorageTypeDefault;
   debug(`upload(): storage_type=${storage_type}`);
 
@@ -49,13 +58,7 @@ export async function uploadFile(
       throw new Error('config.fileStoreS3Bucket is null, which does not allow uploads');
     }
 
-    const res = await uploadToS3Async(
-      config.fileStoreS3Bucket,
-      storage_filename,
-      null,
-      false,
-      contents,
-    );
+    const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
     // Make a filename to store the file. We use a UUIDv4 as the filename,
@@ -80,34 +83,37 @@ export async function uploadFile(
     throw new Error(`Unknown storage type: ${storage_type}`);
   }
 
-  const params = [
-    display_filename,
-    storage_filename,
-    type,
-    assessment_instance_id,
-    instance_question_id,
-    user_id,
-    authn_user_id,
-    storage_type,
-  ];
-  const result = await sqldb.callAsync('files_insert', params);
+  const file_id = await sqldb.queryRow(
+    sql.insert_file,
+    {
+      display_filename,
+      storage_filename,
+      type,
+      assessment_id,
+      assessment_instance_id,
+      instance_question_id,
+      user_id,
+      authn_user_id,
+      storage_type,
+    },
+    IdSchema,
+  );
   debug('upload(): inserted files row into DB');
 
-  return result.rows[0].file_id;
+  return file_id;
 }
 
 /**
  * Soft-delete a file from the file store, leaving the physical file on disk.
  *
- * @param {number} file_id - The file to delete.
- * @param {number} authn_user_id - The current authenticated user.
+ * @param {string} file_id - The file to delete.
+ * @param {string} authn_user_id - The current authenticated user.
  */
 export async function deleteFile(file_id, authn_user_id) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
-  const params = [file_id, authn_user_id];
-  await sqldb.callAsync('files_delete', params);
+  await sqldb.queryAsync(sql.delete_file, { file_id, authn_user_id });
   debug('delete(): soft-deleted row in DB');
 }
 
@@ -172,12 +178,12 @@ export async function getFile(file_id, data_type = 'buffer') {
       debug(
         `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
       );
-      buffer = await getFromS3Async(config.fileStoreS3Bucket, result.rows[0].storage_filename);
+      buffer = await getFromS3(config.fileStoreS3Bucket, result.rows[0].storage_filename);
     } else {
       debug(
         `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
       );
-      readStream = await getFromS3Async(
+      readStream = await getFromS3(
         config.fileStoreS3Bucket,
         result.rows[0].storage_filename,
         false,

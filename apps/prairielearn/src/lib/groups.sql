@@ -245,6 +245,14 @@ WITH
       $group_role_id::bigint IS NOT NULL
     RETURNING
       *
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action, roles)
@@ -276,6 +284,14 @@ WITH
     WHERE
       user_id = $user_id
       AND group_id = $group_id
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
@@ -331,7 +347,7 @@ SELECT
       WHERE
         gr.id IS NOT NULL
     ),
-    array[]::text []
+    array[]::text[]
   )
 FROM
   group_users AS gu
@@ -341,6 +357,80 @@ WHERE
   gu.group_id = $group_id
 GROUP BY
   gu.user_id;
+
+-- BLOCK delete_group
+WITH
+  group_to_delete AS (
+    SELECT
+      g.id
+    FROM
+      groups AS g
+      JOIN group_configs AS gc ON (g.group_config_id = gc.id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.id = $group_id
+      AND g.deleted_at IS NULL
+      AND gc.deleted_at IS NULL
+    FOR NO KEY UPDATE OF
+      g
+  ),
+  deleted_group_users AS (
+    DELETE FROM group_users AS gu
+    WHERE
+      gu.group_id IN (
+        SELECT
+          gd.id
+        FROM
+          group_to_delete AS gd
+      )
+    RETURNING
+      user_id,
+      group_id
+  ),
+  deleted_group_users_logs AS (
+    INSERT INTO
+      group_logs (authn_user_id, user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      user_id,
+      group_id,
+      'leave'
+    FROM
+      deleted_group_users
+  ),
+  deleted_group AS (
+    UPDATE groups AS g
+    SET
+      deleted_at = NOW()
+    FROM
+      group_to_delete AS gd
+    WHERE
+      gd.id = g.id
+    RETURNING
+      g.id
+  ),
+  deleted_group_log AS (
+    INSERT INTO
+      group_logs (authn_user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      id,
+      'delete'
+    FROM
+      deleted_group
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = $group_id
+  )
+SELECT
+  id
+FROM
+  deleted_group;
 
 -- BLOCK delete_all_groups
 WITH
@@ -389,6 +479,16 @@ WITH
       g.id = ag.id
     RETURNING
       g.id
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      modified_at = NOW()
+    FROM
+      deleted_groups AS dg
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND ai.group_id = dg.id
   )
 INSERT INTO
   group_logs (authn_user_id, group_id, action)

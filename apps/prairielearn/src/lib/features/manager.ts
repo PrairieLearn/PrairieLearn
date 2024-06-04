@@ -1,10 +1,12 @@
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
-import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { config } from '../config';
+import { z } from 'zod';
 
-const sql = loadSqlEquiv(__filename);
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+
+import { config } from '../config.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const IsFeatureEnabledSchema = z.object({
   has_feature_grant: z.boolean(),
@@ -73,7 +75,7 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   allFeatures() {
-    return [...this.features];
+    return [...this.features] as FeatureName[];
   }
 
   /**

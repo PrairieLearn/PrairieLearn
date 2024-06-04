@@ -1,21 +1,22 @@
 // @ts-check
-import * as async from 'async';
 import * as path from 'path';
-import * as ejs from 'ejs';
-import { differenceInMilliseconds } from 'date-fns';
 import * as util from 'util';
+
+import * as async from 'async';
+import { differenceInMilliseconds } from 'date-fns';
+import * as ejs from 'ejs';
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { config, setLocalsFromConfig } from './config';
-import * as manualGrading from './manualGrading';
-import * as questionServers from '../question-servers';
-import { getQuestionCourse, ensureVariant } from './question-variant';
-import { writeCourseIssues } from './issues';
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
+import { selectVariantsByInstanceQuestion } from '../models/variant.js';
+import * as questionServers from '../question-servers/index.js';
+
+import { config, setLocalsFromConfig } from './config.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -32,17 +33,23 @@ import {
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,
-} from './db-types';
+} from './db-types.js';
+import { writeCourseIssues } from './issues.js';
+import * as manualGrading from './manualGrading.js';
+import { getQuestionCourse, ensureVariant } from './question-variant.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantSelectResultSchema = VariantSchema.extend({
   assessment: AssessmentSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string().nullable(),
   }).nullable(),
-  assessment_instance_date: DateFromISOString.nullable(),
-  formatted_date: z.string().nullable(),
+  instance_question: InstanceQuestionSchema.extend({
+    assigned_grader_name: z.string().nullable(),
+    last_grader_name: z.string().nullable(),
+  }).nullable(),
+  formatted_date: z.string(),
 });
 
 const detailedSubmissionColumns = /** @type {const} */ ({
@@ -60,6 +67,7 @@ const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).e
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
 });
 
 const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
@@ -68,6 +76,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
+  user_email: z.string().nullable(),
 });
 
 const SubmissionInfoSchema = z.object({
@@ -94,6 +103,7 @@ const SubmissionInfoSchema = z.object({
   grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
+  user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
 });
@@ -102,6 +112,7 @@ const SubmissionInfoSchema = z.object({
  * @typedef {Object} SubmissionPanels
  * @property {string?} submissionPanel
  * @property {string?} scorePanel
+ * @property {string?} extraHeadersHtml
  * @property {string?} [answerPanel]
  * @property {string?} [questionScorePanel]
  * @property {string?} [assessmentScorePanel]
@@ -133,7 +144,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param submissions - The full list of submissions to the variant.
  * @param question_course - The course for the question.
  * @param locals - The current locals for the page response.
- * @type {(variant_course: import('./db-types').Course, ...a: Parameters<import('../question-servers').QuestionServer['render']>) => Promise<import('../question-servers').RenderResultData>}
+ * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
  */
 async function render(
   variant_course,
@@ -170,9 +181,9 @@ async function render(
  * question panels.
  *
  * @param  {String} urlPrefix The prefix of the generated URLs.
- * @param  {import('./db-types').Variant} variant The variant object for this question.
- * @param  {import('./db-types').Question} question The question.
- * @param  {import('./db-types').InstanceQuestion?} instance_question The instance question.
+ * @param  {import('./db-types.js').Variant} variant The variant object for this question.
+ * @param  {import('./db-types.js').Question} question The question.
+ * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
 function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
@@ -363,25 +374,35 @@ function buildLocals(
  */
 export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
+  locals.question_is_shared = await sqldb.queryRow(
+    sql.select_is_shared,
+    { question_id: locals.question.id },
+    z.boolean(),
+  );
 
   if (variant_id != null) {
-    locals.variant = await sqldb.callRow(
-      'variants_select',
-      [variant_id, locals.question.id, locals.instance_question?.id],
+    locals.variant = await sqldb.queryOptionalRow(
+      sql.select_variant_for_render,
+      {
+        variant_id,
+        question_id: locals.question.id,
+        instance_question_id: locals.instance_question?.id,
+      },
       VariantSelectResultSchema,
     );
+    if (locals.variant == null) {
+      throw new error.HttpStatusError(404, 'Variant not found');
+    }
   } else {
     const require_open = locals.assessment && locals.assessment.type !== 'Exam';
     const instance_question_id = locals.instance_question?.id;
     const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
     const options = { variant_seed };
-    const assessmentGroupWork = locals.assessment?.group_work ?? false;
     locals.variant = await ensureVariant(
       locals.question.id,
       instance_question_id,
       locals.user.user_id,
       locals.authn_user.user_id,
-      assessmentGroupWork,
       course_instance_id,
       locals.course,
       locals.question_course,
@@ -427,7 +448,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // actually render.
   const submissions = await sqldb.queryRows(
     sql.select_basic_submissions,
-    { variant_id: locals.variant.id, req_date: locals.req_date },
+    { variant_id: locals.variant.id },
     SubmissionBasicSchema,
   );
   const submissionCount = submissions.length;
@@ -535,7 +556,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 }
 
 /**
- * @param {import('./db-types').GradingJob | null} job
+ * @param {import('./db-types.js').GradingJob | null} job
  */
 function buildGradingJobStats(job) {
   if (job) {
@@ -575,10 +596,10 @@ function buildGradingJobStats(job) {
  * set, also the side panels for score, navigation and the question footer.
  *
  * @param {Object} param
- * @param  {string | number} param.submission_id The id of the submission
- * @param  {string | number} param.question_id The id of the question (for authorization check)
- * @param  {string | number | null} param.instance_question_id The id of the instance question (for authorization check)
- * @param  {string | number | null} param.variant_id The id of the variant (for authorization check)
+ * @param  {string} param.submission_id The id of the submission
+ * @param  {string} param.question_id The id of the question (for authorization check)
+ * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
+ * @param  {string | null} param.variant_id The id of the variant (for authorization check)
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
  * @param  {String?} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
@@ -602,7 +623,7 @@ export async function renderPanelsForSubmission({
     { submission_id, question_id, instance_question_id, variant_id },
     SubmissionInfoSchema,
   );
-  if (submissionInfo == null) throw error.make(404, 'Not found');
+  if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
 
   const {
     variant,
@@ -623,12 +644,21 @@ export async function renderPanelsForSubmission({
     grading_job_id,
     grading_job_status,
     formatted_date,
+    user_uid,
   } = submissionInfo;
+  const previous_variants =
+    variant.instance_question_id == null || assessment_instance == null
+      ? null
+      : await selectVariantsByInstanceQuestion({
+          assessment_instance_id: assessment_instance.id,
+          instance_question_id: variant.instance_question_id,
+        });
 
   /** @type {SubmissionPanels} */
   const panels = {
     submissionPanel: null,
     scorePanel: null,
+    extraHeadersHtml: null,
   };
 
   // Fake locals. Yay!
@@ -669,6 +699,7 @@ export async function renderPanelsForSubmission({
       const grading_job_stats = buildGradingJobStats(grading_job);
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
+      panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);
@@ -683,6 +714,7 @@ export async function renderPanelsForSubmission({
           grading_job_status,
           formatted_date,
           grading_job_stats,
+          user_uid,
           submission_number: submission_index,
         }),
         submissionHtml: htmls.submissionHtmls[0],
@@ -691,7 +723,13 @@ export async function renderPanelsForSubmission({
         urlPrefix,
         plainUrlPrefix: config.urlPrefix,
       };
-      const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
+      const templatePath = path.join(
+        import.meta.dirname,
+        '..',
+        'pages',
+        'partials',
+        'submission.ejs',
+      );
       panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
     },
     async () => {
@@ -707,13 +745,16 @@ export async function renderPanelsForSubmission({
         assessment_question,
         assessment_instance,
         assessment,
+        question,
         variant,
         submission,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
+        urlPrefix,
+        instance_question_info: { previous_variants },
       };
       const templatePath = path.join(
-        __dirname,
+        import.meta.dirname,
         '..',
         'pages',
         'partials',
@@ -726,23 +767,14 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       // As usual, only render if this variant is part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
-      const renderParams = {
-        assessment_instance,
+      panels.assessmentScorePanel = AssessmentScorePanel({
+        urlPrefix,
         assessment,
         assessment_set,
-        urlPrefix,
-      };
-
-      const templatePath = path.join(
-        __dirname,
-        '..',
-        'pages',
-        'partials',
-        'assessmentScorePanel.ejs',
-      );
-      panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
+        assessment_instance,
+      }).toString();
     },
     async () => {
       // Render the question panel footer
@@ -756,10 +788,17 @@ export async function renderPanelsForSubmission({
         question_context: questionContext,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
+        instance_question_info: { previous_variants },
         ...locals,
       };
 
-      const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'questionFooter.ejs');
+      const templatePath = path.join(
+        import.meta.dirname,
+        '..',
+        'pages',
+        'partials',
+        'questionFooter.ejs',
+      );
       panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
     },
     async () => {
@@ -782,7 +821,7 @@ export async function renderPanelsForSubmission({
         urlPrefix, // needed to get urlPrefix for the course instance, not the site
       };
       const templatePath = path.join(
-        __dirname,
+        import.meta.dirname,
         '..',
         'pages',
         'partials',

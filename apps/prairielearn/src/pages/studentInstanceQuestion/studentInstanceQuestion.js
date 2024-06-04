@@ -1,28 +1,35 @@
 // @ts-check
-import { promisify } from 'util';
-import * as _ from 'lodash';
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { callAsync } from '@prairielearn/postgres';
 
-const LogPageView = require('../../middlewares/logPageView');
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { getQuestionGroupPermissions } from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
+import { reportIssueFromForm } from '../../lib/issues.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
   setRendererHeader,
-} from '../../lib/question-render';
-import { gradeAssessmentInstanceAsync } from '../../lib/assessment';
-import { setQuestionCopyTargets } from '../../lib/copy-question';
-import { getQuestionGroupPermissions } from '../../lib/groups';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
-import { insertIssue } from '../../lib/issues';
-import { processSubmission, validateVariantAgainstQuestion } from '../../lib/question-submission';
-import { getCourseLastSync } from '../../models/course';
-import { callAsync } from '@prairielearn/postgres';
+} from '../../lib/question-render.js';
+import { processSubmission } from '../../lib/question-submission.js';
+import { logPageView } from '../../middlewares/logPageView.js';
+import { getCourseLastSync } from '../../models/course.js';
+import {
+  validateVariantAgainstQuestion,
+  selectVariantsByInstanceQuestion,
+} from '../../models/variant.js';
 
-const logPageView = promisify(LogPageView('studentInstanceQuestion'));
+import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
 const router = express.Router();
 
 /**
@@ -49,56 +56,78 @@ async function getValidVariantId(req, res) {
 }
 
 async function processFileUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
   }
   if (!req.file) {
-    throw error.make(400, 'No file uploaded');
+    throw new error.HttpStatusError(400, 'No file uploaded');
   }
-  await uploadFile(
-    req.file.originalname,
-    req.file.buffer,
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  await uploadFile({
+    display_filename: req.file.originalname,
+    contents: req.file.buffer,
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
 async function processTextUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
-  if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
   }
-  await uploadFile(
-    req.body.filename,
-    Buffer.from(req.body.contents),
-    'student_upload',
-    res.locals.assessment_instance.id,
-    res.locals.instance_question.id,
-    res.locals.user.user_id,
-    res.locals.authn_user.user_id,
-  );
+  if (!res.locals.authz_result.active) {
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
+  }
+  await uploadFile({
+    display_filename: req.body.filename,
+    contents: Buffer.from(req.body.contents),
+    type: 'student_upload',
+    assessment_id: res.locals.assessment.id,
+    assessment_instance_id: res.locals.assessment_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+  });
   return await getValidVariantId(req, res);
 }
 
 async function processDeleteFile(req, res) {
-  if (!res.locals.assessment_instance.open) throw error.make(403, `Assessment is not open`);
+  if (!res.locals.assessment_instance.open) {
+    throw new error.HttpStatusError(403, `Assessment is not open`);
+  }
   if (!res.locals.authz_result.active) {
-    throw error.make(403, `This assessment is not accepting submissions at this time.`);
+    throw new error.HttpStatusError(
+      403,
+      `This assessment is not accepting submissions at this time.`,
+    );
   }
 
   // Check the requested file belongs to the current instance question
   const validFiles =
     res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
-  if (validFiles.length === 0) throw error.make(404, `No such file_id: ${req.body.file_id}`);
+  if (validFiles.length === 0) {
+    throw new error.HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
   const file = validFiles[0];
 
   if (file.type !== 'student_upload') {
-    throw error.make(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
+    throw new error.HttpStatusError(
+      403,
+      `Cannot delete file type ${file.type} for file_id=${file.id}`,
+    );
   }
 
   await deleteFile(file.id, res.locals.authn_user.user_id);
@@ -106,52 +135,24 @@ async function processDeleteFile(req, res) {
   return await getValidVariantId(req, res);
 }
 
-async function processIssue(req, res) {
-  if (!res.locals.assessment.allow_issue_reporting) {
-    throw error.make(403, 'Issue reporting not permitted for this assessment');
-  }
-  const description = req.body.description;
-  if (!_.isString(description) || description.length === 0) {
-    throw error.make(400, 'A description of the issue must be provided');
-  }
-
-  const variantId = await getValidVariantId(req, res);
-  await insertIssue({
-    variantId: variantId,
-    studentMessage: description,
-    instructorMessage: 'student-reported issue',
-    manuallyReported: true,
-    courseCaused: true,
-    courseData: _.pick(res.locals, [
-      'variant',
-      'instance_question',
-      'question',
-      'assessment_instance',
-      'assessment',
-      'course_instance',
-      'course',
-    ]),
-    systemData: {},
-    authnUserId: res.locals.authn_user.user_id,
-  });
-  return variantId;
-}
-
 async function validateAndProcessSubmission(req, res) {
   if (!res.locals.assessment_instance.open) {
-    throw error.make(400, 'assessment_instance is closed');
+    throw new error.HttpStatusError(400, 'assessment_instance is closed');
   }
   if (!res.locals.instance_question.open) {
-    throw error.make(400, 'instance_question is closed');
+    throw new error.HttpStatusError(400, 'instance_question is closed');
   }
   if (!res.locals.authz_result.active) {
-    throw error.make(400, 'This assessment is not accepting submissions at this time.');
+    throw new error.HttpStatusError(
+      400,
+      'This assessment is not accepting submissions at this time.',
+    );
   }
   if (
     res.locals.assessment.group_config?.has_roles &&
     !res.locals.instance_question.group_role_permissions.can_submit
   ) {
-    throw error.make(
+    throw new error.HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
     );
@@ -163,16 +164,22 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_result.authorized_edit) {
-      throw error.make(403, 'Not authorized');
+      throw new error.HttpStatusError(403, 'Not authorized');
     }
 
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       if (res.locals.assessment.type === 'Exam') {
         if (res.locals.authz_result.time_limit_expired) {
-          throw error.make(403, 'Time limit is expired, please go back and finish your assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Time limit is expired, please go back and finish your assessment',
+          );
         }
         if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw error.make(403, 'Real-time grading is not allowed for this assessment');
+          throw new error.HttpStatusError(
+            403,
+            'Real-time grading is not allowed for this assessment',
+          );
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -185,7 +192,7 @@ router.post(
       }
     } else if (req.body.__action === 'timeLimitFinish') {
       if (res.locals.assessment.type !== 'Exam') {
-        throw error.make(400, 'Only exams have a time limit');
+        throw new error.HttpStatusError(400, 'Only exams have a time limit');
       }
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
@@ -195,7 +202,7 @@ router.post(
       const requireOpen = true;
       const closeExam = true;
       const overrideGradeRate = false;
-      await gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,
@@ -222,7 +229,7 @@ router.post(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
-      const variant_id = await processIssue(req, res);
+      const variant_id = await reportIssueFromForm(req, res, true);
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
@@ -240,15 +247,15 @@ router.post(
         throw error.make(403, `permission denied: delete_instance`);
       }
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel } = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
@@ -259,21 +266,51 @@ router.get(
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const variant_id =
+    let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
         : req.query.variant_id;
+
+    const isAssessmentAvailable =
+      res.locals.assessment_instance.open && res.locals.authz_result.active;
+
+    if (variant_id === null && !isAssessmentAvailable) {
+      // We can't generate a new variant in this case, so we
+      // fetch and display the most recent non-broken variant.
+      // If no such variant exists, we tell the user that a new variant
+      // cannot be generated.
+      const last_variant_id = await sqldb.queryOptionalRow(
+        sql.select_last_variant_id,
+        { instance_question_id: res.locals.instance_question.id },
+        IdSchema,
+      );
+      if (last_variant_id == null) {
+        res.locals.no_variant_exists = true;
+        res.status(403).send(StudentInstanceQuestion({ resLocals: res.locals }));
+        return;
+      }
+
+      // For exams, we leave variant_id as null; getAndRenderVariant will handle it.
+      if (res.locals.assessment.type === 'Homework') {
+        variant_id = last_variant_id;
+      }
+    }
     await getAndRenderVariant(variant_id, null, res.locals);
 
-    await logPageView(req, res);
+    await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
+
+    res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+    });
 
     if (
       res.locals.assessment.group_config?.has_roles &&
@@ -307,7 +344,7 @@ router.get(
       }
     }
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(StudentInstanceQuestion({ resLocals: res.locals }));
   }),
 );
 

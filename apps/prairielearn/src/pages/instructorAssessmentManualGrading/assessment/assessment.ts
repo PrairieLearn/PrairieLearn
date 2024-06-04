@@ -1,17 +1,19 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
-import * as sqldb from '@prairielearn/postgres';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
-import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html';
+import * as sqldb from '@prairielearn/postgres';
+
+import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const questions = await sqldb.queryRows(
       sql.select_questions_manual_grading,

@@ -1,14 +1,15 @@
-import ERR = require('async-stacktrace');
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { ensureEnrollment } from '../models/enrollment';
-import * as helperServer from './helperServer';
+import { config } from '../lib/config.js';
+import { ensureEnrollment } from '../models/enrollment.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -64,18 +65,6 @@ describe('Access control', function () {
   function cookiesStudentExamBeforeAssessment() {
     const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
-    return cookies;
-  }
-
-  function cookiesStudentExamBeforeReservation() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1950-06-13T13:12:00Z', siteUrl);
-    return cookies;
-  }
-
-  function cookiesStudentExamAfterReservation() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2250-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
@@ -245,13 +234,13 @@ describe('Access control', function () {
   const postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
     const form: Record<string, any> = {
       __action: 'new_instance',
-      __csrf_token: __csrf_token,
+      __csrf_token,
     };
     if (includePassword) form.password = 'secret';
     request.post(
       {
         url: assessmentUrl,
-        form: form,
+        form,
         jar: cookies,
         followAllRedirects: true,
       },
@@ -403,11 +392,11 @@ describe('Access control', function () {
     };
     const form = {
       __action: 'save',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       postData: JSON.stringify({ variant, submittedAnswer }),
     };
     request.post(
-      { url: q1Url, form: form, jar: cookies, followAllRedirects: true },
+      { url: q1Url, form, jar: cookies, followAllRedirects: true },
       function (error, response) {
         if (error) {
           return callback(error);
@@ -434,128 +423,4 @@ describe('Access control', function () {
       postInstanceQuestion(cookiesStudentExam(), 200, callback);
     });
   });
-
-  /**********************************************************************/
-
-  describe('13. Insert PrairieSchedule course link', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.insert_ps_course_link, []);
-    });
-    it('should block access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 403, callback);
-    });
-  });
-
-  describe('14. Insert PrairieSchedule reservation', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.insert_ps_reservation, { user_id: user.user_id });
-    });
-    it('should block access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 403, callback);
-    });
-    it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
-    });
-    it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
-    });
-  });
-
-  describe('15. check in PrairieSchedule reservation', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.update_ps_reservation_to_checked_in, []);
-    });
-    it('should enable access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, callback);
-    });
-    it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
-    });
-    it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
-    });
-  });
-
-  /**********************************************************************/
-
-  describe('16. delete PrairieSchedule course link', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.delete_ps_course_link, []);
-    });
-    it('should enable access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, callback);
-    });
-  });
-
-  describe('17. delete all reservations', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.delete_all_reservations, []);
-    });
-    it('should enable access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, callback);
-    });
-  });
-
-  describe('18. delete all access rules', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.delete_access_rules, []);
-    });
-    it('should block access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 403, callback);
-    });
-  });
-
-  describe('19. insert exam-linked access rule', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.insert_ps_exam_access_rule, { assessment_id });
-    });
-    it('should block access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 403, callback);
-    });
-  });
-
-  describe('20. insert PrairieSchedule reservation', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.insert_ps_reservation, { user_id: user.user_id });
-    });
-    it('should block access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 403, callback);
-    });
-    it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
-    });
-    it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
-    });
-  });
-
-  describe('21. check in PrairieSchedule reservation', function () {
-    it('should succeed', async () => {
-      await sqldb.queryAsync(sql.update_ps_reservation_to_checked_in, []);
-    });
-    it('should enable access to the assessment_instance', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, callback);
-    });
-    it('should not contain countdown timer', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, function (err) {
-        if (ERR(err, callback)) return;
-        try {
-          $ = cheerio.load(page);
-          elemList = $('#countdownDisplay');
-          assert.lengthOf(elemList, 0);
-        } catch (err) {
-          return callback(err);
-        }
-        callback(null);
-      });
-    });
-    it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
-    });
-    it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
-    });
-  });
-
-  /**********************************************************************/
 });

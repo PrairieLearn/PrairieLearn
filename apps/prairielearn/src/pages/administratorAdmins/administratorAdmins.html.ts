@@ -1,6 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { User } from '../../lib/db-types';
+
+import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
   admins,
@@ -13,7 +14,7 @@ export function AdministratorAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
         <script>
@@ -21,7 +22,7 @@ export function AdministratorAdmins({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'administrators',
@@ -34,7 +35,6 @@ export function AdministratorAdmins({
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
                 id="administratorInsertButton"
-                tabindex="0"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
@@ -46,8 +46,6 @@ export function AdministratorAdmins({
                     id: 'administratorInsertButton',
                   }),
                 )}"
-                data-trigger="manual"
-                onclick="$(this).popover('show')"
               >
                 <i class="fa fa-user-plus" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add administrator</span>
@@ -75,7 +73,6 @@ export function AdministratorAdmins({
                             type="button"
                             class="btn btn-sm btn-danger float-right"
                             id="administratorDeleteButton${i}"
-                            tabindex="0"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -89,8 +86,6 @@ export function AdministratorAdmins({
                                 userId: admin.user_id,
                               }),
                             )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fa fa-times" aria-hidden="true"></i> Remove
                           </button>
@@ -128,7 +123,7 @@ function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: str
           class="form-control"
           id="administratorInsertFormUid"
           name="uid"
-          placeholder="username@domain.org"
+          placeholder="username@example.com"
         />
       </div>
       <div class="text-right">

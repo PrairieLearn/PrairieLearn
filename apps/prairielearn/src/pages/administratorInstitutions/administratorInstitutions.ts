@@ -1,13 +1,18 @@
-import asyncHandler = require('express-async-handler');
-import express = require('express');
-import * as sqldb from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 
-import { AdministratorInstitutions, InstitutionRowSchema } from './administratorInstitutions.html';
-import { getAvailableTimezones } from '../../lib/timezones';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { getAvailableTimezones } from '../../lib/timezones.js';
+
+import {
+  AdministratorInstitutions,
+  InstitutionRowSchema,
+} from './administratorInstitutions.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -31,7 +36,7 @@ router.post(
         uid_regexp: req.body.uid_regexp.trim() || null,
       });
     } else {
-      throw error.make(400, 'Unknown action');
+      throw new error.HttpStatusError(400, 'Unknown action');
     }
 
     res.redirect(req.originalUrl);

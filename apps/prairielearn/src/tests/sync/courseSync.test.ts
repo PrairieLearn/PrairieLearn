@@ -1,9 +1,14 @@
 import { assert } from 'chai';
-import * as util from './util';
-import * as helperDb from '../helperDb';
-import { config } from '../../lib/config';
-import { features } from '../../lib/features';
-import { selectOrInsertCourseByPath } from '../../models/course';
+
+import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
+import { selectOrInsertCourseByPath } from '../../models/course.js';
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
+
+const [sampleFeature1, sampleFeature2] = features.allFeatures();
+const invalidFeature = 'unknown-feature';
 
 describe('Course syncing', () => {
   before('set up testing database', helperDb.before);
@@ -15,7 +20,7 @@ describe('Course syncing', () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
       useNewQuestionRenderer: true,
-      devModeFeatures: ['manual-grading-rubrics'],
+      devModeFeatures: [sampleFeature1],
     };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -31,7 +36,7 @@ describe('Course syncing', () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
       useNewQuestionRenderer: true,
-      devModeFeatures: ['unknown-feature'],
+      devModeFeatures: [invalidFeature],
     };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -39,7 +44,10 @@ describe('Course syncing', () => {
 
     const syncedCourses = await util.dumpTable('pl_courses');
     const syncedCourse = syncedCourses[0];
-    assert.match(syncedCourse?.sync_warnings, /Feature "unknown-feature" does not exist./);
+    assert.match(
+      syncedCourse?.sync_warnings,
+      new RegExp(`Feature "${invalidFeature}" does not exist.`),
+    );
     assert.isNotOk(syncedCourse?.sync_errors);
   });
 
@@ -51,7 +59,7 @@ describe('Course syncing', () => {
       const courseData = util.getCourseData();
       courseData.course.options = {
         useNewQuestionRenderer: true,
-        devModeFeatures: ['manual-grading-rubrics', 'course-instance-billing'],
+        devModeFeatures: [sampleFeature1, sampleFeature2],
       };
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -59,7 +67,7 @@ describe('Course syncing', () => {
       // We need to create the course first so that we can enable a feature for it.
       const course = await selectOrInsertCourseByPath(courseDir);
 
-      await features.enable('manual-grading-rubrics', {
+      await features.enable(sampleFeature1, {
         institution_id: '1',
         course_id: course.id,
       });
@@ -70,9 +78,9 @@ describe('Course syncing', () => {
       const syncedCourse = syncedCourses[0];
       assert.match(
         syncedCourse?.sync_warnings,
-        /Feature "course-instance-billing" is not enabled for this course./,
+        new RegExp(`Feature "${sampleFeature2}" is not enabled for this course.`),
       );
-      assert.notMatch(syncedCourse?.sync_warnings, /manual-grading-rubrics/);
+      assert.notMatch(syncedCourse?.sync_warnings, new RegExp(sampleFeature1));
       assert.isNotOk(syncedCourse?.sync_errors);
     } finally {
       config.devMode = originalDevMode;

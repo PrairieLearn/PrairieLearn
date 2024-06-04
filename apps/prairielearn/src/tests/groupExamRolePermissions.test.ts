@@ -1,7 +1,6 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { config } from '../lib/config';
 
 import {
   queryAsync,
@@ -11,11 +10,14 @@ import {
   queryValidatedRows,
   queryOneRowAsync,
 } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(__filename);
 
-import helperServer = require('./helperServer');
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { QuestionSchema, UserSchema, GroupRoleSchema } from '../lib/db-types';
+import { config } from '../lib/config.js';
+import { QuestionSchema, UserSchema, GroupRoleSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -96,7 +98,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName: groupName,
+      groupName,
     }),
   });
   assert.isOk(res.ok);

@@ -1,18 +1,19 @@
-import express = require('express');
-import asyncHandler = require('express-async-handler');
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 import Stripe from 'stripe';
+
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { config } from '../../../lib/config';
-import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe';
+import { config } from '../../../lib/config.js';
+import { selectInstitutionForCourseInstance } from '../../../models/institution.js';
+import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe.js';
+import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
   updateStripeCheckoutSessionData,
-} from '../../models/stripe-checkout-sessions';
-import { ensurePlanGrant } from '../../models/plan-grants';
-import { selectInstitutionForCourseInstance } from '../../../models/institution';
+} from '../../models/stripe-checkout-sessions.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -29,7 +30,7 @@ function constructEvent(req: express.Request) {
       config.stripeWebhookSigningSecret,
     );
   } catch (err) {
-    throw error.make(400, `Webhook error: ${err.message}`);
+    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
   }
 }
 
@@ -71,7 +72,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
             plan_name: planName,
             type: 'stripe',
             institution_id: institution.id,
-            course_instance_id: course_instance_id,
+            course_instance_id,
             user_id: subject_user_id,
           },
           authn_user_id: localSession.agent_user_id,

@@ -1,16 +1,22 @@
-import { Response } from 'express';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
-import { isEnterprise } from '../lib/license';
 import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment';
-import { assertNever } from '../lib/types';
+} from '../ee/models/enrollment.js';
+import {
+  Course,
+  CourseInstance,
+  Enrollment,
+  EnrollmentSchema,
+  Institution,
+} from '../lib/db-types.js';
+import { isEnterprise } from '../lib/license.js';
+import { HttpRedirect } from '../lib/redirect.js';
+import { assertNever } from '../lib/types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function ensureEnrollment({
   course_instance_id,
@@ -37,36 +43,35 @@ export async function ensureEnrollment({
  */
 export async function ensureCheckedEnrollment({
   institution,
+  course,
   course_instance,
   authz_data,
-  redirect,
 }: {
   institution: Institution;
+  course: Course;
   course_instance: CourseInstance;
   authz_data: any;
-  redirect: Response['redirect'];
-}): Promise<boolean> {
+}) {
   // Safety check: ensure the student would otherwise have access to the course.
   // If they don't, throw an access denied error. In most cases, this should
   // have already been checked.
   if (!authz_data.has_student_access) {
-    throw error.make(403, 'Access denied');
+    throw new error.HttpStatusError(403, 'Access denied');
   }
 
   if (isEnterprise()) {
     const status = await checkPotentialEnterpriseEnrollment({
       institution,
+      course,
       course_instance,
       authz_data,
     });
 
     switch (status) {
       case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED:
-        redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
-        return false;
+        throw new HttpRedirect(`/pl/course_instance/${course_instance.id}/upgrade`);
       case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED:
-        redirect('/pl/enroll/limit_exceeded');
-        return false;
+        throw new HttpRedirect('/pl/enroll/limit_exceeded');
       case PotentialEnterpriseEnrollmentStatus.ALLOWED:
         break;
       default:
@@ -78,8 +83,6 @@ export async function ensureCheckedEnrollment({
     course_instance_id: course_instance.id,
     user_id: authz_data.authn_user.user_id,
   });
-
-  return true;
 }
 
 export async function getEnrollmentForUserInCourseInstance({

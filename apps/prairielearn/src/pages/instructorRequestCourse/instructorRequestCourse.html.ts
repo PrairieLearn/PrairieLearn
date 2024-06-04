@@ -1,7 +1,9 @@
+import { z } from 'zod';
+
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
-import { CourseRequestSchema, UserSchema } from '../../lib/db-types';
+
+import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -20,7 +22,7 @@ export function RequestCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head')%>", {
           ...resLocals,
         })}
         <script>
@@ -31,11 +33,23 @@ export function RequestCourse({
               $('.role-comment').hide();
               $('.role-comment-' + role).show();
             });
+
+            // Only show the "other" referral source input when "other" is selected.
+            $('#cr-referral-source').change(function () {
+              if (this.value === 'other') {
+                $('#cr-referral-source-other')
+                  .removeClass('d-none')
+                  .attr('required', 'required')
+                  .focus();
+              } else {
+                $('#cr-referral-source-other').addClass('d-none').removeAttr('required');
+              }
+            });
           });
         </script>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar')%>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
           ...resLocals,
           navPage: 'request_course',
         })}
@@ -86,11 +100,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                 <tr>
                   <td>${course_request.short_name}</td>
                   <td>${course_request.title}</td>
-                  <td>
-                    ${renderEjs(__filename, "<%- include('approvalStatusIcon')%>", {
-                      status: course_request.approved_status,
-                    })}
-                  </td>
+                  <td>${ApprovalStatusIcon({ status: course_request.approved_status })}</td>
                   <td>${details}</td>
                 </tr>
               `;
@@ -208,6 +218,35 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
+            <label id="cr-referral-source-label">How did you hear about PrairieLearn?</label>
+            <select
+              class="custom-select"
+              name="cr-referral-source"
+              id="cr-referral-source"
+              aria-labelledby="cr-referral-source-label"
+              required
+            >
+              <option value="" disabled selected></option>
+              <option value="I've used PrairieLearn before">I've used PrairieLearn before</option>
+              <option value="Word of mouth">Word of mouth</option>
+              <option value="Web search">Web search</option>
+              <option value="Conference or workshop">Conference or workshop</option>
+              <option value="Publication">Publication</option>
+              <option value="other">Other...</option>
+            </select>
+            <input
+              type="text"
+              class="form-control mt-2 d-none"
+              name="cr-referral-source-other"
+              id="cr-referral-source-other"
+              aria-labelledby="cr-referral-source-label"
+            />
+            <small class="form-text text-muted">
+              This information helps us understand how people find out about PrairieLearn. Thank you
+              for sharing!
+            </small>
+          </div>
+          <div class="form-group">
             <label>Your Role in the Course</label>
             <div class="form-control">
               <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
@@ -251,4 +290,14 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
       </form>
     </div>
   `;
+}
+
+function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
+  if (status === 'pending' || status === 'creating' || status === 'failed') {
+    return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
+  } else if (status === 'approved') {
+    return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved</span>`;
+  } else if (status === 'denied') {
+    return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+  }
 }

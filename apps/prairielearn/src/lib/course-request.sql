@@ -40,7 +40,9 @@ SELECT
   r.last_name,
   r.work_email,
   r.institution,
+  r.referral_source,
   r.approved_status,
+  r.created_at,
   ua.name AS approved_by_name,
   coalesce(j.jobs, '[]'::jsonb) AS jobs
 FROM
@@ -50,7 +52,10 @@ FROM
   LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
 WHERE
   $show_all = 'true'
-  OR r.approved_status NOT IN ('approved', 'denied');
+  OR r.approved_status NOT IN ('approved', 'denied')
+ORDER BY
+  r.created_at DESC,
+  r.id DESC;
 
 -- BLOCK update_course_request
 UPDATE course_requests

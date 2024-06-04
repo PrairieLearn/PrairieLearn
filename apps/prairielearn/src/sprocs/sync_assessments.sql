@@ -259,12 +259,10 @@ BEGIN
                 assessment_id,
                 number,
                 mode,
-                role,
                 credit,
                 uids,
                 time_limit_min,
                 password,
-                seb_config,
                 exam_uuid,
                 start_date,
                 end_date,
@@ -276,12 +274,10 @@ BEGIN
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    'Student'::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
                     access_rule->>'password',
-                    access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', ci.display_timezone),
                     input_date(access_rule->>'end_date', ci.display_timezone),
@@ -297,13 +293,11 @@ BEGIN
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 mode = EXCLUDED.mode,
-                role = EXCLUDED.role,
                 credit = EXCLUDED.credit,
                 time_limit_min = EXCLUDED.time_limit_min,
                 password = EXCLUDED.password,
                 exam_uuid = EXCLUDED.exam_uuid,
                 uids = EXCLUDED.uids,
-                seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
@@ -531,12 +525,26 @@ BEGIN
     FROM (
         SELECT
             tid,
-            row_number() OVER (ORDER BY (
-                SELECT string_agg(convert_to(coalesce(r[2],
-                    length(length(r[1])::text) || length(r[1])::text || r[1]),
-                    'SQL_ASCII'),'\x00')
-                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
-            ) ASC) AS order_by
+            row_number() OVER (
+                ORDER BY (
+                    SELECT
+                        string_agg(
+                            convert_to(
+                                coalesce(
+                                    r[2],
+                                    length(length(r[1])::text) || length(r[1])::text || r[1]
+                                ),
+                                'SQL_ASCII'
+                            ),
+                            '\x00'
+                        )
+                    FROM
+                        regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
+                ) ASC,
+                -- In case two assessments have the same number, fall back to
+                -- ordering by the ID to ensure a stable sort.
+                id ASC
+            ) AS order_by
         FROM assessments
         WHERE
             course_instance_id = syncing_course_instance_id

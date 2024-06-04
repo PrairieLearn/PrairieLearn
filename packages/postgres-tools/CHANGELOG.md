@@ -1,5 +1,70 @@
 # @prairielearn/postgres-tools
 
+## 2.0.4
+
+### Patch Changes
+
+- Updated dependencies [1de33d9]
+  - @prairielearn/postgres@2.1.0
+
+## 2.0.3
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+- Updated dependencies [0f7c90f]
+  - @prairielearn/postgres@2.0.3
+
+## 2.0.2
+
+### Patch Changes
+
+- Updated dependencies [fd8f6e6]
+  - @prairielearn/postgres@2.0.2
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- Updated dependencies [901fce8]
+  - @prairielearn/postgres@2.0.1
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/postgres@2.0.0
+
+## 1.1.17
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/postgres@1.9.4
+
+## 1.1.16
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/postgres@1.9.3
+
+## 1.1.15
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+- Updated dependencies [3395c25]
+  - @prairielearn/postgres@1.9.2
+
 ## 1.1.14
 
 ### Patch Changes

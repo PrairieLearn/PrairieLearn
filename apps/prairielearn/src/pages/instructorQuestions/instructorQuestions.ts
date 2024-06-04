@@ -1,17 +1,18 @@
-import ERR = require('async-stacktrace');
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import { QuestionAddEditor } from '../../lib/editors';
-import * as fs from 'fs-extra';
-import { QuestionsPage } from './instructorQuestions.html';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
-import asyncHandler = require('express-async-handler');
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+
+import { QuestionAddEditor } from '../../lib/editors.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
+
+import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -32,7 +33,7 @@ router.get(
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
@@ -44,33 +45,30 @@ router.get(
   }),
 );
 
-router.post('/', (req, res, next) => {
-  if (req.body.__action === 'add_question') {
-    const editor = new QuestionAddEditor({
-      locals: res.locals,
-    });
-    editor.canEdit((err) => {
-      if (ERR(err, next)) return;
-      editor.doEdit((err, job_sequence_id) => {
-        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-        } else {
-          sqldb.queryOneRow(
-            sql.select_question_id_from_uuid,
-            { uuid: editor.uuid, course_id: res.locals.course.id },
-            (err, result) => {
-              if (ERR(err, next)) return;
-              res.redirect(
-                res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings',
-              );
-            },
-          );
-        }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'add_question') {
+      const editor = new QuestionAddEditor({
+        locals: res.locals,
       });
-    });
-  } else {
-    next(error.make(400, `unknown __action: ${req.body.__action}`));
-  }
-});
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+
+      const result = await sqldb.queryOneRowAsync(sql.select_question_id_from_uuid, {
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
+      res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings');
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
 export default router;

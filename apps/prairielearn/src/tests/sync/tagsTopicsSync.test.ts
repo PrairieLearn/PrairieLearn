@@ -1,6 +1,8 @@
 import { assert } from 'chai';
-import * as util from './util';
-import * as helperDb from '../helperDb';
+
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 /**
  * Topics and tags are currently almost identical, so we test them together
@@ -53,7 +55,7 @@ async function testRemove(entityName) {
   const courseData = util.getCourseData();
   const oldEntity = makeEntity();
   courseData.course[entityName].unshift(oldEntity);
-  const courseDir = await util.writeAndSyncCourseData(courseData);
+  const { courseDir } = await util.writeAndSyncCourseData(courseData);
   courseData.course[entityName].splice(0, 1);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
@@ -66,7 +68,7 @@ async function testRename(entityName) {
   const courseData = util.getCourseData();
   const oldEntity = makeEntity();
   courseData.course[entityName].unshift(oldEntity);
-  const courseDir = await util.writeAndSyncCourseData(courseData);
+  const { courseDir } = await util.writeAndSyncCourseData(courseData);
   const oldName = courseData.course[entityName][0].name;
   const newName = 'new name';
   courseData.course[entityName][0].name = newName;

@@ -48,7 +48,7 @@
 
         %>
         <% let body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
-        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_email || issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else if (authz_data.has_course_permission_preview) { %>
@@ -96,18 +96,10 @@
   <form class="question-form" name="question-form" method="POST" autocomplete="off">
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        <% if (question_context == 'student_homework') { %>
-          <%= instance_question_info.question_number %>. <%= question.title %>
-        <% } else if (question_context == 'student_exam') { %>
-          Question <%= instance_question_info.question_number %>: <%= question.title %>
-        <% } else if (question_context == 'instructor' || question_context == 'manual_grading' || question_context == 'public') { %>
-          <%= question.title %>
-        <% } else { %>
-            <% throw Error('unknown question_context: ' + question_context); %>
-        <% } %>
+        <%- include('questionTitle'); %>
         <% // Show even when question_copy_targets is empty. %>
         <% // We'll show a CTA to request a course if the user isn't an editor of any course. %>
-        <% if (course.template_course && question_context != 'manual_grading') { %>
+        <% if (typeof question_copy_targets !== 'undefined' && (course.template_course || (question.shared_publicly_with_source && question_context == 'public')) && question_context != 'manual_grading') { %>
           <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
             <i class="fa fa-clone"></i>
             Copy question
@@ -126,16 +118,7 @@
   <% if (question.type != 'Freeform') { %>
   <div class="card mb-4">
     <div class="card-header bg-primary text-white">
-      <% if (question_context == 'student_homework') { %>
-        <%= instance_question_info.question_number %>. <%= question.title %>
-      <% } else if (question_context == 'student_exam') { %>
-            <!-- FIXME: insert question number properly -->
-            Question <%= instance_question_info.question_number %>: <%= question.title %>
-      <% } else if (question_context == 'instructor' || question_context == 'manual_grading' || question_context == 'public') { %>
-        <%= question.title %>
-      <% } else { %>
-        <% throw Error('unknown question_context: ' + question_context); %>
-      <% } %>
+      <%- include('questionTitle'); %>
     </div>
     <div class="card-body question-body">
       <%- questionHtml %>
@@ -177,37 +160,6 @@
           <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
         <% }); %>
       </div>
-
-      <script>
-        $(function() {
-          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
-            const submissionId = $(this).data('submission-id');
-            // <% if (question_context === 'instructor' || question_context === 'public') { %>
-            const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } else if (question_context === 'manual_grading') { %>
-            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } else { %>
-            const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
-            // <% } %>
-            const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
-            $(`#submissionInfoModal-${submissionId}`).modal('hide');
-            $.get(submissionContentUrl, 'json')
-              .done((data) => {
-                $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
-                MathJax.typesetPromise();
-              })
-              .fail(() => {
-                $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
-              })
-              .always(() => {
-                // Restore modal state if need be
-                if (wasModalOpen) {
-                  $(`#submissionInfoModal-${submissionId}`).modal('show');
-                }
-              });
-          });
-        });
-        </script>
     <% } %>
 
   <% } %> <%# endif showSubmissions %>

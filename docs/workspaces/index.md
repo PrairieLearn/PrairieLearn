@@ -206,10 +206,12 @@ def generate(data):
         },
         # A question file can also be added by using its path in the question instead of its contents
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
+        # To make an empty file, set `contents` to None or an empty string
+        {"name": "empty.txt", "contents": None}
     ]
 ```
 
-By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Only one of `questionFile` and `contents` may be provided. If neither `questionFile` nor `contents` are provided, an empty file is created.
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Either `questionFile` or `contents` must be provided, but not both. If an empty file is expected, `contents` may be set to `None` or an empty string.
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
@@ -234,11 +236,10 @@ In order to run workspaces in a local Docker environment, the `docker` command m
 For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
 
 ```sh
-make dev-workspace-host
-make dev
+make dev-all
 ```
 
-For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
 
 ## Permissions in production
 
@@ -248,8 +249,18 @@ When running a workspace container locally the user/group is the default setting
 docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 ```
 
-For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python) uses port 8080 and so can be run successfully like this:
 
 ```
-docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab
+docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab-python
 ```
+
+## What to Tell Students
+
+Instructors are strongly encouraged to allow students to get exposed to the PrairieLearn workspace environment, as well as specific workspaces to be used in a course, before any formal quizzes or exams. In particular, some workspaces may behave in ways that students need to be aware of. Instructors should provide students with instructions on:
+
+- How to save their work and submit. Students should understand the difference between saving files inside the workspace environment and saving/submitting it on PrairieLearn itself. In particular, it should be clear to students that files saved inside the workspace are not automatically graded.
+
+- Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing, and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, in Jupyter workspaces, students may need to know how to interrupt or restart the kernel.
+
+- Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.

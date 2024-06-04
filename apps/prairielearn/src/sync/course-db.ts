@@ -1,20 +1,22 @@
 import * as path from 'path';
-import _ = require('lodash');
-import * as fs from 'fs-extra';
+
+import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
-import * as jju from 'jju';
-import Ajv, { type JSONSchemaType } from 'ajv';
 import betterAjvErrors from 'better-ajv-errors';
 import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import fs from 'fs-extra';
+import jju from 'jju';
+import _ from 'lodash';
 
-import { chalk } from '../lib/chalk';
-import { config } from '../lib/config';
-import * as schemas from '../schemas';
-import * as infofile from './infofile';
-import { validateJSON } from '../lib/json-load';
-import { makePerformance } from './performance';
-import { selectInstitutionForCourse } from '../models/institution';
-import { features } from '../lib/features';
+import { chalk } from '../lib/chalk.js';
+import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { validateJSON } from '../lib/json-load.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
+import * as schemas from '../schemas/index.js';
+
+import * as infofile from './infofile.js';
+import { makePerformance } from './performance.js';
 
 const perf = makePerformance('course-db');
 
@@ -244,14 +246,8 @@ export interface CourseInstance {
   groupAssessmentsBy: 'Set' | 'Module';
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
-interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam' | 'SEB';
+export interface AssessmentAllowAccess {
+  mode: 'Public' | 'Exam';
   examUuid: string;
   role: string; // Role is only allowed in legacy questions
   uids: string[];
@@ -261,7 +257,6 @@ interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
-  SEBConfig: SEBConfig;
 }
 
 interface QuestionAlternative {
@@ -388,7 +383,7 @@ export interface Question {
   dependencies: Record<string, string>;
 }
 
-interface CourseInstanceData {
+export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }
@@ -399,7 +394,10 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
-export async function loadFullCourse(courseId: string, courseDir: string): Promise<CourseData> {
+export async function loadFullCourse(
+  courseId: string | null,
+  courseDir: string,
+): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
@@ -634,7 +632,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 }
 
 export async function loadCourseInfo(
-  courseId: string,
+  courseId: string | null,
   coursePath: string,
 ): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
@@ -710,25 +708,34 @@ export async function loadCourseInfo(
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
   if (devModeFeatures.length > 0) {
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
-
-    for (const feature of new Set(devModeFeatures)) {
-      // Check if the feature even exists.
-      if (!features.hasFeature(feature)) {
-        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
-        continue;
+    if (courseId == null) {
+      if (!config.devMode) {
+        infofile.addWarning(
+          loadedData,
+          `Loading course ${coursePath} without an ID, features cannot be validated.`,
+        );
       }
+    } else {
+      const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      // If we're in dev mode, any feature is allowed.
-      if (config.devMode) continue;
+      for (const feature of new Set(devModeFeatures)) {
+        // Check if the feature even exists.
+        if (!features.hasFeature(feature)) {
+          infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+          continue;
+        }
 
-      // If the feature exists, check if it's granted to the course and warn if not.
-      const featureEnabled = await features.enabled(feature, {
-        institution_id: institution.id,
-        course_id: courseId,
-      });
-      if (!featureEnabled) {
-        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        // If we're in dev mode, any feature is allowed.
+        if (config.devMode) continue;
+
+        // If the feature exists, check if it's granted to the course and warn if not.
+        const featureEnabled = await features.enabled(feature, {
+          institution_id: institution.id,
+          course_id: courseId,
+        });
+        if (!featureEnabled) {
+          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        }
       }
     }
   }
@@ -940,6 +947,24 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
 }
 
 /**
+ * Returns whether or not an `allowAccess` rule date is valid. It's considered
+ * valid if it matches the regexp used in the `input_date` sproc and if it can
+ * parse into a JavaScript `Date` object. If the supplied date is considered
+ * invalid, `null` is returned.
+ */
+function parseAllowAccessDate(date: string): Date | null {
+  // This ensures we don't accept strings like "2024-04", which `parseISO`
+  // would happily accept. We want folks to always be explicit about days/times.
+  //
+  // This matches the regexp used in the `input_date` sproc.
+  const match = /[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}/.exec(date);
+  if (!match) return null;
+
+  const parsedDate = parseISO(date);
+  return isValid(parsedDate) ? parsedDate : null;
+}
+
+/**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @returns A list of errors, if any, and whether there are any dates in the future
  */
@@ -948,19 +973,26 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   dateInFuture: boolean;
 } {
   const errors: string[] = [];
-  let startDate: Date | null = null,
-    endDate: Date | null = null;
+
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
+  // Note that we're deliberately choosing to ignore timezone handling here. These
+  // will ultimately be interpreted with the course instance's timezone, but all we
+  // care about here are if the dates are valid and that the end date is after the
+  // start date.
+  //
+  // See the `input_date` sproc for where these strings are ultimately parsed for
+  // storage in the database. That sproc actually has stricter validation
   if (rule.startDate) {
-    startDate = parseISO(rule.startDate);
-    if (!isValid(startDate)) {
-      startDate = null;
+    startDate = parseAllowAccessDate(rule.startDate);
+    if (!startDate) {
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if (rule.endDate) {
-    endDate = parseISO(rule.endDate);
-    if (!isValid(endDate)) {
-      endDate = null;
+    endDate = parseAllowAccessDate(rule.endDate);
+    if (!endDate) {
       errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
   }
@@ -1277,7 +1309,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_(courseInstance).has('allowIssueReporting')) {
+  if (_.has(courseInstance, 'allowIssueReporting')) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1304,7 +1336,7 @@ async function validateCourseInstance(
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_(courseInstance).has('userRoles')) {
+    if (_.has(courseInstance, 'userRoles')) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );

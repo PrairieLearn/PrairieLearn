@@ -1,10 +1,13 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types';
-import { InstanceLogEntry } from '../../lib/assessment';
-import { nodeModulesAssetPath } from '../../lib/assets';
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
+import { InstanceLogEntry } from '../../lib/assessment.js';
+import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
+import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import { formatFloat } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -72,17 +75,19 @@ export function InstructorAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
+        ${compiledScriptTag('instructorAssessmentInstanceClient.ts')}
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
           )}"></script>
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
+        ${compiledScriptTag('popover.ts')}
       </head>
       <body>
         <script>
@@ -90,13 +95,17 @@ export function InstructorAssessmentInstance({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
         })}
         <main id="content" class="container-fluid">
+          ${ResetQuestionVariantsModal({
+            csrfToken: resLocals.__csrf_token,
+            groupWork: resLocals.assessment.group_work,
+          })}
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             { ...resLocals },
           )}
@@ -155,12 +164,12 @@ export function InstructorAssessmentInstance({
                             tabindex="0"
                             class="btn btn-xs"
                             role="button"
+                            id="fingerprintDescriptionPopover"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
-                            data-html="true"
+                            data-html="false"
                             title="Client Fingerprint Changes"
-                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
+                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                             ><i class="fa fa-question-circle"></i
                           ></a>
                         </td>
@@ -171,7 +180,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Points</th>
                   <td colspan="2">
-                    ${renderEjs(__filename, "<% include('../partials/pointsFormatter'); %>")}
+                    ${renderEjs(import.meta.url, "<% include('../partials/pointsFormatter'); %>")}
                     <span id="total-points"
                       >${resLocals.assessment_instance.points.toString()}</span
                     >
@@ -187,16 +196,16 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
-                            data-container="body"
                             data-html="true"
                             data-placement="auto"
+                            data-container="body"
                             title="Change total points"
-                            data-content="${`${EditTotalPointsForm({
-                              resLocals,
-                              id: 'editTotalPointsButton',
-                            })}`}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
+                            data-content="${escapeHtml(
+                              EditTotalPointsForm({
+                                resLocals,
+                                id: 'editTotalPointsButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -207,7 +216,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Score</th>
                   <td class="align-middle" style="width: 20%;">
-                    ${renderEjs(__filename, "<%- include('../partials/scorebar'); %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
                       score: resLocals.assessment_instance.score_perc,
                     })}
                   </td>
@@ -223,12 +232,12 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
-                            data-content="${`${EditTotalScorePercForm({
-                              resLocals,
-                              id: 'editTotalScorePercButton',
-                            })}`}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
+                            data-content="${escapeHtml(
+                              EditTotalScorePercForm({
+                                resLocals,
+                                id: 'editTotalScorePercButton',
+                              }),
+                            )}"
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -247,7 +256,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
                             data-html="true"
                             title="Included in statistics"
@@ -262,7 +270,6 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs"
                             role="button"
                             data-toggle="popover"
-                            data-trigger="focus"
                             data-container="body"
                             data-html="true"
                             title="Not included in statistics"
@@ -301,7 +308,8 @@ export function InstructorAssessmentInstance({
                   <th class="text-center">Manual grading points</th>
                   <th class="text-center">Awarded points</th>
                   <th class="text-center" colspan="2">Percentage score</th>
-                  <th></th>
+                  <th><!--Manual grading column --></th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,7 +346,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints') %>",
                           { instance_question, component: 'auto' },
                         )}
@@ -354,7 +362,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm'); %>",
                                   {
                                     ...resLocals,
@@ -367,8 +375,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -377,7 +383,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints'); %>",
                           { instance_question, component: 'manual' },
                         )}
@@ -393,7 +399,7 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm') %>",
                                   {
                                     ...resLocals,
@@ -406,8 +412,6 @@ export function InstructorAssessmentInstance({
                                     },
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -416,7 +420,7 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="text-center">
                         ${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/instanceQuestionPoints'); %>",
                           { instance_question, component: 'total' },
                         )}
@@ -432,16 +436,14 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionPointsForm'); %>",
                                   {
                                     ...resLocals,
                                     id: 'editQuestionPoints' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -449,7 +451,7 @@ export function InstructorAssessmentInstance({
                           : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
-                        ${renderEjs(__filename, "<%- include('../partials/scorebar'); %>", {
+                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
                           score: instance_question.score_perc,
                         })}
                       </td>
@@ -466,16 +468,14 @@ export function InstructorAssessmentInstance({
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} percentage score"
                                 data-content="${renderEjs(
-                                  __filename,
+                                  import.meta.url,
                                   "<%= include('../partials/editQuestionScorePercForm');%>",
                                   {
                                     ...resLocals,
                                     id: 'editQuestionScorePerc' + i_instance_question,
-                                    instance_question: instance_question,
+                                    instance_question,
                                   },
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
                               </button>
@@ -494,6 +494,37 @@ export function InstructorAssessmentInstance({
                               >
                             `
                           : ''}
+                      </td>
+                      <td class="text-right">
+                        <div class="dropdown js-question-actions">
+                          <button
+                            type="button"
+                            class="btn btn-secondary btn-xs dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          >
+                            Action <span class="caret"></span>
+                          </button>
+                          <div class="dropdown-menu dropdown-menu-right">
+                            ${resLocals.authz_data.has_course_instance_permission_edit
+                              ? html`
+                                  <button
+                                    class="dropdown-item"
+                                    data-toggle="modal"
+                                    data-target="#resetQuestionVariantsModal"
+                                    data-instance-question-id="${instance_question.id}"
+                                  >
+                                    Reset question variants
+                                  </button>
+                                `
+                              : html`
+                                  <button class="dropdown-item disabled" disabled>
+                                    Must have editor permission
+                                  </button>
+                                `}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   `;
@@ -533,10 +564,10 @@ export function InstructorAssessmentInstance({
                       <td>${row.some_submission}</td>
                       <td>${row.some_perfect_submission}</td>
                       <td>${row.some_nonzero_submission}</td>
-                      <td>${resLocals.formatFloat(row.first_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.last_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.max_submission_score, 2)}</td>
-                      <td>${resLocals.formatFloat(row.average_submission_score, 2)}</td>
+                      <td>${formatFloat(row.first_submission_score, 2)}</td>
+                      <td>${formatFloat(row.last_submission_score, 2)}</td>
+                      <td>${formatFloat(row.max_submission_score, 2)}</td>
+                      <td>${formatFloat(row.average_submission_score, 2)}</td>
                     </tr>
                   `;
                 })}
@@ -591,45 +622,47 @@ export function InstructorAssessmentInstance({
                 </tr>
               </thead>
               <tbody>
-                ${assessmentInstanceLog.map((row) => {
+                ${assessmentInstanceLog.map((row, index) => {
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid}</td>
+                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
                       ${resLocals.instance_user
-                        ? html`${row.client_fingerprint && row.client_fingerprint_number !== null
-                            ? html`
-                                <td>
-                                  <a
-                                    tabindex="0"
-                                    class="badge color-${FINGERPRINT_COLORS[
-                                      row.client_fingerprint_number % 6
-                                    ]} color-hover"
-                                    role="button"
-                                    id="fingerprintPopover${row.client_fingerprint?.id}"
-                                    data-toggle="popover"
-                                    data-container="body"
-                                    data-html="true"
-                                    data-placement="auto"
-                                    title="Fingerprint ${row.client_fingerprint_number}"
-                                    data-content="
-                                        <div>
-                                            IP Address: ${row.client_fingerprint?.ip_address}
-                                        </div>
-                                        <div>
-                                            Session ID: ${row.client_fingerprint?.user_session_id}
-                                        </div>
-                                        <div>
-                                            User Agent: ${row.client_fingerprint?.user_agent}
-                                        </div>
-                                        "
-                                    data-trigger="focus"
-                                  >
-                                    ${row.client_fingerprint_number}
-                                  </a>
-                                </td>
-                              `
-                            : html`<td>&mdash;</td>`}`
+                        ? row.client_fingerprint && row.client_fingerprint_number !== null
+                          ? html`
+                              <td>
+                                <a
+                                  tabindex="0"
+                                  class="badge color-${FINGERPRINT_COLORS[
+                                    row.client_fingerprint_number % 6
+                                  ]} color-hover"
+                                  role="button"
+                                  id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                  data-toggle="popover"
+                                  data-container="body"
+                                  data-html="true"
+                                  data-placement="auto"
+                                  title="Fingerprint ${row.client_fingerprint_number}"
+                                  data-content="${escapeHtml(html`
+                                    <div>
+                                      IP Address:
+                                      <a
+                                        href="https://client.rdap.org/?type=ip&object=${row
+                                          .client_fingerprint.ip_address}"
+                                        target="_blank"
+                                      >
+                                        ${row.client_fingerprint.ip_address}
+                                      </a>
+                                    </div>
+                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
+                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
+                                  `)}"
+                                >
+                                  ${row.client_fingerprint_number}
+                                </a>
+                              </td>
+                            `
+                          : html`<td>&mdash;</td>`
                         : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
@@ -777,4 +810,35 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
       </div>
     </form>
   `;
+}
+
+function ResetQuestionVariantsModal({
+  csrfToken,
+  groupWork,
+}: {
+  csrfToken: string;
+  groupWork: boolean;
+}) {
+  return Modal({
+    id: 'resetQuestionVariantsModal',
+    title: 'Confirm reset question variants',
+    body: html`
+      <p>
+        Are your sure you want to reset all current variants of this question for this
+        ${groupWork ? 'group' : 'student'}?
+        <strong>All ungraded attempts will be lost.</strong>
+      </p>
+      <p>
+        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
+        this question.
+      </p>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="reset_question_variants" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
 }

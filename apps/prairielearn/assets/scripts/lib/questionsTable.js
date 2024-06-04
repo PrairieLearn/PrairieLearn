@@ -1,8 +1,12 @@
 /* eslint-env browser, jquery */
 
 import _ from 'lodash';
+
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+
+import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
   const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
@@ -58,9 +62,11 @@ onDocumentReady(() => {
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
     }
-    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview"
-      >${qidPrefix}${question.qid}</a
-    >`;
+    text += html`
+      <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
+        ${qidPrefix}${question.qid}
+      </a>
+    `;
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
@@ -74,15 +80,11 @@ onDocumentReady(() => {
   };
 
   window.topicFormatter = function (topic, question) {
-    return html`<span class="badge color-${question.topic.color}"
-      >${question.topic.name}</span
-    >`.toString();
+    return TopicBadge(question.topic).toString();
   };
 
   window.tagsFormatter = function (tags, question) {
-    return _.map(question.tags ?? [], (tag) =>
-      html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
-    ).join(' ');
+    return TagBadgeList(question.tags).toString();
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
@@ -172,8 +174,8 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody: function () {},
-    onResetView: function () {
+    onPreBody() {},
+    onResetView() {
       $('.js-sync-popover[data-toggle="popover"]')
         .popover({
           sanitize: false,

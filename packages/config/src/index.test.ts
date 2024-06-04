@@ -1,9 +1,10 @@
-import { assert } from 'chai';
 import { writeFile } from 'node:fs/promises';
+
+import { assert } from 'chai';
 import { withFile } from 'tmp-promise';
 import { z } from 'zod';
 
-import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index';
+import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index.js';
 
 describe('config', () => {
   it('loads config with defaults', async () => {

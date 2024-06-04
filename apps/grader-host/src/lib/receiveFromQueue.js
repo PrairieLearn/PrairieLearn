@@ -1,19 +1,21 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const Ajv = require('ajv').default;
-const {
+import { setTimeout as sleep } from 'node:timers/promises';
+import * as path from 'path';
+
+import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
-const Sentry = require('@prairielearn/sentry');
-const { setTimeout: sleep } = require('node:timers/promises');
+} from '@aws-sdk/client-sqs';
+import { Ajv } from 'ajv';
+import * as async from 'async';
+import ERR from 'async-stacktrace';
+import fs from 'fs-extra';
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
+import * as Sentry from '@prairielearn/sentry';
+
+import { config } from './config.js';
+import globalLogger from './logger.js';
 
 let messageSchema = null;
 
@@ -73,7 +75,7 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
  * @param {Function} receiveCallback
  * @param {Function} doneCallback
  */
-module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
+export default function (sqs, queueUrl, receiveCallback, doneCallback) {
   let parsedMessage, receiptHandle;
 
   /** @type {AbortController} */
@@ -110,7 +112,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       },
       (callback) => {
         if (!messageSchema) {
-          fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
+          fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'), (err, data) => {
             if (ERR(err, (err) => globalLogger.error(err))) {
               globalLogger.error('Failed to read message schema; exiting process.');
               process.exit(1);
@@ -161,4 +163,4 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       doneCallback(null);
     },
   );
-};
+}

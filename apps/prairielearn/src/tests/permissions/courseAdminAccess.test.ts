@@ -1,12 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as helperServer from '../helperServer';
-import * as helperClient from '../helperClient';
+import { config } from '../../lib/config.js';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkPermissions(users) {
   const result = await sqldb.queryAsync(sql.select_permissions, {
@@ -32,7 +34,7 @@ async function checkPermissions(users) {
 function updatePermissions(users, uid, cr, cir) {
   let user = users.find((user) => user.uid === uid);
   if (!user) {
-    user = { uid: uid };
+    user = { uid };
     users.push(user);
   }
   user.cr = cr;
@@ -49,36 +51,40 @@ function runTest(context) {
 
   const users = [
     {
-      uid: 'instructor@illinois.edu',
+      uid: 'instructor@example.com',
       name: 'Instructor User',
       uin: '100000000',
+      email: 'instructor@example.com',
       cr: 'Owner',
       cir: null,
     },
     {
-      uid: 'staff03@illinois.edu',
+      uid: 'staff03@example.com',
       name: 'Staff Three',
       uin: null,
+      email: 'staff03@example.com',
       cr: null,
       cir: null,
     },
     {
-      uid: 'staff04@illinois.edu',
+      uid: 'staff04@example.com',
       name: 'Staff Four',
       uin: null,
+      email: 'staff04@example.com',
       cr: null,
       cir: null,
     },
     {
-      uid: 'staff05@illinois.edu',
+      uid: 'staff05@example.com',
       name: 'Staff Five',
       uin: null,
+      email: 'staff05@example.com',
       cr: null,
       cir: null,
     },
   ];
 
-  let new_user = 'garbage@illinois.edu';
+  let new_user = 'garbage@example.com';
 
   before('set up testing server', helperServer.before().bind(this));
 
@@ -88,15 +94,16 @@ function runTest(context) {
         user.uid,
         user.name,
         user.uin,
+        user.email,
         'Shibboleth',
       ]);
     }
-    await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
-      1,
-      'instructor@illinois.edu',
-      'Owner',
-      1,
-    ]);
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     const result = await sqldb.queryAsync(sql.select_non_existent_user, {});
     if (result.rowCount) new_user = result.rows[0].uid;
   });
@@ -120,13 +127,13 @@ function runTest(context) {
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
-      uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
+      uid: ' staff03@example.com ,   ,   staff04@example.com',
       course_role: 'Owner',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.equal(response.status, 400);
     await checkPermissions(users);
@@ -145,17 +152,17 @@ function runTest(context) {
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
-      uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
+      uid: ' staff03@example.com ,   ,   staff04@example.com',
       course_role: 'Viewer',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'Viewer', null);
-    updatePermissions(users, 'staff04@illinois.edu', 'Viewer', null);
+    updatePermissions(users, 'staff03@example.com', 'Viewer', null);
+    updatePermissions(users, 'staff04@example.com', 'Viewer', null);
     await checkPermissions(users);
   });
 
@@ -172,16 +179,16 @@ function runTest(context) {
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
-      uid: `staff03@illinois.edu, staff05@illinois.edu, ${new_user}`,
+      uid: `staff03@example.com, staff05@example.com, ${new_user}`,
       course_role: 'None',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff05@illinois.edu', 'None', null);
+    updatePermissions(users, 'staff05@example.com', 'None', null);
     updatePermissions(users, new_user, 'None', null);
     await checkPermissions(users);
   });
@@ -204,11 +211,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'Viewer', 'Student Data Viewer');
+    updatePermissions(users, 'staff03@example.com', 'Viewer', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -229,11 +236,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', null, null);
+    updatePermissions(users, 'staff03@example.com', null, null);
     await checkPermissions(users);
   });
 
@@ -246,13 +253,13 @@ function runTest(context) {
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_delete',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       user_id: 2,
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.equal(response.status, 403);
     await checkPermissions(users);
@@ -276,11 +283,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff04@illinois.edu', 'Owner', null);
+    updatePermissions(users, 'staff04@example.com', 'Owner', null);
     await checkPermissions(users);
   });
 
@@ -293,14 +300,14 @@ function runTest(context) {
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_update_role',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       user_id: context.userId,
       course_role: 'None',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.equal(response.status, 403);
     await checkPermissions(users);
@@ -308,7 +315,7 @@ function runTest(context) {
 
   step('cannot delete self even when emulating another owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
     };
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
@@ -318,13 +325,13 @@ function runTest(context) {
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_delete',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       user_id: context.userId,
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.equal(response.status, 403);
     await checkPermissions(users);
@@ -332,7 +339,7 @@ function runTest(context) {
 
   step('cannot change course role of self even when emulating another owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
     };
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
@@ -342,14 +349,14 @@ function runTest(context) {
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_update_role',
-      __csrf_token: __csrf_token,
+      __csrf_token,
       user_id: context.userId,
       course_role: 'None',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.equal(response.status, 403);
     await checkPermissions(users);
@@ -368,16 +375,16 @@ function runTest(context) {
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
-      uid: 'staff03@illinois.edu',
+      uid: 'staff03@example.com',
       course_role: 'None',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'None', null);
+    updatePermissions(users, 'staff03@example.com', 'None', null);
     await checkPermissions(users);
   });
 
@@ -399,11 +406,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Viewer');
+    updatePermissions(users, 'staff03@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -426,11 +433,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Editor');
+    updatePermissions(users, 'staff03@example.com', 'None', 'Student Data Editor');
     await checkPermissions(users);
   });
 
@@ -452,11 +459,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
+    updatePermissions(users, 'staff05@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -478,11 +485,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff05@illinois.edu', 'None', null);
+    updatePermissions(users, 'staff05@example.com', 'None', null);
     await checkPermissions(users);
   });
 
@@ -502,11 +509,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', 'None', null);
+    updatePermissions(users, 'staff03@example.com', 'None', null);
     await checkPermissions(users);
   });
 
@@ -528,11 +535,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
+    updatePermissions(users, 'staff05@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -552,11 +559,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff03@illinois.edu', null, null);
+    updatePermissions(users, 'staff03@example.com', null, null);
     updatePermissions(users, new_user, null, null);
     await checkPermissions(users);
   });
@@ -577,11 +584,11 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff05@illinois.edu', null, null);
+    updatePermissions(users, 'staff05@example.com', null, null);
     await checkPermissions(users);
   });
 
@@ -603,17 +610,17 @@ function runTest(context) {
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
-      form: form,
-      headers: headers,
+      form,
+      headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(users, 'staff04@illinois.edu', 'Editor', null);
+    updatePermissions(users, 'staff04@example.com', 'Editor', null);
     await checkPermissions(users);
   });
 
   step('cannot GET if not an owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
     };
     const response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,

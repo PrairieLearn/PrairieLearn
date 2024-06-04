@@ -1,16 +1,18 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
-import fetchCookie = require('fetch-cookie');
-import { config } from '../lib/config';
+import fetchCookie from 'fetch-cookie';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(__filename);
 
-import * as helperServer from './helperServer';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { UserSchema } from '../lib/db-types';
+import { config } from '../lib/config.js';
+import { UserSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -86,7 +88,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName: groupName,
+      groupName,
     }),
   });
   assert.isOk(res.ok);

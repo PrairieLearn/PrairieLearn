@@ -1,5 +1,58 @@
 # @prairielearn/opentelemetry
 
+## 2.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- b697912: Fix CommonJS preloads of packages
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Minor Changes
+
+- c51f3aa: Upgrade all JavaScript dependencies; ensure packages loaded with ESM are instrumented
+
+## 1.11.3
+
+### Patch Changes
+
+- 290f60f: Refine configuration types
+
+## 1.11.2
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 1.11.1
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
+## 1.11.0
+
+### Minor Changes
+
+- bd4cff1: Allow trace exporting to be disabled; export more types
+
+## 1.10.7
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+
 ## 1.10.6
 
 ### Patch Changes

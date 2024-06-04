@@ -1,13 +1,14 @@
-import { loadSqlEquiv, queryRows, queryAsync } from '@prairielearn/postgres';
 import { z } from 'zod';
+
 import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryRows, queryAsync } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { DateFromISOString, IdSchema } from '../lib/db-types';
-import { createCourseRepoJob } from '../lib/github';
-import { sendCourseRequestMessage } from '../lib/opsbot';
+import { DateFromISOString, IdSchema } from '../lib/db-types.js';
+import { createCourseRepoJob } from '../lib/github.js';
+import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const JobsRowSchema = z.object({
   authn_user_id: IdSchema.nullable(),
@@ -21,19 +22,22 @@ const JobsRowSchema = z.object({
 
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  created_at: DateFromISOString,
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
   id: IdSchema,
   institution: z.string().nullable(),
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
-  short_name: z.string().nullable(),
-  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
-  title: z.string().nullable(),
-  user_uid: z.string().nullable(),
+  referral_source: z.string().nullable(),
+  short_name: z.string(),
+  title: z.string(),
   user_name: z.string().nullable(),
+  user_uid: z.string(),
   work_email: z.string().nullable(),
 });
+export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);

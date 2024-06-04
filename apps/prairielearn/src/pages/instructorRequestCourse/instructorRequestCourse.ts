@@ -1,39 +1,34 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
 import * as path from 'path';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import * as opsbot from '../../lib/opsbot';
-import * as github from '../../lib/github';
-import { config } from '../../lib/config';
-import { IdSchema } from '../../lib/db-types';
-import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html';
+import { config } from '../../lib/config.js';
+import { IdSchema } from '../../lib/db-types.js';
+import * as github from '../../lib/github.js';
+import * as opsbot from '../../lib/opsbot.js';
+
+import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     const rows = await queryRows(
       sql.get_requests,
-      {
-        user_id: res.locals.authn_user.user_id,
-      },
+      { user_id: res.locals.authn_user.user_id },
       CourseRequestRowSchema,
     );
 
-    res.send(
-      RequestCourse({
-        rows,
-        resLocals: res.locals,
-      }),
-    );
+    res.send(RequestCourse({ rows, resLocals: res.locals }));
   }),
 );
 
@@ -47,6 +42,10 @@ router.post(
     const last_name = req.body['cr-lastname'] || '';
     const work_email = req.body['cr-email'] || '';
     const institution = req.body['cr-institution'] || '';
+    const referral_source_option = req.body['cr-referral-source'] || '';
+    const referral_source_other = req.body['cr-referral-source-other'] || '';
+    const referral_source =
+      referral_source_option === 'other' ? referral_source_other : referral_source_option;
 
     let error = false;
 
@@ -77,6 +76,10 @@ router.post(
       flash('error', 'The institution should not be empty.');
       error = true;
     }
+    if (referral_source.length < 1) {
+      flash('error', 'The referral source should not be empty.');
+      error = true;
+    }
 
     const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
@@ -99,7 +102,7 @@ router.post(
     }
 
     // Otherwise, insert the course request and send a Slack message.
-    const creq_id = await queryRow(
+    const course_request_id = await queryRow(
       sql.insert_course_request,
       {
         short_name,
@@ -110,6 +113,7 @@ router.post(
         last_name,
         work_email,
         institution,
+        referral_source,
       },
       IdSchema,
     );
@@ -135,14 +139,14 @@ router.post(
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {
-        short_name: short_name,
-        title: title,
+        short_name,
+        title,
         institution_id: existingSettingsResult.institution_id,
         display_timezone: existingSettingsResult.display_timezone,
         path: path.join(config.coursesRoot, repo_short_name),
-        repo_short_name: repo_short_name,
+        repo_short_name,
         github_user,
-        course_request_id: creq_id,
+        course_request_id,
       };
       await github.createCourseRepoJob(repo_options, res.locals.authn_user);
 
