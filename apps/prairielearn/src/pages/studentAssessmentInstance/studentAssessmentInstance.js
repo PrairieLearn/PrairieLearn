@@ -4,7 +4,8 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows, callAsync } from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
 import {
@@ -206,17 +207,21 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_instance') {
       if (
-        res.locals.instance_role === 'Staff' &&
-        res.locals.authz_data.has_course_instance_permission_edit
+        res.locals.instance_role !== 'Staff' ||
+        !res.locals.authz_data.has_course_instance_permission_edit
       ) {
-        await callAsync('assessment_instances_delete', [
-          res.locals.assessment_instance.id,
-          res.locals.authn_user.user_id,
-        ]);
-        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/`);
-      } else {
-        throw error.make(403, `permission denied: delete_instance`);
+        throw new error.HttpStatusError(403, 'Access denied');
       }
+
+      await assessment.deleteAssessmentInstance(
+        res.locals.assessment.id,
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+      );
+      flash('success', 'Assessment instance deleted.');
+      // TODO: decide whether to redirect back to the same assessment, or back
+      // to the assessments list.
+      res.redirect(`${res.locals.urlPrefix}/assessments`);
     } else {
       next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
