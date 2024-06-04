@@ -35,7 +35,8 @@ RUN apt-get update && \
     # Test the gosu installation:
     gosu nobody true
 
-# Install Python and required packages via miniconda
+# Install Python and required packages via miniconda.
+# This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 COPY requirements.txt /
 RUN export arch=`uname -m` \
@@ -50,6 +51,8 @@ RUN export arch=`uname -m` \
  && conda clean --all
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
+# We have first installed Python in the previous step, as specified in the
+# documentation of the ms-python.python extension.
 USER coder
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
