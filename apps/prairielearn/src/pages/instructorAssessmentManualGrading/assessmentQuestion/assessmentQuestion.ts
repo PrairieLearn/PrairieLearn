@@ -6,7 +6,6 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { botGrade } from '../../../lib/bot-grading.js';
-import { config } from '../../../lib/config.js';
 import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -147,15 +146,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      if (config.openAiApiKey === null || config.openAiOrganization === null) {
-        throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
-      }
-
       const jobSequenceId = await botGrade({
-        openaiconfig: {
-          apiKey: config.openAiApiKey,
-          organization: config.openAiOrganization,
-        },
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,

@@ -1,8 +1,10 @@
-import { OpenAI, type ClientOptions } from 'openai';
+import { OpenAI } from 'openai';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
 import {
   InstanceQuestionSchema,
   SubmissionSchema,
@@ -27,18 +29,22 @@ const SubmissionVariantSchema = z.object({
 export async function botGrade({
   course,
   course_instance_id,
-  openaiconfig,
   question,
   assessment_question,
   urlPrefix,
 }: {
-  openaiconfig: ClientOptions;
   question: Question;
   course: Course;
   course_instance_id?: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
 }): Promise<string> {
+  // if OpenAI API Key and Organization are not provided, throw error
+  if (!config.openAiApiKey || !config.openAiOrganization) {
+    throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
+  }
+  const openaiconfig = { apiKey: config.openAiApiKey, organization: config.openAiOrganization };
+
   const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
