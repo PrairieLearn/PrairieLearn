@@ -22,7 +22,7 @@ const AuthzAccessRuleSchema = z.object({
   start_date: z.string(),
   end_date: z.string(),
   mode: ModeSchema,
-  active: z.boolean(),
+  active: z.boolean().nullable(),
 });
 
 export const StudentAssessmentsRowSchema = z.object({
@@ -136,7 +136,7 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${renderEjs(
                           import.meta.url,
-                          "<%- include('../partials/studentAccessRulesPopover' %>",
+                          "<%- include('../partials/studentAccessRulesPopover'); %>",
                           {
                             ...resLocals,
                             accessRules: row.access_rules,
@@ -185,5 +185,5 @@ export function StudentAssessments({
         </main>
       </body>
     </html>
-  `;
+  `.toString();
 }
