@@ -251,7 +251,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
-    throw new error.HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
   await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
