@@ -5,6 +5,8 @@ import _ from 'lodash';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+
 onDocumentReady(() => {
   const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
     decodeData('questions-table-data');
@@ -83,9 +85,7 @@ onDocumentReady(() => {
   };
 
   window.tagsFormatter = function (tags, question) {
-    return _.map(question.tags ?? [], (tag) =>
-      html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
-    ).join(' ');
+    return TagBadgeList(question.tags);
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
