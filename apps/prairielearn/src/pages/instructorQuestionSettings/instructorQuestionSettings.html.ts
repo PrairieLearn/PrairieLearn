@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -173,11 +174,7 @@ export function InstructorQuestionSettings({
                 </tr>
                 <tr>
                   <th>Tags</th>
-                  <td>
-                    ${renderEjs(import.meta.url, "<%- include('../partials/tags') %>", {
-                      tags: resLocals.tags,
-                    })}
-                  </td>
+                  <td>${TagBadgeList(resLocals.tags)}</td>
                 </tr>
                 <tr>
                   <th>Issues</th>
