@@ -1,5 +1,6 @@
 import math
 import random
+from enum import Enum
 
 import chevron
 import lxml.html
@@ -18,6 +19,11 @@ BLANK_DEFAULT = True
 BLANK_ANSWER = " "
 NOTA_DEFAULT = False
 COUNTER_TYPE_DEFAULT = "lower-alpha"
+
+
+class OptionsPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
 
 
 def get_form_name(answers_name, index):
@@ -131,9 +137,11 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    options_placement = pl.get_string_attrib(element, "options-placement", "right")
-    options_placement_right = options_placement == "right"
-    options_placement_bottom = options_placement == "bottom"
+    options_placement = pl.get_enum_attrib(
+        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
+    )
+    options_placement_right = options_placement == OptionsPlacementType.RIGHT
+    options_placement_bottom = options_placement == OptionsPlacementType.BOTTOM
 
     options, statements = categorize_matches(element, data)
 
