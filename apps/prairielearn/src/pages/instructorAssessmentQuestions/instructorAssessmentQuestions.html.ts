@@ -268,6 +268,11 @@ function AssessmentQuestionsTable({
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
+                  ${renderEjs(import.meta.url, "<%- include('../partials/tags'); %>", {
+                    tags: question.tags,
+                  })}
+                </td>
+                <td>
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,
                     max_manual_points: question.max_manual_points,
