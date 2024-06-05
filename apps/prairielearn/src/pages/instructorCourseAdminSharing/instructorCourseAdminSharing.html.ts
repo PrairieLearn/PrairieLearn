@@ -71,7 +71,6 @@ interface SharingSetModalProps {
  * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
 */
 function deleteSharingSetModal(sharing_set, csrfToken) {
-  console.log('in deleteSharingSetModal with sharing_set:', sharing_set); // TEST
   let body = '';
   let footer = '';
   if (sharing_set.deletable) {
@@ -106,7 +105,9 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
 /*
  * TEST, better way to choose body and footer based on deletable?
  * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
-*/ /*
+ * 
+ * Also, the modals are a different format. They are longer than the originals and not centered vertically.
+*/
 function chooseSharingNameModal(canChooseSharingName, csrfToken) {
   let body = '';
   let footer = '';
@@ -132,7 +133,7 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
     `;
     footer = html`
       <input type="hidden" name="__action" value="choose_sharing_name" />
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
     `;
   } else {
@@ -147,130 +148,12 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
   }
   return Modal({
     title: 'Choose Sharing Name',
-    id: `deleteSharingSetModal-${sharing_set.id}`,
+    id: 'chooseSharingNameModal',
     body: body,
     footer: footer,
   });
-}*/
+}
 
-const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
-  return html`
-    <div
-      class="modal fade"
-      id="chooseSharingNameModal"
-      tabindex="-1"
-      role="dialog"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Choose Sharing Name</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          ${canChooseSharingName
-            ? html`
-                <div class="modal-body">
-                  <p class="form-text">Enter the sharing name you would like for your course.</p>
-                  <div>
-                    <label for="course_sharing_name">Enter Sharing Name</label>
-                    <input class="form-control" type="text" name="course_sharing_name" required />
-                  </div>
-                  <p>
-                    <strong
-                      >Once you have shared a question either publicly or with another course, you
-                      will no longer be able to change your sharing name.</strong
-                    >
-                    Doing so would break the assessments of other courses that have imported your
-                    questions. It is recommended that you choose something short but descriptive.
-                    For example, if you're teaching a calculus course at a university that goes by
-                    the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'.
-                    Then other courses will import questions from your course with the syntax
-                    '@xyz-calculus/qid'.
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <form name="choose-sharing-name" method="POST">
-                    <input type="hidden" name="__action" value="choose_sharing_name" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <div class="text-right mt-4">
-                      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-                    </div>
-                  </form>
-                </div>
-              `
-            : html`
-                <div class="modal-body">
-                  <p class="form-text">
-                    <strong>Unable to change your course's sharing name.</strong>
-                  </p>
-                  <p>
-                    Your course's sharing name cannot be changed because at least one question has
-                    been shared. Doing so would break the assessments of other courses that have
-                    imported your questions.
-                  </p>
-                </div>
-              `}
-        </div>
-      </div>
-    </div>
-  `;
-};
-/*
-const deleteSharingSetModal = (sharing_set, resLocals) => {
-  return html`
-    <div
-      class="modal fade"
-      id="deleteSharingSetModal"
-      tabindex="-1"
-      role="dialog"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Delete Sharing Set</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          ${sharing_set.deletable
-            ? html`
-                <div class="modal-body">
-                  <p>
-                    <strong>Delete sharing set ${sharing_set.name}?</strong>
-                    If you do so, <strong>this sharing set can't be restored.</strong>
-                  </p>
-                </div>
-                <div class="modal-footer">
-                  <form name="delete_sharing_set" method="POST">
-                    <input type="hidden" name="__action" value="delete_sharing_set" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
-                    <div class="text-right mt-4">
-                      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
-                    </div>
-                  </form>
-                </div>
-              `
-            : html`
-            <div class="modal-body">
-              <p>
-                <strong>Unable to delete sharing set because the sharing set has been shared and 
-                at least one question has been added</strong>.
-                Doing so would break the assessments of other courses that have
-                imported your questions.
-              </p>
-            </div>
-            `
-          }
-        </div>
-      </div>
-    </div>
-  `;
-};*/
 
 export const InstructorSharing = ({
   sharingName,
@@ -324,7 +207,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(canChooseSharingName, resLocals)}
+                          ${chooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
                         `
                       : ''}
                   </td>
