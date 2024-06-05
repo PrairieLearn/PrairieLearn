@@ -646,7 +646,7 @@ WHERE
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        sqldb.queryOneRow(sql.enroll, {
+        await queryOneRow(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
