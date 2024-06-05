@@ -551,7 +551,6 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
             </div>
           </div>
 
-          <!-- TODO: be selective about what we pass to these partials -->
           ${renderEjs(
             import.meta.url,
             // TODO: convert to TypeScript component
