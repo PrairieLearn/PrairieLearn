@@ -125,6 +125,7 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
+                          // @ts-expect-error https://github.com/PrairieLearn/PrairieLearn/pull/9972
                           assessmentSetName: row.assessment_set_name,
                           assessmentNumber: row.assessment_number,
                         })}
