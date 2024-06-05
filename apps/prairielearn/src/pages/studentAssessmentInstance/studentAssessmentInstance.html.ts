@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatPoints } from '../../lib/format.js';
 
@@ -28,20 +29,9 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
               'time-limit-data',
             )}`
           : ''}
+        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-              $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
-          });
-
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-              let filename = $(this).val().replace(/\\/g, '/').replace(/.*//, '');
-              $(this).parent('.custom-file').find('.custom-file-label').text(filename);
-          });
-        </script>
-
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? html`
               <div id="confirmFinishModal" class="modal fade">
@@ -161,19 +151,15 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                               Assessment is <strong>open</strong> and you can answer questions.
                               <br />
                               Available credit: ${resLocals.authz_result.credit_date_string}
-                              ${renderEjs(
-                                import.meta.url,
-                                // TODO: convert to TypeScript component
-                                "<%- include('../partials/studentAccessRulesPopover'); %>",
-                                {
-                                  accessRules: resLocals.authz_result.access_rules,
-                                  assessmentSetName: resLocals.assessment_set.name,
-                                  assessmentNumber: resLocals.assessment.number,
-                                },
-                              )}
+                              ${StudentAccessRulesPopover({
+                                accessRules: resLocals.authz_result.access_rules,
+                                assessmentSetName: resLocals.assessment_set.name,
+                                assessmentNumber: resLocals.assessment.number,
+                              })}
                             `
-                          : html`Assessment is <strong>closed</strong> and you cannot answer
-                              questions.`}
+                          : html`
+                              Assessment is <strong>closed</strong> and you cannot answer questions.
+                            `}
                       </div>
                     `
                   : html`
@@ -201,23 +187,18 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                       <div class="col-md-6 col-sm-12">
                         ${resLocals.assessment_instance.open && resLocals.authz_result.active
                           ? html`
-                              Assessment is
-                              <strong>open</strong> and you can answer questions.
+                              Assessment is <strong>open</strong> and you can answer questions.
                               <br />
                               Available credit: ${resLocals.authz_result.credit_date_string}
-                              ${renderEjs(
-                                import.meta.url,
-                                // TODO: convert to TypeScript component
-                                "<%- include('../partials/studentAccessRulesPopover'); %>",
-                                {
-                                  accessRules: resLocals.authz_result.access_rules,
-                                  assessmentSetName: resLocals.assessment_set.name,
-                                  assessmentNumber: resLocals.assessment.number,
-                                },
-                              )}
+                              ${StudentAccessRulesPopover({
+                                accessRules: resLocals.authz_result.access_rules,
+                                assessmentSetName: resLocals.assessment_set.name,
+                                assessmentNumber: resLocals.assessment.number,
+                              })}
                             `
-                          : html`Assessment is <strong>closed</strong> and you cannot answer
-                              questions.`}
+                          : html`
+                              Assessment is <strong>closed</strong> and you cannot answer questions.
+                            `}
                       </div>
                     `}
                 ${resLocals.assessment.group_work
