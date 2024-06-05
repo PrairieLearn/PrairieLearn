@@ -62,7 +62,7 @@ export function QuestionComponent({
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue) =>
-        IssueComponent({ issue, course_instance, authz_data, devMode, is_administrator }),
+        IssuePanel({ issue, course_instance, authz_data, devMode, is_administrator }),
       )}
       ${question.type === 'Freeform'
         ? html`
@@ -120,7 +120,7 @@ export function QuestionComponent({
   `;
 }
 
-export function IssueComponent({
+export function IssuePanel({
   issue,
   course_instance,
   authz_data,
