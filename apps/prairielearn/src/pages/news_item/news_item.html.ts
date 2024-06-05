@@ -1,14 +1,8 @@
-import { z } from 'zod';
-
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { NewsItemSchema } from '../../lib/db-types.js';
-
-export const NewsItemRowSchema = NewsItemSchema.extend({
-  formatted_date: z.string(),
-});
-type NewsItemRow = z.infer<typeof NewsItemRowSchema>;
+import type { NewsItem } from '../../lib/db-types.js';
 
 export function NewsItem({
   resLocals,
@@ -17,18 +11,26 @@ export function NewsItem({
   userIsInstructor,
 }: {
   resLocals: Record<string, any>;
-  newsItem: NewsItemRow;
+  newsItem: NewsItem;
   newsItemHtml: string;
   userIsInstructor: boolean;
 }) {
   const { urlPrefix } = resLocals as { urlPrefix: string };
+  const formattedDate = formatDate(
+    newsItem.date,
+    resLocals.course_instance?.display_timezone ?? resLocals.course?.display_timezone ?? 'UTC',
+    {
+      includeTime: false,
+      includeTz: false,
+    },
+  );
   return html`
     <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
-          pageNote: newsItem.formatted_date,
+          pageNote: formattedDate,
           pageTitle: newsItem.title,
         })}
       </head>
@@ -49,7 +51,7 @@ export function NewsItem({
 
               <p>
                 <i class="mr-2 text-muted">
-                  Posted on ${newsItem.formatted_date}
+                  Posted on ${formattedDate}
                   ${newsItem.author ? html`by ${unsafeHtml(newsItem.author)}` : ''}
                 </i>
                 ${userIsInstructor && newsItem.visible_to_students

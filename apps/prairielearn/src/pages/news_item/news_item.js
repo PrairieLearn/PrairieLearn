@@ -11,7 +11,7 @@ import { callRow, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres'
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 
-import { NewsItem, NewsItemRowSchema } from './news_item.html.js';
+import { NewsItem } from './news_item.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -24,10 +24,8 @@ router.get(
       {
         news_item_id: req.params.news_item_id,
         user_id: res.locals.authn_user.user_id,
-        course_instance_id: res.locals.course_instance?.id,
-        course_id: res.locals.course?.id,
       },
-      NewsItemRowSchema,
+      NewsItemSchema,
     );
     if (newsItem == null) {
       throw new HttpStatusError(404, 'Not found');
