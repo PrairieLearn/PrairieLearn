@@ -1,13 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import * as helperServer from './helperServer.js';
-import * as helperClient from './helperClient.js';
-
-import { z } from 'zod';
 import { IdSchema, AssessmentInstanceSchema } from '../lib/db-types.js';
+
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -24,8 +25,7 @@ describe('Exam and homework assessment with active access restriction', function
 
   const headers: Record<string, string> = {};
 
-  const VARIANT_FORBIDDEN_STRING =
-    'This question was not viewed while the assessment was open, so no variant was created.';
+  const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;

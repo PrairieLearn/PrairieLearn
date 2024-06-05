@@ -1,16 +1,17 @@
 // @ts-check
-import asyncHandler from 'express-async-handler';
-import * as async from 'async';
-import fs from 'fs-extra';
 import * as path from 'path';
-import * as express from 'express';
 
+import * as async from 'async';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+
+import { chalk } from '../../lib/chalk.js';
+import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
-import * as chunks from '../../lib/chunks.js';
-import { chalk } from '../../lib/chalk.js';
-import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
 const router = express.Router();
 

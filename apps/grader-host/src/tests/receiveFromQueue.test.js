@@ -1,11 +1,11 @@
 // @ts-check
-import { assert } from 'chai';
-import sinon from 'sinon';
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
+import { assert } from 'chai';
+import sinon from 'sinon';
 
 import { config } from '../lib/config.js';
 import queueReceiver from '../lib/receiveFromQueue.js';

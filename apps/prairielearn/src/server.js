@@ -1,79 +1,83 @@
 // @ts-check
 
+/* eslint-disable import/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
-
 import * as Sentry from '@prairielearn/sentry';
+
 // `@sentry/tracing` must be imported before `@sentry/profiling-node`.
 import '@sentry/tracing';
 import { ProfilingIntegration } from '@sentry/profiling-node';
+/* eslint-enable import/order */
 
-import asyncHandler from 'express-async-handler';
 import * as fs from 'node:fs';
-import * as util from 'node:util';
-import * as path from 'node:path';
-import favicon from 'serve-favicon';
-import * as async from 'async';
-import express from 'express';
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
-import passport from 'passport';
-import Bowser from 'bowser';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as path from 'node:path';
+import * as util from 'node:util';
+import * as url from 'url';
+
+import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
+import bodyParser from 'body-parser';
+import Bowser from 'bowser';
+import cookieParser from 'cookie-parser';
+import esMain from 'es-main';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import _ from 'lodash';
+import multer from 'multer';
 import onFinished from 'on-finished';
+import passport from 'passport';
+import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
-import multer from 'multer';
-import * as url from 'url';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+
+import { EncodedData } from '@prairielearn/browser-utils';
+import { cache } from '@prairielearn/cache';
+import * as error from '@prairielearn/error';
+import { flashMiddleware, flash } from '@prairielearn/flash';
+import { logger, addFileLogging } from '@prairielearn/logger';
+import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
   startBatchedMigrations,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
-import _ from 'lodash';
-import esMain from 'es-main';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
+import { createSessionMiddleware } from '@prairielearn/session';
 
-import { logger, addFileLogging } from '@prairielearn/logger';
+import * as cron from './cron/index.js';
+import * as assets from './lib/assets.js';
+import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
-import * as load from './lib/load.js';
+import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
-import * as workspace from './lib/workspace.js';
-import * as sqldb from '@prairielearn/postgres';
-import * as migrations from '@prairielearn/migrations';
-import * as error from '@prairielearn/error';
-import * as sprocs from './sprocs/index.js';
-import * as news_items from './news_items/index.js';
-import * as cron from './cron/index.js';
-import * as socketServer from './lib/socket-server.js';
-import * as freeformServer from './question-servers/freeform.js';
-import { cache } from '@prairielearn/cache';
-import { LocalCache } from './lib/local-cache.js';
-import * as codeCaller from './lib/code-caller/index.js';
-import * as assets from './lib/assets.js';
-import * as namedLocks from '@prairielearn/named-locks';
-import { EncodedData } from '@prairielearn/browser-utils';
-import * as nodeMetrics from './lib/node-metrics.js';
-import { isEnterprise } from './lib/license.js';
-import * as lifecycleHooks from './lib/lifecycle-hooks.js';
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import staticNodeModules from './middlewares/staticNodeModules.js';
-import { flashMiddleware, flash } from '@prairielearn/flash';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
-import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
-import { createSessionMiddleware } from '@prairielearn/session';
-import { PostgresSessionStore } from './lib/session-store.js';
-import { pullAndUpdateCourse } from './lib/course.js';
+import { isEnterprise } from './lib/license.js';
+import * as lifecycleHooks from './lib/lifecycle-hooks.js';
+import * as load from './lib/load.js';
+import { LocalCache } from './lib/local-cache.js';
+import * as nodeMetrics from './lib/node-metrics.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
+import { PostgresSessionStore } from './lib/session-store.js';
+import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import * as workspace from './lib/workspace.js';
+import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
+import staticNodeModules from './middlewares/staticNodeModules.js';
+import * as news_items from './news_items/index.js';
+import * as freeformServer from './question-servers/freeform.js';
+import * as sprocs from './sprocs/index.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -804,16 +808,28 @@ export async function initExpress() {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
@@ -834,18 +850,36 @@ export async function initExpress() {
   // traffic in the future, we can delete these.
   //
   // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
-  app.use('/pl/static/elements', (await import('./pages/elementFiles/elementFiles.js')).default);
+  app.use(
+    '/pl/static/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: false,
+      coreElements: true,
+    }),
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
@@ -1865,19 +1899,21 @@ export async function initExpress() {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // This route is used to initiate a transfer of a question from a template course.
+  // These routes are used to initiate a copy of a question with publicly shared source
+  // or a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
   // pages is that the source question pages are served by chunk servers, but the
   // question transfer machinery relies on access to course repositories on disk,
   // which don't exist on chunk servers
   app.use(
+    '/pl/course/:course_id(\\d+)/copy_public_question',
+    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+  // TODO: remove this route once all links are updated to reference the one above
+  app.use(
     '/pl/course/:course_id(\\d+)/copy_template_course_question',
-    (
-      await import(
-        './pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion.js'
-      )
-    ).default,
+    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
   // Global client files
@@ -1958,6 +1994,20 @@ export async function initExpress() {
     },
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
   ]);
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: true,
+      coreElements: false,
+    }),
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: true,
+      coreElements: false,
+    }),
+  );
 
   // Client files for questions
   app.use(
@@ -2336,6 +2386,7 @@ if (esMain(import.meta) && config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
           ssl: config.postgresqlSsl,
+          errorOnUnusedParameters: config.devMode,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
@@ -2463,16 +2514,6 @@ if (esMain(import.meta) && config.startServer) {
         });
       },
       async () => {
-        if (config.runBatchedMigrations) {
-          // Now that all migrations have been run, we can start executing any
-          // batched migrations that may have been enqueued by migrations.
-          startBatchedMigrations({
-            workDurationMs: config.batchedMigrationsWorkDurationMs,
-            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-          });
-        }
-      },
-      async () => {
         // We create and activate a random DB schema name
         // (https://www.postgresql.org/docs/12/ddl-schemas.html)
         // after we have run the migrations but before we create
@@ -2500,6 +2541,19 @@ if (esMain(import.meta) && config.startServer) {
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
         await sprocs.init();
+      },
+      async () => {
+        if (config.runBatchedMigrations) {
+          // Now that all migrations have been run, we can start executing any
+          // batched migrations that may have been enqueued by migrations.
+          //
+          // Note that we don't do this until sprocs have been created because
+          // some batched migrations may depend on sprocs.
+          startBatchedMigrations({
+            workDurationMs: config.batchedMigrationsWorkDurationMs,
+            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+          });
+        }
       },
       async () => {
         if ('sync-course' in argv) {

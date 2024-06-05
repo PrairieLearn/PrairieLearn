@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
+import { config } from '../../lib/config.js';
 import { CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types.js';
-import { config } from '../../lib/config.js';
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
 
 export const CourseWithInstitutionSchema = CourseSchema.extend({
   institution: InstitutionSchema,

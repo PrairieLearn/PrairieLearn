@@ -1,6 +1,8 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
+
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+
 import { config } from '../lib/config.js';
 import { idsEqual } from '../lib/id.js';
 

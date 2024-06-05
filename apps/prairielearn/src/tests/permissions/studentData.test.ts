@@ -1,16 +1,17 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import * as helperServer from '../helperServer.js';
-import * as helperClient from '../helperClient.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -39,12 +40,14 @@ describe('student data access', function () {
       'instructor@example.com',
       'Instructor User',
       '100000000',
+      'instructor@example.com',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@example.com',
       'Student User',
       '000000001',
+      'student@example.com',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({

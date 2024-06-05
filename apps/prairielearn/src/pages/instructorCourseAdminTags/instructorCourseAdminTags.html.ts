@@ -1,5 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { TagBadge } from '../../components/TagBadge.html.js';
 import { Tag } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTags({
@@ -36,20 +38,16 @@ export function InstructorCourseAdminTags({
                   </tr>
                 </thead>
                 <tbody>
-                  ${tags.map(function (tag) {
-                    return html`
+                  ${tags.map(
+                    (tag) => html`
                       <tr>
                         <td class="align-middle">${tag.number}</td>
-                        <td class="align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/tag'); %>", {
-                            tag,
-                          })}
-                        </td>
+                        <td class="align-middle">${TagBadge(tag)}</td>
                         <td class="align-middle">${tag.color}</td>
                         <td class="align-middle">${tag.description}</td>
                       </tr>
-                    `;
-                  })}
+                    `,
+                  )}
                 </tbody>
               </table>
             </div>

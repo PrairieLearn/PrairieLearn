@@ -1,14 +1,16 @@
 // @ts-check
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { config } from './config.js';
-import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie.js';
-import { InstitutionSchema, UserSchema } from './db-types.js';
-import { HttpRedirect } from './redirect.js';
-import { isEnterprise } from './license.js';
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
+import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie.js';
+
+import { config } from './config.js';
+import { InstitutionSchema, UserSchema } from './db-types.js';
+import { isEnterprise } from './license.js';
+import { HttpRedirect } from './redirect.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -22,6 +24,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @property {string} [uid]
  * @property {string | null} [uin]
  * @property {string | null} [name]
+ * @property {string | null} [email]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
  * @property {number | string | null} [institution_id]
@@ -43,6 +46,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
+      authnParams.email,
       authnParams.provider,
       authnParams.institution_id,
     ];

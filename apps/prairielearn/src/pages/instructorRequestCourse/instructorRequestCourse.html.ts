@@ -1,7 +1,9 @@
+import { z } from 'zod';
+
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
-import { CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+
+import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -98,11 +100,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                 <tr>
                   <td>${course_request.short_name}</td>
                   <td>${course_request.title}</td>
-                  <td>
-                    ${renderEjs(import.meta.url, "<%- include('approvalStatusIcon')%>", {
-                      status: course_request.approved_status,
-                    })}
-                  </td>
+                  <td>${ApprovalStatusIcon({ status: course_request.approved_status })}</td>
                   <td>${details}</td>
                 </tr>
               `;
@@ -292,4 +290,14 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
       </form>
     </div>
   `;
+}
+
+function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
+  if (status === 'pending' || status === 'creating' || status === 'failed') {
+    return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
+  } else if (status === 'approved') {
+    return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved</span>`;
+  } else if (status === 'denied') {
+    return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+  }
 }

@@ -1,8 +1,9 @@
-import chai, { assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
-import tmp from 'tmp-promise';
+
+import { use as chaiUse, assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs-extra';
+import tmp from 'tmp-promise';
 
 import {
   parseAnnotations,
@@ -10,7 +11,7 @@ import {
   sortMigrationFiles,
 } from './load-migrations.js';
 
-chai.use(chaiAsPromised);
+chaiUse(chaiAsPromised);
 
 async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promise<void>) {
   await tmp.withDir(

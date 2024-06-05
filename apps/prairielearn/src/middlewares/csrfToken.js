@@ -1,8 +1,10 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
-import { config } from '../lib/config.js';
+
 import { HttpStatusError } from '@prairielearn/error';
 import { generateSignedToken, checkSignedToken } from '@prairielearn/signed-token';
+
+import { config } from '../lib/config.js';
 
 export default asyncHandler(async (req, res, next) => {
   const tokenData = {

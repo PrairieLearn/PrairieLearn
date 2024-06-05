@@ -1,8 +1,10 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import { queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+
 import * as helperServer from './helperServer.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
@@ -13,18 +15,21 @@ const USER_1 = {
   name: 'Student 1',
   uid: 'student1@example.com',
   uin: '1',
+  email: 'student1@example.com',
 };
 
 const USER_2 = {
   name: 'Student 2',
   uid: 'student2@example.com',
   uin: '2',
+  email: 'student2@example.com',
 };
 
 const USER_3 = {
   name: 'Student 3',
   uid: 'student3@example.com',
   uin: '3',
+  email: 'student3@example.com',
 };
 
 describe('Enroll page (enterprise)', function () {

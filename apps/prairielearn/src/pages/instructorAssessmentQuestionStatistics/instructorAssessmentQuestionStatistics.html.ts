@@ -1,8 +1,11 @@
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
+import { html, unsafeHtml } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
+import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -15,7 +18,6 @@ import {
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
-import { Modal } from '../../components/Modal.html.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -52,8 +54,8 @@ export function InstructorAssessmentQuestionStatistics({
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
         <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
-        <script src="${assetPath('localscripts/scatter.js')}"></script>
         <script src="${assetPath('localscripts/histmini.js')}"></script>
+        ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
         <script>
@@ -112,32 +114,19 @@ export function InstructorAssessmentQuestionStatistics({
                   <div class="card-body">
                     <div
                       id="difficultyDiscriminationScatter"
-                      class="scatter"
-                      data-scatter-xvalues="${JSON.stringify(
-                        rows.map((q) => q.mean_question_score),
-                      )}"
-                      data-scatter-yvalues="${JSON.stringify(rows.map((q) => q.discrimination))}"
-                      data-scatter-labels="${JSON.stringify(
-                        rows.map((q) => q.assessment_question_number),
-                      )}"
+                      class="js-scatter"
+                      data-xdata="${JSON.stringify(rows.map((q) => q.mean_question_score))}"
+                      data-ydata="${JSON.stringify(rows.map((q) => q.discrimination))}"
+                      data-options="${JSON.stringify({
+                        xgrid: _.range(0, 110, 10),
+                        ygrid: _.range(0, 110, 10),
+                        xlabel: 'mean score / %',
+                        ylabel: 'discrimination / %',
+                        radius: 2,
+                        topMargin: 30,
+                        labels: rows.map((q) => q.assessment_question_number),
+                      })}"
                     ></div>
-                    <script>
-                      $(function () {
-                        const xdata = $('#difficultyDiscriminationScatter').data('scatter-xvalues');
-                        const ydata = $('#difficultyDiscriminationScatter').data('scatter-yvalues');
-                        const labels = $('#difficultyDiscriminationScatter').data('scatter-labels');
-                        const options = {
-                          xgrid: _.range(0, 110, 10),
-                          ygrid: _.range(0, 110, 10),
-                          xlabel: 'mean score / %',
-                          ylabel: 'discrimination / %',
-                          radius: 2,
-                          topMargin: 30,
-                          labels: labels,
-                        };
-                        scatter('#difficultyDiscriminationScatter', xdata, ydata, options);
-                      });
-                    </script>
                   </div>
                   <div class="card-footer">
                     <small>

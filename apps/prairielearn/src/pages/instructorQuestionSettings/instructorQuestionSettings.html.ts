@@ -1,12 +1,15 @@
-import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { escapeHtml, html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
 import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { CourseWithPermissions } from '../../models/course.js';
-import { isEnterprise } from '../../lib/license.js';
 import { idsEqual } from '../../lib/id.js';
+import { isEnterprise } from '../../lib/license.js';
+import { CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   title: z.string(),
@@ -167,19 +170,11 @@ export function InstructorQuestionSettings({
                 </tr>
                 <tr>
                   <th>Topic</th>
-                  <td>
-                    ${renderEjs(import.meta.url, "<%- include('../partials/topic') %>", {
-                      topic: resLocals.topic,
-                    })}
-                  </td>
+                  <td>${TopicBadge(resLocals.topic)}</td>
                 </tr>
                 <tr>
                   <th>Tags</th>
-                  <td>
-                    ${renderEjs(import.meta.url, "<%- include('../partials/tags') %>", {
-                      tags: resLocals.tags,
-                    })}
-                  </td>
+                  <td>${TagBadgeList(resLocals.tags)}</td>
                 </tr>
                 <tr>
                   <th>Issues</th>

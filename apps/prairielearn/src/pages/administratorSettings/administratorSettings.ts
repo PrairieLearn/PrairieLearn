@@ -1,11 +1,13 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
-import { cache } from '@prairielearn/cache';
+import asyncHandler from 'express-async-handler';
 
+import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
+
 import * as chunks from '../../lib/chunks.js';
-import { AdministratorSettings } from './administratorSettings.html.js';
 import { IdSchema } from '../../lib/db-types.js';
+
+import { AdministratorSettings } from './administratorSettings.html.js';
 
 const router = express.Router();
 
