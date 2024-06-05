@@ -9,17 +9,19 @@ import { Modal } from './Modal.html.js';
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
 
+type QuestionContext =
+  | 'student_exam'
+  | 'student_homework'
+  | 'instructor'
+  | 'public'
+  | 'manual_grading';
+
 export function QuestionComponent({
   resLocals,
   question_context,
 }: {
   resLocals: Record<string, any>;
-  question_context:
-    | 'student_exam'
-    | 'student_homework'
-    | 'instructor'
-    | 'public'
-    | 'manual_grading';
+  question_context: QuestionContext;
 }) {
   const {
     question,
@@ -65,7 +67,7 @@ export function QuestionComponent({
       data-url-prefix="${urlPrefix}"
       data-question-context="${question_context}"
       data-csrf-token="${__csrf_token}"
-      data-authorized-edit="${!authz_result?.authorized_edit ?? true ? 'true' : 'false'}"
+      data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
@@ -131,6 +133,7 @@ export function QuestionComponent({
         ? html`
             ${SubmissionList({
               resLocals,
+              question_context,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
             })}
@@ -153,6 +156,7 @@ export function QuestionComponent({
                   <div id="more-submissions-collapser" class="collapse">
                     ${SubmissionList({
                       resLocals,
+                      question_context,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                     })}
@@ -320,16 +324,19 @@ ${JSON.stringify(issue.system_data, null, '    ')}</pre
 
 function SubmissionList({
   resLocals,
+  question_context,
   submissions,
   submissionHtmls,
 }: {
   resLocals: Record<string, any>;
+  question_context: QuestionContext;
   submissions: Submission[];
   submissionHtmls: string[];
 }) {
   return submissions.map((submission, idx) =>
     renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
       ...resLocals,
+      question_context,
       submission,
       submissionCount: submissions.length,
       submissionHtml: submissionHtmls[idx],
