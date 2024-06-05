@@ -137,12 +137,6 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    options_placement = pl.get_enum_attrib(
-        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
-    )
-    options_placement_right = options_placement == OptionsPlacementType.RIGHT
-    options_placement_bottom = options_placement == OptionsPlacementType.BOTTOM
-
     options, statements = categorize_matches(element, data)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
@@ -249,12 +243,7 @@ def prepare(element_html, data):
         display_statements.append(keyed_statement)
         correct_matches.append(match_index)
 
-        data["params"][name] = {
-            "statements": display_statements,
-            "options": display_options,
-            "options_placement_right": options_placement_right,
-            "options_placement_bottom": options_placement_bottom,
-        }
+        data["params"][name] = (display_statements, display_options)
         data["correct_answers"][name] = correct_matches
 
 
@@ -291,11 +280,16 @@ def parse(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    params = data["params"].get(name, {})
-    display_statements = params.get("statements", [])
-    display_options = params.get("options", [])
-    options_placement_right = params.get("options_placement_right", True)
-    options_placement_bottom = params.get("options_placement_bottom", False)
+    display_statements, display_options = data["params"].get(name, ([], []))
+    options_placement_right = True
+    options_placement_bottom = False
+    # if data["panel"] == "question":
+    options_placement = pl.get_enum_attrib(
+        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
+    )
+    options_placement_right = options_placement == OptionsPlacementType.RIGHT
+    options_placement_bottom = options_placement == OptionsPlacementType.BOTTOM
+
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(
