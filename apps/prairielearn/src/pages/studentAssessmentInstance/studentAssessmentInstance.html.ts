@@ -219,8 +219,6 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                             resLocals.assessment.type === 'Exam'
                               ? `Question ${instance_question.question_number}`
                               : `${instance_question.question_number}. ${instance_question.question_title}`,
-                          group_role_permissions: resLocals.group_role_permissions,
-                          user_group_roles: resLocals.user_group_roles,
                         })}
                       </td>
                       ${resLocals.assessment.type === 'Exam'
@@ -609,25 +607,19 @@ function RowLabel({
   instance_question,
   rowLabelText,
   urlPrefix,
-  group_role_permissions,
-  user_group_roles,
 }: {
   // TODO: better types?
   instance_question: any;
   rowLabelText: string;
   urlPrefix: string;
-  // TODO: better types?
-  group_role_permissions: any;
-  // TODO: better types?
-  user_group_roles: any;
 }) {
   let lockedPopoverText: string | null = null;
   if (instance_question.sequence_locked) {
     lockedPopoverText = instance_question.prev_sequence_locked
       ? `A previous question must be completed before you can access this one.`
       : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
-  } else if (!(group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;
+  } else if (!(instance_question.group_role_permissions?.can_view ?? true)) {
+    lockedPopoverText = `Your current group role (${instance_question.user_group_roles}) restricts access to this question.`;
   }
 
   return html`
