@@ -1,15 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryAsync,
-  queryOneRowAsync,
-} from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
 
-import { Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
+import { IdSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
@@ -116,6 +111,13 @@ router.get(
 
     const course_instances: CourseInstanceAuthz[] = [];
 
+    // TODO: Refactor to only list courses and pull in course instances in
+    // the page via htmx
+    //
+    // This query is expensive for anyone connected to a large number of courses,
+    // such as admins. Our expectation is that admins don't typically initialize
+    // LTI flows so it will happen infrequently and Postgres will be fast enough
+    // when this N+1 query runs.
     for (const course of courses) {
       // Only course owners can link
       if (!course.permissions_course.has_course_permission_own) {
@@ -153,11 +155,19 @@ router.post(
     const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
     // Map passed and auth lti13_instance_id through institution to course instance, or fail
-    await queryOneRowAsync(sql.select_lti13_course_instance_institution, {
-      course_instance_id: unsafe_course_instance_id,
-      lti13_instance_id: req.params.lti13_instance_id,
-      authn_lti13_instance_id,
-    });
+    const authorized = await queryOptionalRow(
+      sql.select_lti13_course_instance_institution,
+      {
+        course_instance_id: unsafe_course_instance_id,
+        lti13_instance_id: req.params.lti13_instance_id,
+        authn_lti13_instance_id,
+      },
+      IdSchema,
+    );
+
+    if (authorized == null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
 
     // Check that user is course Owner for this course instance
     const course_instance = await selectCourseInstanceById(unsafe_course_instance_id);
@@ -184,7 +194,7 @@ router.post(
 
       res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
     } else {
-      throw new error.HttpStatusError(403, 'Permission denied');
+      throw new HttpStatusError(403, 'Access denied');
     }
   }),
 );
