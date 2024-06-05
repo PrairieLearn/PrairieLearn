@@ -22,6 +22,9 @@ window.PLOrderBlocks = function (uuid, options) {
     console.log(blocks);
 
     for (let block of blocks) {
+      block.addEventListener('click', () => {
+        block.focus();
+      });
       block.setAttribute('selected', false);
       block.addEventListener('keydown', (ev) => {
         console.log(ev.key);
