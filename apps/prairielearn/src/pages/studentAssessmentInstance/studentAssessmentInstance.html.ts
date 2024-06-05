@@ -276,19 +276,16 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                         : ''}"
                     >
                       <td>
-                        ${renderEjs(
-                          import.meta.url,
-                          // TODO: this is only used on this page; turn it into a TypeScript component.
-                          "<%- include('../partials/studentAssessmentInstanceRowLabel.ejs'); %>",
-                          {
-                            ...instance_question,
-                            urlPrefix: resLocals.urlPrefix,
-                            rowLabelText:
-                              resLocals.assessment.type === 'Exam'
-                                ? `Question ${instance_question.question_number}`
-                                : `${instance_question.question_number}. ${instance_question.question_title}`,
-                          },
-                        )}
+                        ${RowLabel({
+                          instance_question,
+                          urlPrefix: resLocals.urlPrefix,
+                          rowLabelText:
+                            resLocals.assessment.type === 'Exam'
+                              ? `Question ${instance_question.question_number}`
+                              : `${instance_question.question_number}. ${instance_question.question_title}`,
+                          group_role_permissions: resLocals.group_role_permissions,
+                          user_group_roles: resLocals.user_group_roles,
+                        })}
                       </td>
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
@@ -695,5 +692,72 @@ function ZoneInfoBadge({
     >
       ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </a>
+  `;
+}
+
+function RowLabel({
+  instance_question,
+  rowLabelText,
+  urlPrefix,
+  group_role_permissions,
+  user_group_roles,
+}: {
+  // TODO: better types?
+  instance_question: any;
+  rowLabelText: string;
+  urlPrefix: string;
+  // TODO: better types?
+  group_role_permissions: any;
+  // TODO: better types?
+  user_group_roles: any;
+}) {
+  let lockedPopoverText: string | null = null;
+  if (instance_question.sequence_locked) {
+    lockedPopoverText = instance_question.prev_sequence_locked
+      ? `A previous question must be completed before you can access this one.`
+      : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
+  } else if (!(group_role_permissions?.can_view ?? true)) {
+    lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;
+  }
+
+  return html`
+    ${lockedPopoverText != null
+      ? html`
+          <span class="text-muted">${rowLabelText} </span>
+          <a
+            tabindex="0"
+            class="btn btn-xs border text-secondary ml-1"
+            role="button"
+            data-toggle="popover"
+            data-trigger="focus"
+            data-container="body"
+            data-html="true"
+            data-content="${lockedPopoverText}"
+            data-test-id="locked-instance-question-row"
+            aria-label="Locked"
+          >
+            <i class="fas fa-lock" aria-hidden="true"></i>
+          </a>
+        `
+      : html`
+          <a href="${urlPrefix}/instance_question/${instance_question.id}/">${rowLabelText}</a>
+        `}
+    ${instance_question.file_count > 0
+      ? html`
+          <a
+            tabindex="0"
+            class="btn btn-xs border text-secondary ml-1"
+            role="button"
+            data-toggle="popover"
+            data-trigger="focus"
+            data-container="body"
+            data-html="true"
+            data-content="Personal notes: ${instance_question.file_count}"
+            aria-label="Has personal note attachments"
+          >
+            <i class="fas fa-paperclip"></i>
+          </a>
+        `
+      : ''}
   `;
 }

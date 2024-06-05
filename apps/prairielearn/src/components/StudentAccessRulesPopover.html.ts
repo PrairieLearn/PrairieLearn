@@ -23,8 +23,6 @@ export function StudentAccessRulesPopover({
   assessmentNumber: string;
   accessRules: AuthzAccessRule[];
 }) {
-  console.log('POPOVER');
-  console.log(typeof assessmentNumber);
   return html`
     <a
       tabindex="0"
