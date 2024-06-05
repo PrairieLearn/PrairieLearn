@@ -136,6 +136,7 @@ export function QuestionComponent({
               question_context,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
+              submissionCount: submissions.length,
             })}
             ${submissions.length > MAX_TOP_RECENTS
               ? html`
@@ -159,6 +160,7 @@ export function QuestionComponent({
                       question_context,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
+                      submissionCount: submissions.length,
                     })}
                   </div>
                 `
@@ -327,18 +329,20 @@ function SubmissionList({
   question_context,
   submissions,
   submissionHtmls,
+  submissionCount,
 }: {
   resLocals: Record<string, any>;
   question_context: QuestionContext;
   submissions: Submission[];
   submissionHtmls: string[];
+  submissionCount: number;
 }) {
   return submissions.map((submission, idx) =>
     renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
       ...resLocals,
       question_context,
       submission,
-      submissionCount: submissions.length,
+      submissionCount,
       submissionHtml: submissionHtmls[idx],
     }),
   );
