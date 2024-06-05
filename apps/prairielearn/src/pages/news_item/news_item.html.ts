@@ -7,7 +7,6 @@ import { NewsItemSchema } from '../../lib/db-types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
   formatted_date: z.string(),
-  show_student_badge: z.boolean(),
 });
 type NewsItemRow = z.infer<typeof NewsItemRowSchema>;
 
@@ -15,10 +14,12 @@ export function NewsItem({
   resLocals,
   newsItem,
   newsItemHtml,
+  userIsInstructor,
 }: {
   resLocals: Record<string, any>;
   newsItem: NewsItemRow;
   newsItemHtml: string;
+  userIsInstructor: boolean;
 }) {
   const { urlPrefix } = resLocals as { urlPrefix: string };
   return html`
@@ -51,7 +52,7 @@ export function NewsItem({
                   Posted on ${newsItem.formatted_date}
                   ${newsItem.author ? html`by ${unsafeHtml(newsItem.author)}` : ''}
                 </i>
-                ${newsItem.show_student_badge
+                ${userIsInstructor && newsItem.visible_to_students
                   ? html`<span class="badge badge-secondary">Visible to students</span>`
                   : ''}
               </p>

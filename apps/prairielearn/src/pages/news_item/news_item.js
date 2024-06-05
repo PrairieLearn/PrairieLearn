@@ -4,9 +4,10 @@ import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 
@@ -41,7 +42,14 @@ router.get(
       'index.html',
     );
     const newsItemHtml = await fs.readFile(indexFilename, 'utf8');
-    res.send(NewsItem({ resLocals: res.locals, newsItem, newsItemHtml }));
+
+    const userIsInstructor = await callRow(
+      'users_is_instructor_in_any_course',
+      [res.locals.authn_user.user_id],
+      z.boolean(),
+    );
+
+    res.send(NewsItem({ resLocals: res.locals, newsItem, newsItemHtml, userIsInstructor }));
   }),
 );
 
