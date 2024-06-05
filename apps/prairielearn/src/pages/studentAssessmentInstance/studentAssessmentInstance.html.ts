@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatPoints } from '../../lib/format.js';
@@ -33,77 +34,10 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
       </head>
       <body>
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
-          ? html`
-              <div id="confirmFinishModal" class="modal fade">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h4 class="modal-title">All done?</h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      ${resLocals.assessment_instance.all_questions_answered
-                        ? html`
-                            <div class="alert alert-warning">
-                              There are still unanswered questions.
-                            </div>
-                          `
-                        : ''}
-                      <p class="text-danger">
-                        <strong>Warning</strong>: You will not be able to answer any more questions
-                        after finishing the assessment.
-                      </p>
-                      <p>
-                        Are you sure you want to finish, complete, and close out the assessment?
-                      </p>
-                    </div>
-                    <div class="modal-footer">
-                      <form name="finish-form" method="POST">
-                        <input type="hidden" name="__action" value="finish" />
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button type="submit" class="btn btn-danger">Finish assessment</button>
-                        <button type="button" data-dismiss="modal" class="btn btn-secondary">
-                          Cancel
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `
-          : ''}
-        ${resLocals.showTimeLimitExpiredModal
-          ? html`
-              <div id="timeLimitExpiredModal" class="modal fade">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h4 class="modal-title">Time limit expired</h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <p>Your time limit expired and your assessment is now finished.</p>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <script>
-                $(function () {
-                  $('#timeLimitExpiredModal').modal({});
-                });
-              </script>
-            `
+          ? ConfirmFinishModal({
+              assessment_instance: resLocals.assessment_instance,
+              csrfToken: resLocals.__csrf_token,
+            })
           : ''}
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
@@ -230,10 +164,12 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                 : ''}
               ${resLocals.assessment_text_templated
                 ? html`
-                  <div class="card bg-light mb-0 mt-4">
-                    <div class="card-body"><${unsafeHtml(resLocals.assessment_text_templated)}</div>
-                  </div>
-                `
+                    <div class="card bg-light mb-0 mt-4">
+                      <div class="card-body">
+                        ${unsafeHtml(resLocals.assessment_text_templated)}
+                      </div>
+                    </div>
+                  `
                 : ''}
             </div>
 
@@ -577,7 +513,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <th class="text-center">Best submission ${ExamQuestionHelpBestSubmission()}</th>
                 <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
-                <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()} %></th>
+                <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
               `
             : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
               ? html`
@@ -788,4 +724,33 @@ function ExamQuestionHelpAwardedPoints() {
       <i class="far fa-question-circle" aria-hidden="true"></i>
     </a>
   `;
+}
+
+function ConfirmFinishModal({
+  assessment_instance,
+  csrfToken,
+}: {
+  assessment_instance: any;
+  csrfToken: string;
+}) {
+  return Modal({
+    id: 'confirmFinishModal',
+    title: 'All done?',
+    body: html`
+      ${assessment_instance.all_questions_answered
+        ? html` <div class="alert alert-warning">There are still unanswered questions.</div> `
+        : ''}
+      <p class="text-danger">
+        <strong>Warning</strong>: You will not be able to answer any more questions after finishing
+        the assessment.
+      </p>
+      <p>Are you sure you want to finish, complete, and close out the assessment?</p>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="finish" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="submit" class="btn btn-danger">Finish assessment</button>
+      <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+    `,
+  });
 }

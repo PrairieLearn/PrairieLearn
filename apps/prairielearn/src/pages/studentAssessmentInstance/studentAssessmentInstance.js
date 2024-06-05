@@ -246,7 +246,6 @@ router.get(
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
-    res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
     res.locals.savedAnswers = 0;
     res.locals.suspendedSavedAnswers = 0;
     res.locals.instance_questions.forEach((question) => {
