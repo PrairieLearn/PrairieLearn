@@ -3,9 +3,9 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { QuestionComponent } from '../../components/Question.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { QuestionComponent } from '../../components/Question.html.js';
 
 export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
   const question_context =
