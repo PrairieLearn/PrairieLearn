@@ -21,6 +21,7 @@ window.PLOrderBlocks = function (uuid, options) {
       return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
     }
     var blocks = Array.from($(optionsElementId)[0].children);
+
     if (!focused) {
       blocks[currFocusedBlockIdx].focus();
       focused = true;
