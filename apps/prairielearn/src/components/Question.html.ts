@@ -37,23 +37,12 @@ export function QuestionComponent({
     authz_result,
     devMode,
     is_administrator,
-    question_copy_targets,
     showTrueAnswer,
     showSubmissions,
     submissions,
     submissionHtmls,
     answerHtml,
-    questionHtml,
-    course,
   } = resLocals;
-
-  // Show even when question_copy_targets is empty.
-  // We'll show a CTA to request a course if the user isn't an editor of any course.
-  const showCopyQuestionButton =
-    question_copy_targets != null &&
-    (course.template_course ||
-      (question.shared_publicly_with_source && question_context === 'public')) &&
-    question_context !== 'manual_grading';
 
   return html`
     <div
@@ -78,51 +67,10 @@ export function QuestionComponent({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              <div class="card mb-4 question-block">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                  ${renderEjs(
-                    import.meta.url,
-                    "<%- include('../pages/partials/questionTitle'); %>",
-                    { ...resLocals, question_context },
-                  )}
-                  ${showCopyQuestionButton
-                    ? html`
-                        <button
-                          class="btn btn-light btn-sm ml-auto"
-                          type="button"
-                          data-toggle="modal"
-                          data-target="#copyQuestionModal"
-                        >
-                          <i class="fa fa-clone"></i>
-                          Copy question
-                        </button>
-                      `
-                    : ''}
-                </div>
-                <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-                ${renderEjs(
-                  import.meta.url,
-                  "<%- include('../pages/partials/questionFooter'); %>",
-                  { ...resLocals, question_context },
-                )}
-              </div>
+              ${QuestionPanel({ resLocals, question_context })}
             </form>
           `
-        : html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
-                ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionTitle'); %>", {
-                  ...resLocals,
-                  question_context,
-                })}
-              </div>
-              <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-              ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionFooter'); %>", {
-                ...resLocals,
-                question_context,
-              })}
-            </div>
-          `}
+        : QuestionPanel({ resLocals, question_context })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">Correct answer</div>
@@ -320,6 +268,53 @@ ${JSON.stringify(issue.system_data, null, '    ')}</pre
             </div>
           `
         : ''}
+    </div>
+  `;
+}
+
+function QuestionPanel({
+  resLocals,
+  question_context,
+}: {
+  resLocals: Record<string, any>;
+  question_context: QuestionContext;
+}) {
+  const { question, questionHtml, question_copy_targets, course } = resLocals;
+  // Show even when question_copy_targets is empty.
+  // We'll show a CTA to request a course if the user isn't an editor of any course.
+  const showCopyQuestionButton =
+    question.type === 'Freeform' &&
+    question_copy_targets != null &&
+    (course.template_course ||
+      (question.shared_publicly_with_source && question_context === 'public')) &&
+    question_context !== 'manual_grading';
+
+  return html`
+    <div class="card mb-4 question-block">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionTitle'); %>", {
+          ...resLocals,
+          question_context,
+        })}
+        ${showCopyQuestionButton
+          ? html`
+              <button
+                class="btn btn-light btn-sm ml-auto"
+                type="button"
+                data-toggle="modal"
+                data-target="#copyQuestionModal"
+              >
+                <i class="fa fa-clone"></i>
+                Copy question
+              </button>
+            `
+          : ''}
+      </div>
+      <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
+      ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionFooter'); %>", {
+        ...resLocals,
+        question_context,
+      })}
     </div>
   `;
 }
