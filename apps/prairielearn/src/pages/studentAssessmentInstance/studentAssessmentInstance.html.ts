@@ -576,31 +576,9 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
       ? html`
           ${resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
             ? html`
-                <th class="text-center">
-                  Best submission
-                  ${renderEjs(
-                    import.meta.url,
-                    // TODO: inline in file as TypeScript component
-                    "<%- include('../partials/examQuestionHelpBestSubmission'); %>",
-                  )}
-                </th>
-                <th class="text-center">
-                  Available points
-                  ${renderEjs(
-                    import.meta.url,
-                    // TODO: inline in file as TypeScript component
-                    "<%- include('../partials/examQuestionHelpAvailablePoints'); %>",
-                  )}
-                </th>
-                <th class="text-center">
-                  Awarded points
-                  ${renderEjs(
-                    import.meta.url,
-                    // TODO: inline in file as TypeScript component
-                    "<%- include('../partials/examQuestionHelpAwardedPoints'); %>",
-                  )}
-                  %>
-                </th>
+                <th class="text-center">Best submission ${ExamQuestionHelpBestSubmission()}</th>
+                <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
+                <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()} %></th>
               `
             : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
               ? html`
@@ -756,5 +734,59 @@ function RowLabel({
           </a>
         `
       : ''}
+  `;
+}
+
+function ExamQuestionHelpBestSubmission() {
+  return html`
+    <a
+      tabindex="0"
+      role="button"
+      data-toggle="popover"
+      data-trigger="focus"
+      data-container="body"
+      data-html="true"
+      data-placement="auto"
+      title="Best submission"
+      data-content="The percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>."
+    >
+      <i class="far fa-question-circle" aria-hidden="true"></i>
+    </a>
+  `;
+}
+
+function ExamQuestionHelpAvailablePoints() {
+  return html`
+    <a
+      tabindex="0"
+      role="button"
+      data-toggle="popover"
+      data-trigger="focus"
+      data-container="body"
+      data-html="true"
+      data-placement="auto"
+      title="Available points"
+      data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
+    >
+      <i class="far fa-question-circle" aria-hidden="true"></i>
+    </a>
+  `;
+}
+
+function ExamQuestionHelpAwardedPoints() {
+  return html`
+    <a
+      tabindex="0"
+      role="button"
+      data-toggle="popover"
+      data-trigger="focus"
+      data-container="body"
+      data-html="true"
+      data-placement="auto"
+      title="Awarded points"
+      data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
+    >
+      <i class="far fa-question-circle" aria-hidden="true"></i>
+    </a>
   `;
 }
