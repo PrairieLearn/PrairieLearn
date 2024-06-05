@@ -20,9 +20,17 @@ describe('date formatting', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 0, 1, 0));
       assert.equal(formatDate(date, 'UTC'), '2018-01-01 00:01:00 (UTC)');
     });
+    it('formats dates without the time', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDate(date, 'UTC', { includeTime: false }), '2018-01-01 (UTC)');
+    });
     it('formats dates without the timezone', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDate(date, 'UTC', { includeTz: false }), '2018-01-01 12:00:00');
+    });
+    it('formats dates without the time or timezone', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDate(date, 'UTC', { includeTime: false, includeTz: false }), '2018-01-01');
     });
     it('formats dates with the long timezone name', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
