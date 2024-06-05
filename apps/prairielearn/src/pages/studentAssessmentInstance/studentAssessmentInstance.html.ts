@@ -254,32 +254,17 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                                 : 2) + (resLocals.assessment.type === 'Exam' ? 1 : 0)}"
                             >
                               <span class="mr-1"> ${instance_question.zone_title} </span>
-                              <!-- TODO: do we need to pass additional context to these partials? -->
                               ${instance_question.zone_has_max_points
-                                ? renderEjs(
-                                    import.meta.url,
-                                    // TODO: inline in file as TypeScript component
-                                    "<%- include('../partials/zoneInfoBadge'); %>",
-                                    {
-                                      zoneInfo: {
-                                        popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
-                                        mainContent: `Maximum ${instance_question.zone_max_points} points`,
-                                      },
-                                    },
-                                  )
+                                ? ZoneInfoBadge({
+                                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
+                                    mainContent: `Maximum ${instance_question.zone_max_points} points`,
+                                  })
                                 : ''}
                               ${instance_question.zone_has_best_questions
-                                ? renderEjs(
-                                    import.meta.url,
-                                    // TODO: inline in file as TypeScript component
-                                    "<%- include('../partials/zoneInfoBadge'); %>",
-                                    {
-                                      zoneInfo: {
-                                        popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
-                                        mainContent: `Best ${instance_question.zone_best_questions} questions`,
-                                      },
-                                    },
-                                  )
+                                ? ZoneInfoBadge({
+                                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                    mainContent: `Best ${instance_question.zone_best_questions} questions`,
+                                  })
                                 : ''}
                             </th>
                           </tr>
@@ -687,5 +672,28 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
                 </tr>
               `}
         `}
+  `;
+}
+
+function ZoneInfoBadge({
+  popoverContent,
+  mainContent,
+}: {
+  popoverContent: string;
+  mainContent: string;
+}) {
+  return html`
+    <a
+      tabindex="0"
+      class="btn btn-xs btn-secondary badge badge-secondary text-white font-weight-normal py-1"
+      role="button"
+      data-toggle="popover"
+      data-trigger="focus"
+      data-container="body"
+      data-html="true"
+      data-content="${popoverContent}"
+    >
+      ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
+    </a>
   `;
 }
