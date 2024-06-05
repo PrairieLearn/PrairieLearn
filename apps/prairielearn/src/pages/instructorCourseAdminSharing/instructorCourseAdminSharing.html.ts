@@ -75,7 +75,10 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
   let footer = '';
   if (sharing_set.deletable) {
     body = html`
-      Are you sure you would like to delete the sharing set "${sharing_set.name}"?
+      <p><strong>This action cannot be undone.</strong></p>
+      <p>
+        Are you sure you would like to delete the sharing set "${sharing_set.name}"?
+      </p>
     `;
     footer = html`
       <input type="hidden" name="__action" value="delete_sharing_set" />
@@ -85,12 +88,15 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
       <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
     `;
   } else {
-    footer = html`
+    body = html`
+      <p><strong>Unable to delete sharing set.</strong></p>
       <p>
-        Unable to delete sharing set because the sharing set has been shared 
+        This sharing set cannot be deleted because it has been shared 
         and at least one question has been added. Doing so would break the 
         assessments of other courses that have imported your questions.
       </p>
+      `;
+    footer = html`
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
   }
@@ -99,14 +105,13 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
     id: `deleteSharingSetModal-${sharing_set.id}`,
     body: body,
     footer: footer,
+    size: 'default',
   });
 }
 
 /*
  * TEST, better way to choose body and footer based on deletable?
  * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
- * 
- * Also, the modals are a different format. They are longer than the originals and not centered vertically.
 */
 function chooseSharingNameModal(canChooseSharingName, csrfToken) {
   let body = '';
@@ -119,10 +124,12 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
         <input class="form-control" type="text" name="course_sharing_name" required />
       </div>
       <p>
-        <strong
-          >Once you have shared a question either publicly or with another course, you
-          will no longer be able to change your sharing name.</strong
-        >
+        <strong>
+          Once you have shared a question either publicly or with another course, you
+          will no longer be able to change your sharing name.
+        </strong>
+      </p>
+      <p>
         Doing so would break the assessments of other courses that have imported your
         questions. It is recommended that you choose something short but descriptive.
         For example, if you're teaching a calculus course at a university that goes by
@@ -134,15 +141,18 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
     footer = html`
       <input type="hidden" name="__action" value="choose_sharing_name" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
     `;
   } else {
-    footer = html`
+    body = html`
+      <p><strong>Unable to change your course's sharing name.</strong></p>
       <p>
-        Unable to delete sharing set because the sharing set has been shared 
-        and at least one question has been added. Doing so would break the 
-        assessments of other courses that have imported your questions.
+        Your course's sharing name cannot be changed because at least one question has been shared.
+        Doing so would break the assessments of other courses that have imported your questions.
       </p>
+      `;
+    footer = html`
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
   }
@@ -151,6 +161,7 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
     id: 'chooseSharingNameModal',
     body: body,
     footer: footer,
+    size: 'default',
   });
 }
 
@@ -336,7 +347,6 @@ export const InstructorSharing = ({
                     </tr>
                   `,
                 )}
-              }
               </tbody>
             </table>
           </div>
