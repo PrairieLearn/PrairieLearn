@@ -283,7 +283,6 @@ def render(element_html, data):
     display_statements, display_options = data["params"].get(name, ([], []))
     options_placement_right = True
     options_placement_bottom = False
-    # if data["panel"] == "question":
     options_placement = pl.get_enum_attrib(
         element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
     )
