@@ -20,7 +20,6 @@ router.get(
     const result = await sqldb.queryOneRowAsync(sql.check_client_files, {
       question_id: question.id,
       filename,
-      type: question.type,
     });
     if (!result.rows[0].access_allowed) {
       throw new error.HttpStatusError(403, 'Access denied');

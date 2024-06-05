@@ -54,9 +54,17 @@ WITH
   ),
   setup_assessment_sets AS (
     INSERT INTO
-      assessment_sets (id, course_id)
+      assessment_sets (
+        id,
+        course_id,
+        abbreviation,
+        color,
+        heading,
+        name,
+        number
+      )
     VALUES
-      (1, 1)
+      (1, 1, 'HW', 'green1', 'Homeworks', 'Homework', 1)
   ),
   setup_assessments AS (
     INSERT INTO
