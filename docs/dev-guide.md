@@ -14,7 +14,8 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## Unit tests and integration tests
 
-- Tests are stored in the `apps/prairielearn/src/tests/` directory..
+- Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
+- Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
 - To run the tests during development, see [Running the test suite](./installingLocal.md#running-the-test-suite).
 
@@ -89,10 +90,10 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 - Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
 
   ```text
-  pages/instructorGradebook
+  apps/prairielearn/src/pages/instructorGradebook
   +-- instructorGradebook.ts         # main entry point, calls the SQL and renders the template
   +-- instructorGradebook.sql        # all SQL code specific to this page
-  +-- instructorGradebook.html.ts    # the template for the page
+  `-- instructorGradebook.html.ts    # the template for the page
   ```
 
 - The above `instructorGradebook` page is loaded from the top-level `server.js` with:
@@ -103,7 +104,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
   ]);
   ```
 
-- The `instructorGradebook.ts` main JS file is an Express `router` and has the basic structure:
+- `instructorGradebook.ts` exports an Express `Router` instance and has the following basic structure:
 
   ```javascript
   import { Router } from 'express';
@@ -191,7 +192,7 @@ import { QuestionSchema } from './lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const rows = await queryRow(sql.select_question, { question_id: 45 }, QuestionSchema);
+const question = await queryRow(sql.select_question, { question_id: 45 }, QuestionSchema);
 ```
 
 - To keep SQL code organized it is a good idea to use [CTEs (`WITH` queries)](https://www.postgresql.org/docs/current/static/queries-with.html). These are formatted like:
@@ -322,7 +323,7 @@ WHERE
 - For queries where it would be an error to not return exactly one result row:
 
   ```javascript
-  const question = await queryOneRow(sql.block_name, {}, QuestionSchema);
+  const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
 - Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
@@ -337,7 +338,7 @@ WHERE
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.query(sql.insert_assessment_question, {
+  await sqldb.queryAsync(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -353,9 +354,11 @@ WHERE
 - To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
 
   ```javascript
-  await sqldb.query(sql.select_questions, {
-    id_list: [7, 12, 45],
-  });
+  const questions = await sqldb.queryRows(
+    sql.select_questions,
+    { id_list: [7, 12, 45] },
+    QuestionSchema,
+  );
   ```
 
   ```sql
@@ -378,7 +381,7 @@ WHERE
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.query(sql.insert_data, {
+  await sqldb.queryAsync(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -589,4 +592,4 @@ console.log(idsEqual(12345, '12345'));
 // > true
 ```
 
-When using "modern" code that includes Zod-validated queries, you can typically use the `===` operator directly because all IDs are coerced to strings.
+"Modern" queries that use Zod validation will automatically coerce all IDs to strings. If you're confident that data on both sides of the comparison is coming from a Zod-validated query, you can use the `===` operator directly.
