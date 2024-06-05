@@ -1,10 +1,6 @@
 -- BLOCK select_news_items
 SELECT
   ni.*,
-  format_date_only_no_tz (
-    ni.date,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
   (an.id IS NOT NULL) AS unread
 FROM
   news_items AS ni

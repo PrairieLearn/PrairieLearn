@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
-  formatted_date: z.string(),
   unread: z.boolean(),
 });
 type NewsItemRow = z.infer<typeof NewsItemRowSchema>;
@@ -24,6 +24,8 @@ export function NewsItems({
     urlPrefix: string;
     news_item_notification_count?: number | null;
   };
+  const timeZone =
+    resLocals.course_instance?.display_timezone ?? resLocals.course?.display_timezone ?? 'UTC';
   return html`
     <!doctype html>
     <html lang="en">
@@ -58,7 +60,10 @@ export function NewsItems({
                           (newsItem) => html`
                             <tr>
                               <td class="align-middle" style="width: 1%; white-space: nowrap;">
-                                ${newsItem.formatted_date}
+                                ${formatDate(newsItem.date, timeZone, {
+                                  includeTime: false,
+                                  includeTz: false,
+                                })}
                               </td>
                               <td class="align-middle">
                                 <a href="${urlPrefix}/news_item/${newsItem.id}/">
