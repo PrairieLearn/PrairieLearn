@@ -65,7 +65,7 @@ export function QuestionComponent({
       data-url-prefix="${urlPrefix}"
       data-question-context="${question_context}"
       data-csrf-token="${__csrf_token}"
-      data-authorized-edit="${!authz_result?.authorized_edit ?? true}"
+      data-authorized-edit="${!authz_result?.authorized_edit ?? true ? 'true' : 'false'}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
@@ -78,7 +78,11 @@ export function QuestionComponent({
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
               <div class="card mb-4 question-block">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
-                  ${renderEjs(import.meta.url, "<%- include('questionTitle'); %>", resLocals)}
+                  ${renderEjs(
+                    import.meta.url,
+                    "<%- include('../pages/partials/questionTitle'); %>",
+                    { ...resLocals, question_context },
+                  )}
                   ${showCopyQuestionButton
                     ? html`
                         <button
@@ -94,17 +98,27 @@ export function QuestionComponent({
                     : ''}
                 </div>
                 <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-                ${renderEjs(import.meta.url, "<%- include('questionFooter'); %>", resLocals)}
+                ${renderEjs(
+                  import.meta.url,
+                  "<%- include('../pages/partials/questionFooter'); %>",
+                  { ...resLocals, question_context },
+                )}
               </div>
             </form>
           `
         : html`
             <div class="card mb-4">
               <div class="card-header bg-primary text-white">
-                ${renderEjs(import.meta.url, "<%- include('questionTitle'); %>", resLocals)}
+                ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionTitle'); %>", {
+                  ...resLocals,
+                  question_context,
+                })}
               </div>
               <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-              ${renderEjs(import.meta.url, "<%- include('questionFooter'); %>", resLocals)}
+              ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionFooter'); %>", {
+                ...resLocals,
+                question_context,
+              })}
             </div>
           `}
 
@@ -314,7 +328,7 @@ function SubmissionList({
   submissionHtmls: string[];
 }) {
   return submissions.map((submission, idx) =>
-    renderEjs(import.meta.url, "<%- include('submission'); %>", {
+    renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
       ...resLocals,
       submission,
       submissionCount: submissions.length,
