@@ -16,7 +16,7 @@ type QuestionContext =
   | 'public'
   | 'manual_grading';
 
-export function QuestionComponent({
+export function QuestionContainer({
   resLocals,
   question_context,
 }: {

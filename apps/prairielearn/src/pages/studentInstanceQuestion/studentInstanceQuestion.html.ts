@@ -3,7 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
-import { QuestionComponent } from '../../components/Question.html.js';
+import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
@@ -87,7 +87,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                       </div>
                     </div>
                   `
-                : QuestionComponent({ resLocals, question_context })}
+                : QuestionContainer({ resLocals, question_context })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

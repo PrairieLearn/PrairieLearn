@@ -1,7 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { QuestionComponent } from '../../components/Question.html.js';
+import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
@@ -43,7 +43,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${QuestionComponent({ resLocals, question_context: 'instructor' })}
+              ${QuestionContainer({ resLocals, question_context: 'instructor' })}
             </div>
 
             <div class="col-lg-3 col-sm-12">
