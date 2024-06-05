@@ -379,12 +379,9 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      // TODO: inline in file as TypeScript component
-                                      "<%- include('../partials/questionValue'); %>",
-                                      { value: instance_question.current_value },
-                                    )}
+                                    <span class="badge badge-primary">
+                                      ${formatPoints(instance_question.current_value)}
+                                    </span>
                                   </td>
                                   <td class="text-center">
                                     ${renderEjs(
