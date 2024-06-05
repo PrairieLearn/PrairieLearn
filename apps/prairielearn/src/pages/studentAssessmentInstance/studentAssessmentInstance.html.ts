@@ -163,6 +163,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                               Available credit: ${resLocals.authz_result.credit_date_string}
                               ${renderEjs(
                                 import.meta.url,
+                                // TODO: convert to TypeScript component
                                 "<%- include('../partials/studentAccessRulesPopover'); %>",
                                 {
                                   accessRules: resLocals.authz_result.access_rules,
@@ -206,6 +207,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                               Available credit: ${resLocals.authz_result.credit_date_string}
                               ${renderEjs(
                                 import.meta.url,
+                                // TODO: convert to TypeScript component
                                 "<%- include('../partials/studentAccessRulesPopover'); %>",
                                 {
                                   accessRules: resLocals.authz_result.access_rules,
@@ -275,6 +277,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                               ${instance_question.zone_has_max_points
                                 ? renderEjs(
                                     import.meta.url,
+                                    // TODO: inline in file as TypeScript component
                                     "<%- include('../partials/zoneInfoBadge'); %>",
                                     {
                                       zoneInfo: {
@@ -287,6 +290,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                               ${instance_question.zone_has_best_questions
                                 ? renderEjs(
                                     import.meta.url,
+                                    // TODO: inline in file as TypeScript component
                                     "<%- include('../partials/zoneInfoBadge'); %>",
                                     {
                                       zoneInfo: {
@@ -414,6 +418,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                                   <td class="text-center">
                                     ${renderEjs(
                                       import.meta.url,
+                                      // TODO: inline in file as TypeScript component
                                       "<%- include('../partials/questionValue'); %>",
                                       { value: instance_question.current_value },
                                     )}
@@ -587,9 +592,15 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
           </div>
 
           <!-- TODO: be selective about what we pass to these partials -->
-          ${renderEjs(import.meta.url, "<%- include('../partials/attachFilePanel') %>", resLocals)}
           ${renderEjs(
             import.meta.url,
+            // TODO: convert to TypeScript component
+            "<%- include('../partials/attachFilePanel') %>",
+            resLocals,
+          )}
+          ${renderEjs(
+            import.meta.url,
+            // TODO: convert to TypeScript component
             "<%- include('../partials/instructorInfoPanel') %>",
             resLocals,
           )}
@@ -609,6 +620,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
                   Best submission
                   ${renderEjs(
                     import.meta.url,
+                    // TODO: inline in file as TypeScript component
                     "<%- include('../partials/examQuestionHelpBestSubmission'); %>",
                   )}
                 </th>
@@ -616,6 +628,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
                   Available points
                   ${renderEjs(
                     import.meta.url,
+                    // TODO: inline in file as TypeScript component
                     "<%- include('../partials/examQuestionHelpAvailablePoints'); %>",
                   )}
                 </th>
@@ -623,6 +636,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
                   Awarded points
                   ${renderEjs(
                     import.meta.url,
+                    // TODO: inline in file as TypeScript component
                     "<%- include('../partials/examQuestionHelpAwardedPoints'); %>",
                   )}
                   %>
