@@ -30,7 +30,7 @@ router.get(
       NewsItemRowSchema,
     );
     if (newsItem == null) {
-      throw new HttpStatusError(404, 'Invalid news item ID');
+      throw new HttpStatusError(404, 'Not found');
     }
 
     const indexFilename = path.join(
@@ -63,7 +63,7 @@ router.get(
       NewsItemSchema,
     );
     if (newsItem == null) {
-      throw new HttpStatusError(404, 'Invalid news item ID');
+      throw new HttpStatusError(404, 'Not found');
     }
 
     const newsItemDir = path.join(
