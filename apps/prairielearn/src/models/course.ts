@@ -4,13 +4,7 @@ import { promisify } from 'util';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryRow,
-  queryAsync,
-  queryRows,
-  queryOptionalRow,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { Course, CourseSchema } from '../lib/db-types.js';
 
