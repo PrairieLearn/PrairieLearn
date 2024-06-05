@@ -33,7 +33,6 @@ async function selectCanDeleteSharingSet(sharing_set_id) {
     },
     z.boolean().nullable(),
   ));
-  console.log(`Can delete sharing set ${sharing_set_id}:`, can_delete); // TEST
   
   return (
     can_delete

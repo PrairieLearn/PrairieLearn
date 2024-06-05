@@ -51,6 +51,21 @@ async function setSharingName(courseId: string, name: string) {
   });
 }
 
+async function deleteSharingSet(courseId: string, sharing_set_id: number) {
+  const sharingUrl = sharingPageUrl(courseId);
+  const response = await fetchCheerio(sharingUrl);
+
+  const token = response.$('#test_csrf_token').text();
+  return await fetch(sharingUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __action: 'delete_sharing_set',
+      __csrf_token: token,
+      sharing_set_id: sharing_set_id.toString(),
+    }),
+  });
+}
+
 async function accessSharedQuestionAssessment(course_id: string) {
   const assessmentsUrl = `${baseUrl}/course_instance/${course_id}/instructor/instance_admin/assessments`;
   const assessmentsPage = await fetchCheerio(assessmentsUrl);
@@ -458,5 +473,193 @@ describe('Question Sharing', function () {
       );
       assert(publiclySharedQuestionRes.ok);
     });
+  });
+
+  describe('Test deleting sharing sets when it has been shared and it has a question', function () {
+    let exampleCourseSharingToken;
+    let testCourseSharingToken;
+    /*
+     * 3 tests
+      1. Try to delete when not shared, should succeed
+      2. Try to delete when only shared, no question, should succeed
+      3. Try to delete when only has a question, not shared, should succeed
+      4. Try to delete when shared AND has a question, should fail
+     */ 
+    
+    // 1. Try to delete when not shared, should succeed
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: 'not shared and no questions',
+        }),
+      });
+    });
+
+    step('Succeed deleting a sharing set when it has not been shared and has no questions', async () => {
+      const res = await deleteSharingSet(sharingCourse.id, 1); // TEST, use 1 as the id?
+      assert(res.status === 200);
+    });
+
+    // 2. Try to delete when only shared, no question, should succeed
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: 'not shared and no questions',
+        }),
+      });
+    });
+
+    step('Share sharing set with test course', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.ok);
+
+      const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
+      assert(sharingPage.ok);
+      assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'CONSUMING 101');
+    });
+
+    step('Succeed deleting a sharing set when it has been shared and has no questions', async () => {
+      const res = await deleteSharingSet(sharingCourse.id, 1); // TEST, use 1 as the id?
+      assert(res.status === 200);
+    });
+
+    // 3. Try to delete when only has a question, not shared, should succeed
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: 'not shared and no questions',
+        }),
+      });
+    });
+
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
+      const resGet = await fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
+
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
+    });
+
+    step('Succeed deleting a sharing set when it has not been shared and has a question', async () => {
+      const res = await deleteSharingSet(sharingCourse.id, 1); // TEST, use 1 as the id?
+      assert(res.status === 200);
+    });
+
+
+    // 4. Try to delete when shared AND has a question, should fail
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: 'not shared and no questions',
+        }),
+      });
+    });
+
+    step('Share sharing set with test course', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.ok);
+
+      const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
+      assert(sharingPage.ok);
+      assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'CONSUMING 101');
+    });
+
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
+      const resGet = await fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
+
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
+    });
+
+    step('Fail to delete a sharing set when it has been shared and has a question', async () => {
+      const res = await deleteSharingSet(sharingCourse.id, 1); // TEST, use 1 as the id?
+      assert(res.status === 400);
+    });
+
   });
 });
