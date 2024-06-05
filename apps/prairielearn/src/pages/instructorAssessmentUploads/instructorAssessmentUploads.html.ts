@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
@@ -25,6 +26,7 @@ export function InstructorAssessmentUploads({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
       </head>
       <body>
         <script>
