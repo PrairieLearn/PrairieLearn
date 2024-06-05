@@ -868,14 +868,14 @@ export const IssueSchema = z.object({
 export type Issue = z.infer<typeof IssueSchema>;
 
 export const AssessmentSetSchema = z.object({
-  abbreviation: z.string().nullable(),
-  color: z.string().nullable(),
+  abbreviation: z.string(),
+  color: z.string(),
   course_id: IdSchema,
-  heading: z.string().nullable(),
+  heading: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
-  number: z.number().nullable(),
+  name: z.string(),
+  number: z.number(),
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
