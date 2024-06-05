@@ -243,8 +243,8 @@ def prepare(element_html, data):
         display_statements.append(keyed_statement)
         correct_matches.append(match_index)
 
-        data["params"][name] = (display_statements, display_options)
-        data["correct_answers"][name] = correct_matches
+    data["params"][name] = (display_statements, display_options)
+    data["correct_answers"][name] = correct_matches
 
 
 def parse(element_html, data):
