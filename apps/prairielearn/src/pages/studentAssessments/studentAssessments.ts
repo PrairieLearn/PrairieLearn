@@ -1,18 +1,17 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const rows = await sqldb.queryRows(
+    const rows = await queryRows(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
