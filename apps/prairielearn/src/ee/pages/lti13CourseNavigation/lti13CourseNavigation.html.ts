@@ -226,7 +226,7 @@ export function Lti13CourseNavigationDone({
           <ul>
             <li>
               The course instance <code>allowAccess</code> rules still apply and may need to be
-              configured for the course.
+              configured.
             </li>
           </ul>
 
