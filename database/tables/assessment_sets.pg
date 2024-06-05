@@ -1,11 +1,12 @@
 columns
-    abbreviation: text
-    color: text
+    abbreviation: text not null
+    color: text not null
     course_id: bigint not null
-    heading: text
+    heading: text not null
     id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
-    name: text
-    number: integer
+    implicit: boolean not null default false
+    name: text not null
+    number: integer not null
 
 indexes
     assessment_sets_pkey: PRIMARY KEY (id) USING btree (id)

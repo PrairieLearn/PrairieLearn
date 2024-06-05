@@ -1,7 +1,12 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets';
+
+import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -10,8 +15,7 @@ import {
   TagSchema,
   TopicSchema,
   ZoneSchema,
-} from '../../lib/db-types';
-import { Modal } from '../../components/Modal.html';
+} from '../../lib/db-types.js';
 
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
@@ -26,19 +30,11 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   sync_errors: QuestionSchema.shape.sync_errors,
   sync_warnings_ansified: z.string().optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema.nullable(),
+  topic: TopicSchema,
   qid: QuestionSchema.shape.qid,
   start_new_zone: z.boolean().nullable(),
   start_new_alternative_group: z.boolean().nullable(),
-  tags: z
-    .array(
-      z.object({
-        color: TagSchema.shape.color,
-        id: TagSchema.shape.id,
-        name: TagSchema.shape.name,
-      }),
-    )
-    .nullable(),
+  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
   title: QuestionSchema.shape.title,
   zone_best_questions: ZoneSchema.shape.best_questions,
   zone_has_best_questions: z.boolean().nullable(),
@@ -61,7 +57,7 @@ export function InstructorAssessmentQuestions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
         <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
         <script src="${assetPath('localscripts/histmini.js')}"></script>
@@ -82,7 +78,7 @@ export function InstructorAssessmentQuestions({
               });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -108,7 +104,7 @@ export function InstructorAssessmentQuestions({
             `,
           })}
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -227,7 +223,7 @@ function AssessmentQuestionsTable({
                           </span>
                         `}
                     ${question.title}
-                    ${renderEjs(__filename, "<%- include('../partials/issueBadge') %>", {
+                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
                       urlPrefix,
                       count: question.open_issue_count,
                       issueQid: question.qid,
@@ -269,16 +265,8 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>
-                  ${renderEjs(__filename, "<%- include('../partials/topic'); %>", {
-                    topic: question.topic,
-                  })}
-                </td>
-                <td>
-                  ${renderEjs(__filename, "<%- include('../partials/tags'); %>", {
-                    tags: question.tags,
-                  })}
-                </td>
+                <td>${TopicBadge(question.topic)}</td>
+                <td>${TagBadgeList(question.tags)}</td>
                 <td>
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,
@@ -335,7 +323,7 @@ function AssessmentQuestionsTable({
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
                         return html`${renderEjs(
-                          __filename,
+                          import.meta.url,
                           "<%- include('../partials/assessment'); %>",
                           {
                             urlPrefix,

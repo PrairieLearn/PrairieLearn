@@ -1,21 +1,22 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import * as jose from 'node-jose';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import jose from 'node-jose';
 import { z } from 'zod';
-import * as _ from 'lodash';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { getInstitution } from '../../lib/institution';
-import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html';
-import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
-import { getCanonicalHost } from '../../../lib/url';
-import { config } from '../../../lib/config';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
+import { config } from '../../../lib/config.js';
+import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { getCanonicalHost } from '../../../lib/url.js';
+import { getInstitution } from '../../lib/institution.js';
 
-const sql = loadSqlEquiv(__filename);
+import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 // Middleware to check for feature and access
@@ -210,6 +211,7 @@ router.post(
         name_attribute: req.body.name_attribute,
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
+        email_attribute: req.body.email_attribute,
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });

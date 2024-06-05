@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/signed-token",
-  "version": "1.0.15",
+  "version": "2.0.2",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -11,16 +12,15 @@
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput"
   },
+  "dependencies": {
+    "base64url": "^3.0.1",
+    "debug": "^4.3.5",
+    "lodash": "^4.17.21"
+  },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.12.2",
-    "mocha": "^10.4.0",
-    "typescript": "^5.4.3"
-  },
-  "dependencies": {
-    "base64url": "^3.0.1",
-    "debug": "^4.3.4",
-    "lodash": "^4.17.21"
+    "@types/node": "^20.13.0",
+    "typescript": "^5.4.5"
   }
 }

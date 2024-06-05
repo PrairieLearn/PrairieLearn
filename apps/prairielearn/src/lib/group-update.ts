@@ -1,6 +1,8 @@
-import * as _ from 'lodash';
+import csvtojson from 'csvtojson';
+import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import csvtojson = require('csvtojson');
+import { z } from 'zod';
+
 import * as namedLocks from '@prairielearn/named-locks';
 import {
   loadSqlEquiv,
@@ -9,13 +11,12 @@ import {
   queryOptionalRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import { z } from 'zod';
 
-import { IdSchema, UserSchema } from './db-types';
-import { createServerJob } from './server-jobs';
-import { GroupOperationError, createGroup, createOrAddToGroup } from './groups';
+import { IdSchema, UserSchema } from './db-types.js';
+import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
+import { createServerJob } from './server-jobs.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),

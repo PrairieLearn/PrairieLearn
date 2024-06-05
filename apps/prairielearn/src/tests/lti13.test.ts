@@ -1,17 +1,19 @@
-import { step } from 'mocha-steps';
 import { assert } from 'chai';
+import express from 'express';
 import fetchCookie from 'fetch-cookie';
-import getPort = require('get-port');
-import * as nodeJose from 'node-jose';
+import getPort from 'get-port';
 import * as jose from 'jose';
-import express = require('express');
+import { step } from 'mocha-steps';
+import nodeJose from 'node-jose';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import { fetchCheerio } from './helperClient';
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
-import { selectUserByUid } from '../models/user';
-import { Lti13UserSchema } from '../lib/db-types';
+
+import { config } from '../lib/config.js';
+import { Lti13UserSchema } from '../lib/db-types.js';
+import { selectUserByUid } from '../models/user.js';
+
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 

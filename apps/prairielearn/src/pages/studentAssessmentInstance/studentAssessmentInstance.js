@@ -1,12 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import * as assessment from '../../lib/assessment';
+import * as assessment from '../../lib/assessment.js';
+import {
+  AssessmentInstanceSchema,
+  DateFromISOString,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
+import { uploadFile, deleteFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -14,18 +21,12 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups';
-import {
-  AssessmentInstanceSchema,
-  DateFromISOString,
-  IdSchema,
-  InstanceQuestionSchema,
-} from '../../lib/db-types';
-import { uploadFile, deleteFile } from '../../lib/file-store';
-import { idsEqual } from '../../lib/id';
+} from '../../lib/groups.js';
+import { idsEqual } from '../../lib/id.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
@@ -219,10 +220,17 @@ router.get(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
       },
       InstanceQuestionRowSchema,
     );
+    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+    });
+    for (const instance_question of res.locals.instance_questions) {
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
+      );
+    }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
@@ -283,7 +291,7 @@ router.get(
         }
       }
     }
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 

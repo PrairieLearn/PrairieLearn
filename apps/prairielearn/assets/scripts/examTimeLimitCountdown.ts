@@ -1,7 +1,8 @@
-import { setupCountdown } from './lib/countdown';
-import { saveQuestionFormData } from './lib/confirmOnUnload';
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+
+import { saveQuestionFormData } from './lib/confirmOnUnload.js';
+import { setupCountdown } from './lib/countdown.js';
 
 onDocumentReady(() => {
   const timeLimitData = decodeData<{

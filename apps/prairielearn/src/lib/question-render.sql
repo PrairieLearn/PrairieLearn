@@ -30,7 +30,8 @@ SELECT
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS formatted_date,
   u.uid AS user_uid,
-  u.name AS user_name
+  u.name AS user_name,
+  u.email AS user_email
 FROM
   issues AS i
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
@@ -278,4 +279,24 @@ WHERE
   AND (
     $instance_question_id::bigint IS NULL
     OR v.instance_question_id = $instance_question_id
+  );
+
+-- BLOCK select_is_shared
+SELECT
+  EXISTS (
+    SELECT
+      *
+    FROM
+      sharing_set_questions
+    WHERE
+      question_id = $question_id
+  )
+  OR EXISTS (
+    SELECT
+      *
+    FROM
+      questions
+    WHERE
+      id = $question_id
+      AND shared_publicly
   );

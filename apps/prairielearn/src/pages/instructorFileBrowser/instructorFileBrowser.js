@@ -1,21 +1,23 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import { Router } from 'express';
-import * as error from '@prairielearn/error';
-
 import * as path from 'node:path';
-import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors';
-import { contains } from '@prairielearn/path-utils';
-import * as fs from 'fs-extra';
+
+import { AnsiUp } from 'ansi_up';
 import * as async from 'async';
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import { fileTypeFromFile } from 'file-type';
+import fs from 'fs-extra';
 import hljs from 'highlight.js';
-import * as FileType from 'file-type';
 import { isBinaryFile } from 'isbinaryfile';
-import { encodePath } from '../../lib/uri-util';
-import * as editorUtil from '../../lib/editorUtil';
-import AnsiUp from 'ansi_up';
-import { getCourseOwners } from '../../lib/course';
-import { getPaths } from '../../lib/instructorFiles';
+
+import * as error from '@prairielearn/error';
+import { contains } from '@prairielearn/path-utils';
+
+import { getCourseOwners } from '../../lib/course.js';
+import * as editorUtil from '../../lib/editorUtil.js';
+import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 const router = Router();
 
@@ -95,7 +97,7 @@ async function browseFile(file_browser) {
   const isBinary = await isBinaryFile(file_browser.paths.workingPath);
   file_browser.isBinary = isBinary;
   if (isBinary) {
-    const type = await FileType.fromFile(file_browser.paths.workingPath);
+    const type = await fileTypeFromFile(file_browser.paths.workingPath);
     if (type) {
       if (type?.mime.startsWith('image')) {
         file_browser.isImage = true;
@@ -174,7 +176,7 @@ router.get(
       getCourseOwners(res.locals.course.id)
         .then((owners) => {
           res.locals.course_owners = owners;
-          res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
         })
         .catch((err) => next(err));
       return;
@@ -210,7 +212,7 @@ router.get(
     }
 
     res.locals.file_browser = file_browser;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -332,11 +334,6 @@ router.post(
         filePath,
         fileContents: req.file.buffer,
       });
-
-      if (!(await editor.shouldEdit())) {
-        res.redirect(req.originalUrl);
-        return;
-      }
 
       const serverJob = await editor.prepareServerJob();
       try {

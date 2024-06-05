@@ -1,13 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as helperServer from '../helperServer';
-import * as helperClient from '../helperClient';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions';
+import { config } from '../../lib/config.js';
+import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import * as helperClient from '../helperClient.js';
+import * as helperServer from '../helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkPermissions(users) {
   const result = await sqldb.queryAsync(sql.select_permissions, {
@@ -53,6 +54,7 @@ function runTest(context) {
       uid: 'instructor@example.com',
       name: 'Instructor User',
       uin: '100000000',
+      email: 'instructor@example.com',
       cr: 'Owner',
       cir: null,
     },
@@ -60,6 +62,7 @@ function runTest(context) {
       uid: 'staff03@example.com',
       name: 'Staff Three',
       uin: null,
+      email: 'staff03@example.com',
       cr: null,
       cir: null,
     },
@@ -67,6 +70,7 @@ function runTest(context) {
       uid: 'staff04@example.com',
       name: 'Staff Four',
       uin: null,
+      email: 'staff04@example.com',
       cr: null,
       cir: null,
     },
@@ -74,6 +78,7 @@ function runTest(context) {
       uid: 'staff05@example.com',
       name: 'Staff Five',
       uin: null,
+      email: 'staff05@example.com',
       cr: null,
       cir: null,
     },
@@ -89,6 +94,7 @@ function runTest(context) {
         user.uid,
         user.name,
         user.uin,
+        user.email,
         'Shibboleth',
       ]);
     }

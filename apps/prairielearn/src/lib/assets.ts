@@ -1,15 +1,19 @@
 import * as crypto from 'node:crypto';
-import express = require('express');
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { hashElement, type HashElementNode } from 'folder-hash';
-import * as compiledAssets from '@prairielearn/compiled-assets';
 
-import { config } from './config';
-import { APP_ROOT_PATH } from './paths';
-import staticNodeModules from '../middlewares/staticNodeModules';
-import elementFiles from '../pages/elementFiles/elementFiles';
+import express from 'express';
+import { hashElement, type HashElementNode } from 'folder-hash';
+
+import * as compiledAssets from '@prairielearn/compiled-assets';
 import { HtmlSafeString } from '@prairielearn/html';
+
+import staticNodeModules from '../middlewares/staticNodeModules.js';
+import elementFiles from '../pages/elementFiles/elementFiles.js';
+
+import { config } from './config.js';
+import { APP_ROOT_PATH } from './paths.js';
 
 let assetsPrefix: string | null = null;
 let elementsHash: HashElementNode | null = null;
@@ -64,8 +68,9 @@ function getPackageNameForAssetPath(assetPath: string): string {
  * Returns the version of the given package within `node_modules`.
  */
 function getPackageVersion(packageName: string): string {
+  const require = createRequire(import.meta.url);
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require(`${packageName}/package.json`).version;
   } catch (e) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
@@ -174,7 +179,13 @@ export function applyMiddleware(app: express.Application) {
       immutable: !config.devMode,
     }),
   );
-  router.use('/elements/:cachebuster', elementFiles);
+  router.use(
+    '/elements/:cachebuster',
+    elementFiles({
+      publicQuestionEndpoint: false,
+      coreElements: true,
+    }),
+  );
 
   app.use(assetsPrefix, router);
 }
@@ -203,7 +214,7 @@ export function nodeModulesAssetPath(assetPath: string): string {
 }
 
 /**
- * Returns the path a given core element asset path should be served from.
+ * Returns the path a given core element asset should be loaded from.
  * Will include a hash of the `/elements` directory in the URL to allow for
  * assets to be immutably cached by clients.
  */
@@ -214,43 +225,64 @@ export function coreElementAssetPath(assetPath: string): string {
 }
 
 /**
- * Returns the path a given course element asset should be served from.
- * Takes into account the URL prefix and course hash to allow for
- * clients to immutably cache assets.
+ * Returns the path that client files for a given course element should
+ * be loaded from. Takes into account the URL prefix and course hash to
+ * allow for clients to immutably cache assets.
  */
-export function courseElementAssetPath(
-  courseHash: string,
-  urlPrefix: string,
-  assetPath: string,
-): string {
+export function courseElementAssetBasePath(courseHash: string | null, urlPrefix: string): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
     // non-cached path so that we don't accidentally instruct the client
     // to indefinitely cache a file without a proper cachebuster.
-    return `${urlPrefix}/elements/${assetPath}`;
+    return `${urlPrefix}/elements`;
   }
 
-  return `${urlPrefix}/cacheableElements/${courseHash}/${assetPath}`;
+  return `${urlPrefix}/cacheableElements/${courseHash}`;
 }
 
 /**
- * Returns the path a given course element extension asset should be served from.
- * Takes into account the URL prefix and course hash to allow for
- * clients to immutably cache assets.
+ * Returns the path a given course element asset should be loaded from.
+ * Takes into account the URL prefix and course hash to allow for clients to
+ * immutably cache assets.
  */
-export function courseElementExtensionAssetPath(
-  courseHash: string,
+export function courseElementAssetPath(
+  courseHash: string | null,
   urlPrefix: string,
   assetPath: string,
+): string {
+  return `${courseElementAssetBasePath(courseHash, urlPrefix)}/${assetPath}`;
+}
+
+/**
+ * Returns the path that client files for a given course element extension should
+ * be loaded from. Takes into account the URL prefix and course hash to
+ * allow for clients to immutably cache assets.
+ */
+export function courseElementExtensionAssetBasePath(
+  courseHash: string | null,
+  urlPrefix: string,
 ): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
     // non-cached path so that we don't accidentally instruct the client
     // to indefinitely cache a file without a proper cachebuster.
-    return `${urlPrefix}/elementExtensions/${assetPath}`;
+    return `${urlPrefix}/elementExtensions`;
   }
 
-  return `${urlPrefix}/cacheableElementExtensions/${courseHash}/${assetPath}`;
+  return `${urlPrefix}/cacheableElementExtensions/${courseHash}`;
+}
+
+/**
+ * Returns the path a given course element extension asset should be loaded from.
+ * Takes into account the URL prefix and course hash to allow for clients to
+ * immutably cache assets.
+ */
+export function courseElementExtensionAssetPath(
+  courseHash: string | null,
+  urlPrefix: string,
+  assetPath: string,
+): string {
+  return `${courseElementExtensionAssetBasePath(courseHash, urlPrefix)}/${assetPath}`;
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {

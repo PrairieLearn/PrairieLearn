@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { IdSchema, Institution, User } from '../../lib/db-types';
-import { type Purchase } from '../../ee/lib/billing/purchases';
-import { isEnterprise } from '../../lib/license';
-import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
+import { type Purchase } from '../../ee/lib/billing/purchases.js';
+import { IdSchema, Institution, User } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -40,7 +41,7 @@ export function UserSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
         <script>
@@ -48,7 +49,7 @@ export function UserSettings({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/navbar') %>", {
           ...resLocals,
           navPage: 'user_settings',
         })}
@@ -61,16 +62,20 @@ export function UserSettings({
             <table class="table table-sm two-column-description">
               <tbody>
                 <tr>
-                  <th>User ID (UID)</th>
+                  <th>UID</th>
                   <td>${authn_user.uid}</td>
                 </tr>
                 <tr>
-                  <th>User Name</th>
+                  <th>Name</th>
                   <td>${authn_user.name}</td>
                 </tr>
                 <tr>
                   <th>Unique Identifier (UIN)</th>
                   <td>${authn_user.uin}</td>
+                </tr>
+                <tr>
+                  <th>Email</th>
+                  <td>${authn_user.email}</td>
                 </tr>
                 <tr>
                   <th>Institution</th>

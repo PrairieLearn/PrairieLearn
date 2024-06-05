@@ -1,28 +1,29 @@
 // @ts-check
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
-import * as _ from 'lodash';
+
+import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import * as schemas from '../schemas';
-import * as jsonLoad from '../lib/json-load';
+import * as jsonLoad from '../lib/json-load.js';
+import * as schemas from '../schemas/index.js';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 
 async function loadNewsItems() {
   const news_items = [];
-  const dirs = await fs.readdir(__dirname);
+  const dirs = await fs.readdir(import.meta.dirname);
   for (const dir of dirs) {
     // Skip anything that doesn't match the expected directory name format.
     const match = DIRECTORY_REGEX.exec(dir);
     if (!match) continue;
 
     const info = await jsonLoad.readInfoJSON(
-      path.join(__dirname, dir, 'info.json'),
+      path.join(import.meta.dirname, dir, 'info.json'),
       schemas.infoNewsItem,
     );
 

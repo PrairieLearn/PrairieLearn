@@ -1,12 +1,14 @@
-import { promisify } from 'util';
 import { exec } from 'child_process';
+import { promisify } from 'util';
+
 import { z } from 'zod';
-import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
+
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { Course, CourseSchema } from '../lib/db-types';
+import { Course, CourseSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({

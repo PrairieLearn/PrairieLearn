@@ -1,17 +1,20 @@
-import * as express from 'express';
 import * as path from 'path';
-import asyncHandler = require('express-async-handler');
-import * as fs from 'fs-extra';
-import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors';
-import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
-import sha256 = require('crypto-js/sha256');
+
+import sha256 from 'crypto-js/sha256.js';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
-import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
-import { getAvailableTimezones } from '../../lib/timezones';
-import { getPaths } from '../../lib/instructorFiles';
-import { b64EncodeUnicode } from '../../lib/base64-util';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { getAvailableTimezones } from '../../lib/timezones.js';
+
+import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
 const router = express.Router();
 
@@ -83,11 +86,6 @@ router.post(
         editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
         origHash,
       });
-
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
 
       const serverJob = await editor.prepareServerJob();
       try {

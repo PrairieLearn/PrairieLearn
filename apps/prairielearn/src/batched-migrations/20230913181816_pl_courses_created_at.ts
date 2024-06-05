@@ -1,12 +1,13 @@
-import execa = require('execa');
-import * as fs from 'fs-extra';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import { z } from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { DateFromISOString, IdSchema } from '../lib/db-types';
+import { DateFromISOString, IdSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 async function getEarliestCommitDateForCourse(coursePath: string | null): Promise<Date | null> {
   if (coursePath == null || !(await fs.pathExists(coursePath))) {

@@ -1,5 +1,5 @@
+import parsePostgresInterval from 'postgres-interval';
 import { z } from 'zod';
-import parsePostgresInterval = require('postgres-interval');
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -144,6 +144,7 @@ export type Institution = z.infer<typeof InstitutionSchema>;
 
 export const SamlProviderSchema = z.object({
   certificate: z.string(),
+  email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
   issuer: z.string(),
@@ -183,6 +184,7 @@ export type GroupConfig = z.infer<typeof GroupConfigSchema>;
 
 export const UserSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
+  email: z.string().nullable(),
   institution_id: IdSchema,
   lti_context_id: z.string().nullable(),
   lti_course_instance_id: IdSchema.nullable(),
@@ -216,6 +218,7 @@ export const QuestionSchema = z.object({
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
   shared_publicly: z.boolean(),
+  shared_publicly_with_source: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -296,22 +299,23 @@ export const WorkspaceLogSchema = z.object({
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
 
 export const Lti13InstanceSchema = z.object({
+  access_token_expires_at: z.date().nullable(),
+  access_tokenset: z.any().nullable(),
+  client_params: z.any().nullable(),
+  created_at: z.date(),
+  custom_fields: z.any().nullable(),
+  deleted_at: z.date().nullable(),
+  email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
-  created_at: z.date(),
-  deleted_at: z.date().nullable(),
-  platform: z.string(),
-  name: z.string(),
-  tool_platform_name: z.string().nullable(),
-  keystore: z.any().nullable(),
   issuer_params: z.any().nullable(),
-  client_params: z.any().nullable(),
-  custom_fields: z.any().nullable(),
-  access_tokenset: z.any().nullable(),
-  access_token_expires_at: z.date().nullable(),
+  keystore: z.any().nullable(),
+  name_attribute: z.string().nullable(),
+  name: z.string(),
+  platform: z.string(),
+  tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
-  name_attribute: z.string().nullable(),
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
@@ -389,6 +393,7 @@ export const TagSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -399,6 +404,7 @@ export const TopicSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
+  implicit: z.boolean(),
   name: z.string().nullable(),
   number: z.number().nullable(),
 });
@@ -862,13 +868,14 @@ export const IssueSchema = z.object({
 export type Issue = z.infer<typeof IssueSchema>;
 
 export const AssessmentSetSchema = z.object({
-  abbreviation: z.string().nullable(),
-  color: z.string().nullable(),
+  abbreviation: z.string(),
+  color: z.string(),
   course_id: IdSchema,
-  heading: z.string().nullable(),
+  heading: z.string(),
   id: IdSchema,
-  name: z.string().nullable(),
-  number: z.number().nullable(),
+  implicit: z.boolean(),
+  name: z.string(),
+  number: z.number(),
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
@@ -943,3 +950,33 @@ export const JobSequenceSchema = z.object({
   type: z.string().nullable(),
   user_id: IdSchema.nullable(),
 });
+export type JobSequence = z.infer<typeof JobSequenceSchema>;
+
+export const LtiCredentialsSchema = z.object({
+  consumer_key: z.string().nullable(),
+  course_instance_id: z.string().nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  secret: z.string().nullable(),
+});
+export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
+
+export const AssessmentAccessRuleSchema = z.object({
+  active: z.boolean(),
+  assessment_id: IdSchema,
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
+  exam_uuid: z.string().nullable(),
+  id: IdSchema,
+  mode: ModeSchema,
+  number: z.number(),
+  password: z.string().nullable(),
+  seb_config: z.any().nullable(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
+  uids: z.string().array().nullable(),
+});
+export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;

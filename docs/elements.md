@@ -58,7 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -706,19 +706,20 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                    |
-| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
-| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                           |
-| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                    |
-| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
-| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                   |
-| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
-| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                          |
-| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                         |
-| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
-| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
-| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
+| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
+| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                       |
+| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
+| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
+| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
+| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
+| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                                      |
+| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                                     |
+| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
+| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
+| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.             |
+| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 

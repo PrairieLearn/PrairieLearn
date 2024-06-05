@@ -1,9 +1,11 @@
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { z } from 'zod';
-import { type CourseInstance, CourseInstanceSchema } from '../lib/db-types';
-import { idsEqual } from '../lib/id';
 
-const sql = loadSqlEquiv(__filename);
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+
+import { type CourseInstance, CourseInstanceSchema } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
   formatted_start_date: z.string(),

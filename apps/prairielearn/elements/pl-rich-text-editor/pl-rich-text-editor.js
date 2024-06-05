@@ -45,10 +45,10 @@
     if (contents && renderer) contents = renderer.makeHtml(contents);
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
-    quill.setContents(quill.clipboard.convert(contents));
+    quill.setContents(quill.clipboard.convert({ html: contents }));
 
     quill.on('text-change', function () {
-      let contents = rtePurify.sanitize(quill.root.innerHTML, rtePurifyConfig);
+      let contents = rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
@@ -63,7 +63,7 @@
 
   // Override default implementation of 'formula'
 
-  var Embed = Quill.imports.parchment.Embed;
+  var Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
     static create(value) {
