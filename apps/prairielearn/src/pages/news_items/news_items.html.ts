@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { formatDate } from '@prairielearn/formatter';
+import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -60,10 +60,7 @@ export function NewsItems({
                           (newsItem) => html`
                             <tr>
                               <td class="align-middle" style="width: 1%; white-space: nowrap;">
-                                ${formatDate(newsItem.date, timeZone, {
-                                  includeTime: false,
-                                  includeTz: false,
-                                })}
+                                ${formatDateYMD(newsItem.date, timeZone)}
                               </td>
                               <td class="align-middle">
                                 <a href="${urlPrefix}/news_item/${newsItem.id}/">

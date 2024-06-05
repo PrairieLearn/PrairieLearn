@@ -1,4 +1,4 @@
-import { formatDate } from '@prairielearn/formatter';
+import { formatDateYMD } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -16,13 +16,9 @@ export function NewsItem({
   userIsInstructor: boolean;
 }) {
   const { urlPrefix } = resLocals as { urlPrefix: string };
-  const formattedDate = formatDate(
+  const formattedDate = formatDateYMD(
     newsItem.date,
     resLocals.course_instance?.display_timezone ?? resLocals.course?.display_timezone ?? 'UTC',
-    {
-      includeTime: false,
-      includeTz: false,
-    },
   );
   return html`
     <!doctype html>
