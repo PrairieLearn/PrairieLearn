@@ -515,7 +515,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // Load issues last in case there are issues from rendering.
   //
   // We'll only load the data that will be needed for this specific page render.
-  // The checks here should match those in `pages/partials/question.ejs`.
+  // The checks here should match those in `components/Question.html.ts`.
   const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
   locals.issues = await sqldb.queryRows(
     sql.select_issues,

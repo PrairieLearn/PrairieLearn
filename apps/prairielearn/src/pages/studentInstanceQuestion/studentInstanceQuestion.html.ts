@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
+import { QuestionComponent } from '../../components/Question.html.js';
 
 export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
   const question_context =
@@ -86,10 +87,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                       </div>
                     </div>
                   `
-                : renderEjs(import.meta.url, "<%- include('../partials/question'); %>", {
-                    ...resLocals,
-                    question_context,
-                  })}
+                : QuestionComponent({ resLocals, question_context })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

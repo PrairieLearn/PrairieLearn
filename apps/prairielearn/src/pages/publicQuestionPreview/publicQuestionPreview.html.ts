@@ -2,6 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { QuestionComponent } from '../../components/Question.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
@@ -36,10 +37,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${renderEjs(import.meta.url, "<%- include('../partials/question') %>", {
-                ...resLocals,
-                question_context: 'public',
-              })}
+              ${QuestionComponent({ resLocals, question_context: 'public' })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

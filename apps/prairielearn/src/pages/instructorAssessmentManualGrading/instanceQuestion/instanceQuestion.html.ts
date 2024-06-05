@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { QuestionComponent } from '../../../components/Question.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
 
@@ -77,10 +78,7 @@ export function InstanceQuestion({
             : ''}
           <div class="row">
             <div class="col-lg-8 col-12">
-              ${renderEjs(import.meta.url, "<%- include('../../partials/question') %>", {
-                ...resLocals,
-                question_context: 'manual_grading',
-              })}
+              ${QuestionComponent({ resLocals, question_context: 'manual_grading' })}
             </div>
 
             <div class="col-lg-4 col-12">
