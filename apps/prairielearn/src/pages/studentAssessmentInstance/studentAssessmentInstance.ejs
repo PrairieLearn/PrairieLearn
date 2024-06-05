@@ -85,8 +85,7 @@
             <i class="fas fa-users"></i>
           <% } %>
 
-          <% // TODO: limit to current user %>
-          <% if (instance_role === 'Staff' && authz_data.has_course_instance_permission_edit) { %>
+          <% if (can_delete_assessment_instance) { %>
             <form method="POST" class="ml-auto">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <input type="hidden" name="__action" value="delete_instance">

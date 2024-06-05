@@ -120,6 +120,16 @@ async function processDeleteFile(req, res) {
   await deleteFile(file.id, res.locals.authn_user.user_id);
 }
 
+function canDeleteAssessmentInstance(resLocals) {
+  // A user can delete an assessment instance from this page if they are
+  // a) a member of course staff with access to this course instance, and
+  // b) own the assessment instance, either directly or via group membership.
+  return (
+    resLocals.authz_data.has_course_instance_permission_view &&
+    resLocals.authz_result.authorized_edit
+  );
+}
+
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
@@ -206,10 +216,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_instance') {
-      if (
-        res.locals.instance_role !== 'Staff' ||
-        !res.locals.authz_data.has_course_instance_permission_edit
-      ) {
+      if (!canDeleteAssessmentInstance(res.locals)) {
         throw new error.HttpStatusError(403, 'Access denied');
       }
 
@@ -309,6 +316,8 @@ router.get(
         }
       }
     }
+
+    res.locals.can_delete_assessment_instance = canDeleteAssessmentInstance(res.locals);
 
     res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
