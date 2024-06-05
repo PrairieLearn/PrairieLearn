@@ -540,7 +540,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                         `}
                   `
                 : ''}
-              ${resLocals.authz_result.authorized_edit
+              ${!resLocals.authz_result.authorized_edit
                 ? html`
                     <div class="alert alert-warning mt-4" role="alert">
                       You are viewing the assessment of a different user and so are not authorized
