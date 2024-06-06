@@ -1,6 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { config } from '../lib/config.js';
 import { CourseInstance, Issue, Submission, User } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
@@ -35,7 +36,6 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     authz_result,
-    devMode,
     is_administrator,
     showTrueAnswer,
     showSubmissions,
@@ -61,9 +61,7 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) =>
-        IssuePanel({ issue, course_instance, authz_data, devMode, is_administrator }),
-      )}
+      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -124,7 +122,6 @@ export function IssuePanel({
   issue,
   course_instance,
   authz_data,
-  devMode,
   is_administrator,
 }: {
   issue: Issue & {
@@ -135,7 +132,6 @@ export function IssuePanel({
   };
   course_instance: CourseInstance;
   authz_data: Record<string, any>;
-  devMode: boolean;
   is_administrator: boolean;
 }) {
   // There are three situations in which the issue need not be anonymized:
@@ -214,7 +210,7 @@ export function IssuePanel({
         </tbody>
       </table>
 
-      ${devMode || authz_data.has_course_permission_view
+      ${config.devMode || authz_data.has_course_permission_view
         ? html`
             <div class="card-body border border-bottom-0 border-left-0 border-right-0">
               ${issue.system_data?.courseErrData
