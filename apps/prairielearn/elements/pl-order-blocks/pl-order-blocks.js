@@ -20,36 +20,38 @@ window.PLOrderBlocks = function (uuid, options) {
     }
     let fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
     let blocks = fullContainer.querySelectorAll('*.pl-order-block');
-    console.log(blocks);
 
     for (let block of blocks) {
+      block.setAttribute('selected', false);
+
       block.addEventListener('click', () => {
         block.focus();
       });
-      block.setAttribute('selected', false);
+
+      block.addEventListener('blur', () => {
+        block.setAttribute('selected', false);
+      });
+
       block.addEventListener('keydown', (ev) => {
-        console.log('selected = ' + block.getAttribute('selected'));
         pressedKeys[ev.key] = true;
         if (block.getAttribute('selected') === 'false') {
           if (ev.key === 'Enter') {
             block.setAttribute('selected', true);
           }
         } else {
+          ev.preventDefault();
           switch (ev.key) {
             case 'ArrowDown':
               if (block.nextElementSibling) {
                 block.nextElementSibling.insertAdjacentElement('afterend', block);
               }
-              ev.preventDefault();
-              block.focus();
               break;
             case 'ArrowUp':
               if (block.previousElementSibling) {
                 block.previousElementSibling.insertAdjacentElement('beforebegin', block);
               }
-              ev.preventDefault();
-              block.focus();
               break;
+            case 'Delete':
             case 'Backspace':
               if (inDropzone(block)) {
                 block.style.marginLeft = '0px';
@@ -67,36 +69,29 @@ window.PLOrderBlocks = function (uuid, options) {
                   $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
                 }
               }
-              ev.preventDefault();
-              block.focus();
               break;
             case 'Enter':
               if (!inDropzone(block)) {
                 $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
               }
-              ev.preventDefault();
-              block.focus();
               break;
             case 'Tab':
               if (inDropzone(block) && enableIndentation) {
                 let currentIndent = getIndentation(block);
                 if (pressedKeys['Shift'] && currentIndent > 0) {
                   block.style.marginLeft = (currentIndent - 1) * TABWIDTH + 'px';
-                } else if (currentIndent < maxIndent) {
+                } else if (currentIndent < maxIndent && !pressedKeys['Shift']) {
                   block.style.marginLeft = (currentIndent + 1) * TABWIDTH + 'px';
                 }
               }
-              ev.preventDefault();
-              block.focus();
               break;
             case 'Escape':
               block.setAttribute('selected', false);
-              block.blur();
-              ev.preventDefault();
               break;
             default:
               break;
           }
+          block.focus();
         }
       });
       block.addEventListener('keyup', (ev) => {
