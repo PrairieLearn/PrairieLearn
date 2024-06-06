@@ -46,7 +46,6 @@ export function QuestionContainer({
 
   return html`
     <div
-      id="question-0"
       class="question-container"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
