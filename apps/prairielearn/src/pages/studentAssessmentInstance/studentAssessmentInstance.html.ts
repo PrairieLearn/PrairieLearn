@@ -5,7 +5,12 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { Assessment, AssessmentInstance, AssessmentSet } from '../../lib/db-types.js';
+import {
+  Assessment,
+  AssessmentInstance,
+  AssessmentSet,
+  InstanceQuestion,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 
 export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<string, any> }) {
@@ -32,7 +37,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
       <body>
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
-              assessment_instance: resLocals.assessment_instance,
+              instance_questions: resLocals.instance_questions,
               csrfToken: resLocals.__csrf_token,
             })
           : ''}
@@ -730,18 +735,20 @@ function ExamQuestionHelpAwardedPoints() {
 }
 
 function ConfirmFinishModal({
-  assessment_instance,
+  instance_questions,
   csrfToken,
 }: {
-  assessment_instance: any;
+  instance_questions: InstanceQuestion[];
   csrfToken: string;
 }) {
+  const all_questions_answered = instance_questions.every((iq) => iq.status !== 'unanswered');
+
   return Modal({
     id: 'confirmFinishModal',
     title: 'All done?',
     body: html`
-      ${assessment_instance.all_questions_answered
-        ? html` <div class="alert alert-warning">There are still unanswered questions.</div> `
+      ${!all_questions_answered
+        ? html`<div class="alert alert-warning">There are still unanswered questions.</div>`
         : ''}
       <p class="text-danger">
         <strong>Warning</strong>: You will not be able to answer any more questions after finishing
