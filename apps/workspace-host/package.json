@@ -28,7 +28,6 @@
     "archiver": "^7.0.1",
     "async": "^3.2.5",
     "async-mutex": "^0.5.0",
-    "async-stacktrace": "^0.0.2",
     "body-parser": "^1.20.2",
     "debug": "^4.3.5",
     "dockerode": "^4.0.2",
