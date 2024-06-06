@@ -24,8 +24,7 @@ export function NewsItems({
     urlPrefix: string;
     news_item_notification_count?: number | null;
   };
-  const timeZone =
-    resLocals.course_instance?.display_timezone ?? resLocals.course?.display_timezone ?? 'UTC';
+  const timeZone = 'UTC';
   return html`
     <!doctype html>
     <html lang="en">

@@ -16,10 +16,7 @@ export function NewsItem({
   userIsInstructor: boolean;
 }) {
   const { urlPrefix } = resLocals as { urlPrefix: string };
-  const formattedDate = formatDateYMD(
-    newsItem.date,
-    resLocals.course_instance?.display_timezone ?? resLocals.course?.display_timezone ?? 'UTC',
-  );
+  const formattedDate = formatDateYMD(newsItem.date, 'UTC');
   return html`
     <!doctype html>
     <html lang="en">
