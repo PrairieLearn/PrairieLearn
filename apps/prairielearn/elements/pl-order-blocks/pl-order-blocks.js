@@ -18,7 +18,8 @@ window.PLOrderBlocks = function (uuid, options) {
     function getIndentation(block) {
       return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
     }
-    var blocks = Array.from($(optionsElementId)[0].children);
+    let fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+    let blocks = fullContainer.querySelectorAll('*.pl-order-block');
     console.log(blocks);
 
     for (let block of blocks) {
@@ -27,11 +28,12 @@ window.PLOrderBlocks = function (uuid, options) {
       });
       block.setAttribute('selected', false);
       block.addEventListener('keydown', (ev) => {
-        console.log(ev.key);
         console.log('selected = ' + block.getAttribute('selected'));
         pressedKeys[ev.key] = true;
-        if (ev.key === 'Enter' && block.getAttribute('selected') === 'false') {
-          block.setAttribute('selected', true);
+        if (block.getAttribute('selected') === 'false') {
+          if (ev.key === 'Enter') {
+            block.setAttribute('selected', true);
+          }
         } else {
           switch (ev.key) {
             case 'ArrowDown':
@@ -222,9 +224,7 @@ window.PLOrderBlocks = function (uuid, options) {
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create() {
-      console.log('creating ' + sortables);
       placePairingIndicators();
-      initializeKeyboardHandling(optionsElementId, dropzoneElementId);
       setAnswer();
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
@@ -251,6 +251,7 @@ window.PLOrderBlocks = function (uuid, options) {
       correctPairing(ui);
     },
   });
+  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
 
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
