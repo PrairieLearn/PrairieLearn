@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as async from 'async';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
@@ -470,50 +469,34 @@ function testEdit(params) {
 }
 
 async function createCourseFiles() {
-  await async.series([
-    async () => await deleteCourseFiles(),
-    async () => {
-      // Ensure that the default branch is master, regardless of how git
-      // is configured on the host machine.
-      await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-        cwd: '.',
-        env: process.env,
-      });
-    },
-    async () => {
-      await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-        cwd: '.',
-        env: process.env,
-      });
-    },
-    async () => {
-      await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-    },
-    async () => {
-      await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-    },
-    async () => {
-      await execa('git', ['commit', '-m', 'initial commit'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-    },
-    async () => {
-      await execa('git', ['push'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-    },
-    async () => {
-      await execa('git', ['clone', courseOriginDir, courseDevDir], {
-        cwd: '.',
-        env: process.env,
-      });
-    },
-  ]);
+  await deleteCourseFiles();
+  // Ensure that the default branch is master, regardless of how git
+  // is configured on the host machine.
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await execa('git', ['add', '-A'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', 'initial commit'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['push'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], {
+    cwd: '.',
+    env: process.env,
+  });
 }
 
 async function deleteCourseFiles() {
