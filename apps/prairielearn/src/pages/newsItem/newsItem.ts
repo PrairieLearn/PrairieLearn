@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
@@ -11,7 +10,7 @@ import { callRow, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres'
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 
-import { NewsItem } from './news_item.html.js';
+import { NewsItem } from './newsItem.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();

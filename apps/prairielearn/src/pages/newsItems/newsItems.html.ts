@@ -24,7 +24,6 @@ export function NewsItems({
     urlPrefix: string;
     news_item_notification_count?: number | null;
   };
-  const timeZone = 'UTC';
   return html`
     <!doctype html>
     <html lang="en">
@@ -59,7 +58,7 @@ export function NewsItems({
                           (newsItem) => html`
                             <tr>
                               <td class="align-middle" style="width: 1%; white-space: nowrap;">
-                                ${formatDateYMD(newsItem.date, timeZone)}
+                                ${formatDateYMD(newsItem.date, 'UTC')}
                               </td>
                               <td class="align-middle">
                                 <a href="${urlPrefix}/news_item/${newsItem.id}/">
