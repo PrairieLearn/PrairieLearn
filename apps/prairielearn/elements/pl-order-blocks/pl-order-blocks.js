@@ -22,21 +22,21 @@ window.PLOrderBlocks = function (uuid, options) {
     let blocks = fullContainer.querySelectorAll('*.pl-order-block');
 
     for (let block of blocks) {
-      block.setAttribute('selected', false);
-
       block.addEventListener('click', () => {
         block.focus();
       });
 
       block.addEventListener('blur', () => {
-        block.setAttribute('selected', false);
+        if (block.classList.contains('selected')) {
+          block.classList.remove('selected');
+        }
       });
 
       block.addEventListener('keydown', (ev) => {
         pressedKeys[ev.key] = true;
-        if (block.getAttribute('selected') === 'false') {
+        if (!block.classList.contains('selected')) {
           if (ev.key === 'Enter') {
-            block.setAttribute('selected', true);
+            block.classList.add('selected');
           }
         } else {
           ev.preventDefault();
@@ -86,7 +86,9 @@ window.PLOrderBlocks = function (uuid, options) {
               }
               break;
             case 'Escape':
-              block.setAttribute('selected', false);
+              if (block.classList.contains('selected')) {
+                block.classList.remove('selected');
+              }
               break;
             default:
               break;
