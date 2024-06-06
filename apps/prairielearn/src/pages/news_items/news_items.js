@@ -1,23 +1,35 @@
 // @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+import { NewsItemRowSchema, NewsItems } from './news_items.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryAsync(sql.select_news_items, {
-      user_id: res.locals.authn_user.user_id,
-      course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
-      course_id: res.locals.course ? res.locals.course.id : null,
-    });
-    res.locals.news_items = result.rows;
+    const userIsInstructor = await callRow(
+      'users_is_instructor_in_any_course',
+      [res.locals.authn_user.user_id],
+      z.boolean(),
+    );
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    const newsItems = await queryRows(
+      sql.select_news_items,
+      {
+        user_id: res.locals.authn_user.user_id,
+        course_instance_id: res.locals.course_instance?.id,
+        course_id: res.locals.course?.id,
+        all_items: userIsInstructor,
+      },
+      NewsItemRowSchema,
+    );
+    res.send(NewsItems({ resLocals: res.locals, newsItems, userIsInstructor }));
   }),
 );
 
