@@ -281,8 +281,6 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_statements, display_options = data["params"].get(name, ([], []))
-    options_placement_right = True
-    options_placement_bottom = False
     options_placement = pl.get_enum_attrib(
         element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
     )
