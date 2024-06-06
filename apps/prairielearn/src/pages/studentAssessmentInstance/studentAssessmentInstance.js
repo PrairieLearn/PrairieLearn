@@ -123,9 +123,9 @@ async function processDeleteFile(req, res) {
 /**
  * This is used to conditionally display/permit a shortcut to delete the
  * assessment instance. Usually, the only way to delete an assessment instance
- * is from the "Students" tab of an assessment. However, when one is iterating
- * on or testing an assessment, it can be tedious to constantly go back to that
- * page to delete the instance in order to recreate it.
+ * is from the "Students" tab of an assessment. However, when a staff member is
+ * iterating on or testing an assessment, it can be tedious to constantly go
+ * back to that page to delete the instance in order to recreate it.
  *
  * The shortcut is a "Delete assessment instance" button on the assessment
  * instance page. It's only displayed if the user has the necessary permissions:
