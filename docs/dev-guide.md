@@ -87,53 +87,11 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 - All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
 
-- Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
+- Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For a real-world example, consider the page where users can accept the PrairieLearn terms and conditions, located at [`apps/prairielearn/src/ee/pages/terms`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms). That directory contains the following files:
 
-  ```text
-  apps/prairielearn/src/pages/instructorGradebook
-  +-- instructorGradebook.ts         # main entry point, calls the SQL and renders the template
-  +-- instructorGradebook.sql        # all SQL code specific to this page
-  `-- instructorGradebook.html.ts    # the template for the page
-  ```
-
-- The above `instructorGradebook` page is loaded from the top-level `server.js` with:
-
-  ```javascript
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
-    (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
-  ]);
-  ```
-
-- `instructorGradebook.ts` exports an Express `Router` instance and has the following basic structure:
-
-  ```javascript
-  import { Router } from 'express';
-  import asyncHandler from 'express-async-handler';
-
-  import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-
-  import { InstructorGradebook, UserScoresRowSchema } from './instructorGradebook.html.js';
-
-  const router = Router();
-  const sql = loadSqlEquiv(import.meta.url);
-
-  router.get(
-    '/',
-    asyncHandler(async (req, res, next) => {
-      const rows = await queryRows(
-        sql.select_user_scores,
-        {
-          course_instance_id: res.params.courseInstanceId,
-        },
-        UserScoresRowSchema,
-      );
-
-      res.send(InstructorGradebook({ rows, resLocals: res.locals }));
-    }),
-  );
-
-  export default router;
-  ```
+  - [`terms.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.ts): The main entry point for the page. It runs SQL queries and renders a template.
+  - [`terms.sql`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.sql): All SQL queries for the page.
+  - [`terms.html.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.html.ts): The template for the page. Exports a function that returns an HTML document.
 
 - When possible, prefer explicitly passing individual typed properties to templates instead of adding properties to `res.locals`. However, `res.locals` may be used for data coming from middlewares that will be used on many pages.
 
