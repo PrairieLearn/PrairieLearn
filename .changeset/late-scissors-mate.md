@@ -2,4 +2,4 @@
 '@prairielearn/formatter': minor
 ---
 
-Support for formatting dates without time
+Add functions `formatDateYMD` and `formatDateYMDHM`'
