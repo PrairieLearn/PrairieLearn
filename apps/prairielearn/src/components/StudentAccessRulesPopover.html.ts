@@ -40,7 +40,7 @@ export function StudentAccessRulesPopover({
   `;
 }
 
-function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: any[] }) {
+function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
     <table class="table">
       <tr>
@@ -50,7 +50,7 @@ function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: any[] 
       </tr>
       ${accessRules.map(
         (accessRule) => html`
-          <tr class="${accessRule.active ? 'info' : ''}">
+          <tr>
             <td>${accessRule.credit}</td>
             <td>${accessRule.start_date}</td>
             <td>${accessRule.end_date}</td>

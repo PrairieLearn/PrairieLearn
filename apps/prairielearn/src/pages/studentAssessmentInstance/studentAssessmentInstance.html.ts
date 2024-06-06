@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { Assessment, AssessmentInstance, AssessmentSet } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 
 export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<string, any> }) {
@@ -19,11 +20,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
               {
                 serverRemainingMS: resLocals.assessment_instance_remaining_ms,
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-                serverUpdateURL:
-                  resLocals.urlPrefix +
-                  '/assessment_instance/' +
-                  resLocals.assessment_instance.id +
-                  '/time_remaining',
+                serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: resLocals.authz_result.authorized_edit,
                 csrfToken: resLocals.__csrf_token,
               },
@@ -52,7 +49,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
             </div>
 
             <div class="card-body">
-              ${resLocals.assessment.allow_real_time_grading && resLocals.assessment_instance.open
+              ${!resLocals.assessment.allow_real_time_grading && resLocals.assessment_instance.open
                 ? html`
                     <div class="alert alert-warning">
                       This assessment will only be graded after it is finished. You should save
@@ -80,20 +77,12 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                           : ''}
                       </div>
                       <div class="col-md-9 col-sm-12">
-                        ${resLocals.assessment_instance.open && resLocals.authz_result.active
-                          ? html`
-                              Assessment is <strong>open</strong> and you can answer questions.
-                              <br />
-                              Available credit: ${resLocals.authz_result.credit_date_string}
-                              ${StudentAccessRulesPopover({
-                                accessRules: resLocals.authz_result.access_rules,
-                                assessmentSetName: resLocals.assessment_set.name,
-                                assessmentNumber: resLocals.assessment.number,
-                              })}
-                            `
-                          : html`
-                              Assessment is <strong>closed</strong> and you cannot answer questions.
-                            `}
+                        ${AssessmentStatus({
+                          assessment: resLocals.assessment,
+                          assessment_set: resLocals.assessment_set,
+                          assessment_instance: resLocals.assessment_instance,
+                          authz_result: resLocals.authz_result,
+                        })}
                       </div>
                     `
                   : html`
@@ -119,20 +108,12 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                         })}
                       </div>
                       <div class="col-md-6 col-sm-12">
-                        ${resLocals.assessment_instance.open && resLocals.authz_result.active
-                          ? html`
-                              Assessment is <strong>open</strong> and you can answer questions.
-                              <br />
-                              Available credit: ${resLocals.authz_result.credit_date_string}
-                              ${StudentAccessRulesPopover({
-                                accessRules: resLocals.authz_result.access_rules,
-                                assessmentSetName: resLocals.assessment_set.name,
-                                assessmentNumber: resLocals.assessment.number,
-                              })}
-                            `
-                          : html`
-                              Assessment is <strong>closed</strong> and you cannot answer questions.
-                            `}
+                        ${AssessmentStatus({
+                          assessment: resLocals.assessment,
+                          assessment_set: resLocals.assessment_set,
+                          assessment_instance: resLocals.assessment_instance,
+                          authz_result: resLocals.authz_result,
+                        })}
                       </div>
                     `}
                 ${resLocals.assessment.group_work
@@ -189,7 +170,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
                                   (resLocals.assessment.allow_real_time_grading ? 4 : 2)
                                 : 2) + (resLocals.assessment.type === 'Exam' ? 1 : 0)}"
                             >
-                              <span class="mr-1"> ${instance_question.zone_title} </span>
+                              <span class="mr-1">${instance_question.zone_title}</span>
                               ${instance_question.zone_has_max_points
                                 ? ZoneInfoBadge({
                                     popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
@@ -504,6 +485,33 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
   `.toString();
 }
 
+function AssessmentStatus({
+  assessment,
+  assessment_set,
+  assessment_instance,
+  authz_result,
+}: {
+  assessment: Assessment;
+  assessment_set: AssessmentSet;
+  assessment_instance: AssessmentInstance;
+  authz_result: any;
+}) {
+  if (assessment_instance.open && authz_result.active) {
+    return html`
+      Assessment is <strong>open</strong> and you can answer questions.
+      <br />
+      Available credit: ${authz_result.credit_date_string}
+      ${StudentAccessRulesPopover({
+        accessRules: authz_result.access_rules,
+        assessmentSetName: assessment_set.name,
+        assessmentNumber: assessment.number,
+      })}
+    `;
+  }
+
+  return html`Assessment is <strong>closed</strong> and you cannot answer questions.`;
+}
+
 function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, any> }) {
   const trailingColumns =
     resLocals.assessment.type === 'Exam'
@@ -628,7 +636,7 @@ function RowLabel({
   return html`
     ${lockedPopoverText != null
       ? html`
-          <span class="text-muted">${rowLabelText} </span>
+          <span class="text-muted">${rowLabelText}</span>
           <a
             tabindex="0"
             class="btn btn-xs border text-secondary ml-1"

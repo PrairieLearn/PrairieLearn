@@ -29,13 +29,6 @@ export function InstructorAssessmentUploads({
         ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
       </head>
       <body>
-        <script>
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-            this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
