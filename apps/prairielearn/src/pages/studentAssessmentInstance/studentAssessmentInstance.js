@@ -120,10 +120,33 @@ async function processDeleteFile(req, res) {
   await deleteFile(file.id, res.locals.authn_user.user_id);
 }
 
+/**
+ * This is used to conditionally display/permit a shortcut to delete the
+ * assessment instance. Usually, the only way to delete an assessment instance
+ * is from the "Students" tab of an assessment. However, when one is iterating
+ * on or testing an assessment, it can be tedious to constantly go back to that
+ * page to delete the instance in order to recreate it.
+ *
+ * The shortcut is a "Delete assessment instance" button on the assessment
+ * instance page. It's only displayed if the user has the necessary permissions:
+ *
+ * - The user must have "view" permission for the course instance.
+ * - The user must own the assessment instance, either directly or via group membership.
+ *
+ * Note that we do not check for course permissions. This addressed the case
+ * where some user was an enrolled student in course instance X and was later
+ * added as course staff to course instance Y. In this case, the user should
+ * not be able to delete their old assessment instances in course instance X.
+ *
+ * We also do not require the user to have "edit" permission for the course
+ * instance. A TA could be assigned to test an upcoming assessment, but may
+ * only have "view" permission for the course instance. In this specific case,
+ * it'd still be helpful for the TA to be able to delete and recreate their
+ * assessment instances to better multiple variants of the assessment.
+ *
+ * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
+ */
 function canDeleteAssessmentInstance(resLocals) {
-  // A user can delete an assessment instance from this page if they are
-  // a) a member of course staff with access to this course instance, and
-  // b) own the assessment instance, either directly or via group membership.
   return (
     resLocals.authz_data.has_course_instance_permission_view &&
     resLocals.authz_result.authorized_edit
