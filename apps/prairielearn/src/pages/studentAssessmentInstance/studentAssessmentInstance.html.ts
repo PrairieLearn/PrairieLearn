@@ -4,6 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
+import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   Assessment,
@@ -13,7 +14,13 @@ import {
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 
-export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<string, any> }) {
+export function StudentAssessmentInstance({
+  showTimeLimitExpiredModal,
+  resLocals,
+}: {
+  showTimeLimitExpiredModal: boolean;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -41,6 +48,7 @@ export function StudentAssessmentInstance({ resLocals }: { resLocals: Record<str
               csrfToken: resLocals.__csrf_token,
             })
           : ''}
+        ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'assessment_instance',

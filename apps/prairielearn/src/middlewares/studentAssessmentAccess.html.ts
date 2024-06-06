@@ -1,15 +1,18 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 
 export function StudentAssessmentAccess({
   resLocals,
   showClosedScore = true,
+  showTimeLimitExpiredModal = false,
 }: {
   resLocals: Record<string, any>;
   showClosedScore?: boolean;
+  showTimeLimitExpiredModal?: boolean;
 }) {
   const { assessment, assessment_set, assessment_instance, authz_result } = resLocals as {
     assessment: Assessment;
@@ -28,6 +31,7 @@ export function StudentAssessmentAccess({
           ...resLocals,
           navPage: '',
         })}
+        ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

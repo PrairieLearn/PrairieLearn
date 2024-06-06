@@ -293,7 +293,12 @@ router.get(
       }
     }
 
-    res.send(StudentAssessmentInstance({ resLocals: res.locals }));
+    res.send(
+      StudentAssessmentInstance({
+        showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
