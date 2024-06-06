@@ -980,3 +980,15 @@ export const AssessmentAccessRuleSchema = z.object({
   uids: z.string().array().nullable(),
 });
 export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
+
+export const NewsItemSchema = z.object({
+  author: z.string().nullable(),
+  date: DateFromISOString,
+  directory: z.string(),
+  id: IdSchema,
+  order_by: z.number(),
+  title: z.string(),
+  uuid: z.string(),
+  visible_to_students: z.boolean(),
+});
+export type NewsItem = z.infer<typeof NewsItemSchema>;
