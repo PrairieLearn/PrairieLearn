@@ -53,7 +53,19 @@ window.PLOrderBlocks = function (uuid, options) {
             case 'Backspace':
               if (inDropzone(block)) {
                 block.style.marginLeft = '0px';
-                $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
+                if (block.hasAttribute('data-distractor-bin')) {
+                  let distractorBinId = block.getAttribute('data-distractor-bin');
+                  let distractorBin = fullContainer
+                    .querySelector(
+                      '.pl-order-blocks-pairing-indicator[data-distractor-bin=' +
+                        distractorBinId +
+                        ']',
+                    )
+                    .querySelector('.inner-list');
+                  distractorBin.insertAdjacentElement('afterbegin', block);
+                } else {
+                  $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
+                }
               }
               ev.preventDefault();
               block.focus();
