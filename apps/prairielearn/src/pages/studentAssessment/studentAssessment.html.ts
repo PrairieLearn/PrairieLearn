@@ -2,7 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Assessment, User } from '../../lib/db-types.js';
+import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
 
 export function StudentAssessment({ resLocals }: { resLocals: Record<string, any> }) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
@@ -131,35 +131,7 @@ function StudentGroupControls({ resLocals }: { resLocals: Record<string, any> })
   const { groupSize, groupConfig, startAllowed, user, __csrf_token, notInGroup, assessment } =
     resLocals;
   if (notInGroup) {
-    if (!groupConfig.student_authz_join && !groupConfig.student_authz_create) {
-      return html`
-        <p class="text-center">
-          This is a group homework. Please wait for the instructor to assign groups.
-        </p>
-      `;
-    }
-
-    return html`
-      <p class="text-center">
-        ${groupConfig.minimum > 1
-          ? html`
-              This is a group assessment. A group must have
-              ${groupConfig.maximum != null
-                ? `between ${groupConfig.minimum} and ${groupConfig.maximum}`
-                : `at least ${groupConfig.minimum}`}
-              students.
-            `
-          : html`
-              This assessment can be done individually or in groups.
-              ${groupConfig.maximum
-                ? `A group must have no more than ${groupConfig.maximum} students.`
-                : ''}
-              <br />To work individually, you must also create a group, but you don't need to share
-              your join code.
-            `}
-      </p>
-      ${renderEjs(import.meta.url, "<%- include('../shared/groupWorkInitial.ejs'); %>", resLocals)}
-    `;
+    return GroupCreationJoinForm({ groupConfig, __csrf_token });
   }
 
   return html`
@@ -177,5 +149,98 @@ function StudentGroupControls({ resLocals }: { resLocals: Record<string, any> })
           </p>
         `
       : ''}
+  `;
+}
+
+function GroupCreationJoinForm({
+  groupConfig,
+  __csrf_token,
+}: {
+  groupConfig: GroupConfig;
+  __csrf_token: string;
+}) {
+  if (!groupConfig.student_authz_join && !groupConfig.student_authz_create) {
+    return html`
+      <p class="text-center">
+        This is a group homework. Please wait for the instructor to assign groups.
+      </p>
+    `;
+  }
+
+  return html`
+    <p class="text-center">
+      ${(groupConfig.minimum ?? 0) > 1
+        ? html`
+            This is a group assessment. A group must have
+            ${groupConfig.maximum != null
+              ? `between ${groupConfig.minimum} and ${groupConfig.maximum}`
+              : `at least ${groupConfig.minimum}`}
+            students.
+          `
+        : html`
+            This assessment can be done individually or in groups.
+            ${groupConfig.maximum
+              ? `A group must have no more than ${groupConfig.maximum} students.`
+              : ''}
+            <br />To work individually, you must also create a group, but you don't need to share
+            your join code.
+          `}
+    </p>
+    <div class="container-fluid">
+      <div class="row">
+        ${groupConfig.student_authz_create
+          ? html`
+              <div class="col-sm bg-light py-4 px-4 border">
+                <form id="create-form" name="create-form" method="POST">
+                  <h6>Group name</h6>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="groupNameInput"
+                    name="groupName"
+                    maxlength="30"
+                    placeholder="e.g. teamOne"
+                    aria-describedby="groupNameHelp"
+                  />
+                  <small id="groupNameHelp" class="form-text text-muted"
+                    >Group names can only contain letters and numbers, with maximum length of 30
+                    characters.</small
+                  >
+                  <div class="mt-4 d-flex justify-content-center">
+                    <div class="form-group mb-0">
+                      <input type="hidden" name="__action" value="create_group" />
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button type="submit" class="btn btn-primary">Create new group</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            `
+          : ''}
+        ${groupConfig.student_authz_join
+          ? html`
+              <div class="col-sm bg-light py-4 px-4 border">
+                <form id="joingroup-form" name="joingroup-form" method="POST">
+                  <h6>Join code</h6>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="joinCodeInput"
+                    name="join_code"
+                    placeholder="abcd-1234"
+                  />
+                  <div class="mt-4 d-flex justify-content-center">
+                    <div class="form-group mb-0">
+                      <input type="hidden" name="__action" value="join_group" />
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button type="submit" class="btn btn-primary">Join group</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            `
+          : ''}
+      </div>
+    </div>
   `;
 }
