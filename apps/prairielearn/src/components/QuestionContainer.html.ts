@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -463,7 +464,84 @@ function QuestionFooterContent({
         </span>
       </div>
     </div>
-    ${renderEjs(import.meta.url, "<%- include('../pages/partials/submitRateFooter') %>", resLocals)}
+    ${SubmitRateFooter({
+      questionContext,
+      showGradeButton,
+      disableGradeButton,
+      assessment_question,
+      allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+    })}
+  `;
+}
+
+function SubmitRateFooter({
+  questionContext,
+  showGradeButton,
+  disableGradeButton,
+  assessment_question,
+  allowGradeLeftMs,
+}: {
+  questionContext: QuestionContext;
+  showGradeButton: boolean;
+  disableGradeButton: boolean;
+  assessment_question: AssessmentQuestion;
+  allowGradeLeftMs: number;
+}) {
+  if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
+  const popoverContent = html`
+    <p>
+      Once you have clicked <strong>Save &amp; Grade</strong>, you will need to wait
+      ${assessment_question.grade_rate_minutes}
+      ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'} before you can grade
+      again.
+    </p>
+    <p>
+      You can still save your answer as frequently as you like.
+      ${questionContext === 'student_exam'
+        ? `If your assessment ends before your last saved answer is graded, it will be automatically graded for you.`
+        : ''}
+    </p>
+  `;
+  return html`
+    <div class="row">
+      <div class="col d-flex justify-content-between">
+        <span class="d-flex">
+          ${disableGradeButton
+            ? html`
+                <small class="font-italic ml-2 mt-1 submission-suspended-msg"
+                  >Grading possible in <span id="submission-suspended-display"></span>
+                  <div id="submission-suspended-progress" class="border border-info"></div>
+                </small>
+                ${EncodedData(
+                  {
+                    serverTimeLimitMS: assessment_question.grade_rate_minutes * 60 * 1000,
+                    serverRemainingMS: allowGradeLeftMs,
+                  },
+                  'submission-suspended-data',
+                )}
+              `
+            : ''}
+        </span>
+        <span class="d-flex align-self-center">
+          <small class="font-italic">
+            Can only be graded once every ${assessment_question.grade_rate_minutes}
+            ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
+          </small>
+          <a
+            class="btn btn-xs"
+            data-toggle="popover"
+            data-html="true"
+            data-content="${escapeHtml(popoverContent)}"
+            data-placement="auto"
+            data-trigger="focus"
+            data-container="body"
+            tabindex="0"
+          >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+          </a>
+        </span>
+      </div>
+    </div>
   `;
 }
 
