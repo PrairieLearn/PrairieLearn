@@ -273,6 +273,24 @@ ${samlProvider?.certificate ?? ''}</textarea
               </small>
             </div>
 
+            <div class="form-group">
+              <label for="email_attribute">Email attribute</label>
+              <input
+                type="text"
+                class="form-control"
+                name="email_attribute"
+                id="email_attribute"
+                value="${samlProvider?.email_attribute ?? ''}"
+                aria-describedby="emailAttributeHelp"
+              />
+              <small id="emailAttributeHelp" class="form-text text-muted">
+                The email attribute should contain the email address of the user, like
+                "jwang123@example.com". This may be the same as the UID attribute for some
+                institutions. You should confirm that the values received in this attribute are
+                routable email addresses.
+              </small>
+            </div>
+
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary" name="__action" value="save">Save</button>
             <a class="btn btn-secondary" href="">Cancel</a>

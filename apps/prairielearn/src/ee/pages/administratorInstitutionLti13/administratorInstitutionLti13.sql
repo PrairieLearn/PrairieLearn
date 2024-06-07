@@ -74,7 +74,8 @@ UPDATE lti13_instances
 SET
   name_attribute = $name_attribute,
   uid_attribute = $uid_attribute,
-  uin_attribute = $uin_attribute
+  uin_attribute = $uin_attribute,
+  email_attribute = $email_attribute
 WHERE
   institution_id = $institution_id
   AND id = $unsafe_lti13_instance_id

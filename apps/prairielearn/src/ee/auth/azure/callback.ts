@@ -36,6 +36,7 @@ router.post(
       uid: user.upn,
       name: user.displayName,
       uin: null,
+      email: user._json.email || null,
       provider: 'Azure',
     };
 
