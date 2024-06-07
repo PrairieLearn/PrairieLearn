@@ -13,6 +13,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
+import { QuestionFooter } from '../components/QuestionContainer.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -601,7 +602,7 @@ function buildGradingJobStats(job) {
  * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
  * @param  {string | null} param.variant_id The id of the variant (for authorization check)
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
- * @param  {String?} param.questionContext The rendering context of this question
+ * @param  {import('../components/QuestionContainer.html.js').QuestionContext} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
  * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
  * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
@@ -780,26 +781,20 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      const renderParams = {
-        variant,
-        question,
-        assessment_question,
-        instance_question,
-        question_context: questionContext,
-        __csrf_token: csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
-        instance_question_info: { previous_variants },
-        ...locals,
-      };
-
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionFooter.ejs',
-      );
-      panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
+      panels.questionPanelFooter = QuestionFooter({
+        resLocals: {
+          variant,
+          question,
+          assessment_question,
+          instance_question,
+          question_context: questionContext,
+          __csrf_token: csrfToken,
+          authz_result: { authorized_edit: authorizedEdit },
+          instance_question_info: { previous_variants },
+          ...locals,
+        },
+        questionContext,
+      }).toString();
     },
     async () => {
       if (!renderScorePanels) return;
