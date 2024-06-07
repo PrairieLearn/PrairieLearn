@@ -21,6 +21,8 @@ import {
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
 
+import { StudentAssessment } from './studentAssessment.html.js';
+
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -75,7 +77,7 @@ router.get(
           }
         }
       }
-      res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.send(StudentAssessment({ resLocals: res.locals }));
     } else {
       const result = await queryAsync(sql.select_single_assessment_instance, params);
       if (result.rowCount === 0) {
@@ -112,7 +114,7 @@ router.get(
               );
             }
           }
-          res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.send(StudentAssessment({ resLocals: res.locals }));
         } else if (res.locals.assessment.type === 'Homework') {
           const time_limit_min = null;
           const client_fingerprint_id = await getClientFingerprintId(req, res);
@@ -128,7 +130,7 @@ router.get(
           );
           res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         } else {
-          res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.send(StudentAssessment({ resLocals: res.locals }));
         }
       } else {
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
