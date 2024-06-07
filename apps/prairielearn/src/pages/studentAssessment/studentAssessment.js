@@ -97,7 +97,7 @@ router.get(
         res.locals.groupMembers = groupInfo.groupMembers;
         res.locals.joinCode = groupInfo.joinCode;
         res.locals.groupName = groupInfo.groupName;
-        res.locals.start = groupInfo.start;
+        res.locals.startAllowed = groupInfo.start;
         res.locals.rolesInfo = groupInfo.rolesInfo;
 
         if (groupConfig.has_roles) {
