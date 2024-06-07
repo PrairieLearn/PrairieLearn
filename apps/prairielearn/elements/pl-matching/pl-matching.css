@@ -51,8 +51,3 @@
 .pl-matching-container-bottom {
   display: block;
 }
-
-.pl-matching-container-bottom .pl-matching-statement-select,
-.pl-matching-container-right .pl-matching-statement-select {
-  min-width: 4.5em;
-}
