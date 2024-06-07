@@ -1,3 +1,4 @@
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -9,6 +10,7 @@ export function StudentAssessment({ resLocals }: { resLocals: Record<string, any
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('studentAssessmentClient.js')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -106,20 +108,6 @@ export function StudentAssessment({ resLocals }: { resLocals: Record<string, any
                       </button>
                     </form>
                   `}
-
-              <script>
-                const certify = $('#certify-pledge')[0];
-                const start = $('#start-assessment')[0];
-                const form = $('#confirm-form')[0];
-
-                certify.onchange = () => {
-                  start.disabled = !certify.checked;
-                };
-                form.onsubmit = () => {
-                  start.disabled = true;
-                  start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';
-                };
-              </script>
             </div>
             <!-- card-body -->
           </div>

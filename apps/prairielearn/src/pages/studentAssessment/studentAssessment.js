@@ -89,6 +89,7 @@ router.get(
       if (groupId === null) {
         res.locals.notInGroup = true;
       } else {
+        res.locals.notInGroup = false;
         const groupInfo = await getGroupInfo(groupId, groupConfig);
         res.locals.groupSize = groupInfo.groupSize;
         res.locals.groupMembers = groupInfo.groupMembers;
