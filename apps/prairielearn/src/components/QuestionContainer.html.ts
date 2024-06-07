@@ -588,8 +588,9 @@ function AvailablePointsNotes({
         : `${roundedPoints[0]} ${additional} points available for this attempt`}
       ${maxManualPoints > 0
         ? roundedPoints[0] > maxManualPoints
-          ? `&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100} auto-graded, ${maxManualPoints} manually graded`
-          : '&mdash; manually graded'
+          ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}
+            auto-graded, ${maxManualPoints} manually graded`
+          : html`&mdash; manually graded`
         : ''}
       ${roundedPoints.length === 2
         ? html`<br />(following attempt is worth: ${roundedPoints[1]})`
