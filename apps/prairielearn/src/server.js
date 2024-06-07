@@ -606,7 +606,7 @@ export async function initExpress() {
       res.locals.navPage = 'news';
       next();
     },
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   ]);
   app.use('/pl/news_item', [
     function (req, res, next) {
@@ -617,7 +617,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   ]);
   app.use(
     '/pl/request_course',
@@ -736,11 +736,11 @@ export async function initExpress() {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -770,11 +770,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1705,11 +1705,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course pages require the effective user to have permission

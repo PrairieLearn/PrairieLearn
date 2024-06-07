@@ -1,11 +1,10 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { NewsItemRowSchema, NewsItems } from './news_items.html.js';
+import { NewsItemRowSchema, NewsItems } from './newsItems.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
