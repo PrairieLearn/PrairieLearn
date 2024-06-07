@@ -627,7 +627,7 @@ function QuestionPanel({
         ${QuestionTitle({
           questionContext,
           question,
-          questionNumber: instance_question_info.question_number,
+          questionNumber: instance_question_info?.question_number,
         })}
         ${showCopyQuestionButton
           ? html`
