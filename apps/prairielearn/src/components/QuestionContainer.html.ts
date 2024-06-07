@@ -580,15 +580,12 @@ function AvailablePointsNotes({
 
   const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
+  const additional = instance_question.points === 0 ? '' : 'additional';
   return html`
     <small class="font-italic align-self-center text-right">
-      ${instance_question.points === 0
-        ? roundedPoints[0] === 1
-          ? '1 point available for this attempt'
-          : `${roundedPoints[0]} points available for this attempt`
-        : roundedPoints[0] === 1
-          ? '1 additional point available for this attempt'
-          : `${roundedPoints[0]} additional points available for this attempt`}
+      ${roundedPoints[0] === 1
+        ? `1 ${additional} point available for this attempt`
+        : `${roundedPoints[0]} ${additional} points available for this attempt`}
       ${maxManualPoints > 0
         ? roundedPoints[0] > maxManualPoints
           ? `&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100} auto-graded, ${maxManualPoints} manually graded`
