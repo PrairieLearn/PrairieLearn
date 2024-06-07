@@ -36,6 +36,8 @@ router.get(
           data: { assessment: res.locals.assessment },
         });
       }
+      // The user has landed on this page to create a new assessment instance.
+      // Proceed even if there are existing instances.
     } else {
       // If the assessment is single-instance, check if the user already has an
       // instance. If so, redirect to it.
