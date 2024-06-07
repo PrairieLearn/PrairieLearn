@@ -2,7 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../lib/config.js';
-import { CourseInstance, Issue, Submission, User } from '../lib/db-types.js';
+import { CourseInstance, Issue, Question, Submission, User } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
@@ -19,10 +19,10 @@ type QuestionContext =
 
 export function QuestionContainer({
   resLocals,
-  question_context,
+  questionContext,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
+  questionContext: QuestionContext;
 }) {
   const {
     question,
@@ -53,7 +53,7 @@ export function QuestionContainer({
       data-instance-question-id="${instance_question?.id ?? ''}"
       data-variant-token="${variantToken}"
       data-url-prefix="${urlPrefix}"
-      data-question-context="${question_context}"
+      data-question-context="${questionContext}"
       data-csrf-token="${__csrf_token}"
       data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
@@ -64,10 +64,10 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, question_context })}
+              ${QuestionPanel({ resLocals, questionContext })}
             </form>
           `
-        : QuestionPanel({ resLocals, question_context })}
+        : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">Correct answer</div>
@@ -78,7 +78,7 @@ export function QuestionContainer({
         ? html`
             ${SubmissionList({
               resLocals,
-              question_context,
+              questionContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
@@ -102,7 +102,7 @@ export function QuestionContainer({
                   <div id="more-submissions-collapser" class="collapse">
                     ${SubmissionList({
                       resLocals,
-                      question_context,
+                      questionContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
@@ -267,29 +267,49 @@ ${JSON.stringify(issue.system_data, null, '    ')}</pre
   `;
 }
 
+export function QuestionTitle({
+  questionContext,
+  question,
+  questionNumber,
+}: {
+  questionContext: QuestionContext;
+  question: Question;
+  questionNumber: string;
+}) {
+  if (questionContext === 'student_homework') {
+    return `${questionNumber}. ${question.title}`;
+  } else if (questionContext === 'student_exam') {
+    return `Question ${questionNumber}: ${question.title}`;
+  } else {
+    return question.title;
+  }
+}
+
 function QuestionPanel({
   resLocals,
-  question_context,
+  questionContext,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
+  questionContext: QuestionContext;
 }) {
-  const { question, questionHtml, question_copy_targets, course } = resLocals;
+  const { question, questionHtml, question_copy_targets, course, instance_question_info } =
+    resLocals;
   // Show even when question_copy_targets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
     question_copy_targets != null &&
     (course.template_course ||
-      (question.shared_publicly_with_source && question_context === 'public')) &&
-    question_context !== 'manual_grading';
+      (question.shared_publicly_with_source && questionContext === 'public')) &&
+    questionContext !== 'manual_grading';
 
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionTitle'); %>", {
-          ...resLocals,
-          question_context,
+        ${QuestionTitle({
+          questionContext,
+          question,
+          questionNumber: instance_question_info.question_number,
         })}
         ${showCopyQuestionButton
           ? html`
@@ -308,7 +328,7 @@ function QuestionPanel({
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
       ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionFooter'); %>", {
         ...resLocals,
-        question_context,
+        question_context: questionContext,
       })}
     </div>
   `;
@@ -316,13 +336,13 @@ function QuestionPanel({
 
 function SubmissionList({
   resLocals,
-  question_context,
+  questionContext,
   submissions,
   submissionHtmls,
   submissionCount,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
+  questionContext: QuestionContext;
   submissions: Submission[];
   submissionHtmls: string[];
   submissionCount: number;
@@ -330,7 +350,7 @@ function SubmissionList({
   return submissions.map((submission, idx) =>
     renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
       ...resLocals,
-      question_context,
+      question_context: questionContext,
       submission,
       submissionCount,
       submissionHtml: submissionHtmls[idx],
