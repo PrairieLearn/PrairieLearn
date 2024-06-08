@@ -13704,6 +13704,7 @@ __metadata:
     eslint-plugin-no-only-tests: ^3.1.0
     globby: ^14.0.1
     htmlhint: ^1.1.4
+    node-gyp: ^10.1.0
     prettier: 3.2.5
     pyright: ^1.1.365
     s3rver: ^3.7.1
