@@ -385,7 +385,6 @@ async function runJob(context, receivedTime, tempDir) {
   logger.info(`Run image: ${runImage}`);
 
   const timeoutDeferredPromise = deferredPromise();
-  /** @type {NodeJS.Timeout} */
   const jobTimeoutId = setTimeout(() => {
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
     timeoutDeferredPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
