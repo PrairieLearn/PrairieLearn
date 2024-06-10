@@ -1,5 +1,4 @@
 // @ts-check
-import { exec } from 'child_process';
 import { pipeline } from 'node:stream/promises';
 import * as util from 'node:util';
 import * as path from 'path';
@@ -9,11 +8,11 @@ import { S3 } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import ERR from 'async-stacktrace';
 import byline from 'byline';
 import Docker from 'dockerode';
+import { execa } from 'execa';
 import fs from 'fs-extra';
-import * as tmp from 'tmp';
+import * as tmp from 'tmp-promise';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as sqldb from '@prairielearn/postgres';
@@ -316,29 +315,20 @@ async function initFiles(info) {
   const files = {};
 
   await async.series([
-    (callback) => {
+    async () => {
       logger.info('Setting up temp file');
-      tmp.file((err, file, fd, cleanup) => {
-        if (ERR(err, callback)) return;
-        jobArchiveFile = file;
-        jobArchiveFileCleanup = cleanup;
-        callback(null);
-      });
+      const res = await tmp.file();
+      jobArchiveFile = res.path;
+      jobArchiveFileCleanup = res.cleanup;
     },
-    (callback) => {
+    async () => {
       logger.info('Setting up temp dir');
-      tmp.dir(
-        {
-          prefix: `job_${jobId}_`,
-          unsafeCleanup: true,
-        },
-        (err, dir, cleanup) => {
-          if (ERR(err, callback)) return;
-          files.tempDir = dir;
-          files.tempDirCleanup = cleanup;
-          callback(null);
-        },
-      );
+      const res = await tmp.dir({
+        prefix: `job_${jobId}_`,
+        unsafeCleanup: true,
+      });
+      files.tempDir = res.path;
+      files.tempDirCleanup = res.cleanup;
     },
     async () => {
       logger.info('Loading job files');
@@ -349,21 +339,15 @@ async function initFiles(info) {
       const object = await s3.getObject(params);
       await pipeline(object.Body, fs.createWriteStream(jobArchiveFile));
     },
-    (callback) => {
+    async () => {
       logger.info('Unzipping files');
-      exec(`tar -xf ${jobArchiveFile} -C ${files.tempDir}`, (err) => {
-        if (ERR(err, callback)) return;
-        jobArchiveFileCleanup();
-        callback(null);
-      });
+      await execa('tar', ['-xf', jobArchiveFile, '-C', files.tempDir]);
+      jobArchiveFileCleanup();
     },
-    (callback) => {
+    async () => {
       logger.info('Making entrypoint executable');
-      exec(`chmod +x ${path.join(files.tempDir, entrypoint.slice(6))}`, (err) => {
-        if (err) {
-          logger.error('Could not make file executable; continuing execution anyways');
-        }
-        callback(null);
+      await execa('chmod', ['+x', path.join(files.tempDir, entrypoint.slice(6))]).catch(() => {
+        logger.error('Could not make file executable; continuing execution anyways');
       });
     },
   ]);
@@ -518,7 +502,7 @@ async function runJob(info) {
                 results.message =
                   'The grading results were larger than 1MB. ' +
                   'If the problem persists, please contact course staff or a proctor.';
-                return callback(null);
+                return;
               }
 
               try {
@@ -636,21 +620,15 @@ async function uploadArchive(results) {
   await async
     .series([
       // Now we can upload the archive of the /grade directory
-      (callback) => {
+      async () => {
         logger.info('Creating temp file for archive');
-        tmp.file((err, file, fd, cleanup) => {
-          if (ERR(err, callback)) return;
-          tempArchive = file;
-          tempArchiveCleanup = cleanup;
-          callback(null);
-        });
+        const res = await tmp.file();
+        tempArchive = res.path;
+        tempArchiveCleanup = res.cleanup;
       },
-      (callback) => {
+      async () => {
         logger.info('Building archive');
-        exec(`tar -zcf ${tempArchive} ${tempDir}`, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await execa('tar', ['-zcf', tempArchive, tempDir]);
       },
       async () => {
         logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);

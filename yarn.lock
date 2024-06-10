@@ -3034,12 +3034,14 @@ __metadata:
     c8: ^9.1.0
     chai: ^5.1.1
     dockerode: ^4.0.2
+    execa: ^9.2.0
     fs-extra: ^11.2.0
     logform: ^2.6.0
     mocha: ^10.4.0
     nodemon: ^3.1.2
     sinon: ^18.0.0
     tmp: ^0.2.3
+    tmp-promise: ^3.0.3
     tsx: ^4.11.0
     typescript: ^5.4.5
     typescript-cp: ^0.1.9
@@ -9025,6 +9027,26 @@ __metadata:
     strip-final-newline: ^4.0.0
     yoctocolors: ^2.0.0
   checksum: 3807e5e4a00e117ee5bc85b1860e21ee763de48b0436a14f170342702b5fbb287f432e6418a10072f9b32bd59dfa367fd038431ba9e025c0697a971e8aaa80fc
+  languageName: node
+  linkType: hard
+
+"execa@npm:^9.2.0":
+  version: 9.2.0
+  resolution: "execa@npm:9.2.0"
+  dependencies:
+    "@sindresorhus/merge-streams": ^4.0.0
+    cross-spawn: ^7.0.3
+    figures: ^6.1.0
+    get-stream: ^9.0.0
+    human-signals: ^7.0.0
+    is-plain-obj: ^4.1.0
+    is-stream: ^4.0.1
+    npm-run-path: ^5.2.0
+    pretty-ms: ^9.0.0
+    signal-exit: ^4.1.0
+    strip-final-newline: ^4.0.0
+    yoctocolors: ^2.0.0
+  checksum: 3f4eed0eb65a48089bc7bb5c73bd3ce5edd4e7a17c1364e98be78c5a2b34367eab5a2f248ce1556b361953533faeff927fb692de716cda6f73906667c6917873
   languageName: node
   linkType: hard
 
