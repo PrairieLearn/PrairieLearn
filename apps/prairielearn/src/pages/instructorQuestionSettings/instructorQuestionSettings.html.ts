@@ -323,7 +323,6 @@ export function InstructorQuestionSettings({
                                 data-content="${escapeHtml(
                                   CopyForm({
                                     csrfToken: resLocals.__csrf_token,
-                                    exampleCourse: resLocals.course.example_course,
                                     editableCourses,
                                     courseId: resLocals.course.id,
                                     buttonId: 'copyQuestionButton',
@@ -372,13 +371,11 @@ export function InstructorQuestionSettings({
 
 function CopyForm({
   csrfToken,
-  exampleCourse,
   editableCourses,
   courseId,
   buttonId,
 }: {
   csrfToken: string;
-  exampleCourse: boolean;
   editableCourses: CourseWithPermissions[];
   courseId: string;
   buttonId: string;
