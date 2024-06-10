@@ -25,7 +25,6 @@
     "@prairielearn/sentry": "workspace:^",
     "ajv": "^8.14.0",
     "async": "^3.2.5",
-    "async-stacktrace": "^0.0.2",
     "byline": "^5.0.0",
     "chai": "^5.1.1",
     "dockerode": "^4.0.2",
