@@ -3342,7 +3342,6 @@ __metadata:
     archiver: ^7.0.1
     async: ^3.2.5
     async-mutex: ^0.5.0
-    async-stacktrace: ^0.0.2
     axe-core: ^4.7.0
     backbone: ^1.6.0
     better-ajv-errors: ^1.2.0
