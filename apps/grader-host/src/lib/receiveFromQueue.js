@@ -9,7 +9,6 @@ import {
 } from '@aws-sdk/client-sqs';
 import { Ajv } from 'ajv';
 import * as async from 'async';
-import ERR from 'async-stacktrace';
 import fs from 'fs-extra';
 
 import * as Sentry from '@prairielearn/sentry';
@@ -72,95 +71,66 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
  *
  * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
  * @param {string} queueUrl
- * @param {Function} receiveCallback
- * @param {Function} doneCallback
+ * @param {(message: any) => Promise<void>} receiveCallback
  */
-export default function (sqs, queueUrl, receiveCallback, doneCallback) {
-  let parsedMessage, receiptHandle;
-
+export default async function (sqs, queueUrl, receiveCallback) {
   /** @type {AbortController} */
   let heartbeatAbortController;
 
-  async.series(
-    [
-      (callback) => {
-        globalLogger.info('Waiting for next job...');
-        async.doUntil(
-          async () => {
-            const data = await sqs.send(
-              new ReceiveMessageCommand({
-                MaxNumberOfMessages: 1,
-                QueueUrl: queueUrl,
-                WaitTimeSeconds: 20,
-              }),
-            );
-            const message = data.Messages?.[0];
-            if (!message || !message.Body) return null;
-            globalLogger.info('Received job!');
-            parsedMessage = JSON.parse(message.Body);
-            receiptHandle = message.ReceiptHandle;
-            return parsedMessage;
-          },
-          (result, callback) => {
-            callback(null, !!result);
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        if (!messageSchema) {
-          fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'), (err, data) => {
-            if (ERR(err, (err) => globalLogger.error(err))) {
-              globalLogger.error('Failed to read message schema; exiting process.');
-              process.exit(1);
-            }
-            const ajv = new Ajv();
-            messageSchema = ajv.compile(data);
-            return callback(null);
-          });
-        } else {
-          return callback(null);
-        }
-      },
-      (callback) => {
-        const valid = messageSchema(parsedMessage);
-        if (!valid) {
-          globalLogger.error(messageSchema.errors);
-          return callback(new Error('Message did not match schema.'));
-        } else {
-          return callback(null);
-        }
-      },
-      async () => {
-        heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
-      },
-      (callback) => {
-        receiveCallback(parsedMessage, (err) => {
-          heartbeatAbortController.abort();
-          if (err) {
-            globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
-            callback(err);
-          } else {
-            globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
-            callback(null);
-          }
-        });
-      },
-      async () => {
-        await sqs.send(
-          new DeleteMessageCommand({
-            QueueUrl: queueUrl,
-            ReceiptHandle: receiptHandle,
-          }),
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, doneCallback)) return;
-      doneCallback(null);
+  globalLogger.info('Waiting for next job...');
+  const { parsedMessage, receiptHandle } = await async.doUntil(
+    async () => {
+      const data = await sqs.send(
+        new ReceiveMessageCommand({
+          MaxNumberOfMessages: 1,
+          QueueUrl: queueUrl,
+          WaitTimeSeconds: 20,
+        }),
+      );
+      const message = data.Messages?.[0];
+      if (!message || !message.Body) return null;
+      globalLogger.info('Received job!');
+      const parsedMessage = JSON.parse(message.Body);
+      const receiptHandle = message.ReceiptHandle;
+      return { parsedMessage, receiptHandle };
     },
+    async (result) => {
+      return !!result;
+    },
+  );
+
+  if (!messageSchema) {
+    const data = await fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'));
+    const ajv = new Ajv();
+    messageSchema = ajv.compile(data);
+  }
+
+  const valid = messageSchema(parsedMessage);
+  if (!valid) {
+    globalLogger.error(messageSchema.errors);
+    throw new Error('Message did not match schema.');
+  }
+
+  heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
+
+  await receiveCallback(parsedMessage)
+    .finally(() => {
+      heartbeatAbortController.abort();
+    })
+    .then(
+      () => {
+        globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
+      },
+      (err) => {
+        globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
+        throw err;
+      },
+    );
+
+  await sqs.send(
+    new DeleteMessageCommand({
+      QueueUrl: queueUrl,
+      ReceiptHandle: receiptHandle,
+    }),
   );
 }

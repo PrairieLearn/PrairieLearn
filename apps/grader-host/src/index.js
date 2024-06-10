@@ -92,72 +92,55 @@ async.series(
         load.init(config.maxConcurrentJobs);
       }
     },
-    (callback) => {
-      if (!config.useHealthCheck) return callback(null);
-      healthCheck.init((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    async () => {
+      if (config.useHealthCheck) {
+        await healthCheck.init();
+      }
     },
-    (callback) => {
-      if (!config.useImagePreloading) return callback(null);
-      pullImages((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    async () => {
+      if (config.useImagePreloading) {
+        await pullImages();
+      }
     },
     async () => {
       await lifecycle.inService();
     },
-    () => {
+    async () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
-      for (let i = 0; i < config.maxConcurrentJobs; i++) {
-        async.forever(
-          (next) => {
-            if (!healthCheck.isHealthy() || processTerminating) return;
 
-            if (!config.jobsQueueUrl) {
-              next(new Error('jobsQueueUrl is not defined'));
+      function worker() {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          if (!healthCheck.isHealthy() || processTerminating) return;
+
+          if (!config.jobsQueueUrl) {
+            throw new Error('jobsQueueUrl is not defined');
+          }
+
+          receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
+            globalLogger.info(`received ${job.jobId} from queue`);
+
+            // Ensure that this job wasn't canceled in the time since job submission.
+            const canceled = await isJobCanceled(job);
+
+            if (canceled) {
+              globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
               return;
             }
 
-            receiveFromQueue(
-              sqs,
-              config.jobsQueueUrl,
-              (job, done) => {
-                globalLogger.info(`received ${job.jobId} from queue`);
-
-                // Ensure that this job wasn't canceled in the time since job submission.
-                isJobCanceled(job, (err, canceled) => {
-                  if (ERR(err, done)) return;
-
-                  if (canceled) {
-                    globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
-                    done();
-                    return;
-                  }
-
-                  handleJob(job, (err) => {
-                    globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
-                    if (ERR(err, done)) return;
-                    globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                    done();
-                  });
-                });
-              },
-              (err) => {
-                ERR(err, (err) => globalLogger.error('receive error:', err));
-                globalLogger.info('Completed full request cycle');
-                next();
-              },
+            await handleJob(job).then(
+              () => globalLogger.info(`handleJob(${job.jobId}) succeeded`),
+              (err) => globalLogger.info(`handleJob(${job.jobId}) errored`, err),
             );
-          },
-          (err) => {
-            globalLogger.error('forever error:', err);
-          },
-        );
+          }).catch((err) => {
+            globalLogger.error('receive error:', err);
+          });
+        }
       }
+
+      // Start an appropriate number of workers
+      await Promise.all(Array.from({ length: config.maxConcurrentJobs }).map(() => worker()));
     },
   ],
   (err) => {
@@ -175,20 +158,15 @@ async.series(
   },
 );
 
-function isJobCanceled(job, callback) {
-  sqldb.queryOneRow(
-    sql.check_job_cancellation,
-    {
-      grading_job_id: job.jobId,
-    },
-    (err, result) => {
-      if (ERR(err, callback)) return;
-      callback(null, result.rows[0].canceled);
-    },
-  );
+async function isJobCanceled(job) {
+  const result = await sqldb.queryOneRowAsync(sql.check_job_cancellation, {
+    grading_job_id: job.jobId,
+  });
+
+  return result.rows[0].canceled;
 }
 
-function handleJob(job, done) {
+async function handleJob(job) {
   load.startJob();
 
   const logger = makeJobLogger();
@@ -204,8 +182,8 @@ function handleJob(job, done) {
   logger.info(`Running job ${job.jobId}`);
   logger.info('job details:', job);
 
-  async.auto(
-    {
+  await async
+    .auto({
       context: async () => await context(info),
       reportReceived: ['context', reportReceived],
       initDocker: ['context', initDocker],
@@ -224,16 +202,10 @@ function handleJob(job, done) {
           callback(null);
         },
       ],
-    },
-    (err) => {
-      logger.info(`Reducing load average, err=${err}`);
+    })
+    .finally(() => {
       load.endJob();
-      logger.info('Successfully reduced load average');
-      if (ERR(err, done)) return;
-      logger.info('Successfully completed handleJob()');
-      done(null);
-    },
-  );
+    });
 }
 
 async function context(info) {
