@@ -26,6 +26,8 @@ import {
 import { idsEqual } from '../../lib/id.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
+
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -292,7 +294,6 @@ router.get(
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
-    res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
     res.locals.savedAnswers = 0;
     res.locals.suspendedSavedAnswers = 0;
     res.locals.instance_questions.forEach((question) => {
@@ -340,9 +341,13 @@ router.get(
       }
     }
 
-    res.locals.can_delete_assessment_instance = canDeleteAssessmentInstance(res.locals);
-
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      StudentAssessmentInstance({
+        showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+        canDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
