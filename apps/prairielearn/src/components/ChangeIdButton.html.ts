@@ -21,15 +21,17 @@ export function ChangeIdButton({
   return html`
     <button
       id="${id}"
-      class="btn btn-xs btn-secondary"
+      class="btn btn-xs btn-secondary js-change-id-button"
       type="button"
       data-toggle="popover"
       data-container="body"
       data-html="true"
       data-placement="auto"
+      data-previous-value="${currentValue}"
+      data-other-values="${JSON.stringify(otherValues)}"
       title="Change ${label}"
       data-content="${escapeHtml(
-        ChangeIdForm({ id, label, currentValue, otherValues, extraHelpText, csrfToken, action }),
+        ChangeIdForm({ id, label, currentValue, extraHelpText, csrfToken, action }),
       )}"
     >
       <i class="fa fa-i-cursor"></i>
@@ -42,7 +44,6 @@ function ChangeIdForm({
   id,
   label,
   currentValue,
-  otherValues,
   extraHelpText,
   csrfToken,
   action,
@@ -50,20 +51,12 @@ function ChangeIdForm({
   id: string;
   label: string;
   currentValue: string;
-  otherValues: string[];
   extraHelpText?: HtmlValue;
   csrfToken: string;
   action?: string;
 }) {
   return html`
-    <form
-      name="change-id-form"
-      class="needs-validation"
-      method="POST"
-      novalidate
-      data-current-value="${currentValue}"
-      data-other-values="${JSON.stringify(otherValues)}"
-    >
+    <form name="change-id-form" class="needs-validation" method="POST" novalidate>
       <input type="hidden" name="__action" value="${action ?? 'change_id'}" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="container p-0 mb-4">
@@ -81,7 +74,6 @@ function ChangeIdForm({
           pattern="[\\-A-Za-z0-9_\\/]+"
           required
         />
-        <div class="invalid-feedback" id="invalidIdMessage"></div>
       </div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
