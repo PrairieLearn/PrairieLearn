@@ -175,7 +175,7 @@ async function handleJob(job) {
   const logger = makeJobLogger();
   globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
-  const info = {
+  const context = {
     docker: new Docker(),
     s3: new S3(makeS3ClientConfig({ maxAttempts: 3 })),
     logger,
@@ -185,51 +185,48 @@ async function handleJob(job) {
   logger.info(`Running job ${job.jobId}`);
   logger.info('job details:', job);
 
-  await async
-    .auto({
-      context: async () => await context(info),
-      reportReceived: ['context', reportReceived],
-      initDocker: ['context', initDocker],
-      initFiles: ['context', initFiles],
-      runJob: ['initDocker', 'initFiles', runJob],
-      uploadResults: ['runJob', uploadResults],
-      uploadArchive: ['runJob', uploadArchive],
-      cleanup: [
-        'uploadResults',
-        'uploadArchive',
-        async (results) => {
-          logger.info('Removing temporary directories');
-          // @ts-expect-error -- Incomplete typing information.
-          await results.initFiles.tempDirCleanup();
-          logger.info('Successfully removed temporary directories');
-        },
-      ],
-    })
-    .finally(() => {
-      load.endJob();
-    });
+  try {
+    const receivedTime = await timeReporter.reportReceivedTime(job.jobId);
+
+    const initResults = await Promise.all([
+      reportReceived(context, receivedTime),
+      initDocker(context),
+      initFiles(context),
+    ]);
+
+    const results = await runJob(context, receivedTime, initResults[2].tempDir);
+
+    await Promise.all([
+      uploadResults(context, results),
+      uploadArchive(context, initResults[2].tempDir),
+    ]);
+
+    logger.info('Removing temporary directories');
+    await initResults[2].tempDirCleanup();
+    logger.info('Successfully removed temporary directories');
+  } finally {
+    load.endJob();
+  }
 }
 
-async function context(info) {
-  const {
-    job: { jobId },
-  } = info;
+/**
+ * @typedef {Object} Context
+ * @property {Docker} docker
+ * @property {S3} s3
+ * @property {import('./lib/jobLogger.js').WinstonBufferedLogger} logger
+ * @property {any} job
+ */
 
-  const receivedTime = await timeReporter.reportReceivedTime(jobId);
-  return {
-    ...info,
-    receivedTime,
-  };
-}
-
-async function reportReceived(info) {
+/**
+ * @param {Context} context
+ * @param {Date} receivedTime
+ */
+async function reportReceived(context, receivedTime) {
   if (!config.resultsQueueUrl) {
     throw new Error('resultsQueueUrl is not defined');
   }
 
-  const {
-    context: { job, receivedTime, logger },
-  } = info;
+  const { job, logger } = context;
   logger.info('Sending job acknowledgement to PrairieLearn');
 
   const messageBody = {
@@ -254,14 +251,15 @@ async function reportReceived(info) {
   }
 }
 
-async function initDocker(info) {
+/**
+ * @param {Context} context
+ */
+async function initDocker(context) {
   const {
-    context: {
-      logger,
-      docker,
-      job: { image },
-    },
-  } = info;
+    logger,
+    docker,
+    job: { image },
+  } = context;
   let dockerAuth = {};
 
   logger.info('Pinging docker');
@@ -286,7 +284,7 @@ async function initDocker(info) {
 
   const stream = await docker.createImage(dockerAuth, params);
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     docker.modem.followProgress(
       stream,
       (err) => {
@@ -305,14 +303,15 @@ async function initDocker(info) {
   });
 }
 
-async function initFiles(info) {
+/**
+ * @param {Context} context
+ */
+async function initFiles(context) {
   const {
-    context: {
-      logger,
-      s3,
-      job: { jobId, s3Bucket, s3RootKey, entrypoint },
-    },
-  } = info;
+    logger,
+    s3,
+    job: { jobId, s3Bucket, s3RootKey, entrypoint },
+  } = context;
 
   logger.info('Setting up temp file');
   const jobArchiveFile = await tmp.file();
@@ -329,7 +328,10 @@ async function initFiles(info) {
       Bucket: s3Bucket,
       Key: `${s3RootKey}/job.tar.gz`,
     });
-    await pipeline(object.Body, fs.createWriteStream(jobArchiveFile.path));
+    await pipeline(
+      /** @type {import('node:stream').Readable} */ (object.Body),
+      fs.createWriteStream(jobArchiveFile.path),
+    );
 
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
@@ -349,16 +351,17 @@ async function initFiles(info) {
   }
 }
 
-async function runJob(info) {
+/**
+ * @param {Context} context
+ * @param {Date} receivedTime
+ * @param {string} tempDir
+ */
+async function runJob(context, receivedTime, tempDir) {
   const {
-    context: {
-      docker,
-      logger,
-      receivedTime,
-      job: { jobId, image, entrypoint, timeout, enableNetworking, environment },
-    },
-    initFiles: { tempDir },
-  } = info;
+    docker,
+    logger,
+    job: { jobId, image, entrypoint, timeout, enableNetworking, environment },
+  } = context;
 
   let results = {};
   let runTimeout = timeout || config.defaultTimeout;
@@ -523,15 +526,16 @@ async function runJob(info) {
   return await Promise.race([task, timeoutDeferredPromise.promise]);
 }
 
-async function uploadResults(info) {
+/**
+ * @param {Context} context
+ * @param {any} results
+ */
+async function uploadResults(context, results) {
   const {
-    context: {
-      logger,
-      s3,
-      job: { jobId, s3Bucket, s3RootKey },
-    },
-    runJob: results,
-  } = info;
+    logger,
+    s3,
+    job: { jobId, s3Bucket, s3RootKey },
+  } = context;
 
   // Now we can send the results back to S3
   logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
@@ -572,15 +576,16 @@ async function uploadResults(info) {
   );
 }
 
-async function uploadArchive(results) {
+/**
+ * @param {Context} context
+ * @param {string} tempDir
+ */
+async function uploadArchive(context, tempDir) {
   const {
-    context: {
-      logger,
-      s3,
-      job: { s3Bucket, s3RootKey },
-    },
-    initFiles: { tempDir },
-  } = results;
+    logger,
+    s3,
+    job: { s3Bucket, s3RootKey },
+  } = context;
 
   // Now we can upload the archive of the /grade directory
   logger.info('Creating temp file for archive');
