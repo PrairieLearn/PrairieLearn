@@ -39,8 +39,8 @@ describe('Group based homework assess control on student side', function () {
     it('should contain a group-based homework assessment', async () => {
       const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
       assert.lengthOf(assessment_ids, 2);
-      assert.notEqual(assessment_ids[0], undefined);
-      assert.notEqual(assessment_ids[1], undefined);
+      assert.isDefined(assessment_ids[0]);
+      assert.isDefined(assessment_ids[1]);
 
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
