@@ -27,6 +27,7 @@
     "async": "^3.2.5",
     "byline": "^5.0.0",
     "chai": "^5.1.1",
+    "chai-as-promised": "^8.0.0",
     "dockerode": "^4.0.2",
     "execa": "^9.2.0",
     "fs-extra": "^11.2.0",
