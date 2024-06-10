@@ -10,7 +10,7 @@ import { Modal } from './Modal.html.js';
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
 
-type QuestionContext =
+export type QuestionContext =
   | 'student_exam'
   | 'student_homework'
   | 'instructor'
