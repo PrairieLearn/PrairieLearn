@@ -21,6 +21,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
+import { deferredPromise } from './lib/deferred.js';
 import * as healthCheck from './lib/healthCheck.js';
 import { makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
@@ -147,13 +148,17 @@ async.series(
       level: 'fatal',
     });
     globalLogger.error('Error in main loop:', err);
-    util.callbackify(lifecycle.abandonLaunch)((err) => {
-      if (err) globalLogger.error('Error in lifecycle.abandon():', err);
-      // pause to log errors, then exit
-      setTimeout(() => {
-        process.exit(1);
-      }, 1000);
-    });
+    lifecycle
+      .abandonLaunch()
+      .catch((err) => {
+        globalLogger.error('Error in lifecycle.abandon():', err);
+      })
+      .finally(() => {
+        // pause to log errors, then exit
+        setTimeout(() => {
+          process.exit(1);
+        }, 1000);
+      });
   },
 );
 
@@ -193,12 +198,11 @@ async function handleJob(job) {
       cleanup: [
         'uploadResults',
         'uploadArchive',
-        function (results, callback) {
+        async (results) => {
           logger.info('Removing temporary directories');
           // @ts-expect-error -- Incomplete typing information.
-          results.initFiles.tempDirCleanup();
+          await results.initFiles.tempDirCleanup();
           logger.info('Successfully removed temporary directories');
-          callback(null);
         },
       ],
     })
@@ -311,48 +315,39 @@ async function initFiles(info) {
     },
   } = info;
 
-  let jobArchiveFile, jobArchiveFileCleanup;
-  const files = {};
+  logger.info('Setting up temp file');
+  const jobArchiveFile = await tmp.file();
 
-  await async.series([
-    async () => {
-      logger.info('Setting up temp file');
-      const res = await tmp.file();
-      jobArchiveFile = res.path;
-      jobArchiveFileCleanup = res.cleanup;
-    },
-    async () => {
-      logger.info('Setting up temp dir');
-      const res = await tmp.dir({
-        prefix: `job_${jobId}_`,
-        unsafeCleanup: true,
-      });
-      files.tempDir = res.path;
-      files.tempDirCleanup = res.cleanup;
-    },
-    async () => {
-      logger.info('Loading job files');
-      const params = {
-        Bucket: s3Bucket,
-        Key: `${s3RootKey}/job.tar.gz`,
-      };
-      const object = await s3.getObject(params);
-      await pipeline(object.Body, fs.createWriteStream(jobArchiveFile));
-    },
-    async () => {
-      logger.info('Unzipping files');
-      await execa('tar', ['-xf', jobArchiveFile, '-C', files.tempDir]);
-      jobArchiveFileCleanup();
-    },
-    async () => {
-      logger.info('Making entrypoint executable');
-      await execa('chmod', ['+x', path.join(files.tempDir, entrypoint.slice(6))]).catch(() => {
-        logger.error('Could not make file executable; continuing execution anyways');
-      });
-    },
-  ]);
+  try {
+    logger.info('Setting up temp dir');
+    const jobDirectory = await tmp.dir({
+      prefix: `job_${jobId}_`,
+      unsafeCleanup: true,
+    });
 
-  return files;
+    logger.info('Loading job files');
+    const object = await s3.getObject({
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/job.tar.gz`,
+    });
+    await pipeline(object.Body, fs.createWriteStream(jobArchiveFile.path));
+
+    logger.info('Unzipping files');
+    await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
+    jobArchiveFile.cleanup();
+
+    logger.info('Making entrypoint executable');
+    await execa('chmod', ['+x', path.join(jobDirectory.path, entrypoint.slice(6))]).catch(() => {
+      logger.error('Could not make file executable; continuing execution anyways');
+    });
+
+    return {
+      tempDir: jobDirectory.path,
+      tempDirCleanup: jobDirectory.cleanup,
+    };
+  } finally {
+    await jobArchiveFile.cleanup();
+  }
 }
 
 async function runJob(info) {
@@ -386,149 +381,128 @@ async function runJob(info) {
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
 
-  /** @type {NodeJS.Timeout | null} */
-  let jobTimeoutId;
-  const timeoutPromise = new Promise((reject) => {
-    jobTimeoutId = setTimeout(() => {
-      healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-      reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
-    }, jobTimeout * 1000);
-  });
+  const timeoutDeferredPromise = deferredPromise();
+  /** @type {NodeJS.Timeout} */
+  const jobTimeoutId = setTimeout(() => {
+    healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
+    timeoutDeferredPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
+  }, jobTimeout * 1000);
 
-  const task = async
-    .waterfall([
-      async () => {
-        return await docker.createContainer({
-          Image: runImage,
-          // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
-          Env: Object.entries(jobEnvironment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
-          AttachStdout: true,
-          AttachStderr: true,
-          Tty: true,
-          NetworkDisabled: !jobEnableNetworking,
-          HostConfig: {
-            Binds: [`${tempDir}:/grade`],
-            Memory: config.graderDockerMemory,
-            MemorySwap: config.graderDockerMemorySwap,
-            KernelMemory: config.graderDockerKernelMemory,
-            DiskQuota: config.graderDockerDiskQuota,
-            IpcMode: 'private',
-            CpuPeriod: config.graderDockerCpuPeriod,
-            CpuQuota: config.graderDockerCpuQuota,
-            PidsLimit: config.graderDockerPidsLimit,
-            Ulimits: [
-              {
-                // Disable core dumps, which can get very large and bloat our storage.
-                Name: 'core',
-                Soft: 0,
-                Hard: 0,
-              },
-            ],
+  const task = (async () => {
+    const container = await docker.createContainer({
+      Image: runImage,
+      // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
+      Env: Object.entries(jobEnvironment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
+      AttachStdout: true,
+      AttachStderr: true,
+      Tty: true,
+      NetworkDisabled: !jobEnableNetworking,
+      HostConfig: {
+        Binds: [`${tempDir}:/grade`],
+        Memory: config.graderDockerMemory,
+        MemorySwap: config.graderDockerMemorySwap,
+        KernelMemory: config.graderDockerKernelMemory,
+        DiskQuota: config.graderDockerDiskQuota,
+        IpcMode: 'private',
+        CpuPeriod: config.graderDockerCpuPeriod,
+        CpuQuota: config.graderDockerCpuQuota,
+        PidsLimit: config.graderDockerPidsLimit,
+        Ulimits: [
+          {
+            // Disable core dumps, which can get very large and bloat our storage.
+            Name: 'core',
+            Soft: 0,
+            Hard: 0,
           },
-          Entrypoint: entrypoint.split(' '),
-        });
+        ],
       },
-      async (container) => {
-        const stream = await container.attach({
-          stream: true,
-          stdout: true,
-          stderr: true,
-        });
-        const out = byline(stream);
-        out.on('data', (line) => {
-          logger.info(`container> ${line.toString('utf8')}`);
-        });
-        return container;
-      },
-      async (container) => {
-        await container.start();
-        logger.info('Container started!');
-        return container;
-      },
-      async (container) => {
-        results.start_time = await timeReporter.reportStartTime(jobId);
-        return container;
-      },
-      async (container) => {
-        const timeoutId = setTimeout(() => {
-          results.timedOut = true;
-          container.kill().catch((err) => {
-            globalLogger.error('Error killing container', err);
-          });
-        }, runTimeout * 1000);
+      Entrypoint: entrypoint.split(' '),
+    });
 
-        logger.info('Waiting for container to complete');
-        try {
-          await container.wait();
-        } finally {
-          clearTimeout(timeoutId);
-        }
+    const stream = await container.attach({
+      stream: true,
+      stdout: true,
+      stderr: true,
+    });
+    const out = byline(stream);
+    out.on('data', (line) => {
+      logger.info(`container> ${line.toString('utf8')}`);
+    });
 
-        return container;
-      },
-      async (container) => {
-        results.end_time = await timeReporter.reportEndTime(jobId);
-        return container;
-      },
-      async (container) => {
-        const data = await container.inspect();
-        if (results.timedOut) {
-          logger.info('Container timed out');
-        } else {
-          logger.info(`Container exited with exit code ${data.State.ExitCode}`);
-        }
-        results.succeeded = !results.timedOut && data.State.ExitCode === 0;
-        return container;
-      },
-      async (container) => {
-        await container.remove({
-          // Remove any volumes associated with this container
-          v: true,
-        });
-      },
-      async () => {
-        // We made it through the Docker danger zone!
-        clearTimeout(jobTimeoutId ?? undefined);
-        jobTimeoutId = null;
-        logger.info('Reading course results');
-        // Now that the job has completed, let's extract the results
-        // First up: results.json
-        if (results.succeeded) {
-          await fs.readFile(path.join(tempDir, 'results', 'results.json')).then(
-            (data) => {
-              if (Buffer.byteLength(data) > 1024 * 1024) {
-                // Cap output at 1MB
-                results.succeeded = false;
-                results.message =
-                  'The grading results were larger than 1MB. ' +
-                  'If the problem persists, please contact course staff or a proctor.';
-                return;
-              }
+    await container.start();
+    logger.info('Container started!');
 
-              try {
-                const parsedResults = JSON.parse(data.toString());
-                results.results = sanitizeObject(parsedResults);
-                results.succeeded = true;
-              } catch (e) {
-                logger.error('Could not parse results.json:', e);
-                results.succeeded = false;
-                results.message = 'Could not parse the grading results.';
-              }
-            },
-            (err) => {
-              logger.error('Could not read results.json', err);
-              results.succeeded = false;
-              results.message = 'Could not read grading results.';
-            },
-          );
-        } else {
-          if (results.timedOut) {
-            results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;
+    results.start_time = await timeReporter.reportStartTime(jobId);
+
+    const timeoutId = setTimeout(() => {
+      results.timedOut = true;
+      container.kill().catch((err) => {
+        globalLogger.error('Error killing container', err);
+      });
+    }, runTimeout * 1000);
+
+    logger.info('Waiting for container to complete');
+    try {
+      await container.wait();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    results.end_time = await timeReporter.reportEndTime(jobId);
+
+    const data = await container.inspect();
+    if (results.timedOut) {
+      logger.info('Container timed out');
+    } else {
+      logger.info(`Container exited with exit code ${data.State.ExitCode}`);
+    }
+    results.succeeded = !results.timedOut && data.State.ExitCode === 0;
+
+    await container.remove({
+      // Remove any volumes associated with this container
+      v: true,
+    });
+
+    // We made it through the Docker danger zone!
+    clearTimeout(jobTimeoutId ?? undefined);
+    logger.info('Reading course results');
+    // Now that the job has completed, let's extract the results
+    // First up: results.json
+    if (results.succeeded) {
+      await fs.readFile(path.join(tempDir, 'results', 'results.json')).then(
+        (data) => {
+          if (Buffer.byteLength(data) > 1024 * 1024) {
+            // Cap output at 1MB
+            results.succeeded = false;
+            results.message =
+              'The grading results were larger than 1MB. ' +
+              'If the problem persists, please contact course staff or a proctor.';
+            return;
           }
-          results.results = null;
-        }
-      },
-    ])
+
+          try {
+            const parsedResults = JSON.parse(data.toString());
+            results.results = sanitizeObject(parsedResults);
+            results.succeeded = true;
+          } catch (e) {
+            logger.error('Could not parse results.json:', e);
+            results.succeeded = false;
+            results.message = 'Could not parse the grading results.';
+          }
+        },
+        (err) => {
+          logger.error('Could not read results.json', err);
+          results.succeeded = false;
+          results.message = 'Could not read grading results.';
+        },
+      );
+    } else {
+      if (results.timedOut) {
+        results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;
+      }
+      results.results = null;
+    }
+  })()
     .catch((err) => {
       logger.error('runJob error', err);
 
@@ -539,9 +513,7 @@ async function runJob(info) {
       // It's possible that we get here with an error prior to the global job timeout exceeding.
       // If that happens, Docker is still alive, but it just errored. We'll cancel
       // the timeout here if needed.
-      if (jobTimeoutId != null) {
-        clearTimeout(jobTimeoutId);
-      }
+      clearTimeout(jobTimeoutId);
 
       results.job_id = jobId;
       results.received_time = receivedTime;
@@ -549,7 +521,7 @@ async function runJob(info) {
       return results;
     });
 
-  return await Promise.race([task, timeoutPromise]);
+  return await Promise.race([task, timeoutDeferredPromise.promise]);
 }
 
 async function uploadResults(info) {
@@ -562,48 +534,43 @@ async function uploadResults(info) {
     runJob: results,
   } = info;
 
-  await async.series([
-    async () => {
-      // Now we can send the results back to S3
-      logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
-      await new Upload({
-        client: s3,
-        params: {
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, 2)),
-        },
-      }).done();
+  // Now we can send the results back to S3
+  logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
+  await new Upload({
+    client: s3,
+    params: {
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/results.json`,
+      Body: Buffer.from(JSON.stringify(results, null, 2)),
     },
-    async () => {
-      // Let's send the results back to PrairieLearn now; the archive will
-      // be uploaded later
-      logger.info('Sending results to PrairieLearn with results');
-      const messageBody = {
-        jobId,
-        event: 'grading_result',
-      };
+  }).done();
 
-      // The SQS max message size is 256KB; if our results payload is
-      // larger than 250KB, we won't send results via this and will
-      // instead rely on PL fetching them via S3.
-      if (JSON.stringify(results).length <= 250 * 1024) {
-        messageBody.data = results;
-      }
+  // Let's send the results back to PrairieLearn now; the archive will
+  // be uploaded later
+  logger.info('Sending results to PrairieLearn with results');
+  const messageBody = {
+    jobId,
+    event: 'grading_result',
+  };
 
-      if (!config.resultsQueueUrl) {
-        throw new Error('resultsQueueUrl is not defined');
-      }
+  // The SQS max message size is 256KB; if our results payload is
+  // larger than 250KB, we won't send results via this and will
+  // instead rely on PL fetching them via S3.
+  if (JSON.stringify(results).length <= 250 * 1024) {
+    messageBody.data = results;
+  }
 
-      const sqs = new SQSClient(makeAwsClientConfig());
-      await sqs.send(
-        new SendMessageCommand({
-          QueueUrl: config.resultsQueueUrl,
-          MessageBody: JSON.stringify(messageBody),
-        }),
-      );
-    },
-  ]);
+  if (!config.resultsQueueUrl) {
+    throw new Error('resultsQueueUrl is not defined');
+  }
+
+  const sqs = new SQSClient(makeAwsClientConfig());
+  await sqs.send(
+    new SendMessageCommand({
+      QueueUrl: config.resultsQueueUrl,
+      MessageBody: JSON.stringify(messageBody),
+    }),
+  );
 }
 
 async function uploadArchive(results) {
@@ -616,44 +583,34 @@ async function uploadArchive(results) {
     initFiles: { tempDir },
   } = results;
 
-  let tempArchive, tempArchiveCleanup;
-  await async
-    .series([
-      // Now we can upload the archive of the /grade directory
-      async () => {
-        logger.info('Creating temp file for archive');
-        const res = await tmp.file();
-        tempArchive = res.path;
-        tempArchiveCleanup = res.cleanup;
+  // Now we can upload the archive of the /grade directory
+  logger.info('Creating temp file for archive');
+  const archiveFile = await tmp.file();
+
+  try {
+    logger.info('Building archive');
+    await execa('tar', ['-zcf', archiveFile.path, tempDir]);
+
+    logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);
+    await new Upload({
+      client: s3,
+      params: {
+        Bucket: s3Bucket,
+        Key: `${s3RootKey}/archive.tar.gz`,
+        Body: fs.createReadStream(archiveFile.path),
       },
-      async () => {
-        logger.info('Building archive');
-        await execa('tar', ['-zcf', tempArchive, tempDir]);
+    }).done();
+
+    // Upload all logs to S3.
+    await new Upload({
+      client: s3,
+      params: {
+        Bucket: s3Bucket,
+        Key: `${s3RootKey}/output.log`,
+        Body: logger.getBuffer(),
       },
-      async () => {
-        logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);
-        await new Upload({
-          client: s3,
-          params: {
-            Bucket: s3Bucket,
-            Key: `${s3RootKey}/archive.tar.gz`,
-            Body: fs.createReadStream(tempArchive),
-          },
-        }).done();
-      },
-      async () => {
-        // Upload all logs to S3.
-        await new Upload({
-          client: s3,
-          params: {
-            Bucket: s3Bucket,
-            Key: `${s3RootKey}/output.log`,
-            Body: logger.getBuffer(),
-          },
-        }).done();
-      },
-    ])
-    .finally(() => {
-      tempArchiveCleanup?.();
-    });
+    }).done();
+  } finally {
+    await archiveFile.cleanup();
+  }
 }
