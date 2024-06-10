@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
@@ -50,16 +51,9 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
+        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
-        <script>
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-              let fileName = $(this).val().replace(/\\/g, '/').replace(/.*//, '');
-              $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-          });
-        </script>
-
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
@@ -86,10 +80,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                       </div>
                     </div>
                   `
-                : renderEjs(import.meta.url, "<%- include('../partials/question'); %>", {
-                    ...resLocals,
-                    question_context,
-                  })}
+                : QuestionContainer({ resLocals, question_context })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

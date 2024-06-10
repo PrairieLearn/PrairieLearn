@@ -31,6 +31,7 @@ router.all('/', function (req, res, next) {
       StudentAssessmentAccess({
         resLocals: res.locals,
         showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
+        showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
       }),
     );
     return;

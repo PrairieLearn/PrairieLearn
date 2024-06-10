@@ -868,14 +868,14 @@ export const IssueSchema = z.object({
 export type Issue = z.infer<typeof IssueSchema>;
 
 export const AssessmentSetSchema = z.object({
-  abbreviation: z.string().nullable(),
-  color: z.string().nullable(),
+  abbreviation: z.string(),
+  color: z.string(),
   course_id: IdSchema,
-  heading: z.string().nullable(),
+  heading: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
-  name: z.string().nullable(),
-  number: z.number().nullable(),
+  name: z.string(),
+  number: z.number(),
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
@@ -966,16 +966,29 @@ export const AssessmentAccessRuleSchema = z.object({
   active: z.boolean(),
   assessment_id: IdSchema,
   credit: z.number().nullable(),
-  end_date: z.string().nullable(),
+  end_date: DateFromISOString.nullable(),
   exam_uuid: z.string().nullable(),
   id: IdSchema,
-  mode: ModeSchema.nullable(),
-  number: z.number().nullable(),
+  mode: ModeSchema,
+  number: z.number(),
   password: z.string().nullable(),
-  seb_config: z.object({}).nullable(),
+  seb_config: z.any().nullable(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
-  start_date: z.string().nullable(),
+  start_date: DateFromISOString.nullable(),
   time_limit_min: z.number().nullable(),
-  uids: z.array(z.string()).nullable(),
+  uids: z.string().array().nullable(),
 });
+export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
+
+export const NewsItemSchema = z.object({
+  author: z.string().nullable(),
+  date: DateFromISOString,
+  directory: z.string(),
+  id: IdSchema,
+  order_by: z.number(),
+  title: z.string(),
+  uuid: z.string(),
+  visible_to_students: z.boolean(),
+});
+export type NewsItem = z.infer<typeof NewsItemSchema>;

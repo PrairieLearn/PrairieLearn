@@ -43,7 +43,7 @@ Writing and maintaining a large pool of questions is a lot of work. There are ma
 4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
 
-As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and and moved to the homework pool.
+As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and moved to the homework pool.
 
 ## Should students be able to review their exams after they are over?
 
