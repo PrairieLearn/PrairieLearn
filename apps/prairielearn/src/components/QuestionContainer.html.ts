@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../lib/config.js';
 import {
@@ -9,12 +8,12 @@ import {
   InstanceQuestion,
   Issue,
   Question,
-  Submission,
   User,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
+import { SubmissionForRenderExtra, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -656,17 +655,24 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  submissions: Submission[];
+  submissions: SubmissionForRenderExtra[];
   submissionHtmls: string[];
   submissionCount: number;
 }) {
   return submissions.map((submission, idx) =>
-    renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
-      ...resLocals,
-      question_context: questionContext,
+    SubmissionPanel({
+      questionContext,
+      question: resLocals.question,
+      assessment_question: resLocals.assessment_question,
+      instance_question: resLocals.instance_question,
+      variant_id: resLocals.variant.id,
+      course_instance_id: resLocals.course_instance.id,
       submission,
-      submissionCount,
       submissionHtml: submissionHtmls[idx],
+      submissionCount,
+      rubric_data: resLocals.rubric_data,
+      urlPrefix: resLocals.urlPrefix,
+      plainUrlPrefix: resLocals.plainUrlPrefix,
     }),
   );
 }

@@ -123,8 +123,6 @@ const SubmissionInfoSchema = z.object({
 
 /**
  * @typedef {z.infer<typeof SubmissionBasicSchema> & Partial<z.infer<typeof SubmissionDetailedSchema>>} SubmissionForRender
- * @property {ReturnType<buildGradingJobStats>} grading_job_stats
- * @property {number} submission_number
  */
 
 /**

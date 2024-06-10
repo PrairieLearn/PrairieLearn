@@ -5,13 +5,21 @@ import type {
   GradingJobStatus,
   InstanceQuestion,
   Question,
-  Submission,
-  User,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import { SubmissionForRender } from '../lib/question-render.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.html.js';
+
+export type SubmissionForRenderExtra = SubmissionForRender & {
+  feedback_manual_html?: string;
+  submission_number: number;
+  rubric_grading?: RubricGradingData;
+  grading_job_status?: GradingJobStatus;
+  grading_job_id?: string;
+  grading_job_stats?: GradingJobStats;
+};
 
 export interface GradingJobStats {
   phases: number[];
@@ -38,23 +46,13 @@ export function SubmissionPanel({
   plainUrlPrefix,
   expanded,
 }: {
-  resLocals: Record<string, any>;
   questionContext: QuestionContext;
   question: Question;
   assessment_question?: AssessmentQuestion;
   instance_question?: InstanceQuestion;
   variant_id: string;
   course_instance_id?: string | null;
-  submission: Submission & {
-    grading_job_id: string;
-    grading_job_stats: GradingJobStats | null;
-    grading_job_status: GradingJobStatus;
-    rubric_grading?: RubricGradingData | null;
-    feedback_manual_html: string;
-    submission_number: number;
-    formatted_date: string;
-    user_uid?: User['uid'] | null;
-  };
+  submission: SubmissionForRenderExtra;
   submissionHtml?: string | null;
   submissionCount: number;
   rubric_data?: RubricData | null;
@@ -173,7 +171,7 @@ export function SubmissionPanel({
                   ${submission.feedback?.manual
                     ? html`
                         <div data-testid="feedback-body">
-                          ${unsafeHtml(submission.feedback_manual_html)}
+                          ${unsafeHtml(submission.feedback_manual_html ?? '')}
                         </div>
                       `
                     : ''}
@@ -277,7 +275,7 @@ function SubmissionStatusBadge({
   assessment_question,
   instance_question,
 }: {
-  submission: Submission;
+  submission: SubmissionForRender;
   question: Question;
   isLatestSubmission: boolean;
   assessment_question?: AssessmentQuestion;
@@ -410,11 +408,7 @@ function SubmissionInfoModal({
 }: {
   urlPrefix: string;
   plainUrlPrefix: string;
-  submission: Submission & {
-    grading_job_id: string;
-    grading_job_stats: GradingJobStats | null;
-    formatted_date: string;
-  };
+  submission: SubmissionForRenderExtra;
   question: Question;
   course_instance_id?: string | null;
 }) {
