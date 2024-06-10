@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
@@ -51,36 +52,15 @@ export function InstructorInstanceAdminSettings({
                     <span class="pr-2">${resLocals.course_instance.short_name}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            id="changeCiidButton"
-                            class="btn btn-xs btn-secondary"
-                            type="button"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change CIID"
-                            data-content="${renderEjs(
-                              import.meta.url,
-                              "<%= include('../partials/changeIdForm') %>",
-                              {
-                                ...resLocals,
-                                id_label: 'CIID',
-                                buttonID: 'changeCiidButton',
-                                id_old: resLocals.course_instance.short_name,
-                                ids: shortNames,
-                                changeIdFormHelpText:
-                                  'The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple versions, like <code>Fa19honors</code>.',
-                              },
-                            )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change CIID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'CIID',
+                          currentValue: resLocals.course_instance.short_name,
+                          otherValues: shortNames,
+                          extraHelpText: html`The recommended format is <code>Fa19</code> or
+                            <code>Fall2019</code>. Add suffixes if there are multiple versions, like
+                            <code>Fa19honors</code>.`,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                   </td>
                 </tr>
