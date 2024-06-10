@@ -73,7 +73,7 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
  * @param {string} queueUrl
  * @param {(message: any) => Promise<void>} receiveCallback
  */
-export default async function (sqs, queueUrl, receiveCallback) {
+export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
   /** @type {AbortController} */
   let heartbeatAbortController;
 

@@ -27,7 +27,7 @@ import * as lifecycle from './lib/lifecycle.js';
 import * as load from './lib/load.js';
 import globalLogger from './lib/logger.js';
 import pullImages from './lib/pullImages.js';
-import receiveFromQueue from './lib/receiveFromQueue.js';
+import { receiveFromQueue } from './lib/receiveFromQueue.js';
 import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -108,7 +108,7 @@ async.series(
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
 
-      function worker() {
+      async function worker() {
         // eslint-disable-next-line no-constant-condition
         while (true) {
           if (!healthCheck.isHealthy() || processTerminating) return;
@@ -117,7 +117,7 @@ async.series(
             throw new Error('jobsQueueUrl is not defined');
           }
 
-          receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
+          await receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
             globalLogger.info(`received ${job.jobId} from queue`);
 
             // Ensure that this job wasn't canceled in the time since job submission.

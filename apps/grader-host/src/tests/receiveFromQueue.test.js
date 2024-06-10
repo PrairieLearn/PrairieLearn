@@ -9,7 +9,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
 import { config } from '../lib/config.js';
-import queueReceiver from '../lib/receiveFromQueue.js';
+import { receiveFromQueue } from '../lib/receiveFromQueue.js';
 
 chaiUse(chaiAsPromised);
 
@@ -74,7 +74,7 @@ function fakeSqs(options = {}) {
 
 const VISIBILITY_TIMEOUT = 60;
 
-describe('queueReceiver', () => {
+describe('receiveFromQueue', () => {
   beforeEach(() => {
     // Our config-loading system chokes when it's not running in AWS. Instead
     // of loading it, we'll just set the values we need for these tests.
@@ -84,7 +84,7 @@ describe('queueReceiver', () => {
   it('tries to receive a message from the correct queue url', async () => {
     const sqs = fakeSqs();
 
-    await queueReceiver(sqs, 'helloworld', async () => {});
+    await receiveFromQueue(sqs, 'helloworld', async () => {});
 
     assert.equal(sqs.receiveMessage.args[0][0].input.QueueUrl, 'helloworld');
   });
@@ -94,7 +94,7 @@ describe('queueReceiver', () => {
       timeoutCount: 1,
     });
 
-    await queueReceiver(sqs, 'helloworld', async () => {});
+    await receiveFromQueue(sqs, 'helloworld', async () => {});
 
     assert.equal(sqs.receiveMessage.callCount, 2);
   });
@@ -104,7 +104,7 @@ describe('queueReceiver', () => {
       message: '{"oops, this is invalid json"',
     });
 
-    await assert.isRejected(queueReceiver(sqs, '', async () => {}));
+    await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
@@ -116,14 +116,14 @@ describe('queueReceiver', () => {
       },
     });
 
-    await assert.isRejected(queueReceiver(sqs, '', async () => {}));
+    await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
   it('updates the timeout of received messages', async () => {
     const sqs = fakeSqs();
 
-    await queueReceiver(sqs, '', async () => {});
+    await receiveFromQueue(sqs, '', async () => {});
 
     assert.equal(sqs.changeMessageVisibility.callCount, 1);
     const params = sqs.changeMessageVisibility.args[0][0].input;
@@ -134,7 +134,7 @@ describe('queueReceiver', () => {
     const sqs = fakeSqs();
 
     await assert.isRejected(
-      queueReceiver(sqs, '', async () => {
+      receiveFromQueue(sqs, '', async () => {
         throw new Error('RIP');
       }),
     );
@@ -144,7 +144,7 @@ describe('queueReceiver', () => {
   it('deletes messages that are handled successfully', async () => {
     const sqs = fakeSqs();
 
-    await queueReceiver(sqs, 'goodbyeworld', async () => {});
+    await receiveFromQueue(sqs, 'goodbyeworld', async () => {});
 
     assert.equal(sqs.deleteMessage.callCount, 1);
     assert.equal(sqs.deleteMessage.args[0][0].input.QueueUrl, 'goodbyeworld');
