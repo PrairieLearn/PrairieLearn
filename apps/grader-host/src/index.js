@@ -194,7 +194,12 @@ async function handleJob(job) {
       initFiles(context),
     ]);
 
+    // TODO: temp debugging, remove
+    logger.info(`Initialization complete for job ${job.jobId}`);
+
     const results = await runJob(context, receivedTime, initResults[2].tempDir);
+
+    logger.info(`Job ${job.jobId} completed with results:`, results);
 
     await Promise.all([
       uploadResults(context, results),
@@ -249,6 +254,9 @@ async function reportReceived(context, receivedTime) {
     logger.error('sendMessage error:', err);
     Sentry.captureException(err);
   }
+
+  // TODO: temp debugging, remove
+  logger.info('Job acknowledgement sent to PrairieLearn');
 }
 
 /**
@@ -301,6 +309,9 @@ async function initDocker(context) {
       },
     );
   });
+
+  // TODO: temp debugging, remove
+  logger.info('Docker image pulled');
 }
 
 /**
@@ -347,7 +358,13 @@ async function initFiles(context) {
       tempDirCleanup: jobDirectory.cleanup,
     };
   } finally {
+    // TODO: temp debugging, remove
+    logger.info('Cleaning up temp file');
+
     await jobArchiveFile.cleanup();
+
+    // TODO: temp debugging, remove
+    logger.info('Successfully cleaned up temp file');
   }
 }
 
