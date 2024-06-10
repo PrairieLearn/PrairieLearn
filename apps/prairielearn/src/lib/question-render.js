@@ -558,6 +558,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
 /**
  * @param {import('./db-types.js').GradingJob | null} job
+ * @returns {import('../components/SubmissionPanel.html.js').GradingJobStats | null}
  */
 function buildGradingJobStats(job) {
   if (job) {
