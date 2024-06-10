@@ -16,9 +16,9 @@ export type SubmissionForRenderExtra = SubmissionForRender & {
   feedback_manual_html?: string;
   submission_number: number;
   rubric_grading?: RubricGradingData;
-  grading_job_status?: GradingJobStatus;
-  grading_job_id?: string;
-  grading_job_stats?: GradingJobStats;
+  grading_job_status?: GradingJobStatus | null;
+  grading_job_id?: string | null;
+  grading_job_stats?: GradingJobStats | null;
 };
 
 export interface GradingJobStats {
@@ -48,8 +48,8 @@ export function SubmissionPanel({
 }: {
   questionContext: QuestionContext;
   question: Question;
-  assessment_question?: AssessmentQuestion;
-  instance_question?: InstanceQuestion;
+  assessment_question?: AssessmentQuestion | null;
+  instance_question?: InstanceQuestion | null;
   variant_id: string;
   course_instance_id?: string | null;
   submission: SubmissionForRenderExtra;
@@ -278,8 +278,8 @@ function SubmissionStatusBadge({
   submission: SubmissionForRender;
   question: Question;
   isLatestSubmission: boolean;
-  assessment_question?: AssessmentQuestion;
-  instance_question?: InstanceQuestion;
+  assessment_question?: AssessmentQuestion | null;
+  instance_question?: InstanceQuestion | null;
 }) {
   let manualGradingBadge: HtmlValue = null;
   let autoGradingBadge: HtmlValue = null;

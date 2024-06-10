@@ -14,6 +14,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { SubmissionPanel } from '../components/SubmissionPanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -703,34 +704,31 @@ export async function renderPanelsForSubmission({
 
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);
-      const renderParams = {
-        course: question_course,
-        course_instance,
+
+      panels.submissionPanel = SubmissionPanel({
+        questionContext,
         question,
-        submission: /** @type {SubmissionForRender} */ ({
-          ...submission,
-          grading_job,
-          grading_job_id,
-          grading_job_status,
-          formatted_date,
-          grading_job_stats,
-          user_uid,
-          submission_number: submission_index,
-        }),
-        submissionHtml: htmls.submissionHtmls[0],
+        variant_id: variant.id,
+        assessment_question,
+        instance_question,
+        course_instance_id: course_instance?.id,
+        submission:
+          /** @type {import('../components/SubmissionPanel.html.js').SubmissionForRenderExtra} */ {
+            ...submission,
+            grading_job,
+            grading_job_id,
+            grading_job_status,
+            formatted_date,
+            grading_job_stats,
+            user_uid,
+            submission_number: submission_index,
+          },
         submissionCount: submission_count,
-        expanded: true,
-        urlPrefix,
-        plainUrlPrefix: config.urlPrefix,
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'submission.ejs',
-      );
-      panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
+        submissionHtml: htmls.submissionHtmls[0],
+        rubric_data: locals.rubric_data,
+        urlPrefix: locals.urlPrefix,
+        plainUrlPrefix: locals.plainUrlPrefix,
+      }).toString();
     },
     async () => {
       // Render the question score panel
