@@ -1,6 +1,5 @@
 // @ts-check
 import { pipeline } from 'node:stream/promises';
-import * as util from 'node:util';
 import * as path from 'path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
