@@ -2,7 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
-import {
+import type {
   AssessmentQuestion,
   CourseInstance,
   InstanceQuestion,
@@ -13,17 +13,11 @@ import {
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
-import { SubmissionForRenderExtra, SubmissionPanel } from './SubmissionPanel.html.js';
+import type { QuestionContext, SubmissionForRender } from './QuestionContainer.types.js';
+import { SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
-
-export type QuestionContext =
-  | 'student_exam'
-  | 'student_homework'
-  | 'instructor'
-  | 'public'
-  | 'manual_grading';
 
 export function QuestionContainer({
   resLocals,
@@ -655,7 +649,7 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
-  submissions: SubmissionForRenderExtra[];
+  submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
 }) {

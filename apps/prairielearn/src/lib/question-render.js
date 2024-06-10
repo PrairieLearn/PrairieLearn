@@ -557,7 +557,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
 /**
  * @param {import('./db-types.js').GradingJob | null} job
- * @returns {import('../components/SubmissionPanel.html.js').GradingJobStats | null}
+ * @returns {import('../components/QuestionContainer.types.js').GradingJobStats | null}
  */
 function buildGradingJobStats(job) {
   if (job) {
@@ -602,7 +602,7 @@ function buildGradingJobStats(job) {
  * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
  * @param  {string | null} param.variant_id The id of the variant (for authorization check)
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
- * @param  {import('../components/QuestionContainer.html.js').QuestionContext} param.questionContext The rendering context of this question
+ * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
  * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
  * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
@@ -712,17 +712,15 @@ export async function renderPanelsForSubmission({
         assessment_question,
         instance_question,
         course_instance_id: course_instance?.id,
-        submission:
-          /** @type {import('../components/SubmissionPanel.html.js').SubmissionForRenderExtra} */ {
-            ...submission,
-            grading_job,
-            grading_job_id,
-            grading_job_status,
-            formatted_date,
-            grading_job_stats,
-            user_uid,
-            submission_number: submission_index,
-          },
+        submission: /** @type {SubmissionForRender} */ {
+          ...submission,
+          grading_job_id,
+          grading_job_status,
+          formatted_date,
+          grading_job_stats,
+          user_uid,
+          submission_number: submission_index,
+        },
         submissionCount: submission_count,
         submissionHtml: htmls.submissionHtmls[0],
         rubric_data: locals.rubric_data,

@@ -1,35 +1,10 @@
 import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
-import type {
-  AssessmentQuestion,
-  GradingJobStatus,
-  InstanceQuestion,
-  Question,
-} from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
-import { SubmissionForRender } from '../lib/question-render.js';
+import type { AssessmentQuestion, InstanceQuestion, Question } from '../lib/db-types.js';
+import type { RubricData } from '../lib/manualGrading.js';
 
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.html.js';
-
-export type SubmissionForRenderExtra = SubmissionForRender & {
-  feedback_manual_html?: string;
-  submission_number: number;
-  rubric_grading?: RubricGradingData;
-  grading_job_status?: GradingJobStatus | null;
-  grading_job_id?: string | null;
-  grading_job_stats?: GradingJobStats | null;
-};
-
-export interface GradingJobStats {
-  phases: number[];
-  submitDuration: string;
-  queueDuration: string;
-  prepareDuration: string;
-  runDuration: string;
-  reportDuration: string;
-  totalDuration: string;
-}
+import type { QuestionContext, SubmissionForRender } from './QuestionContainer.types.js';
 
 export function SubmissionPanel({
   questionContext,
@@ -52,7 +27,7 @@ export function SubmissionPanel({
   instance_question?: InstanceQuestion | null;
   variant_id: string;
   course_instance_id?: string | null;
-  submission: SubmissionForRenderExtra;
+  submission: SubmissionForRender;
   submissionHtml?: string | null;
   submissionCount: number;
   rubric_data?: RubricData | null;
@@ -408,7 +383,7 @@ function SubmissionInfoModal({
 }: {
   urlPrefix: string;
   plainUrlPrefix: string;
-  submission: SubmissionForRenderExtra;
+  submission: SubmissionForRender;
   question: Question;
   course_instance_id?: string | null;
 }) {
