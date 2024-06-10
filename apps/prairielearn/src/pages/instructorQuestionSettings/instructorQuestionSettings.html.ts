@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -64,6 +66,7 @@ export function InstructorQuestionSettings({
           pageNote: resLocals.question.qid,
           ...resLocals,
         })}
+        ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
@@ -71,14 +74,6 @@ export function InstructorQuestionSettings({
         </style>
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
@@ -103,33 +98,12 @@ export function InstructorQuestionSettings({
                     <span class="mr-2">${resLocals.question.qid}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            type="button"
-                            class="btn btn-xs btn-secondary mr-2"
-                            id="changeQidButton"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change QID"
-                            data-content="${renderEjs(
-                              import.meta.url,
-                              "<%= include('../partials/changeIdForm') %>",
-                              {
-                                id_label: 'QID',
-                                buttonID: 'changeQidButton',
-                                id_old: resLocals.question.qid,
-                                ids: qids,
-                                ...resLocals,
-                              },
-                            )}"
-                            data-trigger="click"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change QID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'QID',
+                          currentValue: resLocals.question.qid,
+                          otherValues: qids,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                     ${questionGHLink
                       ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`

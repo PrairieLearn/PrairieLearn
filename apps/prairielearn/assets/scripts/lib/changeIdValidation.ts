@@ -29,7 +29,6 @@ onDocumentReady(function () {
 
       form?.addEventListener('submit', function (event) {
         validateId();
-        console.log('submit', form.checkValidity());
         if (!form?.checkValidity()) {
           event.preventDefault();
           event.stopPropagation();
