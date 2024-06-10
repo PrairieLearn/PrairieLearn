@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
@@ -78,34 +79,12 @@ export function InstructorAssessmentSettings({
                     <span class="pr-2">${resLocals.assessment.tid}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            id="changeAidButton"
-                            class="btn btn-xs btn-secondary"
-                            type="button"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change AID"
-                            data-content="${renderEjs(
-                              import.meta.url,
-                              "<%= include('../partials/changeIdForm'), %>",
-                              {
-                                id_label: 'AID',
-                                buttonID: 'changeAidButton',
-                                id_old: resLocals.assessment.tid,
-                                ids: tids,
-                                ...resLocals,
-                              },
-                            )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change AID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'AID',
+                          currentValue: resLocals.assessment.tid,
+                          otherValues: tids,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                   </td>
                 </tr>
