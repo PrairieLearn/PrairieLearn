@@ -1,10 +1,8 @@
-import { exec } from 'child_process';
 import * as path from 'path';
 
-import * as async from 'async';
-import ERR from 'async-stacktrace';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
@@ -309,11 +307,8 @@ describe('test course editor', function () {
   this.timeout(20000);
 
   describe('not the example course', function () {
-    before('create test course files', function (callback) {
-      createCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    before('create test course files', async () => {
+      await createCourseFiles();
     });
 
     before('set up testing server', helperServer.before(courseDir));
@@ -433,7 +428,15 @@ function testEdit(params) {
     });
   });
 
-  waitForJobSequence(locals, 'Success');
+  describe('The job sequence', () => {
+    it('should have an id', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+      locals.job_sequence_id = result.rows[0].id;
+    });
+    it('should complete', async () => {
+      await helperServer.waitForJobSequenceSuccess(locals.job_sequence_id);
+    });
+  });
 
   describe('validate', () => {
     it('should not have any sync warnings or errors', async () => {
@@ -443,14 +446,10 @@ function testEdit(params) {
       assert.isEmpty(results.rows);
     });
 
-    it('should pull into dev directory', function (callback) {
-      const execOptions = {
+    it('should pull into dev directory', async () => {
+      await execa('git', ['pull'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git pull`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
 
@@ -469,119 +468,39 @@ function testEdit(params) {
   });
 }
 
-function createCourseFiles(callback) {
-  async.series(
-    [
-      async () => await deleteCourseFiles(),
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        // Ensure that the default branch is master, regardless of how git
-        // is configured on the host machine.
-        exec(
-          `git -c "init.defaultBranch=master" init --bare ${courseOriginDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseLiveDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => {
-        await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git add -A`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git commit -m "initial commit"`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git push`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseDevDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function createCourseFiles() {
+  await deleteCourseFiles();
+  // Ensure that the default branch is master, regardless of how git
+  // is configured on the host machine.
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await execa('git', ['add', '-A'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', 'initial commit'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['push'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], {
+    cwd: '.',
+    env: process.env,
+  });
 }
 
 async function deleteCourseFiles() {
   await fs.remove(courseOriginDir);
   await fs.remove(courseLiveDir);
   await fs.remove(courseDevDir);
-}
-
-function waitForJobSequence(locals, expectedResult) {
-  describe('The job sequence', function () {
-    it('should have an id', function (callback) {
-      sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-        if (ERR(err, callback)) return;
-        locals.job_sequence_id = result.rows[0].id;
-        callback(null);
-      });
-    });
-    it('should complete', function (callback) {
-      const checkComplete = function () {
-        const params = { job_sequence_id: locals.job_sequence_id };
-        sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          locals.job_sequence_status = result.rows[0].status;
-          if (locals.job_sequence_status === 'Running') {
-            setTimeout(checkComplete, 10);
-          } else {
-            callback(null);
-          }
-        });
-      };
-      setTimeout(checkComplete, 10);
-    });
-    it(`should have result "${expectedResult}"`, function () {
-      assert.equal(locals.job_sequence_status, expectedResult);
-    });
-  });
 }

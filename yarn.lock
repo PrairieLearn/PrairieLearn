@@ -3343,7 +3343,6 @@ __metadata:
     archiver: ^7.0.1
     async: ^3.2.5
     async-mutex: ^0.5.0
-    async-stacktrace: ^0.0.2
     axe-core: ^4.7.0
     backbone: ^1.6.0
     better-ajv-errors: ^1.2.0
@@ -13725,6 +13724,7 @@ __metadata:
     eslint-plugin-no-only-tests: ^3.1.0
     globby: ^14.0.1
     htmlhint: ^1.1.4
+    node-gyp: ^10.1.0
     prettier: 3.2.5
     pyright: ^1.1.365
     s3rver: ^3.7.1
