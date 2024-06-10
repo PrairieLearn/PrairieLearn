@@ -1,20 +1,18 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
-import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
-  studentLinkQRCode,
   infoCourseInstancePath,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
-  studentLinkQRCode: string;
   infoCourseInstancePath: string;
 }) {
   return html`
@@ -22,44 +20,14 @@ export function InstructorInstanceAdminSettings({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
-        <script>
-          $(() => {
-            let clipboard = new ClipboardJS('.btn-copy');
-            clipboard.on('success', (e) => {
-              $(e.trigger)
-                .popover({
-                  content: 'Copied!',
-                  placement: 'bottom',
-                })
-                .popover('show');
-              window.setTimeout(function () {
-                $(e.trigger).popover('hide');
-              }, 1000);
-            });
-            $('.js-student-link-qrcode-button').popover({
-              content: $('#js-student-link-qrcode'),
-              html: true,
-              trigger: 'click',
-              container: 'body',
-            });
-          });
-        </script>
+        ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
           }
         </style>
       </head>
-
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container">
           ${renderEjs(
@@ -147,17 +115,13 @@ export function InstructorInstanceAdminSettings({
                           type="button"
                           title="Student Link QR Code"
                           aria-label="Student Link QR Code"
-                          class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button"
+                          class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                          data-qr-code-content="${studentLink}"
                         >
                           <i class="fas fa-qrcode"></i>
                         </button>
                       </div>
                     </span>
-                    <div class="d-none">
-                      <div id="js-student-link-qrcode">
-                        <center>${unsafeHtml(studentLinkQRCode)}</center>
-                      </div>
-                    </div>
                   </td>
                 </tr>
               </tbody>
