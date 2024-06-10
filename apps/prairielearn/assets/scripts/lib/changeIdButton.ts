@@ -2,7 +2,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(function () {
   $('.js-change-id-button')
-    .popover({ sanitize: false })
+    .popover({ sanitize: false, container: 'body', html: true, placement: 'auto' })
     .on('shown.bs.popover', function () {
       const previousValue = this.dataset.previousValue;
       const otherValues = JSON.parse(this.dataset.otherValues ?? '[]');
@@ -16,7 +16,7 @@ onDocumentReady(function () {
         if (newValue === previousValue) {
           input?.setCustomValidity('ID must be changed');
         } else if (otherValues.includes(newValue)) {
-          input?.setCustomValidity('ID must be unique');
+          input?.setCustomValidity('This ID is already in use');
         } else {
           input?.setCustomValidity('');
         }

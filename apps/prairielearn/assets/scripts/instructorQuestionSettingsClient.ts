@@ -1,5 +1,5 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import './lib/changeIdValidation.js';
+import './lib/changeIdButton.js';
 
 onDocumentReady(() => {
   $('[data-toggle="popover"]').popover({ sanitize: false });
