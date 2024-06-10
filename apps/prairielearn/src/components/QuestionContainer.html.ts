@@ -660,7 +660,7 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance.id,
+      course_instance_id: resLocals.course_instance?.id,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,
