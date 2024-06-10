@@ -5,7 +5,6 @@ import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -27,11 +26,8 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      // AssessmentAccessRulesSchema,
-      z.any(),
+      AssessmentAccessRulesSchema,
     );
-
-    console.log(accessRules);
 
     const assessmentPath = path.join(
       res.locals.course.path,
@@ -63,7 +59,7 @@ router.get(
         resLocals: res.locals,
         accessRules,
         origHash,
-        timezone,
+        timezone: timezone ?? 'UTC',
       }),
     );
   }),

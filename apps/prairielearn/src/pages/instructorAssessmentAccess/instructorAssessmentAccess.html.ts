@@ -2,10 +2,10 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { AccessRulesTable } from '../../../assets/scripts/lib/accessRulesTable.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
+import { AccessRulesTable } from './accessRulesTable.js';
 import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
 
 export function InstructorAssessmentAccess({

@@ -1,6 +1,8 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
+import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
+
 function adjustedDate(dateString: string | Date) {
   const date = new Date(dateString);
   const timezoneOffset = date.getTimezoneOffset() * 60000;
@@ -15,7 +17,7 @@ export function AccessRulesTable({
   editMode,
   timezone,
 }: {
-  accessRules: any[];
+  accessRules: AssessmentAccessRules[];
   ptHost: string;
   devMode: boolean;
   hasCourseInstancePermissionView: boolean;
@@ -93,12 +95,18 @@ export function AccessRulesTable({
                       ? access_rule.assessment_access_rule.uids.join(', ')
                       : ''}"
                     data-access-rule-start-date="${adjustedDate(
-                      access_rule.assessment_access_rule.start_date,
+                      formatDate(
+                        new Date(access_rule.assessment_access_rule.start_date ?? ''),
+                        timezone,
+                      ),
                     )
                       .toISOString()
                       .slice(0, 19)}"
                     data-access-rule-end-date="${adjustedDate(
-                      formatDate(new Date(access_rule.assessment_access_rule.end_date), timezone),
+                      formatDate(
+                        new Date(access_rule.assessment_access_rule.end_date ?? ''),
+                        timezone,
+                      ),
                     )
                       .toISOString()
                       .slice(0, 19)}"
@@ -126,7 +134,7 @@ export function AccessRulesTable({
                   </button>
                 </td>
                 <td class="align-content-center">
-                  ${access_rule.assessment_access_rule.mode !== ''
+                  ${access_rule.assessment_access_rule.mode !== null
                     ? access_rule.assessment_access_rule.mode
                     : '—'}
                 </td>
@@ -153,12 +161,20 @@ export function AccessRulesTable({
                         `}
                 </td>
                 <td class="align-content-center">
-                  ${formatDate(new Date(access_rule.assessment_access_rule.start_date), timezone)}
+                  ${formatDate(
+                    new Date(access_rule.assessment_access_rule.start_date ?? ''),
+                    timezone,
+                  )}
                 </td>
                 <td class="align-content-center">
-                  ${formatDate(new Date(access_rule.assessment_access_rule.end_date), timezone)}
+                  ${formatDate(
+                    new Date(access_rule.assessment_access_rule.end_date ?? ''),
+                    timezone,
+                  )}
                 </td>
-                <td class="align-content-center">${access_rule.assessment_access_rule.active}</td>
+                <td class="align-content-center">
+                  ${access_rule.assessment_access_rule.active ? 'True' : 'False'}
+                </td>
                 <td class="align-content-center">
                   ${access_rule.assessment_access_rule.credit
                     ? `${access_rule.assessment_access_rule.credit}%`
@@ -175,7 +191,7 @@ export function AccessRulesTable({
                     : '—'}
                 </td>
                 <td class="align-content-center">
-                  ${access_rule.pt_exam
+                  ${access_rule.pt_exam && access_rule.pt_course
                     ? html`
                         <a
                           href="${ptHost}/pt/course/${access_rule.pt_course

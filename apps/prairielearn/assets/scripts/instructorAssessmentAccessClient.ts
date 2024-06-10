@@ -3,12 +3,10 @@ import { on } from 'delegated-events';
 import morphdom from 'morphdom';
 
 import { onDocumentReady, decodeData, templateFromAttributes } from '@prairielearn/browser-utils';
-import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { Modal } from '../../src/components/Modal.html.js';
-
-import { AccessRulesTable } from './lib/accessRulesTable.js';
+import { AccessRulesTable } from '../../src/pages/instructorAssessmentAccess/accessRulesTable.js';
 
 onDocumentReady(() => {
   const enableEditButton = document.getElementById('enableEditButton');
@@ -27,17 +25,6 @@ onDocumentReady(() => {
   const timezone = (accessRulesTable as HTMLElement)?.dataset.timezone ?? 'UTC';
 
   let editMode = false;
-
-  // accessRulesData.forEach((accessRule: Record<string, any>) => {
-  //   accessRule.assessment_access_rule.start_date = formatDate(
-  //     new Date(accessRule.assessment_access_rule.start_date),
-  //     timezone,
-  //   );
-  //   accessRule.assessment_access_rule.end_date = formatDate(
-  //     new Date(accessRule.assessment_access_rule.end_date),
-  //     timezone,
-  //   );
-  // });
 
   function refreshTable() {
     morphdom(
@@ -76,9 +63,7 @@ onDocumentReady(() => {
         startDate: adjustedDate(accessRule.assessment_access_rule.start_date)
           .toISOString()
           .slice(0, 19),
-        endDate: adjustedDate(
-          formatDate(new Date(accessRule.assessment_access_rule.end_date), timezone),
-        )
+        endDate: adjustedDate(accessRule.assessment_access_rule.end_date)
           .toISOString()
           .slice(0, 19),
         active: accessRule.assessment_access_rule.active,
@@ -109,6 +94,19 @@ onDocumentReady(() => {
       .split(',')
       .map((uid: string) => uid.trim());
     updatedAccessRules.active = updatedAccessRules.active === 'true';
+
+    updatedAccessRules.start_date = new Date(
+      Temporal.PlainDateTime.from(updatedAccessRules.start_date)
+        .toZonedDateTime(timezone)
+        .toInstant().epochMilliseconds,
+    ).toISOString();
+
+    updatedAccessRules.end_date = new Date(
+      Temporal.PlainDateTime.from(updatedAccessRules.end_date)
+        .toZonedDateTime(timezone)
+        .toInstant().epochMilliseconds,
+    ).toISOString();
+
     if (accessRulesData[row]) {
       accessRulesData[row].assessment_access_rule = updatedAccessRules;
     } else {
@@ -187,22 +185,29 @@ onDocumentReady(() => {
 
   on('click', '.deleteButton', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    morphdom(deleteAccessRuleModal as Node, DeleteConfirmationModal().toString());
+    morphdom(deleteAccessRuleModal as Node, DeleteConfirmationModal({ row }).toString());
     $('#deleteAccessRuleModal').modal('show');
-    document.getElementById('confirmDeleteButton')?.addEventListener('click', () => {
-      accessRulesData.splice(row, 1);
-      refreshTable();
-    });
+  });
+  on('click', '#confirmDeleteButton', (e) => {
+    const row = parseInt((e.target as HTMLElement).dataset.row ?? '0');
+    accessRulesData.splice(row, 1);
+    refreshTable();
   });
 });
 
-function DeleteConfirmationModal() {
+function DeleteConfirmationModal({ row }: { row: number }) {
   return Modal({
     id: 'deleteAccessRuleModal',
     title: 'Delete Access Rule',
     body: html` <p>Are you sure you want to delete this access rule?</p> `,
     footer: html`
-      <button type="button" class="btn btn-danger" id="confirmDeleteButton" data-dismiss="modal">
+      <button
+        type="button"
+        class="btn btn-danger"
+        id="confirmDeleteButton"
+        data-dismiss="modal"
+        data-row="${row}"
+      >
         Delete Access Rule
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
