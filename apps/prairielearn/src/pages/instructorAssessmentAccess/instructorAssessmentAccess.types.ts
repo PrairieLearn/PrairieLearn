@@ -1,20 +1,22 @@
 import { z } from 'zod';
 
+import { AssessmentAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
+
 export const AssessmentAccessRulesSchema = z.object({
-  mode: z.string(),
-  uids: z.string(),
-  start_date: z.string(),
-  formatted_start_date: z.string().optional(),
-  end_date: z.string(),
-  formatted_end_date: z.string().optional(),
-  credit: z.string(),
-  time_limit: z.string(),
-  password: z.string(),
-  exam_uuid: z.string().nullable(),
-  pt_course_id: z.string().nullable(),
-  pt_course_name: z.string().nullable(),
-  pt_exam_id: z.string().nullable(),
-  pt_exam_name: z.string().nullable(),
-  active: z.string(),
+  assessment_access_rule: AssessmentAccessRuleSchema,
+  pt_course: z
+    .object({
+      id: IdSchema,
+      name: z.string(),
+    })
+    .nullable(),
+  pt_exam: z
+    .object({
+      course_id: IdSchema,
+      id: IdSchema,
+      name: z.string(),
+      uuid: z.string(),
+    })
+    .nullable(),
 });
 export type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;

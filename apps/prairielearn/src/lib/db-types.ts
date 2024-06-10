@@ -961,3 +961,21 @@ export const LtiCredentialsSchema = z.object({
   secret: z.string().nullable(),
 });
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
+
+export const AssessmentAccessRuleSchema = z.object({
+  active: z.boolean(),
+  assessment_id: IdSchema,
+  credit: z.number().nullable(),
+  end_date: DateFromISOString.nullable(),
+  exam_uuid: z.string().nullable(),
+  id: IdSchema,
+  mode: ModeSchema.nullable(),
+  number: z.number().nullable(),
+  password: z.string().nullable(),
+  seb_config: z.object({}).nullable(),
+  show_close_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  start_date: DateFromISOString.nullable(),
+  time_limit_min: z.number().nullable(),
+  uids: z.array(z.string()).nullable(),
+});

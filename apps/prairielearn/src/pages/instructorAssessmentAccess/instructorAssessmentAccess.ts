@@ -1,9 +1,11 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -25,40 +27,45 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      AssessmentAccessRulesSchema,
+      // AssessmentAccessRulesSchema,
+      z.any(),
     );
 
-    const assessmentPathExists = await fs.pathExists(
-      path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid,
-        'infoAssessment.json',
-      ),
+    console.log(accessRules);
+
+    const assessmentPath = path.join(
+      res.locals.course.path,
+      'courseInstances',
+      res.locals.course_instance.short_name,
+      'assessments',
+      res.locals.assessment.tid,
+      'infoAssessment.json',
     );
+
+    const assessmentPathExists = await fs.pathExists(assessmentPath);
 
     let origHash = '';
     if (assessmentPathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(
-          await fs.readFile(
-            path.join(
-              res.locals.course.path,
-              'courseInstances',
-              res.locals.course_instance.short_name,
-              'assessments',
-              res.locals.assessment.tid,
-              'infoAssessment.json',
-            ),
-            'utf8',
-          ),
-        ),
-      ).toString();
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
     }
 
-    res.send(InstructorAssessmentAccess({ resLocals: res.locals, accessRules, origHash }));
+    const now = Temporal.Now.zonedDateTimeISO(res.locals.course_instance.timezone);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: res.locals.course_instance.display_timezone,
+      timeZoneName: 'short',
+    });
+    const timezone = formatter
+      .formatToParts(now.toInstant().epochMilliseconds)
+      .find((part) => part.type === 'timeZoneName')?.value;
+
+    res.send(
+      InstructorAssessmentAccess({
+        resLocals: res.locals,
+        accessRules,
+        origHash,
+        timezone,
+      }),
+    );
   }),
 );
 
@@ -74,7 +81,7 @@ router.post(
     }
 
     if (req.body.__action === 'edit_access_rules') {
-      const assessmentsPath = path.join(
+      const assessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',
         res.locals.course_instance.short_name,
@@ -82,13 +89,10 @@ router.post(
         res.locals.assessment.tid,
         'infoAssessment.json',
       );
-      if (!(await fs.pathExists(assessmentsPath))) {
-        throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
-      }
 
       const paths = getPaths(req, res);
 
-      const assessmentInfo = JSON.parse(await fs.readFile(assessmentsPath, 'utf8'));
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
 
       const origHash = req.body.__orig_hash;
 
@@ -101,15 +105,10 @@ router.post(
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
         },
-        filePath: assessmentsPath,
+        filePath: assessmentPath,
         editContents: b64EncodeUnicode(JSON.stringify(assessmentInfoEdit, null, 2)),
         origHash,
       });
-
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
 
       const serverJob = await editor.prepareServerJob();
       try {

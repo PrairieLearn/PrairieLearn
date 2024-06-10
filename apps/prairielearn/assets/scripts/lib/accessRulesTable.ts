@@ -1,4 +1,11 @@
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+
+function adjustedDate(dateString: string | Date) {
+  const date = new Date(dateString);
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset);
+}
 
 export function AccessRulesTable({
   accessRules,
@@ -6,12 +13,14 @@ export function AccessRulesTable({
   devMode,
   hasCourseInstancePermissionView,
   editMode,
+  timezone,
 }: {
   accessRules: any[];
   ptHost: string;
   devMode: boolean;
   hasCourseInstancePermissionView: boolean;
   editMode: boolean;
+  timezone: string;
 }) {
   return html`
     <div
@@ -20,7 +29,7 @@ export function AccessRulesTable({
       data-pt-host="${ptHost}"
       data-dev-mode="${devMode}"
       data-has-course-instance-permission-view="${hasCourseInstancePermissionView}"
-      data-timezone
+      data-timezone="${timezone}"
     >
       <table class="table table-sm">
         <thead>
@@ -40,7 +49,7 @@ export function AccessRulesTable({
           </tr>
         </thead>
         <tbody>
-          ${accessRules.map((access_rule, i) => {
+          ${accessRules.map((access_rule, index) => {
             // Only users with permission to view student data are allowed
             // to see the list of uids associated with an access rule. Note,
             // however, that any user with permission to view course code
@@ -49,13 +58,14 @@ export function AccessRulesTable({
             // in course code. This should be changed in future, to protect
             // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
             return html`
-              <tr class="tableDataRow">
+              <tr>
                 <td class="arrowButtonsCell align-content-center" ${editMode ? '' : 'hidden'}>
                   <div>
                     <button
                       class="btn btn-xs btn-secondary up-arrow-button"
                       type="button"
-                      data-row="${i}"
+                      data-row="${index}"
+                      ${index === 0 ? 'disabled' : ''}
                     >
                       <i class="fa fa-arrow-up" aria-hidden="true"></i>
                     </button>
@@ -64,14 +74,43 @@ export function AccessRulesTable({
                     <button
                       class="btn btn-xs btn-secondary down-arrow-button"
                       type="button"
-                      data-row="${i}"
+                      data-row="${index}"
+                      ${index === accessRules.length - 1 ? 'disabled' : ''}
                     >
                       <i class="fa fa-arrow-down" aria-hidden="true"></i>
                     </button>
                   </div>
                 </td>
                 <td class="editButtonCell align-content-center" ${editMode ? '' : 'hidden'}>
-                  <button class="btn btn-sm btn-secondary editButton" type="button" data-row="${i}">
+                  <button
+                    class="btn btn-sm btn-secondary editButton"
+                    type="button"
+                    data-row="${index}"
+                    data-toggle="modal"
+                    data-target="editAccessRuleModal"
+                    data-access-rule-mode="${access_rule.assessment_access_rule.mode}"
+                    data-access-rule-uids="${access_rule.assessment_access_rule.uids
+                      ? access_rule.assessment_access_rule.uids.join(', ')
+                      : ''}"
+                    data-access-rule-start-date="${adjustedDate(
+                      access_rule.assessment_access_rule.start_date,
+                    )
+                      .toISOString()
+                      .slice(0, 19)}"
+                    data-access-rule-end-date="${adjustedDate(
+                      formatDate(new Date(access_rule.assessment_access_rule.end_date), timezone),
+                    )
+                      .toISOString()
+                      .slice(0, 19)}"
+                    data-access-rule-active="${access_rule.assessment_access_rule.active}"
+                    data-access-rule-credit="${access_rule.assessment_access_rule.credit}"
+                    data-access-rule-time-limit="${access_rule.assessment_access_rule
+                      .time_limit_min}"
+                    data-access-rule-password="${access_rule.assessment_access_rule.password}"
+                    data-access-rule-exam-uuid="${access_rule.assessment_access_rule.exam_uuid}"
+                    data-title-text="Edit Access Rule"
+                    data-submit-text="Update Access Rule"
+                  >
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   </button>
                 </td>
@@ -79,7 +118,7 @@ export function AccessRulesTable({
                   <button
                     class="btn btn-sm btn-danger deleteButton"
                     type="button"
-                    data-row="${i}"
+                    data-row="${index}"
                     data-toggle="modal"
                     data-target="deleteAccessRuleModal"
                   >
@@ -87,12 +126,16 @@ export function AccessRulesTable({
                   </button>
                 </td>
                 <td class="align-content-center">
-                  ${access_rule.mode.length > 0 ? access_rule.mode : '—'}
+                  ${access_rule.assessment_access_rule.mode !== ''
+                    ? access_rule.assessment_access_rule.mode
+                    : '—'}
                 </td>
                 <td class="align-content-center">
-                  ${access_rule.uids === '' || hasCourseInstancePermissionView
-                    ? access_rule.uids.length > 0
-                      ? access_rule.uids
+                  ${hasCourseInstancePermissionView
+                    ? access_rule.assessment_access_rule.uids
+                      ? access_rule.assessment_access_rule.uids[0] !== ''
+                        ? access_rule.assessment_access_rule.uids.join(', ')
+                        : '—'
                       : '—'
                     : html`
                           <button
@@ -109,29 +152,44 @@ export function AccessRulesTable({
                           </a>
                         `}
                 </td>
-                <td class="align-content-center">${access_rule.start_date}</td>
-                <td class="align-content-center">${access_rule.end_date}</td>
-                <td class="align-content-center">${access_rule.active}</td>
-                <td class="align-content-center">${access_rule.credit}%</td>
-                <td class="align-content-center">${access_rule.time_limit} mins</td>
                 <td class="align-content-center">
-                  ${access_rule.password.length > 0 ? access_rule.password : '—'}
+                  ${formatDate(new Date(access_rule.assessment_access_rule.start_date), timezone)}
                 </td>
                 <td class="align-content-center">
-                  ${access_rule.pt_exam_name
+                  ${formatDate(new Date(access_rule.assessment_access_rule.end_date), timezone)}
+                </td>
+                <td class="align-content-center">${access_rule.assessment_access_rule.active}</td>
+                <td class="align-content-center">
+                  ${access_rule.assessment_access_rule.credit
+                    ? `${access_rule.assessment_access_rule.credit}%`
+                    : '—'}
+                </td>
+                <td class="align-content-center">
+                  ${access_rule.assessment_access_rule.time_limit_min
+                    ? `${access_rule.assessment_access_rule.time_limit_min} mins`
+                    : '—'}
+                </td>
+                <td class="align-content-center">
+                  ${access_rule.assessment_access_rule.password
+                    ? access_rule.assessment_access_rule.password
+                    : '—'}
+                </td>
+                <td class="align-content-center">
+                  ${access_rule.pt_exam
                     ? html`
                         <a
-                          href="${ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
+                          href="${ptHost}/pt/course/${access_rule.pt_course
+                            .id}/staff/exam/${access_rule.pt_exam.id}"
                         >
-                          ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
+                          ${access_rule.pt_course.name}: ${access_rule.pt_exam.name}
                         </a>
                       `
-                    : access_rule.exam_uuid
+                    : access_rule.assessment_access_rule.exam_uuid
                       ? devMode
-                        ? access_rule.exam_uuid
+                        ? access_rule.assessment_access_rule.exam_uuid
                         : html`
                             <span class="text-danger">
-                              Exam not found: ${access_rule.exam_uuid}
+                              Exam not found: ${access_rule.assessment_access_rule.exam_uuid}
                             </span>
                           `
                       : html`&mdash;`}
@@ -139,9 +197,27 @@ export function AccessRulesTable({
               </tr>
             `;
           })}
-          <tr class="tableDataRow" ${editMode ? '' : 'hidden'}>
+          <tr ${editMode ? '' : 'hidden'}>
             <td colspan="12">
-              <button id="addRuleButton" class="btn btn-sm" type="button">
+              <button
+                id="addRuleButton"
+                class="btn btn-sm"
+                type="button"
+                data-row="${accessRules.length}"
+                data-toggle="modal"
+                data-target="editAccessRuleModal"
+                data-access-rule-mode=""
+                data-access-rule-uids=""
+                data-access-rule-start-date="${adjustedDate(new Date()).toISOString().slice(0, 19)}"
+                data-access-rule-end-date="${adjustedDate(new Date()).toISOString().slice(0, 19)}"
+                data-access-rule-active="true"
+                data-access-rule-credit=""
+                data-access-rule-time-limit=""
+                data-access-rule-password=""
+                data-access-rule-exam-uuid=""
+                data-title-text="Add Access Rule"
+                data-submit-text="Add Access Rule"
+              >
                 <i class="fa fa-plus" aria-hidden="true"></i> Add Access Rule
               </button>
             </td>

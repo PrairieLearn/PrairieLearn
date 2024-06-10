@@ -2,21 +2,21 @@ import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import morphdom from 'morphdom';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { Modal } from '../../src/components/Modal.html.js';
 
 import { AccessRulesTable } from './lib/accessRulesTable.js';
-import { EditAccessRuleModal } from './lib/editAccessRuleModal.js';
 
 onDocumentReady(() => {
   const enableEditButton = document.getElementById('enableEditButton');
   const editModeButtons = document.getElementById('editModeButtons');
   const accessRulesTable = document.querySelector('.js-access-rules-table');
-  const editAccessRuleModal = document.querySelector('.js-edit-access-rule-modal');
+  const editAccessRuleModal = document.querySelector('#editAccessRuleModal');
   const deleteAccessRuleModal = document.querySelector('.js-delete-access-rule-modal');
+  const addRuleButton = document.getElementById('addRuleButton');
 
   const accessRulesData = decodeData('access-rules-data');
 
@@ -28,6 +28,17 @@ onDocumentReady(() => {
 
   let editMode = false;
 
+  // accessRulesData.forEach((accessRule: Record<string, any>) => {
+  //   accessRule.assessment_access_rule.start_date = formatDate(
+  //     new Date(accessRule.assessment_access_rule.start_date),
+  //     timezone,
+  //   );
+  //   accessRule.assessment_access_rule.end_date = formatDate(
+  //     new Date(accessRule.assessment_access_rule.end_date),
+  //     timezone,
+  //   );
+  // });
+
   function refreshTable() {
     morphdom(
       accessRulesTable as Node,
@@ -37,13 +48,10 @@ onDocumentReady(() => {
         devMode,
         hasCourseInstancePermissionView,
         editMode,
+        timezone,
       }).toString(),
     );
   }
-
-  refreshTable();
-
-  const addRuleButton = document.getElementById('addRuleButton');
 
   enableEditButton?.addEventListener('click', () => {
     editMode = true;
@@ -59,32 +67,30 @@ onDocumentReady(() => {
       'input[name="assessment_access_rules"]',
     ) as HTMLInputElement;
     if (!assessmentAccessRulesInput) return;
-    accessRulesData.forEach((accessRule: Record<string, any>) => {
-      accessRule.startDate = adjustedDate(accessRule.start_date).toISOString().slice(0, 19);
-      accessRule.endDate = adjustedDate(accessRule.end_date).toISOString().slice(0, 19);
-      accessRule.timeLimitMin = parseInt(accessRule.time_limit);
-      accessRule.uids = accessRule.uids.split(',').map((uid: string) => uid.trim());
-      accessRule.credit = parseInt(accessRule.credit);
-      if (accessRule.exam) {
-        accessRule.examUuid = accessRule.exam_uuid;
-      }
-      delete accessRule.formatted_start_date;
-      delete accessRule.formatted_end_date;
-      delete accessRule.start_date;
-      delete accessRule.end_date;
-      delete accessRule.time_limit;
-      delete accessRule.pt_course_name;
-      delete accessRule.pt_exam_name;
-      delete accessRule.pt_course_id;
-      delete accessRule.pt_exam_id;
-      delete accessRule.exam_uuid;
-      if (accessRule.active === 'True' || accessRule.active === 'true') {
-        accessRule.active = true;
-      } else {
-        accessRule.active = false;
-      }
+    const accessRulesMap = accessRulesData.map((accessRule: Record<string, any>) => {
+      const rule = {
+        mode: accessRule.assessment_access_rule.mode,
+        uids: accessRule.assessment_access_rule.uids
+          ? accessRule.assessment_access_rule.uids
+          : null,
+        startDate: adjustedDate(accessRule.assessment_access_rule.start_date)
+          .toISOString()
+          .slice(0, 19),
+        endDate: adjustedDate(
+          formatDate(new Date(accessRule.assessment_access_rule.end_date), timezone),
+        )
+          .toISOString()
+          .slice(0, 19),
+        active: accessRule.assessment_access_rule.active,
+        credit: parseInt(accessRule.assessment_access_rule.credit),
+        timeLimitMin: parseInt(accessRule.assessment_access_rule.time_limit_mins),
+        password: accessRule.assessment_access_rule.password,
+        examUuid: accessRule.assessment_access_rule.exam_uuid,
+      };
+      const filteredRules = Object.fromEntries(Object.entries(rule).filter(([_, value]) => value));
+      return filteredRules;
     });
-    assessmentAccessRulesInput.value = JSON.stringify(accessRulesData);
+    assessmentAccessRulesInput.value = JSON.stringify(accessRulesMap);
     form.submit();
   });
 
@@ -94,56 +100,49 @@ onDocumentReady(() => {
     return new Date(date.getTime() - timezoneOffset);
   }
 
-  let timeZoneName: string | undefined;
-  // To use Temporal polyfill, we need to check if Temporal is available in the environment
-  if (typeof Temporal !== 'undefined') {
-    const now = Temporal.Now.zonedDateTimeISO(timezone);
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      timeZoneName: 'short',
-    });
-    timeZoneName = formatter
-      .formatToParts(now.toInstant().epochMilliseconds)
-      .find((part) => part.type === 'timeZoneName')?.value;
-  } else {
-    console.error('Temporal API is not available in this environment.');
-  }
-
-  function handleUpdateAccessRule({ form, row }: { form: HTMLFormElement; row: number }) {
+  function handleUpdateAccessRule({ form }: { form: HTMLFormElement }) {
     const formData = new FormData(form);
-    const updatedAccessRules = Object.fromEntries(formData);
-    const startDate = adjustedDate(updatedAccessRules.start_date.toString());
-    const endDate = adjustedDate(updatedAccessRules.end_date.toString());
-    updatedAccessRules.start_date =
-      formatDate(startDate, 'UTC', { includeTz: false }) + ` (${timeZoneName})`;
-    updatedAccessRules.end_date =
-      formatDate(endDate, 'UTC', { includeTz: false }) + ` (${timeZoneName})`;
-    accessRulesData[row] = updatedAccessRules;
+    const updatedAccessRules: Record<string, any> = Object.fromEntries(formData);
+    const row = parseInt(updatedAccessRules.row.toString());
+    updatedAccessRules.uids = updatedAccessRules.uids
+      .toString()
+      .split(',')
+      .map((uid: string) => uid.trim());
+    updatedAccessRules.active = updatedAccessRules.active === 'true';
+    if (accessRulesData[row]) {
+      accessRulesData[row].assessment_access_rule = updatedAccessRules;
+    } else {
+      accessRulesData[row] = { assessment_access_rule: updatedAccessRules };
+    }
     refreshTable();
   }
 
   on('click', '.editButton', (e) => {
-    const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    const accessRule = accessRulesData[row];
-    accessRule.formatted_start_date = adjustedDate(accessRule.start_date)
-      .toISOString()
-      .slice(0, 19);
-    accessRule.formatted_end_date = adjustedDate(accessRule.end_date).toISOString().slice(0, 19);
-    if (!timeZoneName) {
-      throw new Error('Course instance time zone is not available.');
-    }
-    morphdom(
-      editAccessRuleModal as Node,
-      EditAccessRuleModal({ accessRule, i: row, timeZoneName }).toString(),
-    );
+    const editButton = (e.target as HTMLElement).closest('button');
+    if (!editButton) return;
+
+    templateFromAttributes(editButton, editAccessRuleModal as HTMLElement, {
+      'data-row': '.access-rule-row',
+      'data-title-text': '.modal-title',
+      'data-submit-text': '.updateAccessRuleButton',
+      'data-access-rule-mode': '.access-rule-mode',
+      'data-access-rule-uids': '.access-rule-uids',
+      'data-access-rule-start-date': '.access-rule-start-date',
+      'data-access-rule-end-date': '.access-rule-end-date',
+      'data-access-rule-active': '.access-rule-active',
+      'data-access-rule-credit': '.access-rule-credit',
+      'data-access-rule-time-limit': '.access-rule-time-limit',
+      'data-access-rule-password': '.access-rule-password',
+      'data-access-rule-exam-uuid': '.access-rule-exam-uuid',
+    });
+
     $('#editAccessRuleModal').modal('show');
   });
 
   on('click', '#updateAccessRuleButton', (e) => {
-    const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
     const form = (e.target as HTMLElement).closest('form');
     if (!form) return;
-    handleUpdateAccessRule({ form, row });
+    handleUpdateAccessRule({ form });
   });
 
   function swapRows(row: any, targetRow: any) {
@@ -166,36 +165,23 @@ onDocumentReady(() => {
   });
 
   on('click', '#addRuleButton', () => {
-    const formatted_start_date = adjustedDate(new Date()).toISOString().slice(0, 19);
-    const formatted_end_date = adjustedDate(new Date()).toISOString().slice(0, 19);
-    if (!timeZoneName) {
-      throw new Error('Course instance time zone is not available.');
-    }
-    morphdom(
-      editAccessRuleModal as Node,
-      EditAccessRuleModal({
-        accessRule: {
-          mode: '',
-          uids: '',
-          start_date: new Date().toISOString().slice(0, 19),
-          end_date: new Date().toISOString().slice(0, 19),
-          active: 'True',
-          credit: '100',
-          time_limit: '50',
-          password: '',
-          formatted_start_date,
-          formatted_end_date,
-          exam_uuid: null,
-          pt_course_id: null,
-          pt_course_name: null,
-          pt_exam_id: null,
-          pt_exam_name: null,
-        },
-        i: accessRulesData.length,
-        addAccessRule: true,
-        timeZoneName,
-      }).toString(),
-    );
+    const addRuleButton = document.getElementById('addRuleButton');
+    if (!addRuleButton) return;
+
+    templateFromAttributes(addRuleButton, editAccessRuleModal as HTMLElement, {
+      'data-row': '.access-rule-row',
+      'data-title-text': '.modal-title',
+      'data-submit-text': '.updateAccessRuleButton',
+      'data-access-rule-mode': '.access-rule-mode',
+      'data-access-rule-uids': '.access-rule-uids',
+      'data-access-rule-start-date': '.access-rule-start-date',
+      'data-access-rule-end-date': '.access-rule-end-date',
+      'data-access-rule-active': '.access-rule-active',
+      'data-access-rule-credit': '.access-rule-credit',
+      'data-access-rule-time-limit': '.access-rule-time-limit',
+      'data-access-rule-password': '.access-rule-password',
+      'data-access-rule-exam-uuid': '.access-rule-exam-uuid',
+    });
     $('#editAccessRuleModal').modal('show');
   });
 
