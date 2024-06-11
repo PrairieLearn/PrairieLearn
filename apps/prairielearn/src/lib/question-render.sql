@@ -187,7 +187,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  lgj.id AS grading_job_id,
   grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,

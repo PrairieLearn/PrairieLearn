@@ -85,7 +85,6 @@ const SubmissionInfoSchema = z.object({
   course_instance: CourseInstanceSchema.nullable(),
   variant_course: CourseSchema,
   question_course: CourseSchema,
-  grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
   user_uid: z.string().nullable(),
@@ -622,7 +621,6 @@ export async function renderPanelsForSubmission({
     submission_index,
     submission_count,
     grading_job,
-    grading_job_id,
     grading_job_status,
     formatted_date,
     user_uid,
@@ -695,7 +693,6 @@ export async function renderPanelsForSubmission({
         submission: /** @type {SubmissionForRender} */ ({
           ...submission,
           grading_job,
-          grading_job_id,
           grading_job_status,
           formatted_date,
           grading_job_stats,

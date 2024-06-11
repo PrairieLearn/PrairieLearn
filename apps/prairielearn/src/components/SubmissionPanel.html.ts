@@ -6,7 +6,6 @@ import { config } from '../lib/config.js';
 import {
   GradingJobSchema,
   GradingJobStatusSchema,
-  IdSchema,
   SubmissionSchema,
   type AssessmentQuestion,
   type InstanceQuestion,
@@ -29,7 +28,6 @@ const detailedSubmissionColumns = {
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
-  grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
@@ -106,7 +104,7 @@ export function SubmissionPanel({
     <div
       data-testid="submission-with-feedback"
       data-grading-job-status="${submission.grading_job_status}"
-      data-grading-job-id="${submission.grading_job_id}"
+      data-grading-job-id="${submission.grading_job?.id}"
       id="submission-${submission.id}"
     >
       ${submission.feedback?.manual || submission.rubric_grading
@@ -518,15 +516,16 @@ function SubmissionInfoModal({
                   ? html`
                       <a
                         class="btn btn-primary mt-2"
-                        href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission.grading_job_id}"
-                        >View grading job ${submission.grading_job_id}</a
+                        href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission
+                          .grading_job?.id}"
+                        >View grading job ${submission.grading_job?.id}</a
                       >
                     `
                   : html`
                       <a
                         class="btn btn-primary mt-2"
-                        href="${urlPrefix}/grading_job/${submission.grading_job_id}"
-                        >View grading job ${submission.grading_job_id}</a
+                        href="${urlPrefix}/grading_job/${submission.grading_job?.id}"
+                        >View grading job ${submission.grading_job?.id}</a
                       >
                     `}
               `
