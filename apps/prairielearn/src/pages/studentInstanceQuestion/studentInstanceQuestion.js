@@ -246,7 +246,7 @@ router.get(
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,

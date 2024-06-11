@@ -44,7 +44,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${QuestionContainer({ resLocals, question_context: 'instructor' })}
+              ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

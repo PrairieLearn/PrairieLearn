@@ -79,7 +79,7 @@ export function InstanceQuestion({
             : ''}
           <div class="row">
             <div class="col-lg-8 col-12">
-              ${QuestionContainer({ resLocals, question_context: 'manual_grading' })}
+              ${QuestionContainer({ resLocals, questionContext: 'manual_grading' })}
             </div>
 
             <div class="col-lg-4 col-12">
