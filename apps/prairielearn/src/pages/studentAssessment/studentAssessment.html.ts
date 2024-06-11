@@ -109,9 +109,9 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
           take this assessment.
         </li>
         <li class="list-group-item py-2">
-          ${groupWork ? 'We' : 'I'} pledge on my honor that ${groupWork ? 'we' : 'I'} will not give
-          or receive any unauthorized assistance on this assessment and that all work will be
-          ${groupWork ? 'our' : 'my'} own.
+          ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
+          ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+          assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
         </li>
       </ul>
 
