@@ -152,7 +152,7 @@ router.post(
         }
       }
     } else if (req.body.__action === 'delete_sharing_set') {
-      const canDelete = selectCanDeleteSharingSet(req.body.sharing_set_id);
+      const canDelete = await selectCanDeleteSharingSet(req.body.sharing_set_id);
       if (canDelete) {
         await sqldb.queryZeroOrOneRowAsync(sql.delete_sharing_set, {
           sharing_set_id: req.body.sharing_set_id,
