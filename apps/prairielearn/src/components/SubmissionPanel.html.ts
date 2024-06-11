@@ -37,16 +37,6 @@ export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionCol
 
 export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
 
-export interface GradingJobStats {
-  phases: number[];
-  submitDuration: string;
-  queueDuration: string;
-  prepareDuration: string;
-  runDuration: string;
-  reportDuration: string;
-  totalDuration: string;
-}
-
 export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
   Partial<z.infer<typeof SubmissionDetailedSchema>> & {
     feedback_manual_html?: string;
@@ -539,7 +529,7 @@ function SubmissionInfoModal({
   });
 }
 
-function buildGradingJobStats(job: GradingJob | null): GradingJobStats | null {
+function buildGradingJobStats(job: GradingJob | null) {
   if (job) {
     const durations: (number | null)[] = [];
     const formatDiff = (start: Date | null, end: Date | null, addToPhases = true) => {
