@@ -250,10 +250,8 @@ router.post(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
       );
-      flash('success', 'Assessment instance deleted.');
-      // TODO: decide whether to redirect back to the same assessment, or back
-      // to the assessments list.
-      res.redirect(`${res.locals.urlPrefix}/assessments`);
+      flash('success', 'Generated a new assessment instance.');
+      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
       next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }

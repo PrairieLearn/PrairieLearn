@@ -56,6 +56,46 @@ export function StudentAssessmentInstance({
           navPage: 'assessment_instance',
         })}
         <main id="content" class="container">
+          ${canDeleteAssessmentInstance
+            ? html`
+                <div class="alert alert-warning alert-dismissable d-flex align-items-center">
+                  <span class="mr-3">
+                    Additional actions are available because you are viewing your own assessment
+                    instance and have student data editor permissions.
+                  </span>
+
+                  <form method="POST" class="ml-auto mr-3">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-warning dropdown-toggle"
+                        type="button"
+                        data-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        Actions
+                      </button>
+
+                      <div class="dropdown-menu dropdown-menu-right">
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="delete_instance"
+                        >
+                          <i class="fas fa-arrows-rotate"></i>
+                          Regenerate assessment instance
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+              `
+            : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <span>
@@ -63,19 +103,6 @@ export function StudentAssessmentInstance({
                 ${resLocals.assessment.title}
                 ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
               </span>
-
-              ${canDeleteAssessmentInstance
-                ? html`
-                    <form method="POST" class="ml-auto">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
-                      <input type="hidden" name="__action" value="delete_instance" />
-                      <button type="submit" class="btn btn-sm btn-light">
-                        <i class="fas fa-trash"></i>
-                        Delete assessment instance
-                      </button>
-                    </form>
-                  `
-                : ''}
             </div>
 
             <div class="card-body">
