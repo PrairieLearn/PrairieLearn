@@ -12,7 +12,7 @@ onDocumentReady(() => {
     });
   }
   if (startAssessmentButton && startAssessmentForm) {
-    startAssessmentForm?.addEventListener('submit', () => {
+    startAssessmentForm.addEventListener('submit', () => {
       startAssessmentButton.disabled = true;
       startAssessmentButton.innerHTML =
         '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';

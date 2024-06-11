@@ -23,7 +23,7 @@ export function StudentAssessment({ resLocals }: { resLocals: Record<string, any
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}
-              ${assessment.group_work ? html` <i class="fas fa-users"></i> ` : ''}
+              ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
             </div>
 
             <div class="card-body">
@@ -56,7 +56,6 @@ export function StudentAssessment({ resLocals }: { resLocals: Record<string, any
                 ? StudentGroupControls({ resLocals })
                 : StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: true })}
             </div>
-            <!-- card-body -->
           </div>
         </main>
       </body>
@@ -162,7 +161,7 @@ function GroupCreationJoinForm({
   if (!groupConfig.student_authz_join && !groupConfig.student_authz_create) {
     return html`
       <p class="text-center">
-        This is a group homework. Please wait for the instructor to assign groups.
+        This is a group assessment. Please wait for the instructor to assign groups.
       </p>
     `;
   }
@@ -202,10 +201,10 @@ function GroupCreationJoinForm({
                     placeholder="e.g. teamOne"
                     aria-describedby="groupNameHelp"
                   />
-                  <small id="groupNameHelp" class="form-text text-muted"
-                    >Group names can only contain letters and numbers, with maximum length of 30
-                    characters.</small
-                  >
+                  <small id="groupNameHelp" class="form-text text-muted">
+                    Group names can only contain letters and numbers, with maximum length of 30
+                    characters.
+                  </small>
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="form-group mb-0">
                       <input type="hidden" name="__action" value="create_group" />
