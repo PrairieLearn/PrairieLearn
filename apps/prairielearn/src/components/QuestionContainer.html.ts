@@ -13,8 +13,8 @@ import type {
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
-import type { QuestionContext, SubmissionForRender } from './QuestionContainer.types.js';
-import { SubmissionPanel } from './SubmissionPanel.html.js';
+import type { QuestionContext } from './QuestionContainer.types.js';
+import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;

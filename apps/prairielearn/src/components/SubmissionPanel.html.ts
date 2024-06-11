@@ -1,11 +1,59 @@
+import { z } from 'zod';
+
 import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
-import type { AssessmentQuestion, InstanceQuestion, Question } from '../lib/db-types.js';
-import type { RubricData } from '../lib/manualGrading.js';
+import {
+  GradingJobSchema,
+  GradingJobStatusSchema,
+  IdSchema,
+  SubmissionSchema,
+  type AssessmentQuestion,
+  type InstanceQuestion,
+  type Question,
+} from '../lib/db-types.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 
 import { Modal } from './Modal.html.js';
-import type { QuestionContext, SubmissionForRender } from './QuestionContainer.types.js';
+import type { QuestionContext } from './QuestionContainer.types.js';
+
+const detailedSubmissionColumns = {
+  feedback: true,
+  format_errors: true,
+  params: true,
+  partial_scores: true,
+  raw_submitted_answer: true,
+  submitted_answer: true,
+  true_answer: true,
+} as const;
+
+export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
+  grading_job: GradingJobSchema.nullable(),
+  grading_job_id: IdSchema.nullable(),
+  grading_job_status: GradingJobStatusSchema.nullable(),
+  formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
+});
+
+export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
+
+export interface GradingJobStats {
+  phases: number[];
+  submitDuration: string;
+  queueDuration: string;
+  prepareDuration: string;
+  runDuration: string;
+  reportDuration: string;
+  totalDuration: string;
+}
+
+export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
+  Partial<z.infer<typeof SubmissionDetailedSchema>> & {
+    feedback_manual_html?: string;
+    submission_number: number;
+    rubric_grading?: RubricGradingData | null;
+    grading_job_stats?: GradingJobStats | null;
+  };
 
 export function SubmissionPanel({
   questionContext,

@@ -13,7 +13,11 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
-import { SubmissionPanel } from '../components/SubmissionPanel.html.js';
+import {
+  SubmissionPanel,
+  SubmissionBasicSchema,
+  SubmissionDetailedSchema,
+} from '../components/SubmissionPanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -52,26 +56,6 @@ const VariantSelectResultSchema = VariantSchema.extend({
   }).nullable(),
   formatted_date: z.string(),
 });
-
-const detailedSubmissionColumns = /** @type {const} */ ({
-  feedback: true,
-  format_errors: true,
-  params: true,
-  partial_scores: true,
-  raw_submitted_answer: true,
-  submitted_answer: true,
-  true_answer: true,
-});
-
-const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
-  grading_job_id: IdSchema.nullable(),
-  grading_job_status: GradingJobStatusSchema.nullable(),
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-});
-
-const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
 
 const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
@@ -121,10 +105,7 @@ const SubmissionInfoSchema = z.object({
  * @property {string?} [questionNavNextButton]
  */
 
-/**
- * @typedef {z.infer<typeof SubmissionBasicSchema> & Partial<z.infer<typeof SubmissionDetailedSchema>>} SubmissionForRender
- */
-
+/** @typedef {import('../components/SubmissionPanel.html.js').SubmissionForRender} SubmissionForRender */
 /**
  * To improve performance, we'll only render at most three submissions on page
  * load. If the user requests more, we'll render them on the fly.
@@ -556,7 +537,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
 /**
  * @param {import('./db-types.js').GradingJob | null} job
- * @returns {import('../components/QuestionContainer.types.js').GradingJobStats | null}
+ * @returns {import('../components/SubmissionPanel.html.js').GradingJobStats | null}
  */
 function buildGradingJobStats(job) {
   if (job) {
@@ -713,6 +694,7 @@ export async function renderPanelsForSubmission({
         course_instance_id: course_instance?.id,
         submission: /** @type {SubmissionForRender} */ {
           ...submission,
+          grading_job,
           grading_job_id,
           grading_job_status,
           formatted_date,
