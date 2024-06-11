@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { ModeSchema } from '../lib/db-types.js';
+import { EnumModeSchema } from '../lib/db-types.js';
 
 export const AuthzAccessRuleSchema = z.object({
   credit: z.string(),
   time_limit_min: z.string(),
   start_date: z.string(),
   end_date: z.string(),
-  mode: ModeSchema.nullable(),
+  mode: EnumModeSchema.nullable(),
   active: z.boolean().nullable(),
 });
 export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;

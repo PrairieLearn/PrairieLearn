@@ -112,11 +112,11 @@ export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
  * Enum schemas; keep these alphabetized.
  */
 
-export const ModeSchema = z.enum(['Public', 'Exam', 'SEB']);
-export type Mode = z.infer<typeof ModeSchema>;
-
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
+
+export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
+export type EnumMode = z.infer<typeof EnumModeSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
@@ -201,7 +201,7 @@ export const AssessmentAccessRuleSchema = z.object({
   end_date: DateFromISOString.nullable(),
   exam_uuid: z.string().nullable(),
   id: IdSchema,
-  mode: ModeSchema.nullable(),
+  mode: EnumModeSchema.nullable(),
   number: z.number(),
   password: z.string().nullable(),
   seb_config: z.any().nullable(),
@@ -229,7 +229,7 @@ export const AssessmentInstanceSchema = z.object({
   last_client_fingerprint_id: IdSchema.nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
-  mode: ModeSchema.nullable(),
+  mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
   number: z.number().nullable(),
   open: z.boolean().nullable(),
@@ -856,7 +856,7 @@ export const SubmissionSchema = z.object({
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
-  mode: ModeSchema.nullable(),
+  mode: EnumModeSchema.nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
