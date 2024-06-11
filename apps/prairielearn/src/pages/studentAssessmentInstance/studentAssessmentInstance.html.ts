@@ -497,7 +497,6 @@ export function StudentAssessmentInstance({
             instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
-            authz_result: resLocals.authz_result,
             question_context:
               resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
             csrfToken: resLocals.__csrf_token,

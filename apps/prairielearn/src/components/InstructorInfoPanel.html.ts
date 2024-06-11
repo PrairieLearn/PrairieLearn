@@ -26,7 +26,6 @@ export function InstructorInfoPanel({
   instance_group_uid_list,
   instance_user,
   authz_data,
-  authz_result,
   question_is_shared,
   question_context,
   csrfToken,
@@ -46,7 +45,6 @@ export function InstructorInfoPanel({
   instance_group_uid_list?: string[] | null;
   instance_user?: User | null;
   authz_data: Record<string, any>;
-  authz_result?: Record<string, any> | null;
   question_is_shared?: boolean;
   question_context?: string; // TODO use enum once #9983 is merged
   csrfToken: string;
@@ -72,9 +70,7 @@ export function InstructorInfoPanel({
           <div class="pr-1">${user.uid}</div>
         </div>
 
-        ${authz_result?.authorized_edit === false
-          ? InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })
-          : ''}
+        ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
         ${QuestionInfo({ course, course_instance, question, variant, question_is_shared })}
         ${VariantInfo({ variant })}
         ${variant != null &&
@@ -98,11 +94,12 @@ function InstanceUserInfo({
   instance_group?: Group | null;
   instance_group_uid_list?: string[] | null;
 }) {
+  if (instance_user == null && instance_group == null) return '';
   return html`
     <hr />
     <div>
       <details>
-        ${instance_group
+        ${instance_group != null
           ? html`
               <summary><h5 class="card-title">Group details</h5></summary>
               <div class="d-flex flex-wrap pb-2">
@@ -110,17 +107,15 @@ function InstanceUserInfo({
                 <div class="pr-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
-          : instance_user
-            ? html`
-                <summary>
-                  <h5 class="card-title d-inline-block">Student details</h5>
-                </summary>
-                <div class="d-flex flex-wrap pb-2">
-                  <div class="pr-1">${instance_user.name}</div>
-                  <div class="pr-1">${instance_user.uid}</div>
-                </div>
-              `
-            : ''}
+          : html`
+              <summary>
+                <h5 class="card-title d-inline-block">Student details</h5>
+              </summary>
+              <div class="d-flex flex-wrap pb-2">
+                <div class="pr-1">${instance_user?.name}</div>
+                <div class="pr-1">${instance_user?.uid}</div>
+              </div>
+            `}
       </details>
     </div>
   `;

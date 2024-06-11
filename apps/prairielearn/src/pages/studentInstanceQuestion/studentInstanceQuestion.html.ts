@@ -159,7 +159,6 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,
                 authz_data: resLocals.authz_data,
-                authz_result: resLocals.authz_result,
                 question_is_shared: resLocals.question_is_shared,
                 question_context:
                   resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',

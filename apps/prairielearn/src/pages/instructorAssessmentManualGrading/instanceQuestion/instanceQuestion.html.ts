@@ -109,7 +109,6 @@ export function InstanceQuestion({
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,
                 authz_data: resLocals.authz_data,
-                authz_result: resLocals.authz_result,
                 question_is_shared: resLocals.question_is_shared,
                 question_context: 'manual_grading',
                 csrfToken: resLocals.__csrf_token,
