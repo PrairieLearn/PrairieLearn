@@ -67,8 +67,6 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
-  -- These are separate for historical reasons
-  gj.id AS grading_job_id,
   grading_job_status (gj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
