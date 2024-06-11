@@ -137,7 +137,7 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
