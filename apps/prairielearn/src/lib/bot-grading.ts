@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
 import { z } from 'zod';
 
@@ -84,23 +85,6 @@ export async function botGrade({
         SubmissionVariantSchema,
       );
 
-      // maybe remove some if statements that can never happen
-      // if nothing submitted
-      if (submission.submitted_answer == null) {
-        continue;
-      }
-      // if no file submitted or too many files submitted
-      if (
-        submission.submitted_answer._files == null ||
-        submission.submitted_answer._files.length !== 1
-      ) {
-        continue;
-      }
-      const student_answer = Buffer.from(
-        submission.submitted_answer._files[0].contents,
-        'base64',
-      ).toString();
-
       // build urls for the question server
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
 
@@ -110,8 +94,8 @@ export async function botGrade({
         { question: true, submissions: false, answer: false },
         variant,
         question,
-        submission,
-        [submission],
+        null,
+        [],
         question_course,
         urls,
       );
@@ -120,8 +104,21 @@ export async function botGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while bot grading, see output for details');
       }
+      const question_prompt_raw = data.questionHtml;
+      const $ = cheerio.load(question_prompt_raw);
+      $('script').remove()
+      const question_prompt = $.html();
 
-      const question_prompt = data.questionHtml.split('<script>', 2)[0];
+      const render_submission_results = await questionModule.render(
+        { question: false, submissions: true, answer: false },
+        variant,
+        question,
+        submission,
+        [submission],
+        question_course,
+        urls,
+      );
+      const student_answer = render_submission_results.data.submissionHtmls[0];
 
       // Call OpenAI API
       const completion = await openai.chat.completions.create({
