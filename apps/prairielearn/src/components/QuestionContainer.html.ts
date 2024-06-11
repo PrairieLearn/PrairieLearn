@@ -666,7 +666,6 @@ function SubmissionList({
       submissionCount,
       rubric_data: resLocals.rubric_data,
       urlPrefix: resLocals.urlPrefix,
-      plainUrlPrefix: resLocals.plainUrlPrefix,
     }),
   );
 }

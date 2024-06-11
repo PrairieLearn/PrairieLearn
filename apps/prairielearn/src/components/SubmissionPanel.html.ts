@@ -1,5 +1,6 @@
 import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
+import { config } from '../lib/config.js';
 import type { AssessmentQuestion, InstanceQuestion, Question } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.js';
 
@@ -18,7 +19,6 @@ export function SubmissionPanel({
   submissionCount,
   rubric_data,
   urlPrefix,
-  plainUrlPrefix,
   expanded,
 }: {
   questionContext: QuestionContext;
@@ -32,7 +32,6 @@ export function SubmissionPanel({
   submissionCount: number;
   rubric_data?: RubricData | null;
   urlPrefix: string;
-  plainUrlPrefix: string;
   expanded?: boolean;
 }) {
   const isLatestSubmission = submission.submission_number === submissionCount;
@@ -223,7 +222,6 @@ export function SubmissionPanel({
 
         ${SubmissionInfoModal({
           urlPrefix,
-          plainUrlPrefix,
           submission,
           question,
           course_instance_id,
@@ -376,13 +374,11 @@ function SubmissionStatusBadge({
 
 function SubmissionInfoModal({
   urlPrefix,
-  plainUrlPrefix,
   submission,
   question,
   course_instance_id,
 }: {
   urlPrefix: string;
-  plainUrlPrefix: string;
   submission: SubmissionForRender;
   question: Question;
   course_instance_id?: string | null;
@@ -462,7 +458,7 @@ function SubmissionInfoModal({
                   ? html`
                       <a
                         class="btn btn-primary mt-2"
-                        href="${plainUrlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission.grading_job_id}"
+                        href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission.grading_job_id}"
                         >View grading job ${submission.grading_job_id}</a
                       >
                     `
