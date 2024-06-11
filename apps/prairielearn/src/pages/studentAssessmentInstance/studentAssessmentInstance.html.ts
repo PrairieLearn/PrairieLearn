@@ -58,7 +58,7 @@ export function StudentAssessmentInstance({
         <main id="content" class="container">
           ${canDeleteAssessmentInstance
             ? html`
-                <div class="alert alert-warning alert-dismissable d-flex align-items-center">
+                <div class="alert alert-warning d-flex align-items-center">
                   <span class="mr-3">
                     Additional actions are available because you are viewing your own assessment
                     instance and have student data editor permissions.
