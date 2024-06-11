@@ -36,7 +36,6 @@ import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flashMiddleware, flash } from '@prairielearn/flash';
@@ -146,7 +145,6 @@ export async function initExpress() {
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     res.locals.compiled_script_path = assets.compiledScriptPath;
     res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    res.locals.encoded_data = EncodedData;
     next();
   });
   app.use(function (req, res, next) {

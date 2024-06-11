@@ -37,7 +37,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${QuestionContainer({ resLocals, question_context: 'public' })}
+              ${QuestionContainer({ resLocals, questionContext: 'public' })}
             </div>
 
             <div class="col-lg-3 col-sm-12">
