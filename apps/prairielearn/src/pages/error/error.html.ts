@@ -2,7 +2,7 @@ import jsonStringifySafe from 'json-stringify-safe';
 import _ from 'lodash';
 
 import { formatErrorStack } from '@prairielearn/error';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
@@ -23,7 +23,7 @@ export function ErrorPage({
     stack?: string;
     status?: number;
     data?: Record<string, any>;
-    info?: HtmlSafeString;
+    info?: string;
   };
   errorId: string;
   referrer: string | null;
@@ -61,7 +61,7 @@ export function ErrorPage({
             <div class="card-body">
               <h4 class="mb-3">${error.message}</h4>
 
-              ${error.info ?? ''}
+              ${unsafeHtml(error.info ?? '')}
 
               <p><strong>Error ID:</strong> <code>${errorId}</code></p>
 
