@@ -146,7 +146,7 @@ This configuration is good when:
 
 Some notes about this configuration:
 
-- All of the the [notes above](#synchronous-timed-exams) still apply
+- All of the [notes above](#synchronous-timed-exams) still apply
 - It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
 
 ## Post-graded exams

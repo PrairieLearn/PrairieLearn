@@ -1,4 +1,5 @@
 import { type RootHookObject } from 'mocha';
+import tmp from 'tmp-promise';
 
 import { createTemplate, dropTemplate } from './helperDb.js';
 
@@ -12,6 +13,10 @@ export async function mochaGlobalTeardown() {
   // Drop the template database to clean up after ourselves.
   await dropTemplate();
 }
+
+// Ensure any temporary directories created by `tmp-promise` are cleaned up
+// when the process exits.
+tmp.setGracefulCleanup();
 
 /**
  * These hooks run once per worker when Mocha is running in parallel mode.

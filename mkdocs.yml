@@ -49,7 +49,7 @@ nav:
       - 'Java autograder': 'java-grader/index.md'
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question Sharing': 'questionSharing.md'
+      - 'Question sharing': 'questionSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'

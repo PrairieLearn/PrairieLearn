@@ -16,7 +16,7 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
-RUN cd /PrairieLearn && yarn install --immutable && yarn cache clean
+RUN cd /PrairieLearn && yarn install --immutable --inline-builds && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/

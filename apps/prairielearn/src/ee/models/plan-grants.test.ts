@@ -14,6 +14,7 @@ describe('plan-grants', () => {
           uid: 'student@example.com',
           name: 'Example Student',
           uin: 'student',
+          email: 'student@example.com',
         });
 
         await ensurePlanGrant({
@@ -33,6 +34,7 @@ describe('plan-grants', () => {
           uid: 'student@example.com',
           name: 'Example Student',
           uin: 'student',
+          email: 'student@example.com',
         });
 
         const options = {

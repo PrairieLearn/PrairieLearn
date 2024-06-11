@@ -12,6 +12,8 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
+import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { config, setLocalsFromConfig } from './config.js';
@@ -74,6 +76,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
+  user_email: z.string().nullable(),
 });
 
 const SubmissionInfoSchema = z.object({
@@ -103,9 +106,6 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
-  previous_variants: z
-    .array(z.object({ variant_id: IdSchema, max_submission_score: z.number() }))
-    .nullable(),
 });
 
 /**
@@ -448,7 +448,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // actually render.
   const submissions = await sqldb.queryRows(
     sql.select_basic_submissions,
-    { variant_id: locals.variant.id, req_date: locals.req_date },
+    { variant_id: locals.variant.id },
     SubmissionBasicSchema,
   );
   const submissionCount = submissions.length;
@@ -515,7 +515,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // Load issues last in case there are issues from rendering.
   //
   // We'll only load the data that will be needed for this specific page render.
-  // The checks here should match those in `pages/partials/question.ejs`.
+  // The checks here should match those in `components/QuestionContainer.html.ts`.
   const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
   locals.issues = await sqldb.queryRows(
     sql.select_issues,
@@ -596,10 +596,10 @@ function buildGradingJobStats(job) {
  * set, also the side panels for score, navigation and the question footer.
  *
  * @param {Object} param
- * @param  {string | number} param.submission_id The id of the submission
- * @param  {string | number} param.question_id The id of the question (for authorization check)
- * @param  {string | number | null} param.instance_question_id The id of the instance question (for authorization check)
- * @param  {string | number | null} param.variant_id The id of the variant (for authorization check)
+ * @param  {string} param.submission_id The id of the submission
+ * @param  {string} param.question_id The id of the question (for authorization check)
+ * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
+ * @param  {string | null} param.variant_id The id of the variant (for authorization check)
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
  * @param  {String?} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
@@ -627,7 +627,6 @@ export async function renderPanelsForSubmission({
 
   const {
     variant,
-    previous_variants,
     submission,
     instance_question,
     next_instance_question,
@@ -647,6 +646,13 @@ export async function renderPanelsForSubmission({
     formatted_date,
     user_uid,
   } = submissionInfo;
+  const previous_variants =
+    variant.instance_question_id == null || assessment_instance == null
+      ? null
+      : await selectVariantsByInstanceQuestion({
+          assessment_instance_id: assessment_instance.id,
+          instance_question_id: variant.instance_question_id,
+        });
 
   /** @type {SubmissionPanels} */
   const panels = {
@@ -739,14 +745,13 @@ export async function renderPanelsForSubmission({
         assessment_question,
         assessment_instance,
         assessment,
+        question,
         variant,
         submission,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: {
-          previous_variants,
-        },
+        instance_question_info: { previous_variants },
       };
       const templatePath = path.join(
         import.meta.dirname,
@@ -762,23 +767,14 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       // As usual, only render if this variant is part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
-      const renderParams = {
-        assessment_instance,
+      panels.assessmentScorePanel = AssessmentScorePanel({
+        urlPrefix,
         assessment,
         assessment_set,
-        urlPrefix,
-      };
-
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'assessmentScorePanel.ejs',
-      );
-      panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
+        assessment_instance,
+      }).toString();
     },
     async () => {
       // Render the question panel footer
@@ -792,6 +788,7 @@ export async function renderPanelsForSubmission({
         question_context: questionContext,
         __csrf_token: csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
+        instance_question_info: { previous_variants },
         ...locals,
       };
 

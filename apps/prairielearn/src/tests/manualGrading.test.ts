@@ -310,11 +310,11 @@ function checkSettingsResults(
       const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
       const explanation = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][explanation]"]`,
+        `button[data-input-name="rubric_item[cur${item.id}][explanation]"]`,
       );
       assert.equal(explanation.attr('data-current-value') ?? '', item.explanation ?? '');
       const graderNote = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
+        `button[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
       );
       assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
       const always_show_to_students = form.find(
@@ -506,9 +506,7 @@ describe('Manual Grading', function () {
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
         const token =
-          $instancesBody('form[name=grade-all-form]')
-            .find('input[name=__csrf_token]')
-            .attr('value') || '';
+          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
         await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },

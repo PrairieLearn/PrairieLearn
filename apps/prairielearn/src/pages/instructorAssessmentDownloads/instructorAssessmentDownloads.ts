@@ -175,7 +175,6 @@ router.get(
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       const columns = identityColumn.concat([
@@ -204,7 +203,6 @@ router.get(
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       // Replace user-friendly column names with upload-friendly names
@@ -252,7 +250,6 @@ router.get(
         include_all,
         include_final,
         include_best,
-        group_work: res.locals.assessment.group_work,
       });
 
       let submissionColumn = identityColumn;
