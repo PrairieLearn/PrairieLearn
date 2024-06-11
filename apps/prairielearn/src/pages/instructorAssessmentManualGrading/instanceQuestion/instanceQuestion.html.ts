@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
@@ -95,14 +96,24 @@ export function InstanceQuestion({
                     question_context: 'manual_grading',
                   })
                 : ''}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../../partials/instructorInfoPanel'); %>",
-                {
-                  ...resLocals,
-                  question_context: 'manual_grading',
-                },
-              )}
+              ${InstructorInfoPanel({
+                course: resLocals.course,
+                course_instance: resLocals.course_instance,
+                assessment: resLocals.assessment,
+                assessment_instance: resLocals.assessment_instance,
+                instance_question: resLocals.instance_question,
+                question: resLocals.question,
+                variant: resLocals.variant,
+                user: resLocals.user,
+                instance_group: resLocals.instance_group,
+                instance_group_uid_list: resLocals.instance_group_uid_list,
+                instance_user: resLocals.instance_user,
+                authz_data: resLocals.authz_data,
+                authz_result: resLocals.authz_result,
+                question_is_shared: resLocals.question_is_shared,
+                question_context: 'manual_grading',
+                csrfToken: resLocals.__csrf_token,
+              })}
             </div>
           </div>
         </main>

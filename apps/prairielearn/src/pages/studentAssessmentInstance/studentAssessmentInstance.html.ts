@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
@@ -486,12 +487,21 @@ export function StudentAssessmentInstance({
             "<%- include('../partials/attachFilePanel') %>",
             resLocals,
           )}
-          ${renderEjs(
-            import.meta.url,
-            // TODO: convert to TypeScript component
-            "<%- include('../partials/instructorInfoPanel') %>",
-            resLocals,
-          )}
+          ${InstructorInfoPanel({
+            course: resLocals.course,
+            course_instance: resLocals.course_instance,
+            assessment: resLocals.assessment,
+            assessment_instance: resLocals.assessment_instance,
+            user: resLocals.user,
+            instance_group: resLocals.instance_group,
+            instance_group_uid_list: resLocals.instance_group_uid_list,
+            instance_user: resLocals.instance_user,
+            authz_data: resLocals.authz_data,
+            authz_result: resLocals.authz_result,
+            question_context:
+              resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>
