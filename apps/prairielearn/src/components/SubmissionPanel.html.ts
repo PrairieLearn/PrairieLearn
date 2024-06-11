@@ -1,3 +1,4 @@
+import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
 import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
@@ -8,11 +9,11 @@ import {
   GradingJobStatusSchema,
   SubmissionSchema,
   type AssessmentQuestion,
+  type GradingJob,
   type InstanceQuestion,
   type Question,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
-import { buildGradingJobStats } from '../lib/question-render.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
@@ -536,4 +537,35 @@ function SubmissionInfoModal({
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `,
   });
+}
+
+function buildGradingJobStats(job: GradingJob | null): GradingJobStats | null {
+  if (job) {
+    const durations: (number | null)[] = [];
+    const formatDiff = (start: Date | null, end: Date | null, addToPhases = true) => {
+      const duration = end == null || start == null ? null : differenceInMilliseconds(end, start);
+      if (addToPhases) durations.push(duration);
+      return duration == null ? '\u2212' : (duration / 1000).toFixed(3).replace(/\.?0+$/, '') + 's';
+    };
+
+    const stats = {
+      submitDuration: formatDiff(job.grading_requested_at, job.grading_submitted_at),
+      queueDuration: formatDiff(job.grading_submitted_at, job.grading_received_at),
+      prepareDuration: formatDiff(job.grading_received_at, job.grading_started_at),
+      runDuration: formatDiff(job.grading_started_at, job.grading_finished_at),
+      reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
+      totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
+    };
+    const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
+
+    return {
+      ...stats,
+      phases: durations.map(
+        // Round down to avoid width being greater than 100% with floating point errors
+        (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
+      ),
+    };
+  }
+
+  return null;
 }

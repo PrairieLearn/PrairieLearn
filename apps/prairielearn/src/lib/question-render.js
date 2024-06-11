@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as util from 'util';
 
 import * as async from 'async';
-import { differenceInMilliseconds } from 'date-fns';
 import * as ejs from 'ejs';
 import { z } from 'zod';
 
@@ -531,42 +530,6 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
     const encodedJson = encodeURIComponent(questionJson);
     locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
   }
-}
-
-/**
- * @param {import('./db-types.js').GradingJob | null} job
- * @returns {import('../components/SubmissionPanel.html.js').GradingJobStats | null}
- */
-export function buildGradingJobStats(job) {
-  if (job) {
-    /** @type {(number | null)[]} */
-    const durations = [];
-    const formatDiff = (start, end, addToPhases = true) => {
-      const duration = end == null || start == null ? null : differenceInMilliseconds(end, start);
-      if (addToPhases) durations.push(duration);
-      return duration == null ? '\u2212' : (duration / 1000).toFixed(3).replace(/\.?0+$/, '') + 's';
-    };
-
-    const stats = {
-      submitDuration: formatDiff(job.grading_requested_at, job.grading_submitted_at),
-      queueDuration: formatDiff(job.grading_submitted_at, job.grading_received_at),
-      prepareDuration: formatDiff(job.grading_received_at, job.grading_started_at),
-      runDuration: formatDiff(job.grading_started_at, job.grading_finished_at),
-      reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
-      totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
-    };
-    const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
-
-    return {
-      ...stats,
-      phases: durations.map(
-        // Round down to avoid width being greater than 100% with floating point errors
-        (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
-      ),
-    };
-  }
-
-  return null;
 }
 
 /**
