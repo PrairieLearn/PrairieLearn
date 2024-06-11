@@ -51,16 +51,9 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
+        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
-        <script>
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-              let fileName = $(this).val().replace(/\\/g, '/').replace(/.*//, '');
-              $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-          });
-        </script>
-
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',

@@ -1893,13 +1893,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grpc/grpc-js@npm:^1.10.8, @grpc/grpc-js@npm:^1.7.1":
-  version: 1.10.8
-  resolution: "@grpc/grpc-js@npm:1.10.8"
+"@grpc/grpc-js@npm:^1.10.9, @grpc/grpc-js@npm:^1.7.1":
+  version: 1.10.9
+  resolution: "@grpc/grpc-js@npm:1.10.9"
   dependencies:
     "@grpc/proto-loader": ^0.7.13
     "@js-sdsl/ordered-map": ^4.4.2
-  checksum: 498d144016eac26fc069bc57d649bf4776ae6bd1a24e62823a8b07b7d39a4414caa72a799f8287278b79e11ec4ecf989dbac01518c3981d8f947db15916c6727
+  checksum: 88d91c227175275d8cc178c807d09510a83d947911c9bfe8ccd132cb27144c54508bcd114d52ab00b6e4f37eecf74aeee3ef3971900bdb90735d55a0b0dba761
   languageName: node
   linkType: hard
 
@@ -3135,7 +3135,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
   dependencies:
-    "@grpc/grpc-js": ^1.10.8
+    "@grpc/grpc-js": ^1.10.9
     "@opentelemetry/api": ^1.8.0
     "@opentelemetry/context-async-hooks": ^1.24.1
     "@opentelemetry/core": ^1.24.1
@@ -3342,7 +3342,6 @@ __metadata:
     archiver: ^7.0.1
     async: ^3.2.5
     async-mutex: ^0.5.0
-    async-stacktrace: ^0.0.2
     axe-core: ^4.7.0
     backbone: ^1.6.0
     better-ajv-errors: ^1.2.0
@@ -13704,6 +13703,7 @@ __metadata:
     eslint-plugin-no-only-tests: ^3.1.0
     globby: ^14.0.1
     htmlhint: ^1.1.4
+    node-gyp: ^10.1.0
     prettier: 3.2.5
     pyright: ^1.1.365
     s3rver: ^3.7.1
