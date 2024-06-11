@@ -7,7 +7,6 @@ import { differenceInMilliseconds } from 'date-fns';
 import * as ejs from 'ejs';
 import { z } from 'zod';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
@@ -663,7 +662,7 @@ export async function renderPanelsForSubmission({
   };
 
   // Fake locals. Yay!
-  const locals = { encoded_data: EncodedData };
+  const locals = {};
   setLocalsFromConfig(locals);
   Object.assign(
     locals,
