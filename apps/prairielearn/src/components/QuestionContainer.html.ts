@@ -501,8 +501,8 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ml-2 mt-1 submission-suspended-msg"
-                  >Grading possible in <span id="submission-suspended-display"></span>
+                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                  Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
                 ${EncodedData(
