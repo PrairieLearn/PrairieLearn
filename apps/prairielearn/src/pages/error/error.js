@@ -2,7 +2,7 @@
 
 import jsonStringifySafe from 'json-stringify-safe';
 
-import { formatErrorStackSafe } from '@prairielearn/error';
+import { AugmentedError, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../../lib/config.js';
@@ -40,7 +40,18 @@ export default function (err, req, res, _next) {
   res.send(
     ErrorPage({
       // Hide error details in production.
-      error: config.devMode ? err : { message: err.message, status: err.status },
+      error: config.devMode
+        ? err
+        : {
+            message: err.message,
+            status: err.status,
+          },
+      // Only include the info property if it's from an AugmentedError.
+      // We'll render this as unescaped HTML, so we need to be sure that
+      // it's safe to do so, and only AugmentedError guarantees that by
+      // forcing the `info` property to be constructed with an `html`
+      // template.
+      errorInfo: err instanceof AugmentedError ? err.info : undefined,
       errorId,
       referrer,
       resLocals: res.locals,
