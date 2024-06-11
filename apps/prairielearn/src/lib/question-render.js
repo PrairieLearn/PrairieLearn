@@ -651,14 +651,14 @@ export async function renderPanelsForSubmission({
         assessment_question,
         instance_question,
         course_instance_id: course_instance?.id,
-        submission: /** @type {SubmissionForRender} */ ({
+        submission: {
           ...submission,
           grading_job,
           grading_job_status,
           formatted_date,
           user_uid,
           submission_number: submission_index,
-        }),
+        },
         submissionHtml: htmls.submissionHtmls[0],
         submissionCount: submission_count,
         rubric_data: locals.rubric_data,
