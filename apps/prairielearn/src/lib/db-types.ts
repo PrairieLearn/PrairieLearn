@@ -969,7 +969,7 @@ export const AssessmentAccessRuleSchema = z.object({
   end_date: DateFromISOString.nullable(),
   exam_uuid: z.string().nullable(),
   id: IdSchema,
-  mode: ModeSchema,
+  mode: ModeSchema.nullable(),
   number: z.number(),
   password: z.string().nullable(),
   seb_config: z.any().nullable(),
