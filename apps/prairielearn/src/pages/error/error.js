@@ -40,12 +40,7 @@ export default function (err, req, res, _next) {
   res.send(
     ErrorPage({
       // Hide error details in production.
-      error: config.devMode
-        ? err
-        : {
-            message: err.message,
-            status: err.status,
-          },
+      error: config.devMode ? err : { message: err.message, status: err.status },
       // Only include the info property if it's from an AugmentedError.
       // We'll render this as unescaped HTML, so we need to be sure that
       // it's safe to do so, and only AugmentedError guarantees that by
