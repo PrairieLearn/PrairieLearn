@@ -706,6 +706,7 @@ export async function renderPanelsForSubmission({
         submissionHtml: htmls.submissionHtmls[0],
         rubric_data: locals.rubric_data,
         urlPrefix: locals.urlPrefix,
+        expanded: true,
       }).toString();
     },
     async () => {

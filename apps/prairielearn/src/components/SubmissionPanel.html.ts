@@ -83,7 +83,19 @@ export function SubmissionPanel({
   expanded?: boolean;
 }) {
   const isLatestSubmission = submission.submission_number === submissionCount;
+  console.log({
+    expanded,
+    isLatestSubmission,
+    submissionCount,
+    submissionNumber: submission.submission_number,
+  });
   expanded = expanded || isLatestSubmission;
+  console.log({
+    expanded,
+    isLatestSubmission,
+    submissionCount,
+    submissionNumber: submission.submission_number,
+  });
   const renderUrlPrefix =
     questionContext === 'instructor' || questionContext === 'public'
       ? `${urlPrefix}/question/${question.id}/preview`
