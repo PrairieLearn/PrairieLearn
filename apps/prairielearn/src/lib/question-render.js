@@ -692,7 +692,7 @@ export async function renderPanelsForSubmission({
         assessment_question,
         instance_question,
         course_instance_id: course_instance?.id,
-        submission: /** @type {SubmissionForRender} */ {
+        submission: /** @type {SubmissionForRender} */ ({
           ...submission,
           grading_job,
           grading_job_id,
@@ -701,12 +701,12 @@ export async function renderPanelsForSubmission({
           grading_job_stats,
           user_uid,
           submission_number: submission_index,
-        },
-        submissionCount: submission_count,
+        }),
         submissionHtml: htmls.submissionHtmls[0],
+        submissionCount: submission_count,
         rubric_data: locals.rubric_data,
-        urlPrefix: locals.urlPrefix,
         expanded: true,
+        urlPrefix,
       }).toString();
     },
     async () => {
