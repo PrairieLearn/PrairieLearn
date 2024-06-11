@@ -450,7 +450,6 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
     locals.submissions = /** @type {SubmissionForRender[]} */ (
       submissions.map((s, idx) => ({
-        grading_job_stats: buildGradingJobStats(s.grading_job),
         submission_number: submissionCount - idx,
         ...s,
         // Both queries order results consistently, so we can just use
@@ -538,7 +537,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * @param {import('./db-types.js').GradingJob | null} job
  * @returns {import('../components/SubmissionPanel.html.js').GradingJobStats | null}
  */
-function buildGradingJobStats(job) {
+export function buildGradingJobStats(job) {
   if (job) {
     /** @type {(number | null)[]} */
     const durations = [];
@@ -675,7 +674,6 @@ export async function renderPanelsForSubmission({
         question_course,
         locals,
       );
-      const grading_job_stats = buildGradingJobStats(grading_job);
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
@@ -695,7 +693,6 @@ export async function renderPanelsForSubmission({
           grading_job,
           grading_job_status,
           formatted_date,
-          grading_job_stats,
           user_uid,
           submission_number: submission_index,
         }),

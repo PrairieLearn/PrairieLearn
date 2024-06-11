@@ -12,6 +12,7 @@ import {
   type Question,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import { buildGradingJobStats } from '../lib/question-render.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
@@ -50,7 +51,6 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
     feedback_manual_html?: string;
     submission_number: number;
     rubric_grading?: RubricGradingData | null;
-    grading_job_stats?: GradingJobStats | null;
   };
 
 export function SubmissionPanel({
@@ -441,10 +441,11 @@ function SubmissionInfoModal({
   question: Question;
   course_instance_id?: string | null;
 }) {
+  const gradingJobStats = buildGradingJobStats(submission.grading_job);
   return Modal({
     id: `submissionInfoModal-${submission.id}`,
     title: 'Submission info',
-    body: !submission.grading_job_stats
+    body: !gradingJobStats
       ? html`<p>This submission has not been graded.</p>`
       : html`
           <table class="table table-sm table-borderless two-column-description mb-0">
@@ -457,27 +458,27 @@ function SubmissionInfoModal({
                 ? html`
                     <tr>
                       <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
-                      <td>${submission.grading_job_stats.submitDuration}</td>
+                      <td>${gradingJobStats.submitDuration}</td>
                     </tr>
                     <tr>
                       <th><span class="text-warning mr-2">&bull;</span>Queue duration</th>
-                      <td>${submission.grading_job_stats.queueDuration}</td>
+                      <td>${gradingJobStats.queueDuration}</td>
                     </tr>
                     <tr>
                       <th><span class="text-primary mr-2">&bull;</span>Prepare duration</th>
-                      <td>${submission.grading_job_stats.prepareDuration}</td>
+                      <td>${gradingJobStats.prepareDuration}</td>
                     </tr>
                     <tr>
                       <th><span class="text-success mr-2">&bull;</span>Run duration</th>
-                      <td>${submission.grading_job_stats.runDuration}</td>
+                      <td>${gradingJobStats.runDuration}</td>
                     </tr>
                     <tr>
                       <th><span class="text-danger mr-2">&bull;</span>Report duration</th>
-                      <td>${submission.grading_job_stats.reportDuration}</td>
+                      <td>${gradingJobStats.reportDuration}</td>
                     </tr>
                     <tr>
                       <th>Total duration</th>
-                      <td>${submission.grading_job_stats.totalDuration}</td>
+                      <td>${gradingJobStats.totalDuration}</td>
                     </tr>
                   `
                 : ''}
@@ -487,27 +488,27 @@ function SubmissionInfoModal({
             ? html`
                 <div class="d-flex mt-2 mb-2">
                   <span
-                    style="display: inline-block; width: ${submission.grading_job_stats
+                    style="display: inline-block; width: ${gradingJobStats
                       .phases[0]}%; height: 10px;"
                     class="bg-dark m-0"
                   ></span>
                   <span
-                    style="display: inline-block; width: ${submission.grading_job_stats
+                    style="display: inline-block; width: ${gradingJobStats
                       .phases[1]}%; height: 10px;"
                     class="bg-warning m-0"
                   ></span>
                   <span
-                    style="display: inline-block; width: ${submission.grading_job_stats
+                    style="display: inline-block; width: ${gradingJobStats
                       .phases[2]}%; height: 10px;"
                     class="bg-primary m-0"
                   ></span>
                   <span
-                    style="display: inline-block; width: ${submission.grading_job_stats
+                    style="display: inline-block; width: ${gradingJobStats
                       .phases[3]}%; height: 10px;"
                     class="bg-success m-0"
                   ></span>
                   <span
-                    style="display: inline-block; width: ${submission.grading_job_stats
+                    style="display: inline-block; width: ${gradingJobStats
                       .phases[4]}%; height: 10px;"
                     class="bg-danger m-0"
                   ></span>
