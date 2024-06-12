@@ -1,28 +1,30 @@
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { EncodedData } from '@prairielearn/browser-utils';
+import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
-import { CourseInstance, Issue, Submission, User } from '../lib/db-types.js';
+import type {
+  AssessmentQuestion,
+  CourseInstance,
+  InstanceQuestion,
+  Issue,
+  Question,
+  User,
+} from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
+import type { QuestionContext } from './QuestionContainer.types.js';
+import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
 
-type QuestionContext =
-  | 'student_exam'
-  | 'student_homework'
-  | 'instructor'
-  | 'public'
-  | 'manual_grading';
-
 export function QuestionContainer({
   resLocals,
-  question_context,
+  questionContext,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
+  questionContext: QuestionContext;
 }) {
   const {
     question,
@@ -53,7 +55,7 @@ export function QuestionContainer({
       data-instance-question-id="${instance_question?.id ?? ''}"
       data-variant-token="${variantToken}"
       data-url-prefix="${urlPrefix}"
-      data-question-context="${question_context}"
+      data-question-context="${questionContext}"
       data-csrf-token="${__csrf_token}"
       data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
@@ -64,10 +66,10 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, question_context })}
+              ${QuestionPanel({ resLocals, questionContext })}
             </form>
           `
-        : QuestionPanel({ resLocals, question_context })}
+        : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">Correct answer</div>
@@ -78,7 +80,7 @@ export function QuestionContainer({
         ? html`
             ${SubmissionList({
               resLocals,
-              question_context,
+              questionContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
@@ -102,7 +104,7 @@ export function QuestionContainer({
                   <div id="more-submissions-collapser" class="collapse">
                     ${SubmissionList({
                       resLocals,
-                      question_context,
+                      questionContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
@@ -267,29 +269,356 @@ ${JSON.stringify(issue.system_data, null, '    ')}</pre
   `;
 }
 
-function QuestionPanel({
+export function QuestionTitle({
+  questionContext,
+  question,
+  questionNumber,
+}: {
+  questionContext: QuestionContext;
+  question: Question;
+  questionNumber: string;
+}) {
+  if (questionContext === 'student_homework') {
+    return `${questionNumber}. ${question.title}`;
+  } else if (questionContext === 'student_exam') {
+    return `Question ${questionNumber}: ${question.title}`;
+  } else {
+    return question.title;
+  }
+}
+
+export function QuestionFooter({
   resLocals,
-  question_context,
+  questionContext,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
+  questionContext: QuestionContext;
 }) {
-  const { question, questionHtml, question_copy_targets, course } = resLocals;
+  if (questionContext === 'manual_grading') return '';
+  if (resLocals.question.type === 'Freeform') {
+    return html`
+      <div class="card-footer" id="question-panel-footer">
+        ${QuestionFooterContent({ resLocals, questionContext })}
+      </div>
+    `;
+  } else {
+    return html`
+      <div class="card-footer" id="question-panel-footer">
+        <form class="question-form" name="question-form" method="POST">
+          ${QuestionFooterContent({ resLocals, questionContext })}
+        </form>
+      </div>
+    `;
+  }
+}
+
+function QuestionFooterContent({
+  resLocals,
+  questionContext,
+}: {
+  resLocals: Record<string, any>;
+  questionContext: QuestionContext;
+}) {
+  const {
+    showTrueAnswer,
+    showSaveButton,
+    showGradeButton,
+    disableSaveButton,
+    disableGradeButton,
+    showNewVariantButton,
+    showTryAgainButton,
+    hasAttemptsOtherVariants,
+    variantAttemptsLeft,
+    variantAttemptsTotal,
+    newVariantUrl,
+    tryAgainUrl,
+    question,
+    variant,
+    assessment,
+    instance_question,
+    assessment_instance,
+    assessment_question,
+    instance_question_info,
+    authz_result,
+    __csrf_token,
+  } = resLocals;
+
+  if (showTrueAnswer && questionContext === 'student_exam') {
+    return 'This question is complete and cannot be answered again.';
+  }
+  if (authz_result?.authorized_edit === false) {
+    return html`<div class="alert alert-warning mt-2" role="alert">
+      You are viewing the question instance of a different user and so are not authorized to save
+      answers, to submit answers for grading, or to try a new variant of this same question.
+    </div>`;
+  }
+
+  return html`
+    <div class="row">
+      <div class="col d-flex justify-content-between">
+        <span class="d-flex align-items-center">
+          ${showSaveButton
+            ? html`
+                <button
+                  class="btn btn-info question-save disable-on-submit order-2"
+                  ${disableSaveButton ? 'disabled' : ''}
+                  ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
+                >
+                  ${showGradeButton ? 'Save only' : 'Save'}
+                </button>
+              `
+            : ''}
+          ${showGradeButton
+            ? html`
+                <button
+                  class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
+                  ${disableGradeButton ? 'disabled' : ''}
+                  ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
+                >
+                  Save &amp; Grade
+                  ${variantAttemptsTotal > 0
+                    ? variantAttemptsLeft > 1
+                      ? html`
+                          <small class="font-italic ml-2">
+                            ${variantAttemptsLeft} attempts left
+                          </small>
+                        `
+                      : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
+                        ? html`<small class="font-italic ml-2">Last attempt</small>`
+                        : variantAttemptsLeft === 1
+                          ? html`<small class="font-italic ml-2">Single attempt</small>`
+                          : ''
+                    : questionContext === 'student_homework'
+                      ? html`<small class="font-italic ml-2">Unlimited attempts</small>`
+                      : ''}
+                </button>
+              `
+            : ''}
+          ${assessment?.group_config?.has_roles &&
+          !instance_question?.group_role_permissions?.can_submit
+            ? html`
+                <button
+                  type="button"
+                  class="btn btn-xs order-3"
+                  data-toggle="popover"
+                  data-trigger="focus"
+                  data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
+                  aria-label="Submission blocked"
+                >
+                  <i class="fa fa-lock" aria-hidden="true"></i>
+                </button>
+              `
+            : ''}
+        </span>
+        <span class="d-flex">
+          ${question.type === 'Freeform'
+            ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
+            : html`
+                <input type="hidden" name="postData" class="postData" />
+                <input type="hidden" name="__action" class="__action" />
+              `}
+          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+          ${showNewVariantButton
+            ? html`
+                <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
+                  New variant
+                </a>
+              `
+            : showTryAgainButton
+              ? html`
+                  <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ml-1">
+                    ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ? 'Go to latest variant'
+                      : 'Try a new variant'}
+                  </a>
+                `
+              : hasAttemptsOtherVariants
+                ? html`
+                    <small class="font-italic align-self-center">
+                      Additional attempts available with new variants
+                    </small>
+                    <a
+                      class="btn btn-xs align-self-center"
+                      data-toggle="popover"
+                      data-html="true"
+                      data-content="${escapeHtml(
+                        NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
+                      )}"
+                      data-placement="auto"
+                      data-trigger="focus"
+                      data-container="body"
+                      tabindex="0"
+                    >
+                      <i class="fa fa-question-circle" aria-hidden="true"></i>
+                    </a>
+                  `
+                : ''}
+          ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
+        </span>
+      </div>
+    </div>
+    ${SubmitRateFooter({
+      questionContext,
+      showGradeButton,
+      disableGradeButton,
+      assessment_question,
+      allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+    })}
+  `;
+}
+
+function SubmitRateFooter({
+  questionContext,
+  showGradeButton,
+  disableGradeButton,
+  assessment_question,
+  allowGradeLeftMs,
+}: {
+  questionContext: QuestionContext;
+  showGradeButton: boolean;
+  disableGradeButton: boolean;
+  assessment_question: AssessmentQuestion;
+  allowGradeLeftMs: number;
+}) {
+  if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
+  const popoverContent = html`
+    <p>
+      Once you have clicked <strong>Save &amp; Grade</strong>, you will need to wait
+      ${assessment_question.grade_rate_minutes}
+      ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'} before you can grade
+      again.
+    </p>
+    <p>
+      You can still save your answer as frequently as you like.
+      ${questionContext === 'student_exam'
+        ? `If your assessment ends before your last saved answer is graded, it will be automatically graded for you.`
+        : ''}
+    </p>
+  `;
+  return html`
+    <div class="row">
+      <div class="col d-flex justify-content-between">
+        <span class="d-flex">
+          ${disableGradeButton
+            ? html`
+                <small class="font-italic ml-2 mt-1 submission-suspended-msg">
+                  Grading possible in <span id="submission-suspended-display"></span>
+                  <div id="submission-suspended-progress" class="border border-info"></div>
+                </small>
+                ${EncodedData(
+                  {
+                    serverTimeLimitMS: assessment_question.grade_rate_minutes * 60 * 1000,
+                    serverRemainingMS: allowGradeLeftMs,
+                  },
+                  'submission-suspended-data',
+                )}
+              `
+            : ''}
+        </span>
+        <span class="d-flex align-self-center">
+          <small class="font-italic">
+            Can only be graded once every ${assessment_question.grade_rate_minutes}
+            ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
+          </small>
+          <a
+            class="btn btn-xs"
+            data-toggle="popover"
+            data-html="true"
+            data-content="${escapeHtml(popoverContent)}"
+            data-placement="auto"
+            data-trigger="focus"
+            data-container="body"
+            tabindex="0"
+          >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+          </a>
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function NewVariantInfo({
+  variantAttemptsLeft,
+  variantAttemptsTotal,
+}: {
+  variantAttemptsLeft: number;
+  variantAttemptsTotal: number;
+}) {
+  return html`
+    <p>
+      This question allows you to try multiple variants. Each of these variants is equivalent to the
+      question you have been presented with, but may include changes in input values, parameters,
+      and other settings. Although
+      ${variantAttemptsLeft > 1
+        ? `you have ${variantAttemptsLeft} attempts left`
+        : variantAttemptsTotal > 1
+          ? 'this is your last attempt'
+          : 'you have a single attempt'}
+      with the current variant, you are allowed to try an unlimited number of other variants.
+    </p>
+  `;
+}
+
+function AvailablePointsNotes({
+  questionContext,
+  instance_question,
+  assessment_question,
+}: {
+  questionContext: QuestionContext;
+  instance_question: InstanceQuestion;
+  assessment_question: AssessmentQuestion;
+}) {
+  if (questionContext !== 'student_exam' || !instance_question.points_list) return '';
+
+  const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
+  const maxManualPoints = assessment_question?.max_manual_points ?? 0;
+  const additional = instance_question.points === 0 ? '' : 'additional';
+  return html`
+    <small class="font-italic align-self-center text-right">
+      ${roundedPoints[0] === 1
+        ? `1 ${additional} point available for this attempt`
+        : `${roundedPoints[0]} ${additional} points available for this attempt`}
+      ${maxManualPoints > 0
+        ? roundedPoints[0] > maxManualPoints
+          ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}
+            auto-graded, ${maxManualPoints} manually graded`
+          : html`&mdash; manually graded`
+        : ''}
+      ${roundedPoints.length === 2
+        ? html`<br />(following attempt is worth: ${roundedPoints[1]})`
+        : roundedPoints.length > 2
+          ? html`<br />(following attempts are worth: ${roundedPoints.slice(1).join(', ')})`
+          : ''}
+    </small>
+  `;
+}
+
+function QuestionPanel({
+  resLocals,
+  questionContext,
+}: {
+  resLocals: Record<string, any>;
+  questionContext: QuestionContext;
+}) {
+  const { question, questionHtml, question_copy_targets, course, instance_question_info } =
+    resLocals;
   // Show even when question_copy_targets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
     question_copy_targets != null &&
     (course.template_course ||
-      (question.shared_publicly_with_source && question_context === 'public')) &&
-    question_context !== 'manual_grading';
+      (question.shared_publicly_with_source && questionContext === 'public')) &&
+    questionContext !== 'manual_grading';
 
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionTitle'); %>", {
-          ...resLocals,
-          question_context,
+        ${QuestionTitle({
+          questionContext,
+          question,
+          questionNumber: instance_question_info?.question_number,
         })}
         ${showCopyQuestionButton
           ? html`
@@ -306,34 +635,37 @@ function QuestionPanel({
           : ''}
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${renderEjs(import.meta.url, "<%- include('../pages/partials/questionFooter'); %>", {
-        ...resLocals,
-        question_context,
-      })}
+      ${QuestionFooter({ resLocals, questionContext })}
     </div>
   `;
 }
 
 function SubmissionList({
   resLocals,
-  question_context,
+  questionContext,
   submissions,
   submissionHtmls,
   submissionCount,
 }: {
   resLocals: Record<string, any>;
-  question_context: QuestionContext;
-  submissions: Submission[];
+  questionContext: QuestionContext;
+  submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
 }) {
   return submissions.map((submission, idx) =>
-    renderEjs(import.meta.url, "<%- include('../pages/partials/submission'); %>", {
-      ...resLocals,
-      question_context,
+    SubmissionPanel({
+      questionContext,
+      question: resLocals.question,
+      assessment_question: resLocals.assessment_question,
+      instance_question: resLocals.instance_question,
+      variant_id: resLocals.variant.id,
+      course_instance_id: resLocals.course_instance?.id,
       submission,
-      submissionCount,
       submissionHtml: submissionHtmls[idx],
+      submissionCount,
+      rubric_data: resLocals.rubric_data,
+      urlPrefix: resLocals.urlPrefix,
     }),
   );
 }
