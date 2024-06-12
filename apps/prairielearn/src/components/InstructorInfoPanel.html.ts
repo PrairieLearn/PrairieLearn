@@ -271,7 +271,13 @@ function ManualGradingInfo({
   assessment?: Assessment | null;
   questionContext: QuestionContext;
 }) {
-  if (instance_question == null || assessment == null) return '';
+  if (
+    instance_question == null ||
+    assessment == null ||
+    instance_question.status === 'unanswered'
+  ) {
+    return '';
+  }
 
   const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
