@@ -61,7 +61,7 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-function chooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
+function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
   let body: HtmlSafeString;
   let footer: HtmlSafeString;
   if (canChooseSharingName) {
@@ -161,7 +161,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
+                          ${ChooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
                         `
                       : ''}
                   </td>
