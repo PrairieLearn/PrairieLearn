@@ -2783,7 +2783,7 @@ __metadata:
   dependencies:
     "@actions/core": ^1.10.1
     "@actions/github": ^6.0.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^20.13.0
     typescript: ^5.4.5
     zod: ^3.23.8
@@ -2794,7 +2794,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^20.13.0
     node-fetch: ^3.3.2
     typescript: ^5.4.5
@@ -2806,7 +2806,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws@workspace:packages/aws"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": ^3.1.0
     "@smithy/types": ^3.0.0
     "@types/node": ^20.13.0
@@ -2841,7 +2841,7 @@ __metadata:
   dependencies:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     ioredis: ^5.4.1
     lru-cache: ^10.2.2
     typescript: ^5.4.5
@@ -2883,7 +2883,7 @@ __metadata:
     "@aws-sdk/client-ec2": ^3.588.0
     "@aws-sdk/client-secrets-manager": ^3.588.0
     "@prairielearn/aws-imds": "workspace:^"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": ^11.0.4
     "@types/lodash": ^4.17.4
     "@types/mocha": ^10.0.6
@@ -3554,7 +3554,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/signed-token@workspace:packages/signed-token"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.12
     "@types/node": ^20.13.0
     base64url: ^3.0.1
@@ -3564,7 +3564,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
+"@prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
   languageName: unknown
