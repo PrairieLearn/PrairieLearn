@@ -189,7 +189,7 @@ function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string
   if (variant == null) return '';
 
   const duration =
-    // Some legacy questions still return the duration as a string, so parse it before formatting
+    // Some legacy queries still return the duration as a string, so parse it before formatting
     typeof variant.duration === 'string'
       ? IntervalSchema.parse(variant.duration)
       : variant.duration ?? 0;
@@ -226,7 +226,7 @@ function AssessmentInstanceInfo({
 
   const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
   const duration =
-    // Some legacy questions still return the duration as a string, so parse it before formatting
+    // Some legacy queries still return the duration as a string, so parse it before formatting
     typeof assessment_instance.duration === 'string'
       ? IntervalSchema.parse(assessment_instance.duration)
       : assessment_instance.duration ?? 0;
