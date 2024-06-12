@@ -1,6 +1,7 @@
-import { Modal } from '@prairielearn/bootstrap';
-import { html } from '@prairielearn/html';
+import { HtmlSafeString, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -60,15 +61,9 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-/*
- * TEST, better way to choose body and footer based on deletable?
- * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
- *
- * Also, the modals are a different format. They are longer than the originals and not centered vertically.
- */
-function chooseSharingNameModal(canChooseSharingName, csrfToken) {
-  let body = '';
-  let footer = '';
+function chooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
+  let body: HtmlSafeString;
+  let footer: HtmlSafeString;
   if (canChooseSharingName) {
     body = html`
       <p class="form-text">Enter the sharing name you would like for your course.</p>
@@ -94,14 +89,15 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
       <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
     `;
   } else {
-    footer = html`
+    body = html`
     <strong>Unable to change your course's sharing name.</strong>
     </p>
     <p>
       Your course's sharing name cannot be changed because at least one question has
       been shared. Doing so would break the assessments of other courses that have
       imported your questions.
-    </p>
+    </p>`;
+    footer = html`
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
   }
