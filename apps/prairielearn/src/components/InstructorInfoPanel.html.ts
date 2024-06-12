@@ -1,16 +1,18 @@
+import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { User } from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
-import type {
-  Assessment,
-  AssessmentInstance,
-  Course,
-  CourseInstance,
-  Group,
-  InstanceQuestion,
-  Question,
-  Variant,
+import {
+  IntervalSchema,
+  type Assessment,
+  type AssessmentInstance,
+  type Course,
+  type CourseInstance,
+  type Group,
+  type InstanceQuestion,
+  type Question,
+  type Variant,
 } from '../lib/db-types.js';
 
 export function InstructorInfoPanel({
@@ -182,6 +184,12 @@ function QuestionInfo({
 
 function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string } }) {
   if (variant == null) return '';
+
+  const duration =
+    // Some legacy questions still return the duration as a string, so parse it before formatting
+    typeof variant.duration === 'string'
+      ? IntervalSchema.parse(variant.duration)
+      : variant.duration ?? 0;
   return html`
     <div class="d-flex flex-wrap">
       <div class="pr-1">Started at:</div>
@@ -189,7 +197,7 @@ function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string
     </div>
     <div class="d-flex flex-wrap">
       <div class="pr-1">Duration:</div>
-      <div>${variant.duration}</div>
+      <div>${formatInterval(duration)}</div>
     </div>
     <div class="d-flex flex-wrap pb-2">
       <div class="pr-1">
@@ -212,7 +220,13 @@ function AssessmentInstanceInfo({
   assessment_instance?: AssessmentInstance & { formatted_date: string };
 }) {
   if (assessment == null || assessment_instance == null) return '';
+
   const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
+  const duration =
+    // Some legacy questions still return the duration as a string, so parse it before formatting
+    typeof assessment_instance.duration === 'string'
+      ? IntervalSchema.parse(assessment_instance.duration)
+      : assessment_instance.duration ?? 0;
 
   return html`
     <hr />
@@ -231,7 +245,7 @@ function AssessmentInstanceInfo({
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">Duration:</div>
-      <div>${assessment_instance.duration}</div>
+      <div>${formatInterval(duration)}</div>
     </div>
 
     <div class="pb-2">
