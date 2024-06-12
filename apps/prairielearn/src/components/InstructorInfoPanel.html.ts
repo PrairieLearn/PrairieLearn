@@ -66,23 +66,24 @@ export function InstructorInfoPanel({
     <div class="card mb-4 border-warning">
       <div class="card-header bg-warning">Staff information</div>
       <div class="card-body">
-        <h5 class="card-title">Staff user:</h5>
-        <div class="d-flex flex-wrap pb-2">
-          <div class="pr-1">${user.name}</div>
-          <div class="pr-1">${user.uid}</div>
-        </div>
-
+        ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
         ${QuestionInfo({ course, course_instance, question, variant, question_is_shared })}
-        ${VariantInfo({ variant })}
-        ${variant != null &&
-        (question_context === 'instructor' || question_context === 'manual_grading')
-          ? IssueReportButton({ variant, csrfToken })
-          : ''}
+        ${VariantInfo({ variant })} ${IssueReportButton({ variant, csrfToken, question_context })}
         ${AssessmentInstanceInfo({ assessment, assessment_instance })}
         ${ManualGradingInfo({ instance_question, assessment, question_context })}
       </div>
       <div class="card-footer small">This box is not visible to students.</div>
+    </div>
+  `;
+}
+
+function StaffUserInfo({ user }: { user: User }) {
+  return html`
+    <h5 class="card-title">Staff user:</h5>
+    <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1">${user.name}</div>
+      <div class="pr-1">${user.uid}</div>
     </div>
   `;
 }
@@ -234,7 +235,7 @@ function AssessmentInstanceInfo({
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
       <div>
-        <a href="${instructorUrlPrefix}/assessment/${assessment.id}"> ${assessment.tid} </a>
+        <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>
     </div>
 
@@ -249,7 +250,7 @@ function AssessmentInstanceInfo({
     </div>
 
     <div class="pb-2">
-      <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}"> View log </a>
+      <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
     </div>
   `;
 }
@@ -310,10 +311,20 @@ function ManualGradingInfo({
 function IssueReportButton({
   variant,
   csrfToken,
+  question_context,
 }: {
-  variant: Variant & { formatted_date: string };
+  variant?: (Variant & { formatted_date: string }) | null;
   csrfToken: string;
+  question_context?: string;
 }) {
+  if (
+    variant == null ||
+    question_context === 'student_exam' ||
+    question_context === 'student_homework'
+  ) {
+    return '';
+  }
+
   return html`
     <div class="row">
       <div class="col-auto">
