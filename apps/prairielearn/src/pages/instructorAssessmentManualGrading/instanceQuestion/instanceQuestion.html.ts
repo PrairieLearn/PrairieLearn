@@ -110,7 +110,7 @@ export function InstanceQuestion({
                 instance_user: resLocals.instance_user,
                 authz_data: resLocals.authz_data,
                 question_is_shared: resLocals.question_is_shared,
-                question_context: 'manual_grading',
+                questionContext: 'manual_grading',
                 csrfToken: resLocals.__csrf_token,
               })}
             </div>

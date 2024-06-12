@@ -15,6 +15,8 @@ import {
   type Variant,
 } from '../lib/db-types.js';
 
+import { QuestionContext } from './QuestionContainer.types.js';
+
 export function InstructorInfoPanel({
   course,
   course_instance,
@@ -29,7 +31,7 @@ export function InstructorInfoPanel({
   instance_user,
   authz_data,
   question_is_shared,
-  question_context,
+  questionContext,
   csrfToken,
 }: {
   course: Course;
@@ -48,7 +50,7 @@ export function InstructorInfoPanel({
   instance_user?: User | null;
   authz_data: Record<string, any>;
   question_is_shared?: boolean;
-  question_context?: string; // TODO use enum once #9983 is merged
+  questionContext: QuestionContext;
   csrfToken: string;
 }) {
   // Here, we are only checking if the effective user is an instructor. We are not
@@ -69,9 +71,9 @@ export function InstructorInfoPanel({
         ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
         ${QuestionInfo({ course, course_instance, question, variant, question_is_shared })}
-        ${VariantInfo({ variant })} ${IssueReportButton({ variant, csrfToken, question_context })}
+        ${VariantInfo({ variant })} ${IssueReportButton({ variant, csrfToken, questionContext })}
         ${AssessmentInstanceInfo({ assessment, assessment_instance })}
-        ${ManualGradingInfo({ instance_question, assessment, question_context })}
+        ${ManualGradingInfo({ instance_question, assessment, questionContext })}
       </div>
       <div class="card-footer small">This box is not visible to students.</div>
     </div>
@@ -258,7 +260,7 @@ function AssessmentInstanceInfo({
 function ManualGradingInfo({
   instance_question,
   assessment,
-  question_context,
+  questionContext,
 }: {
   instance_question?:
     | (InstanceQuestion & {
@@ -267,7 +269,7 @@ function ManualGradingInfo({
       })
     | null;
   assessment?: Assessment | null;
-  question_context?: string;
+  questionContext: QuestionContext;
 }) {
   if (instance_question == null || assessment == null) return '';
 
@@ -298,7 +300,7 @@ function ManualGradingInfo({
           </div>
         `
       : ''}
-    ${question_context !== 'manual_grading'
+    ${questionContext !== 'manual_grading'
       ? html`
           <div class="pb-2">
             <a href="${manualGradingUrl}">Grade</a>
@@ -311,16 +313,16 @@ function ManualGradingInfo({
 function IssueReportButton({
   variant,
   csrfToken,
-  question_context,
+  questionContext,
 }: {
   variant?: (Variant & { formatted_date: string }) | null;
   csrfToken: string;
-  question_context?: string;
+  questionContext: QuestionContext;
 }) {
   if (
     variant == null ||
-    question_context === 'student_exam' ||
-    question_context === 'student_homework'
+    questionContext === 'student_exam' ||
+    questionContext === 'student_homework'
   ) {
     return '';
   }
