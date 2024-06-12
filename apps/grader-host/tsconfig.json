@@ -2,7 +2,8 @@
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["mocha", "node"]
   },
   "include": ["src/**/*"]
 }

@@ -16,6 +16,7 @@
   "dependencies": {
     "@types/debug": "^4.1.12",
     "@types/lodash": "^4.17.4",
+    "@types/pg": "^8.11.6",
     "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
     "pg": "^8.11.5",
@@ -26,6 +27,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/chai": "^4.3.16",
+    "@types/chai-as-promised": "^7.1.8",
     "@types/mocha": "^10.0.6",
     "@types/multipipe": "^3.0.5",
     "@types/node": "^20.13.0",

@@ -24,6 +24,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/chai": "^4.3.16",
+    "@types/chai-as-promised": "^7.1.8",
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.13.0",

@@ -20,6 +20,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.12",
+    "@types/lodash": "^4.17.4",
     "@types/node": "^20.13.0",
     "typescript": "^5.4.5"
   }
