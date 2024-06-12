@@ -82,7 +82,7 @@ function visitMathBlock(ast, _vFile) {
 
 /**
  * @param {(ast: any, vfile: import('vfile').VFile) => undefined} visitor
- * @returns {() => (ast: import('hast').Root, file: import('vfile').VFile) => import('hast').Root}
+ * @returns {() => (ast: import('unist').Node, file: import('vfile').VFile) => import('unist').Node}
  */
 function makeHandler(visitor) {
   return () => (ast, vFile, next) => {

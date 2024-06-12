@@ -262,6 +262,9 @@ importers:
       '@prairielearn/flash':
         specifier: workspace:^
         version: link:../../packages/flash
+      '@prairielearn/formatter':
+        specifier: workspace:^
+        version: link:../../packages/formatter
       '@prairielearn/html':
         specifier: workspace:^
         version: link:../../packages/html
@@ -634,6 +637,9 @@ importers:
       serve-favicon:
         specifier: ^2.5.0
         version: 2.5.0
+      serve-static:
+        specifier: ^1.15.0
+        version: 1.15.0
       showdown:
         specifier: ^2.1.0
         version: 2.1.0
@@ -685,6 +691,9 @@ importers:
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
+      vfile:
+        specifier: ^6.0.1
+        version: 6.0.1
       winston:
         specifier: ^3.13.0
         version: 3.13.0
@@ -845,6 +854,9 @@ importers:
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
+      '@types/unist':
+        specifier: ^3.0.2
+        version: 3.0.2
       '@types/unzipper':
         specifier: ^0.10.9
         version: 0.10.9
