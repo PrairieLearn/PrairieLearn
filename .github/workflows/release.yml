@@ -20,10 +20,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install Dependencies
-        run: yarn --immutable
+        run: pnpm install --immutable
 
       # `changesets` will use Prettier to format our changelogs. Because our
       # config points to a custom plugin, we need to build that plugin first.
@@ -36,12 +36,11 @@ jobs:
         uses: changesets/action@v1
         with:
           # This invokes the `version` script in `package.json`, which will run
-          # `changeset version` and then `yarn`. We need to run `yarn` in order
-          # to update `yarn.lock`:  https://github.com/changesets/action/issues/170
-          version: yarn version
+          # `changeset version` and then update `pnpm-lock.yaml`.
+          version: pnpm run version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
-          publish: yarn release
+          publish: pnpm run release
           # Avoid creating GitHub releaseses, as we don't need them.
           # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false

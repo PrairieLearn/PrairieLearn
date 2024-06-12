@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc && tscp",
     "dev:no-watch": "tsx src/index.js",
-    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev": "nodemon --exec \"pnpm --silent dev:no-watch\" --",
     "start": "node dist/index.js",
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },

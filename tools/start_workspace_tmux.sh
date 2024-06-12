@@ -11,10 +11,6 @@ export PL_TMUX_BOTTOM_PANE_PERCENT=40
 # These options can help if you are using this script as an entrypoint for the
 # Docker version of PL:
 
-# INVOKE_YARN: Yarn can be invoked to install npm packages upon load.
-# Set to 1 to enable, 0 to disable.
-INVOKE_YARN=1
-
 # CHOWN_GENERATED_FILES: If you are running this script in a Linux container
 # with /PrairieLearn mounted from a local path for development, we can change
 # the ownership of generated files back to your normal user account when the
@@ -116,11 +112,6 @@ cd /PrairieLearn || {
   echo "WARNING: Could not cd into /PrairieLearn"
   echo "  Probably not running in Docker. We hope you know what you're doing."
 }
-
-if [ ${INVOKE_YARN:0} -eq 1 ]; then
-  yarn config set --home enableTelemetry 0
-  yarn || { echo "Yarn had an error. Giving up." ; exit 1 ; }
-fi
 
 # Check if tmux is an old or new version.
 if [[ "$(tmux -V)" =~ [0-9][^[:space:]]* ]]; then

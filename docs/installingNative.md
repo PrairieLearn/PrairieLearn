@@ -6,7 +6,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 
   - [Git](https://git-scm.com)
   - [Node.js](https://nodejs.org)
-  - [Yarn](https://classic.yarnpkg.com)
+  - [pnpm](https://pnpm.io/)
   - [Python 3.10](https://www.python.org)
   - [PostgreSQL 15](https://www.postgresql.org)
   - [Redis](https://redis.io)
@@ -34,7 +34,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   make deps
 
   # Alternatively, you can run each step individually:
-  yarn
+  pnpm install
   make build
   make python-deps
   ```

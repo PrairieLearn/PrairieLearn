@@ -321,9 +321,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
+          cache: 'pnpm'
       - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
+        run: pnpm install --frozen-lockfile
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -360,7 +360,7 @@ jobs:
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
+        run: pnpm dedupe --check
 
   report-image-sizes:
     runs-on: ubuntu-latest
@@ -379,10 +379,10 @@ jobs:
           node-version: '20'
 
       - name: Install Node dependencies
-        run: yarn workspaces focus @prairielearn/actions-report-image-sizes
+        run: pnpm install --filter @prairielearn/actions-report-image-sizes
 
       - name: Build
-        run: yarn build
+        run: pnpm build
         working-directory: packages/actions-report-image-sizes
 
       - name: Report image sizes

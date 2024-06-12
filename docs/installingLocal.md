@@ -76,20 +76,12 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielear
 # following commands are inside the container:
 make start-support
 cd apps/prairielearn
-yarn mocha src/tests/getHomepage.test.js
+pnpm mocha src/tests/getHomepage.test.js
 ```
 
 ## Working on packages
 
-When working on something in the `packages/` directory, you'll need to rebuild the package before any changes will become visible to other packages or apps that use the package. You can build everything with `make build`, or you can run the `dev` script in a package to rebuild it automatically whenever there are changes.
-
-```sh
-# From the root of the repository:
-yarn workspace @prairielearn/postgres run dev
-
-# From a specific package directory, e.g. `packages/postgres`:
-yarn dev
-```
+When working on something in the `packages/` directory, you'll need to rebuild the package before any changes will become visible to other packages or apps that use the package. You can build everything by running `make build` in the root of the repository.
 
 ## Updating or building the Docker image
 

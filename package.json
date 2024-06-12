@@ -2,18 +2,18 @@
   "name": "prairielearn",
   "private": true,
   "scripts": {
-    "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
-    "grader-host-start": "yarn workspace @prairielearn/grader-host start",
-    "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
-    "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn",
-    "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
-    "dev": "yarn workspace @prairielearn/prairielearn dev",
-    "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
-    "start": "yarn workspace @prairielearn/prairielearn start",
-    "migrate-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
-    "migrate": "yarn workspace @prairielearn/prairielearn start --migrate-and-exit",
-    "refresh-workspace-hosts-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
-    "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
+    "grader-host-dev": "pnpm --silent --filter @prairielearn/grader-host dev",
+    "grader-host-start": "pnpm --silent --filter @prairielearn/grader-host start",
+    "release": "turbo run build && changeset publish --no-git-tag",
+    "version": "changeset version && pnpm install --frozen-lockfile=false --lockfile-only",
+    "dev-workspace-host": "pnpm --silent --filter @prairielearn/workspace-host dev",
+    "dev": "pnpm --silent --filter @prairielearn/prairielearn dev",
+    "start-workspace-host": "pnpm --silent --filter @prairielearn/workspace-host start",
+    "start": "pnpm --silent --filter @prairielearn/prairielearn --silent start",
+    "migrate-dev": "pnpm --silent --filter @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
+    "migrate": "pnpm --silent --filter @prairielearn/prairielearn start --migrate-and-exit",
+    "refresh-workspace-hosts-dev": "pnpm --silent --filter @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
+    "refresh-workspace-hosts": "pnpm --silent --filter @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
   },
   "dependencies": {
     "node-gyp": "^10.1.0"
@@ -46,5 +46,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "yarn@3.5.0"
+  "packageManager": "pnpm@9.1.1"
 }
