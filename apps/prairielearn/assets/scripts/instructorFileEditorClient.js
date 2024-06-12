@@ -20,6 +20,7 @@ window.InstructorFileEditor = function (options) {
     showPrintMargin: false,
     mode: options.aceMode,
     readOnly: options.readOnly,
+    enableKeyboardAccessibility: true,
   });
 
   if (options.altElementId) {
