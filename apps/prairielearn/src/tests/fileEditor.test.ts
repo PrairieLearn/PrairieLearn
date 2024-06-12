@@ -1,11 +1,9 @@
-import { exec } from 'child_process';
 import { readFileSync } from 'node:fs';
 import * as path from 'path';
 
-import * as async from 'async';
-import ERR from 'async-stacktrace';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import request from 'request';
@@ -227,7 +225,6 @@ const verifyFileData = [
     clientFilesDir: 'clientFilesQuestion',
     serverFilesDir: 'serverFilesQuestion',
     testFilesDir: 'tests',
-    index: 3,
   },
   {
     title: 'assessment',
@@ -235,7 +232,6 @@ const verifyFileData = [
     path: assessmentPath,
     clientFilesDir: 'clientFilesAssessment',
     serverFilesDir: 'serverFilesAssessment',
-    index: 1,
   },
   {
     title: 'course instance',
@@ -243,7 +239,6 @@ const verifyFileData = [
     path: courseInstancePath,
     clientFilesDir: 'clientFilesCourseInstance',
     serverFilesDir: 'serverFilesCourseInstance',
-    index: 2,
   },
   {
     title: 'course (through course instance)',
@@ -251,7 +246,6 @@ const verifyFileData = [
     path: '',
     clientFilesDir: 'clientFilesCourse',
     serverFilesDir: 'serverFilesCourse',
-    index: 5,
   },
   {
     title: 'course',
@@ -259,7 +253,6 @@ const verifyFileData = [
     path: '',
     clientFilesDir: 'clientFilesCourse',
     serverFilesDir: 'serverFilesCourse',
-    index: 5,
   },
 ];
 
@@ -267,11 +260,8 @@ describe('test file editor', function () {
   this.timeout(20000);
 
   describe('not the test course', function () {
-    before('create test course files', function (callback) {
-      createCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    before('create test course files', async () => {
+      await createCourseFiles();
     });
 
     before('set up testing server', helperServer.before(courseDir));
@@ -285,11 +275,8 @@ describe('test file editor', function () {
 
     after('shut down testing server', helperServer.after);
 
-    after('delete test course files', function (callback) {
-      deleteCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    after('delete test course files', async () => {
+      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {
@@ -362,119 +349,41 @@ function badGet(url, expected_status, should_parse) {
   });
 }
 
-function createCourseFiles(callback) {
-  async.series(
-    [
-      (callback) => {
-        deleteCourseFiles((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        // Ensure that the default branch is master, regardless of how git
-        // is configured on the host machine.
-        exec(
-          `git -c "init.defaultBranch=master" init --bare ${courseOriginDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseLiveDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => {
-        await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git add -A`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git commit -m "initial commit"`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git push`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseDevDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function createCourseFiles() {
+  await deleteCourseFiles();
+  // Ensure that the default branch is master, regardless of how git
+  // is configured on the host machine.
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await execa('git', ['add', '-A'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', 'initial commit'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['push'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], {
+    cwd: '.',
+    env: process.env,
+  });
 }
 
-function deleteCourseFiles(callback) {
-  async.series(
-    [
-      (callback) => {
-        fs.remove(courseOriginDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseLiveDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseDevDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function deleteCourseFiles() {
+  await fs.remove(courseOriginDir);
+  await fs.remove(courseLiveDir);
+  await fs.remove(courseDevDir);
 }
 
 function editPost(
@@ -800,30 +709,19 @@ function doEdits(data) {
 
 function writeAndCommitFileInLive(fileName, fileContents) {
   describe(`commit a change to ${fileName} by exec`, function () {
-    it('should write', function (callback) {
-      fs.writeFile(path.join(courseLiveDir, fileName), fileContents, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should write', async () => {
+      await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
     });
-    it('should add', function (callback) {
-      const execOptions = {
+    it('should add', async () => {
+      await execa('git', ['add', '-A'], {
         cwd: courseLiveDir,
         env: process.env,
-      };
-      exec(`git add -A`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
-    it('should commit', function (callback) {
-      const execOptions = {
+    it('should commit', async () => {
+      await execa('git', ['commit', '-m', 'commit from writeFile'], {
         cwd: courseLiveDir,
         env: process.env,
-      };
-      exec(`git commit -m "commit from writeFile"`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
   });
@@ -831,14 +729,10 @@ function writeAndCommitFileInLive(fileName, fileContents) {
 
 function pullAndVerifyFileInDev(fileName, fileContents) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
-    it('should pull', function (callback) {
-      const execOptions = {
+    it('should pull', async () => {
+      await execa('git', ['pull'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git pull`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
     it('should match contents', function () {
@@ -849,14 +743,10 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
 
 function pullAndVerifyFileNotInDev(fileName) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
-    it('should pull', function (callback) {
-      const execOptions = {
+    it('should pull', async () => {
+      await execa('git', ['pull'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git pull`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
     it('should not exist', function (callback) {
@@ -874,97 +764,71 @@ function pullAndVerifyFileNotInDev(fileName) {
 
 function writeAndPushFileInDev(fileName, fileContents) {
   describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
-    it('should write', function (callback) {
-      fs.writeFile(path.join(courseDevDir, fileName), fileContents, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should write', async () => {
+      await fs.writeFile(path.join(courseDevDir, fileName), fileContents);
     });
-    it('should add', function (callback) {
-      const execOptions = {
+    it('should add', async () => {
+      await execa('git', ['add', '-A'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git add -A`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
-    it('should commit', function (callback) {
-      const execOptions = {
+    it('should commit', async () => {
+      await execa('git', ['commit', '-m', 'commit from writeFile'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git commit -m "commit from writeFile"`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
-    it('should push', function (callback) {
-      const execOptions = {
+    it('should push', async () => {
+      await execa('git', ['push'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec('git push', execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
   });
 }
 
-function waitForJobSequence(locals, expectedResult) {
+function waitForJobSequence(locals, expectedResult: 'Success' | 'Error') {
   describe('The job sequence', function () {
-    it('should have an id', function (callback) {
-      sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-        if (ERR(err, callback)) return;
-        locals.job_sequence_id = result.rows[0].id;
-        callback(null);
-      });
+    it('should have an id', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+      locals.job_sequence_id = result.rows[0].id;
     });
-    it('should complete', function (callback) {
-      const checkComplete = function () {
-        const params = { job_sequence_id: locals.job_sequence_id };
-        sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          locals.job_sequence_status = result.rows[0].status;
-          if (locals.job_sequence_status === 'Running') {
-            setTimeout(checkComplete, 10);
-          } else {
-            callback(null);
-          }
-        });
-      };
-      setTimeout(checkComplete, 10);
-    });
-    it(`should have result "${expectedResult}"`, function () {
-      assert.equal(locals.job_sequence_status, expectedResult);
+    it('should complete', async () => {
+      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id, expectedResult);
     });
   });
 }
 
-function doFiles(data) {
+function doFiles(data: {
+  title: string;
+  url: string;
+  path: string;
+  clientFilesDir: string;
+  serverFilesDir: string;
+  testFilesDir?: string;
+}) {
   describe(`test file handlers for ${data.title}`, function () {
     describe('Files', function () {
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
-        id: 'New',
+        newButtonId: 'New',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
 
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, 'testfile.txt'),
-        id: data.index,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
 
       testRenameFile({
         url: data.url,
-        id: data.index,
         path: path.join(data.path, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -972,30 +836,29 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
-        id: 0,
         path: path.join(data.path, 'subdir', 'testfile.txt'),
       });
     });
     describe('Client Files', function () {
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
-        id: 'NewClient',
+        newButtonId: 'NewClient',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
 
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
-        id: 0,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
 
       testRenameFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
-        id: 0,
         path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -1003,30 +866,29 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
-        id: 0,
         path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
       });
     });
     describe('Server Files', function () {
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url,
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        id: 'NewServer',
+        newButtonId: 'NewServer',
         contents: 'This is a line of text.',
         filename: 'testfile.txt',
       });
 
       testUploadFile({
+        fileViewBaseUrl: data.url,
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        id: 0,
         contents: 'This is a different line of text.',
         filename: 'anotherfile.txt',
       });
 
       testRenameFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        id: 0,
         path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
@@ -1034,47 +896,88 @@ function doFiles(data) {
 
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
-        id: 0,
         path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
       });
     });
     if (data.testFilesDir) {
       describe('Test Files', function () {
-        testUploadFile({
-          url: data.url,
-          path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
-          id: 'NewTest',
-          contents: 'This is a line of text.',
-          filename: 'testfile.txt',
-        });
+        if (data.testFilesDir) {
+          testUploadFile({
+            fileViewBaseUrl: data.url,
+            url: data.url,
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            newButtonId: 'NewTest',
+            contents: 'This is a line of text.',
+            filename: 'testfile.txt',
+          });
 
-        testUploadFile({
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
-          path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
-          id: 0,
-          contents: 'This is a different line of text.',
-          filename: 'anotherfile.txt',
-        });
+          testUploadFile({
+            fileViewBaseUrl: data.url,
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            filename: 'anotherfile.txt',
+          });
 
-        testRenameFile({
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
-          id: 0,
-          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
-          contents: 'This is a different line of text.',
-          new_file_name: path.join('subdir', 'testfile.txt'),
-        });
+          testRenameFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            new_file_name: path.join('subdir', 'testfile.txt'),
+          });
 
-        testDeleteFile({
-          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
-          id: 0,
-          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
-        });
+          testDeleteFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+          });
+        }
       });
     }
+    describe('Files with % in name', function () {
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        newButtonId: 'New',
+        contents: 'This is a line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        contents: 'This is a different line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      // TODO Rename currently has very restrictive naming conventions that
+      // don't allow for this kind of name. Once this is removed it should be
+      // possible to enable the test below.
+
+      // testRenameFile({
+      //   url: data.url,
+      //   path: path.join(data.path, 'sub%dir', 'test%file.txt'),
+      //   contents: 'This is a line of text in a file with percent.',
+      //   new_file_name: path.join('sub%dir', 'test%file.txt'),
+      // });
+
+      testDeleteFile({
+        url: data.url + '/' + encodePath(data.path),
+        path: path.join(data.path, 'test%file.txt'),
+      });
+    });
   });
 }
 
-function testUploadFile(params) {
+function testUploadFile(params: {
+  fileViewBaseUrl: string;
+  url: string;
+  path: string;
+  newButtonId?: string;
+  contents: string;
+  filename: string;
+}) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
@@ -1082,28 +985,29 @@ function testUploadFile(params) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and either a file_path or a working_path', () => {
-      elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
+      if (params.newButtonId) {
+        elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      } else {
+        const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+        elemList = row.find(`button[id^="instructorFileUploadForm-"]`);
+      }
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path or working_path
-      elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`);
-      if (elemList.length > 0) {
+      if (!params.newButtonId) {
+        elemList = $(`input[name="file_path"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.file_path = elemList[0].attribs.value;
         locals.working_path = undefined;
       } else {
-        elemList = $(
-          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`,
-        );
+        elemList = $(`input[name="working_path"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.working_path = elemList[0].attribs.value;
@@ -1133,10 +1037,33 @@ function testUploadFile(params) {
     });
   });
 
+  describe(`Uploaded file is available`, function () {
+    it('file view should match contents', async () => {
+      const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(params.path)}`);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+      const pre = locals.$('.card-body pre');
+      assert.lengthOf(pre, 1);
+      assert.strictEqual(pre.text(), params.contents);
+    });
+
+    it('file download should match contents', async () => {
+      const downloadUrl = locals.$('.card-header a:contains("Download")').attr('href');
+      const res = await fetch(`${siteUrl}${downloadUrl}`);
+      assert.isOk(res.ok);
+      assert.strictEqual(await res.text(), params.contents);
+    });
+  });
+
   pullAndVerifyFileInDev(params.path, params.contents);
 }
 
-function testRenameFile(params) {
+function testRenameFile(params: {
+  url: string;
+  path: string;
+  contents: string;
+  new_file_name: string;
+}) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
@@ -1144,28 +1071,24 @@ function testRenameFile(params) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
-      elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find(`button[id^="instructorFileRenameForm-"]`);
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // old_file_name
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`,
-      );
+      elemList = $(`input[name="old_file_name"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.old_file_name = elemList[0].attribs.value;
+      assert.equal(locals.old_file_name, params.path.split('/').pop());
       // working_path
-      elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`,
-      );
+      elemList = $(`input[name="working_path"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.working_path = elemList[0].attribs.value;
@@ -1190,7 +1113,7 @@ function testRenameFile(params) {
   pullAndVerifyFileInDev(params.path, params.contents);
 }
 
-function testDeleteFile(params) {
+function testDeleteFile(params: { url: string; path: string }) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       const res = await fetch(params.url);
@@ -1198,22 +1121,22 @@ function testDeleteFile(params) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and a file_path', () => {
-      elemList = locals.$(`button[id="instructorFileDeleteForm-${params.id}"]`);
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find(`button[id^="instructorFileDeleteForm-"]`);
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(
-        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`,
-      );
+      elemList = $(`input[name="__csrf_token"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path
-      elemList = $(`form[name="instructor-file-delete-form-${params.id}"] input[name="file_path"]`);
+      elemList = $(`input[name="file_path"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.file_path = elemList[0].attribs.value;
+      assert.equal(locals.file_path, params.path);
     });
   });
 

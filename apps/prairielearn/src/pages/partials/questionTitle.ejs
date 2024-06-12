@@ -1,9 +1,0 @@
-<% if (question_context == 'student_homework') { %>
-  <%= instance_question_info.question_number %>. <%= question.title %>
-<% } else if (question_context == 'student_exam') { %>
-  Question <%= instance_question_info.question_number %>: <%= question.title %>
-<% } else if (question_context == 'instructor' || question_context == 'manual_grading' || question_context == 'public') { %>
-  <%= question.title %>
-<% } else { %>
-  <% throw Error('unknown question_context: ' + question_context); %>
-<% } %>

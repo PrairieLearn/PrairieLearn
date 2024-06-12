@@ -1,6 +1,6 @@
+import { Modal } from '@prairielearn/bootstrap';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Modal } from '@prairielearn/bootstrap';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -60,13 +60,12 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-
 /*
  * TEST, better way to choose body and footer based on deletable?
  * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
- * 
+ *
  * Also, the modals are a different format. They are longer than the originals and not centered vertically.
-*/
+ */
 function chooseSharingNameModal(canChooseSharingName, csrfToken) {
   let body = '';
   let footer = '';
@@ -78,14 +77,15 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
         <input class="form-control" type="text" name="course_sharing_name" required />
       </div>
       <p>
-        <strong>Once you have shared a question either publicly or with another course, you
-          will no longer be able to change your sharing name.</strong>
-        Doing so would break the assessments of other courses that have imported your
-        questions. It is recommended that you choose something short but descriptive.
-        For example, if you're teaching a calculus course at a university that goes by
-        the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'.
-        Then other courses will import questions from your course with the syntax
-        '@xyz-calculus/qid'.
+        <strong
+          >Once you have shared a question either publicly or with another course, you will no
+          longer be able to change your sharing name.</strong
+        >
+        Doing so would break the assessments of other courses that have imported your questions. It
+        is recommended that you choose something short but descriptive. For example, if you're
+        teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you
+        could choose the sharing name 'xyz-calculus'. Then other courses will import questions from
+        your course with the syntax '@xyz-calculus/qid'.
       </p>
     `;
     footer = html`
@@ -95,23 +95,23 @@ function chooseSharingNameModal(canChooseSharingName, csrfToken) {
     `;
   } else {
     footer = html`
-      <p>
-        Unable to delete sharing set because the sharing set has been shared 
-        and at least one question has been added. Doing so would break the 
-        assessments of other courses that have imported your questions.
-      </p>
+    <strong>Unable to change your course's sharing name.</strong>
+    </p>
+    <p>
+      Your course's sharing name cannot be changed because at least one question has
+      been shared. Doing so would break the assessments of other courses that have
+      imported your questions.
+    </p>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
   }
   return Modal({
     title: 'Choose Sharing Name',
     id: 'chooseSharingNameModal',
-    body: body,
-    footer: footer,
+    body,
+    footer,
   });
 }
-
-
 
 export const InstructorSharing = ({
   sharingName,
