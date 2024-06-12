@@ -84,9 +84,9 @@ export const DateFromISOString = z
   )
   .transform((s) => new Date(s));
 
-/**
- * Miscellaneous schemas; keep these alphabetized.
- */
+// *******************************************************************************
+// Miscellaneous schemas; keep these alphabetized.
+// *******************************************************************************
 
 export const AssessmentsFormatForQuestionSchema = z.array(
   z.object({
@@ -108,9 +108,9 @@ export const GradingJobStatusSchema = z.enum([
 ]);
 export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
 
-/**
- * Enum schemas; keep these alphabetized.
- */
+// *******************************************************************************
+// Enum schemas. These should be alphabetized by their corresponding enum name.
+// *******************************************************************************
 
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
@@ -121,9 +121,11 @@ export type EnumMode = z.infer<typeof EnumModeSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
-/**
- * Database table schemas; keep these alphabetized.
- */
+// *******************************************************************************
+// Database table schemas. These should be alphabetized by their corresponding
+// table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
+// because `Group` comes before `GroupConfig` alphabetically.
+// *******************************************************************************
 
 export const AdministratorSchema = z.object({
   id: IdSchema,
@@ -292,9 +294,9 @@ export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
 
 export const AssessmentQuestionRolePermissionsSchema = z.object({
   assessment_question_id: IdSchema,
-  group_role_id: IdSchema,
   can_submit: z.boolean().nullable(),
   can_view: z.boolean().nullable(),
+  group_role_id: IdSchema,
 });
 export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
@@ -338,13 +340,13 @@ export const AuthnProviderSchema = z.object({
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
 export const ClientFingerprintSchema = z.object({
-  id: IdSchema,
-  user_id: IdSchema,
-  user_session_id: IdSchema,
-  ip_address: z.string(),
-  user_agent: z.string().nullable(),
   accept_language: z.string().nullable(),
   created_at: DateFromISOString,
+  id: IdSchema,
+  ip_address: z.string(),
+  user_agent: z.string().nullable(),
+  user_id: IdSchema,
+  user_session_id: IdSchema,
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
