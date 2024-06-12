@@ -316,7 +316,6 @@ jobs:
           cache-dependency-path: images/plbase/python-requirements.txt
       - name: Install Python dependencies
         run: pip install -r images/plbase/python-requirements.txt
-        
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
