@@ -236,17 +236,20 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
     this.restoreOriginalConfirmContainer.show();
+    this.restoreOriginalConfirm.focus();
   });
 
   this.restoreOriginalConfirm.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
   this.restoreOriginalCancel.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
   });
 };
 
