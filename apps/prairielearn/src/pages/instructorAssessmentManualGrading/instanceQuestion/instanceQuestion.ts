@@ -79,7 +79,7 @@ router.get(
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'manual_grading',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,

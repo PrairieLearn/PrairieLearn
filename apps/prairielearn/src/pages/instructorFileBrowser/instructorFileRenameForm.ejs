@@ -11,7 +11,7 @@
   </div>
   <div class="form-group">
       <label for="renameFileInput">Path:</label>
-      <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?" required>
+      <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="(?:[\-A-Za-z0-9_]+|\.\.)(?:\/(?:[\-A-Za-z0-9_]+|\.\.))*(?:\.[\-A-Za-z0-9_]+)?" required>
       <div class="invalid-feedback" id="invalidMessage-<%= file.id %>">
       </div>
   </div>
