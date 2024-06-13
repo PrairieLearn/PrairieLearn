@@ -124,6 +124,14 @@ WITH
         'Access Exam',
         1,
         1
+      ),
+      (
+        54,
+        'b57e29a2-c190-4587-8228-34db3e50a3cd',
+        'accessExam',
+        'Access Exam',
+        1,
+        1
       )
   ),
   setup_assessment_access_rule AS (
@@ -191,12 +199,22 @@ WITH
       ),
       (
         53,
-        2,
+        1,
         null,
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
         '890884f9-aa9d-4fc0-b910-5229794906fb',
+        null
+      ),
+      (
+        54,
+        1,
+        null,
+        '2010-01-01 00:00:01-00',
+        '2010-12-31 23:59:59-00',
+        100,
+        null,
         null
       )
   )
@@ -204,27 +222,24 @@ SELECT
   true;
 
 -- BLOCK insert_pt_reservation
-WITH
-  remove_reservations AS (
-    DELETE FROM pt_reservations
-  ),
-  insert_new_reservation AS (
-    INSERT INTO
-      pt_reservations (
-        exam_id,
-        enrollment_id,
-        session_id,
-        access_start,
-        access_end
-      )
-    VALUES
-      (
-        $exam_id,
-        1,
-        1,
-        '2010-07-01 00:00:00-00',
-        '2010-07-31 23:59:59-00'
-      )
+INSERT INTO
+  pt_reservations (
+    exam_id,
+    enrollment_id,
+    session_id,
+    access_start,
+    access_end
   )
-SELECT
-  true;
+VALUES
+  (
+    $exam_id,
+    1,
+    1,
+    '2010-07-01 00:00:00-00',
+    '2010-07-31 23:59:59-00'
+  );
+
+-- BLOCK delete_pt_reservation
+DELETE FROM pt_reservations
+WHERE
+  exam_id = $exam_id;

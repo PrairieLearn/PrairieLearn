@@ -182,6 +182,9 @@ describe('sproc check_assessment_access* tests', function () {
       before(`create checked-in reservation for student`, async () => {
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
+      after('delete checked-in reservation for student', async () => {
+        await sqldb.queryAsync(sql.delete_pt_reservation, { exam_id: 1 });
+      });
 
       it('should not allow access to an exam without exam_uuid', async () => {
         const authorized = await checkAssessmentAccess({
@@ -231,6 +234,21 @@ describe('sproc check_assessment_access* tests', function () {
       it('should not allow access in Exam mode when access rule mode is null and exam_uuid is present', async () => {
         const authorized = await checkAssessmentAccess({
           assessment_id: '53',
+          authz_mode: 'Exam',
+          authz_mode_reason: 'PrairieTest',
+          course_role: 'None',
+          course_instance_role: 'None',
+          user_id: '1000',
+          uid: 'valid@example.com',
+          date: '2010-07-07 06:06:06-00',
+          display_timezone: 'US/Central',
+        });
+        assert.isFalse(authorized);
+      });
+
+      it('should not allow access in Exam mode when access rule has no explicit mode or exam_uuid', async () => {
+        const authorized = await checkAssessmentAccess({
+          assessment_id: '54',
           authz_mode: 'Exam',
           authz_mode_reason: 'PrairieTest',
           course_role: 'None',
