@@ -34,10 +34,11 @@
         tab: {
           key: 9,
           handler: () => {
-            // Overrides Quill tab behavior to insert a tab character. Retains
-            // other tab behaviours (e.g. indent list items or switch to
-            // different cell in a table), or to the browser default behavior
-            // (i.e., focus on the next focusable element)
+            // Overrides Quill tab behavior that inserts a tab character.
+            // Retains other Quill tab behaviours (indent list items or code
+            // blocks, switch cells in table), falling back to the browser's
+            // default behavior (focus on next focusable element) for
+            // accessibility.
             // https://quilljs.com/docs/modules/keyboard#configuration
             return true;
           },
