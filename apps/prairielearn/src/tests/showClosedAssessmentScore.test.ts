@@ -54,7 +54,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     });
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
