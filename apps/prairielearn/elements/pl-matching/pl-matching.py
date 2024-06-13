@@ -284,8 +284,6 @@ def render(element_html, data):
     options_placement = pl.get_enum_attrib(
         element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
     )
-    options_placement_right = options_placement == OptionsPlacementType.RIGHT
-    options_placement_bottom = options_placement == OptionsPlacementType.BOTTOM
 
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
@@ -344,8 +342,7 @@ def render(element_html, data):
             "options": option_set,
             "counter_type": counter_type,
             "no_counters": no_counters,
-            "options_placement_right": options_placement_right,
-            "options_placement_bottom": options_placement_bottom,
+            "options_placement": options_placement.value,
         }
 
         if score is not None:
