@@ -1,12 +1,11 @@
 import base64
 import hashlib
 import os
+from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
-
-from enum import Enum
 
 
 class Counter(Enum):
@@ -89,7 +88,9 @@ def render(element_html, data):
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
-    output_format = pl.get_enum_attrib(element, "format", OutputFormat, OutputFormat.HTML)
+    output_format = pl.get_enum_attrib(
+        element, "format", OutputFormat, OutputFormat.HTML
+    )
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
