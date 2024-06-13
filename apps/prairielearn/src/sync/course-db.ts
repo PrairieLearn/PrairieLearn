@@ -404,15 +404,30 @@ export async function loadFullCourse(
   perf.end('loadQuestions');
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
-  for (const courseInstanceId in courseInstanceInfos) {
-    // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
-    // If so, duplicate all that here
-    const assessments = await loadAssessments(courseDir, courseInstanceId, questions);
-    const courseInstance = {
+  for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
+    const courseInstanceAccessibleNowOrInFuture = (courseInstance.data?.allowAccess ?? []).some(
+      (rule) => {
+        const startDate = rule.startDate ? parseAllowAccessDate(rule.startDate) : null;
+        const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+
+        if (startDate && isFuture(startDate)) return true;
+        if (endDate && isFuture(endDate)) return true;
+
+        return false;
+      },
+    );
+
+    const assessments = await loadAssessments(
+      courseDir,
+      courseInstanceId,
+      questions,
+      courseInstanceAccessibleNowOrInFuture,
+    );
+
+    courseInstances[courseInstanceId] = {
       courseInstance: courseInstanceInfos[courseInstanceId],
       assessments,
     };
-    courseInstances[courseInstanceId] = courseInstance;
   }
   return {
     course: courseInfo,
@@ -936,12 +951,10 @@ function checkDuplicateUUIDs<T>(
  */
 function checkAllowAccessRoles(rule: { role?: string }): string[] {
   const warnings: string[] = [];
-  if ('role' in rule) {
-    if (rule.role !== 'Student') {
-      warnings.push(
-        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
-      );
-    }
+  if ('role' in rule && rule.role !== 'Student') {
+    warnings.push(
+      `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
+    );
   }
   return warnings;
 }
@@ -1001,14 +1014,10 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
       `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
     );
   }
-  let dateInFuture = false;
-  if (startDate && isFuture(startDate)) {
-    dateInFuture = true;
-  }
-  if (endDate && isFuture(endDate)) {
-    dateInFuture = true;
-  }
-  return { errors, dateInFuture };
+  return {
+    errors,
+    dateInFuture: (startDate && isFuture(startDate)) || (endDate && isFuture(endDate)) || false,
+  };
 }
 
 async function validateQuestion(
@@ -1042,6 +1051,7 @@ async function validateQuestion(
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
+  courseInstanceAccessibleNowOrInFuture: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1060,13 +1070,9 @@ async function validateAssessment(
     }
   }
 
-  // Check assessment access rules
-  let anyDateInFuture = false;
+  // Check assessment access rules.
   (assessment.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
-    }
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
       errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
@@ -1075,11 +1081,18 @@ async function validateAssessment(
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  // When additional validation is added, we don't want to warn for past course
+  // instances that instructors will never touch again, as they won't benefit
+  // from fixing things. So, we'll only show some warnings for course instances
+  // which are accessible either now or any time in the future.
+  if (courseInstanceAccessibleNowOrInFuture) {
     (assessment.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
+
+      if (rule.examUuid && rule.mode !== 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      }
     });
   }
 
@@ -1404,17 +1417,17 @@ export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
   questions: Record<string, InfoFile<Question>>,
+  courseInstanceAccessibleNowOrInFuture: boolean,
 ): Promise<Record<string, InfoFile<Assessment>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
-  const validateAssessmentWithQuestions = (assessment: Assessment) =>
-    validateAssessment(assessment, questions);
   const assessments = await loadInfoForDirectory({
     coursePath,
     directory: assessmentsPath,
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: validateAssessmentWithQuestions,
+    validate: (assessment: Assessment) =>
+      validateAssessment(assessment, questions, courseInstanceAccessibleNowOrInFuture),
     recursive: true,
   });
   checkDuplicateUUIDs(
