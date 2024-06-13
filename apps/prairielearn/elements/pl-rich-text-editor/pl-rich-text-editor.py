@@ -42,6 +42,7 @@ def prepare(element_html, data):
         "placeholder",
         "format",
         "markdown-shortcuts",
+        "counter",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
@@ -69,6 +70,11 @@ def prepare(element_html, data):
             f'Invalid output format "{output_format}". Must be either "html" or "markdown".'
         )
 
+    counter = pl.get_string_attrib(element, "counter", "none")
+    valid_counters = ["character", "word", "none"]
+    if counter not in valid_counters:
+        raise Exception(f"Invalid {counter=}. Valid options are {valid_counters}")
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -85,6 +91,7 @@ def render(element_html, data):
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
+    counter = pl.get_string_attrib(element, "counter", "none")
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
@@ -103,6 +110,8 @@ def render(element_html, data):
             ),
             "format": output_format,
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
+            "counter": counter,
+            "counter_disabled": counter == "none",
         }
 
         if source_file_name is not None:

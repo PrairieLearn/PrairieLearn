@@ -94,4 +94,38 @@
   MathFormula.tagName = 'SPAN';
 
   Quill.register('formats/formula', MathFormula, true);
+
+  class Counter {
+    constructor(quill, options) {
+      this.quill = quill;
+      this.options = options;
+      this.container = document.querySelector(options.container);
+      if (this.options.unit !== 'none') {
+        quill.on(Quill.events.TEXT_CHANGE, this.update.bind(this));
+      }
+    }
+
+    calculate() {
+      const text = this.quill.getText();
+
+      // FIXME: Support unicode characters in character count
+      if (this.options.unit === 'word') {
+        const trimmed = text.trim();
+        // Splitting empty text returns a non-empty array
+        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+      } else if (this.options.unit === 'character') {
+        return text.length;
+      } else {
+        console.error(`Text count not implemented for unit type: ${this.options.unit}`);
+      }
+    }
+
+    update() {
+      const length = this.calculate();
+      const label = `${this.options.unit}${length === 1 ? '' : 's'}`;
+      this.container.innerText = `${length} ${label}`;
+    }
+  }
+
+  Quill.register('modules/counter', Counter);
 })();

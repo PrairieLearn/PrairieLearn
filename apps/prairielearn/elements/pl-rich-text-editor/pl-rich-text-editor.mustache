@@ -4,6 +4,12 @@ $(function() {
         readOnly: {{read_only}},
         placeholder: '{{placeholder}}',
         format: '{{format}}',
+        modules: {
+            counter: {
+                container: '#rte-counter-{{editor_uuid}}',
+                unit: '{{counter}}',
+            }
+        },
         markdownShortcuts: {{markdown_shortcuts}},
         {{#quill_theme}}
         theme: '{{.}}',
@@ -14,5 +20,9 @@ $(function() {
 <input type="hidden" id="rte-input-{{editor_uuid}}"
        name="{{name}}" value="{{current_file_contents}}"/>
 <div class="pl-rich-text-editor-container">
-  <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    <div class="pl-rich-text-editor-counter-container
+        {{#counter_disabled}}pl-rich-text-editor-counter-container-disabled{{/counter_disabled}}">
+        <div id="rte-counter-{{editor_uuid}}"></div>
+    </div>
 </div>
