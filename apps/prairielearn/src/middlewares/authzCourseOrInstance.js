@@ -223,13 +223,11 @@ export async function authzCourseOrInstance(req, res) {
           ${config.devMode && is_administrator
             ? html`
                 <div class="alert alert-warning" role="alert">
-                  <p>
-                    In Development Mode,
-                    <a href="/pl/administrator/query/select_or_insert_user"
-                      >go here to add the user</a
-                    >
-                    first and then try the emulation again.
-                  </p>
+                  In Development Mode,
+                  <a href="/pl/administrator/query/select_or_insert_user">
+                    go here to add the user
+                  </a>
+                  first and then try the emulation again.
                 </div>
                 ${isCourseInstance
                   ? html`

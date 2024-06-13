@@ -207,21 +207,6 @@ router.post(
     if (req.body.__action === 'save_and_sync') {
       debug('Save and sync');
 
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container,
-        filePath: paths.workingPath,
-        editContents: req.body.file_edit_contents,
-        origHash: req.body.file_edit_orig_hash,
-      });
-
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      editor.assertCanEdit();
-
       debug('Write draft file edit to db and to file store');
       const editID = await writeDraftEdit({
         userID: res.locals.user.user_id,
@@ -234,6 +219,14 @@ router.post(
         uid: res.locals.user.uid,
         user_name: res.locals.user.name,
         editContents: req.body.file_edit_contents,
+      });
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container,
+        filePath: paths.workingPath,
+        editContents: req.body.file_edit_contents,
+        origHash: req.body.file_edit_orig_hash,
       });
 
       const serverJob = await editor.prepareServerJob();

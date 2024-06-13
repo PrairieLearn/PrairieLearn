@@ -58,7 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -509,6 +509,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 | `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
 | `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
 | `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
+| `options-placement`   | "right" or "bottom"                                        | "right"       | The placement of options relative to the statements in order to make it visually cohesive. Especially useful when dealing with long statements or options.                                                             |
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 

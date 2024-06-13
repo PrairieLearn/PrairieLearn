@@ -15,14 +15,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_job_sequence
-SELECT
-  *
-FROM
-  job_sequences
-WHERE
-  id = $job_sequence_id;
-
 -- BLOCK select_sync_warnings_and_errors
 WITH
   course_errors AS (

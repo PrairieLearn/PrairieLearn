@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { callRow } from '@prairielearn/postgres';
 
 import { setCookie } from '../../lib/cookie.js';
-import { ModeSchema, type User } from '../../lib/db-types.js';
+import { EnumModeSchema, type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 
@@ -40,7 +40,7 @@ export async function shouldRedirectToTermsPage(user: User, ip: string) {
   const { mode } = await callRow(
     'ip_to_mode',
     [ip, new Date(), user.user_id],
-    z.object({ mode: ModeSchema }),
+    z.object({ mode: EnumModeSchema }),
   );
   return mode === 'Public';
 }

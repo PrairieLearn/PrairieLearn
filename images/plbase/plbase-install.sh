@@ -49,6 +49,21 @@ echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
 
+echo "installing pgvector..."
+dnf -y install postgresql15-server-devel
+cd /tmp
+git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+cd pgvector
+# This Docker image will be built in GitHub Actions but must run on a variety
+# of platforms, so we need to build it without machine-specific instructions.
+# https://github.com/pgvector/pgvector/issues/130
+# https://github.com/pgvector/pgvector/issues/143
+make OPTFLAGS=""
+make install
+rm -rf /tmp/pgvector
+dnf -y remove postgresql15-server-devel
+dnf -y autoremove
+
 # TODO: use standard OS Python installation? The only reason we switched to Conda
 # was to support R and `rpy2`, but now that we've removed those, we might not
 # get any benefit from Conda.
