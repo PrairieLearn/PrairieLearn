@@ -4,26 +4,15 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import {
+  AuthzAccessRuleSchema,
+  StudentAccessRulesPopover,
+} from '../../components/StudentAccessRulesPopover.html.js';
+import {
   AssessmentSchema,
   AssessmentSetSchema,
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
-  ModeSchema,
 } from '../../lib/db-types.js';
-
-// This type is the return type for `access_rules` in the `authz_assessment` and
-// `check_assessment_access` sprocs. It is used in the context of the
-// studentAccessRulesPopover partial. It is declared here for now, but it should
-// be moved once the studentAccessRulesPopover partial is converted to a
-// component.
-const AuthzAccessRuleSchema = z.object({
-  credit: z.string(),
-  time_limit_min: z.string(),
-  start_date: z.string(),
-  end_date: z.string(),
-  mode: ModeSchema.nullable(),
-  active: z.boolean().nullable(),
-});
 
 export const StudentAssessmentsRowSchema = z.object({
   multiple_instance_header: z.boolean(),
@@ -35,7 +24,7 @@ export const StudentAssessmentsRowSchema = z.object({
   label: z.string(),
   credit_date_string: z.string(),
   active: AssessmentAccessRuleSchema.shape.active,
-  access_rules: AuthzAccessRuleSchema.array().nullable(),
+  access_rules: AuthzAccessRuleSchema.array(),
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
@@ -134,15 +123,11 @@ export function StudentAssessments({
                         ${row.assessment_instance_open !== false
                           ? row.credit_date_string
                           : 'Assessment closed.'}
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/studentAccessRulesPopover'); %>",
-                          {
-                            accessRules: row.access_rules,
-                            assessmentSetName: row.assessment_set_name,
-                            assessmentNumber: row.assessment_number,
-                          },
-                        )}
+                        ${StudentAccessRulesPopover({
+                          accessRules: row.access_rules,
+                          assessmentSetName: row.assessment_set_name,
+                          assessmentNumber: row.assessment_number,
+                        })}
                       </td>
                       <td class="text-center align-middle">
                         ${row.multiple_instance_header

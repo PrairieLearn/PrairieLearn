@@ -3,12 +3,12 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
-import { QuestionContainer } from '../../components/QuestionContainer.html.js';
+import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
 export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
-  const question_context =
+  const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
 
   return html`
@@ -51,16 +51,9 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
+        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
-        <script>
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-              let fileName = $(this).val().replace(/\\/g, '/').replace(/.*//, '');
-              $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-          });
-        </script>
-
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
@@ -72,14 +65,11 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/questionTitle') %>",
-                          {
-                            ...resLocals,
-                            question_context,
-                          },
-                        )}
+                        ${QuestionTitle({
+                          questionContext,
+                          question: resLocals.question,
+                          questionNumber: resLocals.instance_question_info.question_number,
+                        })}
                       </div>
                       <div class="card-body">
                         This question was not viewed while the assessment was open, so no variant
@@ -87,7 +77,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                       </div>
                     </div>
                   `
-                : QuestionContainer({ resLocals, question_context })}
+                : QuestionContainer({ resLocals, questionContext })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

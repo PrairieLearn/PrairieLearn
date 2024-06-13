@@ -48,7 +48,7 @@ router.get(
       instance_question_id: null,
       variant_id: req.params.variant_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'instructor',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
