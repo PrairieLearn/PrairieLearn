@@ -13,10 +13,6 @@
   box-shadow: 3px 3px 3px grey;
 }
 
-.pl-rich-text-editor-counter-container-disabled {
-  display: none;
-}
-
 .pl-rich-text-editor-counter-container {
   border-style: solid;
   border-color: #ccc;

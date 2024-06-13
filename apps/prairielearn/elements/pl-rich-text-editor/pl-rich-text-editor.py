@@ -113,7 +113,7 @@ def render(element_html, data):
             "format": output_format.value,
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
             "counter": counter.value,
-            "counter_disabled": counter == Counter.NONE,
+            "counter_enabled": counter != Counter.NONE,
         }
 
         if source_file_name is not None:
