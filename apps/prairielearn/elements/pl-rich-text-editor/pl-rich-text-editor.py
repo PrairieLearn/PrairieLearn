@@ -6,11 +6,24 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
+from enum import Enum
+
+
+class Counter(Enum):
+    NONE = "none"
+    CHARACTER = "character"
+    WORD = "word"
+
+
+class OutputFormat(Enum):
+    HTML = "html"
+    MARKDOWN = "markdown"
+
+
 QUILL_THEME_DEFAULT = "snow"
 PLACEHOLDER_DEFAULT = "Your answer here"
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
-FORMAT_DEFAULT = "html"
 MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
@@ -48,7 +61,6 @@ def prepare(element_html, data):
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
-    output_format = pl.get_string_attrib(element, "format", FORMAT_DEFAULT)
     element_text = element_inner_html(element)
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -65,16 +77,6 @@ def prepare(element_html, data):
                 + element_text
             )
 
-    if output_format not in ("html", "markdown"):
-        raise Exception(
-            f'Invalid output format "{output_format}". Must be either "html" or "markdown".'
-        )
-
-    counter = pl.get_string_attrib(element, "counter", "none")
-    valid_counters = ["character", "word", "none"]
-    if counter not in valid_counters:
-        raise Exception(f"Invalid {counter=}. Valid options are {valid_counters}")
-
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -87,11 +89,11 @@ def render(element_html, data):
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
-    output_format = pl.get_string_attrib(element, "format", FORMAT_DEFAULT)
+    output_format = pl.get_enum_attrib(element, "format", OutputFormat, OutputFormat.HTML)
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
-    counter = pl.get_string_attrib(element, "counter", "none")
+    counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
@@ -108,10 +110,10 @@ def render(element_html, data):
                 if (data["panel"] == "submission" or not data["editable"])
                 else "false"
             ),
-            "format": output_format,
+            "format": output_format.value,
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
-            "counter": counter,
-            "counter_disabled": counter == "none",
+            "counter": counter.value,
+            "counter_disabled": counter == Counter.NONE,
         }
 
         if source_file_name is not None:
