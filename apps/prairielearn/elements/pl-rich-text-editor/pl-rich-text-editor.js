@@ -48,7 +48,9 @@
     quill.setContents(quill.clipboard.convert({ html: contents }));
 
     quill.on('text-change', function () {
-      let contents = rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+      let contents = quill.editor.isBlank()
+        ? ''
+        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
