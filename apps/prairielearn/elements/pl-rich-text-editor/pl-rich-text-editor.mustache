@@ -4,13 +4,8 @@ $(function() {
         readOnly: {{read_only}},
         placeholder: '{{placeholder}}',
         format: '{{format}}',
-        modules: {
-            counter: {
-                container: '#rte-counter-{{editor_uuid}}',
-                unit: '{{counter}}',
-            }
-        },
         markdownShortcuts: {{markdown_shortcuts}},
+        counter: '{{counter}}',
         {{#quill_theme}}
         theme: '{{.}}',
         {{/quill_theme}}

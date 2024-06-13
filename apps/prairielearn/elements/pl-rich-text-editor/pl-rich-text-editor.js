@@ -13,6 +13,35 @@
     }
   });
 
+  class Counter {
+    constructor(unit, uuid, getText) {
+      this.unit = unit;
+      this.container = document.getElementById(`rte-counter-${uuid}`);
+      this.getText = getText;
+
+      // Eagerly populate the container
+      this.update();
+    }
+
+    calculate(text) {
+      if (this.unit === 'word') {
+        const trimmed = text.trim();
+        // Splitting empty text returns a non-empty array
+        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+      } else if (this.unit === 'character') {
+        return [...text].length;
+      } else {
+        console.error(`Text count not implemented for unit type: ${this.unit}`);
+      }
+    }
+
+    update() {
+      const length = this.calculate(this.getText());
+      const label = `${this.unit}${length === 1 ? '' : 's'}`;
+      this.container.innerText = `${length} ${label}`;
+    }
+  }
+
   window.PLRTE = function (uuid, options) {
     if (!options.modules) options.modules = {};
     if (options.readOnly) {
@@ -47,6 +76,9 @@
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
 
+    const getText = () => quill.getText();
+    const counter = options.counter === "none" ? null : new Counter(options.counter, uuid, getText);
+
     quill.on('text-change', function () {
       let contents = rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       if (contents && renderer) contents = renderer.makeMarkdown(contents);
@@ -58,6 +90,11 @@
           }),
         ),
       );
+
+      // Update character/word count
+      if (counter) {
+        counter.update(quill.getText())
+      }
     });
   };
 
@@ -94,38 +131,4 @@
   MathFormula.tagName = 'SPAN';
 
   Quill.register('formats/formula', MathFormula, true);
-
-  class Counter {
-    constructor(quill, options) {
-      this.quill = quill;
-      this.options = options;
-      this.container = document.querySelector(options.container);
-      if (this.options.unit !== 'none') {
-        quill.on(Quill.events.TEXT_CHANGE, this.update.bind(this));
-      }
-    }
-
-    calculate() {
-      const text = this.quill.getText();
-
-      // FIXME: Support unicode characters in character count
-      if (this.options.unit === 'word') {
-        const trimmed = text.trim();
-        // Splitting empty text returns a non-empty array
-        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
-      } else if (this.options.unit === 'character') {
-        return text.length;
-      } else {
-        console.error(`Text count not implemented for unit type: ${this.options.unit}`);
-      }
-    }
-
-    update() {
-      const length = this.calculate();
-      const label = `${this.options.unit}${length === 1 ? '' : 's'}`;
-      this.container.innerText = `${length} ${label}`;
-    }
-  }
-
-  Quill.register('modules/counter', Counter);
 })();
