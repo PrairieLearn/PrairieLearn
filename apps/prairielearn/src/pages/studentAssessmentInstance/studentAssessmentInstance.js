@@ -257,24 +257,18 @@ router.get(
         }
       }
     });
+
     if (res.locals.assessment.group_work) {
       // Get the group config info
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
-      res.locals.groupConfig = groupConfig;
-
-      res.locals.notInGroup = false;
       const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
-      res.locals.groupSize = groupInfo.groupSize;
-      res.locals.groupMembers = groupInfo.groupMembers;
-      res.locals.joinCode = groupInfo.joinCode;
-      res.locals.groupName = groupInfo.groupName;
-      res.locals.start = groupInfo.start;
-      res.locals.rolesInfo = groupInfo.rolesInfo;
-      res.locals.used_join_code = req.body.used_join_code;
+      const userCanAssignRoles =
+        groupInfo != null &&
+        groupConfig.has_roles &&
+        (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+          res.locals.authz_data.has_course_instance_permission_edit);
 
       if (groupConfig.has_roles) {
-        res.locals.userCanAssignRoles = canUserAssignGroupRoles(groupInfo, res.locals.user.user_id);
-
         res.locals.user_group_roles =
           groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
             ?.map((role) => role.role_name)
@@ -291,6 +285,16 @@ router.get(
           }
         }
       }
+
+      res.send(
+        StudentAssessmentInstance({
+          showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+          resLocals: res.locals,
+          groupConfig,
+          groupInfo,
+          userCanAssignRoles,
+        }),
+      );
     }
 
     res.send(
