@@ -106,7 +106,7 @@ export async function botGrade({
       }
       const question_prompt_raw = data.questionHtml;
       const $ = cheerio.load(question_prompt_raw);
-      $('script').remove()
+      $('script').remove();
       const question_prompt = $.html();
 
       const render_submission_results = await questionModule.render(
