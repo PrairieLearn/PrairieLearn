@@ -51,6 +51,16 @@ BEGIN
         authorized := FALSE;
     END IF;
 
+    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode_reason IS DISTINCT FROM 'PrairieTest') THEN
+        -- Only use exam_uuid when we are using PrairieTest.
+        authorized := FALSE;
+    END IF;
+
+    IF (assessment_access_rule.exam_uuid IS NOT NULL AND assessment_access_rule.mode IS DISTINCT FROM 'Exam') THEN
+        -- Only use exam_uuid if the access rule has an explicit mode=Exam.
+        authorized := FALSE;
+    END IF;
+
     IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode = 'Exam' AND mode_reason = 'PrairieTest') THEN
         -- Look for a checked-in PrairieTest reservation.
         SELECT r.access_end

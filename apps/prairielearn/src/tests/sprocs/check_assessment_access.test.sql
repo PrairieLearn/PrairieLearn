@@ -116,6 +116,14 @@ WITH
         'Access Exam',
         1,
         1
+      ),
+      (
+        53,
+        'cff62cac-67d4-4ec7-a1b2-723722b72ba7',
+        'accessExam',
+        'Access Exam',
+        1,
+        1
       )
   ),
   setup_assessment_access_rule AS (
@@ -179,6 +187,16 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         'bf6df059-6760-4cf0-ac32-35a43e28a3e7',
+        null
+      ),
+      (
+        53,
+        2,
+        null,
+        '2010-01-01 00:00:01-00',
+        '2010-12-31 23:59:59-00',
+        100,
+        '890884f9-aa9d-4fc0-b910-5229794906fb',
         null
       )
   )
