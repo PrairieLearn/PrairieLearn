@@ -120,7 +120,7 @@ export const SamlTest = ({
                       : ''}
                     ${hasEmail
                       ? html`<li>
-                          <strong>Email:</strong> ${email} (<code>${nameAttribute}</code>)
+                          <strong>Email:</strong> ${email} (<code>${emailAttribute}</code>)
                         </li>`
                       : ''}
                   </ul>

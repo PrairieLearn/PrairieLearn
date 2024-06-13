@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-import { encodePath, decodePath } from './uri-util.js';
+import { encodePath } from './uri-util.js';
 
 /**
  * For the file path of the current page, this function returns rich
@@ -69,7 +69,7 @@ export function getPaths(req, res) {
 
   if (req.params[0]) {
     try {
-      paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
+      paths.workingPath = path.join(res.locals.course.path, req.params[0]);
     } catch (err) {
       throw new Error(`Invalid path: ${req.params[0]}`);
     }
@@ -88,7 +88,7 @@ export function getPaths(req, res) {
         path: paths.clientDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.clientDir,
-        )}</code> and will be accessible from the student's webbrowser.`,
+        )}</code> and will be accessible from the student's web browser.`,
       });
     }
     if (paths.serverDir) {
@@ -97,7 +97,7 @@ export function getPaths(req, res) {
         path: paths.serverDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.serverDir,
-        )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
+        )}</code> and will be accessible only from the server. It will not be accessible from the student's web browser.`,
       });
     }
     if (paths.testsDir) {
@@ -106,7 +106,7 @@ export function getPaths(req, res) {
         path: paths.testsDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
           paths.testsDir,
-        )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
+        )}</code> and will be accessible only from the server. It will not be accessible from the student's web browser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
       });
     }
   }

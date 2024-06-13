@@ -12,8 +12,8 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
-    "@types/node": "^20.12.11",
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.13.0",
     "typescript": "^5.4.5"
   },
   "dependencies": {

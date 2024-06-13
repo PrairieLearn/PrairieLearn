@@ -4,6 +4,8 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -28,19 +30,11 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   sync_errors: QuestionSchema.shape.sync_errors,
   sync_warnings_ansified: z.string().optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema.nullable(),
+  topic: TopicSchema,
   qid: QuestionSchema.shape.qid,
   start_new_zone: z.boolean().nullable(),
   start_new_alternative_group: z.boolean().nullable(),
-  tags: z
-    .array(
-      z.object({
-        color: TagSchema.shape.color,
-        id: TagSchema.shape.id,
-        name: TagSchema.shape.name,
-      }),
-    )
-    .nullable(),
+  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
   title: QuestionSchema.shape.title,
   zone_best_questions: ZoneSchema.shape.best_questions,
   zone_has_best_questions: z.boolean().nullable(),
@@ -271,16 +265,8 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>
-                  ${renderEjs(import.meta.url, "<%- include('../partials/topic'); %>", {
-                    topic: question.topic,
-                  })}
-                </td>
-                <td>
-                  ${renderEjs(import.meta.url, "<%- include('../partials/tags'); %>", {
-                    tags: question.tags,
-                  })}
-                </td>
+                <td>${TopicBadge(question.topic)}</td>
+                <td>${TagBadgeList(question.tags)}</td>
                 <td>
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,

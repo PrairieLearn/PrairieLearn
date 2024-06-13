@@ -8,7 +8,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types.js';
+import { InstitutionSchema, EnumModeSchema, UserSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
@@ -51,7 +51,7 @@ router.get(
     const mode = await sqldb.callRow(
       'ip_to_mode',
       [req.ip, res.locals.req_date, authn_user.user_id],
-      ModeSchema,
+      EnumModeSchema,
     );
 
     res.send(
@@ -76,7 +76,7 @@ router.post(
       const mode = await sqldb.callRow(
         'ip_to_mode',
         [req.ip, res.locals.req_date, res.locals.authn_user.user_id],
-        ModeSchema,
+        EnumModeSchema,
       );
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
