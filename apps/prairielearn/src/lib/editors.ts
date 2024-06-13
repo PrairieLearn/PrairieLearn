@@ -1054,6 +1054,9 @@ export class QuestionCopyEditor extends Editor {
     debug(`Write info.json with new title and uuid`);
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    delete infoJson['sharingSets'];
+    delete infoJson['publiclyShared'];
+    delete infoJson['publiclySharedWithSource'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1125,6 +1128,9 @@ export class QuestionTransferEditor extends Editor {
     debug(`Write info.json with new title and uuid`);
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+    delete infoJson['sharingSets'];
+    delete infoJson['publiclyShared'];
+    delete infoJson['publiclySharedWithSource'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {

@@ -251,6 +251,22 @@
           }
         }
       }
+    },
+    "sharingSets": {
+      "description": "The list of sharing sets that this question belongs to.",
+      "type": "array",
+      "items": {
+        "description": "The name of a sharing set",
+        "type": "string"
+      }
+    },
+    "publiclyShared": {
+      "description": "Whether this question is publicly shared.",
+      "type": "boolean"
+    },
+    "publiclySharedWithSource": {
+      "description": "Whether this questions's source code is publicly shared.",
+      "type": "boolean"
     }
   }
 }
