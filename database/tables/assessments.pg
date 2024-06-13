@@ -44,7 +44,7 @@ columns
     sync_job_sequence_id: bigint
     sync_warnings: text
     text: text
-    tid: text
+    tid: text not null
     title: text
     type: enum_assessment_type
     uuid: uuid
