@@ -29,6 +29,22 @@
       ];
     }
 
+    options.modules.keyboard = {
+      bindings: {
+        tab: {
+          key: 9,
+          handler: () => {
+            // Overrides Quill tab behavior to insert a tab character. Retains
+            // other tab behaviours (e.g. indent list items or switch to
+            // different cell in a table), or to the browser default behavior
+            // (i.e., focus on the next focusable element)
+            // https://quilljs.com/docs/modules/keyboard#configuration
+            return true;
+          },
+        },
+      },
+    };
+
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
     let renderer = null;
