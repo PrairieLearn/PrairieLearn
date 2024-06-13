@@ -2783,7 +2783,7 @@ __metadata:
   dependencies:
     "@actions/core": ^1.10.1
     "@actions/github": ^6.0.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^20.13.0
     typescript: ^5.4.5
     zod: ^3.23.8
@@ -2794,7 +2794,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^20.13.0
     node-fetch: ^3.3.2
     typescript: ^5.4.5
@@ -2806,7 +2806,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws@workspace:packages/aws"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": ^3.1.0
     "@smithy/types": ^3.0.0
     "@types/node": ^20.13.0
@@ -2841,7 +2841,7 @@ __metadata:
   dependencies:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     ioredis: ^5.4.1
     lru-cache: ^10.2.2
     typescript: ^5.4.5
@@ -2883,7 +2883,7 @@ __metadata:
     "@aws-sdk/client-ec2": ^3.588.0
     "@aws-sdk/client-secrets-manager": ^3.588.0
     "@prairielearn/aws-imds": "workspace:^"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": ^11.0.4
     "@types/lodash": ^4.17.4
     "@types/mocha": ^10.0.6
@@ -3554,7 +3554,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/signed-token@workspace:packages/signed-token"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.12
     "@types/node": ^20.13.0
     base64url: ^3.0.1
@@ -3564,7 +3564,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
+"@prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
   languageName: unknown
@@ -6472,11 +6472,11 @@ __metadata:
   linkType: hard
 
 "braces@npm:^3.0.2, braces@npm:~3.0.2":
-  version: 3.0.2
-  resolution: "braces@npm:3.0.2"
+  version: 3.0.3
+  resolution: "braces@npm:3.0.3"
   dependencies:
-    fill-range: ^7.0.1
-  checksum: e2a8e769a863f3d4ee887b5fe21f63193a891c68b612ddb4b68d82d1b5f3ff9073af066c343e9867a393fe4c2555dcb33e89b937195feb9c1613d259edfcd459
+    fill-range: ^7.1.1
+  checksum: b95aa0b3bd909f6cd1720ffcf031aeaf46154dd88b4da01f9a1d3f7ea866a79eba76a6d01cbc3c422b2ee5cdc39a4f02491058d5df0d7bf6e6a162a832df1f69
   languageName: node
   linkType: hard
 
@@ -9323,12 +9323,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fill-range@npm:^7.0.1":
-  version: 7.0.1
-  resolution: "fill-range@npm:7.0.1"
+"fill-range@npm:^7.1.1":
+  version: 7.1.1
+  resolution: "fill-range@npm:7.1.1"
   dependencies:
     to-regex-range: ^5.0.1
-  checksum: cc283f4e65b504259e64fd969bcf4def4eb08d85565e906b7d36516e87819db52029a76b6363d0f02d0d532f0033c9603b9e2d943d56ee3b0d4f7ad3328ff917
+  checksum: b4abfbca3839a3d55e4ae5ec62e131e2e356bf4859ce8480c64c4876100f4df292a63e5bb1618e1d7460282ca2b305653064f01654474aa35c68000980f17798
   languageName: node
   linkType: hard
 
