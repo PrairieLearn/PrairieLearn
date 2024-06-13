@@ -3,7 +3,13 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
 
-function adjustedDate(dateString: string | Date) {
+/**
+ *
+ * This function adjusts the date to accommodate a situation where the local timezone is different from the timezone of the course. It does so by creating a new date object of the given date object or string and finding the local timezone offset (in milliseconds). Then it returns a new date object with the timezone offset subtracted from the original date.
+ *
+ * @param dateString - The date string to adjust
+ */
+export function adjustedDate(dateString: string | Date) {
   const date = new Date(dateString);
   const timezoneOffset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - timezoneOffset);
@@ -90,34 +96,6 @@ export function AccessRulesTable({
                     data-row="${index}"
                     data-toggle="modal"
                     data-target="editAccessRuleModal"
-                    data-access-rule-mode="${access_rule.assessment_access_rule.mode}"
-                    data-access-rule-uids="${access_rule.assessment_access_rule.uids
-                      ? access_rule.assessment_access_rule.uids.join(', ')
-                      : ''}"
-                    data-access-rule-start-date="${adjustedDate(
-                      formatDate(
-                        new Date(access_rule.assessment_access_rule.start_date ?? ''),
-                        timezone,
-                      ),
-                    )
-                      .toISOString()
-                      .slice(0, 19)}"
-                    data-access-rule-end-date="${adjustedDate(
-                      formatDate(
-                        new Date(access_rule.assessment_access_rule.end_date ?? ''),
-                        timezone,
-                      ),
-                    )
-                      .toISOString()
-                      .slice(0, 19)}"
-                    data-access-rule-active="${access_rule.assessment_access_rule.active}"
-                    data-access-rule-credit="${access_rule.assessment_access_rule.credit}"
-                    data-access-rule-time-limit="${access_rule.assessment_access_rule
-                      .time_limit_min}"
-                    data-access-rule-password="${access_rule.assessment_access_rule.password}"
-                    data-access-rule-exam-uuid="${access_rule.assessment_access_rule.exam_uuid}"
-                    data-title-text="Edit Access Rule"
-                    data-submit-text="Update Access Rule"
                   >
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   </button>
@@ -161,16 +139,20 @@ export function AccessRulesTable({
                         `}
                 </td>
                 <td class="align-content-center">
-                  ${formatDate(
-                    new Date(access_rule.assessment_access_rule.start_date ?? ''),
-                    timezone,
-                  )}
+                  ${access_rule.assessment_access_rule.start_date
+                    ? formatDate(
+                        new Date(access_rule.assessment_access_rule.start_date ?? ''),
+                        timezone,
+                      )
+                    : '—'}
                 </td>
                 <td class="align-content-center">
-                  ${formatDate(
-                    new Date(access_rule.assessment_access_rule.end_date ?? ''),
-                    timezone,
-                  )}
+                  ${access_rule.assessment_access_rule.end_date
+                    ? formatDate(
+                        new Date(access_rule.assessment_access_rule.end_date ?? ''),
+                        timezone,
+                      )
+                    : '—'}
                 </td>
                 <td class="align-content-center">
                   ${access_rule.assessment_access_rule.active ? 'True' : 'False'}

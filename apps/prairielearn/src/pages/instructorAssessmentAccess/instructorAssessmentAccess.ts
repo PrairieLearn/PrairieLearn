@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -45,21 +44,11 @@ router.get(
       origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
     }
 
-    const now = Temporal.Now.zonedDateTimeISO(res.locals.course_instance.timezone);
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: res.locals.course_instance.display_timezone,
-      timeZoneName: 'short',
-    });
-    const timezone = formatter
-      .formatToParts(now.toInstant().epochMilliseconds)
-      .find((part) => part.type === 'timeZoneName')?.value;
-
     res.send(
       InstructorAssessmentAccess({
         resLocals: res.locals,
         accessRules,
         origHash,
-        timezone: timezone ?? 'UTC',
       }),
     );
   }),
@@ -69,7 +58,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be an instructor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (res.locals.course.example_course) {
@@ -92,8 +81,7 @@ router.post(
 
       const origHash = req.body.__orig_hash;
 
-      const assessmentInfoEdit = assessmentInfo;
-      assessmentInfoEdit.allowAccess = JSON.parse(req.body.assessment_access_rules);
+      assessmentInfo.allowAccess = JSON.parse(req.body.assessment_access_rules);
 
       const editor = new FileModifyEditor({
         locals: res.locals,
@@ -102,7 +90,7 @@ router.post(
           invalidRootPaths: paths.invalidRootPaths,
         },
         filePath: assessmentPath,
-        editContents: b64EncodeUnicode(JSON.stringify(assessmentInfoEdit, null, 2)),
+        editContents: b64EncodeUnicode(JSON.stringify(assessmentInfo, null, 2)),
         origHash,
       });
 
