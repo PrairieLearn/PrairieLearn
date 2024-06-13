@@ -77,7 +77,7 @@
     quill.setContents(quill.clipboard.convert({ html: contents }));
 
     const getText = () => quill.getText();
-    const counter = options.counter === "none" ? null : new Counter(options.counter, uuid, getText);
+    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
     quill.on('text-change', function () {
       let contents = rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
@@ -93,7 +93,7 @@
 
       // Update character/word count
       if (counter) {
-        counter.update(quill.getText())
+        counter.update();
       }
     });
   };
