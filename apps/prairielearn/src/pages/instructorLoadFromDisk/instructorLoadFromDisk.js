@@ -35,6 +35,10 @@ async function update(locals) {
         return;
       }
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
+      if (syncResult.hardFail) {
+        job.fail('Sync completely failed due to invalid question sharing edit.');
+        return;
+      }
       if (index !== config.courseDirs.length - 1) job.info('');
       if (!syncResult) throw new Error('syncOrCreateDiskToSql() returned null');
       if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;

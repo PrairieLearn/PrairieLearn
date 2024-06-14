@@ -39,8 +39,8 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
 
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
-  if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+  if (syncResult.hardFail) {
+    throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
   if (config.chunksGenerator) {
