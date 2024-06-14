@@ -2,4 +2,4 @@
 '@prairielearn/formatter': minor
 ---
 
-Add formatInterval function
+Add `formatInterval` function
