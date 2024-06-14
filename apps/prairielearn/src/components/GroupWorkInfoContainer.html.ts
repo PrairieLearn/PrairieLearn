@@ -28,8 +28,7 @@ export function GroupWorkInfoCountainer({
             ? html`
                 <h6 style="display:inline"><b>Join code: </b></h6>
                 <p style="display:inline" id="join-code">${groupInfo.joinCode}</p>
-                <br /><br />
-                <p>
+                <div class="mt-3">
                   ${(groupConfig.minimum ?? 0) > 1
                     ? html`
                         This is a group assessment. Use your join code to invite others to join the
@@ -48,7 +47,7 @@ export function GroupWorkInfoCountainer({
                           ? `A group must have no more than ${groupConfig.maximum} students.`
                           : ''}
                       `}
-                </p>
+                </div>
               `
             : ''}
         </div>
@@ -79,7 +78,7 @@ export function GroupWorkInfoCountainer({
                       .join(', ') || 'No role assigned'}
                   </li>
                 `
-              : html` <li>${user.uid}</li> `,
+              : html`<li>${user.uid}</li>`,
           )}
         </div>
       </div>
