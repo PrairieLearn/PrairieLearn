@@ -63,7 +63,7 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
 async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
-  formName: string,
+  formName?: string,
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -77,7 +77,7 @@ async function switchUserAndLoadAssessment(
   const $ = cheerio.load(page);
 
   // Check that the correct CSRF form exists
-  const elementQuery = `form[name="${formName}"] input[name="__csrf_token"]`;
+  const elementQuery = `form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
   const csrfTokenElement = $(elementQuery);
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value', 'CSRF token value must exist');
   assert.isString(csrfTokenElement.attr('value'), 'CSRF token must be a string');
@@ -268,7 +268,6 @@ async function prepareGroup() {
   const { $: $preJoinFirstUserPage } = await switchUserAndLoadAssessment(
     studentUsers[0],
     assessmentUrl,
-    'leave-group-form',
   );
   const validRoleConfig = [
     { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
@@ -346,7 +345,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       const { $: $assessmentInstanceFirstUserPage } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
-        'leave-group-form',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
@@ -501,7 +499,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       const { $: $assessmentInstanceFirstUserPage, csrfToken } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
-        'leave-group-form',
       );
       const invalidRoleConfig = [
         { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
@@ -533,7 +530,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       const { $: assessmentInstanceSecondUserPage } = await switchUserAndLoadAssessment(
         studentUsers[1],
         assessmentInstanceUrl,
-        'leave-group-form',
       );
       $ = assessmentInstanceSecondUserPage;
 
@@ -546,11 +542,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
-        await switchUserAndLoadAssessment(
-          studentUsers[0],
-          assessmentInstanceUrl,
-          'leave-group-form',
-        );
+        await switchUserAndLoadAssessment(studentUsers[0], assessmentInstanceUrl);
       $ = await updateGroupRoles(
         validRoleConfig,
         groupRoles,

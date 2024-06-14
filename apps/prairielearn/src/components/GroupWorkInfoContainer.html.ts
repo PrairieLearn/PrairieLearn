@@ -63,8 +63,8 @@ export function GroupWorkInfoCountainer({
                   >
                     Leave the Group
                   </button>
-                  ${LeaveGroupModal({ csrfToken })}
                 </div>
+                ${LeaveGroupModal({ csrfToken })}
               `
             : ''}
           <span id="group-member"><b>Group members: </b></span>
@@ -100,11 +100,9 @@ function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
     `,
     footer: html`
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      <form name="leave-group-form" method="POST">
-        <input type="hidden" name="__action" value="leave_group" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
-      </form>
+      <input type="hidden" name="__action" value="leave_group" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });
 }
