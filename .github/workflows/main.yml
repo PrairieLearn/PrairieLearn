@@ -322,6 +322,8 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
       - name: Install Node dependencies
         run: yarn install --immutable --inline-builds
 
@@ -377,6 +379,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
 
       - name: Install Node dependencies
         run: yarn workspaces focus @prairielearn/actions-report-image-sizes
