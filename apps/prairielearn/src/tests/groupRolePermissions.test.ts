@@ -14,6 +14,7 @@ import { config } from '../lib/config.js';
 import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 
+import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -513,16 +514,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       let errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      let tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      let lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
+      assertAlert($, 'role configuration is currently invalid');
+      assertAlert($, 'too many roles');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder")');
 
       // Enter question one
       const res = await fetch(questionOneUrl);
@@ -537,16 +533,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
+      assertAlert($, 'role configuration is currently invalid');
+      assertAlert($, 'too many roles');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"');
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
@@ -565,16 +556,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 0, 'no invalid role config error should show');
       errorNotification = $('span.badge-danger');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
-      tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 0, 'role config should be valid and show no errors');
-      lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 0, 'role config should be valid and show no errors');
+      assertAlert($, 'role configuration is currently invalid)', 0);
+      assertAlert($, 'too many roles', 0);
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });
   });
 });

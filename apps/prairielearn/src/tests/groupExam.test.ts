@@ -10,6 +10,7 @@ import { config } from '../lib/config.js';
 import { UserSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 
+import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -279,8 +280,7 @@ describe('Group based exam assessments', function () {
         'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
-      const elemList = $('.alert:contains(Group is already full)');
-      assert.lengthOf(elemList, 1, 'Page should show that group is already full');
+      assertAlert($, 'Group is already full');
 
       // Switch to second user and start assessment
       const { $: $secondUser } = await switchUserAndLoadAssessment(
@@ -511,7 +511,6 @@ describe('cross exam assessment access', function () {
     $ = cheerio.load(await crossAssessmentJoinResponse.text());
 
     // Error message should show
-    const elemList = $('.alert:contains(Group does not exist)');
-    assert.lengthOf(elemList, 1);
+    assertAlert($, 'Group does not exist');
   });
 });
