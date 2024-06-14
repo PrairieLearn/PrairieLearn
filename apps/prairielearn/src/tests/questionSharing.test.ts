@@ -8,7 +8,7 @@ import fetch from 'node-fetch';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { Course } from '../lib/db-types.js';
+import { Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -464,15 +464,18 @@ describe('Question Sharing', function () {
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
       await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
-      const question_id = await sqldb.queryOneRowAsync(sql.get_question_id, {
-        course_id: sharingCourse.id,
-        qid: SHARING_QUESTION_QID,
-      });
-      if (!question_id) {
-        throw new Error(
-          `Sync of consuming course should not have allowed renaming a shared question.`,
-        );
-      }
+      const question_id = await sqldb.queryOptionalRow(
+        sql.get_question_id,
+        {
+          course_id: sharingCourse.id,
+          qid: SHARING_QUESTION_QID,
+        },
+        IdSchema,
+      );
+      assert(
+        question_id !== null,
+        'Sync of consuming course should not allow renaming a shared question.',
+      );
       await fs.rename(questionTempPath, questionPath);
     });
   });
