@@ -979,11 +979,11 @@ function parseAllowAccessDate(date: string): Date | null {
 
 /**
  * Checks that dates, if present, are valid and sequenced correctly.
- * @returns A list of errors, if any, and whether there are any dates in the future
+ * @returns A list of errors, if any, and whether it allows access in the future
  */
 function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): {
   errors: string[];
-  dateInFuture: boolean;
+  accessibleInFuture: boolean;
 } {
   const errors: string[] = [];
 
@@ -1016,7 +1016,7 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   }
   return {
     errors,
-    dateInFuture: (startDate && isFuture(startDate)) || (endDate && isFuture(endDate)) || false,
+    accessibleInFuture: !endDate || isFuture(endDate),
   };
 }
 
@@ -1332,18 +1332,18 @@ async function validateCourseInstance(
     }
   }
 
-  let anyDateInFuture = false;
+  let accessibleInFuture = false;
   (courseInstance.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
+    if (allowAccessResult.accessibleInFuture) {
+      accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  if (accessibleInFuture) {
+    // Only warn about new roles for current or future courses.
     (courseInstance.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
