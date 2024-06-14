@@ -315,7 +315,7 @@ function runTest(context) {
 
   step('cannot delete self even when emulating another owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     };
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
@@ -339,7 +339,7 @@ function runTest(context) {
 
   step('cannot change course role of self even when emulating another owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     };
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
@@ -620,7 +620,7 @@ function runTest(context) {
 
   step('cannot GET if not an owner', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@example.com',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     };
     const response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
