@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -69,6 +71,7 @@ export function InstructorQuestionSettings({
           pageNote: resLocals.question.qid,
           ...resLocals,
         })}
+        ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
@@ -76,19 +79,6 @@ export function InstructorQuestionSettings({
         </style>
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-        <script>
-          $(function () {
-            $('[data-toggle="tooltip"]').tooltip();
-          });
-        </script>
-
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container">
           ${renderEjs(
@@ -119,33 +109,12 @@ export function InstructorQuestionSettings({
                   <label for="qid">QID</label>
                   ${resLocals.authz_data.has_course_permission_edit &&
                   !resLocals.course.example_course
-                    ? html`
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-secondary align-top ml-1"
-                          id="changeQidButton"
-                          data-toggle="popover"
-                          data-container="body"
-                          data-html="true"
-                          data-placement="auto"
-                          title="Change QID"
-                          data-content="${renderEjs(
-                            import.meta.url,
-                            "<%= include('../partials/changeIdForm') %>",
-                            {
-                              id_label: 'QID',
-                              buttonID: 'changeQidButton',
-                              id_old: resLocals.question.qid,
-                              ids: qids,
-                              ...resLocals,
-                            },
-                          )}"
-                          data-trigger="click"
-                        >
-                          <i class="fa fa-i-cursor"></i>
-                          <span>Change QID</span>
-                        </button>
-                      `
+                    ? ChangeIdButton({
+                        label: 'QID',
+                        currentValue: resLocals.question.qid,
+                        otherValues: qids,
+                        csrfToken: resLocals.__csrf_token,
+                      })
                     : ''}
                   ${questionGHLink
                     ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
@@ -273,7 +242,6 @@ export function InstructorQuestionSettings({
                                 data-content="${escapeHtml(
                                   CopyForm({
                                     csrfToken: resLocals.__csrf_token,
-                                    exampleCourse: resLocals.course.example_course,
                                     editableCourses,
                                     courseId: resLocals.course.id,
                                     buttonId: 'copyQuestionButton',
@@ -322,19 +290,17 @@ export function InstructorQuestionSettings({
 
 function CopyForm({
   csrfToken,
-  exampleCourse,
   editableCourses,
   courseId,
   buttonId,
 }: {
   csrfToken: string;
-  exampleCourse: boolean;
   editableCourses: CourseWithPermissions[];
   courseId: string;
   buttonId: string;
 }) {
   return html`
-    <form name="copy-question-form" class="needs-validation" method="POST" novalidate>
+    <form name="copy-question-form" method="POST">
       <input type="hidden" name="__action" value="copy_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <div class="form-group">
@@ -342,9 +308,6 @@ function CopyForm({
           The copied question will be added to the following course:
         </label>
         <select class="form-control" id="to-course-id-select" name="to_course_id" required>
-          ${exampleCourse
-            ? html`<option hidden disabled selected value>-- select a course --</option>`
-            : ''}
           ${editableCourses.map((c) => {
             return html`
               <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
@@ -353,7 +316,6 @@ function CopyForm({
             `;
           })}
         </select>
-        <div class="invalid-feedback" id="invalidIdMessage"></div>
       </div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
@@ -362,34 +324,6 @@ function CopyForm({
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>
-
-    <script>
-      $(function () {
-        const validateCourse = function () {
-          let element = $('select[name="to_course_id"]');
-          let elementDOM = element.get(0);
-
-          elementDOM.setCustomValidity('');
-          if (elementDOM.validity.valueMissing) {
-            $('#invalidIdMessage').text('Please choose a course');
-          } else {
-            $('#invalidIdMessage').text('');
-          }
-        };
-
-        $('input[name="to_course_id"]').on('input', validateCourse);
-        $('input[name="to_course_id"]').on('change', validateCourse);
-
-        $('form[name="copy-question-form"]').submit(function (event) {
-          validateCourse();
-          if ($(this).get(0).checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          $(this).addClass('was-validated');
-        });
-      });
-    </script>
   `;
 }
 

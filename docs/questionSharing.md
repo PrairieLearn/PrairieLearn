@@ -1,10 +1,10 @@
 **Question sharing is currently in beta.** If your course is hosted on the official PrairieLearn server, you may request that question sharing be turned on for your course. If you administer your own PrairieLearn server, you should _not_ use question sharing at this time. In the future, question sharing may be supported across PrairieLearn servers, so turning on question sharing on unofficial servers at this point in time may lead to naming conflicts in the future.
 
-# Question Sharing
+# Question sharing
 
 In order to avoid instructors needing to copy question files in between courses, PrairieLearn provides a way for questions from one course to be used in assessments in other courses.
 
-## Sharing Names
+## Sharing names
 
 In order for another course to use questions from your course into their assessments, you must have chosen a _sharing name_ for your course that they will use as a prefix to your question IDs when using them. This sharing name will be unique across all PrairieLearn instances and because it will be used in the JSON files for other courses, there will be no way to change the sharing name for your course once you have chosen it. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'. Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
 
@@ -12,9 +12,9 @@ In order for another course to use questions from your course into their assessm
 
 Questions can either be shared publicly, so that anyone can preview the questions (but not the source code) and use them in their course, or you can share questions only to specific other courses using sharing sets.
 
-## Sharing Sets
+## Sharing sets
 
-Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, and instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
+Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
 
 ## Sharing a sharing set with connection with another course
 
@@ -39,15 +39,15 @@ To refer to a question from another course, use the question id (qid) prefixed b
 ]
 ```
 
-## Client and Server Files
+## Client and server files
 
 Questions that make use of `clientFilesQuestion`, `serverFilesQuestion`, and `serverFilesCourse` will work as expected. Using `clientFilesCourse` in a question is not supported at this time.
 
-If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course intance or assessment.
+If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course instance or assessment.
 
 See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
 
-Just as anyone with access to a question in your course can access any the `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion`. These means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions.
+Just as anyone with access to a question in your course can access any file in `clientFilesQuestion`, anyone with permissions to any of the questions you have shared from your course may also access these `clientFilesQuestion` files. This means that if you have any questions from your course that are publicly shared, anyone with access to the internet can access the `clientFilesQuestion` directories for these questions. Additionally, anyone with access to a question shared from your course will be able to access the client assets in your custom course elements, just as any students with access to your course can access the client assets in your custom course elements.
 
 ## Steps to share a question to a course, using a sharing set
 

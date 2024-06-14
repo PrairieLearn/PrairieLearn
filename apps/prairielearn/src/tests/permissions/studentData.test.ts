@@ -40,12 +40,14 @@ describe('student data access', function () {
       'instructor@example.com',
       'Instructor User',
       '100000000',
+      'instructor@example.com',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@example.com',
       'Student User',
       '000000001',
+      'student@example.com',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({
@@ -89,7 +91,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
     const response = await helperClient.fetchCheerio(context.examAssessmentUrl, { headers });
     assert.isTrue(response.ok);
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 

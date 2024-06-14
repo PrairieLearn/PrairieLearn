@@ -110,7 +110,7 @@ const loadHomeworkPage = async (user: User) => {
  * Gets the score text for the first submission panel on the page.
  */
 function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
-  return $('[data-testid="submission-status"] .badge').first().text();
+  return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
 describe('Grading method(s)', function () {

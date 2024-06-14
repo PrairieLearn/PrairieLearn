@@ -30,7 +30,8 @@ SELECT
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS formatted_date,
   u.uid AS user_uid,
-  u.name AS user_name
+  u.name AS user_name,
+  u.email AS user_email
 FROM
   issues AS i
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
@@ -66,8 +67,6 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
-  -- These are separate for historical reasons
-  gj.id AS grading_job_id,
   grading_job_status (gj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
@@ -186,7 +185,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  lgj.id AS grading_job_id,
   grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,

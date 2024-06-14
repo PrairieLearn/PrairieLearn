@@ -1,12 +1,13 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as qs from 'qs';
+import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema, UserSchema } from '../../../lib/db-types.js';
+import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 
@@ -78,7 +79,7 @@ router.get(
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'manual_grading',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
@@ -160,6 +161,11 @@ const PostBodySchema = z.union([
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
+  }),
+  z.object({
+    __action: z.literal('report_issue'),
+    __variant_id: IdSchema,
+    description: z.string(),
   }),
 ]);
 
@@ -263,6 +269,9 @@ router.post(
           res.locals.instance_question.id,
         ),
       );
+    } else if (body.__action === 'report_issue') {
+      await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

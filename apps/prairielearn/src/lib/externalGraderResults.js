@@ -14,6 +14,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';
+import { IdSchema } from './db-types.js';
 import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
@@ -129,8 +130,11 @@ async function loadQueueUrl(sqs) {
 }
 
 async function processMessage(data) {
-  const jobId = Number.parseInt(data.jobId);
-  if (Number.isNaN(jobId)) {
+  /** @type {string} */
+  let jobId;
+  try {
+    jobId = IdSchema.parse(data.jobId);
+  } catch (err) {
     throw new error.AugmentedError('Message does not contain a valid grading job id.', { data });
   }
 
@@ -143,7 +147,7 @@ async function processMessage(data) {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });
-    gradingJobStatusUpdated(jobId);
+    await gradingJobStatusUpdated(jobId);
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
