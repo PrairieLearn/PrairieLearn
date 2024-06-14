@@ -1394,7 +1394,7 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it.only('records an error if an access rule specifies an examUuid but not mode=Exam', async () => {
+  it('records an error if an access rule specifies an examUuid but not mode=Exam', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowAccess?.push({
