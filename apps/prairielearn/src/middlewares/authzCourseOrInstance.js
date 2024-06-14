@@ -25,7 +25,7 @@ const debug = debugfn('prairielearn:authzCourseOrInstance');
 function clearOverrideCookies(res, overrides) {
   overrides.forEach((override) => {
     debug(`clearing cookie: ${override.cookie}`);
-    const newName = override.cookie.replace(/^pl_/, 'pl2_');
+    const newName = override.cookie.replace(/^pl2_/, 'pl_');
     clearCookie(res, [override.cookie, newName]);
   });
 }
@@ -125,7 +125,7 @@ export async function authzCourseOrInstance(req, res) {
       overrides.push({
         name: 'UID',
         value: req.cookies.pl2_requested_uid,
-        cookie: 'pl_requested_uid',
+        cookie: 'pl2_requested_uid',
       });
     }
   }
@@ -133,28 +133,28 @@ export async function authzCourseOrInstance(req, res) {
     overrides.push({
       name: 'Course role',
       value: req.cookies.pl2_requested_course_role,
-      cookie: 'pl_requested_course_role',
+      cookie: 'pl2_requested_course_role',
     });
   }
   if (req.cookies.pl2_requested_course_instance_role) {
     overrides.push({
       name: 'Course instance role',
       value: req.cookies.pl2_requested_course_instance_role,
-      cookie: 'pl_requested_course_instance_role',
+      cookie: 'pl2_requested_course_instance_role',
     });
   }
   if (req.cookies.pl2_requested_mode) {
     overrides.push({
       name: 'Mode',
       value: req.cookies.pl2_requested_mode,
-      cookie: 'pl_requested_mode',
+      cookie: 'pl2_requested_mode',
     });
   }
   if (req.cookies.pl2_requested_date) {
     overrides.push({
       name: 'Date',
       value: req.cookies.pl2_requested_date,
-      cookie: 'pl_requested_date',
+      cookie: 'pl2_requested_date',
     });
   }
   if (overrides.length === 0) {
