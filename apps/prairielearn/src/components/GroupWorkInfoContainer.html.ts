@@ -4,6 +4,8 @@ import type { GroupConfig } from '../lib/db-types.js';
 import type { GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
+import { Modal } from './Modal.html.js';
+
 export function GroupWorkInfoCountainer({
   groupConfig,
   groupInfo,
@@ -62,50 +64,7 @@ export function GroupWorkInfoCountainer({
                   >
                     Leave the Group
                   </button>
-                  <!-- Modal -->
-                  <div
-                    class="modal fade"
-                    id="leaveModal"
-                    tabindex="-1"
-                    role="dialog"
-                    aria-labelledby="leaveModalLabel"
-                    aria-hidden="true"
-                  >
-                    <div class="modal-dialog" role="document">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="leaveModalLabel">Confirm leave group</h5>
-                          <button
-                            type="button"
-                            class="close"
-                            data-dismiss="modal"
-                            aria-label="Close"
-                          >
-                            <span aria-hidden="true">&times;</span>
-                          </button>
-                        </div>
-                        <div class="modal-body">
-                          <p>Are you sure you want to leave the group?</p>
-                          <p>
-                            You will lose access to any work done by the group and you might not be
-                            able to re-join later.
-                          </p>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Close
-                          </button>
-                          <form name="leave-group-form" method="POST">
-                            <input type="hidden" name="__action" value="leave_group" />
-                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                            <button id="leave-group" type="submit" class="btn btn-danger">
-                              Leave group
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ${LeaveGroupModal({ csrfToken })}
                 </div>
               `
             : ''}
@@ -132,6 +91,28 @@ export function GroupWorkInfoCountainer({
       });
     </script>
   `;
+}
+
+function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'leaveModal',
+    title: 'Confirm leave group',
+    body: html`
+      <p>Are you sure you want to leave the group?</p>
+      <p>
+        You will lose access to any work done by the group and you might not be able to re-join
+        later.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <form name="leave-group-form" method="POST">
+        <input type="hidden" name="__action" value="leave_group" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
+      </form>
+    `,
+  });
 }
 
 function GroupRoleTable({
