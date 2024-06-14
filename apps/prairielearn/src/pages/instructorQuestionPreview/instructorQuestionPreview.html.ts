@@ -1,6 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
@@ -42,10 +43,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${renderEjs(import.meta.url, "<%- include('../partials/question'); %>", {
-                ...resLocals,
-                question_context: 'instructor',
-              })}
+              ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

@@ -36,7 +36,6 @@ import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flashMiddleware, flash } from '@prairielearn/flash';
@@ -147,7 +146,6 @@ export async function initExpress() {
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     res.locals.compiled_script_path = assets.compiledScriptPath;
     res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    res.locals.encoded_data = EncodedData;
     next();
   });
   app.use(function (req, res, next) {
@@ -607,7 +605,7 @@ export async function initExpress() {
       res.locals.navPage = 'news';
       next();
     },
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   ]);
   app.use('/pl/news_item', [
     function (req, res, next) {
@@ -618,7 +616,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   ]);
   app.use(
     '/pl/request_course',
@@ -737,11 +735,11 @@ export async function initExpress() {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -771,11 +769,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1714,11 +1712,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course pages require the effective user to have permission
@@ -1908,7 +1906,7 @@ export async function initExpress() {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // These routes are used to initiate a copy of a question with publicly shared source
+  // This route is used to initiate a copy of a question with publicly shared source
   // or a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
@@ -1917,11 +1915,6 @@ export async function initExpress() {
   // which don't exist on chunk servers
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
-    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
-  );
-  // TODO: remove this route once all links are updated to reference the one above
-  app.use(
-    '/pl/course/:course_id(\\d+)/copy_template_course_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
