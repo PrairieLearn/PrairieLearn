@@ -59,7 +59,7 @@ export function GroupWorkInfoCountainer({
                     type="button"
                     class="btn btn-danger"
                     data-toggle="modal"
-                    data-target="#leaveModal"
+                    data-target="#leaveGroupModal"
                   >
                     Leave the Group
                   </button>
@@ -89,7 +89,7 @@ export function GroupWorkInfoCountainer({
 
 function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'leaveModal',
+    id: 'leaveGroupModal',
     title: 'Confirm leave group',
     body: html`
       <p>Are you sure you want to leave the group?</p>

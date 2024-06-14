@@ -53,7 +53,8 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
 async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
-  formName?: string,
+  formName: string | null,
+  formContainer = 'body',
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -67,7 +68,7 @@ async function switchUserAndLoadAssessment(
   const $ = cheerio.load(page);
 
   // Check that the correct CSRF form exists
-  const elementQuery = `form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
+  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
   const csrfTokenElement = $(elementQuery);
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
   assert.isString(csrfTokenElement.attr('value'));
@@ -325,11 +326,11 @@ describe('Group based exam assessments', function () {
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
       // Ensure all group members can access the assessment instance correctly
-      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl);
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null, '#leaveGroupModal');
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
 
-      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl);
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null, '#leaveGroupModal');
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
     });
@@ -408,6 +409,8 @@ describe('cross group exam access', function () {
     const { csrfToken: secondUserInstanceCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       assessmentUrl, // redirects to instance URL
+      null,
+      '#leaveGroupModal',
     );
 
     // Leave exam group as second user
