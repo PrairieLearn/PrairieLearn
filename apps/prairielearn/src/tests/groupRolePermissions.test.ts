@@ -558,7 +558,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       // Check that the errors no longer show
       errorNotification = $('span.badge-danger');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
-      assertAlert($, 'role configuration is currently invalid)', 0);
+      assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);
       assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });

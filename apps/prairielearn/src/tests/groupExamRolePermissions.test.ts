@@ -565,7 +565,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       errorNotification = $('#role-config-errors');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       assertAlert($, 'too many roles', 0);
-      assertAlert($, '1 less student needs to be assigned to the role "Recorder")', 0);
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });
   });
 });
