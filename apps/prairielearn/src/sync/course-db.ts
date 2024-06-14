@@ -410,12 +410,10 @@ export async function loadFullCourse(
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
     const allowAccessRules = courseInstance.data?.allowAccess ?? [];
-    const courseInstanceExpired =
-      allowAccessRules.length === 0 ||
-      allowAccessRules.every((rule) => {
-        const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
-        return endDate && isPast(endDate);
-      });
+    const courseInstanceExpired = allowAccessRules.every((rule) => {
+      const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+      return endDate && isPast(endDate);
+    });
 
     const assessments = await loadAssessments(
       courseDir,
