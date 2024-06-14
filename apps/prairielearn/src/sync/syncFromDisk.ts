@@ -53,7 +53,7 @@ export async function syncDiskToSqlWithLock(
     if (invalidRenames.length > 0) {
       logger.info(
         chalk.red(
-          `✖ Course sync completely failed. Not allowed to move or rename shared Questions. Shared questions that were moved or renamed: ${invalidRenames.join(', ')}`,
+          `✖ Course sync completely failed. The following questions are shared and cannot be renamed/deleted: ${invalidRenames.join(', ')}`,
         ),
       );
       perf.end('sync');
