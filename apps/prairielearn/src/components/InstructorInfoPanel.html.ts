@@ -1,6 +1,5 @@
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { User } from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
 import {
@@ -12,6 +11,7 @@ import {
   type Group,
   type InstanceQuestion,
   type Question,
+  type User,
   type Variant,
 } from '../lib/db-types.js';
 
