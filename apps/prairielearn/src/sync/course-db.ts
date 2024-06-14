@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
@@ -405,27 +405,27 @@ export async function loadFullCourse(
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
-    const courseInstanceAccessibleNowOrInFuture = (courseInstance.data?.allowAccess ?? []).some(
-      (rule) => {
-        const startDate = rule.startDate ? parseAllowAccessDate(rule.startDate) : null;
+    // Check if the course instance is "expired". A course instance is considered
+    // expired if it either has zero `allowAccess` rules (in which case it is never
+    // accessible), or if it has one or more `allowAccess` rules and they all have
+    // an `endDate` that is in the past.
+    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
+    const courseInstanceExpired =
+      allowAccessRules.length === 0 ||
+      allowAccessRules.every((rule) => {
         const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
-
-        if (startDate && isFuture(startDate)) return true;
-        if (endDate && isFuture(endDate)) return true;
-
-        return false;
-      },
-    );
+        return endDate && isPast(endDate);
+      });
 
     const assessments = await loadAssessments(
       courseDir,
       courseInstanceId,
+      courseInstanceExpired,
       questions,
-      courseInstanceAccessibleNowOrInFuture,
     );
 
     courseInstances[courseInstanceId] = {
-      courseInstance: courseInstanceInfos[courseInstanceId],
+      courseInstance,
       assessments,
     };
   }
@@ -1051,7 +1051,7 @@ async function validateQuestion(
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
-  courseInstanceAccessibleNowOrInFuture: boolean,
+  courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1085,7 +1085,7 @@ async function validateAssessment(
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
-  if (courseInstanceAccessibleNowOrInFuture) {
+  if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
@@ -1416,8 +1416,8 @@ export async function loadCourseInstances(
 export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
+  courseInstanceExpired: boolean,
   questions: Record<string, InfoFile<Question>>,
-  courseInstanceAccessibleNowOrInFuture: boolean,
 ): Promise<Record<string, InfoFile<Assessment>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   const assessments = await loadInfoForDirectory({
@@ -1427,7 +1427,7 @@ export async function loadAssessments(
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
     validate: (assessment: Assessment) =>
-      validateAssessment(assessment, questions, courseInstanceAccessibleNowOrInFuture),
+      validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });
   checkDuplicateUUIDs(
