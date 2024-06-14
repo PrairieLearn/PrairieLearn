@@ -518,7 +518,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
-      assertAlert($, '1 less student needs to be assigned to the role "Recorder")');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"');
 
       // Enter question one
       const res = await fetch(questionOneUrl);

@@ -542,7 +542,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
-      assertAlert($, '1 less student needs to be assigned to the role "Recorder")');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"');
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
