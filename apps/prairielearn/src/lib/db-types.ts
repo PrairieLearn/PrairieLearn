@@ -647,12 +647,12 @@ export const JobSequenceSchema = z.object({
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
 export const Lti13InstanceSchema = z.object({
-  access_token_expires_at: z.date().nullable(),
+  access_token_expires_at: DateFromISOString.nullable(),
   access_tokenset: z.any().nullable(),
   client_params: z.any().nullable(),
-  created_at: z.date(),
+  created_at: DateFromISOString,
   custom_fields: z.any().nullable(),
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
@@ -685,8 +685,8 @@ export const Lti13CourseInstanceSchema = z.object({
   id: IdSchema,
   lti13_instance_id: IdSchema,
 });
-
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
+
 export const LtiCredentialsSchema = z.object({
   consumer_key: z.string().nullable(),
   course_instance_id: z.string().nullable(),
