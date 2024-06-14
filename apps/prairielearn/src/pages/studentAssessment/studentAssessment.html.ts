@@ -2,7 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { GroupWorkInfoCountainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
 import { GroupInfo } from '../../lib/groups.js';
 
@@ -157,7 +157,7 @@ function StudentGroupControls({
   }
 
   return html`
-    ${GroupWorkInfoCountainer({
+    ${GroupWorkInfoContainer({
       groupConfig,
       groupInfo,
       userCanAssignRoles,

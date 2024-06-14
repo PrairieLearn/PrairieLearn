@@ -2,7 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { GroupWorkInfoCountainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
@@ -145,7 +145,7 @@ export function StudentAssessmentInstance({
                 ${groupConfig != null
                   ? html`
                       <div class="col-lg-12">
-                        ${GroupWorkInfoCountainer({
+                        ${GroupWorkInfoContainer({
                           groupConfig,
                           groupInfo,
                           userCanAssignRoles,

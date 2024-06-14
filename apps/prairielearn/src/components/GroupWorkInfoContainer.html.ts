@@ -6,7 +6,7 @@ import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
 
-export function GroupWorkInfoCountainer({
+export function GroupWorkInfoContainer({
   groupConfig,
   groupInfo,
   userCanAssignRoles,
@@ -21,13 +21,14 @@ export function GroupWorkInfoCountainer({
     <div class="container-fluid">
       <div class="row">
         <div class="col-sm bg-light py-4 px-4 border">
-          <h6 style="display:inline"><b>Group name: </b></h6>
-          <p style="display:inline" id="group-name">${groupInfo.groupName}</p>
-          <br />
+          <div>
+            <strong>Group name:</strong> <span id="group-name">${groupInfo.groupName}</span>
+          </div>
           ${groupConfig.student_authz_join
             ? html`
-                <h6 style="display:inline"><b>Join code: </b></h6>
-                <p style="display:inline" id="join-code">${groupInfo.joinCode}</p>
+                <div>
+                  <strong>Join code:</strong> <span id="join-code">${groupInfo.joinCode}</span>
+                </div>
                 <div class="mt-3">
                   ${(groupConfig.minimum ?? 0) > 1
                     ? html`
