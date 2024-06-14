@@ -80,25 +80,25 @@ router.get(
       return;
     }
 
-    if (res.locals.assessment.group_work) {
-      // Get the group config info
-      const groupConfig = await getGroupConfig(res.locals.assessment.id);
-
-      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-      const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
-
-      const groupInfo = groupId === null ? null : await getGroupInfo(groupId, groupConfig);
-      const userCanAssignRoles =
-        groupInfo != null &&
-        groupConfig.has_roles &&
-        (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
-          res.locals.authz_data.has_course_instance_permission_edit);
-      res.send(
-        StudentAssessment({ resLocals: res.locals, groupConfig, groupInfo, userCanAssignRoles }),
-      );
-    } else {
+    if (!res.locals.assessment.group_work) {
       res.send(StudentAssessment({ resLocals: res.locals }));
     }
+
+    // Get the group config info
+    const groupConfig = await getGroupConfig(res.locals.assessment.id);
+
+    // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+    const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+
+    const groupInfo = groupId === null ? null : await getGroupInfo(groupId, groupConfig);
+    const userCanAssignRoles =
+      groupInfo != null &&
+      groupConfig.has_roles &&
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+        res.locals.authz_data.has_course_instance_permission_edit);
+    res.send(
+      StudentAssessment({ resLocals: res.locals, groupConfig, groupInfo, userCanAssignRoles }),
+    );
   }),
 );
 

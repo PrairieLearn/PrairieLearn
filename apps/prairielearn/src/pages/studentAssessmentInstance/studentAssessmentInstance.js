@@ -258,51 +258,48 @@ router.get(
       }
     });
 
-    if (res.locals.assessment.group_work) {
-      // Get the group config info
-      const groupConfig = await getGroupConfig(res.locals.assessment.id);
-      const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
-      const userCanAssignRoles =
-        groupInfo != null &&
-        groupConfig.has_roles &&
-        (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
-          res.locals.authz_data.has_course_instance_permission_edit);
+    const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-      if (groupConfig.has_roles) {
-        res.locals.user_group_roles =
-          groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
-            ?.map((role) => role.role_name)
-            ?.join(', ') || 'None';
-        // Get the role permissions. If the authorized user has course instance
-        // permission, then role restrictions don't apply.
-        if (!res.locals.authz_data.has_course_instance_permission_view) {
-          for (const question of res.locals.instance_questions) {
-            question.group_role_permissions = await getQuestionGroupPermissions(
-              question.id,
-              res.locals.assessment_instance.group_id,
-              res.locals.authz_data.user.user_id,
-            );
-          }
+    if (!res.locals.assessment.group_work) {
+      res.send(StudentAssessmentInstance({ showTimeLimitExpiredModal, resLocals: res.locals }));
+    }
+
+    // Get the group config info
+    const groupConfig = await getGroupConfig(res.locals.assessment.id);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
+    const userCanAssignRoles =
+      groupInfo != null &&
+      groupConfig.has_roles &&
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+        res.locals.authz_data.has_course_instance_permission_edit);
+
+    if (groupConfig.has_roles) {
+      res.locals.user_group_roles =
+        groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
+          ?.map((role) => role.role_name)
+          ?.join(', ') || 'None';
+      // Get the role permissions. If the authorized user has course instance
+      // permission, then role restrictions don't apply.
+      if (!res.locals.authz_data.has_course_instance_permission_view) {
+        for (const question of res.locals.instance_questions) {
+          question.group_role_permissions = await getQuestionGroupPermissions(
+            question.id,
+            res.locals.assessment_instance.group_id,
+            res.locals.authz_data.user.user_id,
+          );
         }
       }
-
-      res.send(
-        StudentAssessmentInstance({
-          showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
-          resLocals: res.locals,
-          groupConfig,
-          groupInfo,
-          userCanAssignRoles,
-        }),
-      );
-    } else {
-      res.send(
-        StudentAssessmentInstance({
-          showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
-          resLocals: res.locals,
-        }),
-      );
     }
+
+    res.send(
+      StudentAssessmentInstance({
+        showTimeLimitExpiredModal,
+        resLocals: res.locals,
+        groupConfig,
+        groupInfo,
+        userCanAssignRoles,
+      }),
+    );
   }),
 );
 
