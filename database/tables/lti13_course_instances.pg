@@ -4,14 +4,13 @@ columns
     context_title: text
     course_instance_id: bigint not null
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
-    deleted_at: timestamp with time zone
     deployment_id: text not null
     id: bigint not null default nextval('lti13_course_instances_id_seq'::regclass)
     lti13_instance_id: bigint
 
 indexes
     lti13_course_instances_pkey: PRIMARY KEY (id) USING btree (id)
-    lti13_course_instances_unique_idx: UNIQUE NULLS NOT DISTINCT (lti13_instance_id, deployment_id, context_id, deleted_at) USING btree (lti13_instance_id, deployment_id, context_id, deleted_at) NULLS NOT DISTINCT
+    lti13_course_instances_unique_idx: UNIQUE NULLS NOT DISTINCT (lti13_instance_id, deployment_id, context_id) USING btree (lti13_instance_id, deployment_id, context_id) NULLS NOT DISTINCT
     lti13_course_instances_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints

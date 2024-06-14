@@ -61,6 +61,7 @@ router.post(
       await queryAsync(sql.delete_lti13_course_instance, {
         course_instance_id: res.locals.course_instance.id,
         lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+        authn_user_id: res.locals.authn_user.user_id,
       });
 
       // Redirect away so they don't get an error page

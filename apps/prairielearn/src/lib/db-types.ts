@@ -680,7 +680,6 @@ export const Lti13CourseInstanceSchema = z.object({
   context_title: z.string().nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
-  deleted_at: DateFromISOString.nullable(),
   deployment_id: z.string(),
   id: IdSchema,
   lti13_instance_id: IdSchema,

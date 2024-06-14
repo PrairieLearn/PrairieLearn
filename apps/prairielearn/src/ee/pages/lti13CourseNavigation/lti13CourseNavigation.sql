@@ -6,8 +6,7 @@ FROM
 WHERE
   lti13_instance_id = $lti13_instance_id
   AND deployment_id = $deployment_id
-  AND context_id = $context_id
-  AND deleted_at IS NULL;
+  AND context_id = $context_id;
 
 -- BLOCK select_lti13_course_instance_institution
 SELECT
@@ -52,5 +51,4 @@ WHERE
   lti13_instance_id = $lti13_instance_id
   AND course_instance_id = $course_instance_id
   AND deployment_id = $deployment_id
-  AND context_id = $context_id
-  AND deleted_at IS NULL;
+  AND context_id = $context_id;
