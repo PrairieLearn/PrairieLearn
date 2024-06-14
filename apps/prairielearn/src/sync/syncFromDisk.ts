@@ -1,11 +1,7 @@
-import { z } from 'zod';
-
 import * as namedLocks from '@prairielearn/named-locks';
-import * as sqldb from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
-import { IdSchema } from '../lib/db-types.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -19,9 +15,9 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
+import { getInvalidRenames } from './sharing.js';
 
 const perf = makePerformance('sync');
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
@@ -51,20 +47,9 @@ export async function syncDiskToSqlWithLock(
   );
 
   if (config.checkSharingOnSync) {
-    const sharedQuestions = await sqldb.queryRows(
-      sql.select_shared_questions,
-      { course_id: courseId },
-      z.object({
-        id: IdSchema,
-        qid: z.string(),
-      }),
-    );
-    const invalidRenames: string[] = [];
-    sharedQuestions.forEach((question) => {
-      if (!courseData.questions[question.qid]) {
-        invalidRenames.push(question.qid);
-      }
-    });
+    // TODO: also check if questions were un-shared in the JSON or if any
+    // sharing sets were deleted
+    const invalidRenames = await getInvalidRenames(courseId, courseData);
     if (invalidRenames.length > 0) {
       logger.info(
         chalk.red(
