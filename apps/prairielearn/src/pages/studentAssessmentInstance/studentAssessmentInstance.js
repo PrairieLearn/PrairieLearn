@@ -295,14 +295,14 @@ router.get(
           userCanAssignRoles,
         }),
       );
+    } else {
+      res.send(
+        StudentAssessmentInstance({
+          showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+          resLocals: res.locals,
+        }),
+      );
     }
-
-    res.send(
-      StudentAssessmentInstance({
-        showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
-        resLocals: res.locals,
-      }),
-    );
   }),
 );
 

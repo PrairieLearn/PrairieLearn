@@ -96,8 +96,9 @@ router.get(
       res.send(
         StudentAssessment({ resLocals: res.locals, groupConfig, groupInfo, userCanAssignRoles }),
       );
+    } else {
+      res.send(StudentAssessment({ resLocals: res.locals }));
     }
-    res.send(StudentAssessment({ resLocals: res.locals }));
   }),
 );
 
