@@ -84,11 +84,6 @@ export function GroupWorkInfoCountainer({
       </div>
     </div>
     ${groupConfig.has_roles ? GroupRoleTable({ groupInfo, userCanAssignRoles, csrfToken }) : ''}
-    <script>
-      $(function () {
-        $('[data-toggle="popover"]').popover({ sanitize: false });
-      });
-    </script>
   `;
 }
 
