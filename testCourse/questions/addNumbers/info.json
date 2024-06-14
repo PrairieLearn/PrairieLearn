@@ -7,6 +7,6 @@
     "sharingSets": [
         "final-exam"
     ],
-    "publiclyShared": true,
-    "publiclySharedWithSource": true
+    "sharedPublicly": true,
+    "sharedPubliclyWithSource": true
 }

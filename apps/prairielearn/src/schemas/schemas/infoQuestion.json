@@ -260,11 +260,11 @@
         "type": "string"
       }
     },
-    "publiclyShared": {
+    "sharedPublicly": {
       "description": "Whether this question is publicly shared.",
       "type": "boolean"
     },
-    "publiclySharedWithSource": {
+    "sharedPubliclyWithSource": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
     }

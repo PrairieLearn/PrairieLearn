@@ -170,7 +170,7 @@
         "required": ["name"],
         "properties": {
           "name": {
-            "description": "Name of the sharing set",
+            "description": "Name of the sharing set.",
             "type": "string"
           },
           "description": {
