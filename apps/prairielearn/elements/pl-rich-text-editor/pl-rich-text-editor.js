@@ -13,6 +13,36 @@
     }
   });
 
+  class Counter {
+    constructor(unit, uuid, getText) {
+      this.unit = unit;
+      this.container = document.getElementById(`rte-counter-${uuid}`);
+      this.getText = getText;
+
+      // Eagerly populate the container
+      this.update();
+    }
+
+    calculate(text) {
+      if (this.unit === 'word') {
+        const trimmed = text.trim();
+        // Splitting empty text returns a non-empty array
+        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+      } else if (this.unit === 'character') {
+        // Use a spread so that Unicode characters are counted instead of utf-16 code units
+        return [...text].length;
+      } else {
+        console.error(`Text count not implemented for unit type: ${this.unit}`);
+      }
+    }
+
+    update() {
+      const length = this.calculate(this.getText());
+      const label = `${this.unit}${length === 1 ? '' : 's'}`;
+      this.container.innerText = `${length} ${label}`;
+    }
+  }
+
   window.PLRTE = function (uuid, options) {
     if (!options.modules) options.modules = {};
     if (options.readOnly) {
@@ -64,6 +94,9 @@
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
 
+    const getText = () => quill.getText();
+    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
+
     quill.on('text-change', function () {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
@@ -96,6 +129,11 @@
           }),
         ),
       );
+
+      // Update character/word count
+      if (counter) {
+        counter.update();
+      }
     });
   };
 
