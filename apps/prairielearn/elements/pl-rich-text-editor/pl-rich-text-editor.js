@@ -29,6 +29,7 @@
         // Splitting empty text returns a non-empty array
         return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
       } else if (this.unit === 'character') {
+        // Use a spread so that Unicode characters are counted instead of utf-16 code units
         return [...text].length;
       } else {
         console.error(`Text count not implemented for unit type: ${this.unit}`);
