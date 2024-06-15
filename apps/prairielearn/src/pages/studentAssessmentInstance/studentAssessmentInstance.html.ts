@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
@@ -10,17 +11,29 @@ import {
   Assessment,
   AssessmentInstance,
   AssessmentSet,
+  GroupConfig,
   InstanceQuestion,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
+import { GroupInfo } from '../../lib/groups.js';
 
 export function StudentAssessmentInstance({
   showTimeLimitExpiredModal,
+  groupConfig,
+  groupInfo,
+  userCanAssignRoles,
   resLocals,
 }: {
   showTimeLimitExpiredModal: boolean;
   resLocals: Record<string, any>;
-}) {
+} & (
+  | {
+      groupConfig: GroupConfig;
+      groupInfo: GroupInfo;
+      userCanAssignRoles: boolean;
+    }
+  | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
+)) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -129,14 +142,15 @@ export function StudentAssessmentInstance({
                         })}
                       </div>
                     `}
-                ${resLocals.assessment.group_work
+                ${groupConfig != null
                   ? html`
                       <div class="col-lg-12">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/groupWorkInfoContainer.ejs'); %>",
-                          resLocals,
-                        )}
+                        ${GroupWorkInfoContainer({
+                          groupConfig,
+                          groupInfo,
+                          userCanAssignRoles,
+                          csrfToken: resLocals.__csrf_token,
+                        })}
                       </div>
                     `
                   : ''}
