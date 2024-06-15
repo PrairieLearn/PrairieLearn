@@ -150,7 +150,7 @@ async function processDeleteFile(req, res) {
  */
 function canDeleteAssessmentInstance(resLocals) {
   return (
-    resLocals.authz_data.has_course_instance_permission_view &&
+    resLocals.authz_data.authn_has_course_instance_permission_view &&
     resLocals.authz_result.authorized_edit
   );
 }
@@ -250,8 +250,12 @@ router.post(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
       );
-      flash('success', 'Generated a new assessment instance.');
-      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
+      flash('success', 'Deleted your assessment instance.');
+      if (req.body.destination === 'self') {
+        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
+      } else {
+        res.redirect(`${res.locals.urlPrefix}/assessments/`);
+      }
     } else {
       next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
