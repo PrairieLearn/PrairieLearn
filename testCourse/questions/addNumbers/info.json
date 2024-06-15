@@ -6,7 +6,5 @@
     "type": "v3",
     "sharingSets": [
         "final-exam"
-    ],
-    "sharedPublicly": true,
-    "sharedPubliclyWithSource": true
+    ]
 }
