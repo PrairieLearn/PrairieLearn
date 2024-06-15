@@ -82,6 +82,7 @@ router.get(
 
     if (!res.locals.assessment.group_work) {
       res.send(StudentAssessment({ resLocals: res.locals }));
+      return;
     }
 
     // Get the group config info
