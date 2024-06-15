@@ -1,5 +1,6 @@
 import math
 import random
+from enum import Enum
 
 import chevron
 import lxml.html
@@ -18,6 +19,11 @@ BLANK_DEFAULT = True
 BLANK_ANSWER = " "
 NOTA_DEFAULT = False
 COUNTER_TYPE_DEFAULT = "lower-alpha"
+
+
+class OptionsPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
 
 
 def get_form_name(answers_name, index):
@@ -125,6 +131,7 @@ def prepare(element_html, data):
         "counter-type",
         "fixed-options-order",
         "hide-score-badge",
+        "options-placement",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -274,6 +281,10 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_statements, display_options = data["params"].get(name, ([], []))
+    options_placement = pl.get_enum_attrib(
+        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
+    )
+
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(
@@ -331,6 +342,7 @@ def render(element_html, data):
             "options": option_set,
             "counter_type": counter_type,
             "no_counters": no_counters,
+            "options_placement": options_placement.value,
         }
 
         if score is not None:
