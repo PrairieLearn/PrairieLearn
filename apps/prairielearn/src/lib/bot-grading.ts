@@ -105,7 +105,7 @@ export async function botGrade({
         job.fail('Errors occurred while bot grading, see output for details');
       }
       const question_prompt_raw = data.questionHtml;
-      const $ = cheerio.load(question_prompt_raw);
+      const $ = cheerio.load(question_prompt_raw, null, false);
       $('script').remove();
       const question_prompt = $.html();
 

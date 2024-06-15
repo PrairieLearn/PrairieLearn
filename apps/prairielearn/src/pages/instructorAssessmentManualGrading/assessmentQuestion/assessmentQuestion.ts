@@ -154,9 +154,6 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-
-      // for debugging, run your docker container with "docker run -it --rm -p 3000:3000 -e NODEMON=true -v ~/git/PrairieLearn:/PrairieLearn --name mypl prairielearn/prairielearn"
-      // to check out your database, run "docker exec -it mypl psql postgres"
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
