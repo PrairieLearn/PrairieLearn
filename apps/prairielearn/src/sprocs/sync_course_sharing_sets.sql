@@ -49,13 +49,6 @@ BEGIN
 
     used_tag_names := array_cat(used_tag_names, inserted_tag_names);
 
-    IF delete_unused THEN
-        DELETE FROM tags AS t
-        WHERE
-            t.course_id = syncing_course_id
-            AND t.name NOT IN (SELECT UNNEST(used_tag_names));
-    END IF;
-
     -- Make a map from tag name to ID to return to the caller
     SELECT
         coalesce(
