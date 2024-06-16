@@ -42,7 +42,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
-  sharingSetsOther,
   editableCourses,
   infoPath,
 }: {
@@ -54,7 +53,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
-  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {
@@ -193,71 +191,6 @@ export function InstructorQuestionSettings({
                                         `;
                                       })}
                                     `}
-                                ${resLocals.authz_data.has_course_permission_own
-                                  ? html`
-                                      ${sharingSetsOther.length > 0
-                                        ? html`
-                                            <form
-                                              name="sharing-set-add"
-                                              method="POST"
-                                              class="d-inline"
-                                            >
-                                              <input
-                                                type="hidden"
-                                                name="__action"
-                                                value="sharing_set_add"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="__csrf_token"
-                                                value="${resLocals.__csrf_token}"
-                                              />
-                                              <div class="btn-group btn-group-sm" role="group">
-                                                <button
-                                                  id="addSharingSet"
-                                                  type="button"
-                                                  class="btn btn-sm btn-outline-dark dropdown-toggle"
-                                                  data-toggle="dropdown"
-                                                  aria-haspopup="true"
-                                                  aria-expanded="false"
-                                                >
-                                                  Add...
-                                                </button>
-                                                <div
-                                                  class="dropdown-menu"
-                                                  aria-labelledby="addSharingSet"
-                                                >
-                                                  ${sharingSetsOther.map(function (sharing_set) {
-                                                    return html`
-                                                      <button
-                                                        class="dropdown-item"
-                                                        type="submit"
-                                                        name="unsafe_sharing_set_id"
-                                                        value="${sharing_set.id}"
-                                                      >
-                                                        ${sharing_set.name}
-                                                      </button>
-                                                    `;
-                                                  })}
-                                                </div>
-                                              </div>
-                                            </form>
-                                          `
-                                        : ''}
-                                      <button
-                                        class="btn btn-sm btn-outline-primary"
-                                        type="button"
-                                        data-toggle="modal"
-                                        data-target="#publiclyShareModal"
-                                      >
-                                        Share Publicly
-                                      </button>
-                                      ${PubliclyShareModal({
-                                        csrfToken: resLocals.__csrf_token,
-                                        qid: resLocals.question.qid,
-                                      })}
-                                    `
-                                  : ''}
                               `}
                         </td>
                       </tr>
