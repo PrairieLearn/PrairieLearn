@@ -200,3 +200,18 @@ export async function saveOrGrade(
     }).toString(),
   });
 }
+
+/**
+ * Asserts that an alert exists with a given text. Normalizes the text of the
+ * alert before comparing with the expected value.
+ */
+export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength = 1) {
+  const alerts = $('.alert').filter((_, elem) =>
+    $(elem).text().trim().replaceAll(/\s+/g, ' ').includes(text),
+  );
+  if (alerts.length !== expectedLength) {
+    console.error(`Expected ${expectedLength}:`, text);
+    console.error('Actual:', $('.alert').text());
+  }
+  assert.lengthOf(alerts, expectedLength);
+}
