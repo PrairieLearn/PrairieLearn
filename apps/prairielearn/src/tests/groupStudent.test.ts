@@ -9,7 +9,7 @@ import { config } from '../lib/config.js';
 import { IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 
-import { fetchCheerio } from './helperClient.js';
+import { assertAlert, fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -166,7 +166,7 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      assert.lengthOf(response.$('.alert:contains(already in another group)'), 1);
+      assertAlert(response.$, 'already in another group');
     });
   });
 
@@ -327,8 +327,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is full', function () {
-      const elemList = locals.$('.alert:contains(is already full)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'is already full');
     });
   });
 
@@ -405,7 +404,7 @@ describe('Group based homework assess control on student side', function () {
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-      assert.lengthOf(locals.$('.alert:contains(You are already in another group)'), 1);
+      assertAlert(locals.$, 'You are already in another group');
     });
   });
 
@@ -629,8 +628,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is invalid', function () {
-      const elemList = locals.$('.alert:contains(does not exist)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'does not exist');
     });
   });
 });
