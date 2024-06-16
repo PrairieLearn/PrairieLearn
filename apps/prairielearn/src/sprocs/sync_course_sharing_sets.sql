@@ -1,7 +1,6 @@
 CREATE FUNCTION
-    sync_course_tags(
+    sync_course_sharing_sets(
         IN valid_course_info boolean,
-        IN delete_unused boolean,
         IN course_info_tags JSONB[],
         IN syncing_course_id bigint,
         OUT new_tags_json JSONB
