@@ -195,6 +195,11 @@ interface Tag {
   description?: string;
 }
 
+interface SharingSet {
+  name: string;
+  description?: string;
+}
+
 interface Topic {
   name: string;
   color: string;
@@ -225,6 +230,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -381,6 +387,9 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets: string[];
+  sharedPublicly: boolean;
+  sharedPubliclyWithSource: boolean;
 }
 
 export interface CourseInstanceData {
@@ -755,6 +764,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets: [],
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),

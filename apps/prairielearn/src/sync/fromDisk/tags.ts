@@ -7,14 +7,15 @@ import { CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { makePerformance } from '../performance.js';
 
-const perf = makePerformance('tags');
+const perf = makePerformance('sharing_sets');
 
 export async function sync(
   courseId: string,
   courseData: CourseData,
   questionIds: Record<string, any>,
 ) {
-  // We can only safely remove unused tags if both `infoCourse.json` and all
+  // TODO: do we actually want to prune out unused ones like with tags? or no?
+  // We can only safely remove unused sharing_sets if both `infoCourse.json` and all
   // question `info.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
   const areAllInfoQuestionsValid = Object.values(courseData.questions).every(
@@ -22,41 +23,35 @@ export async function sync(
   );
   const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
 
-  let courseTags: string[] = [];
+  let courseSharingSets: string[] = [];
   if (!infofile.hasErrors(courseData.course)) {
-    courseTags = (courseData.course.data?.tags ?? []).map((t) =>
-      JSON.stringify([t.name, t.description, t.color]),
+    courseSharingSets = (courseData.course.data?.sharingSets ?? []).map((s) =>
+      JSON.stringify([s.name, s.description]),
     );
   }
 
-  const knownQuestionTagsNames = new Set<string>();
-  Object.values(courseData.questions).forEach((q) => {
-    if (!infofile.hasErrors(q)) {
-      (q.data?.tags ?? []).forEach((t) => knownQuestionTagsNames.add(t));
-    }
-  });
-  const questionTagNames = [...knownQuestionTagsNames];
-
   perf.start('sproc:sync_course_tags');
-  const newTags = await sqldb.callRow(
+  const newSharingSets = await sqldb.callRow(
     'sync_course_tags',
-    [!infofile.hasErrors(courseData.course), deleteUnused, courseTags, questionTagNames, courseId],
+    [!infofile.hasErrors(courseData.course), deleteUnused, courseSharingSets, courseId],
     z.array(z.tuple([z.string(), IdSchema])),
   );
   perf.end('sproc:sync_course_tags');
 
-  const tagIdsByName = new Map(newTags);
+  const tagIdsByName = new Map(newSharingSets);
 
-  const questionTagsParam: string[] = [];
+  const questionSharingSetsParam: string[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionTagNames = new Set<string>();
-    (question.data?.tags ?? []).forEach((t) => dedupedQuestionTagNames.add(t));
-    const questionTagIds = [...dedupedQuestionTagNames].map((t) => tagIdsByName.get(t));
-    questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
+    const dedupedQuestionSharingSetNames = new Set<string>();
+    (question.data?.sharingSets ?? []).forEach((t) => dedupedQuestionSharingSetNames.add(t));
+    const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map((t) =>
+      tagIdsByName.get(t),
+    );
+    questionSharingSetsParam.push(JSON.stringify([questionIds[qid], questionSharingSetIds]));
   });
 
   perf.start('sproc:sync_question_tags');
-  await sqldb.callAsync('sync_question_tags', [questionTagsParam]);
+  await sqldb.callAsync('sync_question_tags', [questionSharingSetsParam]);
   perf.end('sproc:sync_question_tags');
 }
