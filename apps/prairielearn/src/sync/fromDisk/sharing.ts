@@ -21,6 +21,8 @@ export async function sync(
     );
   }
 
+  console.log('course sharing sets', courseSharingSets);
+
   perf.start('sproc:sync_course_tags');
   const newSharingSets = await sqldb.callRow(
     'sync_course_sharing_sets',
@@ -42,7 +44,9 @@ export async function sync(
     questionSharingSetsParam.push(JSON.stringify([questionIds[qid], questionSharingSetIds]));
   });
 
+  console.log('question sharing sets', questionSharingSetsParam);
+
   perf.start('sproc:sync_question_tags');
-  await sqldb.callAsync('sync_question_tags', [questionSharingSetsParam]);
+  await sqldb.callAsync('sync_question_sharing_sets', [questionSharingSetsParam]);
   perf.end('sproc:sync_question_tags');
 }
