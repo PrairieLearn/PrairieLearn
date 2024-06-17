@@ -54,11 +54,15 @@ export function InstructorInfoPanel({
   questionContext: QuestionContext;
   csrfToken: string;
 }) {
-  // Here, we are only checking if the effective user is an instructor. We are not
-  // attempting to check if this user has permission to view student data. That check
-  // would have already been made (when necessary) before granting access to the page
-  // on which this partial is included (an assessment instance or question instance).
+  // Here, we are only checking if the effective user is an instructor. We are
+  // not attempting to check if this user has permission to view student data.
+  // That check would have already been made (when necessary) before granting
+  // access to the page on which this partial is included (an assessment
+  // instance or question instance). We don't need this check when the question
+  // is being previewed publicly because the public preview page already checks
+  // for the necessary permissions.
   if (
+    questionContext !== 'public' &&
     !authz_data.has_course_permission_preview &&
     !authz_data.has_course_instance_permission_view
   ) {
@@ -73,8 +77,15 @@ export function InstructorInfoPanel({
       <div class="card-body">
         ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
-        ${QuestionInfo({ course, course_instance, question, variant, question_is_shared })}
-        ${VariantInfo({ variant, timeZone })}
+        ${QuestionInfo({
+          course,
+          course_instance,
+          question,
+          variant,
+          question_is_shared,
+          questionContext,
+        })}
+        ${VariantInfo({ variant, timeZone, questionContext })}
         ${IssueReportButton({ variant, csrfToken, questionContext })}
         ${AssessmentInstanceInfo({ assessment, assessment_instance, timeZone })}
         ${ManualGradingInfo({ instance_question, assessment, questionContext })}
@@ -136,12 +147,14 @@ function QuestionInfo({
   question,
   variant,
   question_is_shared,
+  questionContext,
 }: {
   course: Course;
   course_instance?: CourseInstance;
   question?: Question;
   variant?: Variant;
   question_is_shared?: boolean;
+  questionContext: QuestionContext;
 }) {
   if (question == null || variant == null) return '';
 
@@ -150,6 +163,16 @@ function QuestionInfo({
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
+  const publicPreviewUrl = `${config.urlPrefix}/public/course/${course.id}/question/${question.id}/preview`;
+
+  // Example course questions can be publicly shared, but we don't allow them to
+  // be imported into courses, so we won't show the sharing name in the QID.
+  //
+  // In the future, this should use some kind of "allow import" flag on the
+  // question so that this behavior can be achieved within other courses.
+  const sharingQid = course.example_course
+    ? question.qid
+    : `@${course.sharing_name}/${question.qid}`;
 
   return html`
     <hr />
@@ -158,25 +181,25 @@ function QuestionInfo({
     <div class="d-flex flex-wrap">
       <div class="pr-1">QID:</div>
       <div>
-        <a href="${questionPreviewUrl}">${question.qid}</a>
+        ${questionContext === 'public'
+          ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
+              ${sharingQid}
+            </a>`
+          : html`<a href="${questionPreviewUrl}">${question.qid}</a>`}
       </div>
     </div>
 
-    ${question_is_shared && course.sharing_name
+    ${question_is_shared && course.sharing_name && questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pr-1">Shared As:</div>
             ${question.shared_publicly
               ? html`
                   <div>
-                    <a
-                      href="${config.urlPrefix}/public/course/${course.id}/question/${question.id}/preview"
-                    >
-                      @${course.sharing_name}/${question.qid}
-                    </a>
+                    <a href="${publicPreviewUrl}">${sharingQid}</a>
                   </div>
                 `
-              : html`<div>@${course.sharing_name}/${question.qid}</div>`}
+              : html`<div>${sharingQid}</div>`}
           </div>
         `
       : ''}
@@ -187,7 +210,15 @@ function QuestionInfo({
   `;
 }
 
-function VariantInfo({ variant, timeZone }: { variant?: Variant; timeZone: string }) {
+function VariantInfo({
+  variant,
+  timeZone,
+  questionContext,
+}: {
+  variant?: Variant;
+  timeZone: string;
+  questionContext: QuestionContext;
+}) {
   if (variant == null) return '';
 
   // Some legacy queries still return the duration and date as a string, so parse them before formatting
@@ -199,14 +230,18 @@ function VariantInfo({ variant, timeZone }: { variant?: Variant; timeZone: strin
     typeof variant.date === 'string' ? DateFromISOString.parse(variant.date) : variant.date;
 
   return html`
-    <div class="d-flex flex-wrap">
-      <div class="pr-1">Started at:</div>
-      <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
-    </div>
-    <div class="d-flex flex-wrap">
-      <div class="pr-1">Duration:</div>
-      <div>${formatInterval(duration)}</div>
-    </div>
+    ${questionContext !== 'public'
+      ? html`
+          <div class="d-flex flex-wrap">
+            <div class="pr-1">Started at:</div>
+            <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
+          </div>
+          <div class="d-flex flex-wrap">
+            <div class="pr-1">Duration:</div>
+            <div>${formatInterval(duration)}</div>
+          </div>
+        `
+      : ''}
     <div class="d-flex flex-wrap mt-2 mb-3">
       <details class="pr-1">
         <summary>Show/Hide answer</summary>
@@ -336,7 +371,8 @@ function IssueReportButton({
   if (
     variant == null ||
     questionContext === 'student_exam' ||
-    questionContext === 'student_homework'
+    questionContext === 'student_homework' ||
+    questionContext === 'public'
   ) {
     return '';
   }
