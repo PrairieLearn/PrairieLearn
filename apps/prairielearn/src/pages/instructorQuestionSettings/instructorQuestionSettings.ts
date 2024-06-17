@@ -33,7 +33,7 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function editPublicSharingWithSource (course_id: String, question_id: String, share_source_code: Boolean) {
+async function editPublicSharingWithSource (course_id: string, question_id: string, share_source_code: boolean) {
   if (share_source_code == null) {
     share_source_code = false;
   }
