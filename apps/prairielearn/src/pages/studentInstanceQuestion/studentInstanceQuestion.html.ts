@@ -4,6 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
+import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
@@ -125,11 +126,19 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                     assessment_set: resLocals.assessment_set,
                     assessment_instance: resLocals.assessment_instance,
                   })}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../partials/questionScorePanel') %>",
-                resLocals,
-              )}
+              ${QuestionScorePanel({
+                instance_question: resLocals.instance_question,
+                assessment: resLocals.assessment,
+                assessment_question: resLocals.assessment_question,
+                question: resLocals.question,
+                assessment_instance: resLocals.assessment_instance,
+                instance_question_info: resLocals.instance_question_info,
+                variant: resLocals.variant,
+                no_variant_exists: resLocals.no_variant_exists,
+                authz_result: resLocals.authz_result,
+                csrfToken: resLocals.__csrf_token,
+                urlPrefix: resLocals.urlPrefix,
+              })}
               ${renderEjs(
                 import.meta.url,
                 "<%- include('../partials/questionNavSideButtonGroup') %>",
