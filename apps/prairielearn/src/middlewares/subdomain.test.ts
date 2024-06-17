@@ -1,6 +1,8 @@
 import { assert } from 'chai';
-import express = require('express');
-import sinon = require('sinon');
+import express from 'express';
+import sinon from 'sinon';
+
+import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from '../lib/config.js';
 
@@ -161,14 +163,14 @@ describe('subdomain middleware', () => {
       assert.isTrue(next.calledOnce);
       const args = next.args[0];
       assert.lengthOf(args, 1);
-      assert.instanceOf(args[0], Error);
+      assert.instanceOf(args[0], HttpStatusError);
       assert.equal(args[0].status, 403);
     });
   });
 
   describe('assertSubdomainOrRedirect middleware', () => {
     it('redirects to expected domain', () => {
-      const middleware = assertSubdomainOrRedirect(() => 'q321');
+      const middleware = assertSubdomainOrRedirect(() => 'q321', true);
 
       const req = makeFakeRequest('us.prairielearn.com', null, '/pl/course/1/question/321/preview');
       const { res, redirectSpy } = makeFakeResponse();
@@ -183,7 +185,7 @@ describe('subdomain middleware', () => {
     });
 
     it('proceeds if subdomain is already correct', () => {
-      const middleware = assertSubdomainOrRedirect(() => 'q321');
+      const middleware = assertSubdomainOrRedirect(() => 'q321', true);
 
       const req = makeFakeRequest(
         'q321.us.prairielearn.com',

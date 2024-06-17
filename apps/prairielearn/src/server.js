@@ -1611,7 +1611,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/subdomain')).assertAssessmentInstanceSubdomainOrRedirect,
+      (await import('./middlewares/subdomain.js')).assertAssessmentInstanceSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./middlewares/clientFingerprint.js')).default,
       (await import('./middlewares/logPageView.js')).default('studentAssessmentInstance'),
