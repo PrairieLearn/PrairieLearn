@@ -200,15 +200,11 @@ function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string
       <div class="pr-1">Duration:</div>
       <div>${formatInterval(duration)}</div>
     </div>
-    <div class="d-flex flex-wrap pb-2">
-      <div class="pr-1">
-        <button class="btn btn-link" data-toggle="collapse" data-target="#instructorTrue_answer">
-          Show/Hide answer
-        </button>
-      </div>
-      <div class="collapse" id="instructorTrue_answer">
-        <code>${JSON.stringify(variant.true_answer)}</code>
-      </div>
+    <div class="d-flex flex-wrap mt-2 mb-3">
+      <details class="pr-1">
+        <summary>Show/Hide answer</summary>
+        <pre><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
+      </details>
     </div>
   `;
 }
