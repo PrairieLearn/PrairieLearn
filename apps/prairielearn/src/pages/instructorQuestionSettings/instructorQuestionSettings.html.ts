@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -136,21 +138,11 @@ export function InstructorQuestionSettings({
                   <table class="table two-column-description">
                     <tr>
                       <th class="border-top-0">Topic</th>
-                      <td class="border-top-0">
-                        <span
-                          class="badge color-${resLocals.topic.color}"
-                          data-toggle="tooltip"
-                          data-boundary="window"
-                          data-html="true"
-                          title="${unsafeHtml(resLocals.topic.description)}"
-                        >
-                          ${resLocals.topic.name}
-                        </span>
-                      </td>
+                      <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
                     </tr>
                     <tr>
                       <th>Tags</th>
-                      <td>${TagBadges({ tags: resLocals.tags })}</td>
+                      <td>${TagBadgeList(resLocals.tags)}</td>
                     </tr>
                     ${shouldShowAssessmentsList
                       ? html`<tr>
@@ -526,26 +518,6 @@ function QuestionSharing({
         `
       : ''}
   `;
-}
-
-function TagBadges({ tags }) {
-  if (!tags || tags.length === 0) {
-    return html`<small class="text-muted">This question does not have any tags.</small>`;
-  }
-
-  return tags.map((tag) => {
-    return html`
-      <span
-        class="badge color-${tag.color}"
-        style="white-space: unset; word-break: break-all"
-        data-toggle="tooltip"
-        data-boundary="window"
-        title="${unsafeHtml(tag.description)}"
-      >
-        ${tag.name}
-      </span>
-    `;
-  });
 }
 
 function AssessmentBadges({
