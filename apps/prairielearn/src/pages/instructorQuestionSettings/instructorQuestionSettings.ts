@@ -33,6 +33,17 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+async function editPublicSharingWithSource (course_id: String, question_id: String, share_source_code: Boolean) {
+  if (share_source_code == null) {
+    share_source_code = false;
+  }
+  await sqldb.queryAsync(sql.update_question_shared_publicly_with_source, {
+    course_id: course_id,
+    question_id: question_id,
+    share_source_code: share_source_code,
+  });
+}
+
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
@@ -195,6 +206,16 @@ router.post(
         course_id: res.locals.course.id,
         question_id: res.locals.question.id,
       });
+      if (req.body.share_source_code != null) {
+        // TEST, this is only passed when share_source_code is true, which is why we only check if it's not null
+        //  This may need to be changed later
+        const publicSharingEdited = await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
+      }
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'edit_public_sharing') {
+      // TEST 
+      console.log(`req.body.share_source_code: ${req.body.share_source_code}`) // TEST
+      const publicSharingEdited = await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

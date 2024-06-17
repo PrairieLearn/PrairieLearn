@@ -98,3 +98,11 @@ SET
 WHERE
   id = $question_id
   AND course_id = $course_id;
+
+-- BLOCK update_question_shared_publicly_with_source
+UPDATE questions
+SET
+  shared_publicly_with_source = $share_source_code
+WHERE
+  id = $question_id
+  AND course_id = $course_id;
