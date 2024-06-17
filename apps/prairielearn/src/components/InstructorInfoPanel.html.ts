@@ -16,7 +16,7 @@ import {
   type Variant,
 } from '../lib/db-types.js';
 
-import { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext } from './QuestionContainer.types.js';
 
 export function InstructorInfoPanel({
   course,
