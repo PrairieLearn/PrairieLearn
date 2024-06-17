@@ -6,11 +6,11 @@ import type {
   AssessmentQuestion,
   InstanceQuestion,
   Question,
-  Submission,
   Variant,
 } from '../lib/db-types.js';
 import { formatPoints, formatPointsOrList } from '../lib/format.js';
 import { idsEqual } from '../lib/id.js';
+import type { VariantWithScore } from '../models/variant.js';
 
 export function QuestionScorePanel({
   instance_question,
@@ -36,9 +36,7 @@ export function QuestionScorePanel({
   variant: Variant;
   instance_question_info: {
     question_number: string | null;
-    previous_variants:
-      | (Variant & { max_submission_score: NonNullable<Submission['score']> })[]
-      | null;
+    previous_variants: VariantWithScore[] | null;
   };
   no_variant_exists?: boolean;
   authz_result?: { authorized_edit: boolean | null };
@@ -297,9 +295,7 @@ export function QuestionAwardedPoints({
   urlPrefix,
 }: {
   instanceQuestionId: string;
-  previousVariants?:
-    | (Variant & { max_submission_score: NonNullable<Submission['score']> })[]
-    | null;
+  previousVariants?: VariantWithScore[] | null;
   currentVariantId?: string;
   urlPrefix: string;
 }) {
