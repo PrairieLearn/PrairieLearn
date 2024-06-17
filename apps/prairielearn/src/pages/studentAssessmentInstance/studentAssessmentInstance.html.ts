@@ -76,7 +76,6 @@ export function StudentAssessmentInstance({
 
                   <form method="POST" class="ml-auto mr-3">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input type="hidden" name="__action" value="delete_instance" />
                     <div class="dropdown">
                       <button
                         class="btn btn-warning dropdown-toggle"
@@ -88,7 +87,12 @@ export function StudentAssessmentInstance({
                       </button>
 
                       <div class="dropdown-menu dropdown-menu-right">
-                        <button type="submit" class="dropdown-item" name="destination" value="self">
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="regenerate_instance"
+                        >
                           <i class="fas fa-arrows-rotate"></i>
                           Regenerate assessment instance
                         </button>
@@ -96,8 +100,8 @@ export function StudentAssessmentInstance({
                         <button
                           type="submit"
                           class="dropdown-item"
-                          name="destination"
-                          value="assessments"
+                          name="__action"
+                          value="delete_instance"
                         >
                           <i class="fas fa-times"></i>
                           Delete assessment instance
