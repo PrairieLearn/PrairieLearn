@@ -454,7 +454,6 @@ export function ExamQuestionAvailablePoints({
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </a>
 
-    <!-- Enable popover -->
     <script>
       $(() => {
         $('.js-available-points-popover[data-toggle="popover"]').popover({ sanitize: false });
