@@ -35,7 +35,7 @@ export function QuestionScorePanel({
   assessment_instance: AssessmentInstance;
   variant: Variant;
   instance_question_info: {
-    question_number: string;
+    question_number: string | null;
     previous_variants:
       | (Variant & { max_submission_score: NonNullable<Submission['score']> })[]
       | null;
