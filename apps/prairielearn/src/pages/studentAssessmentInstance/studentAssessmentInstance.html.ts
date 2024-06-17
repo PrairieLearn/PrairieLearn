@@ -22,11 +22,11 @@ export function StudentAssessmentInstance({
   groupConfig,
   groupInfo,
   userCanAssignRoles,
-  canDeleteAssessmentInstance,
+  userCanDeleteAssessmentInstance,
   resLocals,
 }: {
   showTimeLimitExpiredModal: boolean;
-  canDeleteAssessmentInstance: boolean;
+  userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
 } & (
   | {
@@ -69,7 +69,7 @@ export function StudentAssessmentInstance({
           navPage: 'assessment_instance',
         })}
         <main id="content" class="container">
-          ${canDeleteAssessmentInstance
+          ${userCanDeleteAssessmentInstance
             ? html`
                 <div class="alert alert-warning d-flex align-items-center">
                   <span class="mr-3"> Instructor's own assessment instance special menu </span>

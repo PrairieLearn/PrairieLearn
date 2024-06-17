@@ -311,7 +311,13 @@ router.get(
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
     if (!res.locals.assessment.group_work) {
-      res.send(StudentAssessmentInstance({ showTimeLimitExpiredModal, resLocals: res.locals }));
+      res.send(
+        StudentAssessmentInstance({
+          showTimeLimitExpiredModal,
+          userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+          resLocals: res.locals,
+        }),
+      );
       return;
     }
 
@@ -345,11 +351,11 @@ router.get(
     res.send(
       StudentAssessmentInstance({
         showTimeLimitExpiredModal,
-        resLocals: res.locals,
         groupConfig,
         groupInfo,
         userCanAssignRoles,
-        canDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        resLocals: res.locals,
       }),
     );
   }),
