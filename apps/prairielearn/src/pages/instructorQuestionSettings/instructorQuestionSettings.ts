@@ -207,15 +207,12 @@ router.post(
         question_id: res.locals.question.id,
       });
       if (req.body.share_source_code != null) {
-        // TEST, this is only passed when share_source_code is true, which is why we only check if it's not null
-        //  This may need to be changed later
-        const publicSharingEdited = await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
+        // Share source code if the checkbox is checked
+        await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_public_sharing') {
-      // TEST 
-      console.log(`req.body.share_source_code: ${req.body.share_source_code}`) // TEST
-      const publicSharingEdited = await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
+      await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
