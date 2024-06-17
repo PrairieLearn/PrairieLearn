@@ -4,7 +4,7 @@ import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
-import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
@@ -43,6 +43,7 @@ export function InstructorAssessmentGroups({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
+        ${compiledScriptTag('instructorAssessmentGroupsClient.ts')}
       </head>
 
       <body>
@@ -66,12 +67,6 @@ export function InstructorAssessmentGroups({
               // Hide all popovers when the dropdown menu is closed.
               $('.js-group-action[data-toggle="popover"]').popover('hide');
             });
-          });
-
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-            this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
           });
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}

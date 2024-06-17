@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'path';
 
 import { assert } from 'chai';
@@ -1272,10 +1271,10 @@ describe('Assessment syncing', () => {
   });
 
   it('handles assessment sets that are not present in infoCourse.json', async () => {
-    // Missing tags should be created
+    // Missing assessment sets should be created
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    const missingAssessmentSetName = 'missing tag name';
+    const missingAssessmentSetName = 'missing assessment set name';
     assessment.set = missingAssessmentSetName;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['new'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
@@ -1284,12 +1283,13 @@ describe('Assessment syncing', () => {
       (aset) => aset.name === missingAssessmentSetName,
     );
     assert.isOk(syncedAssessmentSet);
+    assert.isTrue(syncedAssessmentSet.implicit);
     assert.isTrue(
       syncedAssessmentSet?.heading && syncedAssessmentSet.heading.length > 0,
       'assessment set should not have empty heading',
     );
 
-    // When missing assessment sets are no longer used in any questions, they should
+    // When missing assessment sets are no longer used in any assessments, they should
     // be removed from the DB
     assessment.set = 'Homework';
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -1298,6 +1298,36 @@ describe('Assessment syncing', () => {
       (aset) => aset.name === missingAssessmentSetName,
     );
     assert.isUndefined(syncedAssessmentSet);
+  });
+
+  it('handles assessment modules that are not present in infoCourse.json', async () => {
+    // Missing assessment modules should be created
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    const missingAssessmentModuleName = 'missing assessment module name';
+    assessment.module = missingAssessmentModuleName;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['new'] = assessment;
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+    let syncedAssessmentModules = await util.dumpTable('assessment_modules');
+    let syncedAssessmentModule = syncedAssessmentModules.find(
+      (amod) => amod.name === missingAssessmentModuleName,
+    );
+    assert.isOk(syncedAssessmentModule);
+    assert.isTrue(syncedAssessmentModule.implicit);
+    assert.isTrue(
+      syncedAssessmentModule?.heading && syncedAssessmentModule.heading.length > 0,
+      'assessment module should not have empty heading',
+    );
+
+    // When missing assessment modules are no longer used in any assessments, they should
+    // be removed from the DB
+    delete assessment.module;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedAssessmentModules = await util.dumpTable('assessment_modules');
+    syncedAssessmentModule = syncedAssessmentModules.find(
+      (amod) => amod.name === missingAssessmentModuleName,
+    );
+    assert.isUndefined(syncedAssessmentModule);
   });
 
   it('records an error if an access rule end date is before the start date', async () => {
@@ -1361,6 +1391,21 @@ describe('Assessment syncing', () => {
     assert.match(
       syncedAssessment?.sync_errors,
       /Invalid allowAccess rule: credit must be 0 if active is false/,
+    );
+  });
+
+  it('records an error if an access rule specifies an examUuid but not mode=Exam', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"/,
     );
   });
 

@@ -49,7 +49,7 @@ interface RolesInfo {
   usersWithoutRoles: User[];
 }
 
-interface GroupInfo {
+export interface GroupInfo {
   groupMembers: User[];
   groupSize: number;
   groupName: string;
@@ -257,6 +257,7 @@ export async function addUserToGroup({
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
+      assessment_id,
       authn_user_id,
       group_role_id: groupRoleId,
     });
@@ -517,6 +518,7 @@ export async function leaveGroup(
 
     // Delete user from group and log
     await sqldb.queryAsync(sql.delete_group_users, {
+      assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
       authn_user_id: authnUserId,
@@ -544,7 +546,7 @@ export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): 
 }
 
 /**
- * Updates the role assignments of users in a group, given the output from groupRoleTable.ejs.
+ * Updates the role assignments of users in a group, given the output from the GroupRoleTable component.
  */
 export async function updateGroupRoles(
   requestBody: Record<string, any>,

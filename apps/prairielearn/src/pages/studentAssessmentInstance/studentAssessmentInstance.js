@@ -23,6 +23,9 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
+
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -50,12 +53,6 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
-  previous_variants: z.array(
-    z.object({
-      variant_id: IdSchema,
-      max_submission_score: z.number(),
-    }),
-  ),
 });
 
 async function ensureUpToDate(locals) {
@@ -228,6 +225,14 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
+    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: res.locals.assessment_instance.id,
+    });
+    for (const instance_question of res.locals.instance_questions) {
+      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, instance_question.id),
+      );
+    }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
@@ -241,7 +246,6 @@ router.get(
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
-    res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
     res.locals.savedAnswers = 0;
     res.locals.suspendedSavedAnswers = 0;
     res.locals.instance_questions.forEach((question) => {
@@ -253,42 +257,50 @@ router.get(
         }
       }
     });
-    if (res.locals.assessment.group_work) {
-      // Get the group config info
-      const groupConfig = await getGroupConfig(res.locals.assessment.id);
-      res.locals.groupConfig = groupConfig;
 
-      res.locals.notInGroup = false;
-      const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
-      res.locals.groupSize = groupInfo.groupSize;
-      res.locals.groupMembers = groupInfo.groupMembers;
-      res.locals.joinCode = groupInfo.joinCode;
-      res.locals.groupName = groupInfo.groupName;
-      res.locals.start = groupInfo.start;
-      res.locals.rolesInfo = groupInfo.rolesInfo;
-      res.locals.used_join_code = req.body.used_join_code;
+    const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-      if (groupConfig.has_roles) {
-        res.locals.userCanAssignRoles = canUserAssignGroupRoles(groupInfo, res.locals.user.user_id);
+    if (!res.locals.assessment.group_work) {
+      res.send(StudentAssessmentInstance({ showTimeLimitExpiredModal, resLocals: res.locals }));
+      return;
+    }
 
-        res.locals.user_group_roles =
-          groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
-            ?.map((role) => role.role_name)
-            ?.join(', ') || 'None';
-        // Get the role permissions. If the authorized user has course instance
-        // permission, then role restrictions don't apply.
-        if (!res.locals.authz_data.has_course_instance_permission_view) {
-          for (const question of res.locals.instance_questions) {
-            question.group_role_permissions = await getQuestionGroupPermissions(
-              question.id,
-              res.locals.assessment_instance.group_id,
-              res.locals.authz_data.user.user_id,
-            );
-          }
+    // Get the group config info
+    const groupConfig = await getGroupConfig(res.locals.assessment.id);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
+    const userCanAssignRoles =
+      groupInfo != null &&
+      groupConfig.has_roles &&
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+        res.locals.authz_data.has_course_instance_permission_edit);
+
+    if (groupConfig.has_roles) {
+      res.locals.user_group_roles =
+        groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
+          ?.map((role) => role.role_name)
+          ?.join(', ') || 'None';
+      // Get the role permissions. If the authorized user has course instance
+      // permission, then role restrictions don't apply.
+      if (!res.locals.authz_data.has_course_instance_permission_view) {
+        for (const question of res.locals.instance_questions) {
+          question.group_role_permissions = await getQuestionGroupPermissions(
+            question.id,
+            res.locals.assessment_instance.group_id,
+            res.locals.authz_data.user.user_id,
+          );
         }
       }
     }
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+
+    res.send(
+      StudentAssessmentInstance({
+        showTimeLimitExpiredModal,
+        resLocals: res.locals,
+        groupConfig,
+        groupInfo,
+        userCanAssignRoles,
+      }),
+    );
   }),
 );
 

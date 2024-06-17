@@ -19,7 +19,9 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
-  this.editor = ace.edit(this.editorElement.get(0));
+  this.editor = ace.edit(this.editorElement.get(0), {
+    enableKeyboardAccessibility: true,
+  });
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
@@ -234,17 +236,20 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
     this.restoreOriginalConfirmContainer.show();
+    this.restoreOriginalConfirm.focus();
   });
 
   this.restoreOriginalConfirm.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
   this.restoreOriginalCancel.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
   });
 };
 

@@ -30,7 +30,8 @@ SELECT
     coalesce(ci.display_timezone, c.display_timezone)
   ) AS formatted_date,
   u.uid AS user_uid,
-  u.name AS user_name
+  u.name AS user_name,
+  u.email AS user_email
 FROM
   issues AS i
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
@@ -66,8 +67,6 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
-  -- These are separate for historical reasons
-  gj.id AS grading_job_id,
   grading_job_status (gj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
@@ -166,46 +165,13 @@ WITH
       gj.id DESC
     LIMIT
       1
-  ),
-  -- The following two CTEs are copied from `selectAndAuthzInstanceQuestion`.
-  variant_max_submission_scores AS (
-    SELECT
-      v.id AS variant_id,
-      max(s.score) AS max_submission_score
-    FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND s.score IS NOT NULL
-    GROUP BY
-      v.id
-  ),
-  instance_question_variants AS (
-    SELECT
-      jsonb_agg(
-        jsonb_build_object(
-          'variant_id',
-          v.id,
-          'max_submission_score',
-          COALESCE(vmss.max_submission_score, 0)
-        )
-        ORDER BY
-          v.date
-      ) AS variants
-    FROM
-      variants AS v
-      LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND NOT v.open
-      AND NOT v.broken
   )
 SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
   to_jsonb(v) AS variant,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+  qo.question_number,
   jsonb_build_object(
     'id',
     next_iq.id,
@@ -220,7 +186,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  lgj.id AS grading_job_id,
   grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
@@ -243,8 +208,7 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-  ) AS submission_count,
-  iqv.variants AS previous_variants
+  ) AS submission_count
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -261,7 +225,7 @@ FROM
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
-  LEFT JOIN instance_question_variants AS iqv ON (TRUE)
+  LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id
