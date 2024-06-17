@@ -378,8 +378,8 @@ export function InstanceQuestionPoints({
           ? html`<span class="badge badge-info">pending</span>`
           : !points && !maxPoints
             ? html`&mdash;`
-            : html` <span data-testid="awarded-points">${formatPoints(points)}</span> `}
-      ${maxPoints ? html` <small>/<span class="text-muted">${maxPoints}</span></small> ` : ''}
+            : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}
+      ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
     </span>
   `;
 }
