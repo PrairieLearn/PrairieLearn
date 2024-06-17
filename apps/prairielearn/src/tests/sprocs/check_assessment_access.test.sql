@@ -54,9 +54,17 @@ WITH
   ),
   setup_assessment_sets AS (
     INSERT INTO
-      assessment_sets (id, course_id)
+      assessment_sets (
+        id,
+        course_id,
+        abbreviation,
+        color,
+        heading,
+        name,
+        number
+      )
     VALUES
-      (1, 1)
+      (1, 1, 'HW', 'green1', 'Homeworks', 'Homework', 1)
   ),
   setup_assessments AS (
     INSERT INTO
@@ -114,6 +122,7 @@ WITH
     INSERT INTO
       assessment_access_rules (
         assessment_id,
+        number,
         mode,
         start_date,
         end_date,
@@ -124,6 +133,7 @@ WITH
     VALUES
       (
         10,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -133,6 +143,7 @@ WITH
       ),
       (
         11,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -142,6 +153,7 @@ WITH
       ),
       (
         12,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -151,6 +163,7 @@ WITH
       ),
       (
         50,
+        1,
         'Public',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -160,6 +173,7 @@ WITH
       ),
       (
         52,
+        1,
         'Public',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',

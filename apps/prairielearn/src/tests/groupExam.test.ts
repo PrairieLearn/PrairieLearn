@@ -10,6 +10,7 @@ import { config } from '../lib/config.js';
 import { UserSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 
+import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -52,7 +53,8 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
 async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
-  formName: string,
+  formName: string | null,
+  formContainer = 'body',
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -66,7 +68,7 @@ async function switchUserAndLoadAssessment(
   const $ = cheerio.load(page);
 
   // Check that the correct CSRF form exists
-  const elementQuery = `form[name="${formName}"] input[name="__csrf_token"]`;
+  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
   const csrfTokenElement = $(elementQuery);
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
   assert.isString(csrfTokenElement.attr('value'));
@@ -279,8 +281,7 @@ describe('Group based exam assessments', function () {
         'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
-      const elemList = $('.alert:contains(Group is already full)');
-      assert.lengthOf(elemList, 1, 'Page should show that group is already full');
+      assertAlert($, 'Group is already full');
 
       // Switch to second user and start assessment
       const { $: $secondUser } = await switchUserAndLoadAssessment(
@@ -325,11 +326,11 @@ describe('Group based exam assessments', function () {
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
       // Ensure all group members can access the assessment instance correctly
-      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, 'leave-group-form');
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null, '#leaveGroupModal');
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
 
-      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, 'leave-group-form');
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null, '#leaveGroupModal');
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
     });
@@ -408,7 +409,8 @@ describe('cross group exam access', function () {
     const { csrfToken: secondUserInstanceCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       assessmentUrl, // redirects to instance URL
-      'leave-group-form',
+      null,
+      '#leaveGroupModal',
     );
 
     // Leave exam group as second user
@@ -511,7 +513,6 @@ describe('cross exam assessment access', function () {
     $ = cheerio.load(await crossAssessmentJoinResponse.text());
 
     // Error message should show
-    const elemList = $('.alert:contains(Group does not exist)');
-    assert.lengthOf(elemList, 1);
+    assertAlert($, 'Group does not exist');
   });
 });

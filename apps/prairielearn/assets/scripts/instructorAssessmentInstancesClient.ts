@@ -338,7 +338,7 @@ onDocumentReady(() => {
               class="btn btn-xs"
               ,
               type="button"
-              title="Show figerprint changes help"
+              title="Show fingerprint changes help"
               data-toggle="modal"
               data-target="#fingerprint-changes-help"
             >

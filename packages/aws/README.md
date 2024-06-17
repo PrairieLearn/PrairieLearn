@@ -67,7 +67,7 @@ const awsConfigProvider = makeAwsConfigProvider({
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: 'http://localhost:5000',
+        endpoint: 'http://127.0.0.1:5000',
       };
     }
 
