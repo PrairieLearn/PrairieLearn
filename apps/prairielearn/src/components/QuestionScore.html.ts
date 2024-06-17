@@ -434,12 +434,10 @@ export function ExamQuestionAvailablePoints({
   `;
 
   return html`
-    ${pointsList.length === 0
-      ? html`&mdash;`
-      : pointsList.length === 1
-        ? formatPoints(pointsList[0])
-        : html`${formatPoints(pointsList[0])},
-            <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
+    ${pointsList.length === 1
+      ? formatPoints(pointsList[0])
+      : html`${formatPoints(pointsList[0])},
+          <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
     <a
       tabindex="0"
       type="button"
