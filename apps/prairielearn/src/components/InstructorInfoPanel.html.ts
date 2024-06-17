@@ -1,8 +1,9 @@
-import { formatInterval } from '@prairielearn/formatter';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
+  DateFromISOString,
   IntervalSchema,
   type Assessment,
   type AssessmentInstance,
@@ -37,13 +38,13 @@ export function InstructorInfoPanel({
   course: Course;
   course_instance?: CourseInstance;
   assessment?: Assessment;
-  assessment_instance?: AssessmentInstance & { formatted_date: string };
+  assessment_instance?: AssessmentInstance;
   instance_question?: InstanceQuestion & {
     assigned_grader_name?: string | null;
     last_grader_name?: string | null;
   };
   question?: Question;
-  variant?: Variant & { formatted_date: string };
+  variant?: Variant;
   user: User;
   instance_group?: Group | null;
   instance_group_uid_list?: string[] | null;
@@ -64,6 +65,8 @@ export function InstructorInfoPanel({
     return '';
   }
 
+  const timeZone = course_instance?.display_timezone ?? course.display_timezone;
+
   return html`
     <div class="card mb-4 border-warning">
       <div class="card-header bg-warning">Staff information</div>
@@ -71,8 +74,9 @@ export function InstructorInfoPanel({
         ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
         ${QuestionInfo({ course, course_instance, question, variant, question_is_shared })}
-        ${VariantInfo({ variant })} ${IssueReportButton({ variant, csrfToken, questionContext })}
-        ${AssessmentInstanceInfo({ assessment, assessment_instance })}
+        ${VariantInfo({ variant, timeZone })}
+        ${IssueReportButton({ variant, csrfToken, questionContext })}
+        ${AssessmentInstanceInfo({ assessment, assessment_instance, timeZone })}
         ${ManualGradingInfo({ instance_question, assessment, questionContext })}
       </div>
       <div class="card-footer small">This box is not visible to students.</div>
@@ -183,18 +187,21 @@ function QuestionInfo({
   `;
 }
 
-function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string } }) {
+function VariantInfo({ variant, timeZone }: { variant?: Variant; timeZone: string }) {
   if (variant == null) return '';
 
+  // Some legacy queries still return the duration and date as a string, so parse them before formatting
   const duration =
-    // Some legacy queries still return the duration as a string, so parse it before formatting
     typeof variant.duration === 'string'
       ? IntervalSchema.parse(variant.duration)
       : variant.duration ?? 0;
+  const date =
+    typeof variant.date === 'string' ? DateFromISOString.parse(variant.date) : variant.date;
+
   return html`
     <div class="d-flex flex-wrap">
       <div class="pr-1">Started at:</div>
-      <div>${variant.formatted_date}</div>
+      <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
     </div>
     <div class="d-flex flex-wrap">
       <div class="pr-1">Duration:</div>
@@ -212,18 +219,25 @@ function VariantInfo({ variant }: { variant?: Variant & { formatted_date: string
 function AssessmentInstanceInfo({
   assessment,
   assessment_instance,
+  timeZone,
 }: {
   assessment?: Assessment;
-  assessment_instance?: AssessmentInstance & { formatted_date: string };
+  assessment_instance?: AssessmentInstance;
+  timeZone: string;
 }) {
   if (assessment == null || assessment_instance == null) return '';
 
   const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
+
+  // Some legacy queries still return the duration and date as a string, so parse them before formatting
   const duration =
-    // Some legacy queries still return the duration as a string, so parse it before formatting
     typeof assessment_instance.duration === 'string'
       ? IntervalSchema.parse(assessment_instance.duration)
       : assessment_instance.duration ?? 0;
+  const date =
+    typeof assessment_instance.date === 'string'
+      ? DateFromISOString.parse(assessment_instance.date)
+      : assessment_instance.date;
 
   return html`
     <hr />
@@ -237,7 +251,7 @@ function AssessmentInstanceInfo({
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">Started at:</div>
-      <div>${assessment_instance.formatted_date}</div>
+      <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
     </div>
 
     <div class="d-flex flex-wrap">
@@ -315,7 +329,7 @@ function IssueReportButton({
   csrfToken,
   questionContext,
 }: {
-  variant?: (Variant & { formatted_date: string }) | null;
+  variant?: Variant | null;
   csrfToken: string;
   questionContext: QuestionContext;
 }) {
