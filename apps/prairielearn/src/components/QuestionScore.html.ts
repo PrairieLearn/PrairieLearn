@@ -262,9 +262,9 @@ export function ExamQuestionStatus({
 
   return html`
     <span class="align-middle">
-      <span class="badge badge-${badge_color[instance_question.status ?? 'grading'] ?? 'default'}"
-        >${instance_question.status}</span
-      >
+      <span class="badge badge-${badge_color[instance_question.status ?? 'grading'] ?? 'default'}">
+        ${instance_question.status}
+      </span>
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
