@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import * as Sentry from '@prairielearn/sentry';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
@@ -686,13 +685,7 @@ export async function renderPanelsForSubmission({
       }
       if (csrfToken == null) {
         // This should not happen in this context
-        Sentry.captureMessage(
-          'CSRF token not provided in a context where the score panel is rendered.',
-        );
-        throw new error.HttpStatusError(
-          500,
-          'CSRF token not provided in a context where the score panel is rendered.',
-        );
+        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
       }
 
       panels.questionScorePanel = QuestionScorePanel({
