@@ -295,7 +295,7 @@ jobs:
       - name: Copy coverage reports to the host
         run: ./tools/copy_docker_coverage_reports.sh test_container
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v4.4.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -322,8 +322,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
       - name: Install Node dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -377,6 +379,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
 
       - name: Install Node dependencies
         run: yarn workspaces focus @prairielearn/actions-report-image-sizes

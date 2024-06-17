@@ -5,7 +5,8 @@ FROM
   questions AS q
 WHERE
   q.course_id = $course_id
-  AND q.deleted_at IS NULL;
+  AND q.deleted_at IS NULL
+  AND q.qid IS NOT NULL;
 
 -- BLOCK select_question_id_from_uuid
 SELECT

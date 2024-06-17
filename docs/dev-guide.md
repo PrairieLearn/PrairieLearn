@@ -1,6 +1,6 @@
 # Developer Guide
 
-In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
+In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
 
 ## High level view
 
@@ -8,60 +8,22 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and DB data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
 
-- All course configuration is done via plain text files in the git repository, which is the master source for this data. There is no extra course configuration stored in the DB. The instructor does not directly edit course data via the website.
+- The majority of course content and configuration is done via plain text files in the git repository, which is the master source for this data.
 
 - All student data is all stored in the DB and is not pushed back into the git repository or disk at any point.
 
-## Directory layout
-
-- Broadly follow the [Express generator](http://expressjs.com/en/starter/generator.html) layout.
-
-- Top-level files and directories are:
-
-  ```text
-  PrairieLearn
-  +-- autograder         # files needed to autograde code on a separate server
-  |   `-- ...            # various scripts and docker images
-  +-- config.json        # server configuration file (optional)
-  +-- cron               # jobs to be periodically executed, one file per job
-  |   +-- index.js       # entry point for all cron jobs
-  |   `-- ...            # one JS file per cron job, executed by index.js
-  +-- docs               # documentation
-  +-- exampleCourse      # example content for a course
-  +-- lib                # miscellaneous helper code
-  +-- middlewares        # Express.js middleware, one per file
-  +-- migrations         # DB migrations
-  |   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
-  +-- package.json       # JavaScript package manifest
-  +-- pages              # one sub-dir per web page
-  |   +-- partials       # EJS helper sub-templates
-  |   +-- instructorHome # all the code for the instructorHome page
-  |   +-- userHome       # all the code for the userHome page
-  |   `-- ...            # other "instructor" and "user" pages
-  +-- public             # all accessible without access control
-  |   +-- javascripts    # external packages only, no modifications
-  |   +-- localscripts   # all local site-wide JS
-  |   `-- stylesheets    # all CSS, both external and local
-  +-- question-servers   # one file per question type
-  +-- server.js          # top-level program
-  +-- sprocs             # DB stored procedures, one per file
-  |   +-- index.js       # entry point for all sproc initialization
-  |   `-- ...            # one JS file per sproc, executed by index.js
-  +-- sync               # code to load on-disk course config into DB
-  `-- tests              # unit and integration tests
-  ```
-
 ## Unit tests and integration tests
 
-- Tests are stored in the `tests/` directory and listed in `tests/index.js`.
+- Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
+- Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
-- To run the tests during development, see [Running the test suite](../installingLocal/#running-the-test-suite).
+- To run the tests during development, see [Running the test suite](./installingLocal.md#running-the-test-suite).
 
-- The tests are run by the CI server on every push to GitHub.
+- The tests are run by GitHub Actions on every push to GitHub.
 
 - The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
-- If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
+- If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest_1`, `pltest_2`, etc.) won't be removed when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test run.
 
 ## Debugging server-side JavaScript
 
@@ -88,9 +50,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
   debug('func()', 'param:', param);
   ```
 
-- As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
-
-- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, Node >= 14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
+- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`/`.then()`/`.catch()` as appropriate, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, Node can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -123,67 +83,25 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## HTML page generation
 
-- Use [Express](http://expressjs.com) as the web framework.
+- [Express](http://expressjs.com) is used as the web framework.
 
-- All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use [jQuery](https://jquery.com) and related libraries. We prefer to use off-the-shelf jQuery plugins where possible.
+- All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
 
-- Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
+- Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For a real-world example, consider the page where users can accept the PrairieLearn terms and conditions, located at [`apps/prairielearn/src/ee/pages/terms`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms). That directory contains the following files:
 
-  ```text
-  pages/instructorGradebook
-  +-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
-  +-- instructorGradebook.sql        # all SQL code specific to this page
-  +-- instructorGradebook.ejs        # the EJS template for the page
-  `-- instructorGradebookClient.js   # any client-side JS needed
-  ```
+  - [`terms.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.ts): The main entry point for the page. It runs SQL queries and renders a template.
+  - [`terms.sql`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.sql): All SQL queries for the page.
+  - [`terms.html.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.html.ts): The template for the page. Exports a function that returns an HTML document.
 
-- The above `instructorGradebook` page is loaded from the top-level `server.js` with:
+- When possible, prefer explicitly passing individual typed properties to templates instead of adding properties to `res.locals`. However, `res.locals` may be used for data coming from middlewares that will be used on many pages.
 
-  ```javascript
-  app.use(
-    '/instructor/:courseInstanceId/gradebook',
-    require('./pages/instructorGradebook/instructorGradebook'),
-  );
-  ```
+- Use [`@prairielearn/html`](https://github.com/PrairieLearn/PrairieLearn/tree/master/packages/html) to generate HTML pages. This uses HTML tagged-template literals to generate HTML, which in turn makes it easy to get full type-checking.
 
-- The `instructorGradebook.js` main JS file is an Express `router` and has the basic structure:
-
-  ```javascript
-  var ERR = require('async-stacktrace');
-  var _ = require('lodash');
-  var express = require('express');
-  var router = express.Router();
-  var sqldb = require('@prairielearn/postgres');
-  var sql = sqldb.loadSqlEquiv(__filename);
-
-  router.get('/', function (req, res, next) {
-    var params = { course_instance_id: res.params.courseInstanceId };
-    sqldb.query(sql.user_scores, params, function (err, result) {
-      // SQL queries for page data
-      if (ERR(err, next)) return;
-      res.locals.user_scores = result.rows; // store the data in res.locals
-
-      res.render('pages/instructorGradebook/instructorGradebook', res.locals); // render the page
-      // inside the EJS template, "res.locals.var" can be accessed with just "var"
-    });
-  });
-
-  module.exports = router;
-  ```
-
-- Use the `res.locals` variable to build up data for the page rendering. Many basic objects are already included from the `selectAndAuthz*.js` middleware that runs before most page loads.
-
-- Use [EJS templates](http://ejs.co) (Embedded JavaScript) templates for all pages. Using JS as the templating language removes the need for another ad hoc language, but does require some discipline to not get in a mess. Try and minimize the amount of JS code in the template files. Inside a template the JS code can directly access the contents of the `res.locals` object.
-
-- Sub-templates are stored in `pages/partials` and can be loaded as below. The sub-template can also access `res.locals` as its base scope, and can also accept extra arguments with an arguments object:
-
-  ```javascript
-  <%- include('../partials/assessment', {assessment: assessment}); %>
-  ```
+- Reused templates are stored in the `apps/prairielearn/src/components/` directory. These should generally accept an object with properties instead of being passed the full `res.locals` object.
 
 ## HTML style
 
-- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2019-12-13 we are using v4.
+- Use [Bootstrap](http://getbootstrap.com) as the style. As of 2024-06-05 we are using v4.
 
 - Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 
@@ -191,17 +109,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## SQL usage
 
-- Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features.
+- [PostgreSQL](https://www.postgresql.org) v15 is used as the database.
 
 - The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
 - Write raw SQL rather than using a [ORM library](https://en.wikipedia.org/wiki/Object-relational_mapping). This reduces the number of frameworks/languages needed.
 
-- Try and write as much code in SQL and [PL/pgSQL](https://www.postgresql.org/docs/9.5/static/plpgsql.html) as possible, rather than in JavaScript. Use PostgreSQL-specific SQL and don't worry about SQL dialect portability. Functions should be written as stored procedures in the `sprocs/` directory.
-
-- The `sprocs/` directory has files that each contain exactly one stored procedure. The filename is the same as the name of the stored procedure, so the `variants_insert()` stored procedure is in the `sprocs/variants_insert.sql` file.
-
-- Stored procedure names should generally start with the name of the table they are associated with and try to use standard SQL command names to describe what they do. For example, `variants_insert()` will do some kind of `INSERT INTO variants`, while `submission_update_parsing()` will do an `UPDATE submissions` with some parsing data.
+- Prefer implementing complex logic in TypeScript instead of inside queries.
 
 - Use the SQL convention of [`snake_case`](https://en.wikipedia.org/wiki/Snake_case) for names. Also use the same convention in JavaScript for names that are the same as in SQL, so the `question_id` variable in SQL is also called `question_id` in JavaScript code.
 
@@ -230,32 +144,14 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 From JavaScript you can then do:
 
 ```javascript
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename); // from filename.js will load filename.sql
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-// run the entire contents of the SQL file
-sqldb.query(sql.all, params, ...);
+import { QuestionSchema } from './lib/db-types.js';
 
-// run just one query block from the SQL file
-sqldb.query(sql.select_question, params, ...);
+const sql = loadSqlEquiv(import.meta.url);
+
+const question = await queryRow(sql.select_question, { question_id: 45 }, QuestionSchema);
 ```
-
-- The layout of the SQL code should generally have each list in separate indented blocks, like:
-
-  ```sql
-  SELECT
-    ft.col1,
-    ft.col2 AS renamed_col,
-    st.col1
-  FROM
-    first_table AS ft
-    JOIN second_table AS st ON (st.first_table_id = ft.id)
-  WHERE
-    ft.col3 = select3
-    AND st.col2 = select2
-  ORDER BY
-    ft.col1;
-  ```
 
 - To keep SQL code organized it is a good idea to use [CTEs (`WITH` queries)](https://www.postgresql.org/docs/current/static/queries-with.html). These are formatted like:
 
@@ -280,14 +176,10 @@ sqldb.query(sql.select_question, params, ...);
 
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
-  ```
+  ```js
   const workspace_id = 1342;
   const message = 'Startup successful';
-  sqldb.call('workspaces_message_update', [workspace_id, message], (err, result) => {
-      if (ERR(err, callback)) return;
-      // we could use the result here if we want the return value of the stored procedure
-      callback(null);
-  });
+  await sqldb.callAsync('workspaces_message_update', [workspace_id, message]);
   ```
 
 - The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
@@ -310,19 +202,22 @@ sqldb.query(sql.select_question, params, ...);
 
 - Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
-- Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. The only exceptions are the `pl_courses` table that other tables refer to with `course_id` and `users` which has a `user_id`. These are both for reasons of interoperability with PrairieSchedule.
+- Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
 
-- Each student is stored as a single row in the `users` table.
+  - Tables that reference the `pl_courses` table use `course_id` instead of `pl_course_id`.
+  - The `users` table has a `user_id` primary key instead of `id`.
+
+- Each user is stored as a single row in the `users` table.
 
 - The `pl_courses` table has one row for each course, like `TAM 212`.
 
-- The `course_instances` table has one row for each semester (“instance”) of each course, with the `course_id` indicating which course it belongs to.
+- The `course_instances` table has one row for each semester ("instance") of each course, with the `course_id` indicating which course it belongs to.
 
-- Every question is a row in the `questions` table, and the `course_id` shows which course it belongs to. All the questions for a course can be thought of as the “question pool” for that course. This same pool is used for all semesters (all course instances).
+- Every question is a row in the `questions` table, and the `course_id` shows which course it belongs to. All the questions for a course can be thought of as the "question pool" for that course. This same pool is used for all semesters (all course instances).
 
-- Assessments are stored in the `assessments` table and each assessment row has a `course_instance_id` to indicate which course instance (and hence which course) it belongs to. An assessment is something like “Homework 1” or “Exam 3”. To determine this we can use the `assessment_set_id` and `number` of each assessment row.
+- Assessments are stored in the `assessments` table and each assessment row has a `course_instance_id` to indicate which course instance (and hence which course) it belongs to. An assessment is something like "Homework 1" or "Exam 3". To determine this we can use the `assessment_set_id` and `number` of each assessment row.
 
-- Each assessment has a list of questions associated with it. This list is stored in the `assessment_questions` table, where each row has a `assessment_id` and `question_id` to indicate which questions belong to which assessment. For example, there might be 20 different questions that are on “Exam 1”, and it might be the case that each student gets 5 of these questions randomly selected.
+- Each assessment has a list of questions associated with it. This list is stored in the `assessment_questions` table, where each row has a `assessment_id` and `question_id` to indicate which questions belong to which assessment. For example, there might be 20 different questions that are on "Exam 1", and it might be the case that each student gets 5 of these questions randomly selected.
 
 - Each student will have their own copy of an assessment, stored in the `assessment_instances` table with each row having a `user_id` and `assessment_id`. This is where the student's score for that assessment is stored.
 
@@ -360,100 +255,18 @@ sqldb.query(sql.select_question, params, ...);
 
 See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
 
-## JSON syncing
-
-- Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
-
-  ```diff
-  @@ -16,2 +16,3 @@ columns
-      order_by: integer
-  +    require_honor_code: boolean default true
-      shuffle_questions: boolean default false
-  ```
-
-- Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
-
-  ```diff
-  @@ -0,0 +1 @@
-  +ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
-  ```
-
-- Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
-
-  ```diff
-  @@ -89,2 +89,7 @@
-              "default": true
-  +        },
-  +        "requireHonorCode": {
-  +            "description": "Requires the student to accept an honor code before starting exam assessments.",
-  +            "type": "boolean",
-  +            "default": true
-          }
-  ```
-
-- Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
-
-  ```diff
-  @@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-          const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
-  +        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
-
-  @@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-              allow_real_time_grading: allowRealTimeGrading,
-  +            require_honor_code: requireHonorCode,
-              auto_close: !!_.get(assessment, 'autoClose', true),
-  ```
-
-- Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
-
-  ```diff
-  @@ -44,3 +44,4 @@ BEGIN
-              allow_issue_reporting,
-  -            allow_real_time_grading)
-  +            allow_real_time_grading,
-  +            require_honor_code)
-              (
-  @@ -64,3 +65,4 @@ BEGIN
-                  (assessment->>'allow_issue_reporting')::boolean,
-  -                (assessment->>'allow_real_time_grading')::boolean
-  +                (assessment->>'allow_real_time_grading')::boolean,
-  +                (assessment->>'require_honor_code')::boolean
-          )
-  @@ -83,3 +85,4 @@ BEGIN
-              allow_issue_reporting = EXCLUDED.allow_issue_reporting,
-  -            allow_real_time_grading = EXCLUDED.allow_real_time_grading
-  +            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-  +            require_honor_code = EXCLUDED.require_honor_code
-          WHERE
-  ```
-
-- Edit the sync tests; e.g., modify `tests/sync/util.js`:
-
-  ```diff
-  @@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
-    * @property {boolean} allowRealTimeGrading
-  + * @property {boolean} requireHonorCode
-    * @property {boolean} multipleInstance
-  ```
-
-- Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
-
-- Add [tests](#unit-tests-and-integration-tests).
-
 ## Database access
 
-- DB access is via the `sqldb.js` module. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
+- DB access is via the `@prairielearn/postgres` package. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
 
 - For single queries we normally use the following pattern, which automatically uses connection pooling from node-postgres and safe variable interpolation with named parameters and [prepared statements](https://github.com/brianc/node-postgres/wiki/Parameterized-queries-and-Prepared-Statements):
 
   ```javascript
-  var params = {
-    course_id: 45,
-  };
-  sqldb.query(sql.select_questions_by_course, params, function (err, result) {
-    if (ERR(err, callback)) return;
-    var questions = result.rows;
-  });
+  const questions = await queryRows(
+    sql.select_questions_by_course,
+    { course_id: 45 },
+    QuestionSchema,
+  );
   ```
 
 Where the corresponding `filename.sql` file contains:
@@ -471,10 +284,7 @@ WHERE
 - For queries where it would be an error to not return exactly one result row:
 
   ```javascript
-  sqldb.queryOneRow(sql.block_name, params, function (err, result) {
-    if (ERR(err, callback)) return;
-    var obj = result.rows[0]; // guaranteed to exist and no more
-  });
+  const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
 - Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
@@ -489,10 +299,9 @@ WHERE
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  var params = {
-      points_list: [10, 5, 1],
-  };
-  sqldb.query(sql.insert_assessment_question, params, ...);
+  await sqldb.queryAsync(sql.insert_assessment_question, {
+    points_list: [10, 5, 1],
+  });
   ```
 
   ```sql
@@ -506,10 +315,11 @@ WHERE
 - To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
 
   ```javascript
-  var params = {
-      id_list: [7, 12, 45],
-  };
-  sqldb.query(sql.select_questions, params, ...);
+  const questions = await sqldb.queryRows(
+    sql.select_questions,
+    { id_list: [7, 12, 45] },
+    QuestionSchema,
+  );
   ```
 
   ```sql
@@ -529,11 +339,12 @@ WHERE
 
   ```javascript
   let data = [
-      {a: 5, b: "foo"},
-      {a: 9, b: "bar"}
+    { a: 5, b: 'foo' },
+    { a: 9, b: 'bar' },
   ];
-  let params = {data: JSON.stringify(data)};
-  sqldb.query(sql.insert_data, params, ...);
+  await sqldb.queryAsync(sql.insert_data, {
+    data: JSON.stringify(data),
+  });
   ```
 
   ```sql
@@ -564,18 +375,16 @@ WHERE
 
 ## Asynchronous control flow in JavaScript
 
-- New code in PrairieLearn should use async/await whenever possible.
+- New code in PrairieLearn should use `async`/`await` whenever possible.
 
-- Older code in PrairieLearn uses the traditional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
-
-- Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
+- Use the [async library](http://caolan.github.io/async/) for complex control flow or when mixing Promise-based and callback-based code.
 
 ## Using async route handlers with ExpressJS
 
 - Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
 
   ```javascript
-  const asyncHandler = require('express-async-handler');
+  import asyncHandler from 'express-async-handler';
   router.get(
     '/',
     asyncHandler(async (req, res, next) => {
@@ -584,200 +393,15 @@ WHERE
   );
   ```
 
-## Interfacing between callback-style and async/await-style functions
-
-- To write a callback-style function that internally uses async/await code, use this pattern:
-
-  ```javascript
-  const util = require('util');
-  function oldFunction(x1, x2, callback) {
-      util.callbackify(async () => {
-          # here we can use async/await code
-          y1 = await f(x1);
-          y2 = await f(x2);
-          return y1 + y2;
-      })(callback);
-  }
-  ```
-
-- To write a multi-return-value callback-style function that internally uses async/await code, we don't currently have an established pattern.
-
-- To call our own library functions from async/await code, we should provide a version of them with "Async" appended to the name:
-
-  ```
-  const util = require('util');
-  module.exports.existingLibFun = (x1, x2, callback) => {
-      callback(null, x1*x2);
-  };
-  module.exports.existingLibFunAsync = util.promisify(module.exports.myFun);
-
-  # in `async` code we can now call existingLibFunAsync() directly with `await`:
-  async function newFun(x1, x2) {
-      let y = await existingLibFunAsync(x1, x2);
-      return 3*y;
-  }
-  ```
-
-- If our own library functions use multiple return values, then the async version of them should return an object:
-
-  ```
-  const util = require('util');
-  module.exports.existingMultiFun = (x, callback) => {
-      const y1 = x*x;
-      const y2 = x*x*x;
-      callback(null, y1, y2); # note the two return values here
-  };
-  module.exports.existingMultiFunAsync = util.promisify((x, callback) =>
-      module.exports.existingMultiFun(x, (err, y1, y2) => callback(err, {y1, y2}))
-  );
-
-  async function newFun(x) {
-      let {y1, y2} = await existingMultiFunAsync(x); # must use y1,y2 names here
-      return y1*y2;
-  }
-  ```
-
-- To call a callback-style function in an external library from within an async/await function, use this pattern:
-
-  ```javascript
-  util = require('util');
-  async function g(x) {
-    x1 = await f(x + 2);
-    x2 = await f(x + 4);
-    z = await util.promisify(oldFunction)(x1, x2);
-    return z;
-  }
-  ```
-
-- As of 2019-08-15 we are not calling any multi-return-value callback-style functions in external libraries from within async/await functions, but if we need to do this then we could include the `bluebird` package and use the pattern:
-
-  ```javascript
-  bluebird = require('bluebird');
-  function oldMultiFunction(x, callback) {
-      return callback(null, x*x, x*x*x);
-  }
-  async function g(x) {
-      let [y1, y2] = await bluebird.promisify(oldMultiFunction, {multiArgs: true})(x); # note array destructuring with y1,y2
-      return y1*y2;
-  }
-  ```
-
-- To call an async/await function from within a callback-style function, use this pattern:
-
-  ```javascript
-  util = require('util');
-  function oldFunction(x, callback) {
-    util.callbackify(g)(x, (err, y) => {
-      if (ERR(err, callback)) return;
-      callback(null, y);
-    });
-  }
-  ```
-
-- To call an multi-return-value async/await function from within a callback-style function, use this pattern:
-
-  ```javascript
-  util = require('util');
-  async function gMulti(x) {
-      y1 = x*x;
-      y2 = x*x*x;
-      return {y1, y2};
-  }
-  function oldFunction(x, callback) {
-      util.callbackify(gMulti)(x, (err, {y1, y2}]) => {
-          if (ERR(err, callback)) return;
-          callback(null, y1*y2);
-      });
-  }
-  ```
-
-## Stack traces with callback-style functions
-
-- Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modifies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
-
-  ```javascript
-  // Don't do this:
-  function foo(p, callback) {
-    bar(q, function (err, result) {
-      if (err) return callback(err);
-      callback(null, result);
-    });
-  }
-
-  // Instead do this:
-  ERR = require('async-stacktrace'); // at top of file
-  function foo(p, callback) {
-    bar(q, function (err, result) {
-      if (ERR(err, callback)) return; // this is the change
-      callback(null, result);
-    });
-  }
-  ```
-
-- Don't pass `callback` functions directly through to children, but instead capture the error with the [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
-
-  ```javascript
-  // Don't do this:
-  function foo(p, callback) {
-    bar(q, callback);
-  }
-
-  // Instead do this:
-  function foo(p, callback) {
-    bar(q, function (err, result) {
-      if (ERR(err, callback)) return;
-      callback(null, result);
-    });
-  }
-  ```
-
-- Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
-
-- If we are in a function that does not have an active callback (perhaps we already called it) then we should log errors with the following pattern. Note that the first string argument to `logger.error()` is mandatory. Failure to provide a string argument will result in `error: undefined` being logged to the console.
-
-  ```javascript
-  function foo(p) {
-      bar(p, function(err, result) {
-          if (ERR(err, e => logger.error('Error in bar()', e);
-          ...
-      });
-  }
-  ```
-
-- Don't call a `callback` function inside a try block, especially if there is also a `callback` call in the catch handler. Otherwise exceptions thrown much later will show up incorrectly as a double-callback or just in the wrong place. For example:
-
-  ```javascript
-  // Don't do this:
-  function foo(p, callback) {
-    try {
-      let result = 3;
-      callback(null, result); // this could throw an error from upstream code in the callback
-    } catch (err) {
-      callback(err);
-    }
-  }
-
-  // Instead do this:
-  function foo(p, callback) {
-    let result;
-    try {
-      result = 3;
-    } catch (err) {
-      callback(err);
-    }
-    callback(null, result);
-  }
-  ```
-
 ## Security model
 
 - We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenticated user data is stored as `res.locals.authn_user`.
 
 - The authentication flow is:
 
-  1. We first redirect to a remote authentication service (either Shibboleth or Google OAuth2 servers). For Shibboleth this happens by the “Login to PL” button linking to `/pl/shibcallback` for which Apache handles the Shibboleth redirections. For Google the “Login to PL” button links to `/pl/auth2login` which sets up the authentication data and redirects to Google.
+  1. We first redirect to a remote authentication service (e.g. SAML SSO, Google, Microsoft).
 
-  2. The remote authentication service redirects back to `/pl/shibcallback` (for Shibboleth) or `/pl/auth2callback` (for Google). These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
+  2. The remote authentication service redirects back to a callback URL, e.g. `/pl/oauth2callback` for Google. These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
 
   3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
 
@@ -798,20 +422,20 @@ WHERE
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
   ```javascript
-  router.post('/', function (req, res, next) {
-    if (req.body.__action == 'enroll') {
-      var params = {
-        course_instance_id: req.body.course_instance_id,
-        user_id: res.locals.authn_user.user_id,
-      };
-      sqldb.queryOneRow(sql.enroll, params, function (err, result) {
-        if (ERR(err, next)) return;
+  router.post(
+    '/',
+    asyncHandler(async (req, res) => {
+      if (req.body.__action == 'enroll') {
+        await queryAsync(sql.enroll, {
+          course_instance_id: req.body.course_instance_id,
+          user_id: res.locals.authn_user.user_id,
+        });
         res.redirect(req.originalUrl);
-      });
-    } else {
-      return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
-    }
-  });
+      } else {
+        throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      }
+    }),
+  );
   ```
 
 - To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) inside the POST data.
@@ -821,7 +445,7 @@ WHERE
   ```html
   <form name="enroll-form" method="POST">
     <input type="hidden" name="__action" value="enroll" />
-    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+    <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
     <input type="hidden" name="course_instance_id" value="56" />
     <button type="submit" class="btn btn-info">Enroll in course instance 56</button>
   </form>
@@ -831,11 +455,17 @@ WHERE
 
 ## Logging errors
 
-- We use [Winston](https://github.com/winstonjs/winston) for logging to the console and to files. To use this, require `lib/logger` and call `logger.info()`, `logger.error()`, etc.
+- We use [Winston](https://github.com/winstonjs/winston) for logging to the console and to files:
 
-- To show a message on the console, use `logger.info()`.
+  ```javascript
+  import { logger } from '@prairielearn/logger';
 
-- To log just to the log files, but not to the console, use `logger.verbose()`.
+  logger.info('This is an info message');
+  logger.error('This is an error message');
+
+  // This will be logged to the log file, but not to the console:
+  logger.verbose('This is a verbose message');
+  ```
 
 - All `logger` functions have a mandatory first argument that is a string, and an optional second argument that is an object containing useful information. It is important to always provide a string as the first argument.
 
@@ -851,19 +481,19 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question-render.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.js), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/pages/partials/question.ejs).
+- The core files involved in question rendering are [lib/question-render.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.js), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
 
-- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question-render.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
+- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question-render.js` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 
 - For example, the exact control-flow for `pages/instructorQuestion` is:
 
   1. The top-level page `pages/instructorQuestion/instructorQuestion.js` code calls `lib/question-render.getAndRenderVariant()`.
 
-  2. `getAndRenderVariant()` inserts data into `res.locals` for later use by `pages/partials/question.ejs`.
+  2. `getAndRenderVariant()` inserts data into `res.locals` for later use by `components/QuestionContainer.html.ts`.
 
-  3. The top-level page code renders the top-level template `pages/instructorQuestion/instructorQuestion.ejs`, which then includes `pages/partials/question.ejs`.
+  3. The top-level page code renders the top-level template `pages/instructorQuestion/instructorQuestion.html.ts`, which then includes `components/QuestionContainer.html.ts`.
 
-  4. `pages/partials/question.ejs` renders the data that was earlier generated by `lib/question-render.js`.
+  4. `components/QuestionContainer.html.ts` renders the data that was earlier generated by `lib/question-render.js`.
 
 ## Question open status
 
@@ -917,8 +547,10 @@ You should almost always use the `===` operator for comparisons; this is enforce
 The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that ids are being compared, you should use the `idsEqual` utility:
 
 ```js
-const { idsEqual } = require('./lib/id');
+import { idsEqual } from './lib/id';
 
 console.log(idsEqual(12345, '12345'));
 // > true
 ```
+
+"Modern" queries that use Zod validation will automatically coerce all IDs to strings. If you're confident that data on both sides of the comparison is coming from a Zod-validated query, you can use the `===` operator directly.

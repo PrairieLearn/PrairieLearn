@@ -75,7 +75,7 @@ router.post(
           row_id: req.params.institution_id,
         });
       });
-      flash('success', 'Successfully updated enrollment limits.');
+      flash('success', 'Successfully updated institution settings.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({

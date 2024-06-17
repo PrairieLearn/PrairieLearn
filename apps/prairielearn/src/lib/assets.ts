@@ -179,7 +179,13 @@ export function applyMiddleware(app: express.Application) {
       immutable: !config.devMode,
     }),
   );
-  router.use('/elements/:cachebuster', elementFiles);
+  router.use(
+    '/elements/:cachebuster',
+    elementFiles({
+      publicQuestionEndpoint: false,
+      coreElements: true,
+    }),
+  );
 
   app.use(assetsPrefix, router);
 }

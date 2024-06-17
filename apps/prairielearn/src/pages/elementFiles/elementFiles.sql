@@ -22,3 +22,16 @@ SELECT
       AND ssc.course_id = $consuming_course_id
       AND q.deleted_at IS NULL
   );
+
+-- BLOCK select_has_publicly_shared_question
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      q.shared_publicly
+      AND course_id = $course_id
+      AND q.deleted_at IS NULL
+  );

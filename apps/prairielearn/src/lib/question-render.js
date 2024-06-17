@@ -3,15 +3,21 @@ import * as path from 'path';
 import * as util from 'util';
 
 import * as async from 'async';
-import { differenceInMilliseconds } from 'date-fns';
 import * as ejs from 'ejs';
 import { z } from 'zod';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
+import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionScorePanel } from '../components/QuestionScore.html.js';
+import {
+  SubmissionPanel,
+  SubmissionBasicSchema,
+  SubmissionDetailedSchema,
+} from '../components/SubmissionPanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -51,26 +57,6 @@ const VariantSelectResultSchema = VariantSchema.extend({
   formatted_date: z.string(),
 });
 
-const detailedSubmissionColumns = /** @type {const} */ ({
-  feedback: true,
-  format_errors: true,
-  params: true,
-  partial_scores: true,
-  raw_submitted_answer: true,
-  submitted_answer: true,
-  true_answer: true,
-});
-
-const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
-  grading_job_id: IdSchema.nullable(),
-  grading_job_status: GradingJobStatusSchema.nullable(),
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-});
-
-const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
-
 const IssueRenderDataSchema = IssueSchema.extend({
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
@@ -99,12 +85,12 @@ const SubmissionInfoSchema = z.object({
   course_instance: CourseInstanceSchema.nullable(),
   variant_course: CourseSchema,
   question_course: CourseSchema,
-  grading_job_id: IdSchema.nullable(),
   grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
+  question_number: z.string().nullable(),
 });
 
 /**
@@ -119,12 +105,7 @@ const SubmissionInfoSchema = z.object({
  * @property {string?} [questionNavNextButton]
  */
 
-/**
- * @typedef {z.infer<typeof SubmissionBasicSchema> & Partial<z.infer<typeof SubmissionDetailedSchema>>} SubmissionForRender
- * @property {ReturnType<buildGradingJobStats>} grading_job_stats
- * @property {number} submission_number
- */
-
+/** @typedef {import('../components/SubmissionPanel.html.js').SubmissionForRender} SubmissionForRender */
 /**
  * To improve performance, we'll only render at most three submissions on page
  * load. If the user requests more, we'll render them on the fly.
@@ -470,7 +451,6 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
     locals.submissions = /** @type {SubmissionForRender[]} */ (
       submissions.map((s, idx) => ({
-        grading_job_stats: buildGradingJobStats(s.grading_job),
         submission_number: submissionCount - idx,
         ...s,
         // Both queries order results consistently, so we can just use
@@ -514,7 +494,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   // Load issues last in case there are issues from rendering.
   //
   // We'll only load the data that will be needed for this specific page render.
-  // The checks here should match those in `pages/partials/question.ejs`.
+  // The checks here should match those in `components/QuestionContainer.html.ts`.
   const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
   locals.issues = await sqldb.queryRows(
     sql.select_issues,
@@ -555,41 +535,6 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 }
 
 /**
- * @param {import('./db-types.js').GradingJob | null} job
- */
-function buildGradingJobStats(job) {
-  if (job) {
-    /** @type {(number | null)[]} */
-    const durations = [];
-    const formatDiff = (start, end, addToPhases = true) => {
-      const duration = end == null || start == null ? null : differenceInMilliseconds(end, start);
-      if (addToPhases) durations.push(duration);
-      return duration == null ? '\u2212' : (duration / 1000).toFixed(3).replace(/\.?0+$/, '') + 's';
-    };
-
-    const stats = {
-      submitDuration: formatDiff(job.grading_requested_at, job.grading_submitted_at),
-      queueDuration: formatDiff(job.grading_submitted_at, job.grading_received_at),
-      prepareDuration: formatDiff(job.grading_received_at, job.grading_started_at),
-      runDuration: formatDiff(job.grading_started_at, job.grading_finished_at),
-      reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
-      totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
-    };
-    const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
-
-    return {
-      ...stats,
-      phases: durations.map(
-        // Round down to avoid width being greater than 100% with floating point errors
-        (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
-      ),
-    };
-  }
-
-  return null;
-}
-
-/**
  * Renders the panels that change when a grading job is completed; used to send real-time results
  * back to the client. This includes the submission panel by default, and if renderScorePanels is
  * set, also the side panels for score, navigation and the question footer.
@@ -600,7 +545,7 @@ function buildGradingJobStats(job) {
  * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
  * @param  {string | null} param.variant_id The id of the variant (for authorization check)
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
- * @param  {String?} param.questionContext The rendering context of this question
+ * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
  * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
  * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
@@ -640,10 +585,10 @@ export async function renderPanelsForSubmission({
     submission_index,
     submission_count,
     grading_job,
-    grading_job_id,
     grading_job_status,
     formatted_date,
     user_uid,
+    question_number,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -661,7 +606,7 @@ export async function renderPanelsForSubmission({
   };
 
   // Fake locals. Yay!
-  const locals = { encoded_data: EncodedData };
+  const locals = {};
   setLocalsFromConfig(locals);
   Object.assign(
     locals,
@@ -695,41 +640,34 @@ export async function renderPanelsForSubmission({
         question_course,
         locals,
       );
-      const grading_job_stats = buildGradingJobStats(grading_job);
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);
-      const renderParams = {
-        course: question_course,
-        course_instance,
+
+      panels.submissionPanel = SubmissionPanel({
+        questionContext,
         question,
-        submission: /** @type {SubmissionForRender} */ ({
+        variant_id: variant.id,
+        assessment_question,
+        instance_question,
+        course_instance_id: course_instance?.id,
+        submission: {
           ...submission,
           grading_job,
-          grading_job_id,
           grading_job_status,
           formatted_date,
-          grading_job_stats,
           user_uid,
           submission_number: submission_index,
-        }),
+        },
         submissionHtml: htmls.submissionHtmls[0],
         submissionCount: submission_count,
+        rubric_data: locals.rubric_data,
         expanded: true,
         urlPrefix,
-        plainUrlPrefix: config.urlPrefix,
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'submission.ejs',
-      );
-      panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
+      }).toString();
     },
     async () => {
       // Render the question score panel
@@ -737,77 +675,64 @@ export async function renderPanelsForSubmission({
 
       // The score panel can and should only be rendered for
       // questions that are part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (
+        instance_question == null ||
+        assessment_question == null ||
+        assessment_instance == null ||
+        assessment == null
+      ) {
+        return;
+      }
+      if (csrfToken == null) {
+        // This should not happen in this context
+        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
+      }
 
-      const renderParams = {
+      panels.questionScorePanel = QuestionScorePanel({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        submission,
-        __csrf_token: csrfToken,
+        csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: { previous_variants },
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionScorePanel.ejs',
-      );
-      panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
+        instance_question_info: { question_number, previous_variants },
+      }).toString();
     },
     async () => {
       // Render the assessment score panel
       if (!renderScorePanels) return;
 
       // As usual, only render if this variant is part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
-      const renderParams = {
-        assessment_instance,
+      panels.assessmentScorePanel = AssessmentScorePanel({
+        urlPrefix,
         assessment,
         assessment_set,
-        urlPrefix,
-      };
-
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'assessmentScorePanel.ejs',
-      );
-      panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
+        assessment_instance,
+      }).toString();
     },
     async () => {
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      const renderParams = {
-        variant,
-        question,
-        assessment_question,
-        instance_question,
-        question_context: questionContext,
-        __csrf_token: csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
-        instance_question_info: { previous_variants },
-        ...locals,
-      };
-
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionFooter.ejs',
-      );
-      panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
+      panels.questionPanelFooter = QuestionFooter({
+        resLocals: {
+          variant,
+          question,
+          assessment_question,
+          instance_question,
+          question_context: questionContext,
+          __csrf_token: csrfToken,
+          authz_result: { authorized_edit: authorizedEdit },
+          instance_question_info: { previous_variants },
+          ...locals,
+        },
+        questionContext,
+      }).toString();
     },
     async () => {
       if (!renderScorePanels) return;

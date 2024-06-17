@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { Topic } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTopics({
@@ -41,11 +42,7 @@ export function InstructorCourseAdminTopics({
                     return html`
                       <tr>
                         <td class="align-middle">${topic.number}</td>
-                        <td class="align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/topic'); %>", {
-                            topic,
-                          })}
-                        </td>
+                        <td class="align-middle">${TopicBadge(topic)}</td>
                         <td class="align-middle">${topic.color}</td>
                         <td class="align-middle">${topic.description}</td>
                       </tr>

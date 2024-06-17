@@ -36,7 +36,6 @@ import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flashMiddleware, flash } from '@prairielearn/flash';
@@ -146,7 +145,6 @@ export async function initExpress() {
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     res.locals.compiled_script_path = assets.compiledScriptPath;
     res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    res.locals.encoded_data = EncodedData;
     next();
   });
   app.use(function (req, res, next) {
@@ -606,7 +604,7 @@ export async function initExpress() {
       res.locals.navPage = 'news';
       next();
     },
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   ]);
   app.use('/pl/news_item', [
     function (req, res, next) {
@@ -617,7 +615,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   ]);
   app.use(
     '/pl/request_course',
@@ -736,11 +734,11 @@ export async function initExpress() {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -770,11 +768,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -809,27 +807,27 @@ export async function initExpress() {
   // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/cacheableElements/:cachebuster',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
@@ -850,30 +848,36 @@ export async function initExpress() {
   // traffic in the future, we can delete these.
   //
   // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
-  app.use('/pl/static/elements', (await import('./pages/elementFiles/elementFiles.js')).default);
+  app.use(
+    '/pl/static/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: false,
+      coreElements: true,
+    }),
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/sharedElements/course/:producing_course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course/:course_id(\\d+)/sharedElements/course/:producing_course_id(\\d+)/elements',
-    (await import('./pages/elementFiles/elementFiles.js')).default,
+    (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
@@ -1699,11 +1703,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course pages require the effective user to have permission
@@ -1893,19 +1897,16 @@ export async function initExpress() {
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // This route is used to initiate a transfer of a question from a template course.
+  // This route is used to initiate a copy of a question with publicly shared source
+  // or a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
   // pages is that the source question pages are served by chunk servers, but the
   // question transfer machinery relies on access to course repositories on disk,
   // which don't exist on chunk servers
   app.use(
-    '/pl/course/:course_id(\\d+)/copy_template_course_question',
-    (
-      await import(
-        './pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion.js'
-      )
-    ).default,
+    '/pl/course/:course_id(\\d+)/copy_public_question',
+    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
   // Global client files
@@ -1986,6 +1987,20 @@ export async function initExpress() {
     },
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
   ]);
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/cacheableElements/:cachebuster',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: true,
+      coreElements: false,
+    }),
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/elements',
+    (await import('./pages/elementFiles/elementFiles.js')).default({
+      publicQuestionEndpoint: true,
+      coreElements: false,
+    }),
+  );
 
   // Client files for questions
   app.use(
