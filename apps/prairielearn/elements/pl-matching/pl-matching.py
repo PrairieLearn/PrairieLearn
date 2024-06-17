@@ -308,6 +308,7 @@ def render(element_html, data):
     html = ""
 
     if data["panel"] == "question":
+        editable = data["editable"]
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         display_score_badge = score is not None and show_answer_feedback
@@ -343,6 +344,7 @@ def render(element_html, data):
             "counter_type": counter_type,
             "no_counters": no_counters,
             "options_placement": options_placement.value,
+            "editable": editable,
         }
 
         if score is not None:

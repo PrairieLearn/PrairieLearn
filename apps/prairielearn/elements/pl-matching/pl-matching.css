@@ -51,3 +51,8 @@
 .pl-matching-container-bottom {
   display: block;
 }
+
+.noedit {
+  opacity: 0.6;
+  pointer-events: none;
+}
