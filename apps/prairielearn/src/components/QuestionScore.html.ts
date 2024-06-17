@@ -35,6 +35,7 @@ export function QuestionScorePanel({
   assessment_instance: AssessmentInstance;
   variant: Variant;
   instance_question_info: {
+    question_number: string;
     previous_variants:
       | (Variant & { max_submission_score: NonNullable<Submission['score']> })[]
       | null;
@@ -53,11 +54,7 @@ export function QuestionScorePanel({
   return html`
     <div class="card mb-4" id="question-score-panel">
       <div class="card-header bg-secondary text-white">
-        Question
-        ${
-          // TODO Originally this was `instance_question.question_number`, but it seems this value is never available...
-          ''
-        }
+        Question ${instance_question_info.question_number}
       </div>
       <table class="table table-sm two-column-description-no-header">
         <tbody>

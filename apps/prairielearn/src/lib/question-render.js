@@ -91,6 +91,7 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
+  question_number: z.string(),
 });
 
 /**
@@ -588,6 +589,7 @@ export async function renderPanelsForSubmission({
     grading_job_status,
     formatted_date,
     user_uid,
+    question_number,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -703,7 +705,7 @@ export async function renderPanelsForSubmission({
         csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: { previous_variants },
+        instance_question_info: { question_number, previous_variants },
       }).toString();
     },
     async () => {
