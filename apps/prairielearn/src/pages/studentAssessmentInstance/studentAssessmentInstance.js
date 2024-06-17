@@ -144,7 +144,11 @@ async function processDeleteFile(req, res) {
  * instance. A TA could be assigned to test an upcoming assessment, but may
  * only have "view" permission for the course instance. In this specific case,
  * it'd still be helpful for the TA to be able to delete and recreate their
- * assessment instances to better multiple variants of the assessment.
+ * assessment instances to better test multiple variants of the assessment.
+ *
+ * Note that we check for `authn_` permissions specifically. This ensures that
+ * the menu appears for both "student view" and "student view without access
+ * restrictions".
  *
  * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
  */
