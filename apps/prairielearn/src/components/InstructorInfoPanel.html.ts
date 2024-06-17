@@ -139,13 +139,13 @@ function QuestionInfo({
   variant?: Variant;
   question_is_shared?: boolean;
 }) {
-  if (question == null) return '';
+  if (question == null || variant == null) return '';
 
-  const variantSeedQuery = variant != null ? `?variant_seed=${variant.variant_seed}` : '';
-  const instructorUrlPrefix =
+  const questionPreviewUrl = `${config.urlPrefix}/${
     course_instance != null
-      ? `${config.urlPrefix}/course_instance/${course_instance.id}/instructor`
-      : `${config.urlPrefix}/course/${course.id}`;
+      ? `course_instance/${course_instance.id}/instructor`
+      : `course/${course.id}`
+  }/question/${question.id}?variant_seed=${variant.variant_seed}`;
 
   return html`
     <hr />
@@ -154,9 +154,7 @@ function QuestionInfo({
     <div class="d-flex flex-wrap">
       <div class="pr-1">QID:</div>
       <div>
-        <a href="${instructorUrlPrefix}/question/${question.id}${variantSeedQuery}">
-          ${question.qid}
-        </a>
+        <a href="${questionPreviewUrl}">${question.qid}</a>
       </div>
     </div>
 
