@@ -59,11 +59,11 @@
 <div id="pl-matching-{{uuid}}" style="display: flex;">
 <div class="pl-matching-statements">
 {{#statements}}
-    <div class="pl-matching-statement {{#editable}}noedit{{/editable}}">
-        <div class="pl-matching-answer {{#editable}}noedit{{/editable}}">
+    <div class="pl-matching-statement">
+        <div class="pl-matching-answer {{^editable}}noedit{{/editable}}">
             <strong>{{counter}}</strong> {{{option}}}
         </div>
-        <div class="pl-matching-statement-text">
+        <div class="pl-matching-statement-text {{^editable}}noedit{{/editable}}">
             {{{statement}}}
         </div>
         {{#parse_error}}
