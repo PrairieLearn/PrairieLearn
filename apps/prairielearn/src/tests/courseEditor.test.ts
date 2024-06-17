@@ -55,7 +55,7 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeQidButton',
+    button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newQuestion',
@@ -90,7 +90,7 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/question/1/settings`,
-    button: 'copyQuestionButton',
+    button: '#copyQuestionButton',
     formSelector: 'form[name="copy-question-form"]',
     data: {
       to_course_id: 1,
@@ -140,7 +140,7 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeAidButton',
+    button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessment/nested',
@@ -163,7 +163,7 @@ const testEditData = [
   // sure that that empty directory is cleaned up and not treated as an actual
   // assessment during sync.
   {
-    button: 'changeAidButton',
+    button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessmentNotNested',
@@ -240,7 +240,7 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeCiidButton',
+    button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newCourseInstance',
@@ -392,7 +392,7 @@ function testEdit(params) {
     }
     it('should have a CSRF token', () => {
       if (params.button) {
-        let elemList = locals.$(`button[id="${params.button}"]`);
+        let elemList = locals.$(params.button);
         assert.lengthOf(elemList, 1);
 
         const $ = cheerio.load(elemList[0].attribs['data-content']);

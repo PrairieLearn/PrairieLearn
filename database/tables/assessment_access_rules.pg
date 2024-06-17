@@ -6,7 +6,7 @@ columns
     exam_uuid: uuid
     id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
     mode: enum_mode
-    number: integer
+    number: integer not null
     password: text
     seb_config: jsonb
     show_closed_assessment: boolean not null default true
