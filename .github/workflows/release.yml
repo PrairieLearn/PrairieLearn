@@ -44,7 +44,7 @@ jobs:
           version: yarn run version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
-          publish: yarn release
+          publish: yarn run release
           # Avoid creating GitHub releaseses, as we don't need them.
           # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false
