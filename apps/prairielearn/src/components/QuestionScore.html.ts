@@ -20,7 +20,6 @@ export function QuestionScorePanel({
   assessment_instance,
   instance_question_info,
   variant,
-  no_variant_exists,
   authz_result,
   csrfToken,
   urlPrefix,
@@ -33,12 +32,11 @@ export function QuestionScorePanel({
   assessment_question: AssessmentQuestion;
   question: Question;
   assessment_instance: AssessmentInstance;
-  variant: Variant;
+  variant?: Variant;
   instance_question_info: {
     question_number: string | null;
     previous_variants: VariantWithScore[] | null;
   };
-  no_variant_exists?: boolean;
   authz_result?: { authorized_edit: boolean | null };
   csrfToken: string;
   urlPrefix: string;
@@ -80,7 +78,7 @@ export function QuestionScorePanel({
                       ${QuestionAwardedPoints({
                         instanceQuestionId: instance_question.id,
                         previousVariants: instance_question_info.previous_variants,
-                        currentVariantId: variant.id,
+                        currentVariantId: variant?.id,
                         urlPrefix,
                       })}
                     </td>
@@ -157,7 +155,7 @@ export function QuestionScorePanel({
         </tbody>
       </table>
 
-      ${!no_variant_exists && assessment.allow_issue_reporting
+      ${variant != null && assessment.allow_issue_reporting
         ? html`
             <div class="card-footer">
               ${authz_result?.authorized_edit === false

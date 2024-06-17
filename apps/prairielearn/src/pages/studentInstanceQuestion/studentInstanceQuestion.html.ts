@@ -38,7 +38,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
         </script>
-        ${resLocals.no_variant_exists
+        ${resLocals.variant == null
           ? ''
           : html`
               ${resLocals.question.type !== 'Freeform'
@@ -63,7 +63,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${resLocals.no_variant_exists
+              ${resLocals.variant == null
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
@@ -135,7 +135,6 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 assessment_instance: resLocals.assessment_instance,
                 instance_question_info: resLocals.instance_question_info,
                 variant: resLocals.variant,
-                no_variant_exists: resLocals.no_variant_exists,
                 authz_result: resLocals.authz_result,
                 csrfToken: resLocals.__csrf_token,
                 urlPrefix: resLocals.urlPrefix,
