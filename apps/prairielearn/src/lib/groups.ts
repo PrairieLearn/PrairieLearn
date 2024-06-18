@@ -185,6 +185,14 @@ export async function getQuestionGroupPermissions(
   return userPermissions ?? { can_submit: false, can_view: false };
 }
 
+export async function getUserRoles(group_id: string, user_id: string) {
+  return await sqldb.queryRows(
+    sql.select_user_roles,
+    { group_id, user_id },
+    GroupRoleSchema,
+  );
+}
+
 export async function addUserToGroup({
   assessment_id,
   group_id,

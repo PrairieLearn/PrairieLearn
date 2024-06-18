@@ -37,6 +37,7 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
+import { getGroupConfig, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { getQuestionCourse, ensureVariant } from './question-variant.js';
@@ -542,6 +543,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * @param  {string} param.question_id The id of the question (for authorization check)
  * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
  * @param  {string | null} param.variant_id The id of the variant (for authorization check)
+ * @param  {string} param.user_id The id of the authenticated user, used to identify group roles
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
  * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
@@ -554,6 +556,7 @@ export async function renderPanelsForSubmission({
   question_id,
   instance_question_id,
   variant_id,
+  user_id,
   urlPrefix,
   questionContext,
   csrfToken,
@@ -731,8 +734,28 @@ export async function renderPanelsForSubmission({
     async () => {
       if (!renderScorePanels) return;
 
-      // only render if variant is part of assessment
-      if (variant.instance_question_id == null) return;
+      // only render if variant is part of assessment, and there is a next question
+      if (variant.instance_question_id == null || next_instance_question.id == null) return;
+
+      /** @type {{can_view: boolean} | null} */
+      let groupRolePermissions = null;
+      /** @type {string} */
+      let userGroupRoles = 'None';
+
+      if (assessment?.group_work && assessment_instance?.group_id != null) {
+        const groupConfig = await getGroupConfig(assessment.id);
+        if (groupConfig.has_roles) {
+          groupRolePermissions = await getQuestionGroupPermissions(
+            next_instance_question.id,
+            assessment_instance.group_id,
+            user_id,
+          );
+          userGroupRoles =
+            (await getUserRoles(assessment_instance.group_id, user_id))
+              .map((role) => role.role_name)
+              .join(', ') || 'None';
+        }
+      }
 
       // Render the next question nav link
       // NOTE: This must be kept in sync with the corresponding code in
@@ -742,9 +765,9 @@ export async function renderPanelsForSubmission({
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
         button: { id: 'question-nav-next', label: 'Next question' },
-        groupRolePermissions: null, // TODO Not currently supported
+        groupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,
-        userGroupRoles: null, // TODO Not currently supported
+        userGroupRoles,
       }).toString();
     },
   ]);

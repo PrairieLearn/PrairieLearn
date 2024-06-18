@@ -72,6 +72,7 @@ router.get(
       question_id: res.locals.question.id,
       instance_question_id: null,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'public',
       csrfToken: null,
