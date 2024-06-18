@@ -161,7 +161,7 @@ export async function initExpress() {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: 'prairielearn_session',
+        name: 'pl2_session',
         writeNames: ['prairielearn_session', 'pl2_session'],
         // Ensure that the legacy session cookie doesn't have a domain specified.
         // We can only safely set domains on the new session cookie.
