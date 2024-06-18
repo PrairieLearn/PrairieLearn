@@ -67,6 +67,19 @@ const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
     }),
   ),
 });
+export type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
+
+export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
+  token: string;
+  jobs: (JobSequenceWithJobs['jobs'][0] & { token: string })[];
+};
+
+export type JobSequenceWithFormattedOutput = Omit<JobSequenceWithTokens, 'jobs'> & {
+  jobs: (Omit<JobSequenceWithTokens['jobs'][0], 'output'> & {
+    output: string;
+    output_raw: Job['output'];
+  })[];
+};
 
 /**
  * Store currently active job information in memory. This is used
@@ -455,7 +468,10 @@ export async function errorAbandonedJobs() {
   });
 }
 
-export async function getJobSequence(job_sequence_id: string, course_id: string | null) {
+export async function getJobSequence(
+  job_sequence_id: string,
+  course_id: string | null,
+): Promise<JobSequenceWithTokens> {
   const jobSequence = await queryRow(
     sql.select_job_sequence_with_course_id_as_json,
     { job_sequence_id, course_id },
@@ -482,7 +498,7 @@ export async function getJobSequence(job_sequence_id: string, course_id: string 
 export async function getJobSequenceWithFormattedOutput(
   job_sequence_id: string,
   course_id: string | null,
-) {
+): Promise<JobSequenceWithFormattedOutput> {
   const jobSequence = await getJobSequence(job_sequence_id, course_id);
   const ansiup = new AnsiUp();
   return {
