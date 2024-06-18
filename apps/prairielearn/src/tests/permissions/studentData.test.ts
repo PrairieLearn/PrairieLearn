@@ -306,7 +306,7 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) cannot emulate student', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
     };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,
@@ -423,7 +423,7 @@ describe('student data access', function () {
     'instructor (student data editor) can attach file to HW1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
@@ -449,7 +449,7 @@ describe('student data access', function () {
     'instructor (student data editor) can submit answer to HW1/Q1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         headers,
@@ -477,7 +477,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl2_requested_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         headers,
@@ -504,7 +504,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl2_requested_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
@@ -584,7 +584,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view gradebook', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
@@ -595,7 +596,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view gradebook raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
@@ -606,7 +608,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view homework assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
@@ -620,7 +623,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+          'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
       };
       const response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
@@ -632,7 +635,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view exam assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
@@ -643,7 +647,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view exam assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
@@ -654,7 +659,7 @@ describe('student data access', function () {
 
   step('instructor (no role) can view gradebook', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
@@ -673,7 +678,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view gradebook raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
@@ -684,7 +689,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view homework assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
@@ -695,7 +700,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view homework assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
@@ -706,7 +711,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view exam assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
@@ -717,7 +722,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view exam assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,

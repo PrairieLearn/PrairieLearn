@@ -98,15 +98,15 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
 
     // After explicitly authenticating, clear the cookie that disables
     // automatic authentication.
-    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+    if (req.cookies.pl2_disable_auto_authn) {
       clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
     }
   }
 
   if (options.redirect) {
     let redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
+    if ('pl2_pre_auth_url' in req.cookies) {
+      redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
 
@@ -128,7 +128,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
+  const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
