@@ -237,7 +237,7 @@
     "axe-core": "^4.7.0",
     "c8": "^9.1.0",
     "chai": "^5.1.1",
-    "chai-as-promised": "^7.1.2",
+    "chai-as-promised": "^8.0.0",
     "express-list-endpoints": "^7.1.0",
     "get-port": "^7.1.0",
     "jsdom": "^24.1.0",
