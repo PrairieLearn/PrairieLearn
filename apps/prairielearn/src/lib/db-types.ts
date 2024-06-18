@@ -646,6 +646,18 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
+export const Lti13CourseInstanceSchema = z.object({
+  context_id: z.string(),
+  context_label: z.string().nullable(),
+  context_title: z.string().nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  deployment_id: z.string(),
+  id: IdSchema,
+  lti13_instance_id: IdSchema,
+});
+export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
+
 export const Lti13InstanceSchema = z.object({
   access_token_expires_at: DateFromISOString.nullable(),
   access_tokenset: z.any().nullable(),
@@ -673,18 +685,6 @@ export const Lti13UserSchema = z.object({
   user_id: IdSchema,
 });
 export type Lti13User = z.infer<typeof Lti13UserSchema>;
-
-export const Lti13CourseInstanceSchema = z.object({
-  context_id: z.string(),
-  context_label: z.string().nullable(),
-  context_title: z.string().nullable(),
-  course_instance_id: IdSchema,
-  created_at: DateFromISOString,
-  deployment_id: z.string(),
-  id: IdSchema,
-  lti13_instance_id: IdSchema,
-});
-export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
 export const LtiCredentialsSchema = z.object({
   consumer_key: z.string().nullable(),
