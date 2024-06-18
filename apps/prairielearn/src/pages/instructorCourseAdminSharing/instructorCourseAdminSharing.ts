@@ -25,6 +25,22 @@ async function selectCanChooseSharingName(course) {
   );
 }
 
+async function selectCanDeleteSharingSet(sharing_set_id) {
+  const can_delete = ! (await sqldb.queryOptionalRow(
+    sql.select_sharing_set_shared_and_has_question,
+    {
+      sharing_set_id: sharing_set_id,
+    },
+    z.boolean().nullable(),
+  ));
+  
+  return (
+    can_delete
+  );
+
+}
+
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -60,6 +76,11 @@ router.get(
     ).href;
 
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+
+    for (const sharingSet of sharingSets) {
+      sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet.id);
+    }
+    
 
     res.send(
       InstructorSharing({
@@ -129,6 +150,17 @@ router.post(
             'Unable to change sharing name. At least one question has been shared.',
           );
         }
+      }
+    } else if (req.body.__action === 'delete_sharing_set') {
+      const canDelete = await selectCanDeleteSharingSet(req.body.sharing_set_id);
+      if (canDelete) {
+        await sqldb.queryZeroOrOneRowAsync(sql.delete_sharing_set, {
+          sharing_set_id: req.body.sharing_set_id,
+        });
+      } else {
+        throw new error.HttpStatusError(
+          400, 
+          'Unable to delete sharing set. The sharing set has been shared and at least one question has been added.');
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
