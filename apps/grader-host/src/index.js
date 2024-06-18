@@ -169,6 +169,9 @@ async function isJobCanceled(job) {
   return result.rows[0].canceled;
 }
 
+/**
+ * @param {import('./lib/receiveFromQueue.js').GradingJobMessage} job
+ */
 async function handleJob(job) {
   load.startJob();
 
@@ -216,7 +219,7 @@ async function handleJob(job) {
  * @property {Docker} docker
  * @property {S3} s3
  * @property {import('./lib/jobLogger.js').WinstonBufferedLogger} logger
- * @property {any} job
+ * @property {import('./lib/receiveFromQueue.js').GradingJobMessage} job
  */
 
 /**
@@ -364,16 +367,14 @@ async function runJob(context, receivedTime, tempDir) {
     job: { jobId, image, entrypoint, timeout, enableNetworking, environment },
   } = context;
 
-  let results = {};
-  let runTimeout = timeout || config.defaultTimeout;
   // Even if instructors specify a really short timeout for the execution of
   // the grading job, there's a certain amount of overhead associated with
   // running the job (pulling an image, uploading results, etc.). We add a
   // fixed amount of time to the instructor-specified timeout to account for
   // this.
-  let jobTimeout = config.timeoutOverhead + runTimeout;
-  let jobEnableNetworking = enableNetworking || false;
-  let jobEnvironment = environment || {};
+  let jobTimeout = timeout + config.timeoutOverhead;
+
+  let results = {};
 
   logger.info('Launching Docker container to run grading job');
 
@@ -394,11 +395,11 @@ async function runJob(context, receivedTime, tempDir) {
     const container = await docker.createContainer({
       Image: runImage,
       // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
-      Env: Object.entries(jobEnvironment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
+      Env: Object.entries(environment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
       AttachStdout: true,
       AttachStderr: true,
       Tty: true,
-      NetworkDisabled: !jobEnableNetworking,
+      NetworkDisabled: !enableNetworking,
       HostConfig: {
         Binds: [`${tempDir}:/grade`],
         Memory: config.graderDockerMemory,
@@ -441,7 +442,7 @@ async function runJob(context, receivedTime, tempDir) {
       container.kill().catch((err) => {
         globalLogger.error('Error killing container', err);
       });
-    }, runTimeout * 1000);
+    }, timeout * 1000);
 
     logger.info('Waiting for container to complete');
     try {
