@@ -91,7 +91,7 @@ export async function botGrade({
 
       // get question html
       const questionModule = questionServers.getModule(question.type);
-      const { courseIssues, data } = await questionModule.render(
+      const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
         variant,
         question,
@@ -100,12 +100,12 @@ export async function botGrade({
         question_course,
         urls,
       );
-      if (courseIssues.length) {
-        job.info(courseIssues.toString());
+      if (render_question_results.courseIssues.length) {
+        job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
         job.fail('Errors occurred while bot grading, see output for details');
       }
-      const $ = cheerio.load(data.questionHtml, null, false);
+      let $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
       const question_prompt = $.html();
 
@@ -118,7 +118,9 @@ export async function botGrade({
         question_course,
         urls,
       );
-      const student_answer = render_submission_results.data.submissionHtmls[0];
+      $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
+      $('script').remove();
+      const student_answer = $.html();
 
       const completion = await openai.chat.completions.create({
         messages: [
@@ -132,7 +134,7 @@ export async function botGrade({
           },
         ],
         model: 'gpt-3.5-turbo',
-        user: authn_user_id.toString(),
+        user: course.id.toString(),
       });
 
       let msg = `\nInstance question ${instance_question.id}\n`;
