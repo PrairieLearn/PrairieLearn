@@ -294,7 +294,9 @@ def render(element_html, data):
             element, "snap-to-grid", defaults.element_defaults["snap-to-grid"]
         ),
         "grid_size": grid_size,
-        "editable": (data["panel"] == "question" and not preview_mode),
+        "editable": (
+            data["panel"] == "question" and data["editable"] and not preview_mode
+        ),
         "base_url": data["options"]["base_url"],
         "element_client_files": data["options"]["client_files_extensions_url"],
         "render_scale": pl.get_float_attrib(
