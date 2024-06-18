@@ -7,6 +7,7 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND iq.assessment_question_id = $assessment_question_id
+  AND iq.requires_manual_grading
   AND iq.status != 'unanswered';
 
 -- BLOCK select_last_variant_and_submission

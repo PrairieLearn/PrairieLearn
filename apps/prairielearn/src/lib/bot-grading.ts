@@ -33,18 +33,23 @@ export async function botGrade({
   question,
   assessment_question,
   urlPrefix,
+  authn_user_id,
 }: {
   question: Question;
   course: Course;
   course_instance_id?: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
+  authn_user_id: string;
 }): Promise<string> {
   // if OpenAI API Key and Organization are not provided, throw error
   if (!config.openAiApiKey || !config.openAiOrganization) {
-    throw new error.HttpStatusError(501, 'Not implemented (feature not available)');
+    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
-  const openaiconfig = { apiKey: config.openAiApiKey, organization: config.openAiOrganization };
+  const openai = new OpenAI({
+    apiKey: config.openAiApiKey,
+    organization: config.openAiOrganization,
+  });
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -52,16 +57,12 @@ export async function botGrade({
     courseId: course.id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_question.assessment_id,
-    authnUserId: '1',
-    type: 'botGrading',
+    authnUserId: authn_user_id,
+    type: 'bot_grading',
     description: 'Use LLM to grade assessment question',
   });
 
   serverJob.executeInBackground(async (job) => {
-    const openai = new OpenAI(openaiconfig);
-    job.info('OpenAI client ready! ');
-
-    // get all instance questions
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
@@ -71,13 +72,13 @@ export async function botGrade({
       InstanceQuestionSchema,
     );
 
-    job.info(`Found ${result.length} submissions to grade! `);
+    job.info(`Found ${result.length} submissions to grade!`);
 
     let error_count = 0;
     let output_count = 0;
     let output: string | null = null;
 
-    // get each instance question
+    // Grade each instance question.
     for (const instance_question of result) {
       const { variant, submission } = await queryRow(
         sql.select_last_variant_and_submission,
@@ -85,7 +86,6 @@ export async function botGrade({
         SubmissionVariantSchema,
       );
 
-      // build urls for the question server
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
 
       // get question html
@@ -104,8 +104,7 @@ export async function botGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while bot grading, see output for details');
       }
-      const question_prompt_raw = data.questionHtml;
-      const $ = cheerio.load(question_prompt_raw, null, false);
+      const $ = cheerio.load(data.questionHtml, null, false);
       $('script').remove();
       const question_prompt = $.html();
 
@@ -120,7 +119,6 @@ export async function botGrade({
       );
       const student_answer = render_submission_results.data.submissionHtmls[0];
 
-      // Call OpenAI API
       const completion = await openai.chat.completions.create({
         messages: [
           {
