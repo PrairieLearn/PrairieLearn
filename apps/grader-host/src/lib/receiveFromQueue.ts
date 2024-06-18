@@ -1,4 +1,3 @@
-// @ts-check
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
@@ -6,9 +5,9 @@ import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  SQSClient,
 } from '@aws-sdk/client-sqs';
-import { Ajv } from 'ajv';
-import * as async from 'async';
+import { Ajv, ValidateFunction } from 'ajv';
 import fs from 'fs-extra';
 
 import * as Sentry from '@prairielearn/sentry';
@@ -16,16 +15,14 @@ import * as Sentry from '@prairielearn/sentry';
 import { config } from './config.js';
 import globalLogger from './logger.js';
 
-let messageSchema = null;
+let messageSchema: ValidateFunction | null = null;
 
-/**
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {string} receiptHandle
- * @param {number} timeout
- * @returns {Promise<void>}
- */
-async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
+async function changeVisibilityTimeout(
+  sqs: SQSClient,
+  queueUrl: string,
+  receiptHandle: string,
+  timeout: number,
+) {
   await sqs.send(
     new ChangeMessageVisibilityCommand({
       QueueUrl: queueUrl,
@@ -35,12 +32,7 @@ async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
   );
 }
 
-/**
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {string} receiptHandle
- */
-async function startHeartbeat(sqs, queueUrl, receiptHandle) {
+async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: string) {
   const abortController = new AbortController();
 
   // Run the first extension immediately before we start processing the job.
@@ -67,37 +59,32 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
   return abortController;
 }
 
-/**
- *
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {(message: any) => Promise<void>} receiveCallback
- */
-export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
-  /** @type {AbortController} */
-  let heartbeatAbortController;
+async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const data = await sqs.send(
+      new ReceiveMessageCommand({
+        MaxNumberOfMessages: 1,
+        QueueUrl: queueUrl,
+        WaitTimeSeconds: 20,
+      }),
+    );
+    const message = data.Messages?.[0];
+    if (!message || !message.Body) continue;
+    globalLogger.info('Received job!');
+    const parsedMessage = JSON.parse(message.Body);
+    const receiptHandle = message.ReceiptHandle as string;
+    return { parsedMessage, receiptHandle };
+  }
+}
 
+export async function receiveFromQueue(
+  sqs: SQSClient,
+  queueUrl: string,
+  receiveCallback: (message: any) => Promise<void>,
+) {
   globalLogger.info('Waiting for next job...');
-  const { parsedMessage, receiptHandle } = await async.doUntil(
-    async () => {
-      const data = await sqs.send(
-        new ReceiveMessageCommand({
-          MaxNumberOfMessages: 1,
-          QueueUrl: queueUrl,
-          WaitTimeSeconds: 20,
-        }),
-      );
-      const message = data.Messages?.[0];
-      if (!message || !message.Body) return null;
-      globalLogger.info('Received job!');
-      const parsedMessage = JSON.parse(message.Body);
-      const receiptHandle = message.ReceiptHandle;
-      return { parsedMessage, receiptHandle };
-    },
-    async (result) => {
-      return !!result;
-    },
-  );
+  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl);
 
   if (!messageSchema) {
     const data = await fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'));
@@ -111,7 +98,7 @@ export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
     throw new Error('Message did not match schema.');
   }
 
-  heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
+  const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
   await receiveCallback(parsedMessage)
     .finally(() => {

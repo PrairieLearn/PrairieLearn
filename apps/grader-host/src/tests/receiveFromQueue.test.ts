@@ -1,4 +1,3 @@
-// @ts-check
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
@@ -52,7 +51,7 @@ function fakeSqs(options = {}) {
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
 
-  return /** @type {any} */ ({
+  return /** @type {any} */ {
     send: async (command) => {
       if (command instanceof ReceiveMessageCommand) {
         return receiveMessage(command);
@@ -69,7 +68,7 @@ function fakeSqs(options = {}) {
     changeMessageVisibility,
     receiveMessage,
     deleteMessage,
-  });
+  };
 }
 
 const VISIBILITY_TIMEOUT = 60;

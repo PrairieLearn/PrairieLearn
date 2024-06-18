@@ -1,4 +1,3 @@
-// @ts-check
 import { format } from 'logform';
 import winston from 'winston';
 
