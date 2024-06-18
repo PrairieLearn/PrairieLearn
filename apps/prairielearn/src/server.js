@@ -175,11 +175,20 @@ export async function initExpress() {
   );
 
   app.use((req, res, next) => {
-    // If the session is going to expire in the near future, we'll extend it
-    // automatically for the user.
+    // To ensure that sessions remain alive while they're actively in use, we
+    // extend the expiration time if it's been a specified amount of time since
+    // the expiration time of the session was last updated.
     //
-    // TODO: make this configurable?
-    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+    // Note that because we're inferring the time of last update based on
+    // `config.sessionStoreExpireSessions`, this won't behave 100% correctly
+    // if `sessionStoreExpireSeconds` is changed. Specifically, if that option
+    // is changed to a smaller value, the throttle period might elapse without
+    // the session being updated. This should occur infrequently, so we'll accept
+    // that risk.
+    const expirationTime = req.session.getExpirationDate().getTime();
+    const expirationUpdatedAtTime = expirationTime - config.sessionStoreExpireSeconds * 1000;
+    const autoUpdateThreshold = Date.now() - config.sessionStoreAutoExtendThrottleSeconds * 1000;
+    if (expirationUpdatedAtTime < autoUpdateThreshold) {
       req.session.setExpiration(config.sessionStoreExpireSeconds);
     }
 

@@ -82,7 +82,16 @@ const ConfigSchema = z.object({
   /** Sets the default user email in development. */
   authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
-  sessionStoreExpireSeconds: z.number().default(86400),
+  /**
+   * How long a session should be kept alive in the session store.
+   */
+  sessionStoreExpireSeconds: z.number().default(30 * 24 * 60 * 60),
+  /**
+   * Specifies a period of time since the last session store expiration
+   * time update after which the expiration time should be updated again.
+   * This value should be smaller than `sessionStoreExpireSeconds`.
+   */
+  sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
     .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
