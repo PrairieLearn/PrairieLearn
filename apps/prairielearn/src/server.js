@@ -180,7 +180,7 @@ export async function initExpress() {
     // the expiration time of the session was last updated.
     //
     // Note that because we're inferring the time of last update based on
-    // `config.sessionStoreExpireSessions`, this won't behave 100% correctly
+    // `config.sessionStoreExpireSeconds`, this won't behave 100% correctly
     // if `sessionStoreExpireSeconds` is changed. Specifically, if that option
     // is changed to a smaller value, the throttle period might elapse without
     // the session being updated. This should occur infrequently, so we'll accept
