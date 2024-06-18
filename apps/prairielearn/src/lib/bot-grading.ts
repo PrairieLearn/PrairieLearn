@@ -26,6 +26,7 @@ const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
+const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 
 export async function botGrade({
   course,
@@ -131,15 +132,18 @@ export async function botGrade({
           },
         ],
         model: 'gpt-3.5-turbo',
+        user: authn_user_id.toString(),
       });
 
-      let msg = '';
+      let msg = `\nInstance question ${instance_question.id}\n`;
       try {
+        msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+        msg += `Raw ChatGPT response:\n${completion.choices[0].message.content}`;
         if (completion.choices[0].message.content === null) {
           error_count++;
           continue;
         }
-        const gpt_answer = JSON.parse(completion.choices[0].message.content);
+        const gpt_answer = GPTGradeSchema.parse(JSON.parse(completion.choices[0].message.content));
         await manualGrading.updateInstanceQuestionScore(
           assessment_question.assessment_id,
           instance_question.id,
@@ -152,7 +156,7 @@ export async function botGrade({
           },
           '1',
         );
-        msg = `Bot grades for ${instance_question.id}: ${gpt_answer.grade}`;
+        msg += `\nBot grades: ${gpt_answer.grade}`;
       } catch (err) {
         job.error(`ERROR bot grading for ${instance_question.id}`);
         job.error(err);
@@ -160,7 +164,7 @@ export async function botGrade({
       }
       output = (output == null ? '' : `${output}\n`) + msg;
       output_count++;
-      if (output_count >= 100) {
+      if (output_count >= 5) {
         job.info(output);
         output = null;
         output_count = 0;
