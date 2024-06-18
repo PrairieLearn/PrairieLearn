@@ -1,9 +1,6 @@
 // @ts-check
-import * as path from 'path';
-import * as util from 'util';
 
 import * as async from 'async';
-import * as ejs from 'ejs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -12,6 +9,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
@@ -621,10 +619,6 @@ export async function renderPanelsForSubmission({
     ),
   );
 
-  // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-  // latter would require all includes in EJS to be translated to await recursively.
-  /** @type function */
-  let renderFileAsync = util.promisify(ejs.renderFile);
   await async.parallel([
     async () => {
       // Render the submission panel
@@ -742,25 +736,16 @@ export async function renderPanelsForSubmission({
 
       // Render the next question nav link
       // NOTE: This must be kept in sync with the corresponding code in
-      // `pages/partials/questionNavSideButtonGroup.ejs`.
-      const renderParams = {
-        question: next_instance_question,
-        advance_score_perc: assessment_question?.advance_score_perc,
-        button: {
-          id: 'question-nav-next',
-          label: 'Next question',
-        },
-        ...locals,
-        urlPrefix, // needed to get urlPrefix for the course instance, not the site
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionNavSideButton.ejs',
-      );
-      panels.questionNavNextButton = await renderFileAsync(templatePath, renderParams);
+      // `components/QuestionNavigation.html.ts`.
+      panels.questionNavNextButton = QuestionNavSideButton({
+        questionId: next_instance_question.id,
+        sequenceLocked: next_instance_question.sequence_locked,
+        urlPrefix,
+        button: { id: 'question-nav-next', label: 'Next question' },
+        groupRolePermissions: null, // TODO Not currently supported
+        advanceScorePerc: assessment_question?.advance_score_perc,
+        userGroupRoles: null, // TODO Not currently supported
+      }).toString();
     },
   ]);
   return panels;
