@@ -116,24 +116,20 @@ export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
     },
   );
 
-  const validatedMessage = GradingJobMessageSchema.safeParse(parsedMessage);
-  if (!validatedMessage.success) {
-    globalLogger.error(validatedMessage.error);
-    throw new Error('Message did not match schema.');
-  }
+  const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
 
   heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
-  await receiveCallback(parsedMessage)
+  await receiveCallback(validatedMessage)
     .finally(() => {
       heartbeatAbortController.abort();
     })
     .then(
       () => {
-        globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
+        globalLogger.info(`Job ${validatedMessage.jobId} finished successfully.`);
       },
       (err) => {
-        globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
+        globalLogger.info(`Job ${validatedMessage.jobId} errored.`);
         throw err;
       },
     );
