@@ -31,7 +31,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import _ from 'lodash';
 import multer from 'multer';
 import onFinished from 'on-finished';
-import passport, { session } from 'passport';
+import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
