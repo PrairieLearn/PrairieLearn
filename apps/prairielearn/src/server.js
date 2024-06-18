@@ -31,7 +31,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import _ from 'lodash';
 import multer from 'multer';
 import onFinished from 'on-finished';
-import passport from 'passport';
+import passport, { session } from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
@@ -174,21 +174,17 @@ export async function initExpress() {
     }),
   );
 
+  // This middleware helps ensure that sessions remain alive (un-expired) as
+  // long as users are somewhat frequently active. See the documentation for
+  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
   app.use((req, res, next) => {
-    // To ensure that sessions remain alive while they're actively in use, we
-    // extend the expiration time if it's been a specified amount of time since
-    // the expiration time of the session was last updated.
-    //
-    // Note that because we're inferring the time of last update based on
-    // `config.sessionStoreExpireSeconds`, this won't behave 100% correctly
-    // if `sessionStoreExpireSeconds` is changed. Specifically, if that option
-    // is changed to a smaller value, the throttle period might elapse without
-    // the session being updated. This should occur infrequently, so we'll accept
-    // that risk.
-    const expirationTime = req.session.getExpirationDate().getTime();
-    const expirationUpdatedAtTime = expirationTime - config.sessionStoreExpireSeconds * 1000;
-    const autoUpdateThreshold = Date.now() - config.sessionStoreAutoExtendThrottleSeconds * 1000;
-    if (expirationUpdatedAtTime < autoUpdateThreshold) {
+    // Compute the number of milliseconds until the session expires.
+    const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
+
+    if (
+      sessionTtl <
+      (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
+    ) {
       req.session.setExpiration(config.sessionStoreExpireSeconds);
     }
 
