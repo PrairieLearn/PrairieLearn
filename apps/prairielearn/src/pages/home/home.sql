@@ -1,5 +1,20 @@
 -- BLOCK select_home
 WITH
+  admin_institutions AS (
+    -- Note that we only consider institutions where the user is explicitly
+    -- added as an administrator. We do not include all institutions if the
+    -- user is a global administrator, as that would be a very long list.
+    --
+    -- Global admins can access institutions/courses via the admin pages.
+    SELECT
+      i.*
+    FROM
+      institutions AS i
+      JOIN institution_administrators AS ia ON (
+        ia.institution_id = i.id
+        AND ia.user_id = $user_id
+      )
+  ),
   example_courses AS (
     SELECT
       c.short_name || ': ' || c.title AS label,
@@ -165,10 +180,26 @@ WITH
       u.user_id = $user_id
   )
 SELECT
+  ia.institutions AS admin_institutions,
   ec.courses AS example_courses,
   ic.courses AS instructor_courses,
   sc.course_instances AS student_courses
 FROM
+  (
+    SELECT
+      coalesce(
+        jsonb_agg(
+          i.*
+          ORDER BY
+            i.short_name,
+            i.long_name,
+            i.id
+        ),
+        '[]'::jsonb
+      ) AS institutions
+    FROM
+      admin_institutions AS i
+  ) AS ia,
   (
     SELECT
       coalesce(

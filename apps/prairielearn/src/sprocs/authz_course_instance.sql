@@ -30,6 +30,20 @@ BEGIN
         course_instance_role := 'None';
     END IF;
 
+    PERFORM 1
+    FROM
+        institution_administrators AS ia
+        JOIN institutions AS i ON (i.id = ia.institution_id)
+        JOIN pl_courses AS c ON (c.institution_id = i.id)
+        JOIN course_instances AS ci ON (ci.course_id = c.id)
+    WHERE
+        ci.id = authz_course_instance.course_instance_id
+        AND ia.user_id = authz_course_instance.user_id;
+
+    IF FOUND THEN
+        course_instance_role := 'Student Data Editor';
+    END IF;
+
     IF is_administrator THEN
         course_instance_role := 'Student Data Editor';
     END IF;

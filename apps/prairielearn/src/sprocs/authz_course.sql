@@ -40,6 +40,19 @@ BEGIN
         END IF;
     END IF;
 
+    PERFORM 1
+    FROM
+        institution_administrators AS ia
+        JOIN institutions AS i ON (i.id = ia.institution_id)
+        JOIN pl_courses AS c ON (c.institution_id = i.id)
+    WHERE
+        c.id = authz_course.course_id
+        AND ia.user_id = authz_course.user_id;
+
+    IF FOUND THEN
+        course_role := 'Owner';
+    END IF;
+
     IF is_administrator THEN
         course_role := 'Owner';
     END IF;

@@ -117,6 +117,22 @@
         </div><!-- card -->
         <% } %> <!-- devMode -->
 
+        <% if (locals.admin_institutions && locals.admin_institutions.length > 0) { %>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Institutions with admin access</div>
+
+            <ul class="list-group list-group-flush">
+              <% locals.admin_institutions.forEach(function(institution) { %>
+                <li class="list-group-item">
+                  <a href="/pl/institution/<%= institution.id %>/admin/courses">
+                    <%= institution.short_name %>: <%= institution.long_name %>
+                  </a>
+                </li>
+              <% }); %>
+            </ul>
+          </div>
+        <% } %>
+
         <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Courses with instructor access</div>

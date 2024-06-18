@@ -40,6 +40,7 @@ router.get(
       include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
     });
 
+    res.locals.admin_institutions = result.rows[0].admin_institutions;
     res.locals.instructor_courses = result.rows[0].instructor_courses;
     res.locals.student_courses = result.rows[0].student_courses;
 

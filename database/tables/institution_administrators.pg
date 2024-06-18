@@ -1,0 +1,13 @@
+columns
+    id: bigint not null default nextval('institution_administrators_id_seq'::regclass)
+    institution_id: bigint not null
+    user_id: bigint not null
+
+indexes
+    institution_administrators_pkey: PRIMARY KEY (id) USING btree (id)
+    institution_administrators_user_id_institution_id_key: UNIQUE (user_id, institution_id) USING btree (user_id, institution_id)
+    institution_administrators_institution_id_idx: USING btree (institution_id)
+
+foreign-key constraints
+    institution_administrators_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    institution_administrators_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
