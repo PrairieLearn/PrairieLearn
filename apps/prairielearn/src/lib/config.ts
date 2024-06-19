@@ -87,11 +87,6 @@ const ConfigSchema = z.object({
    */
   sessionStoreExpireSeconds: z.number().default(30 * 24 * 60 * 60),
   /**
-   * Specifies a period of time since the last session store expiration
-   * time update after which the expiration time should be updated again.
-   * This value should be smaller than `sessionStoreExpireSeconds`.
-   */
-  /**
    * Used to determine how often the session will have its expiration time
    * automatically extended. The session will be extended if the session is
    * set to expire within the next `expireSeconds - throttleSeconds`. For
