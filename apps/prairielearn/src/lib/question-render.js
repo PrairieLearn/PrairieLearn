@@ -759,14 +759,11 @@ export async function renderPanelsForSubmission({
         }
       }
 
-      // Render the next question nav link
-      // NOTE: This must be kept in sync with the corresponding code in
-      // `components/QuestionNavigation.html.ts`.
       panels.questionNavNextButton = QuestionNavSideButton({
         instanceQuestionId: next_instance_question.id,
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
-        button: { id: 'question-nav-next', label: 'Next question' },
+        whichButton: 'next',
         groupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,
         userGroupRoles,

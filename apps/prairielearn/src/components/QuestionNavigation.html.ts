@@ -24,17 +24,15 @@ export function QuestionNavSideGroup({
       ${QuestionNavSideButton({
         instanceQuestionId: prevInstanceQuestionId,
         urlPrefix,
-        button: { id: 'question-nav-prev', label: 'Previous question' },
+        whichButton: 'previous',
         groupRolePermissions: prevGroupRolePermissions,
         userGroupRoles,
       })}
       ${QuestionNavSideButton({
-        // NOTE: This must be kept in sync the the corresponding code in
-        // `lib/question-render.js`.
         instanceQuestionId: nextInstanceQuestionId,
         sequenceLocked,
         urlPrefix,
-        button: { id: 'question-nav-next', label: 'Next question' },
+        whichButton: 'next',
         groupRolePermissions: nextGroupRolePermissions,
         advanceScorePerc,
         userGroupRoles,
@@ -47,7 +45,7 @@ export function QuestionNavSideButton({
   instanceQuestionId,
   sequenceLocked,
   urlPrefix,
-  button,
+  whichButton,
   groupRolePermissions,
   advanceScorePerc,
   userGroupRoles,
@@ -55,25 +53,29 @@ export function QuestionNavSideButton({
   instanceQuestionId: string | null;
   sequenceLocked?: boolean | null;
   groupRolePermissions: { can_view?: boolean } | null;
-  button: { id: string; label: string };
+  whichButton: 'next' | 'previous';
   urlPrefix: string;
   advanceScorePerc?: number | null;
   userGroupRoles: string | null;
 }) {
   const classes = 'btn text-white mb-3';
+  const { buttonId, buttonLabel } =
+    whichButton === 'next'
+      ? { buttonId: 'question-nav-next', buttonLabel: 'Next question' }
+      : { buttonId: 'question-nav-prev', buttonLabel: 'Previous question' };
   let disabledExplanation: HtmlValue | null = null;
 
   if (instanceQuestionId == null) {
     return html`
-      <button id="${button.id}" class="${classes} btn-primary disabled" disabled>
-        ${button.label}
+      <button id="${buttonId}" class="${classes} btn-primary disabled" disabled>
+        ${buttonLabel}
       </button>
     `;
   }
 
   if (groupRolePermissions?.can_view === false) {
     disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
-    ${button.label.toLowerCase()}.`;
+    ${buttonLabel.toLowerCase()}.`;
   } else if (sequenceLocked) {
     disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission
       to this question in order to unlock the next. If you run out of attempts, the next question
@@ -83,7 +85,7 @@ export function QuestionNavSideButton({
   if (disabledExplanation != null) {
     return html`
       <button
-        id="${button.id}"
+        id="${buttonId}"
         class="${classes} btn-secondary pl-sequence-locked"
         data-toggle="popover"
         data-trigger="focus"
@@ -91,7 +93,7 @@ export function QuestionNavSideButton({
         data-html="true"
         data-content="${disabledExplanation}"
       >
-        ${button.label}
+        ${buttonLabel}
         <i class="fas fa-lock ml-1" aria-label="Locked"></i>
       </button>
     `;
@@ -99,11 +101,11 @@ export function QuestionNavSideButton({
 
   return html`
     <a
-      id="${button.id}"
+      id="${buttonId}"
       class="${classes} btn-primary"
       href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
-      ${button.label}
+      ${buttonLabel}
     </a>
   `;
 }
