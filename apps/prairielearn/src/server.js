@@ -661,13 +661,10 @@ export async function initExpress() {
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
-    app.use('/pl/loadFromDisk', [
-      function (req, res, next) {
-        res.locals.navPage = 'load_from_disk';
-        next();
-      },
+    app.use(
+      '/pl/loadFromDisk',
       (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    ]);
+    );
     app.use('/pl/jobSequence', (await import('./pages/jobSequence/jobSequence.js')).default);
   }
 
