@@ -26,7 +26,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const GROUP_WORK_EXAM_TID = 'exam15-groupWorkRoles';
+const GROUP_WORK_EXAM_TID = 'exam16-groupWorkRoles';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
