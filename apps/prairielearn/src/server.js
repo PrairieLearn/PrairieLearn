@@ -668,13 +668,7 @@ export async function initExpress() {
       },
       (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
     ]);
-    app.use('/pl/jobSequence', [
-      function (req, res, next) {
-        res.locals.navPage = 'job_sequence';
-        next();
-      },
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    ]);
+    app.use('/pl/jobSequence', (await import('./pages/jobSequence/jobSequence.js')).default);
   }
 
   // Redirect plain course instance page either to student or instructor assessments page
