@@ -21,8 +21,10 @@ WHERE
 -- BLOCK select_assessments_with_question_for_display
 SELECT
   jsonb_build_object(
-    'title',
-    result.course_title,
+    'short_name',
+    result.course_short_name,
+    'long_name',
+    result.course_long_name,
     'course_instance_id',
     result.course_instance_id,
     'assessments',
@@ -31,7 +33,8 @@ SELECT
 FROM
   (
     SELECT
-      ci.short_name AS course_title,
+      ci.short_name AS course_short_name,
+      ci.long_name AS course_long_name,
       ci.id AS course_instance_id,
       jsonb_agg(
         jsonb_build_object(
@@ -40,7 +43,11 @@ FROM
           'assessment_id',
           a.id,
           'color',
-          aset.color
+          aset.color,
+          'title',
+          a.title,
+          'type',
+          a.type
         )
         ORDER BY
           admin_assessment_question_number (aq.id)
@@ -57,7 +64,9 @@ FROM
       AND ci.deleted_at IS NULL
     GROUP BY
       ci.id
-  ) result;
+    ORDER BY
+      ci.id
+  ) AS result;
 
 -- BLOCK select_sharing_sets
 SELECT

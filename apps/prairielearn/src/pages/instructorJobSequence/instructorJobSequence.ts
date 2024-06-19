@@ -1,10 +1,11 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+
+import { InstructorJobSequence } from './instructorJobSequence.html.js';
 
 const router = Router();
 
@@ -52,8 +53,7 @@ router.get(
       }
     }
 
-    res.locals.job_sequence = job_sequence;
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorJobSequence({ resLocals: res.locals, job_sequence }));
   }),
 );
 

@@ -3029,17 +3029,18 @@ __metadata:
     "@types/tmp": "npm:^0.2.6"
     ajv: "npm:^8.14.0"
     async: "npm:^3.2.5"
-    async-stacktrace: "npm:^0.0.2"
     byline: "npm:^5.0.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
+    chai-as-promised: "npm:^8.0.0"
     dockerode: "npm:^4.0.2"
+    execa: "npm:^9.2.0"
     fs-extra: "npm:^11.2.0"
     logform: "npm:^2.6.0"
     mocha: "npm:^10.4.0"
     nodemon: "npm:^3.1.2"
     sinon: "npm:^18.0.0"
-    tmp: "npm:^0.2.3"
+    tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
     typescript-cp: "npm:^0.1.9"
@@ -3107,7 +3108,7 @@ __metadata:
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    chai-as-promised: "npm:^7.1.2"
+    chai-as-promised: "npm:^8.0.0"
     fs-extra: "npm:^11.2.0"
     mocha: "npm:^10.4.0"
     serialize-error: "npm:^11.0.3"
@@ -3164,7 +3165,7 @@ __metadata:
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    chai-as-promised: "npm:^7.1.2"
+    chai-as-promised: "npm:^8.0.0"
     mocha: "npm:^10.4.0"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
@@ -3226,7 +3227,7 @@ __metadata:
     "@types/pg-cursor": "npm:^2.7.2"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    chai-as-promised: "npm:^7.1.2"
+    chai-as-promised: "npm:^8.0.0"
     mocha: "npm:^10.4.0"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.11.5"
@@ -3356,7 +3357,7 @@ __metadata:
     byline: "npm:^5.0.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    chai-as-promised: "npm:^7.1.2"
+    chai-as-promised: "npm:^8.0.0"
     chalk: "npm:^5.3.0"
     cheerio: "npm:^1.0.0-rc.12"
     clipboard: "npm:^2.0.11"
@@ -3452,7 +3453,7 @@ __metadata:
     set-cookie-parser: "npm:^2.6.0"
     showdown: "npm:^2.1.0"
     socket.io: "npm:^4.7.5"
-    socket.io-adapter: "npm:^2.5.4"
+    socket.io-adapter: "npm:^2.5.5"
     socket.io-client: "npm:^4.7.5"
     streamifier: "npm:^0.1.1"
     strip-ansi: "npm:^7.1.0"
@@ -6166,13 +6167,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-stacktrace@npm:^0.0.2":
-  version: 0.0.2
-  resolution: "async-stacktrace@npm:0.0.2"
-  checksum: 10c0/d622ac2603ea11f34c2c3a2bccddb5d726edce12ddf1b1049cab62f3573f869c357fb138744ce82afdd05dd50dffc9f01db0bb1c01b3bfa9adf6be9305289747
-  languageName: node
-  linkType: hard
-
 "async@npm:3.2.3":
   version: 3.2.3
   resolution: "async@npm:3.2.3"
@@ -6730,14 +6724,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chai-as-promised@npm:^7.1.2":
-  version: 7.1.2
-  resolution: "chai-as-promised@npm:7.1.2"
+"chai-as-promised@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "chai-as-promised@npm:8.0.0"
   dependencies:
-    check-error: "npm:^1.0.2"
+    check-error: "npm:^2.0.0"
   peerDependencies:
     chai: ">= 2.1.2 < 6"
-  checksum: 10c0/ee20ed75296d8cbf828b2f3c9ad64627cee67b1a38b8e906ca59fe788fb6965ddb10f702ae66645ed88f15a905ade4f2d9f8540029e92e2d59b229c9f912273f
+  checksum: 10c0/60200ea9cdac24394a97e768edd7d0cd8962097a02e3e6158932c13f7e9d89489d20e6a2e540e80dbe845c71362e7a7a311672fd16a2eab4214a6952fd0db804
   languageName: node
   linkType: hard
 
@@ -6817,16 +6811,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"check-error@npm:^1.0.2":
-  version: 1.0.3
-  resolution: "check-error@npm:1.0.3"
-  dependencies:
-    get-func-name: "npm:^2.0.2"
-  checksum: 10c0/94aa37a7315c0e8a83d0112b5bfb5a8624f7f0f81057c73e4707729cdd8077166c6aefb3d8e2b92c63ee130d4a2ff94bad46d547e12f3238cc1d78342a973841
-  languageName: node
-  linkType: hard
-
-"check-error@npm:^2.1.1":
+"check-error@npm:^2.0.0, check-error@npm:^2.1.1":
   version: 2.1.1
   resolution: "check-error@npm:2.1.1"
   checksum: 10c0/979f13eccab306cf1785fa10941a590b4e7ea9916ea2a4f8c87f0316fc3eab07eabefb6e587424ef0f88cbcd3805791f172ea739863ca3d7ce2afc54641c7f0e
@@ -8332,15 +8317,15 @@ __metadata:
   linkType: hard
 
 "engine.io-client@npm:~6.5.2":
-  version: 6.5.2
-  resolution: "engine.io-client@npm:6.5.2"
+  version: 6.5.4
+  resolution: "engine.io-client@npm:6.5.4"
   dependencies:
     "@socket.io/component-emitter": "npm:~3.1.0"
     debug: "npm:~4.3.1"
     engine.io-parser: "npm:~5.2.1"
-    ws: "npm:~8.11.0"
+    ws: "npm:~8.17.1"
     xmlhttprequest-ssl: "npm:~2.0.0"
-  checksum: 10c0/4330b53c3b90f9d5b8d9ff283d4525706ff363be7d58f0d137a82b9d4298fcea70c3ccf993499bf360b40d822355aac45b3bcb397b536325066ac7ff5a1ffae5
+  checksum: 10c0/ef220f9875d6a43bade906bd9b61118e812474bbe46e80f38c92dca238484170daf92d51e58bbade6433c29ffb5ba329f4864c5609f2e33c5e31041b1f8ad672
   languageName: node
   linkType: hard
 
@@ -8352,8 +8337,8 @@ __metadata:
   linkType: hard
 
 "engine.io@npm:~6.5.2":
-  version: 6.5.2
-  resolution: "engine.io@npm:6.5.2"
+  version: 6.5.5
+  resolution: "engine.io@npm:6.5.5"
   dependencies:
     "@types/cookie": "npm:^0.4.1"
     "@types/cors": "npm:^2.8.12"
@@ -8364,8 +8349,8 @@ __metadata:
     cors: "npm:~2.8.5"
     debug: "npm:~4.3.1"
     engine.io-parser: "npm:~5.2.1"
-    ws: "npm:~8.11.0"
-  checksum: 10c0/da8be3de6d3a58ef16a82e467b277febeb03c2c36ad545b8531a2dfe85bdc06b080a2c21586b37a5a9ee7f64bdef1fb0bf672ac51e4c99d592a066b3f41b0c2d
+    ws: "npm:~8.17.1"
+  checksum: 10c0/b0994134917c5d3649fd7aea283492eaf092131e572a8d379c7c9081548b42cff756730b4641edd0d1598148dd3be253c4d634cea2ba5c59622d175d9e567469
   languageName: node
   linkType: hard
 
@@ -9007,9 +8992,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"execa@npm:^9.1.0":
-  version: 9.1.0
-  resolution: "execa@npm:9.1.0"
+"execa@npm:^9.1.0, execa@npm:^9.2.0":
+  version: 9.2.0
+  resolution: "execa@npm:9.2.0"
   dependencies:
     "@sindresorhus/merge-streams": "npm:^4.0.0"
     cross-spawn: "npm:^7.0.3"
@@ -9023,7 +9008,7 @@ __metadata:
     signal-exit: "npm:^4.1.0"
     strip-final-newline: "npm:^4.0.0"
     yoctocolors: "npm:^2.0.0"
-  checksum: 10c0/9a4810b93d098eb0bed48793b61c3aa3e5804867c2c5808cd2a597a6e71738151a74dc792909085ce1d38e89f4b0e078d93ffd165aaca2d9a6728f3616f8e5c0
+  checksum: 10c0/339e69bd01bfdc032122ef18d412ccda4386c7752b864607c2e8683a1531b4aab436744aeacee548e1be239adb2b52888da64ffd761e7e22f56f8f14cf66e4a7
   languageName: node
   linkType: hard
 
@@ -9679,7 +9664,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-func-name@npm:^2.0.1, get-func-name@npm:^2.0.2":
+"get-func-name@npm:^2.0.1":
   version: 2.0.2
   resolution: "get-func-name@npm:2.0.2"
   checksum: 10c0/89830fd07623fa73429a711b9daecdb304386d237c71268007f788f113505ef1d4cc2d0b9680e072c5082490aec9df5d7758bf5ac6f1c37062855e8e3dc0b9df
@@ -14950,13 +14935,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io-adapter@npm:^2.5.4, socket.io-adapter@npm:~2.5.2":
-  version: 2.5.4
-  resolution: "socket.io-adapter@npm:2.5.4"
+"socket.io-adapter@npm:^2.5.5, socket.io-adapter@npm:~2.5.2":
+  version: 2.5.5
+  resolution: "socket.io-adapter@npm:2.5.5"
   dependencies:
     debug: "npm:~4.3.4"
-    ws: "npm:~8.11.0"
-  checksum: 10c0/839b50ba2a08a70ccf9b597b2f5e275a47c2f62fa423b1906249ab24facc7f2b7eeb695ef8bbfc3570ab769564fb9148d2608621800ef99917338fa9dd99e127
+    ws: "npm:~8.17.1"
+  checksum: 10c0/04a5a2a9c4399d1b6597c2afc4492ab1e73430cc124ab02b09e948eabf341180b3866e2b61b5084cb899beb68a4db7c328c29bda5efb9207671b5cb0bc6de44e
   languageName: node
   linkType: hard
 
@@ -16704,9 +16689,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.17.0":
-  version: 8.17.0
-  resolution: "ws@npm:8.17.0"
+"ws@npm:^8.17.0, ws@npm:~8.17.1":
+  version: 8.17.1
+  resolution: "ws@npm:8.17.1"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ">=5.0.2"
@@ -16715,22 +16700,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 10c0/55241ec93a66fdfc4bf4f8bc66c8eb038fda2c7a4ee8f6f157f2ca7dc7aa76aea0c0da0bf3adb2af390074a70a0e45456a2eaf80e581e630b75df10a64b0a990
-  languageName: node
-  linkType: hard
-
-"ws@npm:~8.11.0":
-  version: 8.11.0
-  resolution: "ws@npm:8.11.0"
-  peerDependencies:
-    bufferutil: ^4.0.1
-    utf-8-validate: ^5.0.2
-  peerDependenciesMeta:
-    bufferutil:
-      optional: true
-    utf-8-validate:
-      optional: true
-  checksum: 10c0/b672b312f357afba8568b9dbb9e08b9e8a20845659b35fa6b340dc848efe371379f5e22bb1dc89c4b2940d5e2dc52dd1de85dde41776875fce115a448f94754f
+  checksum: 10c0/f4a49064afae4500be772abdc2211c8518f39e1c959640457dcee15d4488628620625c783902a52af2dd02f68558da2868fd06e6fd0e67ebcd09e6881b1b5bfe
   languageName: node
   linkType: hard
 

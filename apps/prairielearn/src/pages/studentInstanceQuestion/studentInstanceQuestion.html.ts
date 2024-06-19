@@ -3,7 +3,9 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
+import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
@@ -36,7 +38,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
         </script>
-        ${resLocals.no_variant_exists
+        ${resLocals.variant == null
           ? ''
           : html`
               ${resLocals.question.type !== 'Freeform'
@@ -61,7 +63,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
-              ${resLocals.no_variant_exists
+              ${resLocals.variant == null
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
@@ -125,11 +127,18 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                     assessment_set: resLocals.assessment_set,
                     assessment_instance: resLocals.assessment_instance,
                   })}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../partials/questionScorePanel') %>",
-                resLocals,
-              )}
+              ${QuestionScorePanel({
+                instance_question: resLocals.instance_question,
+                assessment: resLocals.assessment,
+                assessment_question: resLocals.assessment_question,
+                question: resLocals.question,
+                assessment_instance: resLocals.assessment_instance,
+                instance_question_info: resLocals.instance_question_info,
+                variant: resLocals.variant,
+                authz_result: resLocals.authz_result,
+                csrfToken: resLocals.__csrf_token,
+                urlPrefix: resLocals.urlPrefix,
+              })}
               ${renderEjs(
                 import.meta.url,
                 "<%- include('../partials/questionNavSideButtonGroup') %>",
@@ -142,11 +151,24 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                     resLocals,
                   )
                 : ''}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../partials/instructorInfoPanel') %>",
-                resLocals,
-              )}
+              ${InstructorInfoPanel({
+                course: resLocals.course,
+                course_instance: resLocals.course_instance,
+                assessment: resLocals.assessment,
+                assessment_instance: resLocals.assessment_instance,
+                instance_question: resLocals.instance_question,
+                question: resLocals.question,
+                variant: resLocals.variant,
+                user: resLocals.user,
+                instance_group: resLocals.instance_group,
+                instance_group_uid_list: resLocals.instance_group_uid_list,
+                instance_user: resLocals.instance_user,
+                authz_data: resLocals.authz_data,
+                question_is_shared: resLocals.question_is_shared,
+                questionContext:
+                  resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
+                csrfToken: resLocals.__csrf_token,
+              })}
             </div>
           </div>
         </main>
