@@ -1,5 +1,6 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { Modal } from '../../components/Modal.html.js';
 
 const addSharingSetPopover = (resLocals) => {
@@ -59,13 +60,6 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
     </form>
   `.toString();
 };
-
-interface SharingSetModalProps {
-  csrfToken: string;
-  title: string;
-  sharing_set: { name: string; id: string; deletable: boolean };
-}
-
 
 function deleteSharingSetModal(sharing_set, csrfToken) {
   let body: HtmlSafeString;

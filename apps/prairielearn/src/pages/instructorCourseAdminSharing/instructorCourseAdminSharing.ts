@@ -66,7 +66,7 @@ router.get(
         name: z.string(),
         id: z.string(),
         shared_with: z.string().array(),
-        deletable: z.boolean(),
+        deletable: z.boolean().optional(), // Not in the database, but added in the code
       }),
     );
 
@@ -79,11 +79,9 @@ router.get(
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
     for (const sharingSet of sharingSets) {
-      sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet.id);
-      console.log(sharingSet); // TEST
+      const deletable = await selectCanDeleteSharingSet(sharingSet.id);
+      sharingSet.deletable = deletable !== undefined ? deletable : false; // default to false if somehow undefined
     }
-
-
     
 
     res.send(
