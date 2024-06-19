@@ -82,12 +82,14 @@ router.get(
       sharingSet.deletable = Boolean(deletable);
     }
     
+    // Explicitly type sharingSets after adding the deletable field (until we add deletable to the 'select_sharing_sets' query)
+const typedSharingSets: { name: string; id: string; shared_with: string[]; deletable: boolean; }[] = sharingSets;
 
     res.send(
       InstructorSharing({
         sharingName: sharingInfo.sharing_name,
         sharingToken: sharingInfo.sharing_token,
-        sharingSets,
+        sharingSets: typedSharingSets,
         publicSharingLink,
         canChooseSharingName,
         resLocals: res.locals,
