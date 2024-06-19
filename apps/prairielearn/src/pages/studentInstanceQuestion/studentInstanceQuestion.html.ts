@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
+import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
@@ -139,11 +140,17 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 csrfToken: resLocals.__csrf_token,
                 urlPrefix: resLocals.urlPrefix,
               })}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../partials/questionNavSideButtonGroup') %>",
-                resLocals,
-              )}
+              ${QuestionNavSideGroup({
+                urlPrefix: resLocals.urlPrefix,
+                prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question?.id,
+                nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question?.id,
+                sequenceLocked:
+                  resLocals.instance_question_info.next_instance_question?.sequence_locked,
+                prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
+                nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
+                advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
+                userGroupRoles: resLocals.assessment_instance.user_group_roles,
+              })}
               ${config.attachedFilesDialogEnabled
                 ? renderEjs(
                     import.meta.url,

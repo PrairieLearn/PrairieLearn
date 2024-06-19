@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
-import { InstructorJobSequence } from './instructorJobSequence.html.js';
+import { JobSequence } from './jobSequence.html.js';
 
 const router = Router();
 
@@ -16,9 +16,9 @@ router.get(
     const course_id = res.locals.course?.id ?? null;
     const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
 
-    // Verify existence of authz_data, which means that we are accessing the
-    // job sequence through a course or a course instance. (The only way for
-    // this not to be the case is if we are in devMode.)
+    // Verify existence of authz_data, which means that we are accessing the job
+    // sequence through a course or a course instance. If authz_data does not
+    // exist, we are either in administrator mode or in dev mode.
     if (res.locals.authz_data) {
       // Some job sequences show information that should only be available to
       // users who can view code (Course role: Viewer) or who can view student
@@ -53,7 +53,7 @@ router.get(
       }
     }
 
-    res.send(InstructorJobSequence({ resLocals: res.locals, job_sequence }));
+    res.send(JobSequence({ resLocals: res.locals, job_sequence }));
   }),
 );
 

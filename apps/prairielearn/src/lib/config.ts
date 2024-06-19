@@ -82,7 +82,29 @@ const ConfigSchema = z.object({
   /** Sets the default user email in development. */
   authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
-  sessionStoreExpireSeconds: z.number().default(86400),
+  /**
+   * How long a session should be kept alive in the session store.
+   */
+  sessionStoreExpireSeconds: z.number().default(30 * 24 * 60 * 60),
+  /**
+   * Used to determine how often the session will have its expiration time
+   * automatically extended. The session will be extended if the session is
+   * set to expire within the next `expireSeconds - throttleSeconds`. For
+   * instance, if `sessionStoreExpireSeconds = 24 * 60 * 60` (24 hours) and
+   * `sessionStoreAutoExtendThrottleSeconds = 1 * 60 * 60` (1 hour), then the
+   * session will be extended if it is set to expire within the next 23 hours.
+   *
+   * Another way to think about this is that, assuming frequent user activity,
+   * the session will be extended roughly every hour.
+   *
+   * See the full implementation of this in `server.js`.
+   *
+   * This should most likely be set to a value that's significantly smaller than
+   * `sessionStoreExpireSeconds` to ensure that users don't unexpectedly find
+   * themselves logged out. The default (1 hour) was chosen to complement the
+   * default session duration of 30 days.
+   */
+  sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
     .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
