@@ -12,7 +12,7 @@ export function parseHTML(document: Document, html: string | HtmlSafeString): Do
  * {@link DocumentFragment}. If the HTML being parsed does not contain
  * exactly one element, an error is thrown.
  */
-export function parseHTMLElement<T extends Element>(
+export function parseHTMLElement<T extends Element = Element>(
   document: Document,
   html: string | HtmlSafeString,
 ): T {
