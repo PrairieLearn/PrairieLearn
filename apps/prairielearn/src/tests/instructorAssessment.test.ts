@@ -305,7 +305,7 @@ describe('Instructor assessment editing', function () {
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__action = elemList[0].attribs.value;
       assert.isString(locals.__action);
-      assert.equal(locals.__action, 'edit_question_score_perc');
+      assert.equal(locals.__action, 'edit_question_points');
     });
     it('data-content should have an instance_question_id', function () {
       elemList = locals.data$('form input[name="instance_question_id"]');

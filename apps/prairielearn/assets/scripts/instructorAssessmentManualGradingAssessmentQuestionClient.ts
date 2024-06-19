@@ -1,8 +1,9 @@
 import { BootstrapTableColumn } from 'bootstrap-table';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import { EditQuestionPointsScoreForm } from '../../src/components/EditQuestionPointsScore.html.js';
 import { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 
@@ -95,10 +96,20 @@ onDocumentReady(() => {
       updateGradingTagButton();
       $('#grading-table [data-toggle="popover"]').popover({
         sanitize: false,
-        content() {
-          const dataContent = $($(this).data('base-content'));
-          dataContent.submit(ajaxSubmit).submit(() => $(this).popover('hide'));
-          return dataContent;
+        content(this: Element) {
+          const form = parseHTMLElement<HTMLFormElement>(
+            document,
+            (this as HTMLElement).dataset.baseContent || '',
+          );
+          console.log(form, form.tagName);
+          if (form.tagName === 'FORM') {
+            console.log('about to add event listener to form');
+            form.addEventListener('submit', (event) => {
+              ajaxSubmit(event);
+              $(this).popover('hide');
+            });
+          }
+          return form;
         },
       });
       $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
@@ -304,10 +315,15 @@ function updateGradingTagButton() {
   );
 }
 
-function pointsFormatter(points: string, row: any, _index: number, field: string) {
-  const { hasCourseInstancePermissionEdit } =
+function pointsFormatter(
+  points: string,
+  row: any,
+  _index: number,
+  field: 'manual_points' | 'auto_points' | 'points',
+) {
+  const { hasCourseInstancePermissionEdit, assessmentId, manualRubricId, urlPrefix, csrfToken } =
     document.getElementById('grading-table')?.dataset ?? {};
-  const max =
+  const maxPoints =
     field === 'manual_points'
       ? row.max_manual_points
       : field === 'auto_points'
@@ -315,18 +331,28 @@ function pointsFormatter(points: string, row: any, _index: number, field: string
         : field === 'points'
           ? row.max_points
           : 0;
-  console.log({ points, row, field, max });
+  const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
-  // TODO Edit form
-  const editForm = html``;
+  const editForm = EditQuestionPointsScoreForm({
+    field,
+    pointsOrScore: Number(points),
+    maxPoints,
+    instanceQuestionId: row.id,
+    assessmentId: assessmentId ?? '',
+    rubricId: manualRubricId ?? '',
+    modifiedAt: row.modified_at,
+    urlPrefix: urlPrefix ?? '',
+    csrfToken: csrfToken ?? '',
+    popoverId: buttonId,
+  });
 
   return html`${formatPoints(Number(points))}
-    <small>/<span class="text-muted">${max}</span></small> ${hasCourseInstancePermissionEdit ===
-    'true'
+    <small>/<span class="text-muted">${maxPoints}</span></small>
+    ${hasCourseInstancePermissionEdit === 'true'
       ? html`<button
           type="button"
           class="btn btn-xs btn-secondary"
-          id="editQuestionPoints_${field}_${row.id}"
+          id="${buttonId}"
           data-toggle="popover"
           data-container="body"
           data-html="true"
@@ -340,10 +366,21 @@ function pointsFormatter(points: string, row: any, _index: number, field: string
 }
 
 function scorebarFormatter(score: number | null, row: any) {
-  const { hasCourseInstancePermissionEdit } =
+  const { hasCourseInstancePermissionEdit, assessmentId, manualRubricId, urlPrefix, csrfToken } =
     document.getElementById('grading-table')?.dataset ?? {};
-  // TODO Edit form
-  const editForm = html``;
+  const buttonId = `editQuestionScorePerc${row.id}`;
+
+  const editForm = EditQuestionPointsScoreForm({
+    field: 'score_perc',
+    pointsOrScore: Number(score),
+    instanceQuestionId: row.id,
+    assessmentId: assessmentId ?? '',
+    rubricId: manualRubricId ?? '',
+    modifiedAt: row.modified_at,
+    urlPrefix: urlPrefix ?? '',
+    csrfToken: csrfToken ?? '',
+    popoverId: buttonId,
+  });
 
   return html`<div class="d-inline-block align-middle">
       ${score == null
@@ -367,7 +404,7 @@ function scorebarFormatter(score: number | null, row: any) {
       ? html`<button
           type="button"
           class="btn btn-xs btn-secondary"
-          id="editQuestionScorePerc${row.id}"
+          id="${buttonId}"
           data-toggle="popover"
           data-container="body"
           data-html="true"

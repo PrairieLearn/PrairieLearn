@@ -108,24 +108,8 @@ router.post(
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
+          score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
-      );
-      if (result.modified_at_conflict) {
-        res.send({
-          conflict_grading_job_id: result.grading_job_id,
-          conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
-        });
-      } else {
-        res.send({});
-      }
-    } else if (req.body.__action === 'edit_question_score_perc') {
-      const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment.id,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at,
-        { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id,
       );
       if (result.modified_at_conflict) {

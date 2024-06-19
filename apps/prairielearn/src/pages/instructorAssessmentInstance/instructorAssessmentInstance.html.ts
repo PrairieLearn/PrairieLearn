@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { EditQuestionPointsScoreForm } from '../../components/EditQuestionPointsScore.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
@@ -361,19 +362,19 @@ export function InstructorAssessmentInstance({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm'); %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPointsAuto' + i_instance_question,
+                                data-content="${escapeHtml(
+                                  EditQuestionPointsScoreForm({
                                     field: 'auto_points',
-                                    instance_question: {
-                                      ...instance_question,
-                                      points: instance_question.auto_points,
-                                      max_points: instance_question.max_auto_points,
-                                    },
-                                  },
+                                    pointsOrScore: instance_question.auto_points,
+                                    maxPoints: instance_question.max_auto_points,
+                                    instanceQuestionId: instance_question.id,
+                                    assessmentId: resLocals.assessment.id,
+                                    rubricId: instance_question.manual_rubric_id,
+                                    modifiedAt: instance_question.modified_at,
+                                    urlPrefix: resLocals.urlPrefix,
+                                    csrfToken: resLocals.__csrf_token,
+                                    popoverId: `editQuestionPointsAuto${i_instance_question}`,
+                                  }),
                                 )}"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
@@ -398,19 +399,19 @@ export function InstructorAssessmentInstance({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm') %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPointsManual' + i_instance_question,
+                                data-content="${escapeHtml(
+                                  EditQuestionPointsScoreForm({
                                     field: 'manual_points',
-                                    instance_question: {
-                                      ...instance_question,
-                                      points: instance_question.manual_points,
-                                      max_points: instance_question.max_manual_points,
-                                    },
-                                  },
+                                    pointsOrScore: instance_question.manual_points,
+                                    maxPoints: instance_question.max_manual_points,
+                                    instanceQuestionId: instance_question.id,
+                                    assessmentId: resLocals.assessment.id,
+                                    rubricId: instance_question.manual_rubric_id,
+                                    modifiedAt: instance_question.modified_at,
+                                    urlPrefix: resLocals.urlPrefix,
+                                    csrfToken: resLocals.__csrf_token,
+                                    popoverId: `editQuestionPointsManual${i_instance_question}`,
+                                  }),
                                 )}"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
@@ -435,14 +436,19 @@ export function InstructorAssessmentInstance({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm'); %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPoints' + i_instance_question,
-                                    instance_question,
-                                  },
+                                data-content="${escapeHtml(
+                                  EditQuestionPointsScoreForm({
+                                    field: 'points',
+                                    pointsOrScore: instance_question.points,
+                                    maxPoints: instance_question.max_points,
+                                    instanceQuestionId: instance_question.id,
+                                    assessmentId: resLocals.assessment.id,
+                                    rubricId: instance_question.manual_rubric_id,
+                                    modifiedAt: instance_question.modified_at,
+                                    urlPrefix: resLocals.urlPrefix,
+                                    csrfToken: resLocals.__csrf_token,
+                                    popoverId: `editQuestionPoints${i_instance_question}`,
+                                  }),
                                 )}"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
@@ -467,14 +473,18 @@ export function InstructorAssessmentInstance({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Change question ${instance_question.question_number} percentage score"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionScorePercForm');%>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionScorePerc' + i_instance_question,
-                                    instance_question,
-                                  },
+                                data-content="${escapeHtml(
+                                  EditQuestionPointsScoreForm({
+                                    field: 'score_perc',
+                                    pointsOrScore: instance_question.score_perc,
+                                    instanceQuestionId: instance_question.id,
+                                    assessmentId: resLocals.assessment.id,
+                                    rubricId: instance_question.manual_rubric_id,
+                                    modifiedAt: instance_question.modified_at,
+                                    urlPrefix: resLocals.urlPrefix,
+                                    csrfToken: resLocals.__csrf_token,
+                                    popoverId: `editQuestionScorePerc${i_instance_question}`,
+                                  }),
                                 )}"
                               >
                                 <i class="fa fa-edit" aria-hidden="true"></i>
