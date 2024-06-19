@@ -94,8 +94,8 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
   return Modal({
     title: 'Delete Sharing Set',
     id: `deleteSharingSetModal-${sharing_set.id}`,
-    body: body,
-    footer: footer,
+    body,
+    footer,
     size: 'default',
   });
 }

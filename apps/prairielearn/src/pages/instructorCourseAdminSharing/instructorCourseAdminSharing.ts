@@ -29,7 +29,7 @@ async function selectCanDeleteSharingSet(sharing_set_id) {
   const can_delete = ! (await sqldb.queryOptionalRow(
     sql.select_sharing_set_shared_and_has_question,
     {
-      sharing_set_id: sharing_set_id,
+      sharing_set_id,
     },
     z.boolean().nullable(),
   ));
