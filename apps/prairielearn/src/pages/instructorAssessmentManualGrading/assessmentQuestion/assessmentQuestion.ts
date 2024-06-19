@@ -8,6 +8,8 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 
+import { AssessmentQuestion } from './assessmentQuestion.html.js';
+
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -30,7 +32,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    res.send(AssessmentQuestion({ resLocals: res.locals }));
   }),
 );
 
