@@ -33,14 +33,18 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function editPublicSharingWithSource (course_id: string, question_id: string, share_source_code: boolean) {
+async function editPublicSharingWithSource(
+  course_id: string,
+  question_id: string,
+  share_source_code: boolean,
+) {
   if (share_source_code == null) {
     share_source_code = false;
   }
   await sqldb.queryAsync(sql.update_question_shared_publicly_with_source, {
-    course_id: course_id,
-    question_id: question_id,
-    share_source_code: share_source_code,
+    course_id,
+    question_id,
+    share_source_code,
   });
 }
 
@@ -208,11 +212,19 @@ router.post(
       });
       if (req.body.share_source_code != null) {
         // Share source code if the checkbox is checked
-        await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
+        await editPublicSharingWithSource(
+          res.locals.course.id,
+          res.locals.question.id,
+          req.body.share_source_code,
+        );
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_public_sharing') {
-      await editPublicSharingWithSource(res.locals.course.id, res.locals.question.id, req.body.share_source_code);
+      await editPublicSharingWithSource(
+        res.locals.course.id,
+        res.locals.question.id,
+        req.body.share_source_code,
+      );
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
