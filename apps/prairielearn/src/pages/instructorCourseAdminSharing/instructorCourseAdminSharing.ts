@@ -59,20 +59,22 @@ router.get(
       }),
     );
 
+    /*TEST
     type SharingSetType = {
       name: string;
       id: string;
       shared_with: string[];
       deletable: boolean;
-    };
+    };*/
 
-    const sharingSets: SharingSetType[] = await sqldb.queryRows(
+    const sharingSets = await sqldb.queryRows(
       sql.select_sharing_sets,
       { course_id: res.locals.course.id },
       z.object({
         name: z.string(),
         id: z.string(),
         shared_with: z.string().array(),
+        deletable: z.boolean().optional().default(false),
       }),
     );
 
