@@ -67,9 +67,7 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
   if (sharing_set.deletable) {
     body = html`
       <p><strong>This action cannot be undone.</strong></p>
-      <p>
-        Are you sure you would like to delete the sharing set "${sharing_set.name}"?
-      </p>
+      <p>Are you sure you would like to delete the sharing set "${sharing_set.name}"?</p>
     `;
     footer = html`
       <input type="hidden" name="__action" value="delete_sharing_set" />
@@ -82,11 +80,11 @@ function deleteSharingSetModal(sharing_set, csrfToken) {
     body = html`
       <p><strong>Unable to delete sharing set.</strong></p>
       <p>
-        This sharing set cannot be deleted because it has been shared 
-        and at least one question has been added. Doing so would break the 
-        assessments of other courses that have imported your questions.
+        This sharing set cannot be deleted because it has been shared and at least one question has
+        been added. Doing so would break the assessments of other courses that have imported your
+        questions.
       </p>
-      `;
+    `;
     footer = html`
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `;
@@ -284,27 +282,30 @@ export const InstructorSharing = ({
                           (course_shared_with) => html`
                             <span class="badge color-gray1"> ${course_shared_with} </span>
                           `,
-                        )} ${isCourseOwner
+                        )}
+                        ${isCourseOwner
                           ? html`
-                            <div class="btn-group btn-group-sm" role="group">
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-outline-dark"
-                                id="addCourseToSS-${sharing_set.id}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Add Course to Sharing Set"
-                                data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
-                              >
-                                Add...
-                                <i class="fas fa-plus" aria-hidden="true"></i>
-                              </button>
-                            </div>
-                          `
-                          : ''
-                        } 
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-dark"
+                                  id="addCourseToSS-${sharing_set.id}"
+                                  data-toggle="popover"
+                                  data-container="body"
+                                  data-html="true"
+                                  data-placement="auto"
+                                  title="Add Course to Sharing Set"
+                                  data-content="${addCourseToSharingSetPopover(
+                                    resLocals,
+                                    sharing_set,
+                                  )}"
+                                >
+                                  Add...
+                                  <i class="fas fa-plus" aria-hidden="true"></i>
+                                </button>
+                              </div>
+                            `
+                          : ''}
                         <style>
                           .align-right {
                             float: right;

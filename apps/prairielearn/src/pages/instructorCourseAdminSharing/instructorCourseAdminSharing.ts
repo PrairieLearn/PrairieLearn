@@ -26,20 +26,16 @@ async function selectCanChooseSharingName(course) {
 }
 
 async function selectCanDeleteSharingSet(sharing_set_id) {
-  const can_delete = ! (await sqldb.queryOptionalRow(
+  const can_delete = !(await sqldb.queryOptionalRow(
     sql.select_sharing_set_shared_and_has_question,
     {
       sharing_set_id,
     },
     z.boolean().nullable(),
   ));
-  
-  return (
-    can_delete
-  );
 
+  return can_delete;
 }
-
 
 router.get(
   '/',
@@ -168,8 +164,9 @@ router.post(
         });
       } else {
         throw new error.HttpStatusError(
-          400, 
-          'Unable to delete sharing set. The sharing set has been shared and at least one question has been added.');
+          400,
+          'Unable to delete sharing set. The sharing set has been shared and at least one question has been added.',
+        );
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

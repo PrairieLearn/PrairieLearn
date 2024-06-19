@@ -102,7 +102,8 @@ SELECT
       sharing_set_courses
     WHERE
       sharing_set_id = $sharing_set_id
-  ) AND EXISTS (
+  )
+  AND EXISTS (
     SELECT -- set has question(s)?
       1
     FROM
@@ -112,6 +113,6 @@ SELECT
   );
 
 -- BLOCK delete_sharing_set
-DELETE 
-  FROM sharing_sets 
-  WHERE id = $sharing_set_id;
+DELETE FROM sharing_sets
+WHERE
+  id = $sharing_set_id;
