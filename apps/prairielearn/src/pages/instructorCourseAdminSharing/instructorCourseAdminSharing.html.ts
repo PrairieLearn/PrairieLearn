@@ -66,13 +66,10 @@ interface SharingSetModalProps {
   sharing_set: { name: string; id: string; deletable: boolean };
 }
 
-/*
- * TEST, better way to choose body and footer based on deletable?
- * Doing it with the " ? : " operator makes the Modal appear as an arrow tag above the button.
-*/
+
 function deleteSharingSetModal(sharing_set, csrfToken) {
-  let body = '';
-  let footer = '';
+  let body: HtmlSafeString;
+  let footer: HtmlSafeString;
   if (sharing_set.deletable) {
     body = html`
       <p><strong>This action cannot be undone.</strong></p>

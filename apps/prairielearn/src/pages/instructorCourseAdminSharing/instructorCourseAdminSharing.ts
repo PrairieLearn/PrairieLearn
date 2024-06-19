@@ -66,6 +66,7 @@ router.get(
         name: z.string(),
         id: z.string(),
         shared_with: z.string().array(),
+        deletable: z.boolean(),
       }),
     );
 
@@ -79,7 +80,10 @@ router.get(
 
     for (const sharingSet of sharingSets) {
       sharingSet.deletable = await selectCanDeleteSharingSet(sharingSet.id);
+      console.log(sharingSet); // TEST
     }
+
+
     
 
     res.send(
