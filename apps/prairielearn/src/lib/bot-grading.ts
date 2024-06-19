@@ -35,6 +35,7 @@ export async function botGrade({
   assessment_question,
   urlPrefix,
   authn_user_id,
+  user_id,
 }: {
   question: Question;
   course: Course;
@@ -42,6 +43,7 @@ export async function botGrade({
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
+  user_id: string;
 }): Promise<string> {
   // if OpenAI API Key and Organization are not provided, throw error
   if (!config.openAiApiKey || !config.openAiOrganization) {
@@ -59,6 +61,7 @@ export async function botGrade({
     courseInstanceId: course_instance_id,
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
+    userId: user_id,
     type: 'bot_grading',
     description: 'Use LLM to grade assessment question',
   });
@@ -134,7 +137,7 @@ export async function botGrade({
           },
         ],
         model: 'gpt-3.5-turbo',
-        user: course.id.toString(),
+        user: `course_${course.id}`,
       });
 
       let msg = `\nInstance question ${instance_question.id}\n`;

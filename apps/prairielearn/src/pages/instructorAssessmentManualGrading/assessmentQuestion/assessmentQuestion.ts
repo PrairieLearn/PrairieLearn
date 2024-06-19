@@ -152,7 +152,8 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authz_data.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
