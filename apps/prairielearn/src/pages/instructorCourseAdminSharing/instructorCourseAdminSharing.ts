@@ -66,7 +66,7 @@ router.get(
         name: z.string(),
         id: z.string(),
         shared_with: z.string().array(),
-        deletable: z.boolean().optional(), // Not in the database, but added in the code
+        deletable: z.boolean().optional(), // Not in the database, but added in the next for loop
       }),
     );
 
@@ -80,7 +80,7 @@ router.get(
 
     for (const sharingSet of sharingSets) {
       const deletable = await selectCanDeleteSharingSet(sharingSet.id);
-      sharingSet.deletable = deletable !== undefined ? deletable : false; // default to false if somehow undefined
+      sharingSet.deletable = Boolean(deletable);
     }
     
 
