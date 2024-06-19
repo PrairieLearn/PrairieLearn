@@ -2,6 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Modal } from '../../../components/Modal.html.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
 
 export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, any> }) {
@@ -57,27 +58,7 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        <div class="modal" tabindex="-1" role="dialog" id="grading-conflict-modal">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Grading conflict detected</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <p>Another grader has already graded this submission.</p>
-              </div>
-              <div class="modal-footer">
-                <a class="btn btn-primary conflict-details-link" href="/">See details</a>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${GradingConflictModal()}
         <main id="content" class="container-fluid">
           ${renderEjs(
             import.meta.url,
@@ -124,4 +105,16 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
       </body>
     </html>
   `.toString();
+}
+
+function GradingConflictModal() {
+  return Modal({
+    id: 'grading-conflict-modal',
+    title: 'Grading conflict detected',
+    body: html`<p>Another grader has already graded this submission.</p>`,
+    footer: html`
+      <a class="btn btn-primary conflict-details-link" href="/">See details</a>
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Dismiss</button>
+    `,
+  });
 }
