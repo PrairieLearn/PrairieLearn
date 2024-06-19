@@ -71,13 +71,13 @@ export function QuestionNavSideButton({
     `;
   }
 
-  if (sequenceLocked) {
+  if (groupRolePermissions?.can_view === false) {
+    disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
+    ${button.label.toLowerCase()}.`;
+  } else if (sequenceLocked) {
     disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission
       to this question in order to unlock the next. If you run out of attempts, the next question
       will unlock automatically.`;
-  } else if (groupRolePermissions?.can_view === false) {
-    disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
-    ${button.label.toLowerCase()}.`;
   }
 
   if (disabledExplanation != null) {
