@@ -31,6 +31,7 @@ export function QuestionContainer({
     issues,
     variant,
     instance_question,
+    user,
     variantToken,
     __csrf_token,
     questionJsonBase64,
@@ -53,6 +54,7 @@ export function QuestionContainer({
       data-variant-id="${variant.id}"
       data-question-id="${question.id}"
       data-instance-question-id="${instance_question?.id ?? ''}"
+      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
       data-url-prefix="${urlPrefix}"
       data-question-context="${questionContext}"
