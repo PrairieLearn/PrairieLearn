@@ -174,12 +174,17 @@ export async function initExpress() {
     }),
   );
 
+  // This middleware helps ensure that sessions remain alive (un-expired) as
+  // long as users are somewhat frequently active. See the documentation for
+  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
   app.use((req, res, next) => {
-    // If the session is going to expire in the near future, we'll extend it
-    // automatically for the user.
-    //
-    // TODO: make this configurable?
-    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+    // Compute the number of milliseconds until the session expires.
+    const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
+
+    if (
+      sessionTtl <
+      (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
+    ) {
       req.session.setExpiration(config.sessionStoreExpireSeconds);
     }
 
