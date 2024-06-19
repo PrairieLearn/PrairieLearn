@@ -41,10 +41,10 @@ jobs:
           # This invokes the `version` script in `package.json`, which will run
           # `changeset version` and then `yarn`. We need to run `yarn` in order
           # to update `yarn.lock`:  https://github.com/changesets/action/issues/170
-          version: yarn version
+          version: yarn run version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
-          publish: yarn release
+          publish: yarn run release
           # Avoid creating GitHub releaseses, as we don't need them.
           # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false
