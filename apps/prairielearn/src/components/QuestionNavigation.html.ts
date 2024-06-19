@@ -22,7 +22,7 @@ export function QuestionNavSideGroup({
   return html`
     <div class="text-center mb-2">
       ${QuestionNavSideButton({
-        questionId: prevInstanceQuestionId,
+        instanceQuestionId: prevInstanceQuestionId,
         urlPrefix,
         button: { id: 'question-nav-prev', label: 'Previous question' },
         groupRolePermissions: prevGroupRolePermissions,
@@ -31,7 +31,7 @@ export function QuestionNavSideGroup({
       ${QuestionNavSideButton({
         // NOTE: This must be kept in sync the the corresponding code in
         // `lib/question-render.js`.
-        questionId: nextInstanceQuestionId,
+        instanceQuestionId: nextInstanceQuestionId,
         sequenceLocked,
         urlPrefix,
         button: { id: 'question-nav-next', label: 'Next question' },
@@ -44,7 +44,7 @@ export function QuestionNavSideGroup({
 }
 
 export function QuestionNavSideButton({
-  questionId,
+  instanceQuestionId,
   sequenceLocked,
   urlPrefix,
   button,
@@ -52,7 +52,7 @@ export function QuestionNavSideButton({
   advanceScorePerc,
   userGroupRoles,
 }: {
-  questionId: string | null;
+  instanceQuestionId: string | null;
   sequenceLocked?: boolean | null;
   groupRolePermissions: { can_view?: boolean } | null;
   button: { id: string; label: string };
@@ -63,7 +63,7 @@ export function QuestionNavSideButton({
   const classes = 'btn text-white mb-3';
   let disabledExplanation: HtmlValue | null = null;
 
-  if (questionId == null) {
+  if (instanceQuestionId == null) {
     return html`
       <button id="${button.id}" class="${classes} btn-primary disabled" disabled>
         ${button.label}
@@ -101,7 +101,7 @@ export function QuestionNavSideButton({
     <a
       id="${button.id}"
       class="${classes} btn-primary"
-      href="${urlPrefix}/instance_question/${questionId}/"
+      href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
       ${button.label}
     </a>

@@ -763,7 +763,7 @@ export async function renderPanelsForSubmission({
       // NOTE: This must be kept in sync with the corresponding code in
       // `components/QuestionNavigation.html.ts`.
       panels.questionNavNextButton = QuestionNavSideButton({
-        questionId: next_instance_question.id,
+        instanceQuestionId: next_instance_question.id,
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
         button: { id: 'question-nav-next', label: 'Next question' },
