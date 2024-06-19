@@ -673,7 +673,7 @@ export async function initExpress() {
         res.locals.navPage = 'job_sequence';
         next();
       },
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+      (await import('./pages/jobSequence/jobSequence.js')).default,
     ]);
   }
 
@@ -1243,7 +1243,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/loadFromDisk',
@@ -1615,7 +1615,7 @@ export async function initExpress() {
     );
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+      (await import('./pages/jobSequence/jobSequence.js')).default,
     );
   }
 
@@ -1890,7 +1890,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
@@ -2079,7 +2079,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/administrator/jobSequence',
-    (await import('./pages/administratorJobSequence/administratorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/administrator/courseRequests',
