@@ -734,7 +734,9 @@ export async function renderPanelsForSubmission({
     async () => {
       if (!renderScorePanels) return;
 
-      // only render if variant is part of assessment, and there is a next question
+      // If there is no assessment, the next question button won't exist, so it
+      // does not need to be rendered. If there is no next question, the button
+      // is disabled, so it does not need to be replaced.
       if (variant.instance_question_id == null || next_instance_question.id == null) return;
 
       /** @type {{can_view: boolean} | null} */
