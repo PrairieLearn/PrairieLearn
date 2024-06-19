@@ -12,6 +12,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionScorePanel } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -89,6 +90,7 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
+  question_number: z.string().nullable(),
 });
 
 /**
@@ -586,6 +588,7 @@ export async function renderPanelsForSubmission({
     grading_job_status,
     formatted_date,
     user_uid,
+    question_number,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -672,29 +675,31 @@ export async function renderPanelsForSubmission({
 
       // The score panel can and should only be rendered for
       // questions that are part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (
+        instance_question == null ||
+        assessment_question == null ||
+        assessment_instance == null ||
+        assessment == null
+      ) {
+        return;
+      }
+      if (csrfToken == null) {
+        // This should not happen in this context
+        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
+      }
 
-      const renderParams = {
+      panels.questionScorePanel = QuestionScorePanel({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        submission,
-        __csrf_token: csrfToken,
+        csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: { previous_variants },
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionScorePanel.ejs',
-      );
-      panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
+        instance_question_info: { question_number, previous_variants },
+      }).toString();
     },
     async () => {
       // Render the assessment score panel

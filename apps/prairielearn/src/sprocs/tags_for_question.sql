@@ -6,7 +6,8 @@ SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(
         'name',tag.name,
         'id',tag.id,
-        'color',tag.color
+        'color',tag.color,
+        'description',tag.description
     ) ORDER BY tag.number, tag.id)
 FROM
     tags AS tag

@@ -1,6 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
@@ -55,9 +56,16 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
                   </div>
                 </div>
               </div>
-              ${renderEjs(import.meta.url, "<%- include('../partials/instructorInfoPanel'); %>", {
-                ...resLocals,
-                question_context: 'instructor',
+              ${InstructorInfoPanel({
+                course: resLocals.course,
+                course_instance: resLocals.course_instance,
+                question: resLocals.question,
+                variant: resLocals.variant,
+                user: resLocals.user,
+                authz_data: resLocals.authz_data,
+                question_is_shared: resLocals.question_is_shared,
+                questionContext: 'instructor',
+                csrfToken: resLocals.__csrf_token,
               })}
             </div>
           </div>

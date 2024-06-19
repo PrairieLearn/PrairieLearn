@@ -65,6 +65,15 @@ async function testProject(options: CompiledAssetsOptions) {
         const cssText = await cssRes.text();
         assert.match(cssText, /body\s*\{/);
         assert.match(cssText, /color:\s*red/);
+
+        assert.throws(
+          () => compiledScriptPath('nonexistent.js'),
+          'Unknown scripts asset: nonexistent.js',
+        );
+        assert.throws(
+          () => compiledStylesheetPath('nonexistent.css'),
+          'Unknown stylesheets asset: nonexistent.css',
+        );
       } finally {
         server.close();
       }
