@@ -10,6 +10,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import { AssessmentOpenInstancesAlert } from '../../partials/AssessmentOpenInstancesAlert.html.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -35,6 +36,7 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
     authz_data,
     assessment_question,
     course_staff,
+    num_open_instances,
   } = resLocals;
 
   return html`
@@ -64,11 +66,12 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         ${GradingConflictModal()}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/assessmentOpenInstancesAlert') %>",
-            resLocals,
-          )}
+          ${AssessmentOpenInstancesAlert({
+            numOpenInstances: num_open_instances,
+            assessmentId: assessment.id,
+            urlPrefix,
+          })}
+
           <a
             class="btn btn-primary mb-2"
             href="${urlPrefix}/assessment/${assessment.id}/manual_grading"
