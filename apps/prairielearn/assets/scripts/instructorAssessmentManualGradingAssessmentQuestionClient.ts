@@ -1,7 +1,7 @@
-import { onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
-import { escapeHtml, html } from '@prairielearn/html';
+import { onDocumentReady } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
-import { EditQuestionPointsScoreForm } from '../../src/components/EditQuestionPointsScore.html.js';
+import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 
@@ -86,31 +86,9 @@ onDocumentReady(() => {
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]').popover({
-        sanitize: false,
-        content(this: Element) {
-          const form = parseHTMLElement<HTMLFormElement>(
-            document,
-            (this as HTMLElement).dataset.baseContent || '',
-          );
-          // The content may not be a form if there are rubrics, in that case do nothing.
-          if (form.tagName === 'FORM') {
-            form.addEventListener('submit', (event) => {
-              ajaxSubmit.call(form, event).then((data) => {
-                if (data.conflict_grading_job_id) {
-                  $('#grading-conflict-modal')
-                    .find('a.conflict-details-link')
-                    .attr('href', data.conflict_details_url);
-                  $('#grading-conflict-modal').modal({});
-                }
-                $('#grading-table').bootstrapTable('refresh');
-                $(this).popover('hide');
-              });
-            });
-          }
-          return form;
-        },
-      });
+      $('#grading-table [data-toggle="popover"]')
+        .popover({ sanitize: false })
+        .on('shown.bs.popover', updatePointsPopoverHandlers);
       $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
     },
     columns: [
@@ -233,6 +211,25 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   return await response.json();
 }
 
+async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent) {
+  const data = await ajaxSubmit.call(this, event);
+  if (data.conflict_grading_job_id) {
+    $('#grading-conflict-modal')
+      .find('a.conflict-details-link')
+      .attr('href', data.conflict_details_url);
+    $('#grading-conflict-modal').modal({});
+  }
+  $('#grading-table').bootstrapTable('refresh');
+}
+
+function updatePointsPopoverHandlers(this: Element) {
+  document.querySelectorAll<HTMLFormElement>('form[name=edit-points-form]').forEach((form) => {
+    // Ensures that, if two popovers are open at the same time, the event listener is not added twice
+    form.removeEventListener('submit', pointsFormEventListener);
+    form.addEventListener('submit', pointsFormEventListener);
+  });
+}
+
 function gradingTagDropdown() {
   const courseStaff: User[] =
     JSON.parse(document.getElementById('grading-table')?.dataset.courseStaff ?? '[]') || [];
@@ -311,66 +308,29 @@ function pointsFormatter(
   _index: number,
   field: 'manual_points' | 'auto_points' | 'points',
 ) {
-  const { hasCourseInstancePermissionEdit, assessmentId, manualRubricId, urlPrefix, csrfToken } =
+  const { hasCourseInstancePermissionEdit, urlPrefix, csrfToken } =
     document.getElementById('grading-table')?.dataset ?? {};
-  const maxPoints =
-    field === 'manual_points'
-      ? row.max_manual_points
-      : field === 'auto_points'
-        ? row.max_auto_points
-        : field === 'points'
-          ? row.max_points
-          : 0;
+  const maxPoints = row.assessment_question[`max_${field}`];
   const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
-  const editForm = EditQuestionPointsScoreForm({
-    field,
-    pointsOrScore: Number(points),
-    maxPoints,
-    instanceQuestionId: row.id,
-    assessmentId: assessmentId ?? '',
-    rubricId: manualRubricId ?? '',
-    modifiedAt: row.modified_at,
-    urlPrefix: urlPrefix ?? '',
-    csrfToken: csrfToken ?? '',
-    popoverId: buttonId,
-  });
-
   return html`${formatPoints(Number(points))}
-    <small>/<span class="text-muted">${maxPoints}</span></small>
+    <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
     ${hasCourseInstancePermissionEdit === 'true'
-      ? html`<button
-          type="button"
-          class="btn btn-xs btn-secondary"
-          id="${buttonId}"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Change question points"
-          data-base-content="${escapeHtml(editForm)}"
-        >
-          <i class="fa fa-edit" aria-hidden="true"></i>
-        </button>`
+      ? EditQuestionPointsScoreButton({
+          field,
+          instance_question: row,
+          assessment_question: row.assessment_question,
+          urlPrefix: urlPrefix ?? '',
+          csrfToken: csrfToken ?? '',
+          buttonId,
+        })
       : ''}`;
 }
 
 function scorebarFormatter(score: number | null, row: any) {
-  const { hasCourseInstancePermissionEdit, assessmentId, manualRubricId, urlPrefix, csrfToken } =
+  const { hasCourseInstancePermissionEdit, urlPrefix, csrfToken } =
     document.getElementById('grading-table')?.dataset ?? {};
   const buttonId = `editQuestionScorePerc${row.id}`;
-
-  const editForm = EditQuestionPointsScoreForm({
-    field: 'score_perc',
-    pointsOrScore: Number(score),
-    instanceQuestionId: row.id,
-    assessmentId: assessmentId ?? '',
-    rubricId: manualRubricId ?? '',
-    modifiedAt: row.modified_at,
-    urlPrefix: urlPrefix ?? '',
-    csrfToken: csrfToken ?? '',
-    popoverId: buttonId,
-  });
 
   return html`<div class="d-inline-block align-middle">
       ${score == null
@@ -391,18 +351,13 @@ function scorebarFormatter(score: number | null, row: any) {
           </div>`}
     </div>
     ${hasCourseInstancePermissionEdit === 'true'
-      ? html`<button
-          type="button"
-          class="btn btn-xs btn-secondary"
-          id="${buttonId}"
-          data-toggle="popover"
-          data-container="body"
-          data-html="true"
-          data-placement="auto"
-          title="Change question percentage score"
-          data-base-content="${escapeHtml(editForm)}"
-        >
-          <i class="fa fa-edit" aria-hidden="true"></i>
-        </button>`
+      ? EditQuestionPointsScoreButton({
+          field: 'score_perc',
+          instance_question: row,
+          assessment_question: row.assessment_question,
+          urlPrefix: urlPrefix ?? '',
+          csrfToken: csrfToken ?? '',
+          buttonId,
+        })
       : ''}`.toString();
 }

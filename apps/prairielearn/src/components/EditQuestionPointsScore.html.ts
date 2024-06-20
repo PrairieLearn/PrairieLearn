@@ -1,30 +1,69 @@
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
-export function EditQuestionPointsScoreForm({
+import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
+
+export function EditQuestionPointsScoreButton({
   field,
-  pointsOrScore,
-  maxPoints,
-  instanceQuestionId,
-  assessmentId,
-  rubricId,
-  modifiedAt,
+  instance_question,
+  assessment_question,
   urlPrefix,
   csrfToken,
-  popoverId,
+  buttonId,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
-  pointsOrScore: number | null;
-  maxPoints?: number | null;
-  instanceQuestionId: string;
-  assessmentId: string;
-  rubricId: string | null;
-  modifiedAt: string;
+  instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
+  assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
-  popoverId: string;
+  buttonId: string;
 }) {
-  const manualGradingUrl = `${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${instanceQuestionId}`;
-  if (rubricId) {
+  const editForm = EditQuestionPointsScoreForm({
+    field,
+    instance_question,
+    assessment_question,
+    urlPrefix,
+    csrfToken,
+    buttonId,
+  });
+  const label = {
+    points: 'points',
+    auto_points: 'auto points',
+    manual_points: 'manual points',
+    score_perc: 'score percentage',
+  }[field];
+
+  return html`<button
+    type="button"
+    class="btn btn-xs btn-secondary"
+    id="${buttonId}"
+    data-toggle="popover"
+    data-container="body"
+    data-html="true"
+    data-placement="auto"
+    title="Change question ${label}"
+    data-content="${escapeHtml(editForm)}"
+  >
+    <i class="fa fa-edit" aria-hidden="true"></i>
+  </button>`;
+}
+
+function EditQuestionPointsScoreForm({
+  field,
+  instance_question,
+  assessment_question,
+  urlPrefix,
+  csrfToken,
+  buttonId,
+}: {
+  field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+  instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+  csrfToken: string;
+  buttonId: string;
+}) {
+  const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
+  if (assessment_question.manual_rubric_id != null) {
     return html`
       <div>
         <p>
@@ -35,7 +74,7 @@ export function EditQuestionPointsScoreForm({
           <button
             type="button"
             class="btn btn-secondary"
-            onclick="$('#${popoverId}').popover('hide')"
+            onclick="$('#${buttonId}').popover('hide')"
           >
             Cancel
           </button>
@@ -43,13 +82,19 @@ export function EditQuestionPointsScoreForm({
       </div>
     `;
   }
+  const [pointsOrScore, maxPoints] = {
+    points: [instance_question.points, assessment_question.max_points],
+    manual_points: [instance_question.manual_points, assessment_question.max_manual_points],
+    auto_points: [instance_question.auto_points, assessment_question.max_auto_points],
+    score_perc: [instance_question.score_perc, 100],
+  }[field];
 
   return html`
-    <form method="POST">
+    <form name="edit-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_question_points" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="instance_question_id" value="${instanceQuestionId}" />
-      <input type="hidden" name="modified_at" value="${modifiedAt}" />
+      <input type="hidden" name="instance_question_id" value="${instance_question.id}" />
+      <input type="hidden" name="modified_at" value="${instance_question.modified_at.toString()}" />
       <div class="form-group">
         <div class="input-group">
           <input
@@ -76,11 +121,7 @@ export function EditQuestionPointsScoreForm({
         </small>
       </p>
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#${popoverId}').popover('hide')"
-        >
+        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
           Cancel
         </button>
         <button type="submit" class="btn btn-primary">Change</button>

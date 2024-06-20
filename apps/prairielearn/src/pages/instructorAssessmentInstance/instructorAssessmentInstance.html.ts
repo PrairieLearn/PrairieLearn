@@ -3,12 +3,12 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { EditQuestionPointsScoreForm } from '../../components/EditQuestionPointsScore.html.js';
+import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
-import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -34,10 +34,7 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
-  manual_rubric_id: IdSchema.nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  max_points: z.number().nullable(),
+  assessment_question: AssessmentQuestionSchema,
   modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
@@ -348,112 +345,52 @@ export function InstructorAssessmentInstance({
                       <td class="text-center">
                         ${InstanceQuestionPoints({
                           instance_question,
-                          assessment_question: instance_question, // Required fields are present in instance_question
+                          assessment_question: instance_question.assessment_question,
                           component: 'auto',
                         })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionAutoPointsButton"
-                                id="editQuestionPointsAuto${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${escapeHtml(
-                                  EditQuestionPointsScoreForm({
-                                    field: 'auto_points',
-                                    pointsOrScore: instance_question.auto_points,
-                                    maxPoints: instance_question.max_auto_points,
-                                    instanceQuestionId: instance_question.id,
-                                    assessmentId: resLocals.assessment.id,
-                                    rubricId: instance_question.manual_rubric_id,
-                                    modifiedAt: instance_question.modified_at,
-                                    urlPrefix: resLocals.urlPrefix,
-                                    csrfToken: resLocals.__csrf_token,
-                                    popoverId: `editQuestionPointsAuto${i_instance_question}`,
-                                  }),
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'auto_points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                              buttonId: `editQuestionPointsAuto${i_instance_question}`,
+                            })
                           : ''}
                       </td>
                       <td class="text-center">
                         ${InstanceQuestionPoints({
                           instance_question,
-                          assessment_question: instance_question, // Required fields are present in instance_question
+                          assessment_question: instance_question.assessment_question,
                           component: 'manual',
                         })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionManualPointsButton"
-                                id="editQuestionPointsManual${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${escapeHtml(
-                                  EditQuestionPointsScoreForm({
-                                    field: 'manual_points',
-                                    pointsOrScore: instance_question.manual_points,
-                                    maxPoints: instance_question.max_manual_points,
-                                    instanceQuestionId: instance_question.id,
-                                    assessmentId: resLocals.assessment.id,
-                                    rubricId: instance_question.manual_rubric_id,
-                                    modifiedAt: instance_question.modified_at,
-                                    urlPrefix: resLocals.urlPrefix,
-                                    csrfToken: resLocals.__csrf_token,
-                                    popoverId: `editQuestionPointsManual${i_instance_question}`,
-                                  }),
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'manual_points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                              buttonId: `editQuestionPointsManual${i_instance_question}`,
+                            })
                           : ''}
                       </td>
                       <td class="text-center">
                         ${InstanceQuestionPoints({
                           instance_question,
-                          assessment_question: instance_question, // Required fields are present in instance_question
+                          assessment_question: instance_question.assessment_question,
                           component: 'total',
                         })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionPointsButton"
-                                id="editQuestionPoints${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${escapeHtml(
-                                  EditQuestionPointsScoreForm({
-                                    field: 'points',
-                                    pointsOrScore: instance_question.points,
-                                    maxPoints: instance_question.max_points,
-                                    instanceQuestionId: instance_question.id,
-                                    assessmentId: resLocals.assessment.id,
-                                    rubricId: instance_question.manual_rubric_id,
-                                    modifiedAt: instance_question.modified_at,
-                                    urlPrefix: resLocals.urlPrefix,
-                                    csrfToken: resLocals.__csrf_token,
-                                    popoverId: `editQuestionPoints${i_instance_question}`,
-                                  }),
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                              buttonId: `editQuestionPoints${i_instance_question}`,
+                            })
                           : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
@@ -463,33 +400,14 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td class="align-middle" style="width: 1em;">
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                                id="editQuestionScorePerc${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} percentage score"
-                                data-content="${escapeHtml(
-                                  EditQuestionPointsScoreForm({
-                                    field: 'score_perc',
-                                    pointsOrScore: instance_question.score_perc,
-                                    instanceQuestionId: instance_question.id,
-                                    assessmentId: resLocals.assessment.id,
-                                    rubricId: instance_question.manual_rubric_id,
-                                    modifiedAt: instance_question.modified_at,
-                                    urlPrefix: resLocals.urlPrefix,
-                                    csrfToken: resLocals.__csrf_token,
-                                    popoverId: `editQuestionScorePerc${i_instance_question}`,
-                                  }),
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'score_perc',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                              buttonId: `editQuestionScorePerc${i_instance_question}`,
+                            })
                           : ''}
                       </td>
                       <td class="align-middle text-nowrap" style="width: 1em;">

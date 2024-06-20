@@ -79,7 +79,6 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
                 data-url-prefix="${urlPrefix}"
                 data-assessment-id="${assessment.id}"
                 data-assessment-question-id="${assessment_question.id}"
-                data-manual-rubric-id="${assessment_question.manual_rubric_id}"
                 data-max-points="${assessment_question.max_points}"
                 data-group-work="${assessment.group_work}"
                 data-max-auto-points="${assessment_question.max_auto_points}"
