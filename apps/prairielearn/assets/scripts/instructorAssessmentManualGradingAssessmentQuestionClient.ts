@@ -96,7 +96,16 @@ onDocumentReady(() => {
           // The content may not be a form if there are rubrics, in that case do nothing.
           if (form.tagName === 'FORM') {
             form.addEventListener('submit', (event) => {
-              ajaxSubmit.call(form, event).then(() => $(this).popover('hide'));
+              ajaxSubmit.call(form, event).then((data) => {
+                if (data.conflict_grading_job_id) {
+                  $('#grading-conflict-modal')
+                    .find('a.conflict-details-link')
+                    .attr('href', data.conflict_details_url);
+                  $('#grading-conflict-modal').modal({});
+                }
+                $('#grading-table').bootstrapTable('refresh');
+                $(this).popover('hide');
+              });
             });
           }
           return form;
@@ -106,9 +115,7 @@ onDocumentReady(() => {
     },
     columns: [
       [
-        {
-          checkbox: true,
-        },
+        { checkbox: true },
         {
           field: 'index',
           title: 'Instance',
@@ -212,28 +219,18 @@ onDocumentReady(() => {
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   e.preventDefault();
-  if (e.submitter?.dataset.batchAction) {
-    // Obtain information from submit button that was used
-    this.querySelectorAll<HTMLInputElement>('input[name=batch_action_data]')?.forEach((input) => {
-      input.value = JSON.stringify(e.submitter?.dataset.batchAction);
-    });
-  }
 
-  // TODO Better user notification of update failure (catch)
-  const response = await fetch(this.action, { method: 'POST', body: new FormData(this) });
+  const postBody = new URLSearchParams(new FormData(this, e.submitter) as any);
+
+  const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
+    (err) => ({ status: null, statusText: err.toString() }) as const,
+  );
   if (response.status !== 200) {
-    console.error(response.status, await response.text());
+    console.error(response.status, response.statusText);
     // TODO Better user notification of update failure
+    return;
   }
-  const data = await response.json();
-
-  if (data.conflict_grading_job_id) {
-    $('#grading-conflict-modal')
-      .find('a.conflict-details-link')
-      .attr('href', data.conflict_details_url);
-    $('#grading-conflict-modal').modal({});
-  }
-  $('#grading-table').bootstrapTable('refresh');
+  return await response.json();
 }
 
 function gradingTagDropdown() {
@@ -257,7 +254,8 @@ function gradingTagDropdown() {
             <button
               class="dropdown-item"
               type="submit"
-              data-batch-action="${JSON.stringify({
+              name="batch_action_data"
+              value="${JSON.stringify({
                 requires_manual_grading: true,
                 assigned_grader: grader.user_id,
               })}"
@@ -270,7 +268,8 @@ function gradingTagDropdown() {
         <button
           class="dropdown-item"
           type="submit"
-          data-batch-action="${JSON.stringify({ assigned_grader: null })}"
+          name="batch_action_data"
+          value="${JSON.stringify({ assigned_grader: null })}"
         >
           <i class="fas fa-user-slash"></i>
           Remove grader assignment
@@ -279,7 +278,8 @@ function gradingTagDropdown() {
         <button
           class="dropdown-item"
           type="submit"
-          data-batch-action="${JSON.stringify({ requires_manual_grading: true })}"
+          name="batch_action_data"
+          value="${JSON.stringify({ requires_manual_grading: true })}"
         >
           <i class="fas fa-tag"></i>
           Tag as required grading
@@ -287,7 +287,8 @@ function gradingTagDropdown() {
         <button
           class="dropdown-item"
           type="submit"
-          data-batch-action="${JSON.stringify({ requires_manual_grading: false })}"
+          name="batch_action_data"
+          value="${JSON.stringify({ requires_manual_grading: false })}"
         >
           <i class="fas fa-check-square"></i>
           Tag as graded
