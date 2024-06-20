@@ -713,6 +713,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -764,7 +766,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
-    sharingSets: [],
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
