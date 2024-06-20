@@ -72,6 +72,9 @@ export function StudentAssessmentInstance({
             })
           : ''}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'assessment_instance',
@@ -79,10 +82,20 @@ export function StudentAssessmentInstance({
         <main id="content" class="container">
           ${userCanDeleteAssessmentInstance
             ? html`
-                <div class="alert alert-warning d-flex align-items-center">
-                  <span class="mr-3"> Instructor's own assessment instance special menu </span>
+                <div class="alert alert-warning alert-dismissible fade show">
+                  You are viewing your own assessment instance and have instructor permissions.
+                  <a
+                    href="#"
+                    role="button"
+                    data-toggle="modal"
+                    data-target="#regenerateInstanceModal"
+                  >
+                    Regenerate this assessment instance
+                  </a>
+                  to pick up any changes to the underlying assessment or if you want to get a fresh
+                  set of questions.
 
-                  <form method="POST" class="ml-auto mr-3">
+                  <form method="POST" class="ml-auto mr-3 d-none">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <div class="dropdown">
                       <button
@@ -836,6 +849,29 @@ function ConfirmFinishModal({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="submit" class="btn btn-danger">Finish assessment</button>
       <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+    `,
+  });
+}
+
+function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'regenerateInstanceModal',
+    title: 'Regenerate assessment instance',
+    body: html`
+      <p class="text-danger">
+        <strong>Warning:</strong> Regenerating the assessment instance will select a new set of
+        questions from this assessment. Any progress on the current assessment instance will be
+        lost.
+      </p>
+      <p>Are you sure you want to regenerate the assessment instance?</p>
+    `,
+    footer: html`
+      <form method="POST">
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <input type="hidden" name="__action" value="regenerate_instance" />
+        <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
+        <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+      </form>
     `,
   });
 }
