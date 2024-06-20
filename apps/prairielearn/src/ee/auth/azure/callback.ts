@@ -1,8 +1,8 @@
-import passport = require('passport');
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import passport from 'passport';
 
-import * as authnLib from '../../../lib/authn';
+import * as authnLib from '../../../lib/authn.js';
 
 const router = Router();
 
@@ -22,7 +22,7 @@ function authenticate(req, res): Promise<any> {
         } else {
           resolve(user);
         }
-      }
+      },
     )(req, res);
   });
 }
@@ -36,6 +36,7 @@ router.post(
       uid: user.upn,
       name: user.displayName,
       uin: null,
+      email: user._json.email || null,
       provider: 'Azure',
     };
 
@@ -43,7 +44,7 @@ router.post(
       redirect: true,
       pl_authn_cookie: true,
     });
-  })
+  }),
 );
 
 export default router;

@@ -1,22 +1,27 @@
 // @ts-check
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { v4: uuidv4 } = require('uuid');
-const Docker = require('dockerode');
-const MemoryStream = require('memorystream');
-const tmp = require('tmp-promise');
-const { Mutex } = require('async-mutex');
-const os = require('os');
-const fs = require('fs-extra');
-const execa = require('execa');
-const bindMount = require('@prairielearn/bind-mount');
-const { instrumented } = require('@prairielearn/opentelemetry');
-const { setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+import * as os from 'node:os';
+import * as path from 'node:path';
 
-const { config } = require('../config');
-const { logger } = require('@prairielearn/logger');
-const { FunctionMissingError } = require('./code-caller-shared');
-const { deferredPromise } = require('../deferred');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Mutex } from 'async-mutex';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import MemoryStream from 'memorystream';
+import * as tmp from 'tmp-promise';
+import { v4 as uuidv4 } from 'uuid';
+
+import * as bindMount from '@prairielearn/bind-mount';
+import { setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
+
+import { makeAwsClientConfig } from '../aws.js';
+import { config } from '../config.js';
+import { deferredPromise } from '../deferred.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -27,6 +32,7 @@ const EXITED = Symbol('EXITED');
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
+const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
@@ -78,9 +84,8 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const dockerAuth = config.cacheImageRegistry
-        ? await setupDockerAuthAsync(config.awsRegion)
-        : null;
+      const ecr = new ECRClient(makeAwsClientConfig());
+      const dockerAuth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {
         docker.modem.followProgress(
@@ -97,7 +102,7 @@ async function ensureImage() {
           },
           (output) => {
             logger.info('Docker output', output);
-          }
+          },
         );
       });
     } else {
@@ -106,13 +111,13 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
  */
-class CodeCallerContainer {
+export class CodeCallerContainer {
   constructor(options = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 }) {
     /** @type {CallerState} */
     this.state = CREATED;
@@ -141,6 +146,7 @@ class CodeCallerContainer {
     this.lastCallData = null;
 
     this.coursePath = null;
+    this.forbiddenModules = [];
 
     this._checkState();
 
@@ -193,9 +199,11 @@ class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {string} coursePath
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
-  async prepareForCourse(coursePath) {
+  async prepareForCourse({ coursePath, forbiddenModules }) {
+    this.forbiddenModules = forbiddenModules;
+
     if (this.coursePath && this.coursePath === coursePath) {
       // Same course as before; we can reuse the existing setup
       return;
@@ -234,7 +242,7 @@ class CodeCallerContainer {
       throw new Error('not ready for call');
     }
 
-    const callData = { type, directory, file, fcn, args };
+    const callData = { type, directory, file, fcn, args, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
     // Reset output accumulators.
@@ -293,6 +301,7 @@ class CodeCallerContainer {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      this.forbiddenModules = [];
       this.coursePath = null;
       this.callCount = 0;
       if (result !== 'success') throw new Error(`Error while restarting: ${result}`);
@@ -480,8 +489,8 @@ class CodeCallerContainer {
     if (this.state === WAITING) {
       this._logError(
         `CodeCallerContainer container exited while in state = WAITING, code = ${JSON.stringify(
-          code
-        )}, err = ${err}`
+          code,
+        )}, err = ${err}`,
       );
       this.container = null;
       this.state = EXITED;
@@ -492,9 +501,9 @@ class CodeCallerContainer {
       this._callCallback(
         new Error(
           `CodeCallerContainer container exited unexpectedly, code = ${JSON.stringify(
-            code
-          )}, err = ${err}`
-        )
+            code,
+          )}, err = ${err}`,
+        ),
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -624,14 +633,14 @@ class CodeCallerContainer {
   _checkReadyForCall(fcn) {
     if (!this.container) {
       return this._logError(
-        `Not ready for call, container is not created (state: ${String(this.state)})`
+        `Not ready for call, container is not created (state: ${String(this.state)})`,
       );
     }
     if (fcn !== 'ping' && fcn !== 'restart') {
       // 'ping' and 'restart' are fake functions that don't need a course path
       if (!this.coursePath) {
         return this._logError(
-          `Not ready for call, course was not set (state: ${String(this.state)})`
+          `Not ready for call, course was not set (state: ${String(this.state)})`,
         );
       }
     }
@@ -648,8 +657,8 @@ class CodeCallerContainer {
       const allowedStatesList = allowedStates.map(String).join(', ');
       return this._logError(
         `Expected CodeCallerContainer to be in states [${allowedStatesList}] but actually have state ${String(
-          this.state
-        )}`
+          this.state,
+        )}`,
       );
     }
 
@@ -681,36 +690,36 @@ class CodeCallerContainer {
     if (containerNull != null) {
       if (containerNull && this.container != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should be null`
+          `CodeCallerContainer state ${String(this.state)}: container should be null`,
         );
       }
       if (!containerNull && this.container == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should not be null`
+          `CodeCallerContainer state ${String(this.state)}: container should not be null`,
         );
       }
     }
     if (callbackNull != null) {
       if (callbackNull && this.callback != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should be null`
+          `CodeCallerContainer state ${String(this.state)}: callback should be null`,
         );
       }
       if (!callbackNull && this.callback == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should not be null`
+          `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
         );
       }
     }
     if (timeoutIDNull != null) {
       if (timeoutIDNull && this.timeoutID != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`
+          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
         );
       }
       if (!timeoutIDNull && this.timeoutID == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`
+          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
         );
       }
     }
@@ -718,8 +727,6 @@ class CodeCallerContainer {
     return true;
   }
 }
-
-module.exports.CodeCallerContainer = CodeCallerContainer;
 
 /**
  * If PrairieLearn dies unexpectedly, we may leave around temporary directories
@@ -755,17 +762,17 @@ async function cleanupMountDirectories() {
           logger.error(`Failed to remove temporary directory ${absolutePath}`);
           logger.error(e);
         }
-      })
+      }),
     );
   } catch (e) {
     logger.error(e);
   }
 }
 
-module.exports.init = async function init() {
+export async function init() {
   await cleanupMountDirectories();
   await updateExecutorImageTag();
   if (config.ensureExecutorImageAtStartup) {
     await ensureImage();
   }
-};
+}

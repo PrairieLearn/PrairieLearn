@@ -15,10 +15,9 @@ CREATE FUNCTION
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
-        OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
-        OUT active boolean,     -- If the assessment is visible but not active
+        OUT active boolean,        -- If the assessment is active
         OUT next_active_time text, -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
@@ -51,7 +50,6 @@ BEGIN
         END AS time_limit_min,
         aar.password,
         aar.mode,
-        aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
         aar.active,
@@ -64,7 +62,6 @@ BEGIN
         time_limit_min,
         password,
         mode,
-        seb_config,
         show_closed_assessment,
         show_closed_assessment_score,
         active,
@@ -76,7 +73,6 @@ BEGIN
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
-        AND ((aar.role > 'Student') IS NOT TRUE)
     ORDER BY
         aar.credit DESC NULLS LAST,
         aar.number
@@ -90,7 +86,6 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = FALSE;
@@ -114,7 +109,6 @@ BEGIN
             AND aar.active
             AND aar.start_date > check_assessment_access.date
             AND caar.authorized
-            AND ((aar.role > 'Student') IS NOT TRUE)
         ORDER BY
             aar.start_date,
             aar.credit DESC NULLS LAST,
@@ -143,7 +137,6 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;
@@ -168,7 +161,6 @@ BEGIN
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND ((aar.role > 'Student') IS NOT TRUE)
         AND (
             (aar.active AND caar.authorized)
             OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors

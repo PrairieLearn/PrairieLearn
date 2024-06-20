@@ -1,9 +1,11 @@
 import { assert } from 'chai';
+
 import { queryAsync } from '@prairielearn/postgres';
 
-import * as helperCourse from './helperCourse';
-import * as helperDb from './helperDb';
-import { FeatureManager } from '../lib/features/manager';
+import { FeatureManager } from '../lib/features/manager.js';
+
+import * as helperCourse from './helperCourse.js';
+import * as helperDb from './helperDb.js';
 
 describe('features', () => {
   before(async function () {
@@ -82,7 +84,7 @@ describe('features', () => {
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
   });
 
-  it('enables and disables a flag for a user in a course instance', async () => {
+  it('enables and disables a feature flag for a user in a course instance', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
     const context = { institution_id: '1', course_id: '1', course_instance_id: '1', user_id: '1' };
 
@@ -93,6 +95,23 @@ describe('features', () => {
     await features.disable('test:example-feature-flag', context);
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
     assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: '1' }));
+  });
+
+  it('enables a feature flag via course options', async () => {
+    const features = new FeatureManager(['test:example-feature-flag']);
+    const context = { institution_id: '1', course_id: '1' };
+
+    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
+      options: {
+        devModeFeatures: ['test:example-feature-flag'],
+      },
+    });
+    assert.isTrue(await features.enabled('test:example-feature-flag', context));
+
+    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
+      options: {},
+    });
+    assert.isFalse(await features.enabled('test:example-feature-flag', context));
   });
 
   it('validates and typechecks feature flags', async () => {

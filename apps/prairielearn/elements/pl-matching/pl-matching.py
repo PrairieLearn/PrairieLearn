@@ -1,5 +1,6 @@
 import math
 import random
+from enum import Enum
 
 import chevron
 import lxml.html
@@ -18,6 +19,11 @@ BLANK_DEFAULT = True
 BLANK_ANSWER = " "
 NOTA_DEFAULT = False
 COUNTER_TYPE_DEFAULT = "lower-alpha"
+
+
+class OptionsPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
 
 
 def get_form_name(answers_name, index):
@@ -125,6 +131,7 @@ def prepare(element_html, data):
         "counter-type",
         "fixed-options-order",
         "hide-score-badge",
+        "options-placement",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -251,29 +258,33 @@ def parse(element_html, data):
         try:
             student_answer = int(submitted_answers.get(expected_html_name, None))
         except (ValueError, TypeError):
-            data["format_errors"][
-                expected_html_name
-            ] = "The submitted answer is not a legal option."
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer is not a legal option."
+            )
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
         if student_answer == -1:
-            data["format_errors"][
-                expected_html_name
-            ] = "The submitted answer was left blank."
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer was left blank."
+            )
         elif student_answer is None:
             data["format_errors"][expected_html_name] = "No answer was submitted."
         else:
             if not legal_answer(student_answer, display_options):
-                data["format_errors"][
-                    expected_html_name
-                ] = "The submitted answer is invalid."
+                data["format_errors"][expected_html_name] = (
+                    "The submitted answer is invalid."
+                )
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_statements, display_options = data["params"].get(name, ([], []))
+    options_placement = pl.get_enum_attrib(
+        element, "options-placement", OptionsPlacementType, OptionsPlacementType.RIGHT
+    )
+
     submitted_answers = data["submitted_answers"]
     counter_type = pl.get_string_attrib(element, "counter-type", COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(
@@ -331,6 +342,8 @@ def render(element_html, data):
             "options": option_set,
             "counter_type": counter_type,
             "no_counters": no_counters,
+            "options_placement": options_placement.value,
+            "editable": data["editable"],
         }
 
         if score is not None:
@@ -368,9 +381,11 @@ def render(element_html, data):
                 else:
                     counter = f"{get_counter(student_answer + 1, counter_type)}. "
                 statement_html = {
-                    "option": "[blank]"
-                    if student_answer == -1
-                    else display_options[student_answer]["html"],
+                    "option": (
+                        "[blank]"
+                        if student_answer == -1
+                        else display_options[student_answer]["html"]
+                    ),
                     "counter": counter,
                     "disabled": "disabled",
                     "display_score_badge": display_score_badge,

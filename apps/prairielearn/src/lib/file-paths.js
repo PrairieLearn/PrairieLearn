@@ -1,12 +1,14 @@
 // @ts-check
-const fs = require('fs-extra');
-const path = require('path');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as path from 'path';
 
-const { APP_ROOT_PATH } = require('./paths');
+import fs from 'fs-extra';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { APP_ROOT_PATH } from './paths.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
 
 /**
@@ -35,12 +37,12 @@ const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers'
  * @param {number} nTemplates
  * @returns {Promise<QuestionFilePathInfo>}
  */
-module.exports.questionFilePathAsync = async function (
+export async function questionFilePath(
   filename,
   questionDirectory,
   coursePath,
   question,
-  nTemplates = 0
+  nTemplates = 0,
 ) {
   const rootPath = path.join(coursePath, 'questions', questionDirectory);
   const fullPath = path.join(rootPath, filename);
@@ -66,20 +68,19 @@ module.exports.questionFilePathAsync = async function (
     };
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
     if (result.rowCount === 0) {
-      throw error.make(
+      throw new error.HttpStatusError(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
-        { sql: sql.select_question, params: params }
       );
     }
 
     const templateQuestion = result.rows[0];
-    return module.exports.questionFilePathAsync(
+    return await questionFilePath(
       filename,
       templateQuestion.directory,
       coursePath,
       templateQuestion,
-      nTemplates + 1
+      nTemplates + 1,
     );
   } else {
     // No template, try default files
@@ -114,25 +115,10 @@ module.exports.questionFilePathAsync = async function (
         };
       } else {
         // No default file, give up
-        throw error.makeWithData('File not found', { fullPath, fullDefaultFilePath });
+        throw new error.AugmentedError('File not found', {
+          data: { fullPath, fullDefaultFilePath },
+        });
       }
     }
   }
-};
-
-module.exports.questionFilePath = function (
-  filename,
-  questionDirectory,
-  coursePath,
-  question,
-  callback
-) {
-  module.exports
-    .questionFilePathAsync(filename, questionDirectory, coursePath, question)
-    .then(({ fullPath, effectiveFilename, rootPath }) => {
-      callback(null, fullPath, effectiveFilename, rootPath);
-    })
-    .catch((err) => {
-      callback(err);
-    });
-};
+}

@@ -1,10 +1,12 @@
+import http from 'node:http';
+import path from 'path';
+
+import esbuild, { Metafile } from 'esbuild';
 import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
-import esbuild, { Metafile } from 'esbuild';
-import path from 'path';
-import globby from 'globby';
 import fs from 'fs-extra';
-import http from 'node:http';
+import { globby } from 'globby';
+
 import { html, HtmlSafeString } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {
@@ -34,6 +36,7 @@ export interface CompiledAssetsOptions {
 let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
 let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
+let relativeSourcePaths: string[] | null = null;
 
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
   options = {
@@ -52,6 +55,11 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     // new entrypoints that are added while the server is running.
     const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,css}');
     const sourcePaths = await globby(sourceGlob);
+
+    // Save the result of globbing for the source paths so that we can later
+    // check if a given filename exists.
+    relativeSourcePaths = sourcePaths.map((p) => path.relative(options.sourceDirectory, p));
+
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
       target: 'es6',
@@ -123,7 +131,7 @@ export function handler(): RequestHandler {
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
-      }
+      },
     );
     req.pipe(proxyReq, { end: true });
   };
@@ -146,6 +154,14 @@ function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): stri
   const sourceFilePath = `${type}/${sourceFile}`;
 
   if (options.dev) {
+    // To ensure that errors that would be raised in production are also raised
+    // in development, we'll check for the existence of the asset file on disk.
+    // This mirrors the production check of the file in the manifest: if a file
+    // exists on disk, it should be in the manifest.
+    if (!relativeSourcePaths?.find((p) => p === sourceFilePath)) {
+      throw new Error(`Unknown ${type} asset: ${sourceFile}`);
+    }
+
     return options.publicPath + sourceFilePath.replace(/\.(js|ts)x?$/, '.js');
   }
 
@@ -201,7 +217,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
 function makeManifest(
   metafile: Metafile,
   sourceDirectory: string,
-  buildDirectory: string
+  buildDirectory: string,
 ): Record<string, string> {
   const manifest: Record<string, string> = {};
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
@@ -216,7 +232,7 @@ function makeManifest(
 
 export async function build(
   sourceDirectory: string,
-  buildDirectory: string
+  buildDirectory: string,
 ): Promise<AssetsManifest> {
   // Remove existing assets to ensure that no stale assets are left behind.
   await fs.remove(buildDirectory);

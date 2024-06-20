@@ -1,66 +1,65 @@
-const ERR = require('async-stacktrace');
-const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
-const express = require('express');
-const { stringifyStream } = require('@prairielearn/csv');
-const { pipeline } = require('node:stream/promises');
+// @ts-check
+import { pipeline } from 'node:stream/promises';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-const course = require('../../lib/course');
-const sanitizeName = require('../../lib/sanitize-name');
+import { stringifyStream } from '@prairielearn/csv';
+import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import {
+  getCourseOwners,
+  checkAssessmentInstanceBelongsToCourseInstance,
+} from '../../lib/course.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const csvFilename = function (locals) {
-  return (
-    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
-    'gradebook.csv'
-  );
+  return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 };
 
-router.get('/', function (req, res, next) {
-  res.locals.csvFilename = csvFilename(res.locals);
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    res.locals.csvFilename = csvFilename(res.locals);
 
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    // We don't actually forbid access to this page if the user is not a student
-    // data viewer, because we want to allow users to click the gradebook tab and
-    // see instructions for how to get student data viewer permissions. Otherwise,
-    // users just wouldn't see the tab at all, and this caused a lot of questions
-    // about why staff couldn't see the gradebook tab.
-    course
-      .getCourseOwners(res.locals.course.id)
-      .then((owners) => {
-        res.locals.course_owners = owners;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      })
-      .catch((err) => next(err));
-    return;
-  }
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      // We don't actually forbid access to this page if the user is not a student
+      // data viewer, because we want to allow users to click the gradebook tab and
+      // see instructions for how to get student data viewer permissions. Otherwise,
+      // users just wouldn't see the tab at all, and this caused a lot of questions
+      // about why staff couldn't see the gradebook tab.
+      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      return;
+    }
 
-  var params = { course_instance_id: res.locals.course_instance.id };
-  sqldb.query(sql.course_assessments, params, function (err, result) {
-    if (ERR(err, next)) return;
+    const result = await sqldb.queryAsync(sql.course_assessments, {
+      course_instance_id: res.locals.course_instance.id,
+    });
     res.locals.course_assessments = result.rows;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
-router.get('/raw_data.json', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
-  var params = {
-    course_id: res.locals.course.id,
-    course_instance_id: res.locals.course_instance.id,
-  };
-  sqldb.query(sql.user_scores, params, function (err, result) {
-    if (ERR(err, next)) return;
+router.get(
+  '/raw_data.json',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    const result = await sqldb.queryAsync(sql.user_scores, {
+      course_id: res.locals.course.id,
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     res.locals.user_scores_data = _.map(result.rows, function (row) {
-      var scores = {
+      const scores = {
         user_id: row.user_id,
         uid: _.escape(row.uid),
         uin: _.escape(row.uin ?? ''),
@@ -75,24 +74,24 @@ router.get('/raw_data.json', function (req, res, next) {
       return scores;
     });
     res.send(JSON.stringify(res.locals.user_scores_data));
-  });
-});
+  }),
+);
 
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     if (req.params.filename === csvFilename(res.locals)) {
-      const params = {
+      const assessmentsResult = await sqldb.queryAsync(sql.course_assessments, {
+        course_instance_id: res.locals.course_instance.id,
+      });
+      const userScoresCursor = await sqldb.queryCursor(sql.user_scores, {
         course_id: res.locals.course.id,
         course_instance_id: res.locals.course_instance.id,
-      };
-
-      const assessmentsResult = await sqldb.queryAsync(sql.course_assessments, params);
-      const userScoresCursor = await sqldb.queryCursor(sql.user_scores, params);
+      });
 
       const stringifier = stringifyStream({
         header: true,
@@ -106,48 +105,37 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(userScoresCursor.stream(100), stringifier, res);
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a student data editor)'));
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
 
-  if (req.body.__action === 'edit_total_score_perc') {
-    const course_instance_id = res.locals.course_instance.id;
-    const assessment_instance_id = req.body.assessment_instance_id;
-    course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
-      if (ERR(err, next)) return;
-
-      let params = [
+    if (req.body.__action === 'edit_total_score_perc') {
+      await checkAssessmentInstanceBelongsToCourseInstance(
+        req.body.assessment_instance_id,
+        res.locals.course_instance.id,
+      );
+      await updateAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
-      ];
-      sqldb.call('assessment_instances_update_score_perc', params, function (err, _result) {
-        if (ERR(err, next)) return;
+      );
 
-        params = {
-          assessment_instance_id: req.body.assessment_instance_id,
-        };
-
-        sqldb.query(sql.assessment_instance_score, params, function (err, result) {
-          if (ERR(err, next)) return;
-          res.send(JSON.stringify(result.rows));
-        });
+      const result = await sqldb.queryAsync(sql.assessment_instance_score, {
+        assessment_instance_id: req.body.assessment_instance_id,
       });
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
-  }
-});
+      res.send(JSON.stringify(result.rows));
+    } else {
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
-module.exports = router;
+export default router;

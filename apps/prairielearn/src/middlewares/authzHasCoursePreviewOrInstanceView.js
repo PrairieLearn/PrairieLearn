@@ -1,18 +1,21 @@
-const error = require('@prairielearn/error');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+// @ts-check
+import asyncHandler from 'express-async-handler';
 
-module.exports = function (req, res, next) {
-  debug(res.locals.navbarType);
+import * as error from '@prairielearn/error';
+
+export async function authzHasCoursePreviewOrInstanceView(req, res) {
   if (
     !res.locals.authz_data.has_course_permission_preview &&
     !res.locals.authz_data.has_course_instance_permission_view
   ) {
-    return next(
-      error.make(403, 'Requires either course preview access or student data view access', {
-        locals: res.locals,
-      })
+    throw new error.HttpStatusError(
+      403,
+      'Requires either course preview access or student data view access',
     );
   }
+}
+
+export default asyncHandler(async (req, res, next) => {
+  await authzHasCoursePreviewOrInstanceView(req, res);
   next();
-};
+});

@@ -60,7 +60,6 @@ def process(
 ) -> Tuple[Optional[str], set[str]]:
     html = context["html"]
     elements = context["elements"]
-    element_extensions = context["element_extensions"]
     course_path = context["course_path"]
 
     # This will track which elements have been processed.
@@ -71,7 +70,16 @@ def process(
     # Otherwise, this will remain `None`.
     result = None
 
-    def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
+    # Copying data is potentially expensive, and most of it won't change as we
+    # process all the elements, so we'll make a deep copy of the data once and
+    # use that for future comparisons. For the few pieces of data that do
+    # change based on the element, we'll add and then delete them from
+    # `original_data` as needed.
+    original_data = copy.deepcopy(data)
+
+    def process_element(
+        element: lxml.html.HtmlElement,
+    ) -> None | str | lxml.html.HtmlElement:
         nonlocal result
 
         if element.tag not in elements:
@@ -113,30 +121,9 @@ def process(
             if phase not in mod:
                 return None
 
-            # Make a deep copy of the data so that question/element code can't
-            # modify the source data.
-            data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
-
-            # `base_url` and associated values are only present during the render phase.
-            if phase == "render":
-                data["options"]["client_files_element_url"] = (
-                    pathlib.Path(data["options"]["base_url"])
-                    / "elements"
-                    / element_info["name"]
-                    / "clientFilesElement"
-                ).as_posix()
-                data["options"]["client_files_extensions_url"] = {
-                    extension: (
-                        pathlib.Path(data["options"]["base_url"])
-                        / "elementExtensions"
-                        / element_info["name"]
-                        / extension
-                        / "clientFilesExtension"
-                    ).as_posix()
-                    for extension in data["extensions"]
-                }
-
-            old_data = copy.deepcopy(data)
+            # Add element-specific or phase-specific information to the data.
+            prepare_data(phase, data, context, element)
+            prepare_data(phase, original_data, context, element)
 
             # Temporarily strip tail text from the element; the `parse_fragment`
             # function will choke on it.
@@ -148,7 +135,11 @@ def process(
             # Restore the tail text.
             element.tail = temp_tail
 
-            check_data(old_data, data, phase)
+            check_data(original_data, data, phase)
+
+            # Clean up changes to `data` and `original_data` for the next iteration.
+            restore_data(data)
+            restore_data(original_data)
 
             if phase == "render":
                 # TODO: validate that return value was a string?
@@ -157,6 +148,16 @@ def process(
                 if result is not None:
                     raise Exception("Another element already returned a file")
                 result = element_value
+            else:
+                if element_value is not None and element_value is not data:
+                    # TODO: Once this has been running in production for a while,
+                    # change this to raise an exception.
+                    sys.stderr.write(
+                        f"Function {str(phase)}() in {str(element_controller)} returned a data object other than the one that was passed in.\n\n"
+                        + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                        + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                        + "In the future, returning a different object will trigger a fatal error."
+                    )
         except Exception:
             raise Exception(f"Error processing element {element.tag}")
 
@@ -171,8 +172,41 @@ def process(
     if phase == "file":
         result = filelike_to_string(result)
 
-    # We may have added an `extensions` property to the `data` object; remove it.
-    if "extensions" in data:
-        del data["extensions"]
-
     return result, processed_elements
+
+
+def prepare_data(
+    phase: Phase, data: dict, context: RenderContext, element: lxml.html.HtmlElement
+) -> None:
+    element_extensions = context["element_extensions"]
+    element_info = context["elements"][element.tag]
+
+    # Make a deep copy of the data so that question/element code can't
+    # modify the source data.
+    data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
+
+    # `*_url` options are only present during the render phase.
+    if phase == "render":
+        client_files_element_url = (
+            pathlib.Path(data["options"]["course_element_files_url"])
+            / element_info["name"]
+            / "clientFilesElement"
+        ).as_posix()
+        client_files_extensions_url = {
+            extension: (
+                pathlib.Path(data["options"]["course_element_extension_files_url"])
+                / element_info["name"]
+                / extension
+                / "clientFilesExtension"
+            ).as_posix()
+            for extension in data["extensions"]
+        }
+
+        data["options"]["client_files_element_url"] = client_files_element_url
+        data["options"]["client_files_extensions_url"] = client_files_extensions_url
+
+
+def restore_data(data: dict) -> None:
+    data.pop("extensions", None)
+    data["options"].pop("client_files_element_url", None)
+    data["options"].pop("client_files_extensions_url", None)

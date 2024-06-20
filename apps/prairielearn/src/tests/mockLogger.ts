@@ -1,5 +1,6 @@
-import stream = require('stream');
-import winston = require('winston');
+import * as stream from 'stream';
+
+import winston from 'winston';
 
 interface MockLogger {
   logger: winston.Logger;

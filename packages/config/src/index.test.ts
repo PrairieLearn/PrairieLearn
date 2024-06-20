@@ -1,9 +1,10 @@
-import { assert } from 'chai';
 import { writeFile } from 'node:fs/promises';
+
+import { assert } from 'chai';
 import { withFile } from 'tmp-promise';
 import { z } from 'zod';
 
-import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index';
+import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index.js';
 
 describe('config', () => {
   it('loads config with defaults', async () => {
@@ -58,6 +59,23 @@ describe('config', () => {
     assert.equal(loader.config.features.foo, false);
     assert.equal(loader.config.features.bar, false);
     assert.equal(loader.config.features.baz, true);
+  });
+
+  it('replaces arrays', async () => {
+    const schema = z.object({
+      courseDirs: z
+        .array(z.string())
+        .default(['exampleCourse', '/course', '/course2', '/course3', '/course4', '/course5']),
+    });
+    const loader = new ConfigLoader(schema);
+
+    await loader.loadAndValidate([
+      makeLiteralConfigSource({
+        courseDirs: ['testCourse', '/mycourse'],
+      }),
+    ]);
+
+    assert.deepEqual(loader.config.courseDirs, ['testCourse', '/mycourse']);
   });
 
   it('maintains object identity when loading config', async () => {

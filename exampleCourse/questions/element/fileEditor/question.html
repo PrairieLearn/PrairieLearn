@@ -15,7 +15,7 @@
     <div class="card-header">
       Part 1
     </div>
-    
+
     <div class="card-body">
       <p>
         The default behavior for the <code>pl-file-editor</code> element is displayed here.
@@ -23,10 +23,10 @@
         This file name will be displayed at the top left of the inbrowser file editing area.
       </p>
 
-      <p> 
+      <p>
         Implement a function that determines if a number is even or odd.
       </p>
-      
+
       <pl-file-editor file-name="is_odd.py" >
       </pl-file-editor>
     </div>
@@ -36,10 +36,10 @@
     <div class="card-header">
       Part 2
     </div>
-    
+
     <div class="card-body">
       <p>
-        The file editor area is highly configurable. Within this example, the programming language syntax highlighting is enabled 
+        The file editor area is highly configurable. Within this example, the programming language syntax highlighting is enabled
         for <strong>Python</strong> using <code>ace-mode="ace/mode/python"</code>. In addition,
         the editor area is pre-populated with a starter template using <code>source-file-name="initial-code.py"</code>
       </p>
@@ -52,66 +52,86 @@
       </pl-file-editor>
     </div>
   </div>
-  
+
   <div class="card my-2">
     <div class="card-header">
       Part 3
     </div>
-    
+
     <div class="card-body">
       <p>
-        For long programming assignments, the minimum and the maximum number of lines of code to simultaneously display can be set. 
+        For long programming assignments, the minimum and the maximum number of lines of code to simultaneously display can be set.
         The minimum value causes a pre-allocation of the editor height for its viewing area using <code>min-lines="40"</code>. Meanwhile,
         the maximum bound indicates when the text editor will enable scrolling. For example, <code>max-lines="60"</code>, would allow
         for the editor to display 60 lines of code before the scroll bar would be unlocked.
         Both features can be tested by holding down "return" or "enter".
       </p>
 
-      <p> 
+      <p>
         Implement a function that determines if a number is even or odd.
       </p>
       <pl-file-editor file-name="is_odd3.py" source-file-name="spacing-demo.txt" min-lines="40" max-lines="60">
       </pl-file-editor>
     </div>
   </div>
-  
+
   <div class="card my-2">
     <div class="card-header">
       Part 4
     </div>
-    
+
     <div class="card-body">
       <p>
-        Moreover, for variable length programming assignments, the file editor can be set to automatically expand when new lines are added. 
+        Moreover, for variable length programming assignments, the file editor can be set to automatically expand when new lines are added.
         Expansion is enabled by setting <code>auto-resize="true"</code> and results in the editor window growing downward. It's good
         practice to pair this option with <code>min-lines="20"</code> or <code>source-file-name="initial_code.txt"</code>to initially set the window height.
         Try out the expansion by holding down "return" or "enter".
       </p>
 
-      <p> 
+      <p>
         Implement a function that determines if a number is even or odd.
       </p>
-      
+
       <pl-file-editor file-name="is_odd4.py" auto-resize="true">
       </pl-file-editor>
     </div>
   </div>
-  
+
   <div class="card my-2">
     <div class="card-header">
       Part 5
     </div>
-    
+
     <div class="card-body">
       <p>
         For students using non-latin keyboards, it is possible that non-English characters may be introduced into the box. This can cause confusion if these characters resemble a latin character (e.g., the cyrillic character <strong>&#x0430;</strong> looks a lot like the latin character <strong>a</strong>). Similarly, students may copy from text editors and paste into the answer box, causing characters like fancy quotes to be introduced. The attribute <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character that mostly resembles it.
       </p>
 
-      <p> 
+      <p>
         Implement a function that determines if a number is even or odd.
       </p>
 
       <pl-file-editor file-name="is_odd5.py" normalize-to-ascii="true">
+      </pl-file-editor>
+    </div>
+  </div>
+
+  <div class="card my-2">
+    <div class="card-header">
+      Part 6
+    </div>
+
+    <div class="card-body">
+      <p>
+        This element also supports the submission of blank files by
+        setting <code>allow-blank="true"</code>.
+      </p>
+
+      <p>
+        Submit nothing.
+      </p>
+
+      <pl-file-editor file-name="blank.py" allow-blank="true">
       </pl-file-editor>
     </div>
   </div>

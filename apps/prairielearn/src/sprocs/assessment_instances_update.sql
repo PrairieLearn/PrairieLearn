@@ -33,7 +33,7 @@ BEGIN
     SELECT
         c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
-        COALESCE(a.max_bonus_points, 0),    ai.max_bonus_points,
+        GREATEST(a.max_bonus_points, 0),    ai.max_bonus_points,
         ai.open, a.group_work
     INTO
         course_id, group_id,  user_id,   assessment_id, assessment_type,
@@ -103,9 +103,6 @@ BEGIN
     
     -- determine the correct max_points
     new_assessment_instance_max_points := COALESCE(assessment_max_points, GREATEST(zones_total_max_points - assessment_max_bonus_points, 0));
-
-    -- ensure that max_bonus_points is not greater than the number of available points
-    assessment_max_bonus_points := GREATEST(LEAST(assessment_max_bonus_points, zones_total_max_points - new_assessment_instance_max_points), 0);
 
     -- update max_points if necessary and log it
     IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points OR assessment_max_bonus_points IS DISTINCT FROM old_assessment_instance_max_bonus_points THEN

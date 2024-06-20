@@ -1,21 +1,19 @@
-const { config } = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
-const { enrichSentryScope } = require('../lib/sentry');
+// @ts-check
+import { logger } from '@prairielearn/logger';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   // Capture the path at the start of the request; it may have been rewritten
   // by the time the finish handler executes.
   const path = req.path;
 
   if (req.method !== 'OPTIONS') {
     res.once('close', function () {
-      // Attach information to the Sentry scope so that we can more easily
-      // debug errors. No PII is added.
-      if (config.sentryDsn) {
-        enrichSentryScope(req, res);
-      }
-
-      var access = {
+      logger.verbose('response', {
         response_id: res.locals.response_id,
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],
@@ -38,8 +36,7 @@ module.exports = function (req, res, next) {
         question_id: res.locals?.question?.id ?? null,
         question_directory: res.locals?.question?.directory ?? null,
         instance_question_id: res.locals?.instance_question?.id ?? null,
-      };
-      logger.verbose('response', access);
+      });
 
       // Print additional message in this case to simplify grepping logs for this scenario
       if (!res.writableFinished) {
@@ -50,4 +47,4 @@ module.exports = function (req, res, next) {
     });
   }
   next();
-};
+}

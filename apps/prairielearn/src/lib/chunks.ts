@@ -1,25 +1,29 @@
+import * as child_process from 'child_process';
+import * as path from 'path';
+import { PassThrough as PassThroughStream } from 'stream';
+import * as util from 'util';
+
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import async = require('async');
-import child_process = require('child_process');
-import fs = require('fs-extra');
-import path = require('path');
-import { PassThrough as PassThroughStream } from 'stream';
-import tar = require('tar');
-import util = require('util');
+import * as async from 'async';
+import fs from 'fs-extra';
+import * as tar from 'tar';
 import { v4 as uuidv4 } from 'uuid';
 
-import namedLocks = require('@prairielearn/named-locks');
-import sqldb = require('@prairielearn/postgres');
+import * as namedLocks from '@prairielearn/named-locks';
+import { contains } from '@prairielearn/path-utils';
+import * as sqldb from '@prairielearn/postgres';
 
-import aws = require('./aws');
-import { chalk, chalkDim } from './chalk';
-import { createServerJob, ServerJob } from './server-jobs';
-import courseDB = require('../sync/course-db');
-import type { CourseData } from '../sync/course-db';
-import { config } from './config';
+import { getLockNameForCoursePath } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
+import { CourseData } from '../sync/course-db.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { downloadFromS3, makeS3ClientConfig } from './aws.js';
+import { chalk, chalkDim } from './chalk.js';
+import { config } from './config.js';
+import { createServerJob, ServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type ChunkType =
   | 'elements'
@@ -30,37 +34,37 @@ type ChunkType =
   | 'clientFilesAssessment'
   | 'question';
 
-type ElementsChunkMetadata = {
+interface ElementsChunkMetadata {
   type: 'elements';
-};
+}
 
-type ElementExtensionsChunkMetadata = {
+interface ElementExtensionsChunkMetadata {
   type: 'elementExtensions';
-};
+}
 
-type ClientFilesCourseChunkMetadata = {
+interface ClientFilesCourseChunkMetadata {
   type: 'clientFilesCourse';
-};
+}
 
-type ServerFilesCourseChunkMetadata = {
+interface ServerFilesCourseChunkMetadata {
   type: 'serverFilesCourse';
-};
+}
 
-type ClientFilesCourseInstanceChunkMetadata = {
+interface ClientFilesCourseInstanceChunkMetadata {
   type: 'clientFilesCourseInstance';
   courseInstanceName: string;
-};
+}
 
-type ClientFilesAssessmentChunkMetadata = {
+interface ClientFilesAssessmentChunkMetadata {
   type: 'clientFilesAssessment';
   courseInstanceName: string;
   assessmentName: string;
-};
+}
 
-type QuestionChunkMetadata = {
+interface QuestionChunkMetadata {
   type: 'question';
   questionName: string;
-};
+}
 
 /**
  * {@link ChunkMetadata} objects are used to refer to chunks according to their
@@ -80,37 +84,37 @@ type ChunkMetadata =
   | ClientFilesAssessmentChunkMetadata
   | QuestionChunkMetadata;
 
-type ElementsChunk = {
+interface ElementsChunk {
   type: 'elements';
-};
+}
 
-type ElementExtensionsChunk = {
+interface ElementExtensionsChunk {
   type: 'elementExtensions';
-};
+}
 
-type ClientFilesCourseChunk = {
+interface ClientFilesCourseChunk {
   type: 'clientFilesCourse';
-};
+}
 
-type ServerFilesCourseChunk = {
+interface ServerFilesCourseChunk {
   type: 'serverFilesCourse';
-};
+}
 
-type ClientFilesCourseInstanceChunk = {
+interface ClientFilesCourseInstanceChunk {
   type: 'clientFilesCourseInstance';
   courseInstanceId: string | number;
-};
+}
 
-type ClientFilesAssessmentChunk = {
+interface ClientFilesAssessmentChunk {
   type: 'clientFilesAssessment';
   courseInstanceId: string | number;
   assessmentId: string | number;
-};
+}
 
-type QuestionChunk = {
+export interface QuestionChunk {
   type: 'question';
   questionId: string | number;
-};
+}
 
 /**
  * {@link Chunk} objects are used to identify chunks by the IDs of their
@@ -135,7 +139,7 @@ export type Chunk =
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-type DatabaseChunk = {
+interface DatabaseChunk {
   id: string | number | null;
   type: ChunkType;
   uuid: string;
@@ -146,23 +150,21 @@ type DatabaseChunk = {
   assessment_name?: string;
   question_id?: string | number;
   question_name?: string;
-};
+}
 
-type CourseInstanceChunks = {
+interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;
   assessments: Set<string>;
-};
+}
 
-type CourseChunks = {
+interface CourseChunks {
   elements: boolean;
   elementExtensions: boolean;
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
-  courseInstances: {
-    [id: string]: CourseInstanceChunks;
-  };
-};
+  courseInstances: Record<string, CourseInstanceChunks>;
+}
 
 /**
  * Constructs a {@link ChunkMetadata} object from the given {@link DatabaseChunk}
@@ -224,7 +226,7 @@ export function pathForChunk(chunkMetadata: ChunkMetadata): string {
       return path.join(
         'courseInstances',
         chunkMetadata.courseInstanceName,
-        'clientFilesCourseInstance'
+        'clientFilesCourseInstance',
       );
     case 'clientFilesAssessment':
       return path.join(
@@ -232,7 +234,7 @@ export function pathForChunk(chunkMetadata: ChunkMetadata): string {
         chunkMetadata.courseInstanceName,
         'assessments',
         chunkMetadata.assessmentName,
-        'clientFilesAssessment'
+        'clientFilesAssessment',
       );
   }
 }
@@ -256,13 +258,49 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
 export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
-  newHash: string
+  newHash: string,
 ): Promise<string[]> {
-  const { stdout } = await util.promisify(child_process.exec)(
-    `git diff --name-only ${oldHash}..${newHash}`,
-    { cwd: coursePath }
+  // In some specific scenarios, the course directory and the root of the course
+  // repository might be different. For example, the example course is usually
+  // manually cloned in production environments, and then the course is added
+  // with the path set to the absolute path of the repo _plus_ `exampleCourse/`.
+  //
+  // In these cases, we need to make sure that the paths we're returning from
+  // this function are relative to the course directory, not the root of the
+  // repository. To do this, we query git itself for the root of the repository,
+  // construct an absolute path for each file, and then trim off the course path.
+  const { stdout: topLevelStdout } = await util.promisify(child_process.exec)(
+    `git rev-parse --show-toplevel`,
+    { cwd: coursePath },
   );
-  return stdout.trim().split('\n');
+  const topLevel = topLevelStdout.trim();
+
+  const { stdout: diffStdout } = await util.promisify(child_process.exec)(
+    `git diff --name-only ${oldHash}..${newHash}`,
+    {
+      cwd: coursePath,
+      // This defaults to 1MB of output, however, we've observed in the past that
+      // courses will go long periods of time without syncing, which in turn will
+      // result in a large number of changed files. The largest diff we've seen
+      // is 1.6MB of text; this new value was chosen to give us plenty of
+      // headroom.
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  );
+  const changedFiles = diffStdout.trim().split('\n');
+
+  // Construct absolute path to all changed files.
+  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
+
+  // Exclude any changed files that aren't in the course directory.
+  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
+    contains(coursePath, absoluteChangedFile),
+  );
+
+  // Convert all absolute paths back into relative paths.
+  return courseChangedFiles.map((absoluteChangedFile) =>
+    path.relative(coursePath, absoluteChangedFile),
+  );
 }
 
 /**
@@ -275,7 +313,7 @@ export async function identifyChangedFiles(
  */
 export function identifyChunksFromChangedFiles(
   changedFiles: string[],
-  courseData: CourseData
+  courseData: CourseData,
 ): CourseChunks {
   const courseChunks: CourseChunks = {
     elements: false,
@@ -333,7 +371,7 @@ export function identifyChunksFromChangedFiles(
         // Let's validate that the preceeding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
-          ...pathComponents.slice(0, clientFilesCourseInstanceIndex)
+          ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
         );
         if (courseData.courseInstances[courseInstanceId]) {
           if (!courseChunks.courseInstances[courseInstanceId]) {
@@ -360,7 +398,7 @@ export function identifyChunksFromChangedFiles(
         // to course instance IDs and assessment IDs.
         const courseInstanceId = path.join(...pathComponents.slice(0, assessmentsIndex));
         const assessmentId = path.join(
-          ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex)
+          ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex),
         );
 
         if (
@@ -512,7 +550,7 @@ export async function diffChunks({
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
       const hasClientFilesCourseInstanceDirectory = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance')
+        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (
         hasClientFilesCourseInstanceDirectory &&
@@ -533,8 +571,8 @@ export async function diffChunks({
             ciid,
             'assessments',
             tid,
-            'clientFilesAssessment'
-          )
+            'clientFilesAssessment',
+          ),
         );
         if (
           hasClientFilesAssessmentDirectory &&
@@ -548,7 +586,7 @@ export async function diffChunks({
           });
         }
       });
-    }
+    },
   );
 
   // Check for any deleted course instances or their assessments.
@@ -556,7 +594,7 @@ export async function diffChunks({
     Object.entries(existingCourseChunks.courseInstances).map(async ([ciid, courseInstanceInfo]) => {
       const courseInstanceExists = !!courseData.courseInstances[ciid];
       const clientFilesCourseInstanceExists = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance')
+        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
         deletedChunks.push({
@@ -575,8 +613,8 @@ export async function diffChunks({
               ciid,
               'assessments',
               tid,
-              'clientFilesAssessment'
-            )
+              'clientFilesAssessment',
+            ),
           );
           if (!courseInstanceExists || !assessmentExists || !clientFilesAssessmentExists) {
             deletedChunks.push({
@@ -585,9 +623,9 @@ export async function diffChunks({
               assessmentName: tid,
             });
           }
-        })
+        }),
       );
-    })
+    }),
   );
 
   return { updatedChunks, deletedChunks };
@@ -596,9 +634,15 @@ export async function diffChunks({
 export async function createAndUploadChunks(
   coursePath: string,
   courseId: string,
-  chunksToGenerate: ChunkMetadata[]
+  chunksToGenerate: ChunkMetadata[],
 ) {
   const generatedChunks: (ChunkMetadata & { uuid: string })[] = [];
+
+  // Share a single S3 client across all uploads. If we created one client per
+  // upload, we'd face a denial of service if someone changed a sufficient number
+  // of chunks in a single commit because we'd be rapidly hammering the EC2 IMDS
+  // with requests for credentials and would likely get rate limited.
+  const s3 = new S3(makeS3ClientConfig());
 
   await async.eachLimit(chunksToGenerate, config.chunksMaxParallelUpload, async (chunk) => {
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
@@ -612,13 +656,12 @@ export async function createAndUploadChunks(
         gzip: true,
         cwd: chunkDirectory,
       },
-      ['.']
+      ['.'],
     );
 
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
-    const s3 = new S3(aws.makeS3ClientConfig());
     await new Upload({
       client: s3,
       params: {
@@ -780,14 +823,14 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   courseDir = path.resolve(process.cwd(), courseDir);
   job.info(chalkDim(`Resolved course directory: ${courseDir}`));
 
-  const lockName = `coursedir:${courseDir}`;
+  const lockName = getLockNameForCoursePath(courseDir);
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
 
   await namedLocks.doWithLock(lockName, {}, async () => {
     job.info(chalkDim(`Acquired lock`));
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
-    const courseData = await courseDB.loadFullCourse(courseDir);
+    const courseData = await courseDB.loadFullCourse(course_id, courseDir);
     job.info(chalkDim(`Loaded course data`));
 
     job.info(chalk.bold(`Generating all chunks`));
@@ -826,7 +869,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
-        'clientFilesCourseInstance'
+        'clientFilesCourseInstance',
       );
       break;
     case 'clientFilesAssessment':
@@ -841,7 +884,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
         chunk.course_instance_name,
         'assessments',
         chunk.assessment_name,
-        'clientFilesAssessment'
+        'clientFilesAssessment',
       );
       break;
     case 'question':
@@ -876,7 +919,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.ensureDir(path.dirname(downloadPath));
-  await aws.downloadFromS3Async(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
@@ -1006,10 +1049,9 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
       // will silently no-op.
       const chunkMetadata = chunkMetadataFromDatabaseChunk(chunk);
       await fs.remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
-    })
+    }),
   );
 }
-export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
 
 interface QuestionWithTemplateDirectory {
   id: string;
@@ -1022,8 +1064,8 @@ interface QuestionWithTemplateDirectory {
  * @param question A question object.
  * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
-export async function getTemplateQuestionIdsAsync(
-  question: QuestionWithTemplateDirectory
+export async function getTemplateQuestionIds(
+  question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
   const result = await sqldb.queryAsync(sql.select_template_question_ids, {
@@ -1032,14 +1074,13 @@ export async function getTemplateQuestionIdsAsync(
   const questionIds = result.rows.map((r) => r.id);
   return questionIds;
 }
-export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsync);
 
 /**
  * Logs the changes to chunks for a given job.
  */
 export function logChunkChangesToJob(
   { updatedChunks, deletedChunks }: ChunksDiff,
-  job: Pick<ServerJob, 'verbose'>
+  job: Pick<ServerJob, 'verbose'>,
 ) {
   if (updatedChunks.length === 0 && deletedChunks.length === 0) {
     job.verbose('No chunks changed.');

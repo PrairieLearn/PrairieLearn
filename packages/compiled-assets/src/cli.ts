@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import fs from 'fs-extra';
-import prettyBytes from 'pretty-bytes';
 import path from 'path';
 import { promisify } from 'util';
 import zlib from 'zlib';
+
 import { program } from 'commander';
+import fs from 'fs-extra';
+import prettyBytes from 'pretty-bytes';
 
 import { build } from './index.js';
 
@@ -15,7 +16,7 @@ type CompressedSizes = Record<string, Record<string, number>>;
 
 async function writeCompressedAssets(
   destination: string,
-  manifest: Record<string, string>
+  manifest: Record<string, string>,
 ): Promise<CompressedSizes> {
   const compressedSizes: CompressedSizes = {};
   await Promise.all(
@@ -31,7 +32,7 @@ async function writeCompressedAssets(
         gzip: gzipCompressed.length,
         brotli: brotliCompressed.length,
       };
-    })
+    }),
   );
   return compressedSizes;
 }

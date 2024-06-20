@@ -16,7 +16,7 @@ await init(
   },
   (err) => {
     throw err;
-  }
+  },
 );
 ```
 
@@ -42,38 +42,6 @@ await doWithLock(
   },
   async () => {
     console.log('Doing some work');
-  }
+  },
 );
-```
-
-### Advanced usage
-
-Normally, it's preferable to use `doWithLock`, as it will automatically release the lock in case of failure. However, for advanced usage, you can manually acquire and release a lock.
-
-```ts
-import { waitLockAsync, releaseLockAsync } from '@prairielearn/named-locks';
-
-const lock = await waitLockAsync('name', {});
-try {
-  console.log('Doing some work');
-} finally {
-  await releaseLockAsync(lock);
-}
-```
-
-If you only want to acquire a lock if it's immediately available, you can use `tryLockAsync` instead:
-
-```ts
-import { tryLockAsync, releaseLockAsync } from '@prairielearn/named-locks';
-
-const lock = await waitLockAsync('name', {});
-if (lock) {
-  try {
-    console.log('Doing some work');
-  } finally {
-    await releaseLockAsync(lock);
-  }
-} else {
-  console.log('Lock not acquired');
-}
 ```

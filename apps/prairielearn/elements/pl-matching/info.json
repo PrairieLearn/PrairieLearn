@@ -1,8 +1,6 @@
 {
-    "controller": "pl-matching.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-matching.css"
-        ]
-    }
+  "controller": "pl-matching.py",
+  "dependencies": {
+    "elementStyles": ["pl-matching.css"]
+  }
 }

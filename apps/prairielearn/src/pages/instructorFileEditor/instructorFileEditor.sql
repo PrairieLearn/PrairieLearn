@@ -3,8 +3,6 @@ SELECT
   fe.id,
   fe.orig_hash,
   fe.file_id,
-  fe.did_save,
-  fe.did_sync,
   floor(
     DATE_PART('epoch', CURRENT_TIMESTAMP - fe.created_at) / 3600
   ) AS age,
@@ -50,20 +48,6 @@ WHERE
   AND fe.deleted_at IS NULL
 RETURNING
   fe.file_id;
-
--- BLOCK update_did_save
-UPDATE file_edits AS fe
-SET
-  did_save = TRUE
-WHERE
-  fe.id = $id;
-
--- BLOCK update_did_sync
-UPDATE file_edits AS fe
-SET
-  did_sync = TRUE
-WHERE
-  fe.id = $id;
 
 -- BLOCK update_job_sequence_id
 UPDATE file_edits AS fe

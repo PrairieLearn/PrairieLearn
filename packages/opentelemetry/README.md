@@ -116,6 +116,6 @@ createObservableValueGauges(
     // The interval that your value will be observed, in milliseconds.
     interval: 1000,
   },
-  () => pool.size
+  () => pool.size,
 );
 ```

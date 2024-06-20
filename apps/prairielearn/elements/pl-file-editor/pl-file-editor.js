@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, filterXSS */
+/* global ace, showdown, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -19,7 +19,9 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
-  this.editor = ace.edit(this.editorElement.get(0));
+  this.editor = ace.edit(this.editorElement.get(0), {
+    enableKeyboardAccessibility: true,
+  });
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
@@ -63,24 +65,9 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview === 'markdown') {
-    let renderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    this.editor.session.on('change', () => {
-      this.updatePreview(renderer.makeHtml(this.editor.getValue()));
-    });
-    this.updatePreview(renderer.makeHtml(this.editor.getValue()));
-  } else if (options.preview === 'html') {
-    this.editor.session.on('change', () => {
-      this.updatePreview(this.editor.getValue());
-    });
-    this.updatePreview(this.editor.getValue());
-  } else if (options.preview !== undefined) {
-    let preview = this.element.find('.preview')[0];
-    preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
+  if (options.preview) {
+    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.updatePreview(options.preview);
   }
 
   var currentContents = '';
@@ -116,13 +103,19 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = function (html_contents) {
+window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
+  const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
+  const html_contents = editor_value
+    ? (await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+      `<p>Unknown preview type: <code>${preview_type}</code></p>`
+    : '';
+
   let preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = filterXSS(html_contents);
+    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
@@ -150,7 +143,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: theme,
             text: caption,
             selected: localStorage.getItem('pl-file-editor-theme') === theme,
-          })
+          }),
         );
       }
 
@@ -163,7 +156,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: fontSizeList[entries],
             text: fontSizeList[entries],
             selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
-          })
+          }),
         );
       }
 
@@ -178,7 +171,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: keyboardHandler,
             text: keyboardHandlerList[index],
             selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
-          })
+          }),
         );
       }
     });
@@ -188,16 +181,16 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
-        localStorage.getItem('pl-file-editor-keyboardHandler')
+        localStorage.getItem('pl-file-editor-keyboardHandler'),
       );
     }
 
-    this.modal.find('#modal-' + uuid + '-themes').change(function () {
-      var theme = $(this).val();
+    this.modal.find('#modal-' + uuid + '-themes').change((e) => {
+      var theme = $(e.currentTarget).val();
       this.editor.setTheme(theme);
     });
-    this.modal.find('#modal-' + uuid + '-fontsize').change(function () {
-      var fontSize = $(this).val();
+    this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
+      var fontSize = $(e.currentTarget).val();
       this.editor.setFontSize(fontSize);
     });
   });
@@ -230,7 +223,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
     this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
     );
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
@@ -243,17 +236,20 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
     this.restoreOriginalConfirmContainer.show();
+    this.restoreOriginalConfirm.focus();
   });
 
   this.restoreOriginalConfirm.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
   this.restoreOriginalCancel.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
   });
 };
 
@@ -278,7 +274,7 @@ window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
       .map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join('')
+      .join(''),
   );
 };
 
@@ -289,6 +285,37 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   return btoa(
     encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
       return String.fromCharCode('0x' + p1);
-    })
+    }),
   );
+};
+
+window.PLFileEditor.prototype.preview = {
+  html: (value) => value,
+  markdown: (() => {
+    let markdownRenderer = new showdown.Converter({
+      literalMidWordUnderscores: true,
+      literalMidWordAsterisks: true,
+    });
+
+    return async (value) => markdownRenderer.makeHtml(value);
+  })(),
+  dot: (() => {
+    let vizPromise = null;
+    return async (value) => {
+      try {
+        // Only load/create instance on first call.
+        if (vizPromise == null) {
+          vizPromise = (async () => {
+            const { instance } = await import('@viz-js/viz');
+            return instance();
+          })();
+        }
+        const viz = await vizPromise;
+        return viz.renderString(value, { format: 'svg' });
+      } catch (err) {
+        return `<span class="text-danger">${err.message}</span>`;
+      }
+    };
+  })(),
+  // Additional preview types can be created by extensions, by adding entries to window.PLFileEditor.prototype.preview.
 };

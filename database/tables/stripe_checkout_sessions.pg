@@ -1,0 +1,17 @@
+columns
+    agent_user_id: bigint
+    completed_at: timestamp with time zone
+    course_instance_id: bigint
+    created_at: timestamp with time zone not null default now()
+    data: jsonb not null
+    id: bigint not null default nextval('stripe_checkout_sessions_id_seq'::regclass)
+    plan_grants_created: boolean not null default false
+    plan_names: text[] not null
+    stripe_object_id: text not null
+    subject_user_id: bigint not null
+
+indexes
+    stripe_checkout_sessions_pkey: PRIMARY KEY (id) USING btree (id)
+    stripe_checkout_sessions_stripe_object_id_key: UNIQUE (stripe_object_id) USING btree (stripe_object_id)
+    stripe_checkout_sessions_agent_user_id_idx: USING btree (agent_user_id)
+    stripe_checkout_sessions_subject_user_id_idx: USING btree (subject_user_id)

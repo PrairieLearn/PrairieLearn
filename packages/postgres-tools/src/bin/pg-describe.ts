@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
+import path from 'path';
+
 import async from 'async';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import _ from 'lodash';
-import path from 'path';
 import yargs from 'yargs';
 
-import { describeDatabase, formatDatabaseDescription, DatabaseDescription } from '../describe';
+import { describeDatabase, formatDatabaseDescription, DatabaseDescription } from '../describe.js';
 
-const args = yargs
+const args = yargs(process.argv.slice(2))
   .usage('Usage: $0 <database name> [options]')
   .demandCommand(1)
   .option('output', {
@@ -35,7 +36,7 @@ const args = yargs
   .example('$0 postgres', 'Describe the "postgres" database')
   .example(
     '$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2',
-    'Describe the "userdb" database; ignore specific tables and columns'
+    'Describe the "userdb" database; ignore specific tables and columns',
   )
   .strict();
 
@@ -74,7 +75,7 @@ describeDatabase(argv._[0].toString(), options).then(
   (err) => {
     console.error(err);
     process.exit(1);
-  }
+  },
 );
 
 function printDescription(description: DatabaseDescription) {

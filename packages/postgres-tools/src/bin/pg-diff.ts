@@ -7,9 +7,9 @@ import {
   diffDirectories,
   diffDatabaseAndDirectory,
   diffDirectoryAndDatabase,
-} from '../diff';
+} from '../diff.js';
 
-const args = yargs
+const args = yargs(process.argv.slice(2))
   .usage('Usage: $0 [options]')
   .option('db', {
     description: 'reads a description from the named database',
@@ -21,11 +21,11 @@ const args = yargs
   .alias('h', 'help')
   .example(
     '$0 --db postgres --dir db_dump',
-    'Diffs the database "postgres" with the description in the directory "db_dump"'
+    'Diffs the database "postgres" with the description in the directory "db_dump"',
   )
   .example(
     '$0 --db postgres --db old_restore',
-    'Diffs the database "postgres" with the database "old_restore"'
+    'Diffs the database "postgres" with the database "old_restore"',
   )
   .strict();
 

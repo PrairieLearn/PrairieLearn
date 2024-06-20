@@ -1,5 +1,129 @@
 # @prairielearn/postgres
 
+## 2.1.0
+
+### Minor Changes
+
+- 1de33d9: Add `formatQueryWithErrorPosition` function
+
+## 2.0.3
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- fd8f6e6: Use processed SQL when throwing errors with a `position` property
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+## 1.9.4
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 1.9.3
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
+## 1.9.2
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+
+## 1.9.1
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+
+## 1.9.0
+
+### Minor Changes
+
+- 3249e13: Add functions for validating sproc calls
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
+## 1.8.1
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
+## 1.8.0
+
+### Minor Changes
+
+- 3d1c40c16: Export CursorIterator and QueryParams types
+
+## 1.7.9
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
+## 1.7.8
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
+## 1.7.7
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
+## 1.7.6
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 1.7.5
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 1.7.4
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 1.7.3
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
+## 1.7.2
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
 ## 1.7.1
 
 ### Patch Changes

@@ -1,6 +1,12 @@
-const { idsEqual } = require('../lib/id');
+// @ts-check
+import { idsEqual } from '../lib/id.js';
 
-module.exports = function (err, req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (err, req, res, next) {
   // This middleware tries to handle the case where an instructor
   // starts emulating another effective user, but they are currently
   // on a page to which the effective user doesn't have
@@ -30,7 +36,7 @@ module.exports = function (err, req, res, next) {
       res.locals?.authz_data?.has_course_permission_preview)
   ) {
     res.redirect(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`
+      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`,
     );
     return;
   }
@@ -49,4 +55,4 @@ module.exports = function (err, req, res, next) {
 
   // give up, we couldn't figure out a useful redirect
   next(err);
-};
+}

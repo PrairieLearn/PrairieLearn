@@ -1,117 +1,115 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const asyncHandler = require('express-async-handler');
-const { ECR } = require('@aws-sdk/client-ecr');
-const _ = require('lodash');
-const async = require('async');
-const { formatISO } = require('date-fns');
-const express = require('express');
-const sqldb = require('@prairielearn/postgres');
-const { DockerName } = require('@prairielearn/docker-utils');
-const error = require('@prairielearn/error');
+import { ECR } from '@aws-sdk/client-ecr';
+import * as async from 'async';
+import { formatISO } from 'date-fns';
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-const syncHelpers = require('../shared/syncHelpers');
-const { makeAwsClientConfig } = require('../../lib/aws');
-const { config } = require('../../lib/config');
+import { DockerName } from '@prairielearn/docker-utils';
+import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
-const router = express.Router();
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
+import * as syncHelpers from '../shared/syncHelpers.js';
 
-router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
-  }
-  const params = { course_id: res.locals.course.id };
-  sqldb.query(sql.select_sync_job_sequences, params, function (err, result) {
-    if (ERR(err, next)) return;
-    res.locals.job_sequences = result.rows;
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const router = Router();
 
-    sqldb.query(sql.question_images, params, (err, result) => {
-      if (ERR(err, next)) return;
-      res.locals.images = result.rows;
-      res.locals.imageSyncNeeded = false;
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
+    }
 
-      if (config.cacheImageRegistry) {
-        const ecr = new ECR(makeAwsClientConfig());
-        async.each(
-          res.locals.images,
-          (image, callback) => {
-            var repository = new DockerName(image.image);
-            image.tag = repository.getTag() || 'latest (implied)';
-            // Default to get overwritten later
-            image.pushed_at = null;
-            image.imageSyncNeeded = false;
-            var params = {
-              repositoryName: repository.getRepository(),
-            };
-            ecr.describeImages(params, (err, data) => {
-              if (err && err.name === 'RepositoryNotFoundException') {
-                image.imageSyncNeeded = true;
-                return callback(null);
-              } else if (ERR(err, callback)) {
-                return;
-              }
-              res.locals.ecrInfo = {};
-              data.imageDetails.forEach((imageDetails) => {
-                if (imageDetails.imageTags) {
-                  imageDetails.imageTags.forEach((tag) => {
-                    res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
-                  });
-                }
-              });
+    const jobSequencesResult = await sqldb.queryAsync(sql.select_sync_job_sequences, {
+      course_id: res.locals.course.id,
+    });
+    res.locals.job_sequences = jobSequencesResult.rows;
 
-              // Put info from ECR into image for EJS
-              var repoName = repository.getCombined(true);
-              image.digest_full = _.get(res.locals.ecrInfo[repoName], 'imageDigest', '');
-              image.digest = image.digest_full.substring(0, 24);
-              if (image.digest !== image.digest_full) {
-                image.digest += '...';
-              }
-              image.size =
-                _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
-              var pushed_at = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
-              if (pushed_at) {
-                image.pushed_at = formatISO(pushed_at);
-              } else {
-                res.locals.imageSyncNeeded = true;
-                image.imageSyncNeeded = true;
-              }
-              callback(null);
-            });
-          },
-          (err) => {
-            if (ERR(err, next)) return;
-            const params = {
-              pushed_at_array: _.map(res.locals.images, 'pushed_at'),
-              course_id: res.locals.course.id,
-            };
-            sqldb.query(sql.format_pushed_at, params, (err, result) => {
-              if (ERR(err, next)) return;
-              if (result.rowCount !== res.locals.images.length) {
-                return next(new Error('pushed_at length mismatch'));
-              }
+    const result = await sqldb.queryAsync(sql.question_images, {
+      course_id: res.locals.course.id,
+    });
+    res.locals.images = result.rows;
+    res.locals.imageSyncNeeded = false;
 
-              for (let i = 0; i < res.locals.images.length; i++) {
-                res.locals.images[i].pushed_at_formatted = result.rows[i].pushed_at_formatted;
-              }
+    if (config.cacheImageRegistry) {
+      const ecr = new ECR(makeAwsClientConfig());
+      await async.each(res.locals.images, async (image) => {
+        var repository = new DockerName(image.image);
+        image.tag = repository.getTag() || 'latest (implied)';
+        // Default to get overwritten later
+        image.pushed_at = null;
+        image.imageSyncNeeded = false;
+        image.invalid = false;
 
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        let data;
+        try {
+          data = await ecr.describeImages({
+            repositoryName: repository.getRepository(),
+          });
+        } catch (err) {
+          if (err.name === 'InvalidParameterException') {
+            image.invalid = true;
+            return null;
+          } else if (err.name === 'RepositoryNotFoundException') {
+            image.imageSyncNeeded = true;
+            return null;
+          }
+          throw err;
+        }
+
+        const ecrInfo = {};
+        data.imageDetails?.forEach((imageDetails) => {
+          if (imageDetails.imageTags) {
+            imageDetails.imageTags.forEach((tag) => {
+              ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
             });
           }
-        );
-      } else {
-        //  no config.cacheImageRegistry
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
+
+        // Put info from ECR into image for EJS
+        var repoName = repository.getCombined(true);
+        image.digest_full = ecrInfo[repoName]?.imageDigest ?? '';
+        image.digest = image.digest_full.substring(0, 24);
+        if (image.digest !== image.digest_full) {
+          image.digest += '...';
+        }
+        image.size = (ecrInfo[repoName]?.imageSizeInBytes ?? 0) / (1000 * 1000);
+        const pushed_at = ecrInfo[repoName]?.imagePushedAt;
+        if (pushed_at) {
+          image.pushed_at = formatISO(pushed_at);
+        } else {
+          res.locals.imageSyncNeeded = true;
+          image.imageSyncNeeded = true;
+        }
+      });
+
+      // TODO: format with JavaScript instead of SQL
+      const result = await sqldb.queryAsync(sql.format_pushed_at, {
+        pushed_at_array: res.locals.images.map((i) => i.pushed_at),
+        course_id: res.locals.course.id,
+      });
+      if (result.rowCount !== res.locals.images.length) {
+        throw new Error('pushed_at length mismatch');
       }
-    });
-  });
-});
+
+      for (let i = 0; i < res.locals.images.length; i++) {
+        res.locals.images[i].pushed_at_formatted = result.rows[i].pushed_at_formatted;
+      }
+    }
+
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be course editor)');
+      throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (req.body.__action === 'pull') {
@@ -131,12 +129,9 @@ router.post(
       const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

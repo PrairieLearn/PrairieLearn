@@ -738,7 +738,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         [factor.e(1), 0, 0],
         [0, factor.e(2), 0],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -754,7 +754,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         [1, 0, offset.e(1)],
         [0, 1, offset.e(2)],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -843,7 +843,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         [0, factor, 0, 0],
         [0, 0, factor, 0],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -860,7 +860,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
         [0, 1, 0, offset.e(2)],
         [0, 0, 1, offset.e(3)],
         [0, 0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -921,7 +921,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
   PrairieGeom.prototype.rotateTransform3D = function (transform, angleX, angleY, angleZ) {
     return this.rotateTransform3DZ(
       this.rotateTransform3DY(this.rotateTransform3DX(transform, angleX), angleY),
-      angleZ
+      angleZ,
     );
   };
 
@@ -1389,7 +1389,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
           points[i].e(1).toFixed(numDecPlaces) +
           ', ' +
           points[i].e(2).toFixed(numDecPlaces) +
-          ']),'
+          ']),',
       );
     }
     console.log('],');
@@ -1781,7 +1781,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        })
+        }),
       );
     } else if (val instanceof Sylvester.Vector) {
       return val.modulus();
@@ -1790,7 +1790,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        })
+        }),
       );
     } else {
       return Infinity;
@@ -1823,7 +1823,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
       return numeric.norm2(
         _(_.zip(trueVal, submittedVal)).map(function (v) {
           return that.absError(v[0], v[1]);
-        })
+        }),
       );
     } else if (trueVal instanceof Sylvester.Vector) {
       subVal = submittedVal;
@@ -1835,7 +1835,7 @@ define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) 
       return numeric.norm2(
         _(trueVal).map(function (val, key) {
           return that.absError(val, submittedVal[key]);
-        })
+        }),
       );
     } else {
       return Infinity;

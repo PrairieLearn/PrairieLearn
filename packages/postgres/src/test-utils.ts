@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-import * as defaultPool from './default-pool';
+import * as defaultPool from './default-pool.js';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
@@ -37,7 +37,7 @@ async function createDatabase(
     database,
     templateDatabase,
     prepare,
-  }: CreateDatabaseOptions = {}
+  }: CreateDatabaseOptions = {},
 ): Promise<void> {
   const client = new pg.Client({
     ...getPoolConfig(options),
@@ -46,7 +46,7 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    database ?? getDatabaseNameForCurrentMochaWorker(options.database)
+    database ?? getDatabaseNameForCurrentMochaWorker(options.database),
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
@@ -72,11 +72,12 @@ async function createDatabase(
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
+        errorOnUnusedParameters: true,
         ...(options.poolConfig ?? {}),
       },
       (err) => {
         throw err;
-      }
+      },
     );
   }
 }
@@ -103,7 +104,7 @@ async function resetDatabase(options: PostgresTestUtilsOptions): Promise<void> {
 
 async function dropDatabase(
   options: PostgresTestUtilsOptions,
-  { closePool = true, force = false, database }: DropDatabaseOptions = {}
+  { closePool = true, force = false, database }: DropDatabaseOptions = {},
 ): Promise<void> {
   if (closePool) {
     await defaultPool.closeAsync();

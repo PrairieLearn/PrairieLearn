@@ -1,28 +1,30 @@
-import asyncHandler = require('express-async-handler');
-import express = require('express');
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
-import error = require('@prairielearn/error');
+
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryAsync,
   queryOneRowAsync,
   queryRow,
   queryRows,
   queryZeroOrOneRowAsync,
-  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { InstitutionSchema, CourseInstanceSchema } from '../../lib/db-types';
+import { InstitutionSchema, CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
+import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
+import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+
 import {
   Enroll,
   EnrollLtiMessage,
   CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
-} from './enroll.html';
-import { isEnterprise } from '../../lib/license';
+} from './enroll.html.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -41,75 +43,51 @@ router.get(
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
       },
-      CourseInstanceRowSchema
+      CourseInstanceRowSchema,
     );
     res.send(Enroll({ courseInstances, resLocals: res.locals }));
-  })
+  }),
 );
 
 router.get(
   '/limit_exceeded',
   asyncHandler((req, res) => {
     res.send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
-  })
+  }),
 );
 
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (res.locals.authn_provider_name === 'LTI') {
-      throw error.make(400, 'Enrollment unavailable, managed via LTI');
+      throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
     }
 
+    const { institution, course, course_instance } = await queryRow(
+      sql.select_course_instance,
+      { course_instance_id: req.body.course_instance_id },
+      z.object({
+        institution: InstitutionSchema,
+        course: CourseSchema,
+        course_instance: CourseInstanceSchema,
+      }),
+    );
+
+    const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
+
     if (req.body.__action === 'enroll') {
-      const limitExceeded = await runInTransactionAsync(async () => {
-        // Enrollment limits can only be configured on enterprise instances, so
-        // we'll also only check and enforce the limits on enterprise instances.
-        if (isEnterprise()) {
-          const {
-            institution,
-            course_instance,
-            institution_enrollment_count,
-            course_instance_enrollment_count,
-          } = await queryRow(
-            sql.select_and_lock_enrollment_counts,
-            { course_instance_id: req.body.course_instance_id },
-            z.object({
-              institution: InstitutionSchema,
-              course_instance: CourseInstanceSchema,
-              institution_enrollment_count: z.number(),
-              course_instance_enrollment_count: z.number(),
-            })
-          );
+      // Abuse the middleware to authorize the user for the course instance.
+      req.params.course_instance_id = course_instance.id;
+      await authzCourseOrInstance(req, res);
 
-          const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
-          const courseInstanceEnrollmentLimit =
-            course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
-
-          if (
-            institution_enrollment_count + 1 > yearlyEnrollmentLimit ||
-            course_instance_enrollment_count + 1 > courseInstanceEnrollmentLimit
-          ) {
-            return true;
-          }
-        }
-
-        // No limits would be exceeded, so we can enroll the user.
-        await queryAsync(sql.enroll, {
-          course_instance_id: req.body.course_instance_id,
-          user_id: res.locals.authn_user.user_id,
-          req_date: res.locals.req_date,
-        });
+      await ensureCheckedEnrollment({
+        institution,
+        course,
+        course_instance,
+        authz_data: res.locals.authz_data,
       });
 
-      if (limitExceeded) {
-        // We would exceed an enrollment limit. We won't share any specific
-        // details here. In the future, course staff will be able to check
-        // their enrollment limits for themselves.
-        res.redirect('/pl/enroll/limit_exceeded');
-        return;
-      }
-
+      flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
       await queryZeroOrOneRowAsync(sql.unenroll, {
@@ -117,14 +95,12 @@ router.post(
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
       });
+      flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, 'unknown action: ' + res.locals.__action, {
-        __action: req.body.__action,
-        body: req.body,
-      });
+      throw new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action);
     }
-  })
+  }),
 );
 
 export default router;

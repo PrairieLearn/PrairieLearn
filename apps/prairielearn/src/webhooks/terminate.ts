@@ -1,9 +1,11 @@
+import * as crypto from 'crypto';
+
 import { Router } from 'express';
-import jose = require('jose');
-import crypto = require('crypto');
+import * as jose from 'jose';
+
 import { logger } from '@prairielearn/logger';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
 const router = Router();
 

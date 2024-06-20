@@ -1,16 +1,17 @@
-import chai, { assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
-import tmp from 'tmp-promise';
+
+import { use as chaiUse, assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs-extra';
+import tmp from 'tmp-promise';
 
 import {
   parseAnnotations,
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
-} from './load-migrations';
+} from './load-migrations.js';
 
-chai.use(chaiAsPromised);
+chaiUse(chaiAsPromised);
 
 async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promise<void>) {
   await tmp.withDir(
@@ -20,7 +21,7 @@ async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promi
       }
       await fn(tmpDir.path);
     },
-    { unsafeCleanup: true }
+    { unsafeCleanup: true },
   );
 }
 
@@ -30,7 +31,7 @@ describe('load-migrations', () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await assert.isRejected(
           readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-          'Invalid migration filename: 001_testing.sql'
+          'Invalid migration filename: 001_testing.sql',
         );
       });
     });
@@ -41,9 +42,9 @@ describe('load-migrations', () => {
         async (tmpDir) => {
           await assert.isRejected(
             readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-            'Duplicate migration timestamp'
+            'Duplicate migration timestamp',
           );
-        }
+        },
       );
     });
   });
@@ -84,7 +85,7 @@ describe('load-migrations', () => {
             filename: '20220101010103_testing_3.sql',
             timestamp: '20220101010103',
           },
-        ]
+        ],
       );
     });
   });

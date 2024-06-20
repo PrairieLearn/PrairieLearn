@@ -1,5 +1,5 @@
-import { createLogger, transports } from 'winston';
 import { format } from 'logform';
+import { createLogger, transports } from 'winston';
 
 export const logger = createLogger({
   transports: [
@@ -21,6 +21,6 @@ export function addFileLogging(options: AddFileLoggingOptions) {
       filename: options.filename,
       level: options.level ?? 'debug',
       format: format.combine(format.timestamp(), format.json()),
-    })
+    }),
   );
 }

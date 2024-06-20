@@ -20,7 +20,7 @@ app.use(
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-  })
+  }),
 );
 app.use(flashMiddleware());
 ```
@@ -34,7 +34,7 @@ app.get('/set-flash', (req, res) => {
   flash('notice', 'Your preferences have been updated.');
   flash('success', 'Course created successfully.');
   flash('warning', 'Syncing completed with 5 warnings.');
-  flash('error', 'Group must have fewer than 10 members.');
+  flash('error', html`Group must have <em>fewer than 10 members</em>.`);
 
   res.redirect('/display-flash');
 });
@@ -47,7 +47,7 @@ app.get('/display-flash', (req, res) => {
 
 The `flash()` function has three behaviors:
 
-- `flash(type: string, message: string)`: Set a message with the given type.
+- `flash(type: string, message: string | HtmlSafeString)`: Set a message with the given type.
 - `flash(type: string): FlashMessage[]`: Get all messages with the given type.
 - `flash(types: string[]): FlashMessage[]`: Get all messages with any of the given types.
 - `flash(): FlashMessage[]`: Get all messages.

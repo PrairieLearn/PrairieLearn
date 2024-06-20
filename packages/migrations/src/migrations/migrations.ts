@@ -1,19 +1,20 @@
-import fs from 'fs-extra';
 import path from 'path';
 
-import * as namedLocks from '@prairielearn/named-locks';
-import { logger } from '@prairielearn/logger';
-import * as sqldb from '@prairielearn/postgres';
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
 
 import {
   MigrationFile,
   parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
-} from '../load-migrations';
+} from '../load-migrations.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export async function init(directories: string | string[], project: string) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
@@ -34,14 +35,14 @@ export async function init(directories: string | string[], project: string) {
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
       await initWithLock(migrationDirectories, project);
-    }
+    },
   );
   logger.verbose(`Released lock ${lockName}`);
 }
 
 export function getMigrationsToExecute(
   migrationFiles: MigrationFile[],
-  executedMigrations: { timestamp: string | null }[]
+  executedMigrations: { timestamp: string | null }[],
 ): MigrationFile[] {
   // If no migrations have ever been run, run them all.
   if (executedMigrations.length === 0) {
@@ -101,7 +102,7 @@ export async function initWithLock(directories: string[], project: string) {
         // This revision was the most recent commit to `master` before the
         // code handling indexes was removed.
         'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-      ].join('\n')
+      ].join('\n'),
     );
   }
 
@@ -149,7 +150,7 @@ export async function initWithLock(directories: string[], project: string) {
 
     // Record the migration.
     await sqldb.queryAsync(sql.insert_migration, {
-      filename: filename,
+      filename,
       timestamp,
       project,
     });

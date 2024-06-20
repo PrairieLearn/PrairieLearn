@@ -1,12 +1,14 @@
-const error = require('@prairielearn/error');
+// @ts-check
+import { HttpStatusError } from '@prairielearn/error';
 
-module.exports = function (req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   if (!res.locals.is_administrator) {
-    return next(
-      error.make(403, 'Requires administrator privileges', {
-        locals: res.locals,
-      })
-    );
+    return next(new HttpStatusError(403, 'Requires administrator privileges'));
   }
   next();
-};
+}

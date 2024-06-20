@@ -1,5 +1,7 @@
 import ClipboardJS from 'clipboard';
 
+import { mathjaxTypeset } from './lib/mathjax.js';
+
 $(() => {
   resetInstructorGradingPanel();
 
@@ -15,7 +17,7 @@ $(() => {
     ) {
       document
         .querySelectorAll(
-          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`
+          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`,
         )
         .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
@@ -46,7 +48,7 @@ function resetInstructorGradingPanel() {
           { backgroundColor: '#000', color: '#fff', offset: 0.5 },
           { backgroundColor: '', color: '', offset: 1 },
         ],
-        500
+        500,
       );
       $(e.trigger)
         .popover({
@@ -92,30 +94,20 @@ function resetInstructorGradingPanel() {
       form.querySelectorAll('.js-auto-score-value-input').forEach((input) => {
         input.classList.remove('d-none');
         input.style.display = '';
-        input.querySelector('input').focus();
+        input.querySelector('input')?.focus();
       });
     });
   });
 
   document.querySelectorAll('.js-submission-feedback').forEach((input) => {
-    input.addEventListener('input', function () {
-      // Adjusts the height based on the feedback content. If the feedback changes, the height
-      // changes as well. This is done by resetting the height (so the scrollHeight is computed
-      // based on the minimum height) and then using the scrollHeight plus padding as the new height.
-      this.style.height = '';
-      if (this.scrollHeight) {
-        const style = window.getComputedStyle(this);
-        this.style.height =
-          this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
-      }
-    });
-    input.dispatchEvent(new Event('input'));
+    input.addEventListener('input', () => adjustHeightFromContent(input));
+    adjustHeightFromContent(input);
   });
 
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
     button.addEventListener('click', function () {
       $('.js-rubric-settings-modal').modal('show');
-    })
+    }),
   );
 
   document
@@ -129,26 +121,26 @@ function resetInstructorGradingPanel() {
     link.addEventListener('click', function () {
       this.style.display = 'none';
       const input = this.closest('.js-adjust-points').querySelector(
-        '.js-adjust-points-input-container'
+        '.js-adjust-points-input-container',
       );
       input.style.display = '';
       input.classList.remove('d-none');
       input.querySelector('input').focus();
-    })
+    }),
   );
   document.querySelectorAll('.js-adjust-points-points').forEach((input) =>
     input.addEventListener('input', function () {
       this.closest('.js-adjust-points').querySelector('.js-adjust-points-percentage').value =
         (this.value * 100) / this.dataset.maxPoints;
       computePointsFromRubric();
-    })
+    }),
   );
   document.querySelectorAll('.js-adjust-points-percentage').forEach((input) =>
     input.addEventListener('input', function () {
       this.closest('.js-adjust-points').querySelector('.js-adjust-points-points').value =
         (this.value * this.dataset.maxPoints) / 100;
       computePointsFromRubric();
-    })
+    }),
   );
 
   document
@@ -168,13 +160,29 @@ function resetInstructorGradingPanel() {
     .querySelectorAll('.js-disable-rubric-button')
     .forEach((button) =>
       button.addEventListener('click', (e) =>
-        submitSettings.bind(button.closest('form'))(e, 'false')
-      )
+        submitSettings.bind(button.closest('form'))(e, 'false'),
+      ),
     );
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+/**
+ * Adjusts the height based on the content. If the content changes, the height
+ * changes as well. This is done by resetting the height (so the scrollHeight is
+ * computed based on the minimum height) and then using the scrollHeight plus
+ * padding as the new height.
+ * @param {HTMLElement} element
+ */
+function adjustHeightFromContent(element) {
+  element.style.height = '';
+  if (element.scrollHeight) {
+    const style = window.getComputedStyle(element);
+    element.style.height =
+      element.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+  }
 }
 
 function updateSettingsPointValues() {
@@ -205,7 +213,7 @@ function checkRubricItemTotals() {
     .map((input) => Number(input.value))
     .reduce(
       ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
-      [startingPoints, startingPoints]
+      [startingPoints, startingPoints],
     );
   const minPoints = Number(form.querySelector('[name="min_points"]').value);
   const maxPoints =
@@ -219,7 +227,7 @@ function checkRubricItemTotals() {
       `Rubric item points reach at most ${totalPositive} points. ${
         maxPoints - totalPositive
       } left to reach maximum.`,
-      ['alert-warning']
+      ['alert-warning'],
     );
   }
 
@@ -227,7 +235,7 @@ function checkRubricItemTotals() {
     addAlert(
       form.querySelector('.js-settings-points-warning-placeholder'),
       `Minimum grade from rubric item penalties is ${totalNegative} points.`,
-      ['alert-warning']
+      ['alert-warning'],
     );
   }
 }
@@ -236,7 +244,7 @@ function submitSettings(e, use_rubric) {
   e.preventDefault();
   const modal = this.closest('.modal');
   const gradingForm = document.querySelector(
-    '.js-main-grading-panel form[name=manual-grading-form]'
+    '.js-main-grading-panel form[name=manual-grading-form]',
   );
   // Save values in grading rubric so they can be re-applied once the form is re-created.
   const rubricFormData = Array.from(new FormData(gradingForm).entries());
@@ -269,7 +277,7 @@ function submitSettings(e, use_rubric) {
 
         // Restore any values that had been set before the settings were configured.
         const newRubricForm = document.querySelector(
-          '.js-main-grading-panel form[name=manual-grading-form]'
+          '.js-main-grading-panel form[name=manual-grading-form]',
         );
         newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
           input.checked = false;
@@ -293,6 +301,7 @@ function submitSettings(e, use_rubric) {
         input.value = oldCsrfToken;
       });
       resetInstructorGradingPanel();
+      await mathjaxTypeset();
     });
 }
 
@@ -337,10 +346,6 @@ function resetRubricItemRowsListeners() {
     .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
 }
 
-function updateQueryObjects(parent, query, values) {
-  parent.querySelectorAll(query).forEach((input) => Object.assign(input, values));
-}
-
 function roundPoints(points) {
   return Math.round(Number(points) * 100) / 100;
 }
@@ -353,40 +358,42 @@ function updatePointsView(sourceInput) {
 
     const auto_points =
       roundPoints(
-        sourceInput?.name === 'score_auto_percent'
+        sourceInput?.classList?.contains('js-auto-score-value-input-percentage')
           ? (sourceInput?.value * max_auto_points) / 100
-          : form.querySelector('[name=score_auto_points]')?.value
+          : form.querySelector('.js-auto-score-value-input-points')?.value,
       ) || 0;
     const manual_points =
       roundPoints(
-        sourceInput?.name === 'score_manual_percent'
+        sourceInput?.classList?.contains('js-manual-score-value-input-percentage')
           ? (sourceInput?.value * max_manual_points) / 100
-          : form.querySelector('[name=score_manual_points]')?.value
+          : form.querySelector('.js-manual-score-value-input-points')?.value,
       ) || 0;
     const points = roundPoints(auto_points + manual_points);
     const auto_perc = roundPoints((auto_points * 100) / (max_auto_points || max_points));
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
 
-    if (sourceInput?.name !== 'score_auto_points') {
-      updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
-    }
-    if (sourceInput?.name !== 'score_auto_percent') {
-      updateQueryObjects(form, '[name=score_auto_percent]', { value: auto_perc });
-    }
-    if (sourceInput?.name !== 'score_manual_points') {
-      updateQueryObjects(form, '[name=score_manual_points]', { value: manual_points });
-    }
-    if (sourceInput?.name !== 'score_manual_percent') {
-      updateQueryObjects(form, '[name=score_manual_percent]', { value: manual_perc });
-    }
+    form
+      .querySelectorAll('.js-auto-score-value-input-points')
+      .forEach((input) => input !== sourceInput && (input.value = auto_points));
+    form
+      .querySelectorAll('.js-auto-score-value-input-percentage')
+      .forEach((input) => input !== sourceInput && (input.value = auto_perc));
+    form
+      .querySelectorAll('.js-manual-score-value-input-points')
+      .forEach((input) => input !== sourceInput && (input.value = manual_points));
+    form
+      .querySelectorAll('.js-manual-score-value-input-percentage')
+      .forEach((input) => input !== sourceInput && (input.value = manual_perc));
 
-    updateQueryObjects(form, '.js-value-manual-points', { innerText: manual_points });
-    updateQueryObjects(form, '.js-value-auto-points', { innerText: auto_points });
-    updateQueryObjects(form, '.js-value-total-points', { innerText: points });
-    updateQueryObjects(form, '.js-value-manual-percentage', { innerText: manual_perc });
-    updateQueryObjects(form, '.js-value-auto-percentage', { innerText: auto_perc });
-    updateQueryObjects(form, '.js-value-total-percentage', { innerText: total_perc });
+    form.querySelectorAll('.js-value-manual-points').forEach((v) => (v.innerText = manual_points));
+    form.querySelectorAll('.js-value-auto-points').forEach((v) => (v.innerText = auto_points));
+    form.querySelectorAll('.js-value-total-points').forEach((v) => (v.innerText = points));
+    form
+      .querySelectorAll('.js-value-manual-percentage')
+      .forEach((v) => (v.innerText = manual_perc));
+    form.querySelectorAll('.js-value-auto-percentage').forEach((v) => (v.innerText = auto_perc));
+    form.querySelectorAll('.js-value-total-percentage').forEach((v) => (v.innerText = total_perc));
   });
 }
 
@@ -403,7 +410,7 @@ function computePointsFromRubric(sourceInput = null) {
         Math.min(
           Math.max(Math.round(itemsSum * 100) / 100, Number(form.dataset.rubricMinPoints)),
           Number(replaceAutoPoints ? form.dataset.maxPoints : form.dataset.maxManualPoints) +
-            Number(form.dataset.rubricMaxExtraPoints)
+            Number(form.dataset.rubricMaxExtraPoints),
         ) + Number(form.querySelector('input[name="score_manual_adjust_points"]')?.value || 0);
       const manualPoints =
         rubricValue -
@@ -418,15 +425,22 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  const cell = event.target.closest('label');
+  const container = event.target.closest('td');
+  const label = container.querySelector('label');
+  const button = container.querySelector('button');
+
   const input = document.createElement('textarea');
   input.classList.add('form-control');
-  input.name = cell.dataset.inputName;
+  input.name = button.dataset.inputName;
   input.setAttribute('maxlength', 10000);
-  input.innerText = cell.dataset.currentValue || '';
-  cell.parentNode.insertBefore(input, cell);
-  cell.remove();
+  input.textContent = button.dataset.currentValue || '';
+
+  container.insertBefore(input, label);
+  label?.remove();
+  button.remove();
   input.focus();
+  input.addEventListener('input', () => adjustHeightFromContent(input));
+  adjustHeightFromContent(input);
 }
 
 function updateRubricItemOrderField() {
@@ -454,6 +468,7 @@ function deleteRow(event) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
   updateRubricItemOrderField();
+  checkRubricItemTotals();
 }
 
 function rowDragStart(event) {
@@ -498,12 +513,13 @@ function addRubricItemRow() {
   row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
   row.querySelector('.js-rubric-item-points').value = points;
   row.querySelector('.js-rubric-item-description').name = `rubric_item[new${next_id}][description]`;
-  row.querySelector(
-    '.js-rubric-item-explanation'
-  ).dataset.inputName = `rubric_item[new${next_id}][explanation]`;
-  row.querySelector(
-    '.js-rubric-item-grader-note'
-  ).dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
+  row.querySelector('.js-rubric-item-explanation').dataset.inputName =
+    `rubric_item[new${next_id}][explanation]`;
+  row.querySelector('.js-rubric-item-grader-note').dataset.inputName =
+    `rubric_item[new${next_id}][grader_note]`;
+  row
+    .querySelectorAll('.js-rubric-item-always-show')
+    .forEach((input) => (input.name = `rubric_item[new${next_id}][always_show_to_students]`));
 
   row.querySelector('.js-rubric-item-points').focus();
 

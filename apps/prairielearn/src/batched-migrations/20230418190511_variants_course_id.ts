@@ -24,7 +24,7 @@ export default makeBatchedMigration({
         v.question_id = q.id AND
         v.id >= $start AND
         v.id <= $end`,
-      { start, end }
+      { start, end },
     );
   },
 });

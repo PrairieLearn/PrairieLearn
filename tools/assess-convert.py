@@ -92,7 +92,7 @@ converted infoAssessment.json files in correspondingly named directories.
 
 By default, does not overwrite existing infoAssessment.json files; use -f instead.
 """)
-    parser.add_argument('sourcedir', help='source directory of assessements ("tests")')
+    parser.add_argument('sourcedir', help='source directory of assessments ("tests")')
     parser.add_argument('targetdir', help='target course instance, without the "assessments" directory')
     parser.add_argument('--force', '-f', action='store_true',
                         help='force overwrite of existing assessments if found')

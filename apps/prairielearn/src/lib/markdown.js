@@ -1,18 +1,22 @@
-const unified = require('unified');
-const markdown = require('remark-parse');
-const raw = require('rehype-raw');
-const gfm = require('remark-gfm');
-const remark2rehype = require('remark-rehype');
-const math = require('remark-math');
-const stringify = require('rehype-stringify');
-const sanitize = require('rehype-sanitize');
-const visit = require('unist-util-visit');
+// @ts-check
+import raw from 'rehype-raw';
+import sanitize from 'rehype-sanitize';
+import stringify from 'rehype-stringify';
+import gfm from 'remark-gfm';
+import math from 'remark-math';
+import markdown from 'remark-parse';
+import remark2rehype from 'remark-rehype';
+import { unified } from 'unified';
+import { visit } from 'unist-util-visit';
 
-const regex = /<markdown>(.+?)<\/markdown>/gms;
+// The ? symbol is used to make the match non-greedy (i.e., match the shortest
+// possible string that fulfills the regex). See
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Quantifiers#types
+const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
-const visitCodeBlock = (ast, _vFile) => {
+function visitCodeBlock(ast, _vFile) {
   return visit(ast, 'code', (node, index, parent) => {
     let { lang, value } = node;
     const attrs = [];
@@ -35,12 +39,11 @@ const visitCodeBlock = (ast, _vFile) => {
       type: 'html',
       value: `<pl-code ${attrs.join(' ')}>${value}</pl-code>`,
     };
+    parent?.children.splice(index, 1, html);
 
-    parent.children.splice(index, 1, html);
-
-    return node;
+    return;
   });
-};
+}
 
 /**
  * This visitor is used for inline markdown processing, particularly for cases where the result is
@@ -48,14 +51,14 @@ const visitCodeBlock = (ast, _vFile) => {
  * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
  * with the content of the paragraph.
  */
-const visitCheckSingleParagraph = (ast, _vFile) => {
+function visitCheckSingleParagraph(ast, _vFile) {
   return visit(ast, 'root', (node, _index, _parent) => {
     if (node.children.length === 1 && node.children[0].tagName === 'p') {
       node.children = node.children[0].children;
     }
-    return node;
+    return;
   });
-};
+}
 
 /**
  * By default, `remark-math` installs compilers to transform the AST back into
@@ -64,7 +67,7 @@ const visitCheckSingleParagraph = (ast, _vFile) => {
  * any `math` or `inlineMath` nodes with raw text values wrapped in the appropriate
  * fences.
  */
-const visitMathBlock = (ast, _vFile) => {
+function visitMathBlock(ast, _vFile) {
   return visit(ast, ['math', 'inlineMath'], (node, index, parent) => {
     const startFence = node.type === 'math' ? '$$\n' : '$';
     const endFence = node.type === 'math' ? '\n$$' : '$';
@@ -72,12 +75,16 @@ const visitMathBlock = (ast, _vFile) => {
       type: 'text',
       value: startFence + node.value + endFence,
     };
-    parent.children.splice(index, 1, text);
-    return node;
+    parent?.children.splice(index, 1, text);
+    return;
   });
-};
+}
 
-const makeHandler = (visitor) => {
+/**
+ * @param {(ast: any, vfile: import('vfile').VFile) => undefined} visitor
+ * @returns {() => (ast: import('hast').Root, file: import('vfile').VFile) => import('hast').Root}
+ */
+function makeHandler(visitor) {
   return () => (ast, vFile, next) => {
     visitor(ast, vFile);
 
@@ -86,7 +93,7 @@ const makeHandler = (visitor) => {
     }
     return ast;
   };
-};
+}
 
 const handleCode = makeHandler(visitCodeBlock);
 const handleMath = makeHandler(visitMathBlock);
@@ -124,25 +131,25 @@ const questionProcessor = unified()
   .use(raw)
   .use(stringify);
 
-module.exports.processQuestion = function (html) {
+export function processQuestion(html) {
   return html.replace(regex, (_match, originalContents) => {
     // We'll handle escapes before we pass off the string to our Markdown pipeline
     const decodedContents = originalContents.replace(escapeRegex, (match, prefix, hashes) => {
       return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
     });
     const res = questionProcessor.processSync(decodedContents);
-    return res.contents;
+    return res.value;
   });
-};
+}
 
-module.exports.processContent = async function (original) {
-  return (await defaultProcessor.process(original)).contents;
-};
+export async function processContent(original) {
+  return (await defaultProcessor.process(original)).value;
+}
 
 /**
  * This function is similar to `processContent`, except that if the content fits a single line
- * (paragrah) it will return the content without a `p` tag.
+ * (paragraph) it will return the content without a `p` tag.
  */
-module.exports.processContentInline = async function (original) {
-  return (await inlineProcessor.process(original)).contents;
-};
+export async function processContentInline(original) {
+  return (await inlineProcessor.process(original)).value;
+}

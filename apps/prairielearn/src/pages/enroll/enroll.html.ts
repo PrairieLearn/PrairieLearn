@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -24,10 +25,10 @@ export function Enroll({
   });
 
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
@@ -39,7 +40,7 @@ export function Enroll({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}
@@ -242,17 +243,17 @@ export function EnrollLtiMessage({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}
@@ -290,17 +291,17 @@ export function EnrollLtiMessage({
 
 export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           navPage: 'enroll',
           pageTitle: 'Courses',
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}

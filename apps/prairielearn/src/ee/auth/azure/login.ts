@@ -1,5 +1,5 @@
-import passport = require('passport');
 import { Router } from 'express';
+import passport from 'passport';
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get(
   },
   function (req, res) {
     res.redirect('/pl');
-  }
+  },
 );
 
 export default router;

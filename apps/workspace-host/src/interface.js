@@ -1,38 +1,40 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const util = require('util');
-const express = require('express');
-const http = require('http');
-const request = require('request');
-const path = require('path');
-const { S3 } = require('@aws-sdk/client-s3');
-const { Upload } = require('@aws-sdk/lib-storage');
-const Docker = require('dockerode');
-const fs = require('fs');
-const async = require('async');
-const fsPromises = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
-const argv = require('yargs-parser')(process.argv.slice(2));
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const archiver = require('archiver');
-const net = require('net');
-const asyncHandler = require('express-async-handler');
-const bodyParser = require('body-parser');
-const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
-const workspaceUtils = require('@prairielearn/workspace-utils');
+import * as fs from 'node:fs/promises';
+import * as http from 'node:http';
+import * as net from 'node:net';
+import * as path from 'node:path';
 
-const { config, loadConfig } = require('./lib/config');
-const { parseDockerLogs } = require('./lib/docker');
-const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig } = require('./lib/aws');
-const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import archiver from 'archiver';
+import * as async from 'async';
+import { Mutex } from 'async-mutex';
+import bodyParser from 'body-parser';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import yargsParser from 'yargs-parser';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { cache } from '@prairielearn/cache';
+import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
+
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { config, loadConfig } from './lib/config.js';
+import { parseDockerLogs } from './lib/docker.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import * as socketServer from './lib/socket-server.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
@@ -43,12 +45,7 @@ app.use(bodyParser.json());
 app.get(
   '/status',
   asyncHandler(async (req, res) => {
-    let containers;
-    try {
-      containers = await docker.listContainers({ all: true });
-    } catch (_err) {
-      containers = null;
-    }
+    const containers = await docker.listContainers({ all: true }).catch(() => null);
 
     let db_status;
     try {
@@ -71,7 +68,7 @@ app.get(
       docker: containers,
       postgres: db_status,
     });
-  })
+  }),
 );
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
@@ -86,7 +83,7 @@ app.post(
       res.status(500).send('Missing action');
     } else if (action === 'init') {
       const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
-      await initSequenceAsync(workspace_id, useInitialZip, res);
+      await initSequence(workspace_id, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
@@ -94,7 +91,7 @@ app.post(
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
-  })
+  }),
 );
 
 app.use(Sentry.Handlers.errorHandler());
@@ -117,6 +114,8 @@ async
 
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }
@@ -148,7 +147,7 @@ async
       // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
     },
-    (callback) => {
+    async () => {
       const pgConfig = {
         user: config.postgresqlUser,
         database: config.postgresqlDatabase,
@@ -158,29 +157,30 @@ async
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
       logger.verbose(
-        `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`
+        `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
       );
       const idleErrorHandler = function (err) {
         logger.error('idle client error', err);
         // https://github.com/PrairieLearn/PrairieLearn/issues/2396
         process.exit(1);
       };
-      sqldb.init(pgConfig, idleErrorHandler, function (err) {
-        if (ERR(err, callback)) return;
-        logger.verbose('Successfully connected to database');
-        callback(null);
-      });
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
+      logger.verbose('Successfully connected to database');
     },
-    (callback) => {
+    async () => {
       server = http.createServer(app);
       server.listen(workspace_server_settings.port);
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
-      callback(null);
     },
-    async () => socketServer.init(server),
+    async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of running containers
+      // Set up a periodic pruning of containers that shouldn't exist.
+      //
+      // Note that this updates the load count. The cron job that kills workspace
+      // hosts will only kill hosts that have a load count of 0. This should ensure
+      // that we never kill a host before its had a chance to spin down all its
+      // containers (and flush their logs and record their disk usage).
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
@@ -197,17 +197,13 @@ async
       }
       setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
-    (callback) => {
+    async () => {
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
-      const params = {
+      await sqldb.queryAsync(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
-      };
-      sqldb.query(sql.insert_workspace_hosts, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     },
     async () => {
@@ -227,7 +223,7 @@ async
           });
           try {
             const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-            await dockerAttemptKillAndRemove(container);
+            await killAndRemoveWorkspace(ws.id, container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
           }
@@ -238,17 +234,24 @@ async
       // don't correspond to any known workspace. Clean them up.
       const allContainers = await docker.listContainers({
         all: true,
-        filters: { label: ['prairielearn.workspace-id'] },
+        filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
         if (result.rows.some((ws) => ws.id === containerWorkspaceId)) continue;
 
         logger.info(
-          `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`
+          `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`,
         );
-        await dockerAttemptKillAndRemove(docker.getContainer(container.Id));
+        await killAndRemoveWorkspace(containerWorkspaceId, docker.getContainer(container.Id));
       }
+    },
+    async () => {
+      await cache.init({
+        type: config.cacheType,
+        keyPrefix: config.cacheKeyPrefix,
+        redisUrl: config.redisUrl,
+      });
     },
   ])
   .then(() => {
@@ -287,7 +290,7 @@ async function pruneStoppedContainers() {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
-    await dockerAttemptKillAndRemove(container);
+    await killAndRemoveWorkspace(ws.id, container);
   });
 }
 
@@ -300,7 +303,7 @@ async function pruneRunawayContainers() {
     instance_id,
   });
   const db_workspaces_uuid_set = new Set(
-    db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`)
+    db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
   );
   let running_workspaces;
   try {
@@ -316,7 +319,9 @@ async function pruneRunawayContainers() {
     const name = container_info.Names[0].substring(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
-    await dockerAttemptKillAndRemove(container);
+    const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
+
+    await killAndRemoveWorkspace(containerWorkspaceId, container);
   });
 }
 
@@ -340,41 +345,50 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 }
 
 /**
- * Attempts to kill and remove a container.  Will fail silently if the container
- * is already stopped or does not exist.  Also removes the container's home directory.
+ * Attempts to kill and remove a container. Will fail silently if the container
+ * is already stopped or does not exist.
  *
+ * After the container is removed, the workspace's disk usage will be updated.
+ *
+ * @param {string} workspace_id
  * @param {import('dockerode').Container} container
  */
-async function dockerAttemptKillAndRemove(container) {
+async function killAndRemoveWorkspace(workspace_id, container) {
   try {
     await container.inspect();
+
+    try {
+      await container.kill();
+    } catch (err) {
+      logger.error('Error killing container', err);
+    }
+
+    // Flush all logs from this container to S3. We must do this before the
+    // container is removed, otherwise any remaining logs will be lost.
+    try {
+      await flushLogsToS3(container);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error flushing container logs to S3', err);
+    }
+
+    try {
+      await container.remove();
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('Error removing stopped container', err);
+    }
   } catch (err) {
     // This container doesn't exist on this machine.
     logger.error('Could not inspect container', err);
     Sentry.captureException(err);
-    return;
   }
 
   try {
-    await container.kill();
+    await workspaceUtils.updateWorkspaceDiskUsage(workspace_id, config.workspaceHostHomeDirRoot);
   } catch (err) {
-    logger.error('Error killing container', err);
-  }
-
-  // Flush all logs from this container to S3. We must do this before the
-  // container is removed, otherwise any remaining logs will be lost.
-  try {
-    await flushLogsToS3(container);
-  } catch (err) {
+    logger.error('Error updating workspace disk usage', err);
     Sentry.captureException(err);
-    logger.error('Error flushing container logs to S3', err);
-  }
-
-  try {
-    await container.remove();
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error('Error removing stopped container', err);
   }
 }
 
@@ -408,7 +422,7 @@ async function markSelfUnhealthy(reason) {
  * @param {string | number} workspace_id Workspace ID to search by.
  * @return {Promise<Object>} Workspace object, as described above.
  */
-async function _getWorkspaceAsync(workspace_id) {
+async function _getWorkspace(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
     workspace_id,
     instance_id: workspace_server_settings.instance_id,
@@ -467,7 +481,7 @@ async function _allocateContainerPort(workspace) {
       port =
         config.workspaceHostMinPortRange +
         Math.floor(
-          Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange)
+          Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange),
         );
       if (!(await check_port_db(port))) continue;
       if (!(await check_port_server(port))) continue;
@@ -487,51 +501,51 @@ async function _allocateContainerPort(workspace) {
 
 /**
  * @param {object} workspace
- * @param {function} callback
+ * @returns {Promise<void>}
  */
-function _checkServer(workspace, callback) {
-  const checkMilliseconds = 500;
-  const maxMilliseconds = 30000;
+function _checkServer(workspace) {
+  const startTimeout = config.workspaceStartTimeoutSec * 1000;
+  const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
+  const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = new Date().getTime();
-  function checkWorkspace() {
-    request(
-      `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-      function (err, res, _body) {
-        if (err) {
-          // Do nothing, because errors are expected while the container is launching.
-        }
-        if (res && res.statusCode) {
+  return new Promise((resolve, reject) => {
+    function checkWorkspace() {
+      fetch(
+        `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+        { signal: AbortSignal.timeout(healthCheckTimeout) },
+      )
+        .then(() => {
           // We might get all sorts of strange status codes from the server.
           // This is okay since it still means the server is running and we're
-          // getting responses.
-          callback(null, workspace);
-        } else {
+          // getting responses. So we don't need to check the response status.
+          resolve();
+        })
+        .catch(() => {
+          // Do nothing, because errors are expected while the container is launching.
           const endTime = new Date().getTime();
-          if (endTime - startTime > maxMilliseconds) {
+          if (endTime - startTime > startTimeout) {
             const { id, version, launch_uuid } = workspace;
-            callback(
+            reject(
               new Error(
-                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`
-              )
+                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
+              ),
             );
           } else {
-            setTimeout(checkWorkspace, checkMilliseconds);
+            setTimeout(checkWorkspace, healthCheckInterval);
           }
-        }
-      }
-    );
-  }
-  setTimeout(checkWorkspace, checkMilliseconds);
+        });
+    }
+    checkWorkspace();
+  });
 }
-const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
  * @param {string | number} workspace_id Workspace ID to search by.
  * @return {Promise<Object>} Workspace launch settings.
  */
-async function _getWorkspaceSettingsAsync(workspace_id) {
+async function _getWorkspaceSettings(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
     workspace_id,
   });
@@ -549,7 +563,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
     workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
-      v === null ? k : `${k}=${v}`
+      v === null ? k : `${k}=${v}`,
     ),
   };
 
@@ -576,7 +590,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;
@@ -585,7 +600,7 @@ async function _pullImage(workspace) {
   } catch (err) {
     logger.error(
       `Error pulling "${workspace_image}" image; attempting to fall back to cached version.`,
-      err
+      err,
     );
     return;
   }
@@ -601,8 +616,13 @@ async function _pullImage(workspace) {
   // decreases. It has the disadvantage that the percentage
   // will tend to go faster at the start (when we only know
   // about a few layers) and slow down at the end (when we
-  // know about all layers).
-  let progressDetails = {};
+  // know about all layers). To allow for more accurate
+  // progress reporting, we cache the layer details after
+  // the first successful pull. This allows us to reference
+  // the previously pulled layers and provide a more accurate
+  // percantage calculation on any subsequent pulls.
+  let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
+  let progressDetailsInit = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
@@ -627,6 +647,11 @@ async function _pullImage(workspace) {
         }
 
         const toDatabase = false;
+        cache.set(
+          `workspaceProgressInit:${workspace_image}`,
+          progressDetailsInit,
+          1000 * 60 * 60 * 24 * 30, // 30 days
+        );
         workspaceUtils
           .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
           .catch((err) => {
@@ -642,14 +667,15 @@ async function _pullImage(workspace) {
           // separately by making them separate keys
           const key = `${output.id}/${output.status}`;
           progressDetails[key] = output.progressDetail;
+          progressDetailsInit[key] = { ...output.progressDetail, current: 0 };
         }
         current = Object.values(progressDetails).reduce(
           (current, detail) => detail.current + current,
-          0
+          0,
         );
         const newTotal = Object.values(progressDetails).reduce(
           (total, detail) => detail.total + total,
-          0
+          0,
         );
         if (outputCount <= 200) {
           // limit progress initially to wait for most layers to be seen
@@ -682,16 +708,15 @@ async function _pullImage(workspace) {
               });
           }
         }
-      }
+      },
     );
   });
 }
 
 /**
  * @param {object} workspace
- * @param {function} callback
  */
-function _createContainer(workspace, callback) {
+async function _createContainer(workspace) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
 
@@ -722,114 +747,84 @@ function _createContainer(workspace, callback) {
     }
   }
 
-  let container;
-
   debug(`Creating docker container for image=${workspace.settings.workspace_image}`);
   debug(`Exposed port: ${workspace.settings.workspace_port}`);
   debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${workspace.settings.workspace_environment}`);
   debug(
-    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`
+    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
   );
   debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${localName}`);
-  async.series(
-    [
-      async () => {
-        try {
-          await fsPromises.access(workspaceJobPath);
-        } catch (err) {
-          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
-          // second argument with a `cause` property. Once we're running on
-          // Node 18, we can bump to ES2022 and this will no longer error.
-          throw Error('Could not access workspace files.', { cause: err });
-        }
-      },
-      (callback) => {
-        debug(`Creating directory ${workspaceJobPath}`);
-        fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
-          if (err && err.code !== 'EEXIST') {
-            // Ignore the directory if it already exists.
-            ERR(err, callback);
-            return;
-          }
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.chown(
-          workspaceJobPath,
-          config.workspaceJobsDirectoryOwnerUid,
-          config.workspaceJobsDirectoryOwnerGid,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
-      },
-      (callback) => {
-        docker.createContainer(
-          {
-            Image: workspace.settings.workspace_image,
-            ExposedPorts: {
-              [`${workspace.settings.workspace_port}/tcp`]: {},
-            },
-            Env: workspace.settings.workspace_environment,
-            User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
-            HostConfig: {
-              PortBindings: {
-                [`${workspace.settings.workspace_port}/tcp`]: [
-                  { HostPort: `${workspace.launch_port}` },
-                ],
-              },
-              Binds: [`${workspacePath}:${containerPath}`],
-              Memory: config.workspaceDockerMemory,
-              MemorySwap: config.workspaceDockerMemorySwap,
-              KernelMemory: config.workspaceDockerKernelMemory,
-              DiskQuota: config.workspaceDockerDiskQuota,
-              CpuPeriod: config.workspaceDockerCpuPeriod,
-              CpuQuota: config.workspaceDockerCpuQuota,
-              PidsLimit: config.workspaceDockerPidsLimit,
-              IpcMode: 'private',
-              NetworkMode: networkMode,
-            },
-            Labels: {
-              'prairielearn.workspace-id': String(workspace.id),
-              'prairielearn.workspace-version': String(workspace.version),
-              'prairielearn.course-id': String(workspace.course_id),
-              'prairielearn.institution-id': String(workspace.institution_id),
-            },
-            Cmd: args, // FIXME: proper arg parsing
-            name: localName,
-            Volumes: {
-              [containerPath]: {},
-            },
-          },
-          (err, newContainer) => {
-            if (ERR(err, callback)) return;
-            container = newContainer;
 
-            sqldb.query(
-              sql.update_load_count,
-              { instance_id: workspace_server_settings.instance_id },
-              function (err, _result) {
-                if (ERR(err, callback)) return;
-                callback(null, container);
-              }
-            );
-          }
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, container);
-    }
+  try {
+    await fs.access(workspaceJobPath);
+  } catch (err) {
+    throw Error('Could not access workspace files.', { cause: err });
+  }
+
+  debug(`Creating directory ${workspaceJobPath}`);
+  await fs.mkdir(workspaceJobPath, { recursive: true }).catch((err) => {
+    // Ignore the directory if it already exists. Otherwise, rethrow the error.
+    if (err && err.code !== 'EEXIST') throw err;
+  });
+
+  await fs.chown(
+    workspaceJobPath,
+    config.workspaceJobsDirectoryOwnerUid,
+    config.workspaceJobsDirectoryOwnerGid,
   );
+  const container = await docker.createContainer({
+    Image: workspace.settings.workspace_image,
+    ExposedPorts: {
+      [`${workspace.settings.workspace_port}/tcp`]: {},
+    },
+    Env: workspace.settings.workspace_environment,
+    User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+    HostConfig: {
+      PortBindings: {
+        [`${workspace.settings.workspace_port}/tcp`]: [{ HostPort: `${workspace.launch_port}` }],
+      },
+      Binds: [`${workspacePath}:${containerPath}`],
+      Memory: config.workspaceDockerMemory,
+      MemorySwap: config.workspaceDockerMemorySwap,
+      KernelMemory: config.workspaceDockerKernelMemory,
+      DiskQuota: config.workspaceDockerDiskQuota,
+      CpuPeriod: config.workspaceDockerCpuPeriod,
+      CpuQuota: config.workspaceDockerCpuQuota,
+      PidsLimit: config.workspaceDockerPidsLimit,
+      IpcMode: 'private',
+      NetworkMode: networkMode,
+      Ulimits: [
+        {
+          // Disable core dumps, which can get very large and bloat our storage.
+          Name: 'core',
+          Soft: 0,
+          Hard: 0,
+        },
+      ],
+    },
+    Labels: {
+      'prairielearn.workspace-id': String(workspace.id),
+      'prairielearn.workspace-version': String(workspace.version),
+      'prairielearn.course-id': String(workspace.course_id),
+      'prairielearn.institution-id': String(workspace.institution_id),
+    },
+    Cmd: args, // FIXME: proper arg parsing
+    name: localName,
+    Volumes: {
+      [containerPath]: {},
+    },
+  });
+
+  await sqldb.queryAsync(sql.update_load_count, {
+    instance_id: workspace_server_settings.instance_id,
+  });
+
+  return container;
 }
-const _createContainerAsync = util.promisify(_createContainer);
 
 async function _startContainer(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
@@ -852,7 +847,7 @@ function safeUpdateWorkspaceState(workspaceId, state, message) {
 }
 
 // Called by the main server the first time a workspace is used by a user
-async function initSequenceAsync(workspace_id, useInitialZip, res) {
+async function initSequence(workspace_id, useInitialZip, res) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
@@ -885,13 +880,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     try {
       debug(`init: configuring workspace`);
       workspace.launch_port = await _allocateContainerPort(workspace);
-      workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
+      workspace.settings = await _getWorkspaceSettings(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error configuring workspace. Click "Reboot" to try again.`
+        `Error configuring workspace. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
@@ -904,42 +899,82 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error pulling image. Click "Reboot" to try again.`
+        `Error pulling image. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, {
-        workspace_id,
-        hostname,
-      });
-      workspace.container = await _createContainerAsync(workspace);
+      workspace.container = await _createContainer(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error creating container. Click "Reboot" to try again.`
+        `Error creating container. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
 
     try {
       await _startContainer(workspace);
-      await _checkServerAsync(workspace);
+      await _checkServer(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+
+      // Before we transition this workspace to running, check that the container
+      // we just launched is the same one that this workspace is still assigned to.
+      // To be more precise, we'll check that the container's launch_uuid matches
+      // the current launch_uuid for this workspace. If they don't match, then
+      // the workspace was relaunched while we were initializing it, and we should
+      // abandon it.
+      //
+      // We don't have to explicitly kill the container here - our usual
+      // background maintenance processes will soon notice that this container
+      // should not be running on this host and kill it.
+      const hostname = await sqldb.runInTransactionAsync(async () => {
+        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
+          workspace_id: workspace.id,
+        });
+        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        if (launch_uuid !== workspace.launch_uuid) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+          );
+          return null;
+        }
+
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+        await sqldb.queryAsync(sql.update_workspace_hostname, {
+          workspace_id,
+          hostname,
+        });
+        return hostname;
+      });
+
+      // If we successfully updated the workspace's hostname, we can transition
+      // it to running. Note that this MUST be done outside of the above transaction,
+      // since this send a websocket message to the client to make it load the
+      // workspace. If we do this inside the transaction, there's a chance that the
+      // websocket message will reach the client before the state change is committed,
+      // which would cause the client to try to load the workspace before it's ready.
+      if (hostname) {
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error starting container. Click "Reboot" to try again.`
+        `Error starting container. Click "Reboot" to try again.`,
       );
-      return; // don't set host to unhealthy
+
+      // Immediately kill and remove the container, which will flush any
+      // logs to S3 for better debugging.
+      await killAndRemoveWorkspace(workspace.id, workspace.container);
+
+      // Don't set host to unhealthy.
+      return;
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
@@ -952,8 +987,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
  * @param {import('express').Response} res
  */
 async function sendGradedFilesArchive(workspace_id, res) {
-  const workspace = await _getWorkspaceAsync(workspace_id);
-  const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+  const workspace = await _getWorkspace(workspace_id);
+  const workspaceSettings = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
@@ -966,7 +1001,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
       {
         maxFiles: config.workspaceMaxGradedFilesCount,
         maxSize: config.workspaceMaxGradedFilesSize,
-      }
+      },
     );
   } catch (err) {
     res.status(500).send(err.message);
@@ -977,6 +1012,17 @@ async function sendGradedFilesArchive(workspace_id, res) {
   res.attachment(zipName).status(200);
   const archive = archiver('zip');
   archive.pipe(res);
+
+  archive.on('error', (err) => {
+    logger.error('Error creating archive', err);
+    Sentry.captureException(err);
+
+    // Since we've probably already sent some data to the client, we can't do
+    // anything to gracefully let them know that we encountered an error.
+    // Instead, we'll just destroy the socket so that they pick up an error
+    // and handle that however they want.
+    res.socket?.destroy();
+  });
 
   for (const file of gradedFiles) {
     try {
@@ -998,7 +1044,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
  */
 async function sendLogs(workspaceId, res) {
   try {
-    const workspace = await _getWorkspaceAsync(workspaceId);
+    const workspace = await _getWorkspace(workspaceId);
     const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
     const logs = await container.logs({
       stdout: true,

@@ -20,6 +20,7 @@ window.InstructorFileEditor = function (options) {
     showPrintMargin: false,
     mode: options.aceMode,
     readOnly: options.readOnly,
+    enableKeyboardAccessibility: true,
   });
 
   if (options.altElementId) {
@@ -60,7 +61,7 @@ window.InstructorFileEditor = function (options) {
 
         // Allow the editor to resize itself, filling the whole container
         this.editor.resize();
-      }.bind(this)
+      }.bind(this),
     );
   }
 
@@ -87,7 +88,7 @@ window.InstructorFileEditor = function (options) {
   this.editor.commands.addCommand({
     name: 'saveAndSync',
     bindKey: { win: 'Ctrl-s', mac: 'Command-s' },
-    exec: function () {
+    exec() {
       $(`#${options.saveElementId}`).click();
     },
   });
@@ -115,7 +116,7 @@ window.InstructorFileEditor.prototype.b64DecodeUnicode = function (str) {
       .map((c) => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join('')
+      .join(''),
   );
 };
 
@@ -126,7 +127,7 @@ window.InstructorFileEditor.prototype.b64EncodeUnicode = function (str) {
   return btoa(
     encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
       return String.fromCharCode('0x' + p1);
-    })
+    }),
   );
 };
 

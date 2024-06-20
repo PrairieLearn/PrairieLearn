@@ -3,7 +3,7 @@ var httpDownloadPrefix = 'data:text/plain;base64,';
 define(['SimpleClient', 'text!./question.html', 'text!./answer.html'], function (
   SimpleClient,
   questionTemplate,
-  answerTemplate
+  answerTemplate,
 ) {
   var simpleClient = new SimpleClient.SimpleClient({
     questionTemplate: questionTemplate,
@@ -57,6 +57,6 @@ define(['SimpleClient', 'text!./question.html', 'text!./answer.html'], function 
 if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
   alert(
     'Warning: Your browser does not fully support HTML5 file upload operations.' +
-      'Please use a more current browser or you may not be able to complete this question.'
+      'Please use a more current browser or you may not be able to complete this question.',
   );
 }

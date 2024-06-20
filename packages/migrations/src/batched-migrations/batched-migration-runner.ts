@@ -1,28 +1,23 @@
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedSingleColumnOneRow,
-  queryValidatedZeroOrOneRow,
-} from '@prairielearn/postgres';
-import { logger } from '@prairielearn/logger';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
+
+import {
+  BatchedMigrationJobRowSchema,
+  BatchedMigrationJobStatus,
+  BatchedMigrationJobRow,
+} from './batched-migration-job.js';
 import {
   BatchedMigrationStatus,
   BatchedMigrationRow,
   updateBatchedMigrationStatus,
   BatchedMigrationStatusSchema,
   BatchedMigrationImplementation,
-} from './batched-migration';
-import {
-  BatchedMigrationJobRowSchema,
-  BatchedMigrationJobStatus,
-  BatchedMigrationJobRow,
-} from './batched-migration-job';
+} from './batched-migration.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.filename);
 
 interface BatchedMigrationRunnerOptions {
   logProgress?: boolean;
@@ -37,7 +32,7 @@ export class BatchedMigrationRunner {
   constructor(
     migration: BatchedMigrationRow,
     migrationImplementation: BatchedMigrationImplementation,
-    options: BatchedMigrationRunnerOptions = {}
+    options: BatchedMigrationRunnerOptions = {},
   ) {
     this.options = options;
     this.migration = migration;
@@ -52,28 +47,28 @@ export class BatchedMigrationRunner {
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryValidatedSingleColumnOneRow(
+    return await queryRow(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
-      z.boolean()
+      z.boolean(),
     );
   }
 
   private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryValidatedSingleColumnOneRow(
+    return await queryRow(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
-      z.boolean()
+      z.boolean(),
     );
   }
 
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
-    this.migrationStatus = await queryValidatedSingleColumnOneRow(
+    this.migrationStatus = await queryRow(
       sql.get_migration_status,
       {
         id: migration.id,
       },
-      BatchedMigrationStatusSchema
+      BatchedMigrationStatusSchema,
     );
   }
 
@@ -92,12 +87,12 @@ export class BatchedMigrationRunner {
   }
 
   private async getNextBatchBounds(
-    migration: BatchedMigrationRow
+    migration: BatchedMigrationRow,
   ): Promise<null | [bigint, bigint]> {
-    const lastJob = await queryValidatedZeroOrOneRow(
+    const lastJob = await queryOptionalRow(
       sql.select_last_batched_migration_job,
       { batched_migration_id: migration.id },
-      BatchedMigrationJobRowSchema
+      BatchedMigrationJobRowSchema,
     );
 
     const nextMin = lastJob ? lastJob.max_value + 1n : migration.min_value;
@@ -129,7 +124,7 @@ export class BatchedMigrationRunner {
   private async finishJob(
     job: BatchedMigrationJobRow,
     status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>,
-    data?: unknown
+    data?: unknown,
   ) {
     await queryAsync(sql.finish_batched_migration_job, {
       id: job.id,
@@ -140,34 +135,34 @@ export class BatchedMigrationRunner {
   }
 
   private async getOrCreateNextMigrationJob(
-    migration: BatchedMigrationRow
+    migration: BatchedMigrationRow,
   ): Promise<BatchedMigrationJobRow | null> {
     const nextBatchBounds = await this.getNextBatchBounds(migration);
     if (nextBatchBounds) {
-      return queryValidatedOneRow(
+      return await queryRow(
         sql.insert_batched_migration_job,
         {
           batched_migration_id: migration.id,
           min_value: nextBatchBounds[0],
           max_value: nextBatchBounds[1],
         },
-        BatchedMigrationJobRowSchema
+        BatchedMigrationJobRowSchema,
       );
     } else {
       // Pick up any old pending jobs from this migration. These will only exist if
       // an admin manually elected to retry all failed jobs; we'll never automatically
       // transition failed jobs back to pending.
-      return queryValidatedZeroOrOneRow(
+      return await queryOptionalRow(
         sql.select_first_pending_batched_migration_job,
         { batched_migration_id: migration.id },
-        BatchedMigrationJobRowSchema
+        BatchedMigrationJobRowSchema,
       );
     }
   }
 
   private async runMigrationJob(
     migration: BatchedMigrationRow,
-    migrationImplementation: BatchedMigrationImplementation
+    migrationImplementation: BatchedMigrationImplementation,
   ) {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {
@@ -183,6 +178,10 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
+        logger.error(
+          `Error running job ${nextJob.id} for batched migration ${migration.filename}`,
+          error,
+        );
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');

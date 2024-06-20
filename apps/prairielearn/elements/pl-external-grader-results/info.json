@@ -1,8 +1,6 @@
 {
-    "controller": "pl-external-grader-results.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-external-grader-results.css"
-        ]
-    }
+  "controller": "pl-external-grader-results.py",
+  "dependencies": {
+    "elementStyles": ["pl-external-grader-results.css"]
+  }
 }

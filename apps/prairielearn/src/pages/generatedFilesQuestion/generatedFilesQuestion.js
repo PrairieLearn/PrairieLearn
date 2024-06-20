@@ -1,40 +1,55 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-var question = require('../../lib/question');
-var sqldb = require('@prairielearn/postgres');
+import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+import { getDynamicFile } from '../../lib/question-variant.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
 
-router.get('/variant/:variant_id/*', function (req, res, next) {
-  var variant_id = req.params.variant_id;
-  var filename = req.params[0];
-  var params = {
-    // The instance question generally won't be present if this is used on
-    // an instructor route.
-    has_instance_question: !!res.locals.instance_question,
-    instance_question_id: res.locals.instance_question?.id,
-    question_id: res.locals.question.id,
-    variant_id: variant_id,
-  };
-  sqldb.queryOneRow(sql.select_variant, params, function (err, result) {
-    if (ERR(err, next)) return;
-    var variant = result.rows[0];
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
-    question.getFile(
-      filename,
-      variant,
-      res.locals.question,
-      res.locals.course,
-      res.locals.authn_user.user_id,
-      function (err, fileData) {
-        if (ERR(err, next)) return;
-        res.attachment(filename);
-        res.send(fileData);
+export default function (options = { publicEndpoint: false }) {
+  const router = Router({ mergeParams: true });
+  router.get(
+    '/variant/:variant_id(\\d+)/*',
+    asyncHandler(async function (req, res) {
+      if (options.publicEndpoint) {
+        res.locals.course = await selectCourseById(req.params.course_id);
+        res.locals.question = await selectQuestionById(req.params.question_id);
+
+        if (
+          !res.locals.question.shared_publicly ||
+          res.locals.course.id !== res.locals.question.course_id
+        ) {
+          throw new HttpStatusError(404, 'Not Found');
+        }
       }
-    );
-  });
-});
 
-module.exports = router;
+      var variant_id = req.params.variant_id;
+      var filename = req.params[0];
+      const result = await sqldb.queryOneRowAsync(sql.select_variant, {
+        // The instance question generally won't be present if this is used on
+        // an instructor route.
+        has_instance_question: !!res.locals.instance_question,
+        instance_question_id: res.locals.instance_question?.id,
+        question_id: res.locals.question.id,
+        variant_id,
+      });
+      const variant = result.rows[0];
+
+      const fileData = await getDynamicFile(
+        filename,
+        variant,
+        res.locals.question,
+        res.locals.course,
+        res.locals.authn_user.user_id,
+      );
+      res.attachment(filename);
+      res.send(fileData);
+    }),
+  );
+  return router;
+}
