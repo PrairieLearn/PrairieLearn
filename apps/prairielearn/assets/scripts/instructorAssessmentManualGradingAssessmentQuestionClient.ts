@@ -10,8 +10,7 @@ onDocumentReady(() => {
   const {
     hasCourseInstancePermissionEdit,
     urlPrefix,
-    assessmentId,
-    assessmentQuestionId,
+    instancesUrl,
     maxPoints,
     groupWork,
     maxAutoPoints,
@@ -24,7 +23,7 @@ onDocumentReady(() => {
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
     classes: 'table table-sm table-bordered',
-    url: `${urlPrefix}/assessment/${assessmentId}/manual_grading/assessment_question/${assessmentQuestionId}/instances.json`,
+    url: instancesUrl,
     dataField: 'instance_questions',
     escape: true,
     uniqueId: 'id',
@@ -103,7 +102,8 @@ onDocumentReady(() => {
           switchable: false,
           formatter: (_value: number, row: InstanceQuestionRow) =>
             html`<a
-                href="${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${row.id}"
+                href="${urlPrefix}/assessment/${row.assessment_question
+                  .assessment_id}/manual_grading/instance_question/${row.id}"
               >
                 Instance ${row.index}
                 ${row.open_issue_count

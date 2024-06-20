@@ -31,6 +31,8 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
           ...resLocals,
           pageNote: `Question ${number_in_alternative_group}`,
         })}
+        <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
+        from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
         <script src="${nodeModulesAssetPath(
             'bootstrap-table/dist/bootstrap-table.min.js',
           )}"></script>
@@ -80,8 +82,7 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
                 id="grading-table"
                 data-has-course-instance-permission-edit="${!!authz_data.has_course_instance_permission_edit}"
                 data-url-prefix="${urlPrefix}"
-                data-assessment-id="${assessment.id}"
-                data-assessment-question-id="${assessment_question.id}"
+                data-instances-url="${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/instances.json"
                 data-max-points="${assessment_question.max_points}"
                 data-group-work="${assessment.group_work}"
                 data-max-auto-points="${assessment_question.max_auto_points}"
