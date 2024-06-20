@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import { AssessmentOpenInstancesAlert } from '../../partials/AssessmentOpenInstancesAlert.html.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),

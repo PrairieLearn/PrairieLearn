@@ -1,13 +1,13 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import {
   compiledStylesheetTag,
   compiledScriptTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import { AssessmentOpenInstancesAlert } from '../../partials/AssessmentOpenInstancesAlert.html.js';
 
 export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, any> }) {
   const {
