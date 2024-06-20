@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { z } from 'zod';
 
 import {
@@ -140,7 +139,6 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
-  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -566,10 +564,6 @@ export async function loadConfig(paths: string[]) {
     );
     config.cacheType = config.questionRenderCacheType;
   }
-
-  // TODO: once the usages of this are no longer EJS, we should format the
-  // size on the fly instead of setting it on the global config.
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here

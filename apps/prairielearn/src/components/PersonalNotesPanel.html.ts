@@ -1,3 +1,5 @@
+import { filesize } from 'filesize';
+
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
@@ -119,9 +121,9 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             <div class="custom-file">
               <input type="file" name="file" class="custom-file-input" id="attachFileInput" />
               <label class="custom-file-label" for="attachFileInput">Choose file</label>
-              <small id="emailHelp" class="form-text text-muted"
-                >Max file size: ${config.fileUploadMaxBytesFormatted}</small
-              >
+              <small class="form-text text-muted">
+                Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+              </small>
             </div>
           </div>
           <div class="form-group mb-0">
