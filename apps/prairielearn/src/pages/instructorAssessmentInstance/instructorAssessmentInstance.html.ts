@@ -355,7 +355,7 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionPointsAuto${i_instance_question}`,
+                              buttonId: `editQuestionAutoPoints${i_instance_question}`,
                             })
                           : ''}
                       </td>
@@ -372,7 +372,7 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionPointsManual${i_instance_question}`,
+                              buttonId: `editQuestionManualPoints${i_instance_question}`,
                             })
                           : ''}
                       </td>
