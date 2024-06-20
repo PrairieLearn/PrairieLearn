@@ -41,12 +41,12 @@ onDocumentReady(() => {
         text: 'Show student info',
         icon: 'fa-eye',
         event: () => {
-          const button = $('#js-show-student-info-button');
+          const button = document.getElementById('js-show-student-info-button');
           $('#grading-table').bootstrapTable(
-            button.hasClass('active') ? 'hideColumn' : 'showColumn',
+            button?.classList.contains('active') ? 'hideColumn' : 'showColumn',
             ['user_or_group_name', 'uid'],
           );
-          button.toggleClass('active');
+          button?.classList.toggle('active');
         },
         attributes: {
           id: 'js-show-student-info-button',
@@ -129,7 +129,7 @@ onDocumentReady(() => {
         },
         {
           field: 'user_or_group_name',
-          title: groupWork ? 'Group Name' : 'Name',
+          title: groupWork === 'true' ? 'Group Name' : 'Name',
           searchable: true,
           filterControl: 'input',
           sortable: true,
@@ -137,7 +137,7 @@ onDocumentReady(() => {
         },
         {
           field: 'uid',
-          title: groupWork ? 'UIDs' : 'UID',
+          title: groupWork === 'true' ? 'UIDs' : 'UID',
           searchable: true,
           filterControl: 'input',
           sortable: true,
