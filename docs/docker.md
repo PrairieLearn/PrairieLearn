@@ -5,6 +5,8 @@
 In the base `PrairieLearn` directory run:
 
     docker build -t prairielearn .
+    
+> If you are using a M-series Mac, you will need to add `--platform linux/amd64` to the command.
 
 ## Running the container
 
