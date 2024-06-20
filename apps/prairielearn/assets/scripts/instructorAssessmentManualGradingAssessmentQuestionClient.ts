@@ -229,6 +229,7 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
 
 function updatePointsPopoverHandlers(this: Element) {
   document.querySelectorAll<HTMLFormElement>('form[name=edit-points-form]').forEach((form) => {
+    form.querySelector<HTMLInputElement>('input:not([type="hidden"])')?.focus();
     // Ensures that, if two popovers are open at the same time, the event listener is not added twice
     form.removeEventListener('submit', pointsFormEventListener);
     form.addEventListener('submit', pointsFormEventListener);
