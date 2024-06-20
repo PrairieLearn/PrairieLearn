@@ -1,5 +1,3 @@
-import { BootstrapTableColumn } from 'bootstrap-table';
-
 import { onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
@@ -18,7 +16,7 @@ onDocumentReady(() => {
     maxAutoPoints,
   } = document.getElementById('grading-table')?.dataset ?? {};
 
-  // @ts-expect-error Types of options don't match
+  // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
     classes: 'table table-sm table-bordered',
     url: `${urlPrefix}/assessment/${assessmentId}/manual_grading/assessment_question/${assessmentQuestionId}/instances.json`,
@@ -205,7 +203,7 @@ onDocumentReady(() => {
           formatter: (value: string, row: any) => (value ? row.last_grader_name : '&mdash;'),
         },
       ],
-    ] as BootstrapTableColumn[],
+    ],
   });
 });
 
