@@ -18,16 +18,6 @@ onDocumentReady(() => {
     maxAutoPoints,
   } = document.getElementById('grading-table')?.dataset ?? {};
 
-  console.log({
-    hasCourseInstancePermissionEdit,
-    urlPrefix,
-    assessmentId,
-    assessmentQuestionId,
-    maxPoints,
-    groupWork,
-    maxAutoPoints,
-  });
-
   // @ts-expect-error Types of options don't match
   $('#grading-table').bootstrapTable({
     classes: 'table table-sm table-bordered',
@@ -101,9 +91,8 @@ onDocumentReady(() => {
             document,
             (this as HTMLElement).dataset.baseContent || '',
           );
-          console.log(form, form.tagName);
+          // The content may not be a form if there are rubrics, in that case do nothing.
           if (form.tagName === 'FORM') {
-            console.log('about to add event listener to form');
             form.addEventListener('submit', (event) => {
               ajaxSubmit(event);
               $(this).popover('hide');

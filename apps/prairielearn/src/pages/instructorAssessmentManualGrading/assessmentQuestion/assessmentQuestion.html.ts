@@ -1,9 +1,12 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../../components/Modal.html.js';
-import { nodeModulesAssetPath } from '../../../lib/assets.js';
+import {
+  compiledStylesheetTag,
+  compiledScriptTag,
+  nodeModulesAssetPath,
+} from '../../../lib/assets.js';
 
 export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, any> }) {
   const {
@@ -38,23 +41,8 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
         <script src="${nodeModulesAssetPath(
             'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
           )}"></script>
-        <link
-          href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
-          rel="stylesheet"
-        />
-        <link
-          href="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
-          )}"
-          rel="stylesheet"
-        />
-        <link
-          href="${nodeModulesAssetPath(
-            'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css',
-          )}"
-          rel="stylesheet"
-        />
         ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
+        ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
