@@ -2,26 +2,27 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { nodeModulesAssetPath } from '../../lib/assets.js';
+import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
-export function AdministratorJobSequence({
-  job_sequence,
+export function JobSequence({
   resLocals,
+  job_sequence,
 }: {
-  job_sequence: any;
   resLocals: Record<string, any>;
+  job_sequence: JobSequenceWithFormattedOutput;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
         <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
         })}

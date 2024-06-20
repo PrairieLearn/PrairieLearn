@@ -4,10 +4,11 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
-import { formatFloat } from '../../lib/format.js';
+import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -180,15 +181,14 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Points</th>
                   <td colspan="2">
-                    ${renderEjs(import.meta.url, "<% include('../partials/pointsFormatter'); %>")}
-                    <span id="total-points"
-                      >${resLocals.assessment_instance.points.toString()}</span
-                    >
-                    <small
-                      >/<span id="total-max-points" class="text-muted"
-                        >${resLocals.assessment_instance.max_points.toString()}</span
-                      ></small
-                    >
+                    <span id="total-points">
+                      ${formatPoints(resLocals.assessment_instance.points)}
+                    </span>
+                    <small>
+                      /<span id="total-max-points" class="text-muted"
+                        >${formatPoints(resLocals.assessment_instance.max_points)}
+                      </span>
+                    </small>
                     ${resLocals.authz_data.has_course_instance_permission_edit
                       ? html`
                           <button
@@ -345,11 +345,11 @@ export function InstructorAssessmentInstance({
                         >)
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints') %>",
-                          { instance_question, component: 'auto' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question, // Required fields are present in instance_question
+                          component: 'auto',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
                           ? html`
                               <button
@@ -382,11 +382,11 @@ export function InstructorAssessmentInstance({
                           : ''}
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints'); %>",
-                          { instance_question, component: 'manual' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question, // Required fields are present in instance_question
+                          component: 'manual',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
                           ? html`
                               <button
@@ -419,11 +419,11 @@ export function InstructorAssessmentInstance({
                           : ''}
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints'); %>",
-                          { instance_question, component: 'total' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question, // Required fields are present in instance_question
+                          component: 'total',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
                           ? html`
                               <button

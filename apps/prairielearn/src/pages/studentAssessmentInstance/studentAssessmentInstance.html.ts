@@ -3,7 +3,15 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import {
+  ExamQuestionAvailablePoints,
+  ExamQuestionScore,
+  ExamQuestionStatus,
+  InstanceQuestionPoints,
+  QuestionAwardedPoints,
+} from '../../components/QuestionScore.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -284,41 +292,32 @@ export function StudentAssessmentInstance({
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
                             <td class="text-center">
-                              ${renderEjs(
-                                import.meta.url,
-                                "<%- include('../partials/examQuestionStatus'); %>",
-                                { instance_question },
-                              )}
+                              ${ExamQuestionStatus({ instance_question })}
                             </td>
                             ${resLocals.has_auto_grading_question &&
                             resLocals.assessment.allow_real_time_grading
                               ? html`
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/examQuestionScore'); %>",
-                                      { instance_question },
-                                    )}
+                                    ${ExamQuestionScore({
+                                      instance_question,
+                                      assessment_question: instance_question, // Required fields are in instance_question
+                                    })}
                                   </td>
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/examQuestionAvailablePoints'); %>",
-                                      {
-                                        open:
-                                          resLocals.assessment_instance.open &&
-                                          instance_question.open,
-                                        currentWeight:
-                                          instance_question.points_list_original[
-                                            instance_question.number_attempts
-                                          ] - instance_question.max_manual_points,
-                                        points_list: instance_question.points_list.map(
-                                          (p) => p - instance_question.max_manual_points,
-                                        ),
-                                        highest_submission_score:
-                                          instance_question.highest_submission_score,
-                                      },
-                                    )}
+                                    ${ExamQuestionAvailablePoints({
+                                      open:
+                                        resLocals.assessment_instance.open &&
+                                        instance_question.open,
+                                      currentWeight:
+                                        instance_question.points_list_original[
+                                          instance_question.number_attempts
+                                        ] - instance_question.max_manual_points,
+                                      pointsList: instance_question.points_list.map(
+                                        (p) => p - instance_question.max_manual_points,
+                                      ),
+                                      highestSubmissionScore:
+                                        instance_question.highest_submission_score,
+                                    })}
                                   </td>
                                 `
                               : ''}
@@ -329,27 +328,27 @@ export function StudentAssessmentInstance({
                                   resLocals.has_manual_grading_question
                                     ? html`
                                         <td class="text-center">
-                                          ${renderEjs(
-                                            import.meta.url,
-                                            "<%- include('../partials/instanceQuestionPoints'); %>",
-                                            { instance_question, component: 'auto' },
-                                          )}
+                                          ${InstanceQuestionPoints({
+                                            instance_question,
+                                            assessment_question: instance_question, // Required fields are present in instance_question
+                                            component: 'auto',
+                                          })}
                                         </td>
                                         <td class="text-center">
-                                          ${renderEjs(
-                                            import.meta.url,
-                                            "<%- include('../partials/instanceQuestionPoints'); %>",
-                                            { instance_question, component: 'manual' },
-                                          )}
+                                          ${InstanceQuestionPoints({
+                                            instance_question,
+                                            assessment_question: instance_question, // Required fields are present in instance_question
+                                            component: 'manual',
+                                          })}
                                         </td>
                                       `
                                     : ''}
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/instanceQuestionPoints'); %>",
-                                      { instance_question, component: 'total' },
-                                    )}
+                                    ${InstanceQuestionPoints({
+                                      instance_question,
+                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      component: 'total',
+                                    })}
                                   </td>
                                 `
                               : html`
@@ -378,16 +377,11 @@ export function StudentAssessmentInstance({
                                     </span>
                                   </td>
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/questionAwardedPoints'); %>",
-                                      {
-                                        urlPrefix: resLocals.urlPrefix,
-                                        instance_question_id: instance_question.id,
-                                        previous_variants: instance_question.previous_variants,
-                                        current_variant_id: null,
-                                      },
-                                    )}
+                                    ${QuestionAwardedPoints({
+                                      urlPrefix: resLocals.urlPrefix,
+                                      instanceQuestionId: instance_question.id,
+                                      previousVariants: instance_question.previous_variants,
+                                    })}
                                   </td>
                                 `
                               : ''}
@@ -395,27 +389,27 @@ export function StudentAssessmentInstance({
                             resLocals.has_manual_grading_question
                               ? html`
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/instanceQuestionPoints'); %>",
-                                      { instance_question, component: 'auto' },
-                                    )}
+                                    ${InstanceQuestionPoints({
+                                      instance_question,
+                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      component: 'auto',
+                                    })}
                                   </td>
                                   <td class="text-center">
-                                    ${renderEjs(
-                                      import.meta.url,
-                                      "<%- include('../partials/instanceQuestionPoints'); %>",
-                                      { instance_question, component: 'manual' },
-                                    )}
+                                    ${InstanceQuestionPoints({
+                                      instance_question,
+                                      assessment_question: instance_question, // Required fields are present in instance_question
+                                      component: 'manual',
+                                    })}
                                   </td>
                                 `
                               : ''}
                             <td class="text-center">
-                              ${renderEjs(
-                                import.meta.url,
-                                "<%- include('../partials/instanceQuestionPoints'); %>",
-                                { instance_question, component: 'total' },
-                              )}
+                              ${InstanceQuestionPoints({
+                                instance_question,
+                                assessment_question: instance_question, // Required fields are present in instance_question
+                                component: 'total',
+                              })}
                             </td>
                           `}
                     </tr>
@@ -551,12 +545,20 @@ export function StudentAssessmentInstance({
             "<%- include('../partials/attachFilePanel') %>",
             resLocals,
           )}
-          ${renderEjs(
-            import.meta.url,
-            // TODO: convert to TypeScript component
-            "<%- include('../partials/instructorInfoPanel') %>",
-            resLocals,
-          )}
+          ${InstructorInfoPanel({
+            course: resLocals.course,
+            course_instance: resLocals.course_instance,
+            assessment: resLocals.assessment,
+            assessment_instance: resLocals.assessment_instance,
+            user: resLocals.user,
+            instance_group: resLocals.instance_group,
+            instance_group_uid_list: resLocals.instance_group_uid_list,
+            instance_user: resLocals.instance_user,
+            authz_data: resLocals.authz_data,
+            questionContext:
+              resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>
