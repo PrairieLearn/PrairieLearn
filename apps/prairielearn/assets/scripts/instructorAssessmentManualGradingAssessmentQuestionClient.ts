@@ -200,7 +200,10 @@ onDocumentReady(() => {
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   e.preventDefault();
 
-  const postBody = new URLSearchParams(new FormData(this, e.submitter) as any);
+  const postBody = new URLSearchParams(
+    // https://github.com/microsoft/TypeScript/issues/30584
+    new FormData(this, e.submitter) as any,
+  );
 
   const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
     (err) => ({ status: null, statusText: err.toString() }) as const,
