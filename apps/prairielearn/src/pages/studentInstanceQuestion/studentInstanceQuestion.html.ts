@@ -4,6 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
@@ -152,11 +153,14 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 userGroupRoles: resLocals.assessment_instance.user_group_roles,
               })}
               ${config.attachedFilesDialogEnabled
-                ? renderEjs(
-                    import.meta.url,
-                    "<%- include('../partials/attachFilePanel') %>",
-                    resLocals,
-                  )
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant.id,
+                    csrfToken: resLocals.__csrf_token,
+                  })
                 : ''}
               ${InstructorInfoPanel({
                 course: resLocals.course,
