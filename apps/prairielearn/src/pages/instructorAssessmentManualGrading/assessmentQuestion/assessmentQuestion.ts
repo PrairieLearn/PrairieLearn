@@ -1,28 +1,15 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 
-import { AssessmentQuestion } from './assessmentQuestion.html.js';
+import { AssessmentQuestion, InstanceQuestionRowSchema } from './assessmentQuestion.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  modified_at: z.string(),
-  assessment_open: z.boolean(),
-  uid: z.string().nullable(),
-  assigned_grader_name: z.string().nullable(),
-  last_grader_name: z.string().nullable(),
-  assessment_question: AssessmentQuestionSchema,
-  user_or_group_name: z.string().nullable(),
-  open_issue_count: z.number().nullable(),
-});
 
 router.get(
   '/',
@@ -47,7 +34,7 @@ router.get(
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
       },
-      InstanceQuestionRowSchema,
+      InstanceQuestionRowSchema.omit({ index: true }),
     );
     res.send({ instance_questions: result.map((row, idx) => ({ index: idx + 1, ...row })) });
   }),

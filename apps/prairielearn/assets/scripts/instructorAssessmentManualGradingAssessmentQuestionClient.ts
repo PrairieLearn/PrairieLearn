@@ -2,8 +2,9 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import { User } from '../../src/lib/db-types.js';
+import type { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
+import type { InstanceQuestionRow } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.html.js';
 
 onDocumentReady(() => {
   const {
@@ -100,7 +101,7 @@ onDocumentReady(() => {
           searchable: false,
           sortable: true,
           switchable: false,
-          formatter: (_value: any, row: any) =>
+          formatter: (_value: number, row: InstanceQuestionRow) =>
             html`<a
                 href="${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${row.id}"
               >
@@ -143,7 +144,7 @@ onDocumentReady(() => {
           field: 'assigned_grader',
           title: 'Assigned grader',
           filterControl: 'select',
-          formatter: (_value: string, row: any) => row.assigned_grader_name || '—',
+          formatter: (_value: string, row: InstanceQuestionRow) => row.assigned_grader_name || '—',
         },
         {
           field: 'auto_points',
@@ -188,7 +189,8 @@ onDocumentReady(() => {
           field: 'last_grader',
           title: 'Graded by',
           filterControl: 'select',
-          formatter: (value: string, row: any) => (value ? row.last_grader_name : '&mdash;'),
+          formatter: (value: string, row: InstanceQuestionRow) =>
+            value ? row.last_grader_name : '&mdash;',
         },
       ],
     ],
@@ -304,7 +306,7 @@ function updateGradingTagButton() {
 
 function pointsFormatter(
   points: string,
-  row: any,
+  row: InstanceQuestionRow,
   _index: number,
   field: 'manual_points' | 'auto_points' | 'points',
 ) {
@@ -327,7 +329,7 @@ function pointsFormatter(
       : ''}`;
 }
 
-function scorebarFormatter(score: number | null, row: any) {
+function scorebarFormatter(score: number | null, row: InstanceQuestionRow) {
   const { hasCourseInstancePermissionEdit, urlPrefix, csrfToken } =
     document.getElementById('grading-table')?.dataset ?? {};
   const buttonId = `editQuestionScorePerc${row.id}`;
