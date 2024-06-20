@@ -7,8 +7,8 @@ import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { config } from '../lib/config.js';
-import { receiveFromQueue } from '../lib/receiveFromQueue.js';
+import { config } from './config.js';
+import { receiveFromQueue } from './receiveFromQueue.js';
 
 chaiUse(chaiAsPromised);
 
@@ -16,7 +16,7 @@ function randomString() {
   return Math.random().toString(36).slice(2);
 }
 
-function fakeSqs(options = {}) {
+function fakeSqs(options: { message?: any; timeoutCount?: number } = {}) {
   const receiptHandle = randomString();
 
   let message = options.message;
@@ -25,6 +25,9 @@ function fakeSqs(options = {}) {
       jobId: randomString(),
       image: randomString(),
       entrypoint: randomString(),
+      timeout: 60,
+      enableNetworking: true,
+      environment: { FOO: 'bar' },
       s3Bucket: randomString(),
       s3RootKey: randomString(),
     };
@@ -51,7 +54,7 @@ function fakeSqs(options = {}) {
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
 
-  return /** @type {any} */ {
+  return {
     send: async (command) => {
       if (command instanceof ReceiveMessageCommand) {
         return receiveMessage(command);
@@ -68,7 +71,7 @@ function fakeSqs(options = {}) {
     changeMessageVisibility,
     receiveMessage,
     deleteMessage,
-  };
+  } as any;
 }
 
 const VISIBILITY_TIMEOUT = 60;

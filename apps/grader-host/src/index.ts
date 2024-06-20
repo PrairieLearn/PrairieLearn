@@ -27,7 +27,7 @@ import * as lifecycle from './lib/lifecycle.js';
 import * as load from './lib/load.js';
 import globalLogger from './lib/logger.js';
 import pullImages from './lib/pullImages.js';
-import { receiveFromQueue } from './lib/receiveFromQueue.js';
+import { type GradingJobMessage, receiveFromQueue } from './lib/receiveFromQueue.js';
 import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -161,7 +161,7 @@ async.series(
   },
 );
 
-async function isJobCanceled(job) {
+async function isJobCanceled(job: GradingJobMessage) {
   const result = await sqldb.queryOneRowAsync(sql.check_job_cancellation, {
     grading_job_id: job.jobId,
   });
@@ -169,7 +169,7 @@ async function isJobCanceled(job) {
   return result.rows[0].canceled;
 }
 
-async function handleJob(job) {
+async function handleJob(job: GradingJobMessage) {
   load.startJob();
 
   const logger = makeJobLogger();
@@ -215,7 +215,7 @@ interface Context {
   docker: Docker;
   s3: S3;
   logger: import('./lib/jobLogger.js').WinstonBufferedLogger;
-  job: any;
+  job: GradingJobMessage;
 }
 
 async function reportReceived(context: Context, receivedTime: Date) {
@@ -345,16 +345,14 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
     job: { jobId, image, entrypoint, timeout, enableNetworking, environment },
   } = context;
 
-  const results: Record<string, any> = {};
-  const runTimeout = timeout || config.defaultTimeout;
   // Even if instructors specify a really short timeout for the execution of
   // the grading job, there's a certain amount of overhead associated with
   // running the job (pulling an image, uploading results, etc.). We add a
   // fixed amount of time to the instructor-specified timeout to account for
   // this.
-  const jobTimeout = config.timeoutOverhead + runTimeout;
-  const jobEnableNetworking = enableNetworking || false;
-  const jobEnvironment = environment || {};
+  const jobTimeout = timeout + config.timeoutOverhead;
+
+  const results: Record<string, any> = {};
 
   logger.info('Launching Docker container to run grading job');
 
@@ -375,11 +373,11 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
     const container = await docker.createContainer({
       Image: runImage,
       // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
-      Env: Object.entries(jobEnvironment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
+      Env: Object.entries(environment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
       AttachStdout: true,
       AttachStderr: true,
       Tty: true,
-      NetworkDisabled: !jobEnableNetworking,
+      NetworkDisabled: !enableNetworking,
       HostConfig: {
         Binds: [`${tempDir}:/grade`],
         Memory: config.graderDockerMemory,
@@ -422,7 +420,7 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
       container.kill().catch((err) => {
         globalLogger.error('Error killing container', err);
       });
-    }, runTimeout * 1000);
+    }, timeout * 1000);
 
     logger.info('Waiting for container to complete');
     try {

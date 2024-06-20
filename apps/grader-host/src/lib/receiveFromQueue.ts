@@ -1,5 +1,4 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import * as path from 'path';
 
 import {
   ReceiveMessageCommand,
@@ -7,15 +6,32 @@ import {
   DeleteMessageCommand,
   SQSClient,
 } from '@aws-sdk/client-sqs';
-import { Ajv, ValidateFunction } from 'ajv';
-import fs from 'fs-extra';
+import { z } from 'zod';
 
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config.js';
 import globalLogger from './logger.js';
 
-let messageSchema: ValidateFunction | null = null;
+const GradingJobMessageSchema = z.object({
+  /** The unique ID for this job. */
+  jobId: z.string(),
+  /** The Docker image that the grading job will be executed in. */
+  image: z.string(),
+  /** The entrypoint for the container. */
+  entrypoint: z.string(),
+  /** The number of seconds after which the grading job will time out. */
+  timeout: z.number(),
+  /** Whether or not the container should have internet access. */
+  enableNetworking: z.boolean(),
+  /** Environment variables for the container. */
+  environment: z.record(z.string()),
+  /** The AWS S3 bucket containing this job's files. */
+  s3Bucket: z.string(),
+  /** The root key for the job's files. */
+  s3RootKey: z.string(),
+});
+export type GradingJobMessage = z.infer<typeof GradingJobMessageSchema>;
 
 async function changeVisibilityTimeout(
   sqs: SQSClient,
@@ -81,35 +97,25 @@ async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
 export async function receiveFromQueue(
   sqs: SQSClient,
   queueUrl: string,
-  receiveCallback: (message: any) => Promise<void>,
+  receiveCallback: (message: GradingJobMessage) => Promise<void>,
 ) {
   globalLogger.info('Waiting for next job...');
   const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl);
 
-  if (!messageSchema) {
-    const data = await fs.readJson(path.join(import.meta.dirname, 'messageSchema.json'));
-    const ajv = new Ajv();
-    messageSchema = ajv.compile(data);
-  }
-
-  const valid = messageSchema(parsedMessage);
-  if (!valid) {
-    globalLogger.error(messageSchema.errors);
-    throw new Error('Message did not match schema.');
-  }
+  const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
 
   const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
-  await receiveCallback(parsedMessage)
+  await receiveCallback(validatedMessage)
     .finally(() => {
       heartbeatAbortController.abort();
     })
     .then(
       () => {
-        globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
+        globalLogger.info(`Job ${validatedMessage.jobId} finished successfully.`);
       },
       (err) => {
-        globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
+        globalLogger.info(`Job ${validatedMessage.jobId} errored.`);
         throw err;
       },
     );
