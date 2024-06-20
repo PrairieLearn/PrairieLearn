@@ -52,11 +52,28 @@ class PLDrawingBaseElement {
 window.PLDrawingApi = {
   _idCounter: 0,
 
+  // This will be used to load `.svg` files from the `clientFilesElement` directory.
+  clientFilesBase: (() => {
+    const url = new URL(window.document.currentScript.src);
+
+    // Strip any search or hash parameters from the URL.
+    url.search = '';
+    url.hash = '';
+
+    // Strip off the last component of the URL (the script filename).
+    url.pathname = url.pathname.split('/').slice(0, -1).join('/');
+
+    // Add the clientFilesElement directory.
+    url.pathname += '/clientFilesElement/';
+
+    return url.toString();
+  })(),
+
   /**
    * Generates a new numeric ID for a submission object.
    * Each submitted object is uniquely identified by its ID.
    */
-  generateID: function () {
+  generateID() {
     return this._idCounter++;
   },
 
@@ -69,7 +86,7 @@ window.PLDrawingApi = {
    * @param extensionName Name of the extension/group of elements.
    * @param dictionary Dictionary of elements to register.
    */
-  registerElements: function (extensionName, dictionary) {
+  registerElements(extensionName, dictionary) {
     _.extend(this.elements, dictionary);
     Object.keys(dictionary).forEach((elem) => {
       this.elementModule[elem] = extensionName;
@@ -82,7 +99,7 @@ window.PLDrawingApi = {
    * @param options Element options.  Must contain a 'type' key.
    * @param submittedAnswer Answer state object.
    */
-  createElement: function (canvas, options, submittedAnswer) {
+  createElement(canvas, options, submittedAnswer) {
     const name = options.type;
     let added = null;
 
@@ -101,7 +118,7 @@ window.PLDrawingApi = {
    * @param name Name of the element to look up.
    * @returns The element, if found.  Silently fails with the base element otherwise.
    */
-  getElement: function (name) {
+  getElement(name) {
     let ret = PLDrawingBaseElement;
     if (name in this.elements) {
       let elem = this.elements[name];
@@ -117,9 +134,9 @@ window.PLDrawingApi = {
    * @param canvas Canvas to restore state onto.
    * @param submittedAnswer Answer state to restore from.
    */
-  restoreAnswer: function (canvas, submittedAnswer) {
+  restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(id + 1, this._idCounter);
+      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
       let newObj = JSON.parse(JSON.stringify(obj));
       this.createElement(canvas, newObj, submittedAnswer);
     }
@@ -132,7 +149,7 @@ window.PLDrawingApi = {
    * @param elem_options Any options to give to the element
    * @param existing_answer_submission Existing submission to place on the canvas.
    */
-  setupCanvas: function (root_elem, elem_options, existing_answer_submission) {
+  setupCanvas(root_elem, elem_options, existing_answer_submission) {
     let canvas_elem = $(root_elem).find('canvas')[0];
     let canvas_width = parseFloat(elem_options.width);
     let canvas_height = parseFloat(elem_options.height);
@@ -153,8 +170,8 @@ window.PLDrawingApi = {
 
     // Set all button icons
     let drawing_btns = $(root_elem).find('button');
-    const image_base_url = elem_options['client_files'];
     const element_base_url = elem_options['element_client_files'];
+    const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
       let img = btn.children[0];
       const opts = parseElemOptions(img.parentNode);
@@ -166,7 +183,7 @@ window.PLDrawingApi = {
           if (!image_filename.endsWith('.svg')) {
             image_filename += '.svg';
           }
-          let base = image_base_url;
+          let base = clientFilesBase;
           if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
             base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
@@ -175,6 +192,9 @@ window.PLDrawingApi = {
         let image_tooltip = elem.get_button_tooltip(opts);
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
+        }
+        if (!elem_options.editable) {
+          btn.disabled = true;
         }
         let cloned_opts = _.clone(opts || {});
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
@@ -248,7 +268,7 @@ window.PLDrawingApi = {
     fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
       const target = canvas.findTarget(e);
       if (target !== undefined) {
-        target.fire('dblclick', { e: e });
+        target.fire('dblclick', { e });
       }
     });
 

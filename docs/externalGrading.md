@@ -66,7 +66,7 @@ External grading configuration is done on a per-question basis. All configuratio
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share a standard grading framework between many questions. This property is optional.
 
-- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This is optional and defaults to 30 seconds. This should be as small as is reasonable for your jobs.
+- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This is optional and defaults to 30 seconds. This should be as small as is reasonable for your jobs. This value cannot exceed 600 seconds (10 minutes).
 
 - `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 
@@ -255,4 +255,4 @@ For a working example of this, see [the implementation of `pl-file-upload`](http
 
 In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](installing.md#support-for-external-graders-and-workspaces).
 
-When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs` on Unix-based systems and `$USERPROFILE/.pljobs` on Windows. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.
+When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs`. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.

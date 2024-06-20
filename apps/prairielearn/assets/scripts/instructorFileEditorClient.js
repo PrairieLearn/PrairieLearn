@@ -20,6 +20,7 @@ window.InstructorFileEditor = function (options) {
     showPrintMargin: false,
     mode: options.aceMode,
     readOnly: options.readOnly,
+    enableKeyboardAccessibility: true,
   });
 
   if (options.altElementId) {
@@ -87,7 +88,7 @@ window.InstructorFileEditor = function (options) {
   this.editor.commands.addCommand({
     name: 'saveAndSync',
     bindKey: { win: 'Ctrl-s', mac: 'Command-s' },
-    exec: function () {
+    exec() {
       $(`#${options.saveElementId}`).click();
     },
   });

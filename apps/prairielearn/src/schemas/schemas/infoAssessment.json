@@ -112,6 +112,24 @@
         "$ref": "#/definitions/groupRole"
       }
     },
+    "canSubmit": {
+      "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "canView": {
+      "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
     "studentGroupCreate": {
       "description": "Whether students can create groups.",
       "type": "boolean",
@@ -158,20 +176,10 @@
           "description": "The maximum number of users that should be in this role in a group.",
           "type": "number"
         },
-        "canAssignRolesAtStart": {
-          "description": "Whether users with this role can assign other users' group roles before the assessment starts.",
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
           "default": false
-        },
-        "canAssignRolesDuringAssessment": {
-          "description": "Whether users with this role can assign other users' group roles during an assessment.",
-          "type": "boolean",
-          "default": false
-        },
-        "canSubmitAssessment": {
-          "description": "Whether users with this role can press the 'Save and Grade All' button in an exam.",
-          "type": "boolean",
-          "default": true
         }
       }
     },
@@ -186,10 +194,10 @@
         },
         "mode": {
           "description": "The server mode required for access.",
-          "enum": ["Public", "Exam", "SEB"]
+          "enum": ["Public", "Exam"]
         },
         "examUuid": {
-          "description": "The scheduler exam UUID for which a student must be registered.",
+          "description": "The PrairieTest exam UUID for which a student must be registered.",
           "type": "string",
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
@@ -226,32 +234,6 @@
         "password": {
           "description": "Password to begin the assessment (only for Exams).",
           "type": "string"
-        },
-        "SEBConfig": {
-          "description": "Configuration related to Safe Exam Browser",
-          "type": "object",
-          "properties": {
-            "comment": {
-              "description": "Arbitrary comment for reference purposes.",
-              "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
-            },
-            "password": {
-              "description": "Password protect the SEB exam and config file",
-              "type": "string"
-            },
-            "quitPassword": {
-              "description": "If set, requires password to quit SEB other than visiting the quitURL page",
-              "type": "string"
-            },
-            "allowPrograms": {
-              "description": "Keyword array for allowed programs in SEB",
-              "type": "array",
-              "minItems": 0,
-              "items": {
-                "type": "string"
-              }
-            }
-          }
         },
         "showClosedAssessment": {
           "description": "Whether the student can view the assessment after it has been closed",
@@ -310,6 +292,24 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
+        },
+        "canSubmit": {
+          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "canView": {
+          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
         }
       },
       "required": ["questions"]

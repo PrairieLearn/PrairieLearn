@@ -1,10 +1,10 @@
 node_modules
+.yarn
 
-# Test coverage
+# Coverage reports
 coverage/
-
-# Code coverage reports
-coverage/
+apps/*/coverage/
+packages/*/coverage/
 
 # Transpiled code
 apps/*/dist/
@@ -57,5 +57,13 @@ apps/prairielearn/src/sprocs/*.sql
 exampleCourse/**/*.json
 testCourse/**/*.json
 
+# exampleCourse and testCourse contain question.html files that are actually Mustache files, ignore
+exampleCourse/**/*.html
+testCourse/**/*.html
+
 # JSON files in tests are formatted explicitly to check for loading behaviour, so should not be formatted automatically
 apps/prairielearn/src/tests/*/**/*.json
+
+# EJS files are treated as HTML by VSCode, which will try to format them as such.
+# This won't work, so exclude them.
+apps/prairielearn/src/**/*.ejs

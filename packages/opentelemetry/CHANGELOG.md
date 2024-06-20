@@ -1,5 +1,138 @@
 # @prairielearn/opentelemetry
 
+## 2.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- b697912: Fix CommonJS preloads of packages
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Minor Changes
+
+- c51f3aa: Upgrade all JavaScript dependencies; ensure packages loaded with ESM are instrumented
+
+## 1.11.3
+
+### Patch Changes
+
+- 290f60f: Refine configuration types
+
+## 1.11.2
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 1.11.1
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
+## 1.11.0
+
+### Minor Changes
+
+- bd4cff1: Allow trace exporting to be disabled; export more types
+
+## 1.10.7
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+
+## 1.10.6
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+
+## 1.10.5
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
+## 1.10.4
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
+## 1.10.3
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
+## 1.10.2
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
+## 1.10.1
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
+## 1.10.0
+
+### Minor Changes
+
+- cfbab7a69: The following types are now exported:
+
+  - `Meter`
+  - `Counter`
+  - `Histogram`
+  - `UpDownCounter`
+  - `ObservableCounter`
+  - `ObservableUpDownCounter`
+  - `ObservableGauge`
+
+## 1.9.0
+
+### Minor Changes
+
+- e88f7457b: Export `TraceFlags` from `@opentelemetry/api`
+
+## 1.8.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 1.8.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 1.8.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 1.8.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
 ## 1.8.3
 
 ### Patch Changes

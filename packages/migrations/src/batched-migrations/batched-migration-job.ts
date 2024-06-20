@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(__filename);
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+const sql = loadSqlEquiv(import.meta.filename);
 
 export const BatchedMigrationJobStatusSchema = z.enum(['pending', 'failed', 'succeeded']);
 export type BatchedMigrationJobStatus = z.infer<typeof BatchedMigrationJobStatusSchema>;
@@ -26,7 +27,7 @@ export async function selectRecentJobsWithStatus(
   status: BatchedMigrationJobStatus,
   limit: number,
 ): Promise<BatchedMigrationJobRow[]> {
-  return queryValidatedRows(
+  return await queryRows(
     sql.select_recent_jobs_with_status,
     { batched_migration_id: batchedMigrationId, status, limit },
     BatchedMigrationJobRowSchema,

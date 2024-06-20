@@ -1,3 +1,10 @@
+-- BLOCK update_course_repository
+UPDATE pl_courses AS c
+SET
+  repository = $course_repository
+WHERE
+  c.path = $course_path;
+
 -- BLOCK select_last_job_sequence
 SELECT
   *
@@ -8,23 +15,14 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_job_sequence
-SELECT
-  *
-FROM
-  job_sequences
-WHERE
-  id = $job_sequence_id;
-
 -- BLOCK select_sync_warnings_and_errors
 WITH
   course_errors AS (
     SELECT
-      'course' AS
-    type,
-    path AS id,
-    sync_warnings,
-    sync_errors
+      'course' AS type,
+      path AS id,
+      sync_warnings,
+      sync_errors
     FROM
       pl_courses
     WHERE
@@ -40,11 +38,10 @@ WITH
   ),
   course_instance_errors AS (
     SELECT
-      'course_instance' AS
-    type,
-    ci.short_name AS id,
-    ci.sync_warnings,
-    ci.sync_errors
+      'course_instance' AS type,
+      ci.short_name AS id,
+      ci.sync_warnings,
+      ci.sync_errors
     FROM
       course_instances AS ci
       JOIN pl_courses AS c ON (ci.course_id = c.id)
@@ -61,11 +58,10 @@ WITH
   ),
   question_errors AS (
     SELECT
-      'question' AS
-    type,
-    q.qid AS id,
-    q.sync_warnings,
-    q.sync_errors
+      'question' AS type,
+      q.qid AS id,
+      q.sync_warnings,
+      q.sync_errors
     FROM
       questions AS q
       JOIN pl_courses AS c ON (q.course_id = c.id)
@@ -82,11 +78,10 @@ WITH
   ),
   assessment_errors AS (
     SELECT
-      'assessment' AS
-    type,
-    a.tid AS id,
-    a.sync_warnings,
-    a.sync_errors
+      'assessment' AS type,
+      a.tid AS id,
+      a.sync_warnings,
+      a.sync_errors
     FROM
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

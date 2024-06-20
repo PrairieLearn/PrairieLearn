@@ -40,8 +40,6 @@ PrairieLearn presently provides the following templated **input field** elements
   such as "Illinois", "GATTACA", "computer", and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
-- [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem
-  submission.
 - [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit**
   such as "1.5 m", "14 ms", "6.3 ft", and so on.
 
@@ -60,7 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -94,6 +92,9 @@ compatibility, but they should not be used in new questions.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
   - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
+- [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem
+  submission.
+  - **Deprecated**: the features of required libraries are no longer maintained.
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
   - **Deprecated** as submission elements in `v3` all have score display options.
@@ -126,6 +127,9 @@ Gives automated feedback in the case of improper asymptotic input.
 | `size`           | integer                                               | 35                      | Size of the input box.                                                                                                                                               |
 | `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 | `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                           |
+| `show-score`     | boolean                                               | true                    | Whether to show the score badge and feedback next to this element.                                                                                                   |
+| `allow-blank`    | boolean                                               | false                   | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
+| `blank-value`    | string                                                | 1 (one)                 | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
 
 #### Details
 
@@ -327,17 +331,18 @@ def fib(n):
 | Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file-name`          | string  | -                  | The name of this file; will be used to store this file in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                                               |
-| `ace-mode`           | string  | None               | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).                                                                                                                                                                                                                                                    |
-| `ace-theme`          | string  | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).                                                                                                                                                                                                                                                                                                                          |
+| `ace-mode`           | string  | None               | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/src/mode).                                                                                                                                                                                                                                                        |
+| `ace-theme`          | string  | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/src/theme).                                                                                                                                                                                                                                                                                                                              |
 | `font-size`          | string  | `12px`             | Sets the font size for the Ace editor. Specified as a CSS-style size (e.g., `1rem`, `110%`, `16pt`, or `20px`).                                                                                                                                                                                                                                                                                                                                       |
 | `source-file-name`   | string  | None               | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                       |
 | `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
 | `min-lines`          | integer | None               | Minimum number of lines the editor should show initially.                                                                                                                                                                                                                                                                                                                                                                                             |
 | `max-lines`          | integer | None               | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.                                                                                                                                                                                                                                                                                                                                                          |
 | `auto-resize`        | boolean | true               | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.                                                                                                                                                                                                                                     |
-| `preview`            | string  | None               | If set, provides a live preview mode for editing markup languages. Currently supports `html` or `markdown`.                                                                                                                                                                                                                                                                                                                                           |
+| `preview`            | string  | None               | If set, provides a live preview mode for editing markup languages. Currently supports `html`, `markdown`, or `dot`, though additional languages are supported via extensions (see below).                                                                                                                                                                                                                                                             |
 | `focus`              | boolean | false              | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.                                                                                                                                                                                                                                                                                                                            |
 | `normalize-to-ascii` | boolean | false              | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.                                                                                                                                                                                                                                                                             |
+| `allow-blank`        | boolean | false              | Whether or not an empty submission is allowed.                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 #### Details
 
@@ -345,6 +350,8 @@ When using `auto-resize`, consider specifying a custom `min-lines` or pre-popula
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
 
 The `focus` attribute defaults to `"false"`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers, so use caution. If you have multiple file editors on the same question page, only one element should have `focus` set to true, or else the behavior may be unpredictable.
+
+This element supports additional preview options through [element extensions](elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
 #### Example implementations
 
@@ -428,7 +435,7 @@ def generate(data):
 | ---------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`   | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
 | `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
+| `correct-answer` | string              | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
 | `blank-value`    | integer             | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
 | `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
@@ -502,6 +509,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 | `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
 | `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
 | `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
+| `options-placement`   | "right" or "bottom"                                        | "right"       | The placement of options relative to the statements in order to make it visually cohesive. Especially useful when dealing with long statements or options.                                                             |
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
@@ -699,22 +707,20 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                                    |
-| ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                           |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                                        |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                                     |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
-| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                          |
-| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                                         |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                               |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                                     |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                                   |
-| `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
+| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
+| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                       |
+| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
+| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
+| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
+| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
+| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                                      |
+| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                                     |
+| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
+| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
+| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.             |
+| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -722,9 +728,11 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `random`: the corresponding choice will always be shown, and will be randomly correct, with probability proportional to the total number of correct choices. In other words, if there are `N` possible correct choices in total, this choice will be correct with probability `1/N`.
 - `correct`: the corresponding choice will always be shown and will always be the correct answer.
 - `incorrect`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
-- `true`: same as `random`, accepted for backwards compatibility.
 
-Note that "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+**Notes**
+
+- "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
+- Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -814,9 +822,10 @@ def generate(data):
 | `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
 | `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
+| `show-score`          | boolean                         | true     | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `show-placeholder`    | boolean                         | true     | Show the placeholder text that shows the default comparison.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `placeholder`         | string                          | -        | Custom placeholder text. By default, the placeholder text shown is the default comparison. comparison.                                                                                                                                                                                                                                                                                                                                                                                  |
 | `size`                | integer                         | 35       | Size of the input box.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `show-correct-answer` | boolean                         | true     | Whether to show the correct answer in the submitted answers panel.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `allow-fractions`     | boolean                         | true     | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -871,10 +880,11 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `source-header`       | string                                          | "Drag from here"               | The text that appears at the start of the source area.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `solution-header`     | string                                          | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `solution-placement`  | "right" or "bottom"                             | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                                                                      |
-| `partial-credit`      | "none" or "lcs"                                 | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so.                                                       |
+| `partial-credit`      | "none" or "lcs"                                 | Depends on `grading-method`    | For the `dag`, `ordered`, and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` for partial credit based on the LCS edit-distance from the student solution to some correct solution. Note that `partial-credit` defaults to `lcs` for the `dag` and `ranking` grading method, and to `none` for the `ordered` grading method for backward compatibility. Grading method `unordered` will always assign partial credit.         |
 | `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) |
 | `format`              | "code" or "default"                             | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                                                                           |
 | `code-language`       | string                                          | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                                                                                |
+| `inline`              | boolean                                         | false                          | `false` sets the blocks to be stacked vertically whereas `true` requires blocks to be placed horizontally.                                                                                                                                                                                                                                                                                                                                                     |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -928,15 +938,16 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Customizations
 
-| Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`          | string  | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
-| `quill-theme`        | string  | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
-| `source-file-name`   | string  | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
-| `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `placeholder`        | string  | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
-| `format`             | string  | `html`             | Format used to save the student's response. The element supports `html` and `markdown` formats. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                       |
-| `markdown-shortcuts` | boolean | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
+| Attribute            | Type                          | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ----------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`          | string                        | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
+| `quill-theme`        | string                        | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
+| `source-file-name`   | string                        | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
+| `directory`          | string                        | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `placeholder`        | string                        | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| `format`             | `html` or `markdown`          | `html`             | Format used to save the student's response. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                                                                           |
+| `markdown-shortcuts` | boolean                       | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
+| `counter`            | `word`, `character` or `none` | `none`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                    |
 
 #### Example implementations
 
@@ -1048,12 +1059,15 @@ def generate(data):
 | `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                                                                                                                                  |
 | `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                        |
 | `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.                                                                                                               |
+| `allow-trig-functions`       | boolean             | true                  | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                              |
 | `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                               |
 | `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                                    |
 | `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                                                                                                                                          |
 | `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                            |
 | `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                                                                                                                                      |
 | `custom-functions`           | string              | -                     | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                                                                                                                                         |
+| `show-score`                 | boolean             | true                  | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                           |
+| `suffix`                     | text                | -                     | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                         |
 
 #### Details
 
@@ -1077,86 +1091,6 @@ See example question for details.
 - [`pl-string-input` for string input](#pl-string-input-element)
 
 ---
-
-### `pl-threejs` element
-
-This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
-
-#### Sample element
-
-![](elements/pl-threejs.png)
-
-```html
-<pl-threejs answer-name="a">
-  <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
-  <pl-threejs-stl
-    file-name="MAKE_Robot_V6.stl"
-    frame="body"
-    scale="0.025"
-    position="[-1,1,2]"
-    orientation="[0,0,30]"
-  ></pl-threejs-stl>
-  <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
-</pl-threejs>
-```
-
-#### Customizations
-
-| Attribute                       | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------------- | ------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answer-name`                   | string  | —         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `body-position`                 | list    | [0, 0, 0] | Initial position of body as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `body-orientation`              | list    | special   | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body-pose-format`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `camera-position`               | list    | [5, 2, 2] | Initial position of camera as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `body-cantranslate`             | boolean | true      | If you can translate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `body-canrotate`                | boolean | true      | If you can rotate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `camera-canmove`                | boolean | true      | If you can move the camera (i.e., change the view) in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `body-pose-format`              | string  | rpy       | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.                                                                                                                                                                                                                                                                                                                                                            |
-| `answer-pose-format`            | string  | rpy       | Determines how the answer `data["correct_answers"][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
-| `text-pose-format`              | string  | matrix    | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.                                                                                                                                                                                                                                                                                                                                                      |
-| `show-pose-in-question`         | boolean | true      | If the current pose of the body is displayed in the question panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `show-pose-in-correct-answer`   | boolean | true      | If the current pose of the body is displayed in the correct answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `show-pose-in-submitted-answer` | boolean | true      | If the current pose of the body is displayed in the submitted answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `tol-position`                  | float   | 0.5       | Error in position must be no more than this for the answer to be marked correct.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `tol-rotation`                  | float   | 5.0       | Error in rotation must be no more than this for the answer to be marked correct.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `grade`                         | boolean | true      | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-
-A `pl-threejs-stl` element inside a `pl-threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
-
-| Attribute        | Type   | Default             | Description                                                                                                                                                                                                                                                                              |
-| ---------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`      | string | —                   | Name of `.stl` file.                                                                                                                                                                                                                                                                     |
-| `file-directory` | string | clientFilesQuestion | Location of `.stl` file, either `clientFilesCourse` or `clientFilesQuestion`.                                                                                                                                                                                                            |
-| `frame`          | string | body                | Which frame the object is fixed to, either `body` or `space`.                                                                                                                                                                                                                            |
-| `color`          | color  | special             | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.                                                                                                                                                                                      |
-| `opacity`        | float  | special             | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.                                                                                                                                                                                                          |
-| `position`       | list   | [0, 0, 0]           | Position of object as `[x, y, z]`.                                                                                                                                                                                                                                                       |
-| `orientation`    | list   | special             | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.                                                                                                                                                                                                 |
-| `format`         | string | rpy                 | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
-
-A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
-
-| Attribute     | Type   | Default   | Description                                                                                                                                                                                                                                                                              |
-| ------------- | ------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `frame`       | string | body      | Which frame the object is fixed to, either `body` or `space`.                                                                                                                                                                                                                            |
-| `color`       | color  | special   | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.                                                                                                                                                                                      |
-| `opacity`     | float  | special   | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.                                                                                                                                                                                                          |
-| `position`    | list   | [0, 0, 0] | Position of object as `[x, y, z]`.                                                                                                                                                                                                                                                       |
-| `orientation` | list   | special   | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.                                                                                                                                                                                                 |
-| `format`      | string | rpy       | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
-
-#### Details
-
-Note that a 3D scene is also created to show each submitted answer. This means
-that if there are many submitted answers, the page will load slowly.
-
-#### Example implementations
-
-- [element/threeJS]
-
-#### See also
-
-- [External: `three.js` JavaScript library](https://threejs.org/)
 
 ### `pl-units-input` element
 
@@ -1193,6 +1127,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 | `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set.                                       |
 | `allow-feedback`           | boolean                                      | true         | Whether to show detailed feedback from the autograder for incorrect answers (for example, stating whether a unit or magnitude specifically is incorrect). Feedback varies based on `grading-mode`.                                                                                                                            |
 | `custom-format`            | string                                       | -            | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
+| `show-score`               | boolean                                      | true         | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                         |
 
 #### Details
 
@@ -1259,8 +1194,12 @@ line callouts.
 
 ![](elements/pl-code.png)
 
+<!-- prettier-ignore -->
 ```html
-<pl-code language="python"> def square(x): return x * x </pl-code>
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
 ```
 
 #### Customizations
@@ -1864,21 +1803,21 @@ def generate(data):
 
 #### Customizations
 
-| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                 |
-| ------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`       | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
-| `prefix`            | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `prefix-newline`    | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
-| `suffix`            | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `suffix-newline`    | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
-| `indent`            | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
-| `depth`             | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
-| `width`             | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
-| `compact`           | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
-| `sort-dicts`        | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
-| `no-highlight`      | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
-| `copy-code-button`  | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                     |
-| `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                             |
+| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                                      |
+| ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`       | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                                     |
+| `prefix`            | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `prefix-newline`    | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                                              |
+| `suffix`            | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `suffix-newline`    | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                                        |
+| `indent`            | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                                                   |
+| `depth`             | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                                                  |
+| `width`             | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                                           |
+| `compact-sequences` | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If `compact-sequences` is false (the default) then each item of a sequence will be formatted on a separate line. If it is true, as many items as will fit within the width will be formatted on each output line. |
+| `sort-dicts`        | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                                                  |
+| `no-highlight`      | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                                     |
+| `copy-code-button`  | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                          |
+| `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                  |
 
 #### Details
 
@@ -1898,20 +1837,44 @@ Printing Pandas DataFrames with this element is deprecated. Please use the new [
 
 ### `pl-template` element
 
-Displays boilerplate HTML from templates in a reusable way.
+Displays boilerplate HTML from mustache templates in a reusable way.
 
 #### Sample element
 
 ```html
-<pl-template file-name="outer_template.mustache" subdirectory="templates">
-  <pl-variable name="is-open">True</pl-variable>
-  <pl-variable
-    name="problem-statement"
-    directory="question"
-    file-name="serverFilesQuestion/statement.html"
-  ></pl-variable>
+<pl-template file-name="templates/outer_template.mustache">
+  <pl-variable name="show">True</pl-variable>
+  <pl-variable name="section_header">This is the section header.</pl-variable>
+  <pl-variable name="section_body">This is the section body.</pl-variable>
 </pl-template>
 ```
+
+Along with the sample usage of the element, we include a sample template file. This is the file
+`templates/outer_template.mustache`, stored in the course's `serverFilesCourse` directory:
+
+```html
+<div class="card mb-1 mt-1">
+  <div class="card-header" style="cursor: pointer">
+    <div
+      class="card-title d-flex justify-content-between"
+      data-toggle="collapse"
+      data-target="#collapse-{{uuid}}"
+    >
+      <div>{{section_header}}</div>
+      <div class="fa fa-angle-down"></div>
+    </div>
+  </div>
+
+  <div class="collapse{{#show}} show{{/show}}" id="collapse-{{uuid}}">
+    <div class="card-body">
+      <div class="card-text">{{{section_body}}}</div>
+    </div>
+  </div>
+</div>
+```
+
+_Note:_ The sample element did not define the `uuid` variable, as each `pl-template` element
+has a unique one defined internally.
 
 #### Customizations
 
@@ -2093,22 +2056,27 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-answer-panel` element
 
-Provide information regarding the question answer after the student is unable to
-receive further answers for grading.
+Provide information regarding the question answer after the student is unable
+to submit further answers for grading.
 
 #### Sample element
 
 ```html
-<pl-answer-panel> This is answer-panel text. </pl-answer-panel>
+<pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
 ```
 
 #### Details
 
-Contents are only displayed when the answer panel is requested.
-Common reasons that trigger the display of this element are:
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+question panel (so, only in the answer panel), surround that content
+with the `<pl-answer-panel>` tags.
 
-- The question is fully correct
-- There are no more submission attempts
+Common reasons that trigger the display of the answer panel are:
+
+- The question is fully correct.
+- There are no more submission attempts.
 - The time limit for the assessment has expired.
 
 #### Example implementations
@@ -2312,15 +2280,16 @@ Displays the contents of question directions.
 #### Sample element
 
 ```html
-<pl-question-panel> This is question-panel text. </pl-question-panel>
+<pl-question-panel>This content is only shown in the question panel.</pl-question-panel>
 ```
 
 #### Details
 
-Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information
-between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside the answer.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+answer panel (so, only in the question panel), surround that content
+with the `<pl-question-panel>` tags.
 
 #### Example implementations
 
@@ -2341,13 +2310,19 @@ Customizes how information entered by a user is displayed before grading.
 #### Sample element
 
 ```html
-<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
+<pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
 ```
 
 #### Details
 
-Contents are only shown after the student has submitted an answer. This answer
-may be correct, incorrect, or invalid.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the question panel and
+answer panel (so, only in the submission panel), surround that content
+with the `<pl-submission-panel>` tags.
+
+The submission panel is only shown after the student has submitted an
+answer. This answer may be correct, incorrect, or invalid.
 
 #### Example implementations
 
@@ -2409,6 +2384,84 @@ The provided `script-name` corresponds to a file located within the director for
 
 - [PrairieDraw graphics documentation](PrairieDraw.md)
 
+### `pl-threejs` element
+
+This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
+
+**WARNING**: This element is **deprecated** and should not be used in new questions.
+
+#### Sample element
+
+![](elements/pl-threejs.png)
+
+```html
+<pl-threejs answer-name="a">
+  <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
+  <pl-threejs-stl
+    file-name="MAKE_Robot_V6.stl"
+    frame="body"
+    scale="0.025"
+    position="[-1,1,2]"
+    orientation="[0,0,30]"
+  ></pl-threejs-stl>
+  <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
+</pl-threejs>
+```
+
+#### Customizations
+
+| Attribute                       | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answer-name`                   | string  | —         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `body-position`                 | list    | [0, 0, 0] | Initial position of body as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `body-orientation`              | list    | special   | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body-pose-format`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `camera-position`               | list    | [5, 2, 2] | Initial position of camera as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `body-cantranslate`             | boolean | true      | If you can translate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `body-canrotate`                | boolean | true      | If you can rotate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `camera-canmove`                | boolean | true      | If you can move the camera (i.e., change the view) in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `body-pose-format`              | string  | rpy       | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.                                                                                                                                                                                                                                                                                                                                                            |
+| `answer-pose-format`            | string  | rpy       | Determines how the answer `data["correct_answers"][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
+| `text-pose-format`              | string  | matrix    | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.                                                                                                                                                                                                                                                                                                                                                      |
+| `show-pose-in-question`         | boolean | true      | If the current pose of the body is displayed in the question panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `show-pose-in-correct-answer`   | boolean | true      | If the current pose of the body is displayed in the correct answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `show-pose-in-submitted-answer` | boolean | true      | If the current pose of the body is displayed in the submitted answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `tol-position`                  | float   | 0.5       | Error in position must be no more than this for the answer to be marked correct.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `tol-rotation`                  | float   | 5.0       | Error in rotation must be no more than this for the answer to be marked correct.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `grade`                         | boolean | true      | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+A `pl-threejs-stl` element inside a `pl-threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
+
+| Attribute        | Type   | Default             | Description                                                                                                                                                                                                                                                                              |
+| ---------------- | ------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`      | string | —                   | Name of `.stl` file.                                                                                                                                                                                                                                                                     |
+| `file-directory` | string | clientFilesQuestion | Location of `.stl` file, either `clientFilesCourse` or `clientFilesQuestion`.                                                                                                                                                                                                            |
+| `frame`          | string | body                | Which frame the object is fixed to, either `body` or `space`.                                                                                                                                                                                                                            |
+| `color`          | color  | special             | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.                                                                                                                                                                                      |
+| `opacity`        | float  | special             | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.                                                                                                                                                                                                          |
+| `position`       | list   | [0, 0, 0]           | Position of object as `[x, y, z]`.                                                                                                                                                                                                                                                       |
+| `orientation`    | list   | special             | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.                                                                                                                                                                                                 |
+| `format`         | string | rpy                 | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
+
+A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
+
+| Attribute     | Type   | Default   | Description                                                                                                                                                                                                                                                                              |
+| ------------- | ------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `frame`       | string | body      | Which frame the object is fixed to, either `body` or `space`.                                                                                                                                                                                                                            |
+| `color`       | color  | special   | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.                                                                                                                                                                                      |
+| `opacity`     | float  | special   | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.                                                                                                                                                                                                          |
+| `position`    | list   | [0, 0, 0] | Position of object as `[x, y, z]`.                                                                                                                                                                                                                                                       |
+| `orientation` | list   | special   | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.                                                                                                                                                                                                 |
+| `format`      | string | rpy       | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
+
+#### Details
+
+Note that a 3D scene is also created to show each submitted answer. This means
+that if there are many submitted answers, the page will load slowly.
+
+#### See also
+
+- [External: `three.js` JavaScript library](https://threejs.org/)
+
 <!-- Reference style links for element implementations -->
 
 <!-- External Grade Questions -->
@@ -2440,7 +2493,6 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/randomdataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
 [demo/randommultiplechoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
 [demo/randomplot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
-[demo/randomsymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
 [demo/proofblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 
 <!-- Element option overview questions -->
@@ -2473,7 +2525,6 @@ The provided `script-name` corresponds to a file located within the director for
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/template]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/template
-[element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
 [element/card]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/card

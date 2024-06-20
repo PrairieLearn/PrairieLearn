@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import {
   loadSqlEquiv,
   queryAsync,
@@ -6,23 +7,46 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+
 import {
   WorkspaceHostSchema,
   WorkspaceLogSchema,
   type WorkspaceHost,
   type WorkspaceLog,
-} from './db-types';
+} from './db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Marks the given workspace host as unhealthy.
+ *
+ * @returns All updated workspace hosts
  */
-export async function markWorkspaceHostUnhealthy(workspace_host_id: string, reason: string) {
-  await queryAsync(sql.set_host_unhealthy, {
-    workspace_host_id,
-    reason,
-  });
+export async function markWorkspaceHostUnhealthy(
+  workspace_host_id: string,
+  reason: string,
+): Promise<WorkspaceHost> {
+  return await queryRow(
+    sql.set_hosts_unhealthy,
+    {
+      workspace_host_id,
+      reason,
+    },
+    WorkspaceHostSchema,
+  );
+}
+
+/**
+ * Marks all active workspace hosts as unhealthy.
+ *
+ * @returns All updated workspace hosts
+ */
+export async function markAllWorkspaceHostsUnhealthy(reason: string): Promise<WorkspaceHost[]> {
+  return await queryRows(
+    sql.set_hosts_unhealthy,
+    { workspace_host_id: null, reason },
+    WorkspaceHostSchema,
+  );
 }
 
 export async function assignWorkspaceToHost(
@@ -61,7 +85,7 @@ export async function findTerminableWorkspaceHosts(
   unhealthy_timeout_sec: number,
   launch_timeout_sec: number,
 ): Promise<WorkspaceHost[]> {
-  return queryRows(
+  return await queryRows(
     sql.find_terminable_hosts,
     {
       unhealthy_timeout_sec,
@@ -82,7 +106,7 @@ export async function findTerminableWorkspaceHosts(
 export async function terminateWorkspaceHostsIfNotLaunching(
   instanceIds: string[],
 ): Promise<WorkspaceLog[]> {
-  return queryRows(
+  return await queryRows(
     sql.terminate_hosts_if_not_launching,
     { instance_ids: instanceIds },
     WorkspaceLogSchema,

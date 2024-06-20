@@ -1,28 +1,31 @@
-const path = require('path');
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import * as path from 'node:path';
 
-const error = require('@prairielearn/error');
-const chunks = require('../../lib/chunks');
-const ERR = require('async-stacktrace');
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
-router.get('/*', function (req, res, next) {
-  const filename = req.params[0];
-  if (!filename) {
-    return next(
-      error.make(400, 'No filename provided within clientFilesCourse directory', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
-  }
-  const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-  chunks.ensureChunksForCourse(res.locals.course.id, { type: 'clientFilesCourse' }, (err) => {
-    if (ERR(err, next)) return;
+import * as error from '@prairielearn/error';
+
+import * as chunks from '../../lib/chunks.js';
+
+const router = Router({ mergeParams: true });
+
+router.get(
+  '/*',
+  asyncHandler(async function (req, res) {
+    const filename = req.params[0];
+    if (!filename) {
+      throw new error.HttpStatusError(
+        400,
+        'No filename provided within clientFilesCourse directory',
+      );
+    }
+    const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
+    await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'clientFilesCourse' });
 
     const clientFilesDir = path.join(coursePath, 'clientFilesCourse');
     res.sendFile(filename, { root: clientFilesDir });
-  });
-});
+  }),
+);
 
-module.exports = router;
+export default router;

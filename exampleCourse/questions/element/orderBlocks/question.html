@@ -135,3 +135,31 @@ to display the input area above the output area.</p>
   <pl-answer correct="false">carrot</pl-answer>
   <pl-answer correct="true">apple</pl-answer>
 </pl-order-blocks>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 6:</strong> Create a SQL command that selects all students who are enrolled in computer science.
+  </p>
+
+  <p>
+    This example uses the attributes <code>solution-placement="bottom"</code>
+    and <code>block_orientation="horizontal"</code> to create horizontal arrangement 
+    of the source blocks.
+  </p>
+  <br>
+  <b>Note:</b> This model of block arrangement, particularly for the context of computer science, is attributed to
+  <a href="https://doi.org/10.1145/3488042.3489968">"Regex Parsons: Using Horizontal Parsons Problems to Scaffold Learning Regex"</a>
+
+</pl-question-panel>
+
+<pl-order-blocks answers-name="sql-query" format="code" code-language="sql" solution-placement="bottom" inline="true">
+  <pl-answer correct="true">SELECT</pl-answer>
+  <pl-answer correct="true">students</pl-answer>
+  <pl-answer correct="true">FROM</pl-answer>
+  <pl-answer correct="true">enrollments</pl-answer>
+  <pl-answer correct="true">WHERE</pl-answer>
+  <pl-answer correct="true">major</pl-answer>
+  <pl-answer correct="true">=</pl-answer>
+  <pl-answer correct="true">"computer science"</pl-answer>
+</pl-order-blocks>
+

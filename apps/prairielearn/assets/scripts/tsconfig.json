@@ -2,9 +2,15 @@
   "compilerOptions": {
     "lib": ["ES2020", "DOM"],
     "noEmit": true,
-    "rootDir": "./",
+    "rootDir": "../../",
     "outDir": "../../public/build/scripts",
-    "types": ["jquery", "bootstrap"]
+    "types": ["jquery", "bootstrap", "bootstrap-table"],
+    "strict": true,
+    // Support native ESM, which esbuild supports.
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": ["**/*"]
 }

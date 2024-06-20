@@ -1,19 +1,20 @@
-import fs from 'fs-extra';
 import path from 'path';
 
-import * as namedLocks from '@prairielearn/named-locks';
-import { logger } from '@prairielearn/logger';
-import * as sqldb from '@prairielearn/postgres';
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as sqldb from '@prairielearn/postgres';
 
 import {
   MigrationFile,
   parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
-} from '../load-migrations';
+} from '../load-migrations.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export async function init(directories: string | string[], project: string) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
@@ -149,7 +150,7 @@ export async function initWithLock(directories: string[], project: string) {
 
     // Record the migration.
     await sqldb.queryAsync(sql.insert_migration, {
-      filename: filename,
+      filename,
       timestamp,
       project,
     });

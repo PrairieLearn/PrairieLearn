@@ -557,16 +557,31 @@ ORDER BY
 -- BLOCK group_configs
 SELECT
   g.name,
-  u.uid
+  u.uid,
+  COALESCE(
+    ARRAY_AGG(gr.role_name) FILTER (
+      WHERE
+        gr.role_name IS NOT NULL
+    ),
+    '{}'::text[]
+  ) AS roles
 FROM
   group_configs AS gc
   JOIN groups AS g ON gc.id = g.group_config_id
   JOIN group_users AS gu ON g.id = gu.group_id
   JOIN users AS u ON gu.user_id = u.user_id
+  LEFT JOIN group_user_roles AS gur ON (
+    gur.group_id = g.id
+    AND gur.user_id = u.user_id
+  )
+  LEFT JOIN group_roles AS gr ON gur.group_role_id = gr.id
 WHERE
   gc.assessment_id = $assessment_id
   AND gc.deleted_at IS NULL
   AND g.deleted_at IS NULL
+GROUP BY
+  g.name,
+  u.uid
 ORDER BY
   g.name,
   u.uid;

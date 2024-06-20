@@ -6,5 +6,3 @@ def generate(data):
         {"tag": "false", "ans": "part"},
         {"tag": "false", "ans": "inverse"},
     ]
-
-    return data

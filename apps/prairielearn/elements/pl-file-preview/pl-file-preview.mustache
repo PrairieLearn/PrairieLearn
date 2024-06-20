@@ -9,16 +9,17 @@
       {{#files}}
       <li class="list-group-item" data-file="{{name}}">
         <div class="d-flex flex-row collapsed file-status-container" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
-          <div class="flex-grow-1">
-            <i class="file-status-icon fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
+          <div class="flex-grow-1 mr-2">
+            <i class="fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
             {{name}}
             <p class="file-status">uploaded</p>
           </div>
           <div class="align-self-center">
-            <button class="btn btn-outline-secondary btn-sm file-preview-download-file">
+            <button class="btn btn-outline-secondary btn-sm file-preview-download">
               Download
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
+            <button type="button" class="btn btn-outline-secondary btn-sm">
+              <span class="mr-2 js-toggle-show-preview-text">Show preview</span>
               <i class="file-preview-icon fa fa-angle-down"></i>
             </button>
           </div>
@@ -27,6 +28,11 @@
         <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
           <img class="mw-100 mt-2 d-none">
           <pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>
+          <button type="button" class="btn btn-outline-secondary btn-sm btn-block d-none file-preview-expand">
+            <i class="fa-solid fa-expand"></i>
+            <i class="fa-solid fa-compress d-none"></i>
+            <span class="js-toggle-expand-preview-text">Expand</span>
+          </button>
         </div>
       </li>
       {{/files}}

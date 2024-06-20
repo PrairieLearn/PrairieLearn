@@ -173,7 +173,7 @@ def grade_dag(
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
-    https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
+    https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)

@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import execa from 'execa';
+import { execa } from 'execa';
 
 /**
  * A thin wrapper around {@link Sentry.init} that automatically sets `release`
@@ -81,4 +81,6 @@ export {
   deepReadDirSync,
   Integrations,
   Handlers,
+  runWithAsyncContext,
+  getCurrentScope,
 } from '@sentry/node';

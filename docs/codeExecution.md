@@ -36,7 +36,7 @@ This is still how PrairieLearn functions by default for local development. The `
 
 Under this mode, PrairieLearn uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
 
-Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
+Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we occasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
 
 This mode also allows us to isolate one course from another so that course A cannot see content from course B, and vice versa. To achieve this, we take advantage of bind mounts. When creating a container, PrairieLearn also creates a special directory on the host, and then mounts that directory to `/course` in the container. To execute content for course A, PrairieLearn first bind mounts that course's directory to the container's host directory. This is transitive to the container, which will now see that course's content at `/course`. In the future, when a different course's code needs to be executed in that container, PrairieLearn will simply update the bind mount to point to the other course.
 
@@ -61,7 +61,7 @@ The primary external interface of these callers is the `call()` function, which 
   - For core elements, this is an item in PrairieLearn's `elements` directory.
 - `file`: the name of the file whose code will be executed (e.g. `server.py`)
 - `fcn`: the name of the function in `file` that will be executed (e.g. `grade` or `render`).
-- `args`: an array of JSON-encodeable arguments to the function being called.
+- `args`: an array of JSON-encodable arguments to the function being called.
 
 The piece of code to execute is specified by (`type`, `directory`, `file`) instead of an absolute path because the location of each file on disk may change between each type of code caller; allowing the code caller to construct the path from that information keeps the code that uses a caller agnostic to the underlying caller being used.
 
@@ -69,7 +69,7 @@ The piece of code to execute is specified by (`type`, `directory`, `file`) inste
 
 Let's walk through a typical request to view a question that requires a function in a corresponding `server.py` file to run.
 
-1. The page request is handled by `pages/studentInstanceQuestionHomework` or similar.
+1. The page request is handled by `pages/studentInstanceQuestion` or similar.
 2. That handler calls `getAndRenderVariant` in `lib/question` (a different function would be called if the user were submitting an answer).
 3. That function calls an internal function that calls `render` in `question-servers/freeform.js`.
 4. That function calls `withCodeCaller` in `lib/workers`. Depending on the active execution mode
