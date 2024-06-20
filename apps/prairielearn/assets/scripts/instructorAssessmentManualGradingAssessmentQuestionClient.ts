@@ -111,9 +111,9 @@ onDocumentReady(() => {
                   : ''}
               </a>
               ${row.assessment_open
-                ? html`<span title="Assessment instance is still open" data-toggle="tooltip"
-                    ><i class="fas fa-exclamation-triangle text-warning"></i
-                  ></span>`
+                ? html`<span title="Assessment instance is still open" data-toggle="tooltip">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                  </span>`
                 : ''}`.toString(),
         },
         {
