@@ -211,14 +211,14 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   if (response.status !== 200) {
     console.error(response.status, response.statusText);
     // TODO Better user notification of update failure
-    return;
+    return null;
   }
   return await response.json();
 }
 
 async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent) {
   const data = await ajaxSubmit.call(this, event);
-  if (data.conflict_grading_job_id) {
+  if (data?.conflict_grading_job_id) {
     $('#grading-conflict-modal')
       .find('a.conflict-details-link')
       .attr('href', data.conflict_details_url);
