@@ -1,20 +1,4 @@
 /**
- * Bootstrap 5 switched from "left"/"right" to "start"/"end" for RTL support.
- * The following classes add a compatibility layer for content written for
- * Bootstrap 4.
- *
- * TODO: Use the updated styles for RTL support.
- */
-
-.ml-auto {
-  margin-left: auto;
-}
-
-.mr-auto {
-  margin-right: auto;
-}
-
-/**
  * We need these classes for our navigation dropdowns.
  *
  * TODO: replace with modern classes.
@@ -38,6 +22,13 @@
 .dropdown-menu-right[data-bs-popper] {
   right: 0;
   left: auto;
+}
+
+/**
+ * Bootstrap 5 replaced with `.badge-pill` with `.rounded-pill`.
+ */
+.badge-pill {
+  border-radius: var(--bs-border-radius-pill) !important;
 }
 
 /**
@@ -312,6 +303,14 @@ a.badge-dark:focus {
 .pl-5,
 .px-5 {
   padding-left: 3rem !important;
+}
+
+.mr-auto {
+  margin-right: auto !important;
+}
+
+.ml-auto {
+  margin-left: auto !important;
 }
 
 @media (min-width: 576px) {
