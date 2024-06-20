@@ -16,6 +16,10 @@ onDocumentReady(() => {
     maxAutoPoints,
   } = document.getElementById('grading-table')?.dataset ?? {};
 
+  document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
+    form.addEventListener('submit', ajaxSubmit);
+  });
+
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
     classes: 'table table-sm table-bordered',
@@ -92,8 +96,7 @@ onDocumentReady(() => {
           // The content may not be a form if there are rubrics, in that case do nothing.
           if (form.tagName === 'FORM') {
             form.addEventListener('submit', (event) => {
-              ajaxSubmit(event);
-              $(this).popover('hide');
+              ajaxSubmit.call(form, event).then(() => $(this).popover('hide'));
             });
           }
           return form;
@@ -207,31 +210,30 @@ onDocumentReady(() => {
   });
 });
 
-function ajaxSubmit(e: any) {
+async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   e.preventDefault();
-  const submitter = e.submitter || e.originalEvent?.submitter;
-  if (submitter) {
+  if (e.submitter?.dataset.batchAction) {
     // Obtain information from submit button that was used
-    $(e.target)
-      .find('input[name=batch_action_data]')
-      .val(JSON.stringify($(submitter).data('batch-action') || {}));
+    this.querySelectorAll<HTMLInputElement>('input[name=batch_action_data]')?.forEach((input) => {
+      input.value = JSON.stringify(e.submitter?.dataset.batchAction);
+    });
   }
-  $.post(
-    $(e.target).attr('action') ?? '',
-    $(e.target).serialize(),
-    function (data) {
-      if (data.conflict_grading_job_id) {
-        $('#grading-conflict-modal')
-          .find('a.conflict-details-link')
-          .attr('href', data.conflict_details_url);
-        $('#grading-conflict-modal').modal({});
-      }
-      $('#grading-table').bootstrapTable('refresh');
-    },
-    'json',
-  ).fail(function () {
+
+  // TODO Better user notification of update failure (catch)
+  const response = await fetch(this.action, { method: 'POST', body: new FormData(this) });
+  if (response.status !== 200) {
+    console.error(response.status, await response.text());
     // TODO Better user notification of update failure
-  });
+  }
+  const data = await response.json();
+
+  if (data.conflict_grading_job_id) {
+    $('#grading-conflict-modal')
+      .find('a.conflict-details-link')
+      .attr('href', data.conflict_details_url);
+    $('#grading-conflict-modal').modal({});
+  }
+  $('#grading-table').bootstrapTable('refresh');
 }
 
 function gradingTagDropdown() {
