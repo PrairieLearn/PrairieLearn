@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
@@ -121,6 +122,55 @@ async function processDeleteFile(req, res) {
   await deleteFile(file.id, res.locals.authn_user.user_id);
 }
 
+/**
+ * This is used to conditionally display/permit a shortcut to delete the
+ * assessment instance. Usually, the only way to delete an assessment instance
+ * is from the "Students" tab of an assessment. However, when a staff member is
+ * iterating on or testing an assessment, it can be tedious to constantly go
+ * back to that page to delete the instance in order to recreate it.
+ *
+ * The shortcut is a "Regenerate assessment instance" button on the assessment
+ * instance page. It's only displayed if the user has the necessary permissions:
+ * either "Previewer" or above access on the course, or "Student Data Viewer"
+ * or above access on the course instance. We're deliberately permissive with
+ * these permissions to allow "untrusted" course staff to e.g. perform quality
+ * control on assessments.
+ *
+ * We have an extra check: the instance must have been created by a user that
+ * was an instructor at the time of creation. This addresses the case where
+ * some user was an enrolled student in course instance X and was later added
+ * as course staff to course instance Y. In this case, the user should not be
+ * able to delete their old assessment instances in course instance X. This
+ * check is performed with the `assessment_instances.include_in_statistics`
+ * column, which reflects whether or not the user was an instructor at the time
+ * of creation. We'll rename this column to something more general, e.g.
+ * `created_by_instructor`, in a future migration.
+ *
+ * There's one exception to the above check: the example course, where
+ * `include_in_statistics` is generally `false` even when instructors create
+ * assessment instances; this is because the example course has weird implicit
+ * permissions.
+ *
+ * Note that we check for `authn_` permissions specifically. This ensures that
+ * the menu appears for both "student view" and "student view without access
+ * restrictions".
+ *
+ * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
+ */
+function canDeleteAssessmentInstance(resLocals) {
+  return (
+    // Check for permissions.
+    (resLocals.authz_data.authn_has_course_permission_preview ||
+      resLocals.authz_data.authn_has_course_instance_permission_view) &&
+    // Check that the assessment instance belongs to this user, or that the
+    // user belongs to the group that created the assessment instance.
+    resLocals.authz_result.authorized_edit &&
+    // Check that the assessment instance was created by an instructor; bypass
+    // this check if the course is an example course.
+    (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
+}
+
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
@@ -206,6 +256,30 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
+    } else if (
+      req.body.__action === 'regenerate_instance' ||
+      req.body.__action === 'delete_instance'
+    ) {
+      if (!canDeleteAssessmentInstance(res.locals)) {
+        throw new error.HttpStatusError(403, 'Access denied');
+      }
+
+      await assessment.deleteAssessmentInstance(
+        res.locals.assessment.id,
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+      );
+
+      // The only difference between "regenerate" and "delete" is that the former
+      // redirect back to the same assessment, thus generating a new instance, while
+      // the latter redirects to the list of assessments.
+      if (req.body.__action === 'regenerate_instance') {
+        flash('success', 'Regenerated your assessment instance.');
+        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
+      } else {
+        flash('success', 'Deleted your assessment instance.');
+        res.redirect(`${res.locals.urlPrefix}/assessments/`);
+      }
     } else {
       next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
@@ -261,7 +335,13 @@ router.get(
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
     if (!res.locals.assessment.group_work) {
-      res.send(StudentAssessmentInstance({ showTimeLimitExpiredModal, resLocals: res.locals }));
+      res.send(
+        StudentAssessmentInstance({
+          showTimeLimitExpiredModal,
+          userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+          resLocals: res.locals,
+        }),
+      );
       return;
     }
 
@@ -295,10 +375,11 @@ router.get(
     res.send(
       StudentAssessmentInstance({
         showTimeLimitExpiredModal,
-        resLocals: res.locals,
         groupConfig,
         groupInfo,
         userCanAssignRoles,
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+        resLocals: res.locals,
       }),
     );
   }),
