@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import type { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
-import type { InstanceQuestionRow } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.html.js';
+import type { InstanceQuestionRow } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
 onDocumentReady(() => {
   const {

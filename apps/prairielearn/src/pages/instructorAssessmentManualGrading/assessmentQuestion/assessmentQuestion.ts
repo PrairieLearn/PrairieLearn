@@ -6,7 +6,8 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import * as manualGrading from '../../../lib/manualGrading.js';
 
-import { AssessmentQuestion, InstanceQuestionRowSchema } from './assessmentQuestion.html.js';
+import { AssessmentQuestion } from './assessmentQuestion.html.js';
+import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
