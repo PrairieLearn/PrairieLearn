@@ -94,6 +94,7 @@ export function InstanceQuestion({
               ${resLocals.file_list.length > 0
                 ? PersonalNotesPanel({
                     fileList: resLocals.file_list,
+                    context: 'question',
                     courseInstanceId: resLocals.course_instance.id,
                     assessment_instance: resLocals.assessment_instance,
                     authz_result: resLocals.authz_result,

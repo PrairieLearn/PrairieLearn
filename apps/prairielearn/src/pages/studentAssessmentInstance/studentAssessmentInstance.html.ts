@@ -491,6 +491,7 @@ export function StudentAssessmentInstance({
 
           ${PersonalNotesPanel({
             fileList: resLocals.file_list,
+            context: 'assessment',
             courseInstanceId: resLocals.course_instance.id,
             assessment_instance: resLocals.assessment_instance,
             csrfToken: resLocals.__csrf_token,

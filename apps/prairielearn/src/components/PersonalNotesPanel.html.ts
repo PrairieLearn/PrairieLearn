@@ -13,6 +13,7 @@ export function PersonalNotesPanel({
   variantId,
   allowNewUploads = true,
   csrfToken,
+  context,
 }: {
   fileList: File[];
   courseInstanceId: string;
@@ -21,6 +22,7 @@ export function PersonalNotesPanel({
   variantId?: string;
   allowNewUploads?: boolean;
   csrfToken: string;
+  context: 'question' | 'assessment';
 }) {
   return html`
     <div class="card mb-4" id="attach-file-panel">
@@ -77,9 +79,8 @@ export function PersonalNotesPanel({
                 : !authz_result.authorized_edit
                   ? html`
                       <div class="alert alert-warning mt-2" role="alert">
-                        You are viewing the
-                        ${variantId != null ? 'question instance' : 'assessment instance'} of a
-                        different user and so are not authorized to add or delete personal notes.
+                        You are viewing the ${context} instance of a different user and so are not
+                        authorized to add or delete personal notes.
                       </div>
                     `
                   : html`
