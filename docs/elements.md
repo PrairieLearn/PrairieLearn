@@ -17,6 +17,8 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
+- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using
+  [excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -302,6 +304,38 @@ def generate(data):
 
 - [demo/overlayDropdown]
 - [element/dropdown]
+
+---
+
+### `pl-excalidraw` element
+
+Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
+
+![](elements/pl-excalidraw.png)
+
+**question.html**
+
+```html
+<p>Draw something else, with a starter diagram</p>
+
+<pl-excalidraw
+  name="vector"
+  file="starter.excalidraw"
+  file_dir="client_files_question_path"
+></pl-excalidraw>
+```
+
+#### Customizations
+
+| Attribute  | Type   | Default                      | Description                                                                            |
+| ---------- | ------ | ---------------------------- | -------------------------------------------------------------------------------------- |
+| `name`     | string | -                            | Unique name to identify the widget with. Drawing submissions are saved with this name. |
+| `file`     | string | -                            | Optional file to load as the starter diagram                                           |
+| `file_dir` | string | `client_files_question_path` | Directory to load `file` from.                                                         |
+
+#### Example implementation
+
+[element/excalidraw]
 
 ---
 
@@ -2504,6 +2538,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
 [element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/excalidraw]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/excalidraw
 [element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
