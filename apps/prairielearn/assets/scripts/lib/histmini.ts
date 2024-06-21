@@ -1,9 +1,9 @@
 import * as d3 from 'd3';
 
 export function histmini(
-  selector: Element,
-  data: number[],
-  options: {
+  selector: HTMLElement,
+  data?: number[],
+  options?: {
     width?: number;
     height?: number;
     xmin?: number;
@@ -13,6 +13,9 @@ export function histmini(
     normalize?: boolean;
   },
 ) {
+  if (data === undefined) data = JSON.parse(selector.dataset.data ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
+
   if (!Array.isArray(data) || data.length === 0) return;
 
   const resolvedOptions = {

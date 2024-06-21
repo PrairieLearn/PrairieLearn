@@ -20,8 +20,5 @@ onDocumentReady(() => {
       $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
     });
 
-  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => {
-    const { data, options } = element.dataset;
-    histmini(element, JSON.parse(data ?? '[]'), JSON.parse(options ?? '{}'));
-  });
+  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 });

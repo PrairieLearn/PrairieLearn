@@ -58,8 +58,5 @@ onDocumentReady(() => {
 });
 
 function updatePlots(container: HTMLElement) {
-  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => {
-    const { data, options } = element.dataset;
-    histmini(element, JSON.parse(data ?? '[]'), JSON.parse(options ?? '{}'));
-  });
+  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 }
