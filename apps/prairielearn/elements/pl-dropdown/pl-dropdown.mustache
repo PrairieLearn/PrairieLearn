@@ -1,7 +1,7 @@
 
 {{#question}}
     <span class="d-inline-block form-group form-inline">
-        <select name="{{answers-name}}" class="form-control" {{^editable}}disabled{{/editable}}>
+        <select name="{{answers-name}}" class="custom-select" {{^editable}}disabled{{/editable}}>
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
