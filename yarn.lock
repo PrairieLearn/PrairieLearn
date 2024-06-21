@@ -3448,6 +3448,7 @@ __metadata:
     request: "npm:^2.88.2"
     requirejs: "npm:^2.3.6"
     search-string: "npm:^3.1.0"
+    selector-observer: "npm:^2.1.6"
     serve-favicon: "npm:^2.5.0"
     set-cookie-parser: "npm:^2.6.0"
     showdown: "npm:^2.1.0"
@@ -14628,7 +14629,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"selector-set@npm:^1.1.5":
+"selector-observer@npm:^2.1.6":
+  version: 2.1.6
+  resolution: "selector-observer@npm:2.1.6"
+  dependencies:
+    selector-set: "npm:^1.1"
+  checksum: 10c0/ce234cd4545d608e29e3c546c0dfc065a6c76aa2781ee2f23c2a78a2b979108e3ef4f1717fdda6530569e45c2a9e1504d10d1823a086a9aea7b89ce431952dbb
+  languageName: node
+  linkType: hard
+
+"selector-set@npm:^1.1, selector-set@npm:^1.1.5":
   version: 1.1.5
   resolution: "selector-set@npm:1.1.5"
   checksum: 10c0/4835907846eb8496c2cc4e5ce48355cce1ef3b55e82789542739dcdc71ebfb756e133d1d7f7ec9f0cf4b1c11fc0375a1d3b99a482d9c973493ca85a6d4b012ab
