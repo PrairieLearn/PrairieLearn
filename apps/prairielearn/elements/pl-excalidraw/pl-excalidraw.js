@@ -1,8 +1,7 @@
 /* eslint-env browser,jquery */
 
-// This module is defined in the import map
-// eslint-disable-next-line import/no-unresolved
-import { ExcalidrawLib, React, ReactDOM } from 'pl-excalidraw-deps';
+// This module is redefined in the import map with the same name
+import {ExcalidrawLib, React, ReactDOM} from '@prairielearn/excalidraw-builds';
 
 const elt = React.createElement;
 
@@ -36,13 +35,13 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
 
   /* First time setup */
   React.useEffect(() => {
-    const readOnly = metadata.panel !== 'question';
-    setReadOnly(readOnly);
+      setReadOnly(metadata.read_only);
   }, [metadata]);
 
   /* Autosave */
   React.useEffect(() => {
-    if (!lib || metadata.panel !== 'question') return;
+    // No need to autosave a read-only element
+    if (!lib || metadata.read_only) return;
     const autoSave = setTimeout(() => {
       setHiddenInput(
         ExcalidrawLib.serializeAsJSON(

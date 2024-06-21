@@ -61,7 +61,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         content_bytes = json.dumps(
             {
-                "panel": data["panel"],
+                "read_only": data["panel"] != "question",
                 "initial_content": initial_content,
             }
         ).encode()
