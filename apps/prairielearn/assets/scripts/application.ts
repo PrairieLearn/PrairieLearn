@@ -46,4 +46,13 @@ onDocumentReady(() => {
       );
     },
   });
+
+  observe('.form-group', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('mb-3');
+      console.warn('Bootstrap 5 replaced .form-group with .mb-3. Please update your HTML.', el);
+    },
+  });
 });
