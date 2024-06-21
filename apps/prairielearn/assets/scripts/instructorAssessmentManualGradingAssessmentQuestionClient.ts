@@ -227,6 +227,7 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
     // TODO Better user notification of update failure
     return null;
   }
+  $('#grading-table').bootstrapTable('refresh');
   return await response.json();
 }
 
@@ -238,7 +239,6 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
       .attr('href', data.conflict_details_url);
     $('#grading-conflict-modal').modal({});
   }
-  $('#grading-table').bootstrapTable('refresh');
 }
 
 function updatePointsPopoverHandlers(this: Element) {
