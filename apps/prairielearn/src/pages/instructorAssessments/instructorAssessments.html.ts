@@ -156,13 +156,11 @@ export function InstructorAssessments({
             </div>
 
             <div class="card-footer">
-              <p>
-                Download
-                <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}"
-                  >${csvFilename}</a
-                >
-                (includes more statistics columns than displayed above)
-              </p>
+              Download
+              <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
+                ${csvFilename}
+              </a>
+              (includes more statistics columns than displayed above)
             </div>
           </div>
         </main>
