@@ -1,13 +1,25 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { histmini } from './lib/histmini.js';
 import { scatter } from './lib/scatter.js';
 
 onDocumentReady(() => {
-  document.querySelectorAll<HTMLElement>('.js-scatter').forEach((scatterElement) => {
-    console.log(scatterElement.dataset.xdata);
-    const xdata = JSON.parse(scatterElement.dataset.xdata ?? '');
-    const ydata = JSON.parse(scatterElement.dataset.ydata ?? '');
-    const options = JSON.parse(scatterElement.dataset.options ?? '');
-    scatter(scatterElement, xdata, ydata, options);
+  $(function () {
+    $('[data-toggle="popover"]').popover({ sanitize: false });
+  });
+
+  document.querySelectorAll<HTMLElement>('.js-scatter').forEach((element) => {
+    const { xdata, ydata, options } = element.dataset;
+    scatter(
+      element,
+      JSON.parse(xdata ?? '[]'),
+      JSON.parse(ydata ?? '[]'),
+      JSON.parse(options ?? '{}'),
+    );
+  });
+
+  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => {
+    const { data, options } = element.dataset;
+    histmini(element, JSON.parse(data ?? '[]'), JSON.parse(options ?? '{}'));
   });
 });

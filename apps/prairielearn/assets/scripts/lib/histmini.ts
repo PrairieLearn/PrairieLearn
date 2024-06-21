@@ -28,7 +28,7 @@ export function histmini(
 
   if (resolvedOptions.normalize) {
     const total = data.reduce((sum, value) => sum + value);
-    data = data.map((val) => val / total);
+    data = data.map((val) => (total ? val / total : 0));
   }
 
   const margin = { top: 1, right: 1, bottom: 1, left: 1 },
@@ -54,7 +54,7 @@ export function histmini(
     .attr('height', height + margin.top + margin.bottom)
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    .attr('transform', `translate(${margin.left},${margin.top})`);
 
   svg
     .selectAll('.bar')
