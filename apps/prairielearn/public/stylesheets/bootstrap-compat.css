@@ -1,37 +1,4 @@
 /**
- * We need these classes for our navigation dropdowns.
- *
- * TODO: replace with modern classes.
- *
- * TODO: these have responsive variants too; do we need them?
- */
-
-.dropdown-menu-left {
-  --bs-position: start;
-}
-
-.dropdown-menu-left[data-bs-popper] {
-  right: auto;
-  left: 0;
-}
-
-.dropdown-menu-right {
-  --bs-position: end;
-}
-
-.dropdown-menu-right[data-bs-popper] {
-  right: 0;
-  left: auto;
-}
-
-/**
- * Bootstrap 5 replaced with `.badge-pill` with `.rounded-pill`.
- */
-.badge-pill {
-  border-radius: var(--bs-border-radius-pill) !important;
-}
-
-/**
  * Bootstrap 5 dropped support for some badge classes that we rely on.
  * 
  * TODO: Update the below colors to use Bootstrap 5 CSS variables.
@@ -173,10 +140,6 @@ a.badge-dark.focus,
 a.badge-dark:focus {
   outline: 0;
   box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.5);
-}
-
-.rounded-pill {
-  border-radius: var(--bs-border-radius-pill) !important;
 }
 
 /**

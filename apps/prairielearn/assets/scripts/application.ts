@@ -55,4 +55,67 @@ onDocumentReady(() => {
       console.warn('Bootstrap 5 replaced .form-group with .mb-3. Please update your HTML.', el);
     },
   });
+
+  const BADGE_COLORS = [
+    'primary',
+    'secondary',
+    'success',
+    'danger',
+    'warning',
+    'info',
+    'light',
+    'dark',
+  ];
+  const BADGE_SELECTOR = BADGE_COLORS.map((color) => `.badge-${color}`).join(', ');
+  observe(BADGE_SELECTOR, {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.classList.contains('badge')) return;
+
+      const color = BADGE_COLORS.find((color) => el.classList.contains(`badge-${color}`));
+      el.classList.remove(`badge-${color}`);
+      el.classList.add(`text-bg-${color}`);
+      console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
+    },
+  });
+
+  observe('.badge-pill', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.classList.contains('badge')) return;
+
+      el.classList.add('rounded-pill');
+      console.warn(
+        'Bootstrap 5 replaced .badge-pill with .rounded-pill. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('.dropdown-menu-right, .dropdown-menu-left', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.classList.contains('dropdown-menu')) return;
+
+      const position = el.classList.contains('dropdown-menu-right') ? 'end' : 'start';
+      el.classList.add(`dropdown-menu-${position}`);
+      console.warn(
+        'Bootstrap 5 replaced .dropdown-menu-{left,right} with .dropdown-menu-{start|end}. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('label', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.closest('.form-group') == null) return;
+
+      el.classList.add('form-label');
+      console.warn(
+        'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
+        el,
+      );
+    },
+  });
 });
