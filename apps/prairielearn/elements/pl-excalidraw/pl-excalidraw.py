@@ -47,7 +47,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             case "question":
                 # First try loading the submission
                 if drawing_name in data["submitted_answers"]:
-                    initial_content = data["submitted_answers"].get(drawing_name) or initial_content
+                    initial_content = (
+                        data["submitted_answers"].get(drawing_name) or initial_content
+                    )
                 # Next, try using the file attribute to load the starter diagram
                 elif pl.has_attrib(element, "file"):
                     initial_content = load_file_content()
@@ -55,7 +57,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     initial_content = ""
             case "submission":
-                initial_content = data["submitted_answers"].get(drawing_name) or initial_content
+                initial_content = (
+                    data["submitted_answers"].get(drawing_name) or initial_content
+                )
             case panel:
                 raise RuntimeError(f"Unhandled panel type {panel}")
 
