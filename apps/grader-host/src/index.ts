@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
@@ -22,7 +22,7 @@ import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import { deferredPromise } from './lib/deferred.js';
 import * as healthCheck from './lib/healthCheck.js';
-import { makeJobLogger } from './lib/jobLogger.js';
+import { type WinstonBufferedLogger, makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
 import * as load from './lib/load.js';
 import globalLogger from './lib/logger.js';
@@ -214,7 +214,7 @@ async function handleJob(job: GradingJobMessage) {
 interface Context {
   docker: Docker;
   s3: S3;
-  logger: import('./lib/jobLogger.js').WinstonBufferedLogger;
+  logger: WinstonBufferedLogger;
   job: GradingJobMessage;
 }
 

@@ -4,7 +4,7 @@ import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-  SQSClient,
+  type SQSClient,
 } from '@aws-sdk/client-sqs';
 import { z } from 'zod';
 
