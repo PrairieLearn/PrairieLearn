@@ -70,6 +70,13 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK choose_sharing_set_name
+UPDATE sharing_sets 
+SET 
+	name = $sharing_set_name
+WHERE
+	id = $sharing_set_id
+
 -- BLOCK select_shared_question_exists
 SELECT
   EXISTS (
