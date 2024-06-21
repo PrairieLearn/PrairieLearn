@@ -20,7 +20,7 @@ export function histogram(
     leftMargin?: number;
   },
 ) {
-  if (data === undefined) data = JSON.parse(selector.dataset.data ?? '[]');
+  if (data === undefined) data = JSON.parse(selector.dataset.histogram ?? '[]');
   if (xgrid === undefined) xgrid = JSON.parse(selector.dataset.xgrid ?? '[]');
   if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
   if (!data || !xgrid) return;

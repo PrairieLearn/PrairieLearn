@@ -24,7 +24,7 @@ export function parallelHistograms(
     rightPadding?: number;
   },
 ) {
-  if (data === undefined) data = JSON.parse(selector.dataset.data ?? '[]');
+  if (data === undefined) data = JSON.parse(selector.dataset.histograms ?? '[]');
   if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
   if (!data) return;
 
