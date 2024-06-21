@@ -1,7 +1,7 @@
 /* eslint-env browser,jquery */
 
 // This module is redefined in the import map with the same name
-import {ExcalidrawLib, React, ReactDOM} from '@prairielearn/excalidraw-builds';
+import { ExcalidrawLib, React, ReactDOM } from '@prairielearn/excalidraw-builds';
 
 const elt = React.createElement;
 
@@ -35,7 +35,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
 
   /* First time setup */
   React.useEffect(() => {
-      setReadOnly(metadata.read_only);
+    setReadOnly(metadata.read_only);
   }, [metadata]);
 
   /* Autosave */

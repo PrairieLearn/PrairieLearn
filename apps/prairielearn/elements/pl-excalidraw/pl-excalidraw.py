@@ -16,9 +16,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         drawing_name = pl.get_string_attrib(element, "name")
-        initial_content: str
+        initial_content: str = ""
 
-        def load_file_content():
+        def load_file_content() -> str:
             file_dir = pl.get_string_attrib(
                 element, "file_dir", "client_files_question_path"
             )
@@ -47,7 +47,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             case "question":
                 # First try loading the submission
                 if drawing_name in data["submitted_answers"]:
-                    initial_content = data["submitted_answers"].get(drawing_name)
+                    initial_content = data["submitted_answers"].get(drawing_name) or initial_content
                 # Next, try using the file attribute to load the starter diagram
                 elif pl.has_attrib(element, "file"):
                     initial_content = load_file_content()
@@ -55,7 +55,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     initial_content = ""
             case "submission":
-                initial_content = data["submitted_answers"].get(drawing_name)
+                initial_content = data["submitted_answers"].get(drawing_name) or initial_content
             case panel:
                 raise RuntimeError(f"Unhandled panel type {panel}")
 
@@ -81,7 +81,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     drawing_name = pl.get_string_attrib(element, "name")
 
-    def append_errors(error_msg):
+    def append_errors(error_msg: str):
         if drawing_name not in data["format_errors"]:
             data["format_errors"][drawing_name] = []
         data["format_errors"][drawing_name] = data["format_errors"][
