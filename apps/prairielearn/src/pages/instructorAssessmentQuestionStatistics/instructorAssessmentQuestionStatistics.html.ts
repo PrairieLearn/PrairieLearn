@@ -5,7 +5,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -54,8 +54,6 @@ export function InstructorAssessmentQuestionStatistics({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-        <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
         ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
