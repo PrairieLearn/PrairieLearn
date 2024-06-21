@@ -45,7 +45,7 @@ BEGIN
     ELSE
         -- If we don't have valid course info, we aren't going to delete anything
         -- so we need to account for existing topics.
-        SELECT array_arr(name) INTO used_topic_names
+        SELECT array_agg(name) INTO used_topic_names
         FROM topics
         WHERE course_id = syncing_course_id;
     END IF;

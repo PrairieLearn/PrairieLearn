@@ -22,7 +22,7 @@ let unhealthyReason = null;
  * 2) an internal checker that will ping docker at a certain interval and will
  *    kill our process if the daemon can't be reached.
  */
-export function init(callback) {
+export async function init() {
   const docker = new Docker();
 
   const handler = (req, res) => {
@@ -44,22 +44,23 @@ export function init(callback) {
     });
   };
 
-  docker.ping((err) => {
-    if (err) {
-      globalLogger.error(`Docker ping failed during healthCheck start: ${err}`);
-      return callback(err);
-    }
+  await docker.ping().catch((err) => {
+    globalLogger.error(`Docker ping failed during healthCheck start: ${err}`);
+    throw err;
+  });
 
-    setTimeout(doHealthCheck, config.healthCheckInterval);
+  setTimeout(doHealthCheck, config.healthCheckInterval);
 
-    const server = http.createServer(handler);
+  const server = http.createServer(handler);
+
+  await new Promise((resolve, reject) => {
     server.listen(config.healthCheckPort, (err) => {
       if (err) {
         globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
-        callback(err);
+        reject(err);
       } else {
         globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
-        callback(null);
+        resolve(null);
       }
     });
   });
