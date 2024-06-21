@@ -1,4 +1,3 @@
-// @ts-check
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
