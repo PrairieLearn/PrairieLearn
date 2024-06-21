@@ -47,6 +47,10 @@ onDocumentReady(() => {
     },
   });
 
+  // The `.form-group` class no longer exists. Instead, they recommend using
+  // the normal spacing utilities. We'll patch this by adding the `.mb-3`
+  // class to all `.form-group` elements, as this matches the spacing previously
+  // provided by `.form-group`.
   observe('.form-group', {
     add(el) {
       if (!(el instanceof HTMLElement)) return;
@@ -56,6 +60,8 @@ onDocumentReady(() => {
     },
   });
 
+  // The classes used to color badges have changed. We'll patch
+  // this by replacing the `.badge-*` class with the new `.text-bg-*` class.
   const BADGE_COLORS = [
     'primary',
     'secondary',
@@ -79,6 +85,7 @@ onDocumentReady(() => {
     },
   });
 
+  // The `.badge-pill` was replaced by `.rounded-pill`.
   observe('.badge-pill', {
     add(el) {
       if (!(el instanceof HTMLElement)) return;
@@ -92,6 +99,8 @@ onDocumentReady(() => {
     },
   });
 
+  // The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
+  // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
   observe('.dropdown-menu-right, .dropdown-menu-left', {
     add(el) {
       if (!(el instanceof HTMLElement)) return;
@@ -106,6 +115,8 @@ onDocumentReady(() => {
     },
   });
 
+  // `label` no longer receives a default bottom margin; the `form-label` class
+  // must be added to form labels.
   observe('label', {
     add(el) {
       if (!(el instanceof HTMLElement)) return;
@@ -114,6 +125,18 @@ onDocumentReady(() => {
       el.classList.add('form-label');
       console.warn(
         'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('.custom-select', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('form-select');
+      console.warn(
+        'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
         el,
       );
     },
