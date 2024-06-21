@@ -26,8 +26,10 @@
 
 .excalidraw-root .popover {
   border: unset;
+  max-width: unset;
   background-color: unset;
 }
+
 .excalidraw-root label {
   margin-bottom: initial;
 }
