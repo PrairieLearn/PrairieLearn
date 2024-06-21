@@ -14,7 +14,7 @@ Questions can either be shared publicly, so that anyone can preview the question
 
 ## Sharing sets
 
-Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, and instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
+Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
 
 ## Sharing a sharing set with connection with another course
 
@@ -43,7 +43,7 @@ To refer to a question from another course, use the question id (qid) prefixed b
 
 Questions that make use of `clientFilesQuestion`, `serverFilesQuestion`, and `serverFilesCourse` will work as expected. Using `clientFilesCourse` in a question is not supported at this time.
 
-If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course intance or assessment.
+If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course instance or assessment.
 
 See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
 

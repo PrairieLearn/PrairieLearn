@@ -49,7 +49,7 @@ interface RolesInfo {
   usersWithoutRoles: User[];
 }
 
-interface GroupInfo {
+export interface GroupInfo {
   groupMembers: User[];
   groupSize: number;
   groupName: string;
@@ -183,6 +183,10 @@ export async function getQuestionGroupPermissions(
     z.object({ can_submit: z.boolean(), can_view: z.boolean() }),
   );
   return userPermissions ?? { can_submit: false, can_view: false };
+}
+
+export async function getUserRoles(group_id: string, user_id: string) {
+  return await sqldb.queryRows(sql.select_user_roles, { group_id, user_id }, GroupRoleSchema);
 }
 
 export async function addUserToGroup({
@@ -546,7 +550,7 @@ export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): 
 }
 
 /**
- * Updates the role assignments of users in a group, given the output from groupRoleTable.ejs.
+ * Updates the role assignments of users in a group, given the output from the GroupRoleTable component.
  */
 export async function updateGroupRoles(
   requestBody: Record<string, any>,

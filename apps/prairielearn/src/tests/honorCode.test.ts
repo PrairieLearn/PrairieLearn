@@ -31,7 +31,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should see the honor code div by default
     assert.lengthOf(response.$('div.test-class-honor-code'), 1);
@@ -47,7 +47,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-class-honor-code'), 0);

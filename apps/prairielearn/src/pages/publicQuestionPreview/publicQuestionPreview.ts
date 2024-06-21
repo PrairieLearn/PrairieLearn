@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema, UserSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import {
   getAndRenderVariant,
   renderPanelsForSubmission,
@@ -25,6 +26,16 @@ async function setLocals(req, res) {
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);
   res.locals.question = await selectQuestionById(req.params.question_id);
+
+  const disablePublicWorkspaces = await features.enabledFromLocals(
+    'disable-public-workspaces',
+    res.locals,
+  );
+
+  if (res.locals.question.workspace_image && disablePublicWorkspaces) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+
   if (
     !res.locals.question.shared_publicly ||
     res.locals.course.id !== res.locals.question.course_id
@@ -61,8 +72,9 @@ router.get(
       question_id: res.locals.question.id,
       instance_question_id: null,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'public',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,

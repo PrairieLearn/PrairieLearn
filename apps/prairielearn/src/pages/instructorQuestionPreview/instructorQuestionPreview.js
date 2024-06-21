@@ -16,6 +16,8 @@ import {
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 
+import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
+
 const router = express.Router();
 
 router.post(
@@ -45,8 +47,9 @@ router.get(
       question_id: res.locals.question.id,
       instance_question_id: null,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'instructor',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
@@ -66,7 +69,7 @@ router.get(
     await setQuestionCopyTargets(res);
 
     setRendererHeader(res);
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorQuestionPreview({ resLocals: res.locals }));
   }),
 );
 

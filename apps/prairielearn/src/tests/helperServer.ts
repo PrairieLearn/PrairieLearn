@@ -144,15 +144,19 @@ export async function waitForJobSequence(job_sequence_id) {
   return job_sequence;
 }
 
-export async function waitForJobSequenceSuccess(job_sequence_id) {
+export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success' | 'Error') {
   const job_sequence = await waitForJobSequence(job_sequence_id);
 
   // In the case of a failure, print more information to aid debugging.
-  if (job_sequence.status !== 'Success') {
+  if (job_sequence.status !== status) {
     console.log(job_sequence);
     const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
     console.log(result.rows);
   }
 
-  assert.equal(job_sequence.status, 'Success');
+  assert.equal(job_sequence.status, status);
+}
+
+export async function waitForJobSequenceSuccess(job_sequence_id) {
+  await waitForJobSequenceStatus(job_sequence_id, 'Success');
 }

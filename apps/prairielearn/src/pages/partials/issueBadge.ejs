@@ -7,6 +7,6 @@
         <% } %>
         <%= count %></a>
     <% } else { %>
-        <span class="badge badge-pill badge-danger"><%= count %></span>
+        <span class="badge badge-pill badge-danger <%= typeof className === 'undefined' ? '' : className %> "><%= count %></span>
     <% } %>
 <% } %>

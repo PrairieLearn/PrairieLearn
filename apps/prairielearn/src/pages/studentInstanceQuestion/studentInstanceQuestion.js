@@ -24,6 +24,8 @@ import {
   selectVariantsByInstanceQuestion,
 } from '../../models/variant.js';
 
+import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const router = express.Router();
@@ -243,8 +245,9 @@ router.get(
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
@@ -275,8 +278,7 @@ router.get(
         IdSchema,
       );
       if (last_variant_id == null) {
-        res.locals.no_variant_exists = true;
-        res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.status(403).send(StudentInstanceQuestion({ resLocals: res.locals }));
         return;
       }
 
@@ -315,7 +317,7 @@ router.get(
       }
     }
     setRendererHeader(res);
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(StudentInstanceQuestion({ resLocals: res.locals }));
   }),
 );
 

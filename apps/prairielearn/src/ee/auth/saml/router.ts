@@ -1,4 +1,5 @@
-import ERR from 'async-stacktrace';
+import util from 'node:util';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
@@ -125,22 +126,19 @@ router.post(
 
 router.get(
   '/metadata',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     if (!samlProvider) {
       throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
-    strategy.generateServiceProviderMetadata(
+    const metadata = await util.promisify(strategy.generateServiceProviderMetadata)(
       req,
       samlProvider.public_key,
       samlProvider.public_key,
-      (err, metadata) => {
-        if (ERR(err, next)) return;
-        res.type('application/xml');
-        res.send(metadata);
-      },
     );
+    res.type('application/xml');
+    res.send(metadata);
   }),
 );
 

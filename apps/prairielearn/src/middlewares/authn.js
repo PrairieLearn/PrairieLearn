@@ -79,7 +79,7 @@ export default asyncHandler(async (req, res, next) => {
   // - Use the "bypass" authentication option on the login page to log in as
   //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
   // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
-  if (config.devMode && !req.cookies.pl_disable_auto_authn && !req.cookies.pl_authn) {
+  if (config.devMode && !req.cookies.pl2_disable_auto_authn && !req.cookies.pl2_authn) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
@@ -123,11 +123,11 @@ export default asyncHandler(async (req, res, next) => {
     };
   }
 
-  if (!authnData && req.cookies.pl_authn) {
+  if (!authnData && req.cookies.pl2_authn) {
     // If we have a authn cookie then we try and unpack it. If we fail to
     // unpack the cookie's data, then authnData will be null and we'll
     // treat the user as though they're not authenticated.
-    authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
+    authnData = getCheckedSignedTokenData(req.cookies.pl2_authn, config.secretKey, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
   }

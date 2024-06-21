@@ -328,11 +328,11 @@ If an instructor does not assign a student to a group, the student will need to 
 
 When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
 
-> Note: Students cannot see eachother's edits in real-time, although this is planned for a future version of PrairieLearn.
+> Note: Students cannot see each other's edits in real-time, although this is planned for a future version of PrairieLearn.
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
-Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
+Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with each other outside of PrairieLearn. They are also able to leave their group to join a different one.
 
 ### Enabling custom group roles
 
