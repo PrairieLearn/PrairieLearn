@@ -9,7 +9,13 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 
-export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, any> }) {
+export function AssessmentQuestion({
+  resLocals,
+  botGradingEnabled,
+}: {
+  resLocals: Record<string, any>;
+  botGradingEnabled: boolean;
+}) {
   const {
     number_in_alternative_group,
     urlPrefix,
@@ -70,7 +76,14 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
             "<%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
-
+          ${botGradingEnabled
+            ? html`
+                <form name="start-bot-grading" method="POST" id="bot-grading">
+                  <input type="hidden" name="__action" value="bot_grade_assessment" />
+                  <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                </form>
+              `
+            : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
@@ -88,6 +101,7 @@ export function AssessmentQuestion({ resLocals }: { resLocals: Record<string, an
                 data-max-auto-points="${assessment_question.max_auto_points}"
                 data-csrf-token="${__csrf_token}"
                 data-course-staff="${JSON.stringify(course_staff)}"
+                data-bot-grading-enabled="${botGradingEnabled}"
               ></table>
             </form>
           </div>

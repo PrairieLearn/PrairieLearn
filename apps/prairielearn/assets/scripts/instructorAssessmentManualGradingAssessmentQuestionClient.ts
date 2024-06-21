@@ -14,6 +14,7 @@ onDocumentReady(() => {
     maxPoints,
     groupWork,
     maxAutoPoints,
+    botGradingEnabled,
   } = document.getElementById('grading-table')?.dataset ?? {};
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -35,12 +36,25 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
     theadClasses: 'thead-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
+      botGrade: {
+        text: 'Bot Grade All',
+        icon: 'fa-pen',
+        render: botGradingEnabled === 'true',
+        attributes: {
+          id: 'js-bot-grade-button',
+          title: 'Bot grade all instances',
+        },
+        event: () => {
+          const form = document.getElementById('bot-grading') as HTMLFormElement;
+          form?.submit();
+        },
+      },
       showStudentInfo: {
         text: 'Show student info',
         icon: 'fa-eye',
