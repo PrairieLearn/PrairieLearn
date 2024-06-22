@@ -8,8 +8,8 @@ import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { config } from '../lib/config.js';
-import { receiveFromQueue } from '../lib/receiveFromQueue.js';
+import { config } from './config.js';
+import { receiveFromQueue } from './receiveFromQueue.js';
 
 chaiUse(chaiAsPromised);
 
@@ -26,6 +26,9 @@ function fakeSqs(options = {}) {
       jobId: randomString(),
       image: randomString(),
       entrypoint: randomString(),
+      timeout: 60,
+      enableNetworking: true,
+      environment: { FOO: 'bar' },
       s3Bucket: randomString(),
       s3RootKey: randomString(),
     };
