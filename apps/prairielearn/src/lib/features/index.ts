@@ -6,6 +6,7 @@ const featureNames = [
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',
+  'bot-grading',
   'disable-public-workspaces',
   // Can only be applied to institutions.
   'lti13',
