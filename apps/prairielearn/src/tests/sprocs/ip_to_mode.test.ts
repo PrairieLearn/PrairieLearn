@@ -192,8 +192,8 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
-            // 100 minutes from now (40 minutes after access end)
-            new Date(Date.now() + 1000 * 60 * 100),
+            // 60 minutes from now (40 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 60),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
