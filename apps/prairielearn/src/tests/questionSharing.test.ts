@@ -281,6 +281,36 @@ describe('Question Sharing', function () {
       assert.equal(result.status, 500);
     });
 
+    step('Change the sharing set name', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      let res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'choose_sharing_set_name',
+          sharing_set_name: 'New sharing set name',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.status === 200);
+
+
+      res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'choose_sharing_set_name',
+          sharing_set_name: SHARING_SET_NAME,
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.status === 200);
+    });
+
     step('Share sharing set with test course', async () => {
       const sharingUrl = sharingPageUrl(sharingCourse.id);
       const response = await fetchCheerio(sharingUrl);
