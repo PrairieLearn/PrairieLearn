@@ -109,7 +109,7 @@ function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string
   });
 }
 
-function ChooseSharingSetNameModal(sharing_set_id: string, csrfToken: string) {
+function ChooseSharingSetNameModal(sharing_set, csrfToken: string) {
   const body = html`
     <p class="form-text">Enter the name you would like for this sharing set.</p>
     <div>
@@ -122,13 +122,13 @@ function ChooseSharingSetNameModal(sharing_set_id: string, csrfToken: string) {
   `;
   const footer = html`
     <input type="hidden" name="__action" value="choose_sharing_set_name" />
-    <input type="hidden" name="sharing_set_id" value="${sharing_set_id}" />
+    <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
     <input type="hidden" name="__csrf_token" value="${csrfToken}" />
     <button type="submit" class="btn btn-primary">Choose Sharing Set Name</button>
   `;
   return Modal({
     title: 'Choose Sharing Set Name',
-    id: 'chooseSharingSetNameModal',
+    id: `chooseSharingSetNameModal-${sharing_set.id}`,
     body,
     footer,
   });
@@ -264,28 +264,26 @@ export const InstructorSharing = ({
                 ${sharingSets.map(
                   (sharing_set) => html`
                     <tr>
-                      <td class="align-middle">${sharing_set.name}</td>
-                      ${isCourseOwner
-                        ? html`
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary mx-2"
-                        id="chooseSharingSetName-${sharing_set.id}"
-                        title="Choose Sharing Set Name"
-                        data-toggle="modal"
-                        data-target="#chooseSharingSetNameModal"
-                        data-trigger="manual"
-                        data-content="${addCourseToSharingSetPopover(
-                          resLocals,
-                          sharing_set,
-                        )}"
-                      >
-                        <i class="fas fa-share-nodes" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Choose Sharing Set Name</span>
-                      </button>
-                    ${ChooseSharingSetNameModal(sharing_set.id, resLocals.__csrf_token)}
-                      `
-                      : ''}
+                      <td class="align-middle">${sharing_set.name}
+                        ${isCourseOwner
+                          ? html`
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary mx-2"
+                            id="chooseSharingSetName-${sharing_set.id}"
+                            title="Choose Sharing Set Name"
+                            data-toggle="modal"
+                            data-target="#chooseSharingSetNameModal-${sharing_set.id}"
+                            data-trigger="manual"
+                          >
+                            <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Choose Sharing Set Name</span>
+                          </button>
+                          ${ChooseSharingSetNameModal(sharing_set, 
+                            resLocals.__csrf_token)}
+                          `
+                        : ''}
+                      </td>
                       <td class="align-middle" data-testid="shared-with">
                         ${sharing_set.shared_with.map(
                           (course_shared_with) => html`
