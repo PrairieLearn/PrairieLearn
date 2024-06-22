@@ -297,7 +297,6 @@ describe('Question Sharing', function () {
       });
       assert(res.status === 200);
 
-
       res = await fetch(sharingUrl, {
         method: 'POST',
         body: new URLSearchParams({
