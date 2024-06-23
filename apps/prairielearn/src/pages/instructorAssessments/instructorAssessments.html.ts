@@ -47,8 +47,8 @@ export function InstructorAssessments({
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         ${compiledScriptTag('instructorAssessmentsClient.ts')}
-        ${EncodedData(
-          { assessmentIdsNeedingStatsUpdate, urlPrefix } as StatsUpdateData,
+        ${EncodedData<StatsUpdateData>(
+          { assessmentIdsNeedingStatsUpdate, urlPrefix },
           'stats-update-data',
         )}
       </head>
