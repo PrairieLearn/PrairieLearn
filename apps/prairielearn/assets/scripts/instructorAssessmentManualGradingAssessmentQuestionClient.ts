@@ -1,21 +1,25 @@
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import type { User } from '../../src/lib/db-types.js';
+import { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
-import type { InstanceQuestionRow } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
+import type {
+  InstanceQuestionRow,
+  InstanceQuestionTableData,
+} from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
 onDocumentReady(() => {
   const {
     hasCourseInstancePermissionEdit,
     urlPrefix,
     instancesUrl,
-    maxPoints,
     groupWork,
     maxAutoPoints,
     botGradingEnabled,
-  } = document.getElementById('grading-table')?.dataset ?? {};
+    courseStaff,
+    csrfToken,
+  } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
@@ -45,7 +49,7 @@ onDocumentReady(() => {
       botGrade: {
         text: 'Bot Grade All',
         icon: 'fa-pen',
-        render: botGradingEnabled === 'true',
+        render: botGradingEnabled,
         attributes: {
           id: 'js-bot-grade-button',
           title: 'Bot grade all instances',
@@ -74,8 +78,8 @@ onDocumentReady(() => {
       status: {
         text: 'Tag for grading',
         icon: 'fa-tags',
-        render: hasCourseInstancePermissionEdit === 'true',
-        html: gradingTagDropdown,
+        render: hasCourseInstancePermissionEdit,
+        html: () => gradingTagDropdown(courseStaff),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -86,7 +90,7 @@ onDocumentReady(() => {
     onCheckSome: updateGradingTagButton,
     onCreatedControls: () => {
       $('#grading-table th[data-field="points"] .filter-control input').tooltip({
-        title: `hint: use <code>&lt;${Math.ceil(Number(maxPoints) / 2)}</code>, or <code>&gt;0</code>`,
+        title: `hint: use <code>&lt;1</code>, or <code>&gt;0</code>`,
         html: true,
       });
       $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
@@ -132,7 +136,7 @@ onDocumentReady(() => {
         },
         {
           field: 'user_or_group_name',
-          title: groupWork === 'true' ? 'Group Name' : 'Name',
+          title: groupWork ? 'Group Name' : 'Name',
           searchable: true,
           filterControl: 'input',
           sortable: true,
@@ -140,7 +144,7 @@ onDocumentReady(() => {
         },
         {
           field: 'uid',
-          title: groupWork === 'true' ? 'UIDs' : 'UID',
+          title: groupWork ? 'UIDs' : 'UID',
           searchable: true,
           filterControl: 'input',
           sortable: true,
@@ -165,10 +169,17 @@ onDocumentReady(() => {
           title: 'Auto points',
           class: 'text-center',
           filterControl: 'input',
-          visible: Number(maxAutoPoints) > 0,
+          visible: (maxAutoPoints ?? 0) > 0,
           searchFormatter: false,
           sortable: true,
-          formatter: pointsFormatter,
+          formatter: (points: number | null, row: InstanceQuestionRow) =>
+            pointsFormatter(
+              row,
+              'auto_points',
+              hasCourseInstancePermissionEdit,
+              urlPrefix,
+              csrfToken,
+            ),
         },
         {
           field: 'manual_points',
@@ -178,7 +189,14 @@ onDocumentReady(() => {
           visible: true,
           searchFormatter: false,
           sortable: true,
-          formatter: pointsFormatter,
+          formatter: (points: number | null, row: InstanceQuestionRow) =>
+            pointsFormatter(
+              row,
+              'manual_points',
+              hasCourseInstancePermissionEdit,
+              urlPrefix,
+              csrfToken,
+            ),
         },
         {
           field: 'points',
@@ -188,7 +206,8 @@ onDocumentReady(() => {
           visible: false,
           searchFormatter: false,
           sortable: true,
-          formatter: pointsFormatter,
+          formatter: (points: number | null, row: InstanceQuestionRow) =>
+            pointsFormatter(row, 'points', hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
         },
         {
           field: 'score_perc',
@@ -197,7 +216,8 @@ onDocumentReady(() => {
           filterControl: 'input',
           searchFormatter: false,
           sortable: true,
-          formatter: scorebarFormatter,
+          formatter: (score: number | null, row: InstanceQuestionRow) =>
+            scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
         },
         {
           field: 'last_grader',
@@ -250,10 +270,7 @@ function updatePointsPopoverHandlers(this: Element) {
   });
 }
 
-function gradingTagDropdown() {
-  const courseStaff: User[] =
-    JSON.parse(document.getElementById('grading-table')?.dataset.courseStaff ?? '[]') || [];
-
+function gradingTagDropdown(courseStaff: User[]) {
   return html`
     <div class="dropdown btn-group">
       <button
@@ -323,19 +340,19 @@ function updateGradingTagButton() {
 }
 
 function pointsFormatter(
-  points: string,
   row: InstanceQuestionRow,
-  _index: number,
   field: 'manual_points' | 'auto_points' | 'points',
+  hasCourseInstancePermissionEdit: boolean,
+  urlPrefix: string,
+  csrfToken: string,
 ) {
-  const { hasCourseInstancePermissionEdit, urlPrefix, csrfToken } =
-    document.getElementById('grading-table')?.dataset ?? {};
+  const points = row[field];
   const maxPoints = row.assessment_question[`max_${field}`];
   const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
-  return html`${formatPoints(Number(points))}
+  return html`${formatPoints(points ?? 0)}
     <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
-    ${hasCourseInstancePermissionEdit === 'true'
+    ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
           field,
           instance_question: row,
@@ -347,9 +364,13 @@ function pointsFormatter(
       : ''}`;
 }
 
-function scorebarFormatter(score: number | null, row: InstanceQuestionRow) {
-  const { hasCourseInstancePermissionEdit, urlPrefix, csrfToken } =
-    document.getElementById('grading-table')?.dataset ?? {};
+function scorebarFormatter(
+  score: number | null,
+  row: InstanceQuestionRow,
+  hasCourseInstancePermissionEdit: boolean,
+  urlPrefix: string,
+  csrfToken: string,
+) {
   const buttonId = `editQuestionScorePerc${row.id}`;
 
   return html`<div class="d-inline-block align-middle">
@@ -370,7 +391,7 @@ function scorebarFormatter(score: number | null, row: InstanceQuestionRow) {
             </div>
           </div>`}
     </div>
-    ${hasCourseInstancePermissionEdit === 'true'
+    ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
           field: 'score_perc',
           instance_question: row,

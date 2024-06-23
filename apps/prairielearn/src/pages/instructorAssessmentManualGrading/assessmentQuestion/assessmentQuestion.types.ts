@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  InstanceQuestionSchema,
+  type User,
+} from '../../../lib/db-types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -14,3 +18,15 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   index: z.number(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+
+export interface InstanceQuestionTableData {
+  hasCourseInstancePermissionEdit: boolean;
+  urlPrefix: string;
+  instancesUrl: string;
+  groupWork: boolean;
+  maxPoints: number | null;
+  maxAutoPoints: number | null;
+  botGradingEnabled: boolean;
+  courseStaff: User[];
+  csrfToken: string;
+}

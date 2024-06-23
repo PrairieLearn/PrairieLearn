@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -8,6 +9,8 @@ import {
   compiledScriptTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+
+import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
   resLocals,
@@ -53,6 +56,20 @@ export function AssessmentQuestion({
           )}"></script>
         ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
         ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
+        ${EncodedData<InstanceQuestionTableData>(
+          {
+            hasCourseInstancePermissionEdit: !!authz_data.has_course_instance_permission_edit,
+            urlPrefix,
+            instancesUrl: `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/instances.json`,
+            maxPoints: assessment_question.max_points,
+            groupWork: assessment.group_work,
+            maxAutoPoints: assessment_question.max_auto_points,
+            botGradingEnabled,
+            courseStaff: course_staff,
+            csrfToken: __csrf_token,
+          },
+          'instance-question-table-data',
+        )}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
@@ -91,18 +108,7 @@ export function AssessmentQuestion({
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <table
-                id="grading-table"
-                data-has-course-instance-permission-edit="${!!authz_data.has_course_instance_permission_edit}"
-                data-url-prefix="${urlPrefix}"
-                data-instances-url="${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/instances.json"
-                data-max-points="${assessment_question.max_points}"
-                data-group-work="${assessment.group_work}"
-                data-max-auto-points="${assessment_question.max_auto_points}"
-                data-csrf-token="${__csrf_token}"
-                data-course-staff="${JSON.stringify(course_staff)}"
-                data-bot-grading-enabled="${botGradingEnabled}"
-              ></table>
+              <table id="grading-table"></table>
             </form>
           </div>
         </main>
