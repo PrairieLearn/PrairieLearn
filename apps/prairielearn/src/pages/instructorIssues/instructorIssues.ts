@@ -141,8 +141,9 @@ router.get(
     });
     const linkable_course_instance_ids = new Set(course_instances.map((ci) => ci.id));
 
-    _.assign(res.locals, pages(req.query.page, issues.length, PAGE_SIZE));
-    const shouldPaginate = issues.length > PAGE_SIZE;
+    const issueCount = issues[0]?.issue_count ?? 0;
+    _.assign(res.locals, pages(req.query.page, issueCount, PAGE_SIZE));
+    const shouldPaginate = issueCount > PAGE_SIZE;
 
     const rows = issues.map((row) => ({
       ...row,
