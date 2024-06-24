@@ -20,7 +20,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 
-export const PAGE_SIZE = 100;
+export const PAGE_SIZE = 10;
 
 export const IssueRowSchema = IssueSchema.extend({
   now: DateFromISOString,
@@ -216,7 +216,7 @@ export function InstructorIssues({
               ? html`
                   <div class="card-body">
                     ${IssuePager({
-                      extraQueryParams: filterQuery ? `q=${encodeURIComponent(filterQuery)}` : null,
+                      extraQueryParams: `q=${encodeURIComponent(filterQuery)}`,
                       chosenPage,
                       count: issueCount,
                       pageSize: PAGE_SIZE,
