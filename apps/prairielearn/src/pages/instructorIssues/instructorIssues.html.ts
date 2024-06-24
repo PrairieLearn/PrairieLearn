@@ -294,9 +294,9 @@ function IssueRow({
           #${issue.id} reported
           ${issue.date
             ? html`
-                <span title="${formatDate(issue.date, issue.display_timezone)}"
-                  >${issue.relativeDate}</span
-                >
+                <span title="${formatDate(issue.date, issue.display_timezone)}">
+                  ${issue.relativeDate}
+                </span>
               `
             : ''}
           ${issue.showUser
@@ -325,11 +325,11 @@ function IssueRow({
             `
           : ''}
         ${issue.course_instance_short_name
-          ? html`<span class="badge badge-dark">${issue.course_instance_short_name || '—'}</span>`
+          ? html`<span class="badge badge-dark">${issue.course_instance_short_name}</span>`
           : ''}
       </div>
       ${authz_data.has_course_permission_edit
-        ? html` <div class="ml-auto pl-4">${IssueActionButton({ issue, csrfToken })}</div> `
+        ? html`<div class="ml-auto pl-4">${IssueActionButton({ issue, csrfToken })}</div>`
         : ''}
     </div>
   `;
