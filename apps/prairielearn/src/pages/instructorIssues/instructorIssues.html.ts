@@ -56,7 +56,7 @@ const formattedCommonQueries = Object.fromEntries(
 
 export function InstructorIssues({
   resLocals,
-  rows,
+  issues,
   filterQuery,
   openFilteredIssuesCount,
   openCount,
@@ -64,7 +64,7 @@ export function InstructorIssues({
   shouldPaginate,
 }: {
   resLocals: Record<string, any>;
-  rows: IssueComputedRow[];
+  issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;
   openCount: number;
@@ -93,7 +93,11 @@ export function InstructorIssues({
             resLocals,
           )}
           ${authz_data.has_course_permission_edit
-            ? CloseMatchingIssuesModal({ openFilteredIssuesCount, rows, csrfToken: __csrf_token })
+            ? CloseMatchingIssuesModal({
+                openFilteredIssuesCount,
+                issues,
+                csrfToken: __csrf_token,
+              })
             : ''}
           ${FilterHelpModal()}
 
@@ -185,7 +189,7 @@ export function InstructorIssues({
               </form>
             </div>
 
-            ${rows.length === 0
+            ${issues.length === 0
               ? html`
                   <div class="card-body">
                     <div class="text-center text-muted">No matching issues found</div>
@@ -193,7 +197,15 @@ export function InstructorIssues({
                 `
               : html`
                   <div class="list-group list-group-flush">
-                    ${rows.map((row) => IssueRow({ row, urlPrefix, authz_data, resLocals }))}
+                    ${issues.map((row) =>
+                      IssueRow({
+                        issue: row,
+                        urlPrefix,
+                        authz_data,
+                        csrfToken: __csrf_token,
+                        resLocals,
+                      }),
+                    )}
                   </div>
                 `}
             ${shouldPaginate
@@ -214,48 +226,50 @@ export function InstructorIssues({
 }
 
 function IssueRow({
-  row,
+  issue,
   urlPrefix,
   authz_data,
+  csrfToken,
   resLocals,
 }: {
-  row: IssueComputedRow;
+  issue: IssueComputedRow;
   urlPrefix: string;
   authz_data: Record<string, any>;
+  csrfToken: string;
   resLocals: Record<string, any>;
 }) {
   const plainUrlPrefix = config.urlPrefix;
   const mailtoLink = `mailto:${
-    row.user_email || row.user_uid || '-'
+    issue.user_email || issue.user_uid || '-'
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
-    `Hello ${row.user_name},\n\nRegarding the issue of:\n\n"${row.student_message || '-'}"\n\nWe've...`,
+    `Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`,
   )}`;
-  const questionPreviewUrl = `${urlPrefix}/question/${row.question_id}/`;
-  const studentViewUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}`;
-  const manualGradingUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}/manual_grading/instance_question/${row.instance_question_id}`;
-  const assessmentInstanceUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment_instance/${row.assessment_instance_id}`;
+  const questionPreviewUrl = `${urlPrefix}/question/${issue.question_id}/`;
+  const studentViewUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
+  const manualGradingUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
+  const assessmentInstanceUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor/assessment_instance/${issue.assessment_instance_id}`;
 
   return html`
     <div class="list-group-item issue-list-item d-flex flex-row align-items-center">
       <div style="min-width: 0;">
-        ${row.open
+        ${issue.open
           ? html`<i class="fa fa-exclamation-circle text-danger issue-status-icon"></i>`
           : html`<i class="fa fa-check-circle text-success issue-status-icon"></i>`}
         <div class="d-block">
-          <strong>${row.question_qid}</strong>
-          ${!row.instance_question_id // Issue not associated to an instance question (originates from question preview)
+          <strong>${issue.question_qid}</strong>
+          ${!issue.instance_question_id // Issue not associated to an instance question (originates from question preview)
             ? html`
-                (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>)
+                (<a href="${questionPreviewUrl}?variant_id=${issue.variant_id}">instructor view</a>)
               `
-            : row.showUser
+            : issue.showUser
               ? html`
-                  (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>,
-                  <a href="${studentViewUrl}">student view</a>,
+                  (<a href="${questionPreviewUrl}?variant_id=${issue.variant_id}">instructor view</a
+                  >, <a href="${studentViewUrl}">student view</a>,
                   <a href="${manualGradingUrl}">manual grading</a>,
                   <a href="${assessmentInstanceUrl}"> assessment details</a>)
                 `
               : html`
-                  (<a href="${questionPreviewUrl}?variant_seed=${row.variant_seed}"
+                  (<a href="${questionPreviewUrl}?variant_seed=${issue.variant_seed}"
                     >instructor view</a
                   >)
                   <a
@@ -263,79 +277,72 @@ function IssueRow({
                     class="badge badge-warning badge-sm"
                     data-toggle="tooltip"
                     data-html="true"
-                    title="This issue was raised in course instance <strong>${row.course_instance_short_name}</strong>. You do not have student data access for ${row.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
+                    title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >
                     No student data access
                   </a>
                 `}
         </div>
-        <p class="mb-0">${getFormattedMessage(row)}</p>
+        <p class="mb-0">${getFormattedMessage(issue)}</p>
         <small class="text-muted mr-2">
-          #${row.id} reported
-          ${row.date
+          #${issue.id} reported
+          ${issue.date
             ? html`
-                <span title="${formatDate(row.date, row.display_timezone)}"
-                  >${row.relativeDate}</span
+                <span title="${formatDate(issue.date, issue.display_timezone)}"
+                  >${issue.relativeDate}</span
                 >
               `
             : ''}
-          ${row.showUser
+          ${issue.showUser
             ? html`
-                ${row.manually_reported ? 'by' : 'for'} ${row.user_name || '-'} (<a
+                ${issue.manually_reported ? 'by' : 'for'} ${issue.user_name || '-'} (<a
                   href="${mailtoLink}"
-                  >${row.user_uid || '-'}</a
+                  >${issue.user_uid || '-'}</a
                 >)
               `
             : ''}
         </small>
-        ${row.manually_reported
+        ${issue.manually_reported
           ? html`<span class="badge badge-info">Manually reported</span>`
           : html`<span class="badge badge-warning">Automatically reported</span>`}
-        ${row.assessment
+        ${issue.assessment
           ? html`
               ${renderEjs(import.meta.url, "<%- include('../partials/assessment') %>", {
                 ...resLocals,
                 assessment: {
-                  ...row.assessment,
-                  hide_link: row.hideAssessmentLink,
+                  ...issue.assessment,
+                  hide_link: issue.hideAssessmentLink,
                   // Construct the URL prefix with the appropriate course instance
-                  urlPrefix: `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`,
+                  urlPrefix: `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor`,
                 },
               })}
             `
           : ''}
-        ${row.course_instance_short_name
-          ? html`<span class="badge badge-dark">${row.course_instance_short_name || '—'}</span>`
+        ${issue.course_instance_short_name
+          ? html`<span class="badge badge-dark">${issue.course_instance_short_name || '—'}</span>`
           : ''}
       </div>
       ${authz_data.has_course_permission_edit
-        ? html`
-            <div class="ml-auto pl-4">
-              ${renderEjs(import.meta.url, "<%- include('../partials/issueActionButtons') %>", {
-                ...resLocals,
-                issue: row,
-              })}
-            </div>
-          `
+        ? html` <div class="ml-auto pl-4">${IssueActionButton({ issue, csrfToken })}</div> `
         : ''}
     </div>
   `;
 }
 
-function getFormattedMessage(row: Issue) {
-  if (!row.student_message) return html`&mdash;`;
+function getFormattedMessage(issue: Issue) {
+  if (!issue.student_message) return html`&mdash;`;
 
-  const message = joinHtml(row.student_message.split(/\r?\n|\r/), html`<br />`);
-  return row.manually_reported ? html`"${message}"` : message;
+  const message = joinHtml(issue.student_message.split(/\r?\n|\r/), html`<br />`);
+  return issue.manually_reported ? html`"${message}"` : message;
 }
 
 function CloseMatchingIssuesModal({
   openFilteredIssuesCount,
-  rows,
+  issues,
   csrfToken,
 }: {
   openFilteredIssuesCount: number;
-  rows: IssueRow[];
+  issues: IssueRow[];
   csrfToken: string;
 }) {
   return Modal({
@@ -355,7 +362,7 @@ function CloseMatchingIssuesModal({
         <input
           type="hidden"
           name="unsafe_issue_ids"
-          value="${rows.map((row) => row.id).join(',')}"
+          value="${issues.map((issue) => issue.id).join(',')}"
         />
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         <button type="submit" class="btn btn-danger">Close issues</button>
@@ -442,4 +449,36 @@ function FilterHelpModal() {
     `,
     footer: html`<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>`,
   });
+}
+
+function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: string }) {
+  return html`
+    <form method="POST" style="white-space: nowrap;">
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="issue_id" value="${issue.id}" />
+      <div class="btn-group btn-group-sm">
+        ${issue.open
+          ? html`
+              <button
+                class="btn btn-outline-secondary"
+                name="__action"
+                value="close"
+                title="Close issue"
+              >
+                <i class="fa fa-times fa-fw" aria-hidden="true"></i>
+              </button>
+            `
+          : html`
+              <button
+                class="btn btn-outline-secondary"
+                name="__action"
+                value="open"
+                title="Reopen issue"
+              >
+                <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
+              </button>
+            `}
+      </div>
+    </form>
+  `;
 }

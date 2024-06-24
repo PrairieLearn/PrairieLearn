@@ -196,7 +196,7 @@ router.get(
     res.send(
       InstructorIssues({
         resLocals: res.locals,
-        rows,
+        issues: rows,
         filterQuery,
         openFilteredIssuesCount,
         openCount,
