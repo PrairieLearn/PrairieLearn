@@ -1,57 +1,43 @@
 // @ts-check
-import { parseISO, formatDistance } from 'date-fns';
-import * as express from 'express';
+import { formatDistance } from 'date-fns';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 import SearchString from 'search-string';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import * as paginate from '../../lib/paginate.js';
+import { pages } from '../../lib/paginate.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
-const router = express.Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+import { InstructorIssues, IssueRowSchema } from './instructorIssues.html.js';
+
+const router = Router();
+const sql = loadSqlEquiv(import.meta.url);
 
 const PAGE_SIZE = 100;
 
-const commonQueries = {
-  allOpenQuery: 'is:open',
-  allClosedQuery: 'is:closed',
-  allManuallyReportedQuery: 'is:manually-reported',
-  allAutomaticallyReportedQuery: 'is:automatically-reported',
-};
-
-const formattedCommonQueries = {};
-
-Object.keys(commonQueries).forEach((key) => {
-  formattedCommonQueries[key] = `?q=${encodeURIComponent(commonQueries[key])}`;
-});
-
-function formatForLikeClause(str) {
+function formatForLikeClause(str: string) {
   return `%${str}%`;
 }
 
-function parseRawQuery(str) {
+function parseRawQuery(str: string) {
   const parsedQuery = SearchString.parse(str);
-  /**
-   * @type {{filter_is_open: boolean | null, filter_is_closed: boolean | null, filter_manually_reported: boolean | null, filter_automatically_reported: boolean | null, filter_qids: string[] | null, filter_not_qids: string[] | null, filter_query_text: string | null, filter_users: string[] | null, filter_not_users: string[] | null}}
-   */
   const filters = {
-    filter_is_open: null,
-    filter_is_closed: null,
-    filter_manually_reported: null,
-    filter_automatically_reported: null,
-    filter_qids: null,
-    filter_not_qids: null,
-    filter_query_text: null,
-    filter_users: null,
-    filter_not_users: null,
+    filter_is_open: null as boolean | null,
+    filter_is_closed: null as boolean | null,
+    filter_manually_reported: null as boolean | null,
+    filter_automatically_reported: null as boolean | null,
+    filter_qids: null as string[] | null,
+    filter_not_qids: null as string[] | null,
+    filter_query_text: null as string | null,
+    filter_users: null as string[] | null,
+    filter_not_users: null as string[] | null,
   };
 
   const queryText = parsedQuery.getAllText();
@@ -101,20 +87,19 @@ function parseRawQuery(str) {
   return filters;
 }
 
-/**
- * @param {string} issue_id
- * @param {boolean} new_open
- * @param {string} course_id
- * @param {string} authn_user_id
- */
-async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
-  const result = await sqldb.queryOptionalRow(
+async function updateIssueOpen(
+  issue_id: string,
+  new_open: boolean,
+  course_id: string,
+  authn_user_id: string,
+) {
+  const updated_issue_id = await queryOptionalRow(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
   );
-  if (!result) {
-    throw new error.HttpStatusError(
+  if (!updated_issue_id) {
+    throw new HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
     );
@@ -124,34 +109,26 @@ async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!('q' in req.query)) {
-      req.query.q = 'is:open';
-    }
+    const filterQuery = typeof req.query.q === 'string' ? req.query.q : 'is:open';
 
-    const counts = await sqldb.queryAsync(sql.issues_count, {
-      course_id: res.locals.course.id,
-    });
+    const [closedCount, openCount] = await queryRows(
+      sql.issues_count,
+      { course_id: res.locals.course.id },
+      z.number(),
+    );
 
-    if (counts.rowCount !== 2) {
-      throw new Error('unable to obtain issue count, rowCount = ' + counts.rowCount);
-    }
-
-    res.locals.closedCount = counts.rows[0].count;
-    res.locals.openCount = counts.rows[1].count;
-
-    var params = {
-      course_id: res.locals.course.id,
-      offset: 0,
-      limit: PAGE_SIZE,
-    };
-    if (_.isInteger(Number(req.query.page))) {
-      params.offset = (Number(req.query.page) - 1) * PAGE_SIZE;
-    }
-
-    const filters = parseRawQuery(req.query.q);
-    _.assign(params, filters);
-
-    const issues = await sqldb.queryAsync(sql.select_issues, params);
+    const queryPageNumber = Number(req.query.page);
+    const filters = parseRawQuery(filterQuery);
+    const issues = await queryRows(
+      sql.select_issues,
+      {
+        course_id: res.locals.course.id,
+        offset: Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0,
+        limit: PAGE_SIZE,
+        ...filters,
+      },
+      IssueRowSchema,
+    );
 
     // Compute the IDs of the course instances to which the effective user has access.
 
@@ -162,50 +139,26 @@ router.get(
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
-    const linkable_course_instance_ids = course_instances.reduce((acc, ci) => {
-      acc.add(ci.id);
-      return acc;
-    }, new Set());
+    const linkable_course_instance_ids = new Set(course_instances.map((ci) => ci.id));
 
-    res.locals.issueCount = issues.rowCount ? issues.rows[0].issue_count : 0;
+    _.assign(res.locals, pages(req.query.page, issues.length, PAGE_SIZE));
+    const shouldPaginate = issues.length > PAGE_SIZE;
 
-    _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
-    res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
-
-    issues.rows.forEach((row) => {
+    const rows = issues.map((row) => ({
+      ...row,
       // Add human-readable relative dates to each row
-      row.relative_date = formatDistance(parseISO(row.formatted_date), parseISO(row.now_date), {
-        addSuffix: true,
-      });
+      relative_date: row.date ? formatDistance(row.date, row.now, { addSuffix: true }) : '',
 
-      if (row.assessment) {
-        if (!row.course_instance_id) {
-          throw new Error(
-            `Issue id ${row.issue_id} is associated with an assessment but not a course instance`,
-          );
-        }
-
-        // Each issue is associated with a question variant. If an issue is also
-        // associated with a course instance, then this question variant is from
-        // some assessment in that course instance. We can provide a link to this
-        // assessment, but we only want to do so if the effective user has access
-        // to the corresponding course instance.
-        //
-        // Add a flag to each row saying if the effective user has this access.
-        row.assessment.hide_link = !linkable_course_instance_ids.has(
-          parseInt(row.course_instance_id),
-        );
-
-        // If necessary, construct the URL prefix to the appropriate course instance
-        // (either if we are accessing the issue through the course page route, or if
-        // we are accessing the issue through a different course instance page route).
-        if (
-          !res.locals.course_instance ||
-          !idsEqual(res.locals.course_instance.id, row.course_instance_id)
-        ) {
-          row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
-        }
-      }
+      // Each issue is associated with a question variant. If an issue is also
+      // associated with a course instance, then this question variant is from
+      // some assessment in that course instance. We can provide a link to this
+      // assessment, but we only want to do so if the effective user has access
+      // to the corresponding course instance.
+      //
+      // Add a flag to each row saying if the effective user has this access.
+      hide_link:
+        row.course_instance_id != null &&
+        !linkable_course_instance_ids.has(IdSchema.parse(row.course_instance_id)),
 
       // There are three situations in which the issue need not be anonymized:
       //
@@ -226,7 +179,7 @@ router.get(
       //     effective user roles are taken into account.
       //
       // Otherwise, all issues must be anonymized.
-      row.show_user =
+      show_user:
         !row.course_instance_id ||
         (res.locals.course_instance &&
           idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
@@ -234,25 +187,23 @@ router.get(
         ((!res.locals.course_instance ||
           !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
           course_instances.some(
-            (ci) =>
-              idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view,
-          ));
-    });
+            (ci) => ci.id === row.course_instance_id && ci.has_course_instance_permission_view,
+          )),
+    }));
 
-    res.locals.rows = issues.rows;
+    const openFilteredIssuesCount = issues.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
-    res.locals.filterQuery = req.query.q;
-    res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
-    res.locals.filters = filters;
-    res.locals.openFilteredIssuesCount = issues.rows.reduce(
-      (acc, row) => (row.open ? acc + 1 : acc),
-      0,
+    res.send(
+      InstructorIssues({
+        resLocals: res.locals,
+        rows,
+        filterQuery,
+        openFilteredIssuesCount,
+        openCount,
+        closedCount,
+        shouldPaginate,
+      }),
     );
-
-    res.locals.commonQueries = {};
-    _.assign(res.locals.commonQueries, formattedCommonQueries);
-
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -260,7 +211,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
+      throw new HttpStatusError(403, 'Access denied (must be a course editor)');
     }
 
     if (req.body.__action === 'open') {
@@ -281,7 +232,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
-      const closedCount = await sqldb.queryRow(
+      const closedCount = await queryRow(
         sql.close_issues,
         {
           issue_ids: issueIds,
@@ -293,7 +244,7 @@ router.post(
       flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
