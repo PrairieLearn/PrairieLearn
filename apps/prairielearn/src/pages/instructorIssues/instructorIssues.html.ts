@@ -12,6 +12,7 @@ import {
   CourseInstanceSchema,
   DateFromISOString,
   IdSchema,
+  type Issue,
   IssueSchema,
   QuestionSchema,
   UserSchema,
@@ -135,22 +136,24 @@ export function InstructorIssues({
                       Filters
                     </button>
                     <div class="dropdown-menu">
-                      <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}"
-                        >Open issues</a
-                      >
-                      <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}"
-                        >Closed issues</a
-                      >
+                      <a class="dropdown-item" href="${formattedCommonQueries.allOpenQuery}">
+                        Open issues
+                      </a>
+                      <a class="dropdown-item" href="${formattedCommonQueries.allClosedQuery}">
+                        Closed issues
+                      </a>
                       <a
                         class="dropdown-item"
                         href="${formattedCommonQueries.allManuallyReportedQuery}"
-                        >Manually-reported issues</a
                       >
+                        Manually-reported issues
+                      </a>
                       <a
                         class="dropdown-item"
                         href="${formattedCommonQueries.allAutomaticallyReportedQuery}"
-                        >Automatically-reported issues</a
                       >
+                        Automatically-reported issues
+                      </a>
                     </div>
                   </div>
                   <input
@@ -319,7 +322,7 @@ function IssueRow({
   `;
 }
 
-function getFormattedMessage(row) {
+function getFormattedMessage(row: Issue) {
   if (!row.student_message) return html`&mdash;`;
 
   const message = joinHtml(row.student_message.split(/\r?\n|\r/), html`<br />`);
