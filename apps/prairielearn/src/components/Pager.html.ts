@@ -7,7 +7,7 @@ export function IssuePager({
   pageSize,
 }: {
   extraQueryParams: string | null;
-  chosenPage: any;
+  chosenPage: number;
   count: number;
   pageSize: number;
 }) {
@@ -48,7 +48,7 @@ export function IssuePager({
   `;
 }
 
-export function pages(chosenPage: any, count: number, pageSize: number) {
+export function pages(chosenPage: number, count: number, pageSize: number) {
   const lastPage = Math.max(1, Math.ceil(count / pageSize));
 
   let currPage = Number(chosenPage);

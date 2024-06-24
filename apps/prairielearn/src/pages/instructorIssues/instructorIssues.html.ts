@@ -72,7 +72,7 @@ export function InstructorIssues({
   openFilteredIssuesCount: number;
   openCount: number;
   closedCount: number;
-  chosenPage: any;
+  chosenPage: number;
 }) {
   const { authz_data, __csrf_token, urlPrefix } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
