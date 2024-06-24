@@ -2,7 +2,6 @@
 import { formatDistance } from 'date-fns';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import SearchString from 'search-string';
 import { z } from 'zod';
 
@@ -12,15 +11,12 @@ import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielea
 
 import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { pages } from '../../lib/paginate.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
-import { InstructorIssues, IssueRowSchema } from './instructorIssues.html.js';
+import { InstructorIssues, IssueRowSchema, PAGE_SIZE } from './instructorIssues.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const PAGE_SIZE = 100;
 
 function formatForLikeClause(str: string) {
   return `%${str}%`;
@@ -119,7 +115,7 @@ router.get(
 
     const queryPageNumber = Number(req.query.page);
     const filters = parseRawQuery(filterQuery);
-    const issues = await queryRows(
+    const issueRows = await queryRows(
       sql.select_issues,
       {
         course_id: res.locals.course.id,
@@ -141,11 +137,7 @@ router.get(
     });
     const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 
-    const issueCount = issues[0]?.issue_count ?? 0;
-    _.assign(res.locals, pages(req.query.page, issueCount, PAGE_SIZE));
-    const shouldPaginate = issueCount > PAGE_SIZE;
-
-    const rows = issues.map((row) => ({
+    const issues = issueRows.map((row) => ({
       ...row,
       // Add human-readable relative dates to each row
       relativeDate: row.date ? formatDistance(row.date, row.now, { addSuffix: true }) : '',
@@ -191,17 +183,17 @@ router.get(
           )),
     }));
 
-    const openFilteredIssuesCount = issues.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
+    const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
     res.send(
       InstructorIssues({
         resLocals: res.locals,
-        issues: rows,
+        issues,
         filterQuery,
         openFilteredIssuesCount,
         openCount,
         closedCount,
-        shouldPaginate,
+        chosenPage: req.query.page,
       }),
     );
   }),

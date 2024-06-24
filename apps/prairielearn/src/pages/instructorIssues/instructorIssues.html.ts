@@ -5,6 +5,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { IssuePager } from '../../components/Pager.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -18,6 +19,8 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+
+export const PAGE_SIZE = 100;
 
 export const IssueRowSchema = IssueSchema.extend({
   now: DateFromISOString,
@@ -61,7 +64,7 @@ export function InstructorIssues({
   openFilteredIssuesCount,
   openCount,
   closedCount,
-  shouldPaginate,
+  chosenPage,
 }: {
   resLocals: Record<string, any>;
   issues: IssueComputedRow[];
@@ -69,9 +72,10 @@ export function InstructorIssues({
   openFilteredIssuesCount: number;
   openCount: number;
   closedCount: number;
-  shouldPaginate: boolean;
+  chosenPage: any;
 }) {
   const { authz_data, __csrf_token, urlPrefix } = resLocals;
+  const issueCount = issues[0]?.issue_count ?? 0;
   return html`
     <!doctype html>
     <html lang="en">
@@ -208,12 +212,14 @@ export function InstructorIssues({
                     )}
                   </div>
                 `}
-            ${shouldPaginate
+            ${issueCount > PAGE_SIZE
               ? html`
                   <div class="card-body">
-                    ${renderEjs(import.meta.url, "<%- include('../partials/pager') %>", {
-                      ...resLocals,
-                      params: `q=${encodeURIComponent(filterQuery)}`,
+                    ${IssuePager({
+                      extraQueryParams: filterQuery ? `q=${encodeURIComponent(filterQuery)}` : null,
+                      chosenPage,
+                      count: issueCount,
+                      pageSize: PAGE_SIZE,
                     })}
                   </div>
                 `
