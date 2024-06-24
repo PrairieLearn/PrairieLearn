@@ -5,7 +5,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
-import { IssuePager } from '../../components/Pager.html.js';
+import { Pager } from '../../components/Pager.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -215,7 +215,7 @@ export function InstructorIssues({
             ${issueCount > PAGE_SIZE
               ? html`
                   <div class="card-body">
-                    ${IssuePager({
+                    ${Pager({
                       extraQueryParams: `q=${encodeURIComponent(filterQuery)}`,
                       chosenPage,
                       count: issueCount,

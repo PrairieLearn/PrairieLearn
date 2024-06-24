@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-export function IssuePager({
+export function Pager({
   extraQueryParams,
   chosenPage,
   count,
