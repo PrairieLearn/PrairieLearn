@@ -20,7 +20,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 100;
 
 export const IssueRowSchema = IssueSchema.extend({
   now: DateFromISOString,

@@ -1,4 +1,6 @@
 // @ts-check
+import * as url from 'node:url';
+
 import { formatDistance } from 'date-fns';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -115,16 +117,20 @@ router.get(
 
     const queryPageNumber = Number(req.query.page);
     const filters = parseRawQuery(filterQuery);
+    const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
     const issueRows = await queryRows(
       sql.select_issues,
-      {
-        course_id: res.locals.course.id,
-        offset: Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0,
-        limit: PAGE_SIZE,
-        ...filters,
-      },
+      { course_id: res.locals.course.id, offset, limit: PAGE_SIZE, ...filters },
       IssueRowSchema,
     );
+    // If the offset is not zero and there are no returned issues, this
+    // typically means the page number was incorrectly set to a value larger
+    // than the number of actual issues. In this case, redirect to the same page
+    // without setting the page number.
+    if (offset > 0 && issueRows.length === 0) {
+      res.redirect(`${url.parse(req.originalUrl).pathname}?q=${encodeURIComponent(filterQuery)}`);
+      return;
+    }
 
     // Compute the IDs of the course instances to which the effective user has access.
 
@@ -193,7 +199,7 @@ router.get(
         openFilteredIssuesCount,
         openCount,
         closedCount,
-        chosenPage: req.query.page,
+        chosenPage: queryPageNumber,
       }),
     );
   }),
