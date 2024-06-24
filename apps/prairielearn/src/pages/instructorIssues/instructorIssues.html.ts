@@ -36,10 +36,10 @@ export const IssueRowSchema = IssueSchema.extend({
   issue_count: z.number(),
 });
 export type IssueRow = z.infer<typeof IssueRowSchema>;
-export type IssueComputedRow = IssueRow & {
-  relative_date: string;
-  show_user: boolean;
-  hide_link: boolean;
+type IssueComputedRow = IssueRow & {
+  relativeDate: string;
+  showUser: boolean;
+  hideAssessmentLink: boolean;
 };
 
 const commonQueries = {
@@ -244,7 +244,7 @@ function IssueRow({
             ? html`
                 (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>)
               `
-            : row.show_user
+            : row.showUser
               ? html`
                   (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>,
                   <a href="${studentViewUrl}">student view</a>,
@@ -272,11 +272,11 @@ function IssueRow({
           ${row.date
             ? html`
                 <span title="${formatDate(row.date, row.display_timezone)}"
-                  >${row.relative_date}</span
+                  >${row.relativeDate}</span
                 >
               `
             : ''}
-          ${row.show_user
+          ${row.showUser
             ? html`
                 ${row.manually_reported ? 'by' : 'for'} ${row.user_name || '-'} (<a
                   href="${mailtoLink}"
@@ -294,7 +294,8 @@ function IssueRow({
                 ...resLocals,
                 assessment: {
                   ...row.assessment,
-                  // Construct the URL prefix to the appropriate course instance
+                  hide_link: row.hideAssessmentLink,
+                  // Construct the URL prefix with the appropriate course instance
                   urlPrefix: `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`,
                 },
               })}

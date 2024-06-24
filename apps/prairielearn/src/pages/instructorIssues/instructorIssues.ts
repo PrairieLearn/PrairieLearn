@@ -139,7 +139,7 @@ router.get(
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
-    const linkable_course_instance_ids = new Set(course_instances.map((ci) => ci.id));
+    const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 
     const issueCount = issues[0]?.issue_count ?? 0;
     _.assign(res.locals, pages(req.query.page, issueCount, PAGE_SIZE));
@@ -148,7 +148,7 @@ router.get(
     const rows = issues.map((row) => ({
       ...row,
       // Add human-readable relative dates to each row
-      relative_date: row.date ? formatDistance(row.date, row.now, { addSuffix: true }) : '',
+      relativeDate: row.date ? formatDistance(row.date, row.now, { addSuffix: true }) : '',
 
       // Each issue is associated with a question variant. If an issue is also
       // associated with a course instance, then this question variant is from
@@ -157,9 +157,8 @@ router.get(
       // to the corresponding course instance.
       //
       // Add a flag to each row saying if the effective user has this access.
-      hide_link:
-        row.course_instance_id != null &&
-        !linkable_course_instance_ids.has(IdSchema.parse(row.course_instance_id)),
+      hideAssessmentLink:
+        row.course_instance_id != null && !linkableCourseInstanceIds.has(row.course_instance_id),
 
       // There are three situations in which the issue need not be anonymized:
       //
@@ -180,7 +179,7 @@ router.get(
       //     effective user roles are taken into account.
       //
       // Otherwise, all issues must be anonymized.
-      show_user:
+      showUser:
         !row.course_instance_id ||
         (res.locals.course_instance &&
           idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
