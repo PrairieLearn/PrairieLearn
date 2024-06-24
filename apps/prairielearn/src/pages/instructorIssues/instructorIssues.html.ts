@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { html } from '@prairielearn/html';
+import { html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
@@ -227,6 +227,10 @@ function IssueRow({
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
     `Hello ${row.user_name},\n\nRegarding the issue of:\n\n"${row.student_message || '-'}"\n\nWe've...`,
   )}`;
+  const questionPreviewUrl = `${urlPrefix}/question/${row.question_id}/`;
+  const studentViewUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}`;
+  const manualGradingUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}/manual_grading/instance_question/${row.instance_question_id}`;
+  const assessmentInstanceUrl = `${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment_instance/${row.assessment_instance_id}`;
 
   return html`
     <div class="list-group-item issue-list-item d-flex flex-row align-items-center">
@@ -236,36 +240,19 @@ function IssueRow({
           : html`<i class="fa fa-check-circle text-success issue-status-icon"></i>`}
         <div class="d-block">
           <strong>${row.question_qid}</strong>
-          ${row.instance_question_id && row.show_user
+          ${!row.instance_question_id // Issue not associated to an instance question (originates from question preview)
             ? html`
-                (<a href="${urlPrefix}/question/${row.question_id}/?variant_id=${row.variant_id}"
-                  >instructor view</a
-                >,
-                <a
-                  href="${plainUrlPrefix}/course_instance/${row.course_instance_id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
-                >
-                  student view</a
-                >,
-                <a
-                  href="${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}/manual_grading/instance_question/${row.instance_question_id}"
-                >
-                  manual grading</a
-                >,
-                <a
-                  href="${plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment_instance/${row.assessment_instance_id}"
-                >
-                  assessment details</a
-                >)
+                (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>)
               `
-            : !row.instance_question_id
+            : row.show_user
               ? html`
-                  (<a href="${urlPrefix}/question/${row.question_id}/?variant_id=${row.variant_id}"
-                    >instructor view</a
-                  >)
+                  (<a href="${questionPreviewUrl}?variant_id=${row.variant_id}">instructor view</a>,
+                  <a href="${studentViewUrl}">student view</a>,
+                  <a href="${manualGradingUrl}">manual grading</a>,
+                  <a href="${assessmentInstanceUrl}"> assessment details</a>)
                 `
               : html`
-                  (<a
-                    href="${urlPrefix}/question/${row.question_id}/?variant_seed=${row.variant_seed}"
+                  (<a href="${questionPreviewUrl}?variant_seed=${row.variant_seed}"
                     >instructor view</a
                   >)
                   <a
@@ -332,11 +319,10 @@ function IssueRow({
 }
 
 function getFormattedMessage(row) {
-  return !row.student_message
-    ? html`&mdash;`
-    : row.manually_reported
-      ? `"${row.student_message}"`
-      : row.student_message;
+  if (!row.student_message) return html`&mdash;`;
+
+  const message = joinHtml(row.student_message.split(/\r?\n|\r/), html`<br />`);
+  return row.manually_reported ? html`"${message}"` : message;
 }
 
 function CloseMatchingIssuesModal({
