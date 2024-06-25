@@ -1,4 +1,4 @@
-// @ts-check
+import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
@@ -22,12 +22,12 @@ import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import { deferredPromise } from './lib/deferred.js';
 import * as healthCheck from './lib/healthCheck.js';
-import { makeJobLogger } from './lib/jobLogger.js';
+import { type WinstonBufferedLogger, makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
 import * as load from './lib/load.js';
 import globalLogger from './lib/logger.js';
 import pullImages from './lib/pullImages.js';
-import { receiveFromQueue } from './lib/receiveFromQueue.js';
+import { type GradingJobMessage, receiveFromQueue } from './lib/receiveFromQueue.js';
 import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -161,7 +161,7 @@ async.series(
   },
 );
 
-async function isJobCanceled(job) {
+async function isJobCanceled(job: GradingJobMessage) {
   const result = await sqldb.queryOneRowAsync(sql.check_job_cancellation, {
     grading_job_id: job.jobId,
   });
@@ -169,10 +169,7 @@ async function isJobCanceled(job) {
   return result.rows[0].canceled;
 }
 
-/**
- * @param {import('./lib/receiveFromQueue.js').GradingJobMessage} job
- */
-async function handleJob(job) {
+async function handleJob(job: GradingJobMessage) {
   load.startJob();
 
   const logger = makeJobLogger();
@@ -214,19 +211,14 @@ async function handleJob(job) {
   }
 }
 
-/**
- * @typedef {Object} Context
- * @property {Docker} docker
- * @property {S3} s3
- * @property {import('./lib/jobLogger.js').WinstonBufferedLogger} logger
- * @property {import('./lib/receiveFromQueue.js').GradingJobMessage} job
- */
+interface Context {
+  docker: Docker;
+  s3: S3;
+  logger: WinstonBufferedLogger;
+  job: GradingJobMessage;
+}
 
-/**
- * @param {Context} context
- * @param {Date} receivedTime
- */
-async function reportReceived(context, receivedTime) {
+async function reportReceived(context: Context, receivedTime: Date) {
   if (!config.resultsQueueUrl) {
     throw new Error('resultsQueueUrl is not defined');
   }
@@ -256,10 +248,7 @@ async function reportReceived(context, receivedTime) {
   }
 }
 
-/**
- * @param {Context} context
- */
-async function initDocker(context) {
+async function initDocker(context: Context) {
   const {
     logger,
     docker,
@@ -277,7 +266,7 @@ async function initDocker(context) {
   }
 
   logger.info(`Pulling latest version of "${image}" image`);
-  var repository = new DockerName(image);
+  const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
     repository.setRegistry(config.cacheImageRegistry);
   }
@@ -308,10 +297,7 @@ async function initDocker(context) {
   });
 }
 
-/**
- * @param {Context} context
- */
-async function initFiles(context) {
+async function initFiles(context: Context) {
   const {
     logger,
     s3,
@@ -333,10 +319,7 @@ async function initFiles(context) {
       Bucket: s3Bucket,
       Key: `${s3RootKey}/job.tar.gz`,
     });
-    await pipeline(
-      /** @type {import('node:stream').Readable} */ (object.Body),
-      fs.createWriteStream(jobArchiveFile.path),
-    );
+    await pipeline(object.Body as Readable, fs.createWriteStream(jobArchiveFile.path));
 
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
@@ -355,12 +338,7 @@ async function initFiles(context) {
   }
 }
 
-/**
- * @param {Context} context
- * @param {Date} receivedTime
- * @param {string} tempDir
- */
-async function runJob(context, receivedTime, tempDir) {
+async function runJob(context: Context, receivedTime: Date, tempDir: string) {
   const {
     docker,
     logger,
@@ -372,13 +350,13 @@ async function runJob(context, receivedTime, tempDir) {
   // running the job (pulling an image, uploading results, etc.). We add a
   // fixed amount of time to the instructor-specified timeout to account for
   // this.
-  let jobTimeout = timeout + config.timeoutOverhead;
+  const jobTimeout = timeout + config.timeoutOverhead;
 
-  let results = {};
+  const results: Record<string, any> = {};
 
   logger.info('Launching Docker container to run grading job');
 
-  var repository = new DockerName(image);
+  const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
     repository.setRegistry(config.cacheImageRegistry);
   }
@@ -527,11 +505,7 @@ async function runJob(context, receivedTime, tempDir) {
   return await Promise.race([task, timeoutDeferredPromise.promise]);
 }
 
-/**
- * @param {Context} context
- * @param {any} results
- */
-async function uploadResults(context, results) {
+async function uploadResults(context: Context, results: any) {
   const {
     logger,
     s3,
@@ -549,20 +523,17 @@ async function uploadResults(context, results) {
     },
   }).done();
 
-  // Let's send the results back to PrairieLearn now; the archive will
+  // Send the results back to PrairieLearn now; the archive will
   // be uploaded later
   logger.info('Sending results to PrairieLearn with results');
   const messageBody = {
     jobId,
     event: 'grading_result',
+    // The SQS max message size is 256KB; if our results payload is
+    // larger than 250KB, we won't send results via this and will
+    // instead rely on PL fetching them via S3.
+    data: JSON.stringify(results).length <= 250 * 1024 ? results : undefined,
   };
-
-  // The SQS max message size is 256KB; if our results payload is
-  // larger than 250KB, we won't send results via this and will
-  // instead rely on PL fetching them via S3.
-  if (JSON.stringify(results).length <= 250 * 1024) {
-    messageBody.data = results;
-  }
 
   if (!config.resultsQueueUrl) {
     throw new Error('resultsQueueUrl is not defined');
@@ -577,11 +548,7 @@ async function uploadResults(context, results) {
   );
 }
 
-/**
- * @param {Context} context
- * @param {string} tempDir
- */
-async function uploadArchive(context, tempDir) {
+async function uploadArchive(context: Context, tempDir: string) {
   const {
     logger,
     s3,

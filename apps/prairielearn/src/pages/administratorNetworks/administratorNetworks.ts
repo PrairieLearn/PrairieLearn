@@ -1,7 +1,5 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -14,7 +12,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryOneRowAsync(sql.select, []);
-    _.assign(res.locals, result.rows[0]);
+    Object.assign(res.locals, result.rows[0]);
     res.send(AdministratorNetworks({ resLocals: res.locals }));
   }),
 );

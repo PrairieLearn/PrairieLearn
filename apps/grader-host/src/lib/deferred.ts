@@ -1,22 +1,16 @@
-// @ts-check
-/**
- * @template T
- * @typedef {Object} DeferredPromise
- * @property {Promise<T>} promise
- * @property {(value: T) => void} resolve
- * @property {(reason: any) => void} reject
- */
+interface DeferredPromise<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: any) => void;
+}
 
 /**
  * Returns an object that can be used to resolve or reject a promise from
  * the outside.
- *
- * @template T
- * @returns {DeferredPromise<T>}
  */
-export function deferredPromise() {
+export function deferredPromise<T>(): DeferredPromise<T> {
   let resolve, reject;
-  const promise = new Promise((res, rej) => {
+  const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
   });

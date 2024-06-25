@@ -1,4 +1,3 @@
-// @ts-check
 import * as assert from 'node:assert';
 
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
@@ -13,7 +12,7 @@ import logger from './logger.js';
  * or
  *    null -> Launching -> AbandoningLaunch
  */
-let lifecycleState = null;
+let lifecycleState: 'Launching' | 'InService' | 'AbandoningLaunch' | null = null;
 
 export function getState() {
   return lifecycleState;

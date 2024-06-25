@@ -1,9 +1,8 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function reportTime(sqlBlockName) {
+function reportTime(sqlBlockName: string) {
   return async function (jobId) {
     const results = await sqldb.queryOneRowAsync(sql[sqlBlockName], {
       job_id: jobId,
