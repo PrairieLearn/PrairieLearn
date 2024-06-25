@@ -1,14 +1,16 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-
-import { config } from '../lib/config';
 import fetch from 'node-fetch';
-import * as helperServer from './helperServer';
-import * as sqldb from '@prairielearn/postgres';
 import { io } from 'socket.io-client';
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
+
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -25,21 +27,48 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-const waitForExternalGrader = async ($questionsPage) => {
-  const { variantId, variantToken } = $questionsPage('.question-container').data();
+async function waitForExternalGrader($questionsPage): Promise<any> {
+  const {
+    variantId,
+    questionId,
+    instanceQuestionId,
+    userId,
+    variantToken,
+    urlPrefix,
+    questionContext,
+    csrfToken,
+    authorizedEdit,
+  } = $questionsPage('.question-container').data();
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise((resolve, reject) => {
     socket.on('connect_error', (err) => reject(err));
 
-    const handleStatusChange = (msg) => {
+    function handleStatusChange(msg) {
       msg.submissions.forEach((s) => {
         if (s.grading_job_status === 'graded') {
-          resolve(undefined);
+          socket.emit(
+            'getResults',
+            {
+              // Cheerio converts data attributes to numbers based on format, but
+              // the socket expects them as strings
+              question_id: questionId.toString(),
+              instance_question_id: instanceQuestionId.toString(),
+              variant_id: variantId.toString(),
+              user_id: userId.toString(),
+              variant_token: variantToken.toString(),
+              submission_id: s.id.toString(),
+              url_prefix: urlPrefix.toString(),
+              question_context: questionContext.toString(),
+              csrf_token: csrfToken.toString(),
+              authorized_edit: authorizedEdit,
+            },
+            (resultsMsg: any) => resolve(resultsMsg),
+          );
           return;
         }
       });
-    };
+    }
 
     socket.emit(
       'init',
@@ -58,7 +87,7 @@ const waitForExternalGrader = async ($questionsPage) => {
     // socket to allow the test process to exit.
     socket.close();
   });
-};
+}
 
 /**
  * @param user - user to load page by
@@ -83,7 +112,7 @@ const loadHomeworkPage = async (user: User) => {
  * Gets the score text for the first submission panel on the page.
  */
 function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
-  return $('[data-testid="submission-status"] .badge').first().text();
+  return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
 describe('Grading method(s)', function () {
@@ -267,27 +296,37 @@ describe('Grading method(s)', function () {
             { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
+        });
+        it('should retrieve results via socket', async () => {
           questionsPage = await gradeRes.text();
           $questionsPage = cheerio.load(questionsPage);
 
           iqId = parseInstanceQuestionId(iqUrl);
-          await waitForExternalGrader($questionsPage);
-          // reload QuestionsPage since socket io cannot update without DOM
-          questionsPage = await (await fetch(iqUrl)).text();
-          $questionsPage = cheerio.load(questionsPage);
+          const socketResult = await waitForExternalGrader($questionsPage);
+          assert.isNotNull(socketResult);
+          assert.isNotNull(socketResult.submissionPanel);
+
+          const $submissionPanel = cheerio.load(socketResult.submissionPanel);
+          assert.lengthOf($submissionPanel('[data-testid="submission-block"]'), 1);
+          assert.equal(getLatestSubmissionStatus($submissionPanel), '100%');
+          assert.lengthOf($submissionPanel('.pl-external-grader-results'), 1);
+          assert.lengthOf($submissionPanel('.grading-block:not(.d-none)'), 0);
         });
 
         it('should result in 1 grading jobs', async () => {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 1);
         });
-        it('should result in 1 "submission-block" component being rendered', () => {
+        it('should result in 1 "submission-block" component being rendered', async () => {
+          // reload QuestionsPage to also check behaviour when results are ready on load
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being displayed', () => {
+        it('should NOT result in "grading-block" component being displayed', () => {
           assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });

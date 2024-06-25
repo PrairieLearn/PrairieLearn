@@ -1,25 +1,26 @@
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { config } from '../lib/config';
-import * as courseDB from './course-db';
-import * as syncCourseInfo from './fromDisk/courseInfo';
-import * as syncCourseInstances from './fromDisk/courseInstances';
-import * as syncTopics from './fromDisk/topics';
-import * as syncQuestions from './fromDisk/questions';
-import * as syncTags from './fromDisk/tags';
-import * as syncAssessmentSets from './fromDisk/assessmentSets';
-import * as syncAssessmentModules from './fromDisk/assessmentModules';
-import * as syncAssessments from './fromDisk/assessments';
-import { flushElementCache } from '../question-servers/freeform';
-import { makePerformance } from './performance';
-import { chalk, chalkDim } from '../lib/chalk';
-import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course';
+import { chalk, chalkDim } from '../lib/chalk.js';
+import { config } from '../lib/config.js';
+import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { flushElementCache } from '../question-servers/freeform.js';
+
+import * as courseDB from './course-db.js';
+import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
+import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
+import * as syncAssessments from './fromDisk/assessments.js';
+import * as syncCourseInfo from './fromDisk/courseInfo.js';
+import * as syncCourseInstances from './fromDisk/courseInstances.js';
+import * as syncQuestions from './fromDisk/questions.js';
+import * as syncTags from './fromDisk/tags.js';
+import * as syncTopics from './fromDisk/topics.js';
+import { makePerformance } from './performance.js';
 
 const perf = makePerformance('sync');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
-interface SyncResults {
+export interface SyncResults {
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
@@ -60,12 +61,7 @@ export async function syncDiskToSqlWithLock(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
       const courseInstanceId = courseInstanceIds[ciid];
       await perf.timed(`syncAssessments${ciid}`, () =>
-        syncAssessments.sync(
-          courseId,
-          courseInstanceId,
-          courseInstanceData.assessments,
-          questionIds,
-        ),
+        syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
       );
     }),
   );

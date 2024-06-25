@@ -1,10 +1,13 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
-import { QuestionsPage } from './publicQuestions.html';
-import { selectPublicQuestionsForCourse } from '../../models/questions';
-import { selectCourseById } from '../../models/course';
-import { features } from '../../lib/features/index';
+
+import { features } from '../../lib/features/index.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectPublicQuestionsForCourse } from '../../models/questions.js';
+
+import { QuestionsPage } from './publicQuestions.html.js';
 
 const router = Router({ mergeParams: true });
 
@@ -18,13 +21,13 @@ router.get(
     });
 
     if (!questionSharingEnabled) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
     res.send(
       QuestionsPage({
-        questions: questions,
+        questions,
         showAddQuestionButton: false,
         resLocals: res.locals,
       }),
@@ -32,4 +35,4 @@ router.get(
   }),
 );
 
-export = router;
+export default router;

@@ -1,15 +1,14 @@
-import ERR = require('async-stacktrace');
-import _ = require('lodash');
 import { assert } from 'chai';
+import _ from 'lodash';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
-import * as helperAttachFiles from './helperAttachFiles';
+import * as helperAttachFiles from './helperAttachFiles.js';
+import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 
@@ -806,13 +805,10 @@ describe('Exam assessment', function () {
     helperQuestion.checkQuestionScore(locals);
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
-      it('should succeed', function (callback) {
-        sqldb.queryOneRow(sql.select_last_submission, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          const submission = result.rows[0];
-          if (submission.gradable) return callback(new Error('submission.gradable is true'));
-          callback(null);
-        });
+      it('should succeed', async () => {
+        const result = await sqldb.queryOneRowAsync(sql.select_last_submission, []);
+        const submission = result.rows[0];
+        assert.isFalse(submission.gradable);
       });
     });
     describe('the submission panel contents', function () {
@@ -849,18 +845,11 @@ describe('Exam assessment', function () {
         locals.postAction = 'save';
         locals.question = helperExam.questions.brokenGeneration;
       });
-      it('should result in no variants', function (callback) {
-        const params = {
+      it('should result in no variants', async () => {
+        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
           qid: locals.question.qid,
-        };
-        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount === 0) {
-            callback(null);
-          } else {
-            callback(new Error(`Found ${result.rowCount} variants`));
-          }
         });
+        assert.lengthOf(result.rows, 0);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -869,18 +858,11 @@ describe('Exam assessment', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
         assert.lengthOf(elemList, 1);
       });
-      it('should have created one variant', function (callback) {
-        const params = {
+      it('should have created one variant', async () => {
+        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
           qid: locals.question.qid,
-        };
-        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount === 1) {
-            callback(null);
-          } else {
-            callback(new Error(`Found ${result.rowCount} variants`));
-          }
         });
+        assert.lengthOf(result.rows, 1);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -889,18 +871,11 @@ describe('Exam assessment', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
         assert.lengthOf(elemList, 1);
       });
-      it('should have created two variants', function (callback) {
-        const params = {
+      it('should have created two variants', async () => {
+        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
           qid: locals.question.qid,
-        };
-        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount === 2) {
-            callback(null);
-          } else {
-            callback(new Error(`Found ${result.rowCount} variants`));
-          }
         });
+        assert.lengthOf(result.rows, 2);
       });
     });
   });
@@ -1085,11 +1060,8 @@ describe('Exam assessment', function () {
   });
 
   describe('31. close exam', function () {
-    it('should succeed', function (callback) {
-      sqldb.queryOneRow(sql.close_all_assessment_instances, [], function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await sqldb.queryOneRowAsync(sql.close_all_assessment_instances, []);
     });
   });
 
@@ -1116,11 +1088,8 @@ describe('Exam assessment', function () {
 
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
-      it('should succeed', function (callback) {
-        sqldb.query(sql.update_addVectors_force_max_points, [], function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      it('should succeed', async () => {
+        await sqldb.queryAsync(sql.update_addVectors_force_max_points, []);
       });
     });
     helperQuestion.regradeAssessment(locals);
@@ -1184,9 +1153,9 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,score_perc,feedback\n' +
-          'dev@illinois.edu,1,addNumbers,40,feedback numbers\n' +
-          'dev@illinois.edu,1,addVectors,50,feedback vectors\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,,\n';
+          'dev@example.com,1,addNumbers,40,feedback numbers\n' +
+          'dev@example.com,1,addVectors,50,feedback vectors\n' +
+          'dev@example.com,1,fossilFuelsRadio,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1289,10 +1258,10 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,points,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,4.7,' +
+          'dev@example.com,1,addNumbers,4.7,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,1.2,,\n';
+          'dev@example.com,1,addVectors,1.2,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1408,7 +1377,7 @@ describe('Exam assessment', function () {
   describe('36. assessment instance score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,score_perc\n' + 'dev@illinois.edu,1,43.7\n';
+        locals.csvData = 'uid,instance,score_perc\n' + 'dev@example.com,1,43.7\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1464,7 +1433,7 @@ describe('Exam assessment', function () {
   describe('37. assessment instance points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData = 'uid,instance,points\n' + 'dev@illinois.edu,1,29.6\n';
+        locals.csvData = 'uid,instance,points\n' + 'dev@example.com,1,29.6\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1537,11 +1506,11 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,manual_points,auto_points,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,1.3,2.2,' +
+          'dev@example.com,1,addNumbers,1.3,2.2,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,,10.7,,\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,2.9,,,\n';
+          'dev@example.com,1,addVectors,,10.7,,\n' +
+          'dev@example.com,1,fossilFuelsRadio,2.9,,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1674,11 +1643,11 @@ describe('Exam assessment', function () {
       it('should succeed', function () {
         locals.csvData =
           'uid,instance,qid,manual_score_perc,auto_score_perc,submission_id,feedback_json\n' +
-          'dev@illinois.edu,1,addNumbers,60,44,' +
+          'dev@example.com,1,addNumbers,60,44,' +
           locals.submission_id_for_feedback +
           ',"{""msg"":""feedback numbers 2""}"\n' +
-          'dev@illinois.edu,1,addVectors,20,,,\n' +
-          'dev@illinois.edu,1,fossilFuelsRadio,,30,,\n';
+          'dev@example.com,1,addVectors,20,,,\n' +
+          'dev@example.com,1,fossilFuelsRadio,,30,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);

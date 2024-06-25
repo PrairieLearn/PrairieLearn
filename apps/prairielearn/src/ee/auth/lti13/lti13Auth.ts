@@ -1,22 +1,25 @@
+import * as crypto from 'crypto';
+import { URL } from 'url';
+import { callbackify } from 'util';
+
 import { Router, type Request, Response, NextFunction } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
-import { get as _get } from 'lodash';
-import { callbackify } from 'util';
-import * as crypto from 'crypto';
-import { URL } from 'url';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 import { cache } from '@prairielearn/cache';
-import * as authnLib from '../../../lib/authn';
-import { selectLti13Instance } from '../../models/lti13Instance';
-import { Lti13Test } from './lti13Auth.html';
-import { getCanonicalHost } from '../../../lib/url';
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(__filename);
+import * as authnLib from '../../../lib/authn.js';
+import { getCanonicalHost } from '../../../lib/url.js';
+import { selectLti13Instance } from '../../models/lti13Instance.js';
+
+import { Lti13Test } from './lti13Auth.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const StateTest = '-StateTest';
@@ -36,18 +39,18 @@ router.post(
     const lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
-    let uid: string;
-    let uin: string | null;
-    let name: string | null;
-
     // UID checking
+    let uid: string;
     if (!lti13_instance.uid_attribute) {
-      throw error.make(500, 'LTI 1.3 instance configuration missing required UID attribute');
+      throw new error.HttpStatusError(
+        500,
+        'LTI 1.3 instance configuration missing required UID attribute',
+      );
     } else {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      uid = _get(lti13_claims, lti13_instance.uid_attribute);
+      uid = _.get(lti13_claims, lti13_instance.uid_attribute);
       if (!uid) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (
@@ -55,13 +58,13 @@ router.post(
             'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
           )
         ) {
-          throw error.make(
+          throw new error.HttpStatusError(
             403,
             `Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.`,
           );
         } else {
           // Error about missing UID
-          throw error.make(
+          throw new error.HttpStatusError(
             500,
             `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
           );
@@ -70,13 +73,13 @@ router.post(
     }
 
     // UIN checking, if attribute defined value must be present
-    uin = null;
+    let uin: string | null = null;
     if (lti13_instance.uin_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-      uin = _get(lti13_claims, lti13_instance.uin_attribute);
+      uin = _.get(lti13_claims, lti13_instance.uin_attribute);
       if (!uin) {
-        throw error.make(
+        throw new error.HttpStatusError(
           500,
           `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
         );
@@ -86,18 +89,27 @@ router.post(
     // Name checking, not an error
     // LTI 1.3 spec defines sharing name as a MAY https://www.imsglobal.org/spec/lti/v1p3#users-and-roles
     // but discourages (MUST NOT) using other attributes for unique identifier
-    name = null;
+    let name: string | null = null;
     if (lti13_instance.name_attribute) {
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Reasonable default is "name"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      name = _get(lti13_claims, lti13_instance.name_attribute);
+      name = _.get(lti13_claims, lti13_instance.name_attribute);
+    }
+
+    let email: string | null = null;
+    if (lti13_instance.email_attribute) {
+      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+      // Reasonable default is "email"
+      // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+      email = _.get(lti13_claims, lti13_instance.email_attribute);
     }
 
     const userInfo = {
       uid,
       uin,
       name,
+      email,
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
     };
@@ -245,9 +257,12 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // The authentication libraries under openid-connect will fail (silently) if the key length
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
-          error.make(400, 'Authentication failed, before user validation.', {
-            info_raw: info,
-            info: info?.toString(),
+          new error.AugmentedError('Authentication failed, before user validation.', {
+            status: 400,
+            data: {
+              info_raw: info,
+              info: info?.toString(),
+            },
           }),
         );
       } else {
@@ -291,7 +306,7 @@ async function setupPassport(lti13_instance_id: string) {
     'lti13',
     new Strategy(
       {
-        client: client,
+        client,
         passReqToCallback: true,
       },
       callbackify(verify),
@@ -308,7 +323,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
-    throw error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    throw new error.HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
   await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds

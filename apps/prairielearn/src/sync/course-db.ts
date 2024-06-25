@@ -1,20 +1,22 @@
 import * as path from 'path';
-import _ = require('lodash');
-import * as fs from 'fs-extra';
-import * as async from 'async';
-import * as jju from 'jju';
-import Ajv, { type JSONSchemaType } from 'ajv';
-import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 
-import { chalk } from '../lib/chalk';
-import { config } from '../lib/config';
-import * as schemas from '../schemas';
-import * as infofile from './infofile';
-import { validateJSON } from '../lib/json-load';
-import { makePerformance } from './performance';
-import { selectInstitutionForCourse } from '../models/institution';
-import { features } from '../lib/features';
+import { Ajv, type JSONSchemaType } from 'ajv';
+import * as async from 'async';
+import betterAjvErrors from 'better-ajv-errors';
+import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
+import fs from 'fs-extra';
+import jju from 'jju';
+import _ from 'lodash';
+
+import { chalk } from '../lib/chalk.js';
+import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { validateJSON } from '../lib/json-load.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
+import * as schemas from '../schemas/index.js';
+
+import * as infofile from './infofile.js';
+import { makePerformance } from './performance.js';
 
 const perf = makePerformance('course-db');
 
@@ -244,14 +246,8 @@ export interface CourseInstance {
   groupAssessmentsBy: 'Set' | 'Module';
 }
 
-interface SEBConfig {
-  password: string;
-  quitPassword: string;
-  allowPrograms: string[];
-}
-
-interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam' | 'SEB';
+export interface AssessmentAllowAccess {
+  mode: 'Public' | 'Exam';
   examUuid: string;
   role: string; // Role is only allowed in legacy questions
   uids: string[];
@@ -261,7 +257,6 @@ interface AssessmentAllowAccess {
   active: boolean;
   timeLimitMin: number;
   password: string;
-  SEBConfig: SEBConfig;
 }
 
 interface QuestionAlternative {
@@ -388,7 +383,7 @@ export interface Question {
   dependencies: Record<string, string>;
 }
 
-interface CourseInstanceData {
+export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }
@@ -399,22 +394,38 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
-export async function loadFullCourse(courseId: string, courseDir: string): Promise<CourseData> {
+export async function loadFullCourse(
+  courseId: string | null,
+  courseDir: string,
+): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
   perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
   perf.end('loadQuestions');
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
-  for (const courseInstanceId in courseInstanceInfos) {
-    // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
-    // If so, duplicate all that here
-    const assessments = await loadAssessments(courseDir, courseInstanceId, questions);
-    const courseInstance = {
-      courseInstance: courseInstanceInfos[courseInstanceId],
+  for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
+    // Check if the course instance is "expired". A course instance is considered
+    // expired if it either has zero `allowAccess` rules (in which case it is never
+    // accessible), or if it has one or more `allowAccess` rules and they all have
+    // an `endDate` that is in the past.
+    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
+    const courseInstanceExpired = allowAccessRules.every((rule) => {
+      const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+      return endDate && isPast(endDate);
+    });
+
+    const assessments = await loadAssessments(
+      courseDir,
+      courseInstanceId,
+      courseInstanceExpired,
+      questions,
+    );
+
+    courseInstances[courseInstanceId] = {
+      courseInstance,
       assessments,
     };
-    courseInstances[courseInstanceId] = courseInstance;
   }
   return {
     course: courseInfo,
@@ -634,7 +645,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 }
 
 export async function loadCourseInfo(
-  courseId: string,
+  courseId: string | null,
   coursePath: string,
 ): Promise<InfoFile<Course>> {
   const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
@@ -710,25 +721,34 @@ export async function loadCourseInfo(
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
   if (devModeFeatures.length > 0) {
-    const institution = await selectInstitutionForCourse({ course_id: courseId });
-
-    for (const feature of new Set(devModeFeatures)) {
-      // Check if the feature even exists.
-      if (!features.hasFeature(feature)) {
-        infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
-        continue;
+    if (courseId == null) {
+      if (!config.devMode) {
+        infofile.addWarning(
+          loadedData,
+          `Loading course ${coursePath} without an ID, features cannot be validated.`,
+        );
       }
+    } else {
+      const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      // If we're in dev mode, any feature is allowed.
-      if (config.devMode) continue;
+      for (const feature of new Set(devModeFeatures)) {
+        // Check if the feature even exists.
+        if (!features.hasFeature(feature)) {
+          infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
+          continue;
+        }
 
-      // If the feature exists, check if it's granted to the course and warn if not.
-      const featureEnabled = await features.enabled(feature, {
-        institution_id: institution.id,
-        course_id: courseId,
-      });
-      if (!featureEnabled) {
-        infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        // If we're in dev mode, any feature is allowed.
+        if (config.devMode) continue;
+
+        // If the feature exists, check if it's granted to the course and warn if not.
+        const featureEnabled = await features.enabled(feature, {
+          institution_id: institution.id,
+          course_id: courseId,
+        });
+        if (!featureEnabled) {
+          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        }
       }
     }
   }
@@ -929,38 +949,61 @@ function checkDuplicateUUIDs<T>(
  */
 function checkAllowAccessRoles(rule: { role?: string }): string[] {
   const warnings: string[] = [];
-  if ('role' in rule) {
-    if (rule.role !== 'Student') {
-      warnings.push(
-        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
-      );
-    }
+  if ('role' in rule && rule.role !== 'Student') {
+    warnings.push(
+      `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
+    );
   }
   return warnings;
 }
 
 /**
+ * Returns whether or not an `allowAccess` rule date is valid. It's considered
+ * valid if it matches the regexp used in the `input_date` sproc and if it can
+ * parse into a JavaScript `Date` object. If the supplied date is considered
+ * invalid, `null` is returned.
+ */
+function parseAllowAccessDate(date: string): Date | null {
+  // This ensures we don't accept strings like "2024-04", which `parseISO`
+  // would happily accept. We want folks to always be explicit about days/times.
+  //
+  // This matches the regexp used in the `input_date` sproc.
+  const match = /[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}/.exec(date);
+  if (!match) return null;
+
+  const parsedDate = parseISO(date);
+  return isValid(parsedDate) ? parsedDate : null;
+}
+
+/**
  * Checks that dates, if present, are valid and sequenced correctly.
- * @returns A list of errors, if any, and whether there are any dates in the future
+ * @returns A list of errors, if any, and whether it allows access in the future
  */
 function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): {
   errors: string[];
-  dateInFuture: boolean;
+  accessibleInFuture: boolean;
 } {
   const errors: string[] = [];
-  let startDate: Date | null = null,
-    endDate: Date | null = null;
+
+  let startDate: Date | null = null;
+  let endDate: Date | null = null;
+
+  // Note that we're deliberately choosing to ignore timezone handling here. These
+  // will ultimately be interpreted with the course instance's timezone, but all we
+  // care about here are if the dates are valid and that the end date is after the
+  // start date.
+  //
+  // See the `input_date` sproc for where these strings are ultimately parsed for
+  // storage in the database. That sproc actually has stricter validation
   if (rule.startDate) {
-    startDate = parseISO(rule.startDate);
-    if (!isValid(startDate)) {
-      startDate = null;
+    startDate = parseAllowAccessDate(rule.startDate);
+    if (!startDate) {
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if (rule.endDate) {
-    endDate = parseISO(rule.endDate);
-    if (!isValid(endDate)) {
-      endDate = null;
+    endDate = parseAllowAccessDate(rule.endDate);
+    if (!endDate) {
       errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
   }
@@ -969,14 +1012,10 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
       `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
     );
   }
-  let dateInFuture = false;
-  if (startDate && isFuture(startDate)) {
-    dateInFuture = true;
-  }
-  if (endDate && isFuture(endDate)) {
-    dateInFuture = true;
-  }
-  return { errors, dateInFuture };
+  return {
+    errors,
+    accessibleInFuture: !endDate || isFuture(endDate),
+  };
 }
 
 async function validateQuestion(
@@ -1010,6 +1049,7 @@ async function validateQuestion(
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
+  courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1028,13 +1068,9 @@ async function validateAssessment(
     }
   }
 
-  // Check assessment access rules
-  let anyDateInFuture = false;
+  // Check assessment access rules.
   (assessment.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
-    }
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
       errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
@@ -1043,11 +1079,18 @@ async function validateAssessment(
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  // When additional validation is added, we don't want to warn for past course
+  // instances that instructors will never touch again, as they won't benefit
+  // from fixing things. So, we'll only show some warnings for course instances
+  // which are accessible either now or any time in the future.
+  if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
+
+      if (rule.examUuid && rule.mode !== 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      }
     });
   }
 
@@ -1277,7 +1320,7 @@ async function validateCourseInstance(
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_(courseInstance).has('allowIssueReporting')) {
+  if (_.has(courseInstance, 'allowIssueReporting')) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1287,24 +1330,24 @@ async function validateCourseInstance(
     }
   }
 
-  let anyDateInFuture = false;
+  let accessibleInFuture = false;
   (courseInstance.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
+    if (allowAccessResult.accessibleInFuture) {
+      accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  if (accessibleInFuture) {
+    // Only warn about new roles for current or future courses.
     (courseInstance.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
     });
 
-    if (_(courseInstance).has('userRoles')) {
+    if (_.has(courseInstance, 'userRoles')) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
@@ -1371,18 +1414,18 @@ export async function loadCourseInstances(
 export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
+  courseInstanceExpired: boolean,
   questions: Record<string, InfoFile<Question>>,
 ): Promise<Record<string, InfoFile<Assessment>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
-  const validateAssessmentWithQuestions = (assessment: Assessment) =>
-    validateAssessment(assessment, questions);
   const assessments = await loadInfoForDirectory({
     coursePath,
     directory: assessmentsPath,
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: validateAssessmentWithQuestions,
+    validate: (assessment: Assessment) =>
+      validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });
   checkDuplicateUUIDs(

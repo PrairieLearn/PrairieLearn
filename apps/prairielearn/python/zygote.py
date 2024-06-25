@@ -87,11 +87,11 @@ matplotlib.use("PDF")
 prairielearn.get_unit_registry()
 
 
-# We want to conditionally allow/block importing specific modules, namely `rpy2`.
+# We want to conditionally allow/block importing specific modules.
 # This custom importer will allow us to do so, and throw a custom error message.
 #
 # While this won't prevent anything more complex than an `import` statement, it
-# will make it clear to the user that they're not allowed to use `rpy2`. If they
+# will make it clear to the user that they're not allowed to use. If they
 # try to bypass the block, it's up to them to deal with the consequences.
 class ForbidModuleMetaPathFinder(MetaPathFinder):
     def __init__(self) -> None:
@@ -231,7 +231,7 @@ def worker_loop() -> None:
             # question happens to contain multiple occurrences of the same element, the
             # randomizations for each occurrence are independent of each other but still
             # dependent on the variant seed.
-            if type(args[-1]) is dict and not seeded:
+            if type(args[-1]) is dict and not seeded:  # noqa: E721
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
@@ -320,35 +320,29 @@ def worker_loop() -> None:
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
                 if (fcn != "file") and (fcn != "render"):
-                    if val is None:
+                    if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False
                         )
                     else:
-                        json_outp_passed = try_dumps(
-                            {"present": True, "val": args[-1]},
-                            sort_keys=True,
-                            allow_nan=False,
-                        )
                         json_outp = try_dumps(
-                            {"present": True, "val": val},
-                            sort_keys=True,
-                            allow_nan=False,
+                            {"present": True, "val": val}, allow_nan=False
                         )
-                        if json_outp_passed != json_outp:
-                            sys.stderr.write(
-                                'WARNING: Passed and returned value of "data" differ in the function '
-                                + str(fcn)
-                                + "() in the file "
-                                + str(cwd)
-                                + "/"
-                                + str(file)
-                                + ".py.\n\n passed:\n  "
-                                + str(args[-1])
-                                + "\n\n returned:\n  "
-                                + str(val)
-                                + '\n\nThere is no need to be returning "data" at all (it is mutable, i.e., passed by reference). In future, this code will throw a fatal error. For now, the returned value of "data" was used and the passed value was discarded.'
-                            )
+
+                        # We'll only actually complain if the function returned
+                        # a completely different object than the one passed in.
+                        # Otherwise, we'll just silently ignore the return value
+                        # and use the passed-in object (which should in fact be
+                        # the same object).
+                        #
+                        # TODO: Once this has been running in production for a while,
+                        # change this to raise an exception.
+                        sys.stderr.write(
+                            f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                            + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                            + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                            + "In the future, returning a different object will trigger a fatal error."
+                        )
                 else:
                     json_outp = try_dumps(
                         {"present": True, "val": val}, allow_nan=False

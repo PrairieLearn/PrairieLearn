@@ -1,10 +1,12 @@
-import { assert } from 'chai';
-import * as fs from 'fs-extra';
 import * as path from 'path';
 
-import * as util from './util';
-import * as helperDb from '../helperDb';
-import { idsEqual } from '../../lib/id';
+import { assert } from 'chai';
+import fs from 'fs-extra';
+
+import { idsEqual } from '../../lib/id.js';
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 /**
  * Makes an empty question.
@@ -72,10 +74,11 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const missingTagName = 'missing tag name';
     courseData.questions[util.QUESTION_ID].tags?.push(missingTagName);
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedTags = await util.dumpTable('tags');
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
+    assert.isTrue(syncedTag.implicit);
     assert.isNotEmpty(syncedTag?.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
@@ -83,6 +86,7 @@ describe('Question syncing', () => {
     syncedTags = await util.dumpTable('tags');
     syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
+    assert.isTrue(syncedTag.implicit);
 
     // When missing tags are no longer used in any questions, they should
     // be removed from the DB
@@ -99,10 +103,11 @@ describe('Question syncing', () => {
     const missingTopicName = 'missing topic name';
     const originalTopicName = courseData.questions[util.QUESTION_ID].topic;
     courseData.questions[util.QUESTION_ID].topic = missingTopicName;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
+    assert.isTrue(syncedTopic.implicit);
     assert.isNotEmpty(syncedTopic?.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
@@ -110,6 +115,7 @@ describe('Question syncing', () => {
     syncedTopics = await util.dumpTable('topics');
     syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
+    assert.isTrue(syncedTopic.implicit);
 
     // When missing topics are no longer used in any questions, they should
     // be removed from the DB
@@ -181,6 +187,7 @@ describe('Question syncing', () => {
     const syncedTopics = await util.dumpTable('topics');
     const syncedTopic = syncedTopics.find((t) => t.name === newTopic.name);
     assert.equal(newSyncedQuestion?.topic_id, syncedTopic?.id);
+    assert.isTrue(syncedTopic?.implicit);
   });
 
   it('preserves question tag even if question tag is deleted', async () => {
@@ -209,6 +216,7 @@ describe('Question syncing', () => {
     const syncedQuestionTag = syncedQuestionTags.find(
       (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag?.id),
     );
+    assert.isTrue(syncedTag?.implicit);
     assert.ok(syncedQuestionTag);
   });
 
@@ -296,7 +304,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const question = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = question;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question and re-sync
     question.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
@@ -309,7 +317,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const originalQuestion = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and title of the question and re-sync
     const newQuestion = { ...originalQuestion };
@@ -329,7 +337,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     const originalQuestion = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question, add an error and re-sync
     const newQuestion = { ...originalQuestion };
@@ -366,7 +374,7 @@ describe('Question syncing', () => {
     const originalQuestion = makeQuestion(courseData);
     originalQuestion.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
     courseData.questions['a'] = originalQuestion;
-    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above question to a new directory AND add another with the
     // same UUID.

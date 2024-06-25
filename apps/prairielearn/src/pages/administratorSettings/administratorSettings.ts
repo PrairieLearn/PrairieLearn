@@ -1,11 +1,13 @@
-import asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import { cache } from '@prairielearn/cache';
+import asyncHandler from 'express-async-handler';
 
+import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
-import * as chunks from '../../lib/chunks';
-import { AdministratorSettings } from './administratorSettings.html';
-import { IdSchema } from '../../lib/db-types';
+
+import * as chunks from '../../lib/chunks.js';
+import { IdSchema } from '../../lib/db-types.js';
+
+import { AdministratorSettings } from './administratorSettings.html.js';
 
 const router = express.Router();
 
@@ -32,7 +34,7 @@ router.post(
       try {
         course_ids = course_ids_string.split(',').map((x) => IdSchema.parse(x));
       } catch (err) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           `could not split course_ids into an array of integers: ${course_ids_string}`,
         );
@@ -40,7 +42,7 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

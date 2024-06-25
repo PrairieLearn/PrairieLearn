@@ -1,11 +1,11 @@
-// @ts-check
-import fs from 'fs-extra';
 import path from 'node:path';
-import chalk from 'chalk';
-import _ from 'lodash';
-import { structuredPatch } from 'diff';
 
-import { describeDatabase, formatDatabaseDescription } from './describe';
+import chalk from 'chalk';
+import { structuredPatch } from 'diff';
+import fs from 'fs-extra';
+import _ from 'lodash';
+
+import { describeDatabase, formatDatabaseDescription } from './describe.js';
 
 interface DatabaseInfo {
   type: 'database';

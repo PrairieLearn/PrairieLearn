@@ -130,7 +130,7 @@ The `question.html` is regular HTML, with four special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
-2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is is necessary for questions to be graded properly.
+2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
@@ -301,7 +301,7 @@ You can also use this functionality in file-based elements (`pl-figure`, `pl-fil
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
 
 - On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-- On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
+- On `Exam`-type assessments, all questions are effectively single-variant, so the `singleVariant` option has no effect.
 
 ## The `partialCredit` option
 

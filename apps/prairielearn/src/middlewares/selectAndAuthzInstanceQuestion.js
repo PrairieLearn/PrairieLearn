@@ -1,14 +1,14 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups';
+import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const middleware = asyncHandler(async (req, res, next) => {
+export async function selectAndAuthzInstanceQuestion(req, res) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     instance_question_id: req.params.instance_question_id,
     assessment_id: req.params.assessment_id,
@@ -16,7 +16,7 @@ const middleware = asyncHandler(async (req, res, next) => {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if ((result.rowCount ?? 0) === 0) throw error.make(403, 'Access denied');
+  if ((result.rowCount ?? 0) === 0) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, result.rows[0]);
   if (res.locals.assessment.group_work) {
@@ -30,7 +30,7 @@ const middleware = asyncHandler(async (req, res, next) => {
         !res.locals.assessment_instance.group_info.start &&
         !res.locals.authz_data.has_course_instance_permission_view
       ) {
-        throw error.make(
+        throw new error.HttpStatusError(
           400,
           'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
         );
@@ -51,7 +51,7 @@ const middleware = asyncHandler(async (req, res, next) => {
           res.locals.authz_data.user.user_id,
         );
         if (!res.locals.instance_question.group_role_permissions.can_view) {
-          throw error.make(
+          throw new error.HttpStatusError(
             400,
             'Your current group role does not give you permission to see this question.',
           );
@@ -59,7 +59,9 @@ const middleware = asyncHandler(async (req, res, next) => {
       }
     }
   }
+}
+
+export default asyncHandler(async (req, res, next) => {
+  await selectAndAuthzInstanceQuestion(req, res);
   next();
 });
-
-export default middleware;

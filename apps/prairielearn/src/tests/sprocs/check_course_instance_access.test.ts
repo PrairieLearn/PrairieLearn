@@ -1,9 +1,10 @@
 import { assert } from 'chai';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperDb from '../helperDb';
+import * as helperDb from '../helperDb.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('sproc check_course_instance_access* tests', function () {
   before('set up testing server', helperDb.before);

@@ -1,12 +1,14 @@
 // @ts-check
-import * as fs from 'fs-extra';
 import * as path from 'path';
+
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { APP_ROOT_PATH } from './paths';
+import { APP_ROOT_PATH } from './paths.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
 
 /**
@@ -35,7 +37,7 @@ const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers'
  * @param {number} nTemplates
  * @returns {Promise<QuestionFilePathInfo>}
  */
-export async function questionFilePathAsync(
+export async function questionFilePath(
   filename,
   questionDirectory,
   coursePath,
@@ -66,14 +68,14 @@ export async function questionFilePathAsync(
     };
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
     if (result.rowCount === 0) {
-      throw error.make(
+      throw new error.HttpStatusError(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
       );
     }
 
     const templateQuestion = result.rows[0];
-    return questionFilePathAsync(
+    return await questionFilePath(
       filename,
       templateQuestion.directory,
       coursePath,
@@ -113,18 +115,10 @@ export async function questionFilePathAsync(
         };
       } else {
         // No default file, give up
-        throw error.makeWithData('File not found', { fullPath, fullDefaultFilePath });
+        throw new error.AugmentedError('File not found', {
+          data: { fullPath, fullDefaultFilePath },
+        });
       }
     }
   }
-}
-
-export function questionFilePath(filename, questionDirectory, coursePath, question, callback) {
-  questionFilePathAsync(filename, questionDirectory, coursePath, question)
-    .then(({ fullPath, effectiveFilename, rootPath }) => {
-      callback(null, fullPath, effectiveFilename, rootPath);
-    })
-    .catch((err) => {
-      callback(err);
-    });
 }

@@ -1,15 +1,21 @@
-import _ = require('lodash');
 import { assert } from 'chai';
-import request = require('request');
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
+import request from 'request';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import { idsEqual } from '../lib/id';
-import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
+import { config } from '../lib/config.js';
+import { idsEqual } from '../lib/id.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import {
+  testElementClientFiles,
+  testFileDownloads,
+  testQuestionPreviews,
+} from './helperQuestionPreview.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -41,6 +47,19 @@ const differentiatePolynomial = {
   type: 'Freeform',
   title: 'Differentiate a polynomial function of one variable',
 };
+const customElement = {
+  id: '',
+  qid: 'customElement',
+  type: 'Freeform',
+  title: 'Demo: Custom element',
+};
+const testQuestions = [
+  addNumbers,
+  addVectors,
+  downloadFile,
+  differentiatePolynomial,
+  customElement,
+];
 
 describe('Instructor questions', function () {
   this.timeout(60000);
@@ -48,7 +67,7 @@ describe('Instructor questions', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let page, elemList, questionData;
+  let page, questionData;
 
   describe('the database', function () {
     let questions;
@@ -59,30 +78,14 @@ describe('Instructor questions', function () {
       }
       questions = result.rows;
     });
-    it('should contain the addNumbers question', function () {
-      const question = _.find(questions, { directory: addNumbers.qid });
-      assert.isDefined(question);
-      addNumbers.id = question.id;
-    });
-    it('should contain the addVectors question', function () {
-      const question = _.find(questions, { directory: addVectors.qid });
-      assert.isDefined(question);
-      addVectors.id = question.id;
-    });
-    it('should contain the downloadFile question', function () {
-      const question = _.find(questions, {
-        directory: downloadFile.qid,
+
+    for (const testQuestion of testQuestions) {
+      it(`should contain the ${testQuestion.qid} question`, function () {
+        const foundQuestion = _.find(questions, { directory: testQuestion.qid });
+        assert.isDefined(foundQuestion);
+        testQuestion.id = foundQuestion.id;
       });
-      assert.isDefined(question);
-      downloadFile.id = question.id;
-    });
-    it('should contain the differentiatePolynomial question', function () {
-      const question = _.find(questions, {
-        directory: differentiatePolynomial.qid,
-      });
-      assert.isDefined(question);
-      differentiatePolynomial.id = question.id;
-    });
+    }
   });
 
   describe('GET ' + questionsUrlCourse, function () {
@@ -107,32 +110,15 @@ describe('Instructor questions', function () {
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
-    it('should include addNumbers question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, addNumbers.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(addNumbers.qid, elemList[0].qid);
-      assert.equal(addNumbers.title, elemList[0].title);
-    });
-    it('should include addVectors question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, addVectors.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(addVectors.qid, elemList[0].qid);
-      assert.equal(addVectors.title, elemList[0].title);
-    });
-    it('should include downloadFile question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, downloadFile.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(downloadFile.qid, elemList[0].qid);
-      assert.equal(downloadFile.title, elemList[0].title);
-    });
-    it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter((question) =>
-        idsEqual(question.id, differentiatePolynomial.id),
-      );
-      assert.lengthOf(elemList, 1);
-      assert.equal(differentiatePolynomial.qid, elemList[0].qid);
-      assert.equal(differentiatePolynomial.title, elemList[0].title);
-    });
+
+    for (const testQuestion of testQuestions) {
+      it(`should include ${testQuestion.qid} question`, function () {
+        const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
+        assert.lengthOf(elemList, 1);
+        assert.equal(testQuestion.qid, elemList[0].qid);
+        assert.equal(testQuestion.title, elemList[0].title);
+      });
+    }
   });
 
   describe('GET ' + questionsUrl, function () {
@@ -157,38 +143,20 @@ describe('Instructor questions', function () {
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
-    it('should include addNumbers question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, addNumbers.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(addNumbers.qid, elemList[0].qid);
-      assert.equal(addNumbers.title, elemList[0].title);
-    });
-    it('should include addVectors question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, addVectors.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(addVectors.qid, elemList[0].qid);
-      assert.equal(addVectors.title, elemList[0].title);
-    });
-    it('should include downloadFile question', function () {
-      elemList = questionData.filter((question) => idsEqual(question.id, downloadFile.id));
-      assert.lengthOf(elemList, 1);
-      assert.equal(downloadFile.qid, elemList[0].qid);
-      assert.equal(downloadFile.title, elemList[0].title);
-    });
-    it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter((question) =>
-        idsEqual(question.id, differentiatePolynomial.id),
-      );
-      assert.lengthOf(elemList, 1);
-      assert.equal(differentiatePolynomial.qid, elemList[0].qid);
-      assert.equal(differentiatePolynomial.title, elemList[0].title);
-    });
+    for (const testQuestion of testQuestions) {
+      it(`should include ${testQuestion.qid} question`, function () {
+        const elemList = questionData.filter((question) => idsEqual(question.id, testQuestion.id));
+        assert.lengthOf(elemList, 1);
+        assert.equal(testQuestion.qid, elemList[0].qid);
+        assert.equal(testQuestion.title, elemList[0].title);
+      });
+    }
   });
 
   describe('Test Question Previews', function () {
     const previewPageInfo = {
-      siteUrl: siteUrl,
-      baseUrl: baseUrl,
+      siteUrl,
+      baseUrl,
       questionBaseUrl: courseInstanceBaseUrl + '/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
@@ -196,5 +164,6 @@ describe('Instructor questions', function () {
 
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
     testFileDownloads(previewPageInfo, downloadFile, true);
+    testElementClientFiles(previewPageInfo, customElement);
   });
 });

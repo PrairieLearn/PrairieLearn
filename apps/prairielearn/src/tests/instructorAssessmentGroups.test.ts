@@ -1,14 +1,21 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetchCookie from 'fetch-cookie';
+import { step } from 'mocha-steps';
+
 import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient';
-import { IdSchema, type User, UserSchema } from '../lib/db-types';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
+import { IdSchema, type User, UserSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+import {
+  assertAlert,
+  extractAndSaveCSRFToken,
+  fetchCheerio,
+  getCSRFToken,
+} from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 describe('Instructor group controls', () => {
   before('set up testing server', helperServer.before());
@@ -44,7 +51,7 @@ describe('Instructor group controls', () => {
 
   step('can create a new group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -69,7 +76,7 @@ describe('Instructor group controls', () => {
 
   step('cannot create a group with a user already in another group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCookie(fetchCheerio)(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -85,13 +92,13 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(response.$('.alert:contains(in another group)'), 1);
+    assertAlert(response.$, 'in another group');
     assert.lengthOf(response.$('#usersTable td:contains(TestGroup2)'), 0);
   });
 
   step('can create a second group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -116,7 +123,7 @@ describe('Instructor group controls', () => {
 
   step('can create a group with an instructor', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
-    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '[name="add-group-form"]');
+    const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
     const response = await fetchCheerio(instructorAssessmentGroupsUrl, {
       method: 'POST',
@@ -125,13 +132,13 @@ describe('Instructor group controls', () => {
         __action: 'add_group',
         group_name: 'TestGroupWithInstructor',
         // Add instructor to the group
-        uids: 'dev@illinois.edu',
+        uids: 'dev@example.com',
       }),
     });
     assert.equal(response.status, 200);
     const groupRow = response.$('#usersTable tr:contains(TestGroupWithInstructor)');
     assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(`:contains("dev@illinois.edu")`));
+    assert.ok(groupRow.is(`:contains("dev@example.com")`));
   });
 
   step('can add a user to an existing group', async () => {
@@ -176,7 +183,7 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(response.$('.alert:contains(in another group)'), 1);
+    assertAlert(response.$, 'in another group');
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup2):contains(${users[4].uid})`), 0);
   });

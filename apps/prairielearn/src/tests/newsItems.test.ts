@@ -1,14 +1,15 @@
 import { assert } from 'chai';
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as news_items from '../news_items';
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
+import * as news_items from '../news_items/index.js';
 
-import * as helperServer from './helperServer';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 
@@ -40,28 +41,28 @@ describe('News items', function () {
     });
     it('should create a notification for news item 1 for admin user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'dev@illinois.edu',
+        uid: 'dev@example.com',
         news_item_id: 1,
       });
       assert.equal(results.rowCount, 1);
     });
     it('should create a notification for news item 2 for admin user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'dev@illinois.edu',
+        uid: 'dev@example.com',
         news_item_id: 2,
       });
       assert.equal(results.rowCount, 1);
     });
     it('should not create a notification for news item 1 for student user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'student@illinois.edu',
+        uid: 'student@example.com',
         news_item_id: 1,
       });
       assert.equal(results.rowCount, 0);
     });
     it('should not create a notification for news item 2 for student user', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'student@illinois.edu',
+        uid: 'student@example.com',
         news_item_id: 2,
       });
       assert.equal(results.rowCount, 0);
@@ -118,14 +119,14 @@ describe('News items', function () {
     });
     it('should remove notification 1', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'dev@illinois.edu',
+        uid: 'dev@example.com',
         news_item_id: 1,
       });
       assert.equal(results.rowCount, 0);
     });
     it('should still have notification 2', async () => {
       const results = await sqldb.queryAsync(sql.select_notification, {
-        uid: 'dev@illinois.edu',
+        uid: 'dev@example.com',
         news_item_id: 2,
       });
       assert.equal(results.rowCount, 1);

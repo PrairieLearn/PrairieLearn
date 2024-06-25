@@ -1,9 +1,11 @@
-const http = require('http');
-const Docker = require('dockerode');
+// @ts-check
+import * as http from 'node:http';
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
-const lifecycle = require('./lifecycle');
+import Docker from 'dockerode';
+
+import { config } from './config.js';
+import * as lifecycle from './lifecycle.js';
+import globalLogger from './logger.js';
 
 /**
  * Stores our current status. Once we transition to an unhealthy state, there's
@@ -20,7 +22,7 @@ let unhealthyReason = null;
  * 2) an internal checker that will ping docker at a certain interval and will
  *    kill our process if the daemon can't be reached.
  */
-module.exports.init = function (callback) {
+export async function init() {
   const docker = new Docker();
 
   const handler = (req, res) => {
@@ -36,40 +38,41 @@ module.exports.init = function (callback) {
   const doHealthCheck = () => {
     docker.ping((err) => {
       if (err) {
-        module.exports.flagUnhealthy('Docker unreachable');
+        flagUnhealthy('Docker unreachable');
       }
       setTimeout(doHealthCheck, config.healthCheckInterval);
     });
   };
 
-  docker.ping((err) => {
-    if (err) {
-      globalLogger.error(`Docker ping failed during healthCheck start: ${err}`);
-      return callback(err);
-    }
+  await docker.ping().catch((err) => {
+    globalLogger.error(`Docker ping failed during healthCheck start: ${err}`);
+    throw err;
+  });
 
-    setTimeout(doHealthCheck, config.healthCheckInterval);
+  setTimeout(doHealthCheck, config.healthCheckInterval);
 
-    const server = http.createServer(handler);
+  const server = http.createServer(handler);
+
+  await new Promise((resolve, reject) => {
     server.listen(config.healthCheckPort, (err) => {
       if (err) {
         globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
-        callback(err);
+        reject(err);
       } else {
         globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
-        callback(null);
+        resolve(null);
       }
     });
   });
-};
+}
 
-module.exports.flagUnhealthy = function (reason) {
+export function flagUnhealthy(reason) {
   globalLogger.error(`A health check failed: ${reason}`);
   healthy = false;
   unhealthyReason = reason;
   lifecycle.abandonLaunch();
-};
+}
 
-module.exports.isHealthy = function () {
+export function isHealthy() {
   return healthy;
-};
+}

@@ -32,8 +32,11 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
   # Run the PrairieLearn server in development mode.
   make dev
 
-  # Or, run PrairieLearn like it's run in production.
+  # Or, run PrairieLearn like it is run in production.
   make start
+
+  # To support workspaces in local development, use `make dev-all` or `make start-all` to run
+  # both PrairieLearn and a workspace server application.
 
   # To stop the server, press Ctrl-C.
   # To exit the container, press Ctrl-C and then Ctrl-D.
@@ -116,7 +119,7 @@ The previous shells were launched in their own containers. If you want to open a
 
   which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-  ```
+  ```console
   CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
   e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
   ```

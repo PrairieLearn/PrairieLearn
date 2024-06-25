@@ -1,16 +1,19 @@
 import { assert } from 'chai';
 
-import * as helperDb from '../../tests/helperDb';
-import * as helperCourse from '../../tests/helperCourse';
-import { ensureEnrollment } from '../../models/enrollment';
+import { queryRow } from '@prairielearn/postgres';
+
+import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
+
 import {
+  getEnrollmentCountsForCourse,
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
-} from './enrollment';
-import { getOrCreateUser } from '../../tests/utils/auth';
-import { ensurePlanGrant } from './plan-grants';
-import { queryRow } from '@prairielearn/postgres';
-import { CourseInstanceSchema } from '../../lib/db-types';
+} from './enrollment.js';
+import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
@@ -45,16 +48,19 @@ describe('getEnrollmentCountsForInstitution', () => {
       uid: 'free@example.com',
       name: 'Free Student',
       uin: 'free1',
+      email: 'free@example.com',
     });
     const paidUser1 = await getOrCreateUser({
       uid: 'paid1@example.com',
       name: 'Paid Student 1',
       uin: 'paid1',
+      email: 'paid1@example.com',
     });
     const paidUser2 = await getOrCreateUser({
       uid: 'paid2@example.com',
       name: 'Paid Student 2',
       uin: 'paid2',
+      email: 'paid2@example.com',
     });
 
     await ensureEnrollment({
@@ -114,6 +120,91 @@ describe('getEnrollmentCountsForInstitution', () => {
   });
 });
 
+describe('getEnrollmentCountsForCourse', () => {
+  beforeEach(async function () {
+    await helperDb.before.call(this);
+    await helperCourse.syncCourse();
+  });
+
+  afterEach(async function () {
+    await helperDb.after.call(this);
+  });
+
+  it('returns zero enrollments by default', async () => {
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+
+    assert.equal(result.free, 0);
+    assert.equal(result.paid, 0);
+  });
+
+  it('returns a single free enrollment', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+      email: 'student@example.com',
+    });
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+
+    assert.equal(result.free, 1);
+    assert.equal(result.paid, 0);
+  });
+
+  it('returns a single paid enrollment', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+      email: 'student@example.com',
+    });
+
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await ensurePlanGrant({
+      plan_grant: {
+        institution_id: '1',
+        course_instance_id: '1',
+        user_id: user.user_id,
+        plan_name: 'basic',
+        type: 'stripe',
+      },
+      authn_user_id: '1',
+    });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+    assert.equal(result.free, 0);
+    assert.equal(result.paid, 1);
+  });
+
+  it('does not include non-basic plan grants', async () => {
+    const user = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Example Student',
+      uin: 'student',
+      email: 'student@example.com',
+    });
+
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await ensurePlanGrant({
+      plan_grant: {
+        institution_id: '1',
+        course_instance_id: '1',
+        user_id: user.user_id,
+        plan_name: 'compute',
+        type: 'stripe',
+      },
+      authn_user_id: '1',
+    });
+
+    const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
+    assert.equal(result.free, 1);
+    assert.equal(result.paid, 0);
+  });
+});
+
 describe('getEnrollmentCountsForCourseInstance', () => {
   beforeEach(async function () {
     await helperDb.before.call(this);
@@ -136,6 +227,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
@@ -150,6 +242,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -175,6 +268,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });

@@ -1,4 +1,12 @@
-module.exports = function (req, res, next) {
+// @ts-check
+import { clearCookie } from '../lib/cookie.js';
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export default function (req, res, next) {
   // We use the pl_requested_data_changed cookie to detect when we
   // have attempted to change the effective user (or other emulation
   // data). This cookie is set in pages/partials/navbar.ejs and
@@ -15,9 +23,9 @@ module.exports = function (req, res, next) {
   // unauthorized page for some reason other than emulating, they
   // will receive an error page as expected.
 
-  if (req.cookies.pl_requested_data_changed) {
-    res.clearCookie('pl_requested_data_changed');
+  if (req.cookies.pl2_requested_data_changed) {
+    clearCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed']);
     res.locals.pl_requested_data_changed = true;
   }
   next();
-};
+}

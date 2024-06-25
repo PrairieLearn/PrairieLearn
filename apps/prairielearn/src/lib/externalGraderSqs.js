@@ -1,21 +1,23 @@
 // @ts-check
-import * as async from 'async';
 import { EventEmitter } from 'events';
-import * as fs from 'fs-extra';
-import * as tar from 'tar';
-const _ = require('lodash');
-import { Upload } from '@aws-sdk/lib-storage';
-import { S3 } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
+
+import { S3 } from '@aws-sdk/client-s3';
 import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { Upload } from '@aws-sdk/lib-storage';
+import * as async from 'async';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import * as tar from 'tar';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeAwsClientConfig, makeS3ClientConfig } from './aws';
-import { config as globalConfig } from './config';
-import { getJobDirectory, buildDirectory } from './externalGraderCommon';
+import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
+import { config as globalConfig } from './config.js';
+import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let QUEUE_URL = null;
 
@@ -31,19 +33,12 @@ export class ExternalGraderSqs {
 
     async.series(
       [
-        (callback) => {
-          buildDirectory(dir, submission, variant, question, course, callback);
-        },
         async () => {
+          await buildDirectory(dir, submission, variant, question, course);
+
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
-          let tarball = tar.create(
-            {
-              gzip: true,
-              cwd: dir,
-            },
-            ['.'],
-          );
+          let tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
 
           const passthrough = new PassThrough();
           tarball.pipe(passthrough);
@@ -55,14 +50,10 @@ export class ExternalGraderSqs {
           };
 
           const s3 = new S3(makeS3ClientConfig());
-          await new Upload({
-            client: s3,
-            params,
-          }).done();
-        },
-        async () => {
+          await new Upload({ client: s3, params }).done();
+
           // Store S3 info for this job
-          sqldb.queryAsync(sql.update_s3_info, {
+          await sqldb.queryAsync(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,
@@ -104,7 +95,7 @@ async function sendJobToQueue(jobId, question, config) {
     },
     async () => {
       const messageBody = {
-        jobId: jobId,
+        jobId,
         image: question.external_grading_image,
         entrypoint: question.external_grading_entrypoint,
         s3Bucket: config.externalGradingS3Bucket,

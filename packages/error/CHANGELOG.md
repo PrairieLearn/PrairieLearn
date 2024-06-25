@@ -1,5 +1,48 @@
 # @prairielearn/error
 
+## 2.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+## 1.2.0
+
+### Minor Changes
+
+- 49a689e: Introduce `formatErrorStack` and `formatErrorStackSafe` functions
+
+## 1.1.1
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 1.1.0
+
+### Minor Changes
+
+- 9550c19: Introduce `AugmentedError` and `HttpStatusError` classes
+- 3f2beec: Add `augmentError` function
+
+## 1.0.15
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
 ## 1.0.14
 
 ### Patch Changes

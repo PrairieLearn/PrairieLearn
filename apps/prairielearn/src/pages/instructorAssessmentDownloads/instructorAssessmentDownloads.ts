@@ -1,17 +1,20 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import archiver = require('archiver');
-import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import archiver from 'archiver';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { getGroupConfig } from '../../lib/groups';
-import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html';
+
+import { getGroupConfig } from '../../lib/groups.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+
+import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type Columns = [string, string][];
 
@@ -58,7 +61,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.send(
       InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
@@ -93,7 +96,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     //
     // NOTE: you could argue that some downloads should be restricted further to users with
@@ -172,7 +175,6 @@ router.get(
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       const columns = identityColumn.concat([
@@ -201,7 +203,6 @@ router.get(
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       // Replace user-friendly column names with upload-friendly names
@@ -249,7 +250,6 @@ router.get(
         include_all,
         include_final,
         include_best,
-        group_work: res.locals.assessment.group_work,
       });
 
       let submissionColumn = identityColumn;
@@ -385,7 +385,7 @@ router.get(
         group_work: true,
       });
     } else {
-      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );

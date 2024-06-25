@@ -1,19 +1,22 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
-import * as qs from 'qs';
+import asyncHandler from 'express-async-handler';
+import qs from 'qs';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render';
-import * as manualGrading from '../../../lib/manualGrading';
-import { IdSchema, UserSchema } from '../../../lib/db-types';
-import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
-import { GradingPanel } from './gradingPanel.html';
-import { RubricSettingsModal } from './rubricSettingsModal.html';
+import { IdSchema, UserSchema } from '../../../lib/db-types.js';
+import { reportIssueFromForm } from '../../../lib/issues.js';
+import * as manualGrading from '../../../lib/manualGrading.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+
+import { GradingPanel } from './gradingPanel.html.js';
+import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
+import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
@@ -28,7 +31,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
   // If student never loaded question or never submitted anything (submission is null)
   if (variant_with_submission_id == null) {
-    throw error.make(404, 'Instance question does not have a gradable submission.');
+    throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
   await getAndRenderVariant(variant_with_submission_id, null, resLocals);
@@ -60,7 +63,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw error.make(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
     res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
@@ -68,20 +71,21 @@ router.get(
 );
 
 router.get(
-  '/variant/:variant_id/submission/:submission_id',
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const results = await renderPanelsForSubmission({
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'manual_grading',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
     });
-    res.send({ submissionPanel: results.submissionPanel });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 
@@ -116,6 +120,11 @@ const PostBodySchema = z.union([
     score_auto_points: z.coerce.number().nullish(),
     score_auto_percent: z.coerce.number().nullish(),
     submission_note: z.string().nullish(),
+    unsafe_issue_ids_close: IdSchema.or(z.record(z.string(), IdSchema))
+      .nullish()
+      .transform((val) =>
+        val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
+      ),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -154,13 +163,18 @@ const PostBodySchema = z.union([
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
   }),
+  z.object({
+    __action: z.literal('report_issue'),
+    __variant_id: IdSchema,
+    description: z.string(),
+  }),
 ]);
 
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw error.make(403, 'Access denied (must be a student data editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
@@ -202,6 +216,14 @@ router.post(
 
       if (modified_at_conflict) {
         return res.redirect(req.baseUrl + `?conflict_grading_job_id=${grading_job_id}`);
+      }
+      // Only close issues if the submission was successfully graded
+      if (body.unsafe_issue_ids_close.length > 0) {
+        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+          issue_ids: body.unsafe_issue_ids_close,
+          instance_question_id: res.locals.instance_question.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        });
       }
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
@@ -248,8 +270,11 @@ router.post(
           res.locals.instance_question.id,
         ),
       );
+    } else if (body.__action === 'report_issue') {
+      await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

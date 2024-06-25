@@ -1,8 +1,8 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseRequestRow } from '../lib/course-request';
-import { Institution } from '../lib/db-types';
+import { CourseRequestRow } from '../lib/course-request.js';
+import { Institution } from '../lib/db-types.js';
 
 export function CourseRequestsTable({
   rows,
@@ -40,13 +40,13 @@ export function CourseRequestsTable({
         <table class="table table-sm">
           <thead>
             <tr>
-              <th>Short Name</th>
-              <th>Title</th>
-              <th>Requested By</th>
+              <th>Created At</th>
+              <th>Short Name / Title</th>
               <th>Institution</th>
-              <th>Official Email</th>
-              <th>User ID</th>
+              <th>Requested By</th>
+              <th>PrairieLearn User</th>
               <th>GitHub Username</th>
+              <th>Referral Source</th>
               <th>Status</th>
               ${showAll ? html`<th>Updated By</th>` : ''}
               <th>Actions</th>
@@ -57,13 +57,15 @@ export function CourseRequestsTable({
             ${rows.map((row) => {
               return html`
                 <tr>
-                  <td class="align-middle">${row.short_name}</td>
-                  <td class="align-middle">${row.title}</td>
-                  <td class="align-middle">${row.first_name} ${row.last_name}</td>
+                  <td class="align-middle">${row.created_at.toISOString()}</td>
+                  <td class="align-middle">${row.short_name}: ${row.title}</td>
                   <td class="align-middle">${row.institution}</td>
-                  <td class="align-middle">${row.work_email}</td>
-                  <td class="align-middle">${row.user_uid}</td>
+                  <td class="align-middle">
+                    ${row.first_name} ${row.last_name} (${row.work_email})
+                  </td>
+                  <td class="align-middle">${row.user_name} (${row.user_uid})</td>
                   <td class="align-middle">${row.github_user}</td>
+                  <td class="align-middle">${row.referral_source}</td>
                   <td class="align-middle">
                     ${CourseRequestStatusIcon({ status: row.approved_status })}
                   </td>
@@ -79,52 +81,48 @@ export function CourseRequestsTable({
                   <td class="align-middle">
                     ${row.approved_status !== 'approved'
                       ? html`
-                          <form
-                            name="approve-request-form-${row.id}"
-                            method="POST"
-                            class="d-flex align-items-start"
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-danger text-nowrap mr-2"
+                            id="deny-request-button-${row.id}"
+                            data-toggle="popover"
+                            data-container="body"
+                            data-boundary="window"
+                            data-html="true"
+                            data-placement="auto"
+                            title="Deny course request"
+                            data-content="${escapeHtml(
+                              CourseRequestDenyForm({
+                                id: `deny-request-button-${row.id}`,
+                                request: row,
+                                csrfToken,
+                              }),
+                            )}"
                           >
-                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                            <input
-                              type="hidden"
-                              name="__action"
-                              value="approve_deny_course_request"
-                            />
-                            <input type="hidden" name="request_id" value="${row.id}" />
-
-                            <button
-                              type="submit"
-                              class="btn btn-sm btn-danger text-nowrap mr-2"
-                              name="approve_deny_action"
-                              value="deny"
-                            >
-                              <i class="fa fa-times" aria-hidden="true"></i> Deny
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-success text-nowrap"
-                              id="approve-request-button-${row.id}"
-                              name="approve_deny_action"
-                              value="approve"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-boundary="window"
-                              data-html="true"
-                              data-placement="auto"
-                              title="Approve course request"
-                              data-content="${escapeHtml(
-                                CourseRequestApproveForm({
-                                  id: `approve-request-button-${row.id}`,
-                                  request: row,
-                                  institutions,
-                                  coursesRoot,
-                                  csrfToken,
-                                }),
-                              )}"
-                            >
-                              <i class="fa fa-check" aria-hidden="true"></i> Approve
-                            </button>
-                          </form>
+                            <i class="fa fa-times" aria-hidden="true"></i> Deny
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-success text-nowrap"
+                            id="approve-request-button-${row.id}"
+                            data-toggle="popover"
+                            data-container="body"
+                            data-boundary="window"
+                            data-html="true"
+                            data-placement="auto"
+                            title="Approve course request"
+                            data-content="${escapeHtml(
+                              CourseRequestApproveForm({
+                                id: `approve-request-button-${row.id}`,
+                                request: row,
+                                institutions,
+                                coursesRoot,
+                                csrfToken,
+                              }),
+                            )}"
+                          >
+                            <i class="fa fa-check" aria-hidden="true"></i> Approve
+                          </button>
                         `
                       : ''}
                   </td>
@@ -149,7 +147,7 @@ export function CourseRequestsTable({
                 ${row.jobs.length > 0
                   ? html`
                       <tr>
-                        <td colspan="${showAll ? 11 : 10}" class="p-0">
+                        <td colspan="${showAll ? 10 : 9}" class="p-0">
                           <div id="course-requests-job-list-${row.id}" class="collapse">
                             <table class="table table-sm table-active mb-0">
                               <thead>
@@ -172,7 +170,7 @@ export function CourseRequestsTable({
                                       <td>${job.authn_user_name}</td>
                                       <td>
                                         ${renderEjs(
-                                          __filename,
+                                          import.meta.url,
                                           "<%- include('../pages/partials/jobStatus') %>",
                                           { status: job.status },
                                         )}
@@ -312,6 +310,29 @@ function CourseRequestApproveForm({
         </button>
         <button type="submit" class="btn btn-primary">Create course</button>
       </div>
+    </form>
+  `;
+}
+
+function CourseRequestDenyForm({
+  id,
+  request,
+  csrfToken,
+}: {
+  id: string;
+  request: CourseRequestRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="approve_deny_course_request" />
+      <input type="hidden" name="approve_deny_action" value="deny" />
+      <input type="hidden" name="request_id" value="${request.id}" />
+      <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger">Deny</button>
     </form>
   `;
 }

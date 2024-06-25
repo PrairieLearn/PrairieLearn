@@ -1,21 +1,22 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
-const SearchString = require('search-string');
-const { z } = require('zod');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import SearchString from 'search-string';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import * as paginate from '../../lib/paginate';
-import * as sqldb from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
-import { idsEqual } from '../../lib/id';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-import { IdSchema } from '../../lib/db-types';
+import * as sqldb from '@prairielearn/postgres';
+
+import { IdSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import * as paginate from '../../lib/paginate.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const PAGE_SIZE = 100;
 
@@ -113,7 +114,7 @@ async function updateIssueOpen(issue_id, new_open, course_id, authn_user_id) {
     IdSchema,
   );
   if (!result) {
-    throw error.make(
+    throw new error.HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
     );
@@ -251,7 +252,7 @@ router.get(
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -259,7 +260,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw error.make(403, 'Access denied (must be a course editor)');
+      throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
     }
 
     if (req.body.__action === 'open') {
@@ -292,7 +293,7 @@ router.post(
       flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw error.make(400, `unknown __action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

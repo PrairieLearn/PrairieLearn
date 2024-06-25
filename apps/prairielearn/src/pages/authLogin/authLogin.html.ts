@@ -1,9 +1,9 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { config } from '../../lib/config';
-import { assetPath } from '../../lib/assets';
-import { isEnterprise } from '../../lib/license';
+import { assetPath } from '../../lib/assets.js';
+import { config } from '../../lib/config.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export interface InstitutionAuthnProvider {
   name: string;
@@ -28,7 +28,7 @@ function LoginPageContainer({
     <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         <style>
           html,
           body {
@@ -135,7 +135,7 @@ function LoginPageContainer({
 
 function ShibLoginButton() {
   return html`
-    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback" role="button">
+    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
       ${config.shibLinkLogo != null
         ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
         : html`<span class="social-icon"></span>`}
@@ -146,7 +146,7 @@ function ShibLoginButton() {
 
 function GoogleLoginButton() {
   return html`
-    <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login" role="button">
+    <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
       <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Google</span>
     </a>
@@ -155,7 +155,7 @@ function GoogleLoginButton() {
 
 function MicrosoftLoginButton() {
   return html`
-    <a class="btn btn-dark d-block position-relative" href="/pl/azure_login" role="button">
+    <a class="btn btn-dark d-block position-relative" href="/pl/azure_login">
       <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Microsoft</span>
     </a>
@@ -299,7 +299,7 @@ export function AuthLoginUnsupportedProvider({
 
 function DevModeBypass() {
   return html`
-    <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
+    <a class="btn btn-success w-100" href="/pl/dev_login">
       <span class="font-weight-bold">Dev Mode Bypass</span>
     </a>
     <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
@@ -321,6 +321,13 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
         <label for="dev_uin">UIN</label>
         <input class="form-control" id="dev_uin" name="uin" aria-describedby="dev_uin_help" />
         <small id="dev_uin_help" class="form-text text-muted">
+          Optional; will be set to <tt>null</tt> if not specified.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="dev_email">Email</label>
+        <input class="form-control" id="dev_email" name="email" aria-describedby="dev_email_help" />
+        <small id="dev_email_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>

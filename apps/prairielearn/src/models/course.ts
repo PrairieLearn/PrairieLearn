@@ -1,12 +1,14 @@
-import { promisify } from 'util';
 import { exec } from 'child_process';
+import { promisify } from 'util';
+
 import { z } from 'zod';
-import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
+
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { Course, CourseSchema } from '../lib/db-types';
+import { Course, CourseSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({
@@ -17,6 +19,7 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
     has_course_permission_preview: z.boolean(),
   }),
 });
+export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(
@@ -40,9 +43,11 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
     });
     return stdout.trim();
   } catch (err) {
-    throw error.makeWithData(`Could not get git status; exited with code ${err.code}`, {
-      stdout: err.stdout,
-      stderr: err.stderr,
+    throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
+      data: {
+        stdout: err.stdout,
+        stderr: err.stderr,
+      },
     });
   }
 }

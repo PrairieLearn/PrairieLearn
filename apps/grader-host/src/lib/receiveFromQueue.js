@@ -1,21 +1,39 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const Ajv = require('ajv').default;
-const {
+import { setTimeout as sleep } from 'node:timers/promises';
+
+import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
-} = require('@aws-sdk/client-sqs');
-const Sentry = require('@prairielearn/sentry');
-const { setTimeout: sleep } = require('node:timers/promises');
+} from '@aws-sdk/client-sqs';
+import * as async from 'async';
+import { z } from 'zod';
 
-const globalLogger = require('./logger');
-const { config } = require('./config');
+import * as Sentry from '@prairielearn/sentry';
 
-let messageSchema = null;
+import { config } from './config.js';
+import globalLogger from './logger.js';
+
+const GradingJobMessageSchema = z.object({
+  /** The unique ID for this job. */
+  jobId: z.string(),
+  /** The Docker image that the grading job will be executed in. */
+  image: z.string(),
+  /** The entrypoint for the container. */
+  entrypoint: z.string(),
+  /** The number of seconds after which the grading job will time out. */
+  timeout: z.number(),
+  /** Whether or not the container should have internet access. */
+  enableNetworking: z.boolean(),
+  /** Environment variables for the container. */
+  environment: z.record(z.string()),
+  /** The AWS S3 bucket containing this job's files. */
+  s3Bucket: z.string(),
+  /** The root key for the job's files. */
+  s3RootKey: z.string(),
+});
+
+/** @typedef {z.infer<typeof GradingJobMessageSchema>} GradingJobMessage */
 
 /**
  * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
@@ -70,95 +88,56 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
  *
  * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
  * @param {string} queueUrl
- * @param {Function} receiveCallback
- * @param {Function} doneCallback
+ * @param {(message: GradingJobMessage) => Promise<void>} receiveCallback
  */
-module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
-  let parsedMessage, receiptHandle;
-
+export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
   /** @type {AbortController} */
   let heartbeatAbortController;
 
-  async.series(
-    [
-      (callback) => {
-        globalLogger.info('Waiting for next job...');
-        async.doUntil(
-          async () => {
-            const data = await sqs.send(
-              new ReceiveMessageCommand({
-                MaxNumberOfMessages: 1,
-                QueueUrl: queueUrl,
-                WaitTimeSeconds: 20,
-              }),
-            );
-            const message = data.Messages?.[0];
-            if (!message || !message.Body) return null;
-            globalLogger.info('Received job!');
-            parsedMessage = JSON.parse(message.Body);
-            receiptHandle = message.ReceiptHandle;
-            return parsedMessage;
-          },
-          (result, callback) => {
-            callback(null, !!result);
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        if (!messageSchema) {
-          fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
-            if (ERR(err, (err) => globalLogger.error(err))) {
-              globalLogger.error('Failed to read message schema; exiting process.');
-              process.exit(1);
-            }
-            const ajv = new Ajv();
-            messageSchema = ajv.compile(data);
-            return callback(null);
-          });
-        } else {
-          return callback(null);
-        }
-      },
-      (callback) => {
-        const valid = messageSchema(parsedMessage);
-        if (!valid) {
-          globalLogger.error(messageSchema.errors);
-          return callback(new Error('Message did not match schema.'));
-        } else {
-          return callback(null);
-        }
-      },
-      async () => {
-        heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
-      },
-      (callback) => {
-        receiveCallback(parsedMessage, (err) => {
-          heartbeatAbortController.abort();
-          if (err) {
-            globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
-            callback(err);
-          } else {
-            globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
-            callback(null);
-          }
-        });
-      },
-      async () => {
-        await sqs.send(
-          new DeleteMessageCommand({
-            QueueUrl: queueUrl,
-            ReceiptHandle: receiptHandle,
-          }),
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, doneCallback)) return;
-      doneCallback(null);
+  globalLogger.info('Waiting for next job...');
+  const { parsedMessage, receiptHandle } = await async.doUntil(
+    async () => {
+      const data = await sqs.send(
+        new ReceiveMessageCommand({
+          MaxNumberOfMessages: 1,
+          QueueUrl: queueUrl,
+          WaitTimeSeconds: 20,
+        }),
+      );
+      const message = data.Messages?.[0];
+      if (!message || !message.Body) return null;
+      globalLogger.info('Received job!');
+      const parsedMessage = JSON.parse(message.Body);
+      const receiptHandle = message.ReceiptHandle;
+      return { parsedMessage, receiptHandle };
+    },
+    async (result) => {
+      return !!result;
     },
   );
-};
+
+  const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
+
+  heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
+
+  await receiveCallback(validatedMessage)
+    .finally(() => {
+      heartbeatAbortController.abort();
+    })
+    .then(
+      () => {
+        globalLogger.info(`Job ${validatedMessage.jobId} finished successfully.`);
+      },
+      (err) => {
+        globalLogger.info(`Job ${validatedMessage.jobId} errored.`);
+        throw err;
+      },
+    );
+
+  await sqs.send(
+    new DeleteMessageCommand({
+      QueueUrl: queueUrl,
+      ReceiptHandle: receiptHandle,
+    }),
+  );
+}

@@ -1,18 +1,20 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import * as authLib from '../../lib/authn.js';
+import { config } from '../../lib/config.js';
 
 import {
   AuthLogin,
   AuthLoginUnsupportedProvider,
   type InstitutionAuthnProvider,
-} from './authLogin.html';
-import { config } from '../../lib/config';
-import * as authLib from '../../lib/authn';
+} from './authLogin.html.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 const InstitutionAuthnProviderSchema = z.object({
@@ -108,13 +110,14 @@ const DevLoginParamsSchema = z.object({
   uid: z.string().min(1),
   name: z.string().min(1),
   uin: z.string().nullable().optional().default(null),
+  email: z.string().nullable().optional().default(null),
 });
 
 router.post(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!config.devMode) {
-      throw error.make(404, 'Not Found');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     if (req.body.__action === 'dev_login') {
@@ -124,6 +127,7 @@ router.post(
         uid: body.uid,
         name: body.name,
         uin: body.uin || null,
+        email: body.email || null,
         provider: 'dev',
       };
 
@@ -132,7 +136,7 @@ router.post(
         pl_authn_cookie: true,
       });
     } else {
-      throw error.make(400, `Unknown action: ${req.body.__action}`);
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );

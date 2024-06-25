@@ -36,5 +36,3 @@ def generate(data):
     data["params"]["yD"] = yD
     data["params"]["base_rectangle"] = base_rectangle
     data["params"]["height_rectangle"] = height_rectangle
-
-    return data

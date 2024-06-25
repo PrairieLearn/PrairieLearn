@@ -1,7 +1,6 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { config } from '../lib/config';
 
 import {
   queryAsync,
@@ -10,11 +9,15 @@ import {
   queryOneRowAsync,
   queryRow,
 } from '@prairielearn/postgres';
-const sql = loadSqlEquiv(__filename);
 
-import helperServer = require('./helperServer');
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types';
+import { config } from '../lib/config.js';
+import { UserSchema, GroupRoleSchema, IdSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+
+import { assertAlert } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -55,7 +58,8 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
 async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
-  formName: string,
+  formName: string | null,
+  formContainer = 'body',
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -69,7 +73,7 @@ async function switchUserAndLoadAssessment(
   const $ = cheerio.load(page);
 
   // Check that the correct CSRF form exists
-  const elementQuery = `form[name="${formName}"] input[name="__csrf_token"]`;
+  const elementQuery = `${formContainer} form${formName ? `[name="${formName}"]` : ''} input[name="__csrf_token"]`;
   const csrfTokenElement = $(elementQuery);
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value', 'CSRF token value must exist');
   assert.isString(csrfTokenElement.attr('value'), 'CSRF token must be a string');
@@ -91,7 +95,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName: groupName,
+      groupName,
     }),
   });
   assert.isOk(res.ok);
@@ -258,7 +262,8 @@ async function prepareGroup() {
   const { $: $preJoinFirstUserPage } = await switchUserAndLoadAssessment(
     studentUsers[0],
     assessmentUrl,
-    'leave-group-form',
+    null,
+    '#leaveGroupModal',
   );
   const validRoleConfig = [
     { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
@@ -336,7 +341,8 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       const { $: $assessmentInstanceFirstUserPage } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
-        'leave-group-form',
+        null,
+        '#leaveGroupModal',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
@@ -493,7 +499,8 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       const { $: $assessmentInstanceFirstUserPage, csrfToken } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
-        'leave-group-form',
+        null,
+        '#leaveGroupModal',
       );
       const invalidRoleConfig = [
         { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
@@ -511,16 +518,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       let errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      let tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      let lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
+      assertAlert($, 'role configuration is currently invalid');
+      assertAlert($, 'too many roles');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"');
 
       // Enter question one
       const res = await fetch(questionOneUrl);
@@ -530,28 +532,25 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       const { $: assessmentInstanceSecondUserPage } = await switchUserAndLoadAssessment(
         studentUsers[1],
         assessmentInstanceUrl,
-        'leave-group-form',
+        null,
+        '#leaveGroupModal',
       );
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
+      assertAlert($, 'role configuration is currently invalid');
+      assertAlert($, 'too many roles');
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"');
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
         await switchUserAndLoadAssessment(
           studentUsers[0],
           assessmentInstanceUrl,
-          'leave-group-form',
+          null,
+          '#leaveGroupModal',
         );
       $ = await updateGroupRoles(
         validRoleConfig,
@@ -563,16 +562,11 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
-      assert.lengthOf(invalidRoleConfigError, 0, 'no invalid role config error should show');
       errorNotification = $('span.badge-danger');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
-      tooManyRolesError = $('.alert:contains(too many roles)');
-      assert.lengthOf(tooManyRolesError, 0, 'role config should be valid and show no errors');
-      lessRecordersError = $(
-        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-      );
-      assert.lengthOf(lessRecordersError, 0, 'role config should be valid and show no errors');
+      assertAlert($, 'role configuration is currently invalid', 0);
+      assertAlert($, 'too many roles', 0);
+      assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });
   });
 });

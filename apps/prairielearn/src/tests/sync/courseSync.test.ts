@@ -1,9 +1,11 @@
 import { assert } from 'chai';
-import * as util from './util';
-import * as helperDb from '../helperDb';
-import { config } from '../../lib/config';
-import { features } from '../../lib/features';
-import { selectOrInsertCourseByPath } from '../../models/course';
+
+import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
+import { selectOrInsertCourseByPath } from '../../models/course.js';
+import * as helperDb from '../helperDb.js';
+
+import * as util from './util.js';
 
 const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';

@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+
 import { eachSeries } from 'async';
 
 import * as error from '@prairielearn/error';
@@ -60,7 +61,6 @@ export async function init() {
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
-      'assessment_instances_select_for_auto_finish.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',
@@ -106,7 +106,7 @@ export async function init() {
     async (filename) => {
       logger.verbose('Loading ' + filename);
       try {
-        const sql = await readFile(join(__dirname, filename), 'utf8');
+        const sql = await readFile(join(import.meta.dirname, filename), 'utf8');
         await queryAsync(sql, []);
       } catch (err) {
         throw error.addData(err, { sqlFile: filename });

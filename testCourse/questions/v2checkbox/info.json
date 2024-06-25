@@ -2,7 +2,6 @@
     "uuid": "b1533f99-f8e3-4495-b31c-d479096d40ae",
     "title": "Checkbox question (v2)",
     "topic": "Test",
-    "tags": [],
     "type": "Checkbox",
     "options": {
       "text": "Check the TRUE statements.",

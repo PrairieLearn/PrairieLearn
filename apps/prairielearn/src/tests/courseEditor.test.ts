@@ -1,23 +1,24 @@
-import ERR = require('async-stacktrace');
-import { assert } from 'chai';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as async from 'async';
+
+import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { exec } from 'child_process';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import klaw from 'klaw';
 import fetch from 'node-fetch';
-import klaw = require('klaw');
 import * as tmp from 'tmp';
 
-import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-import * as helperServer from './helperServer';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 
-const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
+const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 // Set up temporary writeable directories for course content
 const baseDir = tmp.dirSync().name;
@@ -37,7 +38,7 @@ const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
 const testEditData = [
   {
     url: questionsUrl,
-    form: 'add-question-form',
+    formSelector: 'form[name="add-question-form"]',
     action: 'add_question',
     info: 'questions/New_1/info.json',
     files: new Set([
@@ -54,8 +55,8 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeQidButton',
-    form: 'change-id-form',
+    button: '.js-change-id-button',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newQuestion',
     },
@@ -75,7 +76,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -89,8 +90,8 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/question/1/settings`,
-    button: 'copyQuestionButton',
-    form: 'copy-question-form',
+    button: '#copyQuestionButton',
+    formSelector: 'form[name="copy-question-form"]',
     data: {
       to_course_id: 1,
     },
@@ -110,7 +111,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -124,7 +125,7 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    form: 'add-assessment-form',
+    formSelector: 'form[name="add-assessment-form"]',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
     files: new Set([
@@ -139,8 +140,8 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeAidButton',
-    form: 'change-id-form',
+    button: '.js-change-id-button',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessment/nested',
     },
@@ -162,8 +163,8 @@ const testEditData = [
   // sure that that empty directory is cleaned up and not treated as an actual
   // assessment during sync.
   {
-    button: 'changeAidButton',
-    form: 'change-id-form',
+    button: '.js-change-id-button',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newAssessmentNotNested',
     },
@@ -181,7 +182,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-assessment-form',
+    formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
       'README.md',
@@ -195,7 +196,7 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/assessment/1/settings`,
-    form: 'copy-assessment-form',
+    formSelector: 'form[name="copy-assessment-form"]',
     action: 'copy_assessment',
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
     files: new Set([
@@ -210,7 +211,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-assessment-form',
+    formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
       'README.md',
@@ -224,7 +225,7 @@ const testEditData = [
   },
   {
     url: courseInstancesUrl,
-    form: 'add-course-instance-form',
+    formSelector: 'form[name="add-course-instance-form"]',
     action: 'add_course_instance',
     info: `courseInstances/New_1/infoCourseInstance.json`,
     files: new Set([
@@ -239,8 +240,8 @@ const testEditData = [
     ]),
   },
   {
-    button: 'changeCiidButton',
-    form: 'change-id-form',
+    button: '.js-change-id-button',
+    formSelector: 'form[name="change-id-form"]',
     data: {
       id: 'newCourseInstance',
     },
@@ -258,7 +259,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-course-instance-form',
+    formSelector: '#deleteCourseInstanceModal',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',
@@ -272,7 +273,7 @@ const testEditData = [
   },
   {
     url: `${courseInstanceUrl}/instance_admin/settings`,
-    form: 'copy-course-instance-form',
+    formSelector: 'form[name="copy-course-instance-form"]',
     action: 'copy_course_instance',
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
     files: new Set([
@@ -288,7 +289,7 @@ const testEditData = [
     ]),
   },
   {
-    form: 'delete-course-instance-form',
+    formSelector: '#deleteCourseInstanceModal',
     action: 'delete_course_instance',
     files: new Set([
       'README.md',
@@ -306,14 +307,18 @@ describe('test course editor', function () {
   this.timeout(20000);
 
   describe('not the example course', function () {
-    before('create test course files', function (callback) {
-      createCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    before('create test course files', async () => {
+      await createCourseFiles();
     });
 
     before('set up testing server', helperServer.before(courseDir));
+
+    before('update course repository in database', async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
 
     after('shut down testing server', helperServer.after);
 
@@ -387,17 +392,17 @@ function testEdit(params) {
     }
     it('should have a CSRF token', () => {
       if (params.button) {
-        let elemList = locals.$(`button[id="${params.button}"]`);
+        let elemList = locals.$(params.button);
         assert.lengthOf(elemList, 1);
 
         const $ = cheerio.load(elemList[0].attribs['data-content']);
-        elemList = $(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        const elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -423,7 +428,15 @@ function testEdit(params) {
     });
   });
 
-  waitForJobSequence(locals, 'Success');
+  describe('The job sequence', () => {
+    it('should have an id', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+      locals.job_sequence_id = result.rows[0].id;
+    });
+    it('should complete', async () => {
+      await helperServer.waitForJobSequenceSuccess(locals.job_sequence_id);
+    });
+  });
 
   describe('validate', () => {
     it('should not have any sync warnings or errors', async () => {
@@ -433,14 +446,10 @@ function testEdit(params) {
       assert.isEmpty(results.rows);
     });
 
-    it('should pull into dev directory', function (callback) {
-      const execOptions = {
+    it('should pull into dev directory', async () => {
+      await execa('git', ['pull'], {
         cwd: courseDevDir,
         env: process.env,
-      };
-      exec(`git pull`, execOptions, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     });
 
@@ -459,119 +468,39 @@ function testEdit(params) {
   });
 }
 
-function createCourseFiles(callback) {
-  async.series(
-    [
-      async () => await deleteCourseFiles(),
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        // Ensure that the default branch is master, regardless of how git
-        // is configured on the host machine.
-        exec(
-          `git -c "init.defaultBranch=master" init --bare ${courseOriginDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseLiveDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => {
-        await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git add -A`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git commit -m "initial commit"`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git push`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: '.',
-          env: process.env,
-        };
-        exec(`git clone ${courseOriginDir} ${courseDevDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function createCourseFiles() {
+  await deleteCourseFiles();
+  // Ensure that the default branch is master, regardless of how git
+  // is configured on the host machine.
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
+    cwd: '.',
+    env: process.env,
+  });
+  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await execa('git', ['add', '-A'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', 'initial commit'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['push'], {
+    cwd: courseLiveDir,
+    env: process.env,
+  });
+  await execa('git', ['clone', courseOriginDir, courseDevDir], {
+    cwd: '.',
+    env: process.env,
+  });
 }
 
 async function deleteCourseFiles() {
   await fs.remove(courseOriginDir);
   await fs.remove(courseLiveDir);
   await fs.remove(courseDevDir);
-}
-
-function waitForJobSequence(locals, expectedResult) {
-  describe('The job sequence', function () {
-    it('should have an id', function (callback) {
-      sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-        if (ERR(err, callback)) return;
-        locals.job_sequence_id = result.rows[0].id;
-        callback(null);
-      });
-    });
-    it('should complete', function (callback) {
-      const checkComplete = function () {
-        const params = { job_sequence_id: locals.job_sequence_id };
-        sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          locals.job_sequence_status = result.rows[0].status;
-          if (locals.job_sequence_status === 'Running') {
-            setTimeout(checkComplete, 10);
-          } else {
-            callback(null);
-          }
-        });
-      };
-      setTimeout(checkComplete, 10);
-    });
-    it(`should have result "${expectedResult}"`, function () {
-      assert.equal(locals.job_sequence_status, expectedResult);
-    });
-  });
 }

@@ -1,9 +1,10 @@
 import { Socket, io } from 'socket.io-client';
+
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import { mathjaxTypeset } from './lib/mathjax';
-import { setupCountdown } from './lib/countdown';
-import { confirmOnUnload } from './lib/confirmOnUnload';
+import { confirmOnUnload } from './lib/confirmOnUnload.js';
+import { setupCountdown } from './lib/countdown.js';
+import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
@@ -18,6 +19,27 @@ onDocumentReady(() => {
 
   setupDynamicObjects();
   disableOnSubmit();
+
+  $('.js-submission-body.render-pending').on('show.bs.collapse', loadPendingSubmissionPanel);
+
+  const copyQuestionForm = document.querySelector<HTMLFormElement>('#copyQuestionModal form');
+  if (copyQuestionForm) {
+    const courseSelect = copyQuestionForm.querySelector<HTMLSelectElement>(
+      '#copyQuestionModal select[name="to_course_id"]',
+    );
+    courseSelect?.addEventListener('change', () => {
+      const option = courseSelect.selectedOptions[0];
+
+      if (option) {
+        copyQuestionForm.action = option?.dataset.copyUrl ?? '';
+        copyQuestionForm
+          .querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]')
+          .forEach((input) => {
+            input.value = option?.dataset.csrfToken ?? '';
+          });
+      }
+    });
+  }
 });
 
 function externalGradingLiveUpdate() {
@@ -83,7 +105,7 @@ function handleStatusChange(socket: Socket, msg: any) {
   });
 }
 
-function fetchResults(socket: Socket, submissionId: string | number) {
+function fetchResults(socket: Socket, submissionId: string) {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
 
   if (!questionContainer) return;
@@ -92,6 +114,7 @@ function fetchResults(socket: Socket, submissionId: string | number) {
     variantId,
     questionId,
     instanceQuestionId,
+    userId,
     variantToken,
     urlPrefix,
     questionContext,
@@ -109,6 +132,7 @@ function fetchResults(socket: Socket, submissionId: string | number) {
       question_id: questionId,
       instance_question_id: instanceQuestionId === '' ? null : instanceQuestionId,
       variant_id: variantId,
+      user_id: userId,
       variant_token: variantToken,
       submission_id: submissionId,
       url_prefix: urlPrefix,
@@ -118,56 +142,121 @@ function fetchResults(socket: Socket, submissionId: string | number) {
       // the instance question is part of the current user's
       // assessment instance (authorized_edit==true) or because the
       // question is open in preview mode (authz_result==undefined)
-      authorized_edit: authorizedEdit,
+      authorized_edit: authorizedEdit === 'true',
     },
     function (msg: any) {
       // We're done with the socket for this incarnation of the page
       socket.close();
-      if (msg.answerPanel) {
-        const answerContainer = document.querySelector('.answer-body');
-        if (answerContainer) {
-          answerContainer.innerHTML = msg.answerPanel;
-          answerContainer.closest('.grading-block')?.classList.remove('d-none');
-        }
+      if (msg) {
+        updateDynamicPanels(msg, submissionId);
+      } else {
+        console.error(`Error retrieving results for submission ${submissionId}`);
       }
-      if (msg.submissionPanel) {
-        // Using jQuery here because msg.submissionPanel may contain scripts
-        // that must be executed. Typical vanilla JS alternatives don't support
-        // this kind of script.
-        $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
-        mathjaxTypeset();
-        // Restore modal state if need be
-        if (wasModalOpen) {
-          $('#submissionInfoModal-' + submissionId).modal('show');
-        }
+      // Restore modal state if need be
+      if (wasModalOpen) {
+        $('#submissionInfoModal-' + submissionId).modal('show');
       }
-      if (msg.questionScorePanel) {
-        const questionScorePanel = document.getElementById('question-score-panel');
-        if (questionScorePanel) {
-          questionScorePanel.outerHTML = msg.questionScorePanel;
-        }
-      }
-      if (msg.assessmentScorePanel) {
-        const assessmentScorePanel = document.getElementById('assessment-score-panel');
-        if (assessmentScorePanel) {
-          assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
-        }
-      }
-      if (msg.questionPanelFooter) {
-        const questionPanelFooter = document.getElementById('question-panel-footer');
-        if (questionPanelFooter) {
-          questionPanelFooter.outerHTML = msg.questionPanelFooter;
-        }
-      }
-      if (msg.questionNavNextButton) {
-        const questionNavNextButton = document.getElementById('question-nav-next');
-        if (questionNavNextButton) {
-          questionNavNextButton.outerHTML = msg.questionNavNextButton;
-        }
-      }
-      setupDynamicObjects();
     },
   );
+}
+
+function updateDynamicPanels(msg: any, submissionId: string) {
+  if (msg.extraHeadersHtml) {
+    const parser = new DOMParser();
+    const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
+
+    const newImportMap = headers.querySelector<HTMLScriptElement>('script[type="importmap"]');
+    if (newImportMap != null) {
+      const currentImportMap = document.head.querySelector<HTMLScriptElement>(
+        'script[type="importmap"]',
+      );
+      if (!currentImportMap) {
+        document.head.appendChild(newImportMap);
+      } else {
+        // This case is not currently possible with existing importmap
+        // functionality. Once an existing importmap has been created, the
+        // importmap cannot be modified. Once this functionality exists this
+        // code can be modified to update the importmap.
+        // https://html.spec.whatwg.org/multipage/webappapis.html#import-map-processing-model
+        const newImportMapJson = JSON.parse(newImportMap.textContent || '{}');
+        const currentImportMapJson = JSON.parse(currentImportMap.textContent || '{}');
+        const newImportMapKeys = Object.keys(newImportMapJson.imports || {}).filter(
+          (key) => !(key in currentImportMapJson.imports),
+        );
+        if (newImportMapKeys.length > 0) {
+          console.warn(
+            'Cannot update importmap. New importmap has imports not in current importmap: ',
+            newImportMapKeys,
+          );
+        }
+      }
+    }
+
+    const currentLinks = Array.from(
+      document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+    ).map((link) => link.href);
+    headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
+      if (!currentLinks.includes(header.href)) {
+        document.head.appendChild(header);
+      }
+    });
+
+    const currentScripts = Array.from(
+      document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+    ).map((script) => script.src);
+    headers
+      .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
+      .forEach((header) => {
+        if (!currentScripts.includes(header.src)) {
+          document.head.appendChild(header);
+        }
+      });
+  }
+
+  if (msg.answerPanel) {
+    const answerContainer = document.querySelector('.answer-body');
+    if (answerContainer) {
+      // Using jQuery here because msg.answerPanel may contain scripts that
+      // must be executed. Typical vanilla JS alternatives don't support
+      // this kind of script.
+      $(answerContainer).html(msg.answerPanel);
+      mathjaxTypeset();
+      answerContainer.closest('.grading-block')?.classList.remove('d-none');
+    }
+  }
+
+  if (msg.submissionPanel) {
+    // Using jQuery here because msg.submissionPanel may contain scripts
+    // that must be executed. Typical vanilla JS alternatives don't support
+    // this kind of script.
+    $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
+    mathjaxTypeset();
+  }
+  if (msg.questionScorePanel) {
+    const questionScorePanel = document.getElementById('question-score-panel');
+    if (questionScorePanel) {
+      questionScorePanel.outerHTML = msg.questionScorePanel;
+    }
+  }
+  if (msg.assessmentScorePanel) {
+    const assessmentScorePanel = document.getElementById('assessment-score-panel');
+    if (assessmentScorePanel) {
+      assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
+    }
+  }
+  if (msg.questionPanelFooter) {
+    const questionPanelFooter = document.getElementById('question-panel-footer');
+    if (questionPanelFooter) {
+      questionPanelFooter.outerHTML = msg.questionPanelFooter;
+    }
+  }
+  if (msg.questionNavNextButton) {
+    const questionNavNextButton = document.getElementById('question-nav-next');
+    if (questionNavNextButton) {
+      questionNavNextButton.outerHTML = msg.questionNavNextButton;
+    }
+  }
+  setupDynamicObjects();
 }
 
 function updateStatus(submission: any) {
@@ -227,6 +316,26 @@ function setupDynamicObjects() {
       },
     });
   }
+}
+
+function loadPendingSubmissionPanel(this: HTMLDivElement) {
+  const { submissionId, dynamicRenderUrl } = this.dataset;
+  if (submissionId == null || dynamicRenderUrl == null) return;
+
+  fetch(dynamicRenderUrl)
+    .then(async (response) => {
+      // If the response is not a 200, delegate to the error handler (catch block)
+      if (!response.ok) throw new Error('Failed to fetch submission');
+      const msg = await response.json();
+      updateDynamicPanels(msg, submissionId);
+    })
+    .catch(() => {
+      const container = document.querySelector(`#submission-${submissionId}-body`);
+      if (container != null) {
+        container.innerHTML =
+          '<div class="card-body submission-body">Error retrieving submission</div>';
+      }
+    });
 }
 
 function disableOnSubmit() {

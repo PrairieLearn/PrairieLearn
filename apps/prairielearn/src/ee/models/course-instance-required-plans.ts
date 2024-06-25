@@ -1,9 +1,10 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import { PlanName } from '../lib/billing/plans-types';
-import { CourseInstanceRequiredPlanSchema, IdSchema } from '../../lib/db-types';
-import { insertAuditLog } from '../../models/audit-log';
 
-const sql = loadSqlEquiv(__filename);
+import { CourseInstanceRequiredPlanSchema, IdSchema } from '../../lib/db-types.js';
+import { insertAuditLog } from '../../models/audit-log.js';
+import { PlanName } from '../lib/billing/plans-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceRequiredPlanWithContextSchema = CourseInstanceRequiredPlanSchema.extend({
   course_id: IdSchema,
