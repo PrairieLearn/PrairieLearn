@@ -90,7 +90,7 @@
             <form class="form-inline" id="changeCourseRoleForm" method="POST">
               <div class="form-group">
                 <label class="mr-2" for="changeEffectiveCourseRole">Change effective course role to:</label>
-                <select class="form-control mr-2" id="changeEffectiveCourseRole" name="pl_requested_course_role">
+                <select class="custom-select mr-2" id="changeEffectiveCourseRole" name="pl_requested_course_role">
                   <% available_course_roles.reverse().forEach(function(available_course_role) { %>
                   <% if (available_course_role == authz_data.course_role) { %>
                   <option value="<%= available_course_role %>" selected><%= available_course_role %> (current)</option>
@@ -129,7 +129,7 @@
             <form class="form-inline" id="changeCourseInstanceRoleForm" method="POST">
               <div class="form-group">
                 <label class="mr-2" for="changeEffectiveCourseInstanceRole">Change effective course instance role to:</label>
-                <select class="form-control mr-2" id="changeEffectiveCourseInstanceRole" name="pl_requested_course_instance_role">
+                <select class="custom-select mr-2" id="changeEffectiveCourseInstanceRole" name="pl_requested_course_instance_role">
                   <% available_course_instance_roles.reverse().forEach(function(available_course_instance_role) { %>
                   <% if (available_course_instance_role == authz_data.course_instance_role) { %>
                   <option value="<%= available_course_instance_role %>" selected><%= available_course_instance_role %> (current)</option>
@@ -166,7 +166,7 @@
             <form class="form-inline" id="changeModeForm" method="POST">
               <div class="form-group">
                 <label class="mr-2" for="changeMode">Change effective mode to:</label>
-                <select class="form-control mr-2" id="changeMode" name="pl_requested_mode">
+                <select class="custom-select mr-2" id="changeMode" name="pl_requested_mode">
                   <% if (authz_data.mode == 'Public') { %>
                   <option value="Public" selected>Public (current)</option>
                   <% } else { %>
