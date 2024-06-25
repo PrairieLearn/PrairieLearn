@@ -1,4 +1,5 @@
-FROM codercom/code-server:4.23.1-ubuntu
+# noble is the codename for Ubuntu 24.04 LTS
+FROM codercom/code-server:4.90.3-noble
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
@@ -35,20 +36,30 @@ RUN apt-get update && \
     # Test the gosu installation:
     gosu nobody true
 
+# Make sure to build using bash as the shell so that conda/mamba hooks will
+# work during installation.
+SHELL ["/bin/bash", "-c"]
+
 # Install Python and required packages via miniconda.
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 COPY requirements.txt /
 RUN export arch=`uname -m` \
- && curl -sfLO "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh" \
- && chmod +x "Miniconda3-latest-Linux-${arch}.sh" \
- && ./"Miniconda3-latest-Linux-${arch}.sh" -b -p /home/coder/miniconda \
- && PATH="/home/coder/miniconda/bin:$PATH" \
- && /home/coder/miniconda/condabin/conda init bash \
- && conda config --add channels conda-forge \
- && conda run -n base pip install -r /requirements.txt \
- && rm "Miniconda3-latest-Linux-${arch}.sh" \
- && conda clean --all
+ && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
+ && chmod +x "Miniforge3-Linux-${arch}.sh" \
+ && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
+ # Install conda and mamba hooks for future bash sessions:
+ && /home/coder/conda/bin/mamba init bash \
+ # Activate hooks in the current session:
+ && . "/home/coder/conda/etc/profile.d/conda.sh" \
+ && . "/home/coder/conda/etc/profile.d/mamba.sh" \
+ && mamba activate \
+ # Mamba can install pygraphviz without compile errors if we do so first, separately from the rest of the requirements:
+ && mamba install --yes --quiet $(grep pygraphviz /requirements.txt | head -n 1) \
+ && pip install -r /requirements.txt \
+ && rm "Miniforge3-Linux-${arch}.sh" \
+ && mamba clean --all --yes --quiet \
+ && pip cache purge
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
 # We have first installed Python in the previous step, as specified in the
