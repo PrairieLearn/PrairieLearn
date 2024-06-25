@@ -161,6 +161,7 @@ export function InstructorQuestionSettings({
                       <div data-testid="shared-with">
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
+                          sourceSharedPublicly: resLocals.question.shared_publicly_with_source,
                           sharingSetsIn,
                           hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
                           sharingSetsOther,
@@ -192,113 +193,7 @@ export function InstructorQuestionSettings({
                   !resLocals.course.example_course
                   ? html`
                       <tr>
-                        <th class="align-middle">Sharing</th>
-                        <td data-testid="shared-with">
-                          ${resLocals.question.shared_publicly
-                            ? html`
-                                <div class="badge color-green3">Public</div>
-                                This question is publicly shared.
-                                ${resLocals.question.shared_publicly_with_source
-                                  ? html`
-                                      <div class="badge color-blue3">Source</div>
-                                      This question's source code is publicly shared.
-                                    `
-                                  : ''}
-                                <button
-                                  class="btn btn-sm btn-outline-primary"
-                                  type="button"
-                                  data-toggle="modal"
-                                  data-target="#editPublicSharingModal"
-                                >
-                                  Edit Public Sharing
-                                </button>
-                                ${EditPublicSharingModal({
-                                  csrfToken: resLocals.__csrf_token,
-                                  qid: resLocals.question.qid,
-                                  shared_publicly_with_source:
-                                    resLocals.question.shared_publicly_with_source,
-                                })}
-                              `
-                            : html`
-                                ${sharingSetsIn.length === 0
-                                  ? html`Not Shared`
-                                  : html`
-                                      Shared With:
-                                      ${sharingSetsIn.map(function (sharing_set) {
-                                        return html`
-                                          <span class="badge color-gray1">
-                                            ${sharing_set?.name}
-                                          </span>
-                                        `;
-                                      })}
-                                    `}
-                                ${resLocals.authz_data.has_course_permission_own
-                                  ? html`
-                                      ${sharingSetsOther.length > 0
-                                        ? html`
-                                            <form
-                                              name="sharing-set-add"
-                                              method="POST"
-                                              class="d-inline"
-                                            >
-                                              <input
-                                                type="hidden"
-                                                name="__action"
-                                                value="sharing_set_add"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="__csrf_token"
-                                                value="${resLocals.__csrf_token}"
-                                              />
-                                              <div class="btn-group btn-group-sm" role="group">
-                                                <button
-                                                  id="addSharingSet"
-                                                  type="button"
-                                                  class="btn btn-sm btn-outline-dark dropdown-toggle"
-                                                  data-toggle="dropdown"
-                                                  aria-haspopup="true"
-                                                  aria-expanded="false"
-                                                >
-                                                  Add...
-                                                </button>
-                                                <div
-                                                  class="dropdown-menu"
-                                                  aria-labelledby="addSharingSet"
-                                                >
-                                                  ${sharingSetsOther.map(function (sharing_set) {
-                                                    return html`
-                                                      <button
-                                                        class="dropdown-item"
-                                                        type="submit"
-                                                        name="unsafe_sharing_set_id"
-                                                        value="${sharing_set.id}"
-                                                      >
-                                                        ${sharing_set.name}
-                                                      </button>
-                                                    `;
-                                                  })}
-                                                </div>
-                                              </div>
-                                            </form>
-                                          `
-                                        : ''}
-                                      <button
-                                        class="btn btn-sm btn-outline-primary"
-                                        type="button"
-                                        data-toggle="modal"
-                                        data-target="#publiclyShareModal"
-                                      >
-                                        Share Publicly
-                                      </button>
-                                      ${PubliclyShareModal({
-                                        csrfToken: resLocals.__csrf_token,
-                                        qid: resLocals.question.qid,
-                                      })}
-                                    `
-                                  : ''}
-                              `}
-                        </td>
+                        
                       </tr>
                     `
                   : html`
@@ -595,6 +490,7 @@ function QuestionTestsForm({
 
 function QuestionSharing({
   questionSharedPublicly,
+  sourceSharedPublicly,
   sharingSetsIn,
   hasCoursePermissionOwn,
   sharingSetsOther,
@@ -602,6 +498,7 @@ function QuestionSharing({
   qid,
 }: {
   questionSharedPublicly: boolean;
+  sourceSharedPublicly: boolean;
   sharingSetsIn: SharingSetRow[];
   hasCoursePermissionOwn: boolean;
   sharingSetsOther: SharingSetRow[];
@@ -611,9 +508,31 @@ function QuestionSharing({
   if (questionSharedPublicly) {
     return html`
       <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
+        <span class="badge color-green3 mr-1">Public</span>      
+        ${sourceSharedPublicly
+        ? html`
+            <span class="badge color-blue3">Source</span>
+            This question and its source code are publicly shared.
+          `
+        : html`This question is publicly shared.`}
       </p>
+
+      <button
+        class="btn btn-sm btn-outline-primary"
+        type="button"
+        data-toggle="modal"
+        data-target="#editPublicSharingModal"
+      >
+        Edit Public Sharing
+      </button>
+      ${EditPublicSharingModal({
+        csrfToken: csrfToken,
+        qid: qid,
+        shared_publicly_with_source:
+          sourceSharedPublicly,
+      })}
+
+
     `;
   }
 
