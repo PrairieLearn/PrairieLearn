@@ -435,7 +435,7 @@ export async function sync(
         if (qids.length > 0) {
           infofile.addError(
             assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+            "You have attempted to import a question with '@', but question sharing is not enabled for your course.",
           );
         }
       }

@@ -52,10 +52,10 @@ async function getValidVariantId(req: Request, res: Response): Promise<string> {
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   if (!req.file) {
     throw new HttpStatusError(400, 'No file uploaded');
@@ -75,10 +75,10 @@ async function processFileUpload(req: Request, res: Response) {
 
 async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -95,10 +95,10 @@ async function processTextUpload(req: Request, res: Response) {
 
 async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current instance question
