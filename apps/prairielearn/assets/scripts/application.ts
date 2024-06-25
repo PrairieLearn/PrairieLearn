@@ -141,4 +141,64 @@ onDocumentReady(() => {
       );
     },
   });
+
+  const FONT_WEIGHT_CLASSES = [
+    'font-weight-bold',
+    'font-weight-bolder',
+    'font-weight-normal',
+    'font-weight-light',
+    'font-weight-lighter',
+  ];
+  observe(FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '), {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      const fontWeightClasses = FONT_WEIGHT_CLASSES.filter((cls) => el.classList.contains(cls));
+      for (const cls of fontWeightClasses) {
+        const newClass = cls.replace('font-weight', 'fw');
+        el.classList.add(newClass);
+      }
+
+      console.warn(
+        'Bootstrap 5 replaced font-weight classes with fw-* classes. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('.text-monospace', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('font-monospace');
+      console.warn(
+        'Bootstrap 5 replaced .text-monospace with .font-monospace. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('.sr-only', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('visually-hidden');
+      console.warn(
+        'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  observe('.sr-only-focusable', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('visually-hidden-focusable');
+      console.warn(
+        'Bootstrap 5 replaced .sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
+        el,
+      );
+    },
+  });
 });
