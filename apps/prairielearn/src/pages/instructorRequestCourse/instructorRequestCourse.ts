@@ -156,7 +156,7 @@ router.post(
       // Do this in the background once we've redirected the response.
       try {
         await opsbot.sendCourseRequestMessage(
-          `*Automatically creating course*\n` +
+          '*Automatically creating course*\n' +
             `Course repo: ${repo_short_name}\n` +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
@@ -175,7 +175,7 @@ router.post(
       // Do this in the background once we've redirected the response.
       try {
         await opsbot.sendCourseRequestMessage(
-          `*Incoming course request*\n` +
+          '*Incoming course request*\n' +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
             `Requested by: ${first_name} ${last_name} (${work_email})\n` +

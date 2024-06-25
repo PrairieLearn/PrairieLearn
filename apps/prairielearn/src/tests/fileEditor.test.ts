@@ -322,7 +322,7 @@ describe('test file editor', function () {
 });
 
 function badGet(url, expected_status, should_parse) {
-  describe(`GET to edit url with bad path`, function () {
+  describe('GET to edit url with bad path', function () {
     it(`should load with status ${expected_status}`, function (callback) {
       locals.preStartTime = Date.now();
       request(url, function (error, response, body) {
@@ -458,7 +458,7 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
       elemList = locals.$(selector);
       assert.lengthOf(elemList, 1);
     });
-    it(`should match expected url in edit link`, function () {
+    it('should match expected url in edit link', function () {
       assert.equal(siteUrl + elemList[0].attribs.href, expectedEditUrl);
     });
   });
@@ -567,7 +567,7 @@ function editGet(
   expectedDraftContents,
   expectedDiskContents,
 ) {
-  describe(`GET to edit url`, function () {
+  describe('GET to edit url', function () {
     it('should load successfully', function (callback) {
       locals.preStartTime = Date.now();
       request(url, function (error, response, body) {
@@ -989,25 +989,25 @@ function testUploadFile(params: {
         elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
       } else {
         const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-        elemList = row.find(`button[id^="instructorFileUploadForm-"]`);
+        elemList = row.find('button[id^="instructorFileUploadForm-"]');
       }
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(`input[name="__csrf_token"]`);
+      elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path or working_path
       if (!params.newButtonId) {
-        elemList = $(`input[name="file_path"]`);
+        elemList = $('input[name="file_path"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.file_path = elemList[0].attribs.value;
         locals.working_path = undefined;
       } else {
-        elemList = $(`input[name="working_path"]`);
+        elemList = $('input[name="working_path"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.working_path = elemList[0].attribs.value;
@@ -1037,7 +1037,7 @@ function testUploadFile(params: {
     });
   });
 
-  describe(`Uploaded file is available`, function () {
+  describe('Uploaded file is available', function () {
     it('file view should match contents', async () => {
       const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(params.path)}`);
       assert.isOk(res.ok);
@@ -1072,23 +1072,23 @@ function testRenameFile(params: {
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find(`button[id^="instructorFileRenameForm-"]`);
+      elemList = row.find('button[id^="instructorFileRenameForm-"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(`input[name="__csrf_token"]`);
+      elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // old_file_name
-      elemList = $(`input[name="old_file_name"]`);
+      elemList = $('input[name="old_file_name"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.old_file_name = elemList[0].attribs.value;
       assert.equal(locals.old_file_name, params.path.split('/').pop());
       // working_path
-      elemList = $(`input[name="working_path"]`);
+      elemList = $('input[name="working_path"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.working_path = elemList[0].attribs.value;
@@ -1122,17 +1122,17 @@ function testDeleteFile(params: { url: string; path: string }) {
     });
     it('should have a CSRF token and a file_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find(`button[id^="instructorFileDeleteForm-"]`);
+      elemList = row.find('button[id^="instructorFileDeleteForm-"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
-      elemList = $(`input[name="__csrf_token"]`);
+      elemList = $('input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path
-      elemList = $(`input[name="file_path"]`);
+      elemList = $('input[name="file_path"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.file_path = elemList[0].attribs.value;

@@ -167,7 +167,7 @@ router.post(
   asyncHandler(async (req, res) => {
     debug(`Responding to post with action ${req.body.__action}`);
     if (req.body.__action === 'add_assessment') {
-      debug(`Responding to action add_assessment`);
+      debug('Responding to action add_assessment');
       const editor = new AssessmentAddEditor({
         locals: res.locals,
       });

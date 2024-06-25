@@ -493,7 +493,7 @@ function SubmitRateFooter({
     <p>
       You can still save your answer as frequently as you like.
       ${questionContext === 'student_exam'
-        ? `If your assessment ends before your last saved answer is graded, it will be automatically graded for you.`
+        ? 'If your assessment ends before your last saved answer is graded, it will be automatically graded for you.'
         : ''}
     </p>
   `;
