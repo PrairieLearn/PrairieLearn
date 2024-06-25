@@ -93,7 +93,7 @@ export function InstructorCourseAdminSettings({
                 <div class="form-group">
                   <label for="display_timezone">Timezone</label>
                   <select
-                    class="form-control"
+                    class="custom-select"
                     id="display_timezone"
                     name="display_timezone"
                     ${courseInfoExists &&

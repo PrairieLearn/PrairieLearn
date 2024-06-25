@@ -225,7 +225,7 @@ function CourseInsertForm({
         <label>Institution:</label>
         <select
           name="institution_id"
-          class="form-control"
+          class="custom-select"
           onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
         >
           ${institutions.map((i) => {
