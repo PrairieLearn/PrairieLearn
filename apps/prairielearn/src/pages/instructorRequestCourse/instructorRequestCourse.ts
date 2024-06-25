@@ -86,7 +86,6 @@ router.post(
       {
         user_id: res.locals.authn_user.user_id,
         short_name,
-        title,
       },
       z.boolean(),
     );
