@@ -399,7 +399,7 @@ function CopyForm({
         <label for="to-course-id-select">
           The copied question will be added to the following course:
         </label>
-        <select class="form-control" id="to-course-id-select" name="to_course_id" required>
+        <select class="custom-select" id="to-course-id-select" name="to_course_id" required>
           ${editableCourses.map((c) => {
             return html`
               <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>

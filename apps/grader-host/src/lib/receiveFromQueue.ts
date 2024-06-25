@@ -1,12 +1,11 @@
-// @ts-check
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  type SQSClient,
 } from '@aws-sdk/client-sqs';
-import * as async from 'async';
 import { z } from 'zod';
 
 import * as Sentry from '@prairielearn/sentry';
@@ -32,17 +31,14 @@ const GradingJobMessageSchema = z.object({
   /** The root key for the job's files. */
   s3RootKey: z.string(),
 });
+export type GradingJobMessage = z.infer<typeof GradingJobMessageSchema>;
 
-/** @typedef {z.infer<typeof GradingJobMessageSchema>} GradingJobMessage */
-
-/**
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {string} receiptHandle
- * @param {number} timeout
- * @returns {Promise<void>}
- */
-async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
+async function changeVisibilityTimeout(
+  sqs: SQSClient,
+  queueUrl: string,
+  receiptHandle: string,
+  timeout: number,
+) {
   await sqs.send(
     new ChangeMessageVisibilityCommand({
       QueueUrl: queueUrl,
@@ -52,12 +48,7 @@ async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
   );
 }
 
-/**
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {string} receiptHandle
- */
-async function startHeartbeat(sqs, queueUrl, receiptHandle) {
+async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: string) {
   const abortController = new AbortController();
 
   // Run the first extension immediately before we start processing the job.
@@ -84,41 +75,36 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
   return abortController;
 }
 
-/**
- *
- * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
- * @param {string} queueUrl
- * @param {(message: GradingJobMessage) => Promise<void>} receiveCallback
- */
-export async function receiveFromQueue(sqs, queueUrl, receiveCallback) {
-  /** @type {AbortController} */
-  let heartbeatAbortController;
+async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const data = await sqs.send(
+      new ReceiveMessageCommand({
+        MaxNumberOfMessages: 1,
+        QueueUrl: queueUrl,
+        WaitTimeSeconds: 20,
+      }),
+    );
+    const message = data.Messages?.[0];
+    if (!message || !message.Body) continue;
+    globalLogger.info('Received job!');
+    const parsedMessage = JSON.parse(message.Body);
+    const receiptHandle = message.ReceiptHandle as string;
+    return { parsedMessage, receiptHandle };
+  }
+}
 
+export async function receiveFromQueue(
+  sqs: SQSClient,
+  queueUrl: string,
+  receiveCallback: (message: GradingJobMessage) => Promise<void>,
+) {
   globalLogger.info('Waiting for next job...');
-  const { parsedMessage, receiptHandle } = await async.doUntil(
-    async () => {
-      const data = await sqs.send(
-        new ReceiveMessageCommand({
-          MaxNumberOfMessages: 1,
-          QueueUrl: queueUrl,
-          WaitTimeSeconds: 20,
-        }),
-      );
-      const message = data.Messages?.[0];
-      if (!message || !message.Body) return null;
-      globalLogger.info('Received job!');
-      const parsedMessage = JSON.parse(message.Body);
-      const receiptHandle = message.ReceiptHandle;
-      return { parsedMessage, receiptHandle };
-    },
-    async (result) => {
-      return !!result;
-    },
-  );
+  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl);
 
   const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
 
-  heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
+  const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
   await receiveCallback(validatedMessage)
     .finally(() => {
