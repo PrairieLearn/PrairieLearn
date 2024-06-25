@@ -477,7 +477,6 @@ describe('Question Sharing', function () {
 
   // START
   describe('Test deleting a sharing set', function () {
-    let exampleCourseSharingToken;
     let testCourseSharingToken;
 
     step('Create a sharing set', async () => {
@@ -523,10 +522,13 @@ describe('Question Sharing', function () {
     });
 
     // Successfully delete the sharing set
-    step('Successfully delete the sharing set when questions have been added, but has not been shared', async () => {
-      let res = await deleteSharingSet(sharingCourse.id, '1');
-      assert(res.status === 200);
-    });
+    step(
+      'Successfully delete the sharing set when questions have been added, but has not been shared',
+      async () => {
+        let res = await deleteSharingSet(sharingCourse.id, '1');
+        assert(res.status === 200);
+      },
+    );
 
     // Create a new sharing set with the same name
     step('Create a sharing set', async () => {
@@ -565,10 +567,13 @@ describe('Question Sharing', function () {
     });
 
     // Successfully delete the new sharing set
-    step('Successfully delete the sharing set when it has been shared, but no questions have been added', async () => {
-      let res = await deleteSharingSet(sharingCourse.id, '1');
-      assert(res.status === 200);
-    });
+    step(
+      'Successfully delete the sharing set when it has been shared, but no questions have been added',
+      async () => {
+        let res = await deleteSharingSet(sharingCourse.id, '1');
+        assert(res.status === 200);
+      },
+    );
 
     // Create a new sharing set with the same name
     step('Create a sharing set', async () => {
@@ -635,10 +640,12 @@ describe('Question Sharing', function () {
     });
 
     // Fail to delete the sharing set
-    step('Fail to delete the sharing set when it has been shared and questions have been added', async () => {
-      let res = await deleteSharingSet(sharingCourse.id, '1');
-      assert(res.status === 400);
-    });
-
+    step(
+      'Fail to delete the sharing set when it has been shared and questions have been added',
+      async () => {
+        let res = await deleteSharingSet(sharingCourse.id, '1');
+        assert(res.status === 400);
+      },
+    );
   }); // END
 });
