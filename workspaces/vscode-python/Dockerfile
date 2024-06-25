@@ -48,9 +48,9 @@ RUN export arch=`uname -m` \
  && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
  && chmod +x "Miniforge3-Linux-${arch}.sh" \
  && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
- # Install conda and mamba hooks for future bash sessions:
+ # Install conda and mamba hooks for future interactive bash sessions:
  && /home/coder/conda/bin/mamba init bash \
- # Activate hooks in the current session:
+ # Activate hooks in the current noninteractive session:
  && . "/home/coder/conda/etc/profile.d/conda.sh" \
  && . "/home/coder/conda/etc/profile.d/mamba.sh" \
  && mamba activate \
