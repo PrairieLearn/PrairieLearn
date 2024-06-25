@@ -525,7 +525,7 @@ describe('Question Sharing', function () {
     step(
       'Successfully delete the sharing set when questions have been added, but has not been shared',
       async () => {
-        let res = await deleteSharingSet(sharingCourse.id, '1');
+        const res = await deleteSharingSet(sharingCourse.id, '1');
         assert(res.status === 200);
       },
     );
@@ -570,7 +570,7 @@ describe('Question Sharing', function () {
     step(
       'Successfully delete the sharing set when it has been shared, but no questions have been added',
       async () => {
-        let res = await deleteSharingSet(sharingCourse.id, '1');
+        const res = await deleteSharingSet(sharingCourse.id, '1');
         assert(res.status === 200);
       },
     );
@@ -643,7 +643,7 @@ describe('Question Sharing', function () {
     step(
       'Fail to delete the sharing set when it has been shared and questions have been added',
       async () => {
-        let res = await deleteSharingSet(sharingCourse.id, '1');
+        const res = await deleteSharingSet(sharingCourse.id, '1');
         assert(res.status === 400);
       },
     );
