@@ -210,4 +210,35 @@ onDocumentReady(() => {
       console.warn('Bootstrap 5 replaced .form-row with .row. Please update your HTML.', el);
     },
   });
+
+  observe('button.close', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('btn-close');
+      console.warn('Bootstrap 5 replaced .close with .btn-close. Please update your HTML.', el);
+    },
+  });
+
+  observe('button.close', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      console.log(el.children);
+      if (
+        el.children.length !== 1 ||
+        el.children[0].tagName !== 'SPAN' ||
+        !el.children[0].hasAttribute('aria-hidden') ||
+        el.children[0].textContent !== '×'
+      ) {
+        return;
+      }
+
+      el.innerHTML = '';
+      console.warn(
+        'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+        el,
+      );
+    },
+  });
 });
