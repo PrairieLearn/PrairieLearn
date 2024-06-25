@@ -1,17 +1,20 @@
 // @ts-check
 import * as child_process from 'node:child_process';
-import * as path from 'node:path';
+import { createServer } from 'node:net';
+import path from 'node:path';
 
 import debugfn from 'debug';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+// TODO: is this safe to use in the subprocess version?
+import { trace } from '@prairielearn/opentelemetry';
 
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
-import { FunctionMissingError } from './code-caller-shared.js';
+import { FunctionMissingError, developmentSpanEvent } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller-native');
 
@@ -80,6 +83,29 @@ const EXITED = Symbol('EXITED');
 /** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
+ * @param {import('net').Socket | null} socket
+ * @param {string} data
+ * @returns {Promise<void>}
+ */
+async function writeDataToSocket(socket, data) {
+  if (!socket) throw new Error('Socket is null');
+
+  return new Promise((resolve, reject) => {
+    const message = Buffer.from(data, 'utf8');
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(message.length, 0);
+    socket.write(length);
+    socket.write(message, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
  * @implements {CodeCaller}
  */
 export class CodeCallerNative {
@@ -110,6 +136,8 @@ export class CodeCallerNative {
 
     /** @type {CodeCallerNativeChildProcess | null} */
     this.child = null;
+    /** @type {import('net').Socket | null} */
+    this.socket = null;
     this.callback = null;
     this.timeoutID = null;
 
@@ -125,6 +153,8 @@ export class CodeCallerNative {
     /** @type {string[]} */
     this.outputData = [];
     this.outputRestart = '';
+    this.socketDataBuffers = [];
+    this.socketDataLength = 0;
 
     // for error logging
     this.lastCallData = null;
@@ -226,11 +256,23 @@ export class CodeCallerNative {
     this.outputBoth = [];
     this.outputData = [];
     this.outputRestart = '';
+    this.socketDataBuffers = [];
+    this.socketDataLength = 0;
 
     this.lastCallData = callData;
 
-    this.child?.stdin?.write(callDataString);
-    this.child?.stdin?.write('\n');
+    // Grab a reference to the current span so that we can use it when we get results.
+    this.span = trace.getActiveSpan();
+
+    developmentSpanEvent(this.span, 'write-data-start', {
+      file: file ?? undefined,
+      fcn: fcn ?? undefined,
+    });
+    await writeDataToSocket(this.socket, callDataString);
+    developmentSpanEvent(this.span, 'write-data-end', {
+      file: file ?? undefined,
+      fcn: fcn ?? undefined,
+    });
 
     this.state = IN_CALL;
     this._checkState();
@@ -312,7 +354,7 @@ export class CodeCallerNative {
     this._checkState();
 
     if (this.state === CREATED) {
-      this._startChild();
+      await this._startChild();
       await this.call('ping', null, null, 'ping', []);
     }
 
@@ -320,9 +362,37 @@ export class CodeCallerNative {
     this.debug('exit ensureChild()');
   }
 
-  _startChild() {
+  async _startChild() {
     this.debug('enter _startChild()');
     this._checkState([CREATED]);
+
+    // Start a server listening on a free port on the host.
+    const waitForConnection = deferredPromise();
+    const server = createServer((socket) => {
+      // We only ever allow one connection at a time.
+      if (this.socket != null) {
+        socket.destroy();
+        return;
+      }
+
+      // Disable Nagle's algorithm.
+      socket.setNoDelay();
+
+      this.socket = socket;
+
+      // TODO: might want another handler here; `_handleChildExit` expects a
+      // code and a signal.
+      socket.on('close', this._handleChildExit.bind(this));
+      socket.on('error', this._handleChildError.bind(this));
+      socket.on('data', this._handleSocketData.bind(this));
+      waitForConnection.resolve(null);
+    });
+    await new Promise((resolve, reject) => {
+      server.listen(0, '127.0.0.1').once('listening', resolve).once('error', reject);
+    });
+
+    const address = /** @type {import('net').AddressInfo} */ (server.address());
+    const port = address.port;
 
     const cmd = 'python3';
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
@@ -332,6 +402,7 @@ export class CodeCallerNative {
     // https://www.python.org/dev/peps/pep-0538/
     // https://www.python.org/dev/peps/pep-0540/
     env.PYTHONIOENCODING = 'utf-8';
+    env.PORT = String(port);
     if (this.options.dropPrivileges) {
       // This instructs the Python process to switch to a deprivileged user before
       // executing any user code.
@@ -362,6 +433,9 @@ export class CodeCallerNative {
 
     child.on('exit', this._handleChildExit.bind(this));
     child.on('error', this._handleChildError.bind(this));
+
+    // Wait until we receive a connection from the child process.
+    await waitForConnection.promise;
 
     this.child = child;
     this.state = WAITING;
@@ -421,6 +495,37 @@ export class CodeCallerNative {
       this._restartIsFinished();
     }
     this.debug('exit _handleStdio4Data()');
+  }
+
+  _handleSocketData(data) {
+    this.debug('enter _handleSocketData()');
+    this._checkState([IN_CALL, EXITING]);
+    if (this.socketDataLength === 0) {
+      developmentSpanEvent(this.span, 'read-data-start', {
+        file: this.lastCallData?.file ?? undefined,
+        fcn: this.lastCallData?.fcn ?? undefined,
+      });
+    }
+    if (this.state === IN_CALL) {
+      this.last = Date.now();
+      if (this.socketDataLength < 4 && this.socketDataBuffers.length > 0) {
+        this.socketDataBuffers[0] = Buffer.concat([this.socketDataBuffers[0], data]);
+      } else {
+        this.socketDataBuffers.push(data);
+      }
+      this.socketDataLength += data.length;
+      if (this.socketDataLength >= 4) {
+        const length = this.socketDataBuffers[0].readUInt32BE(0);
+        if (this.socketDataLength >= length + 4) {
+          developmentSpanEvent(this.span, 'read-data-end', {
+            file: this.lastCallData?.file ?? undefined,
+            fcn: this.lastCallData?.fcn ?? undefined,
+          });
+          this._callIsFinished();
+        }
+      }
+    }
+    this.debug('exit _handleSocketData()');
   }
 
   _handleChildExit(code, signal) {
@@ -537,7 +642,12 @@ export class CodeCallerNative {
     let data,
       err = null;
     try {
-      data = JSON.parse(this.outputData.join(''));
+      if (this.outputData.length > 0) {
+        data = JSON.parse(this.outputData.join(''));
+      } else {
+        const allData = Buffer.concat(this.socketDataBuffers);
+        data = JSON.parse(allData.subarray(4).toString('utf-8'));
+      }
     } catch (e) {
       err = new Error('Error decoding CodeCallerNative JSON: ' + e.message);
     }

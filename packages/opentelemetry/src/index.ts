@@ -13,6 +13,9 @@ export {
   type ObservableUpDownCounter,
   type ObservableGauge,
   type ObservableResult,
+  type Span,
+  type Attributes,
+  type AttributeValue,
 } from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
 

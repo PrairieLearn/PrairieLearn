@@ -1,9 +1,4 @@
-export class FunctionMissingError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'FunctionMissingError';
-  }
-}
+import * as opentelemetry from '@prairielearn/opentelemetry';
 
 export type CallType =
   | 'question'
@@ -31,4 +26,21 @@ export interface CodeCaller {
   ) => Promise<{ result: any; output: string }>;
   restart: () => Promise<boolean>;
   done: () => void;
+}
+
+export class FunctionMissingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FunctionMissingError';
+  }
+}
+
+export function developmentSpanEvent(
+  span: opentelemetry.Span | null | undefined,
+  name: string,
+  attributes?: opentelemetry.Attributes,
+) {
+  if (process.env.NODE_ENV === 'production' || !span) return;
+
+  span?.addEvent(name, attributes);
 }

@@ -7,6 +7,7 @@ import { createPool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 
 import * as chunks from '../chunks.js';
@@ -199,13 +200,18 @@ export async function withCodeCaller(course, fn) {
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
 
-  const codeCaller = await getHealthyCodeCaller();
+  const codeCaller = await instrumented(
+    'codeCaller.getHealthyCodeCaller()',
+    async () => await getHealthyCodeCaller(),
+  );
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
+    await instrumented('codeCaller.prepareForCourse', async () => {
+      await codeCaller.prepareForCourse({
+        coursePath,
+        forbiddenModules: [],
+      });
     });
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is
