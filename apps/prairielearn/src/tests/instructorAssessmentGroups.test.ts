@@ -138,7 +138,7 @@ describe('Instructor group controls', () => {
     assert.equal(response.status, 200);
     const groupRow = response.$('#usersTable tr:contains(TestGroupWithInstructor)');
     assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(`:contains("dev@example.com")`));
+    assert.ok(groupRow.is(':contains("dev@example.com")'));
   });
 
   step('can add a user to an existing group', async () => {

@@ -113,7 +113,7 @@ router.post(
           idsEqual(ci.id, req.body.course_instance_id),
         );
         if (!course_instance) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       }
 
@@ -342,10 +342,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       if (req.body.course_instance_role) {
@@ -383,10 +383,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       await insertCourseInstancePermissions({

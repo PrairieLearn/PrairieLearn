@@ -1,4 +1,3 @@
-// @ts-check
 import {
   ReceiveMessageCommand,
   ChangeMessageVisibilityCommand,
@@ -17,7 +16,7 @@ function randomString() {
   return Math.random().toString(36).slice(2);
 }
 
-function fakeSqs(options = {}) {
+function fakeSqs(options: { message?: any; timeoutCount?: number } = {}) {
   const receiptHandle = randomString();
 
   let message = options.message;
@@ -55,7 +54,7 @@ function fakeSqs(options = {}) {
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
 
-  return /** @type {any} */ ({
+  return {
     send: async (command) => {
       if (command instanceof ReceiveMessageCommand) {
         return receiveMessage(command);
@@ -72,7 +71,7 @@ function fakeSqs(options = {}) {
     changeMessageVisibility,
     receiveMessage,
     deleteMessage,
-  });
+  } as any;
 }
 
 const VISIBILITY_TIMEOUT = 60;

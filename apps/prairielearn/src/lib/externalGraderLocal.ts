@@ -92,7 +92,7 @@ export class ExternalGraderLocal {
           await new Promise((resolve, reject) => {
             docker.modem.followProgress(stream, (err) => (err ? reject(err) : resolve(null)));
           });
-          logger.info(`Successfully pulled image`);
+          logger.info('Successfully pulled image');
         } catch (err) {
           logger.warn(
             `Error pulling "${question.external_grading_image}" image; attempting to fall back to cached version.`,

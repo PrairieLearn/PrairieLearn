@@ -1,5 +1,4 @@
-// @ts-check
-
+import type { ErrorRequestHandler } from 'express';
 import jsonStringifySafe from 'json-stringify-safe';
 
 import { AugmentedError, formatErrorStackSafe } from '@prairielearn/error';
@@ -14,10 +13,8 @@ import { ErrorPage } from './error.html.js';
  * error-handling middleware.
  *
  * @see http://expressjs.com/en/guide/using-middleware.html#middleware.error-handling
- *
- * @type {import('express').ErrorRequestHandler}
  */
-export default function (err, req, res, _next) {
+export default (function (err, req, res, _next) {
   const errorId = res.locals.error_id;
 
   err.status ??= 500;
@@ -52,4 +49,4 @@ export default function (err, req, res, _next) {
       resLocals: res.locals,
     }),
   );
-}
+} satisfies ErrorRequestHandler as ErrorRequestHandler); // https://github.com/microsoft/TypeScript/issues/13626#issuecomment-1472348545

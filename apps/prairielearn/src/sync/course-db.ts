@@ -1059,12 +1059,12 @@ async function validateAssessment(
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
     if (!allowRealTimeGrading) {
-      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+      errors.push('Real-time grading cannot be disabled for Homework-type assessments');
     }
 
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
-      errors.push(`"multipleInstance" cannot be used for Homework-type assessments`);
+      errors.push('"multipleInstance" cannot be used for Homework-type assessments');
     }
   }
 
@@ -1073,7 +1073,7 @@ async function validateAssessment(
     const allowAccessResult = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
-      errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+      errors.push('Invalid allowAccess rule: credit must be 0 if active is false');
     }
 
     errors.push(...allowAccessResult.errors);
@@ -1117,7 +1117,7 @@ async function validateAssessment(
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`,
+          'Cannot specify an array of multiple point values for a question if real-time grading is disabled',
         );
       }
       // We'll normalize either single questions or alternative groups
@@ -1137,7 +1137,7 @@ async function validateAssessment(
           const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`,
+              'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
             );
           }
           return {
@@ -1160,7 +1160,7 @@ async function validateAssessment(
           },
         ];
       } else {
-        errors.push(`Zone question must specify either "alternatives" or "id"`);
+        errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
       alternatives.forEach((alternative) => {
@@ -1376,7 +1376,7 @@ export async function loadQuestions(
   // used to import questions from other courses.
   for (const qid in questions) {
     if (qid[0] === '@') {
-      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+      infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
   checkDuplicateUUIDs(
