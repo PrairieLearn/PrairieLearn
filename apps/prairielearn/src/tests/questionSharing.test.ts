@@ -511,11 +511,8 @@ describe('Question Sharing', function () {
           unsafe_sharing_set_id: '1',
         }),
       });
-      console.log(`Response status: ${resGet.ok}`); // TEST
-      console.log(`Question ID: ${result.rows[0].id}`); // TEST
       assert(resPost.ok);
       
-
       const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
       assert.include(
         settingsPageResponse.$('[data-testid="shared-with"]').text(),
