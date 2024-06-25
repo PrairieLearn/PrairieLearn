@@ -201,4 +201,13 @@ onDocumentReady(() => {
       );
     },
   });
+
+  observe('.form-row', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
+
+      el.classList.add('row');
+      console.warn('Bootstrap 5 replaced .form-row with .row. Please update your HTML.', el);
+    },
+  });
 });
