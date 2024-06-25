@@ -171,6 +171,7 @@ SELECT
   to_jsonb(s) AS submission,
   to_jsonb(v) AS variant,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+  qo.question_number,
   jsonb_build_object(
     'id',
     next_iq.id,
@@ -224,6 +225,7 @@ FROM
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
+  LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id

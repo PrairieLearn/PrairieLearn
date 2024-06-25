@@ -42,6 +42,10 @@
       <% } %>
     </ul>
 
+    <% if (devMode) { %>
+       <a id="navbar-load-from-disk" class="btn btn-success btn-sm" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
+    <% } %>
+
     <%# User and logout %>
     <%
     let displayedName;
@@ -75,9 +79,6 @@
       data-authn-course-instance-role="<%= locals.authz_data?.authn_course_instance_role %>"
       data-has-instructor-access="<%= locals.authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString() %>"
     >
-      <% if (devMode) { %>
-          <li class="mb-2 mb-md-0 mr-2 "><a id="navbar-load-from-disk" class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
-      <% } %>
 
 
       <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
