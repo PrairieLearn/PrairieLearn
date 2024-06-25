@@ -475,7 +475,6 @@ describe('Question Sharing', function () {
     });
   });
 
-  // START
   describe('Test deleting a sharing set', function () {
     let testCourseSharingToken;
 
@@ -512,7 +511,10 @@ describe('Question Sharing', function () {
           unsafe_sharing_set_id: '1',
         }),
       });
+      console.log(`Response status: ${resGet.ok}`); // TEST
+      console.log(`Question ID: ${result.rows[0].id}`); // TEST
       assert(resPost.ok);
+      
 
       const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
       assert.include(
@@ -529,6 +531,7 @@ describe('Question Sharing', function () {
         assert(res.status === 200);
       },
     );
+
 
     // Create a new sharing set with the same name
     step('Create a sharing set', async () => {
@@ -647,5 +650,5 @@ describe('Question Sharing', function () {
         assert(res.status === 400);
       },
     );
-  }); // END
+  });
 });
