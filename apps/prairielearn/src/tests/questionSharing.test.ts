@@ -51,6 +51,21 @@ async function setSharingName(courseId: string, name: string) {
   });
 }
 
+async function deleteSharingSet(courseId: string, sharingSetId: string) {
+  const sharingUrl = sharingPageUrl(courseId);
+  const response = await fetchCheerio(sharingUrl);
+
+  const token = response.$('#test_csrf_token').text();
+  return await fetch(sharingUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __action: 'delete_sharing_set',
+      __csrf_token: token,
+      sharing_set_id: sharingSetId,
+    }),
+  });
+}
+
 async function accessSharedQuestionAssessment(course_id: string) {
   const assessmentsUrl = `${baseUrl}/course_instance/${course_id}/instructor/instance_admin/assessments`;
   const assessmentsPage = await fetchCheerio(assessmentsUrl);
@@ -459,4 +474,171 @@ describe('Question Sharing', function () {
       assert(publiclySharedQuestionRes.ok);
     });
   });
+
+  // START
+  describe('Test deleting a sharing set', function () {
+    let exampleCourseSharingToken;
+    let testCourseSharingToken;
+
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: SHARING_SET_NAME,
+        }),
+      });
+    });
+
+    // Add the question to the sharing set
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
+      const resGet = await fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
+
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
+    });
+
+    // Successfully delete the sharing set
+    step('Successfully delete the sharing set when questions have been added, but has not been shared', async () => {
+      let res = await deleteSharingSet(sharingCourse.id, '1');
+      assert(res.status === 200);
+    });
+
+    // Create a new sharing set with the same name
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: SHARING_SET_NAME,
+        }),
+      });
+    });
+
+    // Share the new sharing set with the consuming course
+    step('Share sharing set with test course', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.ok);
+
+      const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
+      assert(sharingPage.ok);
+      assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'CONSUMING 101');
+    });
+
+    // Successfully delete the new sharing set
+    step('Successfully delete the sharing set when it has been shared, but no questions have been added', async () => {
+      let res = await deleteSharingSet(sharingCourse.id, '1');
+      assert(res.status === 200);
+    });
+
+    // Create a new sharing set with the same name
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: SHARING_SET_NAME,
+        }),
+      });
+    });
+
+    // Add the question to the new sharing set
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
+      const resGet = await fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
+
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
+    });
+
+    // Share the new sharing set with the consuming course
+    step('Share sharing set with test course', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: testCourseSharingToken,
+        }),
+      });
+      assert(res.ok);
+
+      const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
+      assert(sharingPage.ok);
+      assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'CONSUMING 101');
+    });
+
+    // Fail to delete the sharing set
+    step('Fail to delete the sharing set when it has been shared and questions have been added', async () => {
+      let res = await deleteSharingSet(sharingCourse.id, '1');
+      assert(res.status === 400);
+    });
+
+  }); // END
 });
