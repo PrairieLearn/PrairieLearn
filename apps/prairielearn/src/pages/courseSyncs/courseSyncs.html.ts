@@ -63,7 +63,7 @@ export function CourseSyncs({
                 <tbody>
                   <tr>
                     <th class="align-middle">Current commit hash</th>
-                    <td>${course.commit_hash}</td>
+                    <td colspan="2">${course.commit_hash}</td>
                   </tr>
 
                   <tr>
