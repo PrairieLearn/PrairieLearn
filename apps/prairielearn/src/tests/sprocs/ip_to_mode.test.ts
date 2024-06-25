@@ -177,8 +177,8 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
-            // 65 minutes from now (5 minutes after access end)
-            new Date(Date.now() + 1000 * 60 * 65),
+            // 25 minutes from now (5 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 25),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Exam');
@@ -192,8 +192,8 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
-            // 100 minutes from now (40 minutes after access end)
-            new Date(Date.now() + 1000 * 60 * 100),
+            // 60 minutes from now (40 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 60),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
@@ -293,6 +293,26 @@ describe('sproc ip_to_mode tests', function () {
             '192.168.0.01',
             // 90 minutes from now.
             new Date(Date.now() + 1000 * 60 * 90),
+            user_id,
+          ]);
+          assert.equal(result.rows[0].mode, 'Public');
+        });
+      });
+
+      it('should return "Public" for any IP address, outside the access date range but within an hour of check-in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+
+          // Remove IP restriction.
+          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+
+          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.queryAsync(sql.start_reservations, {});
+
+          const result = await sqldb.callAsync('ip_to_mode', [
+            '192.168.0.01',
+            // 50 minutes from now.
+            new Date(Date.now() + 1000 * 60 * 50),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');

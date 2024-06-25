@@ -1,5 +1,4 @@
-// @ts-check
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -18,7 +17,7 @@ import { logPageView } from '../../middlewares/logPageView.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.post(
   '/',
