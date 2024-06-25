@@ -394,7 +394,7 @@ onDocumentReady(() => {
             />`
           : ''}
         <select
-          class="form-control select-time-limit"
+          class="custom-select select-time-limit"
           name="plus_minus"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
@@ -429,7 +429,7 @@ onDocumentReady(() => {
             style="width: 5em"
             value="5"
           />
-          <select class="form-control time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`

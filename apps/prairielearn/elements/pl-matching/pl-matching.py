@@ -343,6 +343,7 @@ def render(element_html, data):
             "counter_type": counter_type,
             "no_counters": no_counters,
             "options_placement": options_placement.value,
+            "editable": data["editable"],
         }
 
         if score is not None:

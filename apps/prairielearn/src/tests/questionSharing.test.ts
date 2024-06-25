@@ -54,7 +54,7 @@ async function setSharingName(courseId: string, name: string) {
 async function accessSharedQuestionAssessment(course_id: string) {
   const assessmentsUrl = `${baseUrl}/course_instance/${course_id}/instructor/instance_admin/assessments`;
   const assessmentsPage = await fetchCheerio(assessmentsUrl);
-  const assessmentLink = assessmentsPage.$(`a:contains("Test assessment")`);
+  const assessmentLink = assessmentsPage.$('a:contains("Test assessment")');
   assert.lengthOf(assessmentLink, 1);
   const sharedQuestionAssessmentUrl = siteUrl + assessmentLink.attr('href');
   const res = await fetchCheerio(sharedQuestionAssessmentUrl);
@@ -142,7 +142,7 @@ describe('Question Sharing', function () {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (!syncResult?.hadJsonErrorsOrWarnings) {
         throw new Error(
-          `Sync of consuming course succeeded when it should have failed due to unresolved shared question path.`,
+          'Sync of consuming course succeeded when it should have failed due to unresolved shared question path.',
         );
       }
     });
@@ -157,7 +157,7 @@ describe('Question Sharing', function () {
       async () => {
         const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
         if (syncResult?.hadJsonErrorsOrWarnings) {
-          throw new Error(`Errors or warnings found during sync of consuming course`);
+          throw new Error('Errors or warnings found during sync of consuming course');
         }
       },
     );
@@ -388,18 +388,18 @@ describe('Question Sharing', function () {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (syncResult === undefined || syncResult.hadJsonErrorsOrWarnings) {
         console.log(syncResult);
-        throw new Error(`Errors or warnings found during sync of consuming course`);
+        throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
 
     step('Successfully access shared question', async () => {
       const res = await accessSharedQuestionAssessment(consumingCourse.id);
-      const sharedQuestionLink = res.$(`a:contains("Shared via sharing set")`);
+      const sharedQuestionLink = res.$('a:contains("Shared via sharing set")');
       assert.lengthOf(sharedQuestionLink, 1);
       const sharedQuestionRes = await fetchCheerio(siteUrl + sharedQuestionLink.attr('href'));
       assert(sharedQuestionRes.ok);
 
-      const publiclySharedQuestionLink = res.$(`a:contains("Shared publicly")`);
+      const publiclySharedQuestionLink = res.$('a:contains("Shared publicly")');
       assert.lengthOf(publiclySharedQuestionLink, 1);
       const publiclySharedQuestionRes = await fetchCheerio(
         siteUrl + publiclySharedQuestionLink.attr('href'),

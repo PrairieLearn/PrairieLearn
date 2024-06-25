@@ -65,7 +65,7 @@ router.get(
       return;
     }
 
-    debug(`Soft-delete file transfer`);
+    debug('Soft-delete file transfer');
     await sqldb.queryOneRowAsync(sql.soft_delete_file_transfer, {
       id: req.params.file_transfer_id,
       user_id: res.locals.user.user_id,

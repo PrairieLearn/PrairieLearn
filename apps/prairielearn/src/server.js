@@ -161,7 +161,7 @@ export async function initExpress() {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: 'prairielearn_session',
+        name: 'pl2_session',
         writeNames: ['prairielearn_session', 'pl2_session'],
         // Ensure that the legacy session cookie doesn't have a domain specified.
         // We can only safely set domains on the new session cookie.
@@ -174,12 +174,17 @@ export async function initExpress() {
     }),
   );
 
+  // This middleware helps ensure that sessions remain alive (un-expired) as
+  // long as users are somewhat frequently active. See the documentation for
+  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
   app.use((req, res, next) => {
-    // If the session is going to expire in the near future, we'll extend it
-    // automatically for the user.
-    //
-    // TODO: make this configurable?
-    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+    // Compute the number of milliseconds until the session expires.
+    const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
+
+    if (
+      sessionTtl <
+      (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
+    ) {
       req.session.setExpiration(config.sessionStoreExpireSeconds);
     }
 
@@ -661,20 +666,11 @@ export async function initExpress() {
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
-    app.use('/pl/loadFromDisk', [
-      function (req, res, next) {
-        res.locals.navPage = 'load_from_disk';
-        next();
-      },
+    app.use(
+      '/pl/loadFromDisk',
       (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    ]);
-    app.use('/pl/jobSequence', [
-      function (req, res, next) {
-        res.locals.navPage = 'job_sequence';
-        next();
-      },
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
-    ]);
+    );
+    app.use('/pl/jobSequence', (await import('./pages/jobSequence/jobSequence.js')).default);
   }
 
   // Redirect plain course instance page either to student or instructor assessments page
@@ -1243,7 +1239,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/loadFromDisk',
@@ -1615,7 +1611,7 @@ export async function initExpress() {
     );
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+      (await import('./pages/jobSequence/jobSequence.js')).default,
     );
   }
 
@@ -1890,7 +1886,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
@@ -2079,7 +2075,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/administrator/jobSequence',
-    (await import('./pages/administratorJobSequence/administratorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/administrator/courseRequests',
@@ -2557,7 +2553,7 @@ if (esMain(import.meta) && config.startServer) {
             userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
+          logger.info('Waiting for job to finish...');
           await jobPromise;
           (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
