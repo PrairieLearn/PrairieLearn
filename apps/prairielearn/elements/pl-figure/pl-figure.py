@@ -17,6 +17,8 @@ FILE_TYPE_DEFAULT = FileType.STATIC
 DIRECTORY_DEFAULT = "clientFilesQuestion"
 INLINE_DEFAULT = False
 ALT_TEXT_DEFAULT = ""
+TITLE_DEFAULT = ""
+XTRA_CLASS_DEFAULT = ""
 
 DIRECTORY_URL_DICT = {
     "clientFilesQuestion": "client_files_question_url",
@@ -34,7 +36,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["file-name"],
-        optional_attribs=["width", "type", "directory", "inline", "alt"],
+        optional_attribs=["width", "type", "directory", "inline", "alt", 'title', 'class'],
     )
 
     file_type = pl.get_enum_attrib(element, "type", FileType, FILE_TYPE_DEFAULT)
@@ -76,6 +78,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Get alternate-text text (default is PrairieLearn Image)
     alt_text = pl.get_string_attrib(element, "alt", ALT_TEXT_DEFAULT)
 
+    # Get title text (default is "")
+    title = pl.get_string_attrib(element, "title", TITLE_DEFAULT)
+
+    class_ = pl.get_string_attrib(element, "class", XTRA_CLASS_DEFAULT)
+
+
     # Get base url, which depends on the type and directory
     if file_type is FileType.STATIC:
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
@@ -99,6 +107,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
     # Create and return html
-    html_params = {"src": file_url, "width": width, "inline": inline, "alt": alt_text}
+    html_params = {"src": file_url, "width": width, "inline": inline, "alt": alt_text, 'title': title, 'class': class_}
     with open("pl-figure.mustache", "r", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
