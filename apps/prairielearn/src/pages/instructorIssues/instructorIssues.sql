@@ -75,7 +75,6 @@ WITH
   )
 SELECT
   i.* AS issue_id,
-  now() AS now,
   ci.short_name AS course_instance_short_name,
   ci.id AS course_instance_id,
   COALESCE(ci.display_timezone, c.display_timezone) AS display_timezone,

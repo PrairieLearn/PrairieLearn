@@ -1,7 +1,6 @@
 // @ts-check
 import * as url from 'node:url';
 
-import { formatDistance } from 'date-fns';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import SearchString from 'search-string';
@@ -145,8 +144,6 @@ router.get(
 
     const issues = issueRows.map((row) => ({
       ...row,
-      // Add human-readable relative dates to each row
-      relativeDate: row.date ? formatDistance(row.date, row.now, { addSuffix: true }) : '',
 
       // Each issue is associated with a question variant. If an issue is also
       // associated with a course instance, then this question variant is from

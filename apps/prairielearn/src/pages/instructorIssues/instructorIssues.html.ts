@@ -1,3 +1,4 @@
+import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -11,7 +12,6 @@ import { config } from '../../lib/config.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  DateFromISOString,
   IdSchema,
   type Issue,
   IssueSchema,
@@ -23,7 +23,6 @@ import {
 export const PAGE_SIZE = 100;
 
 export const IssueRowSchema = IssueSchema.extend({
-  now: DateFromISOString,
   course_instance_short_name: CourseInstanceSchema.shape.short_name.nullable(),
   course_instance_id: IdSchema.nullable(),
   display_timezone: CourseInstanceSchema.shape.display_timezone,
@@ -41,7 +40,6 @@ export const IssueRowSchema = IssueSchema.extend({
 });
 export type IssueRow = z.infer<typeof IssueRowSchema>;
 type IssueComputedRow = IssueRow & {
-  relativeDate: string;
   showUser: boolean;
   hideAssessmentLink: boolean;
 };
@@ -295,7 +293,7 @@ function IssueRow({
           ${issue.date
             ? html`
                 <span title="${formatDate(issue.date, issue.display_timezone)}">
-                  ${issue.relativeDate}
+                  ${formatDistance(issue.date, Date.now(), { addSuffix: true })}
                 </span>
               `
             : ''}
