@@ -28,7 +28,7 @@ export function Pager({
             Prev
           </a>
         </li>
-        <li class="page-item">
+        <li class="page-item" aria-current="page">
           <a class="page-link" href="?page=${currPage}${suffix}">Page ${currPage}/${lastPage}</a>
         </li>
         <li class="page-item ${currPage === lastPage ? 'disabled' : ''}">
