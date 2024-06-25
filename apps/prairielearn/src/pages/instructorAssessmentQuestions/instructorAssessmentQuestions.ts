@@ -5,12 +5,12 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import {
-  InstructorAssessmentQuestions,
-  AssessmentQuestionRowSchema,
-} from './instructorAssessmentQuestions.html.js';
+import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
+import { AssessmentQuestionRowSchema } from './instructorAssessmentQuestions.types.js';
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
@@ -33,6 +33,37 @@ router.get(
       return row;
     });
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
+  }),
+);
+
+router.get(
+  '/questions',
+  asyncHandler(async (req, res) => {
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course_id: res.locals.course.id,
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+    });
+
+    const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
+      res.locals.course.id,
+      courseInstances.map((ci) => ci.id),
+    );
+
+    const courseDirExists = await fs.pathExists(res.locals.course.path);
+    res.send(
+      QuestionsPage({
+        questions,
+        course_instances: courseInstances,
+        showAddQuestionButton:
+          res.locals.authz_data.has_course_permission_edit &&
+          !res.locals.course.example_course &&
+          courseDirExists,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 

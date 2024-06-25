@@ -1,5 +1,4 @@
-import { z } from 'zod';
-
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -7,44 +6,10 @@ import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import {
-  AlternativeGroupSchema,
-  AssessmentQuestionSchema,
-  AssessmentsFormatForQuestionSchema,
-  QuestionSchema,
-  TagSchema,
-  TopicSchema,
-  ZoneSchema,
-} from '../../lib/db-types.js';
 
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
-  number: z.string().nullable(),
-  open_issue_count: z.string().nullable(),
-  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors_ansified: z.string().optional(),
-  sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings_ansified: z.string().optional(),
-  sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema,
-  qid: QuestionSchema.shape.qid,
-  start_new_zone: z.boolean().nullable(),
-  start_new_alternative_group: z.boolean().nullable(),
-  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
-  title: QuestionSchema.shape.title,
-  zone_best_questions: ZoneSchema.shape.best_questions,
-  zone_has_best_questions: z.boolean().nullable(),
-  zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: ZoneSchema.shape.max_points,
-  zone_number_choose: ZoneSchema.shape.number_choose,
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-});
-type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+import { DeleteQuestionModal } from './deleteQuestionModal.html.js';
+import { EditQuestionModal } from './editQuestionModal.html.js';
+import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -65,6 +30,7 @@ export function InstructorAssessmentQuestions({
       </head>
       <script></script>
       <body>
+        ${EncodedData(questions, 'assessment-questions-data')}
         <script>
           $(() => {
             $('[data-toggle="popover"]').popover({ sanitize: false });
@@ -103,6 +69,8 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
+          ${DeleteQuestionModal({ zoneNumber: 0, questionNumber: 0 })}
+          ${EditQuestionModal({ newQuestion: false })}
           ${renderEjs(
             import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -112,6 +80,23 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
+              ${resLocals.authz_data.has_course_instance_permission_edit
+                ? html`
+                    <div class="ml-auto">
+                      <button id="enableEditButton" class="btn btn-sm btn-light">
+                        <i class="fa fa-edit" aria-hidden="true"></i> Edit Assessment Questions
+                      </button>
+                      <span id="editModeButtons" style="display: none">
+                        <button id="saveAndSyncButton" class="btn btn-sm btn-light" type="button">
+                          <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                        </button>
+                        <button class="btn btn-sm btn-light" onclick="window.location.reload()">
+                          Cancel
+                        </button>
+                      </span>
+                    </div>
+                  `
+                : ''}
             </div>
             ${AssessmentQuestionsTable({
               questions,
@@ -158,7 +143,10 @@ function AssessmentQuestionsTable({
   }
 
   return html`
-    <div class="table-responsive">
+    <div
+      class="table-responsive js-assessment-questions-table"
+      data-assessment-type="${assessmentType}"
+    >
       <table class="table table-sm table-hover">
         <thead>
           <tr>
