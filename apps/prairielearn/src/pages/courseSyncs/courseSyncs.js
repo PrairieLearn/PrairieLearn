@@ -98,25 +98,26 @@ router.post(
     } else if (req.body.__action === 'status') {
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
-    } else if (req.body.__action === 'syncImages') {
-      let images;
-      if ('single_image' in req.body) {
-        const questionId = await queryOptionalRow(
-          sql.check_question_with_image,
-          { course_id: res.locals.course.id, image: req.body.single_image },
-          IdSchema,
-        );
-        if (questionId == null) {
-          throw new HttpStatusError(400, 'Image not found in any question for this course');
-        }
-        images = [{ image: req.body.single_image }];
-      } else {
-        images = await queryRows(
-          sql.question_images,
-          { course_id: res.locals.course.id },
-          ImageRowSchema,
-        );
+    } else if (req.body.__action === 'syncSingleImage') {
+      const questionId = await queryOptionalRow(
+        sql.check_question_with_image,
+        { course_id: res.locals.course.id, image: req.body.single_image },
+        IdSchema,
+      );
+      if (questionId == null) {
+        throw new HttpStatusError(400, 'Image not found in any question for this course');
       }
+      const jobSequenceId = await syncHelpers.ecrUpdate(
+        [{ image: req.body.single_image }],
+        res.locals,
+      );
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'syncImages') {
+      const images = await queryRows(
+        sql.question_images,
+        { course_id: res.locals.course.id },
+        ImageRowSchema,
+      );
       const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else {
