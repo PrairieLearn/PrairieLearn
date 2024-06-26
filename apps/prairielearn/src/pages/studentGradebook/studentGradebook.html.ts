@@ -76,9 +76,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                              score: row.assessment_instance_score_perc,
-                            })
+                          ? Scorebar(row.assessment_instance_score_perc)
                           : 'Score not shown'}
                       </td>
                     </tr>

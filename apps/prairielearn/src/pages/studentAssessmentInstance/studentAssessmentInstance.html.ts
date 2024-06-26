@@ -12,6 +12,7 @@ import {
   InstanceQuestionPoints,
   QuestionAwardedPoints,
 } from '../../components/QuestionScore.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -137,9 +138,7 @@ export function StudentAssessmentInstance({
                           : ''}
                       </div>
                       <div class="col-md-3 col-sm-6">
-                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                          score: resLocals.assessment_instance.score_perc,
-                        })}
+                        ${Scorebar(resLocals.assessment_instance.score_perc)}
                       </div>
                       <div class="col-md-6 col-sm-12">
                         ${AssessmentStatus({
