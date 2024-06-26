@@ -345,7 +345,6 @@ describe('Instructor assessment editing', function () {
 
   describe('12. POST to instructor assessment instance URL to set total points', function () {
     it('should load successfully', async () => {
-      const form = {};
       const res = await fetch(locals.instructorAssessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
