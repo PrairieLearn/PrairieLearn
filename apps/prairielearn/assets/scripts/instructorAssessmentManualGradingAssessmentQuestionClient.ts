@@ -90,7 +90,7 @@ onDocumentReady(() => {
     onCheckSome: updateGradingTagButton,
     onCreatedControls: () => {
       $('#grading-table th[data-field="points"] .filter-control input').tooltip({
-        title: `hint: use <code>&lt;1</code>, or <code>&gt;0</code>`,
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
       $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
