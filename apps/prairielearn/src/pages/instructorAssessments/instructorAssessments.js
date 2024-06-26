@@ -1,8 +1,6 @@
 // @ts-check
 import { pipeline } from 'node:stream/promises';
 
-import { AnsiUp } from 'ansi_up';
-import debugfn from 'debug';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -14,44 +12,51 @@ import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
+import { AssessmentSchema, IdSchema } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-const router = express.Router();
-const ansiUp = new AnsiUp();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-const debug = debugfn('prairielearn:instructorAssessments');
+import {
+  AssessmentRowSchema,
+  AssessmentStats,
+  InstructorAssessments,
+} from './instructorAssessments.html.js';
 
-const csvFilename = (locals) => {
-  return (
-    courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'assessment_stats.csv'
-  );
-};
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+function buildCsvFilename(locals) {
+  return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
+}
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.csvFilename = csvFilename(res.locals);
+    const csvFilename = buildCsvFilename(res.locals);
 
-    var params = {
-      course_instance_id: res.locals.course_instance.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
-      assessments_group_by: res.locals.course_instance.assessments_group_by,
-    };
-    const result = await sqldb.queryAsync(sql.select_assessments, params);
-    res.locals.rows = result.rows;
+    const rows = await sqldb.queryRows(
+      sql.select_assessments,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+        req_date: res.locals.req_date,
+        assessments_group_by: res.locals.course_instance.assessments_group_by,
+      },
+      AssessmentRowSchema,
+    );
 
-    for (const row of res.locals.rows) {
-      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-    }
-
-    res.locals.assessment_ids_needing_stats_update = res.locals.rows
+    const assessmentIdsNeedingStatsUpdate = rows
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      InstructorAssessments({
+        resLocals: res.locals,
+        rows,
+        assessmentIdsNeedingStatsUpdate,
+        csvFilename,
+      }),
+    );
   }),
 );
 
@@ -66,26 +71,28 @@ router.get(
     // When fetching the assessment, we don't check whether it needs an update
     // again because we don't want to get get stuck in a loop perpetually
     // updating because students are still working.
-    var params = {
-      course_instance_id: res.locals.course_instance.id, // for authz checking
-      assessment_id: req.params.assessment_id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
-    };
-    const result = await sqldb.queryAsync(sql.select_assessment, params);
-    if (result.rowCount === 0) {
+    const row = await sqldb.queryOptionalRow(
+      sql.select_assessment,
+      {
+        course_instance_id: res.locals.course_instance.id, // for authz checking
+        assessment_id: req.params.assessment_id,
+        authz_data: res.locals.authz_data,
+        req_date: res.locals.req_date,
+      },
+      AssessmentSchema,
+    );
+    if (row == null) {
       throw new error.HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
-    res.locals.row = result.rows[0];
 
-    res.render(`${import.meta.dirname}/assessmentStats.ejs`, res.locals);
+    res.send(AssessmentStats({ row }).toString());
   }),
 );
 
 router.get(
   '/file/:filename',
   asyncHandler(async (req, res) => {
-    if (req.params.filename === csvFilename(res.locals)) {
+    if (req.params.filename === buildCsvFilename(res.locals)) {
       // There is no need to check if the user has permission to view student
       // data, because this file only has aggregate data.
 
@@ -157,7 +164,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
+      throw new error.HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
   }),
 );
@@ -165,30 +172,22 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    debug(`Responding to post with action ${req.body.__action}`);
     if (req.body.__action === 'add_assessment') {
-      debug('Responding to action add_assessment');
-      const editor = new AssessmentAddEditor({
-        locals: res.locals,
-      });
+      const editor = new AssessmentAddEditor({ locals: res.locals });
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }
 
-      debug(
-        `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
+      const assessment_id = await sqldb.queryRow(
+        sql.select_assessment_id_from_uuid,
+        { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
+        IdSchema,
       );
-      const result = await sqldb.queryOneRowAsync(sql.select_assessment_id_from_uuid, {
-        uuid: editor.uuid,
-        course_instance_id: res.locals.course_instance.id,
-      });
-      res.redirect(
-        res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
-      );
+      res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/settings`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
