@@ -76,7 +76,7 @@ export class BatchedMigrationRunner {
     // Safety check: if there are any pending jobs, don't mark this
     // migration as finished.
     if (await this.hasIncompleteJobs(migration)) {
-      this.log(`Incomplete jobs found, not marking as finished`);
+      this.log('Incomplete jobs found, not marking as finished');
       return;
     }
 

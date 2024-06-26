@@ -1,9 +1,8 @@
-// @ts-check
-import * as express from 'express';
+import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
@@ -26,9 +25,9 @@ import {
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 
-const router = express.Router();
+const router = Router();
 
 /**
  * Get a validated variant ID from a request, or throw an exception.
@@ -39,11 +38,9 @@ const router = express.Router();
  * everything is ok. If anything is invalid or unauthorized, we throw an
  * exception.
  *
- * @param {express.Request} req The request object
- * @param {express.Response} res The response object
- * @returns {Promise<string>} The validated variant ID
+ * @returns The validated variant ID
  */
-async function getValidVariantId(req, res) {
+async function getValidVariantId(req: Request, res: Response): Promise<string> {
   return (
     await validateVariantAgainstQuestion(
       req.body.__variant_id,
@@ -53,18 +50,15 @@ async function getValidVariantId(req, res) {
   ).id;
 }
 
-async function processFileUpload(req, res) {
+async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new error.HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new error.HttpStatusError(
-      403,
-      `This assessment is not accepting submissions at this time.`,
-    );
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   if (!req.file) {
-    throw new error.HttpStatusError(400, 'No file uploaded');
+    throw new HttpStatusError(400, 'No file uploaded');
   }
   await uploadFile({
     display_filename: req.file.originalname,
@@ -79,15 +73,12 @@ async function processFileUpload(req, res) {
   return await getValidVariantId(req, res);
 }
 
-async function processTextUpload(req, res) {
+async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new error.HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new error.HttpStatusError(
-      403,
-      `This assessment is not accepting submissions at this time.`,
-    );
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -102,30 +93,24 @@ async function processTextUpload(req, res) {
   return await getValidVariantId(req, res);
 }
 
-async function processDeleteFile(req, res) {
+async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new error.HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new error.HttpStatusError(
-      403,
-      `This assessment is not accepting submissions at this time.`,
-    );
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current instance question
   const validFiles =
     res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
   if (validFiles.length === 0) {
-    throw new error.HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+    throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
   }
   const file = validFiles[0];
 
   if (file.type !== 'student_upload') {
-    throw new error.HttpStatusError(
-      403,
-      `Cannot delete file type ${file.type} for file_id=${file.id}`,
-    );
+    throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
   await deleteFile(file.id, res.locals.authn_user.user_id);
@@ -133,24 +118,21 @@ async function processDeleteFile(req, res) {
   return await getValidVariantId(req, res);
 }
 
-async function validateAndProcessSubmission(req, res) {
+async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new error.HttpStatusError(400, 'assessment_instance is closed');
+    throw new HttpStatusError(400, 'assessment_instance is closed');
   }
   if (!res.locals.instance_question.open) {
-    throw new error.HttpStatusError(400, 'instance_question is closed');
+    throw new HttpStatusError(400, 'instance_question is closed');
   }
   if (!res.locals.authz_result.active) {
-    throw new error.HttpStatusError(
-      400,
-      'This assessment is not accepting submissions at this time.',
-    );
+    throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
   if (
     res.locals.assessment.group_config?.has_roles &&
     !res.locals.instance_question.group_role_permissions.can_submit
   ) {
-    throw new error.HttpStatusError(
+    throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
     );
@@ -162,22 +144,19 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_result.authorized_edit) {
-      throw new error.HttpStatusError(403, 'Not authorized');
+      throw new HttpStatusError(403, 'Not authorized');
     }
 
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       if (res.locals.assessment.type === 'Exam') {
         if (res.locals.authz_result.time_limit_expired) {
-          throw new error.HttpStatusError(
+          throw new HttpStatusError(
             403,
             'Time limit is expired, please go back and finish your assessment',
           );
         }
         if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw new error.HttpStatusError(
-            403,
-            'Real-time grading is not allowed for this assessment',
-          );
+          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -190,7 +169,7 @@ router.post(
       }
     } else if (req.body.__action === 'timeLimitFinish') {
       if (res.locals.assessment.type !== 'Exam') {
-        throw new error.HttpStatusError(400, 'Only exams have a time limit');
+        throw new HttpStatusError(400, 'Only exams have a time limit');
       }
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
@@ -232,7 +211,7 @@ router.post(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -272,7 +251,7 @@ router.get(
       // fetch and display the most recent non-broken variant.
       // If no such variant exists, we tell the user that a new variant
       // cannot be generated.
-      const last_variant_id = await sqldb.queryOptionalRow(
+      const last_variant_id = await queryOptionalRow(
         sql.select_last_variant_id,
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,
