@@ -215,7 +215,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -240,7 +240,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -265,7 +265,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -288,7 +288,7 @@ describe('student data access', function () {
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -330,7 +330,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -355,7 +355,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -380,7 +380,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -403,7 +403,7 @@ describe('student data access', function () {
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -456,7 +456,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 1);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
       const form = {
         __action: 'grade',
         __csrf_token: context.__csrf_token,
@@ -509,7 +509,7 @@ describe('student data access', function () {
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 1);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
       const form = {
         __action: 'grade',
         __csrf_token: context.__csrf_token,

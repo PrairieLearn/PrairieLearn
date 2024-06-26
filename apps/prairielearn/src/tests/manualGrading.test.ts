@@ -241,7 +241,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     );
 
     if (!rubric_items) {
-      const container = feedbackBlock.find(`[data-testid^="rubric-item-container-"]`);
+      const container = feedbackBlock.find('[data-testid^="rubric-item-container-"]');
       assert.equal(container.length, 0);
     } else {
       rubric_items.forEach((item, index) => {
@@ -301,7 +301,7 @@ function checkSettingsResults(
     assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
 
-    const idFields = form.find(`input[name^="rubric_item"][name$="[id]"]`);
+    const idFields = form.find('input[name^="rubric_item"][name$="[id]"]');
 
     rubric_items.forEach((item, index) => {
       const idField = $manualGradingIQPage(idFields.get(index));
