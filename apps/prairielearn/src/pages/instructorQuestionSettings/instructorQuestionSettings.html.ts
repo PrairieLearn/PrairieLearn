@@ -511,7 +511,7 @@ function QuestionSharing({
         <span class="badge color-green3 mr-1">Public</span>      
         ${sourceSharedPublicly
         ? html`
-            <span class="badge color-blue3">Source</span>
+            <span class="badge color-blue3">Source Code</span>
             This question and its source code are publicly shared.
           `
         : html`This question is publicly shared.`}

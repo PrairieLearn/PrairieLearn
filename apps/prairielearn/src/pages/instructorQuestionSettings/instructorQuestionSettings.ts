@@ -214,56 +214,72 @@ router.post(
         course_id: res.locals.course.id,
         question_id: res.locals.question.id,
       });
+      
       if (req.body.share_source_code != null) {
-        // Share source code if the checkbox is checked, TEST/REMOVE
         await editPublicSharingWithSource(
           res.locals.course.id,
           res.locals.question.id,
           req.body.share_source_code,
-        );
+      )};
 
-        /*
-        // TEST, new way since we're editing JSON instead of updating the DB
-        if (!(await fs.pathExists(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json')))) { 
-          throw new error.HttpStatusError(400, 'info.json does not exist'); 
-        } 
-        const paths = getPaths(req, res); 
-
-        const questionInfo = JSON.parse(
-            await fs.readFile(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 'utf8'),
-        );
-        
-        const origHash = req.body.orig_hash; 
-        
-        const questionInfoEdit = questionInfo; 
-        questionInfoEdit.name = req.body.short_name; 
-        questionInfoEdit.title = req.body.title; 
-        questionInfoEdit.timezone = req.body.display_timezone; 
-        
-        const editor = new FileModifyEditor({ 
-          locals: res.locals, 
-          container: { 
-            rootPath: paths.rootPath, 
-            invalidRootPaths: paths.invalidRootPaths, 
-          }, 
-          filePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 
-          editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)), 
-          origHash, 
-        });*/
-      
       res.redirect(req.originalUrl);
+
+      // TEST START
+      // TEST, new way since we're editing JSON instead of updating the DB
+      if (!(await fs.pathExists(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json')))) { 
+        throw new error.HttpStatusError(400, 'info.json does not exist'); 
+      } 
+      const paths = getPaths(req, res);
+      
+      console.log('paths', paths)// TEST
+
+      const questionInfo = JSON.parse(
+          await fs.readFile(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 'utf8'),
+      );
+
+      console.log('questionInfo', questionInfo)// TEST
+      
+      const origHash = req.body.orig_hash; 
+
+      console.log('origHash', origHash)// TEST
+      
+      const questionInfoEdit = questionInfo; 
+      questionInfoEdit.name = req.body.short_name; 
+      questionInfoEdit.title = req.body.title; 
+      questionInfoEdit.timezone = req.body.display_timezone; 
+
+      console.log('questionInfoEdit', questionInfoEdit)// TEST
+      
+      const editor = new FileModifyEditor({ 
+        locals: res.locals, 
+        container: { 
+          rootPath: paths.rootPath, 
+          invalidRootPaths: paths.invalidRootPaths, 
+        }, 
+        filePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 
+        editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)), 
+        origHash, 
+      });
+
+      console.log('editor', editor)// TEST 
+      // TEST END
+        
+      
     } else if (req.body.__action === 'edit_public_sharing') {
       await editPublicSharingWithSource(
         res.locals.course.id,
         res.locals.question.id,
         req.body.share_source_code,
       );
-      // TEST edit here too
+      
+      
       res.redirect(req.originalUrl);
+      // TEST edit here too
+      
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
-  }})
+  })
 );
 
 router.get(
