@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'node:path';
 
 import { Router } from 'express';
@@ -6,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import * as chunks from '../../lib/chunks.js';
+import { getRuntimeDirectoryForCourse, ensureChunksForCourseAsync } from '../../lib/chunks.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
@@ -34,9 +33,9 @@ export default function (options = { publicEndpoint: false }) {
       }
 
       const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
-      const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+      const coursePath = getRuntimeDirectoryForCourse(question_course);
 
-      await chunks.ensureChunksForCourseAsync(question_course.id, {
+      await ensureChunksForCourseAsync(question_course.id, {
         type: 'question',
         questionId: res.locals.question.id,
       });

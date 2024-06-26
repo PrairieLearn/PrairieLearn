@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { OAuth2Client } from 'google-auth-library';
@@ -31,8 +30,7 @@ router.get(
       throw new Error(`Invalid 'code' query parameter for authCallbackOAuth2: ${code}`);
     }
     // FIXME: should check req.query.state to avoid CSRF
-    let oauth2Client, identity;
-    oauth2Client = new OAuth2Client(
+    const oauth2Client = new OAuth2Client(
       config.googleClientId,
       config.googleClientSecret,
       config.googleRedirectUrl,
@@ -63,12 +61,12 @@ router.get(
     // A JWT has the form HEADER.PAYLOAD.SIGNATURE
     // We get the PAYLOAD, un-base64, parse to JSON:
     const parts = idToken.split('.');
-    identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+    const identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
     logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
 
     if (!identity.email) throw new Error('Google auth response missing email');
 
-    let authnParams = {
+    const authnParams = {
       uid: identity.email,
       name: identity.name || identity.email,
       uin: identity.sub,

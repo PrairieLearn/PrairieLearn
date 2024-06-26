@@ -1,12 +1,15 @@
-// @ts-check
 import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
-import * as chunks from '../../lib/chunks.js';
+import {
+  getRuntimeDirectoryForCourse,
+  ensureChunksForCourseAsync,
+  type Chunk,
+} from '../../lib/chunks.js';
 
 const router = Router();
 
@@ -15,20 +18,16 @@ router.get(
   asyncHandler(async (req, res) => {
     const filename = req.params[0];
     if (!filename) {
-      throw new error.HttpStatusError(
-        400,
-        'No filename provided within clientFilesAssessment directory',
-      );
+      throw new HttpStatusError(400, 'No filename provided within clientFilesAssessment directory');
     }
 
-    const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-    /** @type {chunks.Chunk} */
-    const chunk = {
+    const coursePath = getRuntimeDirectoryForCourse(res.locals.course);
+    const chunk: Chunk = {
       type: 'clientFilesAssessment',
       courseInstanceId: res.locals.course_instance.id,
       assessmentId: res.locals.assessment.id,
     };
-    await chunks.ensureChunksForCourseAsync(res.locals.course.id, chunk);
+    await ensureChunksForCourseAsync(res.locals.course.id, chunk);
 
     const clientFilesDir = path.join(
       coursePath,
