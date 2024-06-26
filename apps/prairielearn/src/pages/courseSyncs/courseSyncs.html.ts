@@ -205,7 +205,7 @@ function ImageTable({
                 <td>${image.size ? filesize(image.size) : ''}</td>
                 <td>
                   ${image.imageSyncNeeded
-                    ? html` <span class="text-warning">Not found in PL registry</span> `
+                    ? html`<span class="text-warning">Not found in PL registry</span>`
                     : image.pushed_at
                       ? formatDate(image.pushed_at, course.display_timezone)
                       : html`&mdash;`}
@@ -229,19 +229,16 @@ function ImageTable({
                     ? html`
                         ${image.questions.length} question${image.questions.length > 1 ? 's' : ''}
 
-                        <a
+                        <button
                           class="btn btn-xs btn-secondary"
-                          role="button"
-                          tabindex="0"
                           data-toggle="popover"
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"
                           data-trigger="focus"
-                          href="#"
                         >
                           Show
-                        </a>
+                        </button>
                       `
                     : 'No questions'}
                 </td>
