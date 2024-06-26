@@ -130,6 +130,30 @@ router.post(
           );
         }
       }
+    } else if (req.body.__action === 'choose_sharing_set_name') {
+      if (
+        req.body.sharing_set_name.includes('/') ||
+        req.body.sharing_set_name.includes('@') ||
+        req.body.sharing_set_name === ''
+      ) {
+        throw new error.HttpStatusError(
+          400,
+          'Sharing Set Name must be non-empty and is not allowed to contain "/" or "@".',
+        );
+      } else {
+        const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
+        if (canChooseSharingName) {
+          await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_set_name, {
+            sharing_set_name: req.body.sharing_set_name.trim(),
+            sharing_set_id: req.body.sharing_set_id,
+          });
+        } else {
+          throw new error.HttpStatusError(
+            400,
+            'Unable to change sharing set name.', // TEST, since this shouldn't happen do we get rid of it?
+          );
+        }
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
