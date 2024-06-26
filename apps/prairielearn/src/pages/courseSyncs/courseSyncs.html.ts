@@ -202,7 +202,7 @@ function ImageTable({
                 <td>
                   <pre class="mb-0" title="${image.digest_full}">${image.digest}</pre>
                 </td>
-                <td>${image.size ? filesize(image.size, { base: 10, round: 0 }) : ''}</td>
+                <td>${image.size ? filesize(image.size) : ''}</td>
                 <td>
                   ${image.imageSyncNeeded
                     ? html` <span class="text-warning">Not found in PL registry</span> `
