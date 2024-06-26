@@ -1,5 +1,7 @@
-import { html } from '@prairielearn/html';
+import { HtmlSafeString, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -59,71 +61,53 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-const chooseSharingNameModal = (canChooseSharingName, resLocals) => {
-  return html`
-    <div
-      class="modal fade"
-      id="chooseSharingNameModal"
-      tabindex="-1"
-      role="dialog"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Choose Sharing Name</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          ${canChooseSharingName
-            ? html`
-                <form name="choose-sharing-name" method="POST">
-                  <input type="hidden" name="__action" value="choose_sharing_name" />
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <div class="modal-body">
-                    <p class="form-text">Enter the sharing name you would like for your course.</p>
-                    <div>
-                      <label for="course_sharing_name">Enter Sharing Name</label>
-                      <input class="form-control" type="text" name="course_sharing_name" required />
-                    </div>
-                    <p>
-                      <strong
-                        >Once you have shared a question either publicly or with another course, you
-                        will no longer be able to change your sharing name.</strong
-                      >
-                      Doing so would break the assessments of other courses that have imported your
-                      questions. It is recommended that you choose something short but descriptive.
-                      For example, if you're teaching a calculus course at a university that goes by
-                      the abbreviation 'XYZ', then you could choose the sharing name 'xyz-calculus'.
-                      Then other courses will import questions from your course with the syntax
-                      '@xyz-calculus/qid'.
-                    </p>
-                  </div>
-                  <div class="modal-footer">
-                    <div class="text-right mt-4">
-                      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-                    </div>
-                  </div>
-                </form>
-              `
-            : html`
-                <div class="modal-body">
-                  <p class="form-text">
-                    <strong>Unable to change your course's sharing name.</strong>
-                  </p>
-                  <p>
-                    Your course's sharing name cannot be changed because at least one question has
-                    been shared. Doing so would break the assessments of other courses that have
-                    imported your questions.
-                  </p>
-                </div>
-              `}
-        </div>
+function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
+  let body: HtmlSafeString;
+  let footer: HtmlSafeString;
+  if (canChooseSharingName) {
+    body = html`
+      <p class="form-text">Enter the sharing name you would like for your course.</p>
+      <div>
+        <label for="course_sharing_name">Enter Sharing Name</label>
+        <input class="form-control" type="text" name="course_sharing_name" required />
       </div>
-    </div>
-  `;
-};
+      <p>
+        <strong
+          >Once you have shared a question either publicly or with another course, you will no
+          longer be able to change your sharing name.</strong
+        >
+        Doing so would break the assessments of other courses that have imported your questions. It
+        is recommended that you choose something short but descriptive. For example, if you're
+        teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you
+        could choose the sharing name 'xyz-calculus'. Then other courses will import questions from
+        your course with the syntax '@xyz-calculus/qid'.
+      </p>
+    `;
+    footer = html`
+      <input type="hidden" name="__action" value="choose_sharing_name" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+    `;
+  } else {
+    body = html`
+    <strong>Unable to change your course's sharing name.</strong>
+    </p>
+    <p>
+      Your course's sharing name cannot be changed because at least one question has
+      been shared. Doing so would break the assessments of other courses that have
+      imported your questions.
+    </p>`;
+    footer = html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    `;
+  }
+  return Modal({
+    title: 'Choose Sharing Name',
+    id: 'chooseSharingNameModal',
+    body,
+    footer,
+  });
+}
 
 export const InstructorSharing = ({
   sharingName,
@@ -177,7 +161,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(canChooseSharingName, resLocals)}
+                          ${ChooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
                         `
                       : ''}
                   </td>

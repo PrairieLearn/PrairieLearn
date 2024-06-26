@@ -389,12 +389,12 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
       pythonFunction,
       pythonArgs,
     );
-    debug(`execPythonServer(): completed`);
+    debug('execPythonServer(): completed');
     return { result, output };
   } catch (err) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
-      debug(`execPythonServer(): function not present`);
+      debug('execPythonServer(): function not present');
       return {
         result: defaultServerRet(phase, data, html, context),
         output: '',
@@ -1610,7 +1610,7 @@ export async function render(
         // The import map must come before any scripts that use imports
         !_.isEmpty(importMap.imports)
           ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
-          : ``,
+          : '',
         // It's important that any library-style scripts come first
         ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
         ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),

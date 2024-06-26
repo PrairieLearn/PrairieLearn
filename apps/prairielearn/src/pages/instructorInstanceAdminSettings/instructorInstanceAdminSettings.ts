@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import QR from 'qrcode-svg';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -34,15 +33,9 @@ router.get(
 
     const host = getCanonicalHost(req);
     const studentLink = new URL(
-      res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id,
+      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
       host,
     ).href;
-
-    const studentLinkQRCode = new QR({
-      content: studentLink,
-      width: 512,
-      height: 512,
-    }).svg();
 
     const infoCourseInstancePath = encodePath(
       path.join(
@@ -56,7 +49,6 @@ router.get(
         resLocals: res.locals,
         shortNames,
         studentLink,
-        studentLinkQRCode,
         infoCourseInstancePath,
       }),
     );

@@ -1,10 +1,10 @@
 import { scaleLinear, axisBottom, axisLeft, select, zip } from 'd3';
 
 export function scatter(
-  selector: Element,
-  xdata: number[],
-  ydata: number[],
-  options: {
+  selector: HTMLElement,
+  xdata?: number[],
+  ydata?: number[],
+  options?: {
     width?: number;
     height?: number;
     xmin?: number;
@@ -25,6 +25,11 @@ export function scatter(
     labels?: [];
   },
 ) {
+  if (xdata === undefined) xdata = JSON.parse(selector.dataset.xdata ?? '[]');
+  if (ydata === undefined) ydata = JSON.parse(selector.dataset.ydata ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '[]');
+  if (!xdata || !ydata) return;
+
   const resolvedOptions = {
     width: 600,
     height: 600,

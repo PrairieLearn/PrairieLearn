@@ -47,9 +47,9 @@ def main():
     for uid in [g['uid'] for g in grades]:
         print(f'Generating submissions for {uid}...')
         cookies = {
-            'pl_requested_uid': uid,
-            'pl_requested_course_instance_role': 'Student Data Editor',
-            'pl_requested_course_role': 'Owner'
+            'pl2_requested_uid': uid,
+            'pl2_requested_course_instance_role': 'Student Data Editor',
+            'pl2_requested_course_role': 'Owner'
         }
         url = f'{base_url}/assessment/{args.assessment}'
         with requests.get(url, cookies=cookies) as response:

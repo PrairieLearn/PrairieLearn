@@ -52,21 +52,37 @@ export interface ServerJobExecutor {
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 
+const JobRowSchema = JobSchema.extend({
+  start_date_formatted: z.string().nullable(),
+  finish_date_formatted: z.string().nullable(),
+  user_uid: UserSchema.shape.uid.nullable(),
+  authn_user_uid: UserSchema.shape.uid.nullable(),
+});
+type JobRow = z.infer<typeof JobRowSchema>;
+
 const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
   start_date_formatted: z.string().nullable(),
   finish_date_formatted: z.string().nullable(),
   user_uid: UserSchema.shape.uid.nullable(),
   authn_user_uid: UserSchema.shape.uid.nullable(),
   job_count: z.coerce.number(),
-  jobs: z.array(
-    JobSchema.extend({
-      start_date_formatted: z.string().nullable(),
-      finish_date_formatted: z.string().nullable(),
-      user_uid: UserSchema.shape.uid.nullable(),
-      authn_user_uid: UserSchema.shape.uid.nullable(),
-    }),
-  ),
+  jobs: JobRowSchema.array(),
 });
+type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
+
+type JobWithToken = JobRow & { token: string };
+export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
+  token: string;
+  jobs: JobWithToken[];
+};
+
+type JobWithFormattedOutput = Omit<JobWithToken, 'output'> & {
+  output: string;
+  output_raw: Job['output'];
+};
+export type JobSequenceWithFormattedOutput = Omit<JobSequenceWithTokens, 'jobs'> & {
+  jobs: JobWithFormattedOutput[];
+};
 
 /**
  * Store currently active job information in memory. This is used
@@ -455,7 +471,10 @@ export async function errorAbandonedJobs() {
   });
 }
 
-export async function getJobSequence(job_sequence_id: string, course_id: string | null) {
+export async function getJobSequence(
+  job_sequence_id: string,
+  course_id: string | null,
+): Promise<JobSequenceWithTokens> {
   const jobSequence = await queryRow(
     sql.select_job_sequence_with_course_id_as_json,
     { job_sequence_id, course_id },
@@ -482,7 +501,7 @@ export async function getJobSequence(job_sequence_id: string, course_id: string 
 export async function getJobSequenceWithFormattedOutput(
   job_sequence_id: string,
   course_id: string | null,
-) {
+): Promise<JobSequenceWithFormattedOutput> {
   const jobSequence = await getJobSequence(job_sequence_id, course_id);
   const ansiup = new AnsiUp();
   return {
