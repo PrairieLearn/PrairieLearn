@@ -1,4 +1,3 @@
-// @ts-check
 import { ECRClient } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import Docker from 'dockerode';

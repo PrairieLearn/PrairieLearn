@@ -1,4 +1,3 @@
-// @ts-check
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
@@ -8,8 +7,8 @@ import logger from './logger.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-var initialized = false;
-var currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
+let initialized = false;
+let currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
 
 export function init(newMaxJobs) {
   maxJobs = newMaxJobs;
@@ -64,7 +63,7 @@ function _addIntegratedLoad() {
 }
 
 function _reportLoad() {
-  var params = {
+  const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
     average_jobs: _getAndResetLoadEstimate(),
@@ -79,7 +78,7 @@ function _reportLoad() {
 }
 
 function _reportConfig() {
-  var params = {
+  const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
     average_jobs: 0,

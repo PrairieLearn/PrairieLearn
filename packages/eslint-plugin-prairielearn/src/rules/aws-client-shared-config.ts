@@ -80,7 +80,7 @@ export default {
 
           context.report({
             node,
-            message: `Unknown config provided to AWS client.`,
+            message: 'Unknown config provided to AWS client.',
           });
         }
       },

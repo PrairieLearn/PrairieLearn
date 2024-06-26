@@ -1,9 +1,8 @@
-// @ts-check
-import * as express from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
@@ -27,7 +26,7 @@ import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -55,7 +54,7 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_interval: z.string(),
 });
 
-async function ensureUpToDate(locals) {
+async function ensureUpToDate(locals: Record<string, any>) {
   const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
   if (updated) {
     // we updated the assessment_instance, so reload it
@@ -67,10 +66,13 @@ async function ensureUpToDate(locals) {
   }
 }
 
-async function processFileUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+async function processFileUpload(req: Request, res: Response) {
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
+  }
+  if (!req.file) {
+    throw new HttpStatusError(400, 'Upload requested but no file provided');
   }
   await uploadFile({
     display_filename: req.file.originalname,
@@ -84,10 +86,10 @@ async function processFileUpload(req, res) {
   });
 }
 
-async function processTextUpload(req, res) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+async function processTextUpload(req: Request, res: Response) {
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -101,10 +103,10 @@ async function processTextUpload(req, res) {
   });
 }
 
-async function processDeleteFile(req, res) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+async function processDeleteFile(req: Request, res: Response) {
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current assessment instance
@@ -128,7 +130,7 @@ router.post(
       !res.locals.authz_result.authorized_edit &&
       !res.locals.authz_data.has_course_instance_permission_edit
     ) {
-      throw new error.HttpStatusError(403, 'Not authorized');
+      throw new HttpStatusError(403, 'Not authorized');
     }
     if (
       !res.locals.authz_result.authorized_edit &&
@@ -136,7 +138,7 @@ router.post(
         req.body.__action,
       )
     ) {
-      throw new error.HttpStatusError(403, 'Action is only permitted to students, not staff');
+      throw new HttpStatusError(403, 'Action is only permitted to students, not staff');
     }
 
     if (req.body.__action === 'attach_file') {
@@ -150,13 +152,10 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
       const overrideGradeRate = false;
-      var closeExam;
+      let closeExam: boolean;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
-          throw new error.HttpStatusError(
-            403,
-            'Real-time grading is not allowed for this assessment',
-          );
+          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
         }
         closeExam = false;
       } else if (req.body.__action === 'finish') {
@@ -168,7 +167,7 @@ router.post(
         }
         closeExam = true;
       } else {
-        throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+        throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
       const requireOpen = true;
       await assessment.gradeAssessmentInstance(
@@ -186,7 +185,7 @@ router.post(
       }
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) {
-        throw new error.HttpStatusError(400, 'Unauthorized request.');
+        throw new HttpStatusError(400, 'Unauthorized request.');
       }
       await leaveGroup(
         res.locals.assessment.id,
@@ -207,7 +206,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else {
-      next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
+      next(new HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
   }),
 );

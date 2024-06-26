@@ -1,4 +1,3 @@
-// @ts-check
 import * as http from 'node:http';
 
 import Docker from 'dockerode';
@@ -25,16 +24,6 @@ let unhealthyReason = null;
 export async function init() {
   const docker = new Docker();
 
-  const handler = (req, res) => {
-    if (req.url === '/ping') {
-      res.statusCode = healthy ? 200 : 500;
-      res.end(healthy ? 'Healthy' : `Unhealthy: ${unhealthyReason}`);
-    } else {
-      res.statusCode = 404;
-      res.end('Not found');
-    }
-  };
-
   const doHealthCheck = () => {
     docker.ping((err) => {
       if (err) {
@@ -51,18 +40,26 @@ export async function init() {
 
   setTimeout(doHealthCheck, config.healthCheckInterval);
 
-  const server = http.createServer(handler);
+  const server = http.createServer((req, res) => {
+    if (req.url === '/ping') {
+      res.statusCode = healthy ? 200 : 500;
+      res.end(healthy ? 'Healthy' : `Unhealthy: ${unhealthyReason}`);
+    } else {
+      res.statusCode = 404;
+      res.end('Not found');
+    }
+  });
 
   await new Promise((resolve, reject) => {
-    server.listen(config.healthCheckPort, (err) => {
-      if (err) {
-        globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
-        reject(err);
-      } else {
-        globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
-        resolve(null);
-      }
+    server.once('error', (err) => {
+      globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
+      reject(err);
     });
+    server.once('listening', () => {
+      globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
+      resolve(null);
+    });
+    server.listen(config.healthCheckPort);
   });
 }
 

@@ -252,7 +252,7 @@ function getHash(contents) {
 }
 
 async function readDraftEdit(fileEdit) {
-  debug(`Looking for previously saved drafts`);
+  debug('Looking for previously saved drafts');
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -272,7 +272,7 @@ async function readDraftEdit(fileEdit) {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
   } else {
-    debug(`Found no saved drafts`);
+    debug('Found no saved drafts');
   }
 
   // We are choosing to soft-delete all drafts *before* reading the
