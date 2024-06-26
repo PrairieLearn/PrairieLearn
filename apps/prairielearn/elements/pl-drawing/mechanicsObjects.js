@@ -2858,7 +2858,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    if (options['clockwiseDirection']) {
+    if (options['clockwise-direction']) {
       options.drawStartArrow = false;
       options.drawEndArrow = true;
     } else {
