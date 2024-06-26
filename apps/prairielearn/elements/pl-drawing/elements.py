@@ -980,7 +980,7 @@ class ArcVector(BaseElement):
     def generate(el, data):
         disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", False)
         color = pl.get_color_attrib(el, "color", "purple")
-        clockwise_direction = pl.get_boolean_attrib(el, "clockwise-direction", True)
+        clockwise_direction = pl.get_boolean_attrib(el, "clockwiseDirection", True)
         if clockwise_direction:
             drawStartArrow = False
             drawEndArrow = True
@@ -1036,7 +1036,7 @@ class ArcVector(BaseElement):
             "offset_backward": offset_backward,
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
-            "clockwise-direction": clockwise_direction,
+            "clockwiseDirection": clockwise_direction,
         }
 
     def is_gradable():

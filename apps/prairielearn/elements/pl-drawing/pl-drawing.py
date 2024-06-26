@@ -186,10 +186,10 @@ def render_controls(template, elem):
         if type_name is not None:
             if type_name == "pl-arc-vector-CCW":
                 type_name = "pl-arc-vector"
-                elem.attrib["clockwise-direction"] = "false"
+                elem.attrib["clockwiseDirection"] = "false"
             elif type_name == "pl-arc-vector-CW":
                 type_name = "pl-arc-vector"
-                elem.attrib["clockwise-direction"] = "true"
+                elem.attrib["clockwiseDirection"] = "true"
             opts = elements.generate(elem, type_name)
             if opts is not None:
                 opts["selectable"] = True

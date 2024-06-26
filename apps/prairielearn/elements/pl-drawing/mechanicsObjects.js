@@ -2858,7 +2858,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       options.drawStartArrow = false;
       options.drawEndArrow = true;
     } else {
@@ -2925,7 +2925,7 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   }
 
   static get_button_icon(options) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       return 'pl-arc-vector-CW';
     } else {
       return 'pl-arc-vector-CCW';
@@ -2933,7 +2933,7 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   }
 
   static get_button_tooltip(options) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       return 'Add clockwise arc vector';
     } else {
       return 'Add counterclockwise arc vector';
