@@ -14,7 +14,7 @@ import type { Node } from 'unist';
 import { type Test, visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
 
-import { HtmlValue, html, joinHtml } from '@prairielearn/html';
+import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
