@@ -414,6 +414,7 @@ const ConfigSchema = z.object({
    * `prairieLearnAuthSecret`.
    */
   prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  openAIApiKey: z.string().default('OPEN_AI_KEY_HERE'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
