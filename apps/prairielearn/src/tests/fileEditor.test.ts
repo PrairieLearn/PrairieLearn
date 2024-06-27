@@ -318,9 +318,7 @@ describe('test file editor', function () {
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
     it(`should load with status ${expected_status}`, async () => {
-      locals.preStartTime = Date.now();
       const res = await fetch(url);
-      locals.postStartTime = Date.now();
       assert.equal(res.status, expected_status);
       page = await res.text();
     });
@@ -383,7 +381,6 @@ function editPost(
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', async () => {
-      locals.preEndTime = Date.now();
       const res = await fetch(url, {
         method: 'POST',
         body: new URLSearchParams({
@@ -395,7 +392,6 @@ function editPost(
           file_edit_orig_hash: locals.file_edit_orig_hash,
         }),
       });
-      locals.postStartTime = Date.now();
       assert.equal(res.status, 200);
       page = await res.text();
     });
@@ -420,9 +416,7 @@ function jsonToContents(json) {
 function findEditUrl(name, selector, url, expectedEditUrl) {
   describe(`GET to ${name}`, function () {
     it('should load successfully', async () => {
-      locals.preStartTime = Date.now();
       const res = await fetch(url);
-      locals.postStartTime = Date.now();
       assert.equal(res.status, 200);
       page = await res.text();
     });
@@ -544,9 +538,7 @@ function editGet(
 ) {
   describe('GET to edit url', function () {
     it('should load successfully', async () => {
-      locals.preStartTime = Date.now();
       const res = await fetch(url);
-      locals.postStartTime = Date.now();
       assert.equal(res.status, 200);
       page = await res.text();
     });
