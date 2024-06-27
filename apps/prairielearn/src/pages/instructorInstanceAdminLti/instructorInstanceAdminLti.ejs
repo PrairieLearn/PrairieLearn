@@ -172,7 +172,7 @@
                     <input type="hidden" name="__action" value="lti_link_target">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <input type="hidden" name="lti_link_id" value="<%= link.id %>">
-                    <select onChange="this.form.submit();" name="newAssessment">
+                    <select class="custom-select" onChange="this.form.submit();" name="newAssessment">
                       <option value="" <% if (!link.assessment_id) { %>selected<% } %>>
                         -- None
                       </option>

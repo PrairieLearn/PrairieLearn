@@ -2553,7 +2553,7 @@ if (esMain(import.meta) && config.startServer) {
             userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
+          logger.info('Waiting for job to finish...');
           await jobPromise;
           (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
