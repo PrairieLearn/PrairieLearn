@@ -163,6 +163,7 @@ export function InstructorCourseAdminSettings({
                         class="btn btn-sm btn-outline-secondary btn-copy"
                         data-clipboard-text="${resLocals.course.repository}"
                         aria-label="Copy repository"
+                        ${resLocals.course.repository ? '' : 'disabled'}
                       >
                         <i class="far fa-clipboard"></i>
                       </button>
