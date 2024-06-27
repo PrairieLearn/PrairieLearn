@@ -12,6 +12,7 @@ import * as syncAssessments from './fromDisk/assessments.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
+import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
@@ -80,6 +81,9 @@ export async function syncDiskToSqlWithLock(
   );
 
   await perf.timed('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
+  await perf.timed('syncSharingSets', () =>
+    syncSharingSets.sync(courseId, courseData, questionIds),
+  );
   await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
   perf.start('syncAssessments');

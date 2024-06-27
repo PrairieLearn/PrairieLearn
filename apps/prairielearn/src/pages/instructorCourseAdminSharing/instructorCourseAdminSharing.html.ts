@@ -3,28 +3,6 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 
-const addSharingSetPopover = (resLocals) => {
-  return html`
-    <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="sharing_set_create">
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-
-      <div class="form-group mb-4">
-        <p class=form-text>
-          Enter the name of the sharing set you would like to create.
-        </p>
-      </div>
-      <div class=form-group>
-        <input class="form-control form-control-sm" type="text" name="sharing_set_name" required/>
-      <div>
-      <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#courseSharingSetAdd').popover('hide')">Cancel</button>
-        <button type="submit" class="btn btn-primary">Create Sharing Set</button>
-      </div>
-    </form>
-  `.toString();
-};
-
 const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
@@ -210,24 +188,6 @@ export const InstructorSharing = ({
                 <div class="col-auto">
                   <span class="text-white">Sharing Sets</span>
                 </div>
-                ${isCourseOwner
-                  ? html`<div class="col-auto">
-                      <button
-                        type="button"
-                        class="btn btn-light btn-sm ml-auto"
-                        id="courseSharingSetAdd"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Create Sharing Set"
-                        data-content="${addSharingSetPopover(resLocals)}"
-                      >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Create Sharing Set</span>
-                      </button>
-                    </div>`
-                  : ''}
               </div>
             </div>
             <table class="table table-sm table-hover table-striped">

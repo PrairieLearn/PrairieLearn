@@ -45,7 +45,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
-  sharingSetsOther,
   editableCourses,
   infoPath,
 }: {
@@ -57,7 +56,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
-  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {
