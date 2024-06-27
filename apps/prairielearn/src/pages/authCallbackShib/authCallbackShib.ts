@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { loadUser } from '../../lib/authn.js';
+import * as authnLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
 
 const router = Router();
@@ -27,7 +27,7 @@ router.get(
     if (uid === '(null)') throw new Error(authError);
 
     const authnParams = { uid, name, uin, provider: 'Shibboleth' };
-    await loadUser(req, res, authnParams, { pl_authn_cookie: true, redirect: true });
+    await authnLib.loadUser(req, res, authnParams, { pl_authn_cookie: true, redirect: true });
   }),
 );
 
