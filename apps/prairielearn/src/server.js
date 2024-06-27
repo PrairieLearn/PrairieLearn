@@ -1312,7 +1312,7 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/', [
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/llm-generate-question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
       next();
