@@ -9,8 +9,14 @@ import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
-    decodeData('questions-table-data');
+  const {
+    course_instance_ids,
+    showAddQuestionButton,
+    showLlmGenerateQuestionButton,
+    qidPrefix,
+    urlPrefix,
+    plainUrlPrefix,
+  } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -195,11 +201,13 @@ onDocumentReady(() => {
         $('form[name=add-question-form]').submit();
       },
     };
+  }
 
-    tableSettings.buttons.addAIQuestion = {
+  if (showLlmGenerateQuestionButton) {
+    tableSettings.buttons.llmGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/llm-generate-question">
-          <i class="fa fa-plus" aria-hidden="true"></i>
+          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
           Generate Question with LLM
         </a>
       `.toString(),

@@ -12,6 +12,7 @@ import { loadSqlEquiv, queryRows, queryOptionalRow } from '@prairielearn/postgre
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
@@ -207,6 +208,16 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
     throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
   }
 }
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await features.enabledFromLocals('llm-question-generation', res.locals))) {
+      throw new error.HttpStatusError(403, 'Feature not enabled');
+    }
+
+    next();
+  }),
+);
 
 router.get(
   '/',
