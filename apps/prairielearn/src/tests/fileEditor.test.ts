@@ -6,7 +6,6 @@ import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
-import request from 'request';
 import * as tmp from 'tmp';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -323,19 +322,12 @@ describe('test file editor', function () {
 
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
-    it(`should load with status ${expected_status}`, function (callback) {
+    it(`should load with status ${expected_status}`, async () => {
       locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== expected_status) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(url);
+      locals.postStartTime = Date.now();
+      assert.equal(res.status, expected_status);
+      page = await res.text();
     });
     if (should_parse) {
       it('should parse', function () {
@@ -395,27 +387,22 @@ function editPost(
   expectedDiskContents,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
-    it('should load successfully', function (callback) {
-      const form = {
-        __action: action,
-        __csrf_token: locals.__csrf_token,
-        file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
-        file_edit_user_id: locals.file_edit_user_id,
-        file_edit_course_id: locals.file_edit_course_id,
-        file_edit_orig_hash: locals.file_edit_orig_hash,
-      };
+    it('should load successfully', async () => {
       locals.preEndTime = Date.now();
-      request.post({ url, form, followAllRedirects: true }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postEndTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
+      const res = await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: action,
+          __csrf_token: locals.__csrf_token,
+          file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
+          file_edit_user_id: locals.file_edit_user_id,
+          file_edit_course_id: locals.file_edit_course_id,
+          file_edit_orig_hash: locals.file_edit_orig_hash,
+        }),
       });
+      locals.postStartTime = Date.now();
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -437,19 +424,12 @@ function jsonToContents(json) {
 
 function findEditUrl(name, selector, url, expectedEditUrl) {
   describe(`GET to ${name}`, function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async () => {
       locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(url);
+      locals.postStartTime = Date.now();
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -568,19 +548,12 @@ function editGet(
   expectedDiskContents,
 ) {
   describe('GET to edit url', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async () => {
       locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(url);
+      locals.postStartTime = Date.now();
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
