@@ -1,4 +1,7 @@
 // @ts-check
+import type { Root as HastRoot, Element } from 'hast';
+import type { Root as MdastRoot, Code, Html, Text } from 'mdast';
+import type { Math, InlineMath } from 'mdast-util-math';
 import raw from 'rehype-raw';
 import sanitize from 'rehype-sanitize';
 import stringify from 'rehype-stringify';
@@ -6,8 +9,12 @@ import gfm from 'remark-gfm';
 import math from 'remark-math';
 import markdown from 'remark-parse';
 import remark2rehype from 'remark-rehype';
-import { unified } from 'unified';
-import { visit } from 'unist-util-visit';
+import { type TransformCallback, type Transformer, unified } from 'unified';
+import type { Node } from 'unist';
+import { type Test, visit } from 'unist-util-visit';
+import type { VFile } from 'vfile';
+
+import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -16,32 +23,28 @@ const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
-function visitCodeBlock(ast, _vFile) {
-  return visit(ast, 'code', (node, index, parent) => {
-    let { lang, value } = node;
-    const attrs = [];
+function visitCodeBlock(ast: MdastRoot) {
+  return visit(ast, 'code', (node: Code, index, parent) => {
+    const { lang, value } = node;
+    const attrs: HtmlValue[] = [];
 
-    if (lang) {
-      const res = lang.match(langRegex);
+    const res = lang?.match(langRegex);
+    if (res) {
       const language = res[1];
       const highlightLines = res[3];
       if (language) {
-        attrs.push(`language="${language}"`);
+        attrs.push(html`language="${language}"`);
       }
       if (highlightLines) {
-        attrs.push(`highlight-lines="${highlightLines}"`);
+        attrs.push(html`highlight-lines="${highlightLines}"`);
       }
     }
 
-    value = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const html = {
+    const newNode: Html = {
       type: 'html',
-      value: `<pl-code ${attrs.join(' ')}>${value}</pl-code>`,
+      value: html`<pl-code ${joinHtml(attrs, ' ')}>${value}</pl-code>`.toString(),
     };
-    parent?.children.splice(index, 1, html);
-
-    return;
+    parent?.children.splice(index ?? 0, 1, newNode);
   });
 }
 
@@ -51,12 +54,14 @@ function visitCodeBlock(ast, _vFile) {
  * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
  * with the content of the paragraph.
  */
-function visitCheckSingleParagraph(ast, _vFile) {
-  return visit(ast, 'root', (node, _index, _parent) => {
-    if (node.children.length === 1 && node.children[0].tagName === 'p') {
-      node.children = node.children[0].children;
+function visitCheckSingleParagraph(ast: HastRoot) {
+  return visit(ast, 'root', (node) => {
+    if (node.children.length === 1) {
+      const child = node.children[0] as Element;
+      if (child.tagName === 'p') {
+        node.children = child.children;
+      }
     }
-    return;
   });
 }
 
@@ -67,29 +72,24 @@ function visitCheckSingleParagraph(ast, _vFile) {
  * any `math` or `inlineMath` nodes with raw text values wrapped in the appropriate
  * fences.
  */
-function visitMathBlock(ast, _vFile) {
-  return visit(ast, ['math', 'inlineMath'], (node, index, parent) => {
+function visitMathBlock(ast: MdastRoot) {
+  return visit(ast, ['math', 'inlineMath'] as Test, (node: Math | InlineMath, index, parent) => {
     const startFence = node.type === 'math' ? '$$\n' : '$';
     const endFence = node.type === 'math' ? '\n$$' : '$';
-    const text = {
+    const text: Text = {
       type: 'text',
       value: startFence + node.value + endFence,
     };
-    parent?.children.splice(index, 1, text);
-    return;
+    parent?.children.splice(index ?? 0, 1, text);
   });
 }
 
-/**
- * @param {(ast: any, vfile: import('vfile').VFile) => undefined} visitor
- * @returns {() => (ast: import('hast').Root, file: import('vfile').VFile) => import('hast').Root}
- */
-function makeHandler(visitor) {
-  return () => (ast, vFile, next) => {
-    visitor(ast, vFile);
+function makeHandler<R extends Node>(visitor: (ast: R) => undefined): () => Transformer<R, R> {
+  return () => (ast: R, vFile: VFile, callback?: TransformCallback<R>) => {
+    visitor(ast);
 
-    if (typeof next === 'function') {
-      return next(null, ast, vFile);
+    if (typeof callback === 'function') {
+      return callback(undefined, ast, vFile);
     }
     return ast;
   };
@@ -131,25 +131,28 @@ const questionProcessor = unified()
   .use(raw)
   .use(stringify);
 
-export function processQuestion(html) {
-  return html.replace(regex, (_match, originalContents) => {
+export function processQuestion(html: string) {
+  return html.replace(regex, (_match, originalContents: string) => {
     // We'll handle escapes before we pass off the string to our Markdown pipeline
-    const decodedContents = originalContents.replace(escapeRegex, (match, prefix, hashes) => {
-      return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
-    });
+    const decodedContents = originalContents.replace(
+      escapeRegex,
+      (_match, prefix: string, hashes: string) => {
+        return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
+      },
+    );
     const res = questionProcessor.processSync(decodedContents);
-    return res.value;
+    return res.value.toString();
   });
 }
 
-export async function processContent(original) {
-  return (await defaultProcessor.process(original)).value;
+export async function processContent(original: string) {
+  return (await defaultProcessor.process(original)).value.toString();
 }
 
 /**
  * This function is similar to `processContent`, except that if the content fits a single line
  * (paragraph) it will return the content without a `p` tag.
  */
-export async function processContentInline(original) {
-  return (await inlineProcessor.process(original)).value;
+export async function processContentInline(original: string) {
+  return (await inlineProcessor.process(original)).value.toString();
 }
