@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { OAuth2Client } from 'google-auth-library';

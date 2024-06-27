@@ -1,16 +1,15 @@
-// @ts-check
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/*',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course viewer)');
+      throw new HttpStatusError(403, 'Access denied (must be course viewer)');
     }
     if (req.query.type) res.type(req.query.type.toString());
     if (req.query.attachment) res.attachment(req.query.attachment.toString());
