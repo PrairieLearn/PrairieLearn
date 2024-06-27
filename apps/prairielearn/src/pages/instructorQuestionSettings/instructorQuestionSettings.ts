@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -50,6 +51,62 @@ async function editPublicSharingWithSource(
     question_id,
     share_source_code,
   });
+}
+
+async function editInfoJSON(
+  req: express.Request,
+  res: express.Response,
+) {
+  if (!(await fs.pathExists(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json')))) { 
+    throw new error.HttpStatusError(400, 'info.json does not exist'); 
+  } 
+  const paths = getPaths(req, res); // UNNEEDED I THINK
+  //console.log('paths', paths)// TEST
+
+  const questionInfo = JSON.parse( // Lets us view the contents of the info.json file
+      await fs.readFile(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 'utf8'),
+  );
+  console.log('questionInfo', questionInfo)// TEST
+  
+
+  let origHash = ''; // This is a bit of a cheat way to do it, in 'instructorCourseAdminSettings.ts' there is a better way that I don't think will work for this page
+  origHash = sha256(
+    b64EncodeUnicode(
+      await fs.readFile(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 'utf8'),
+    ),
+  ).toString();
+  console.log('origHash', origHash)// TEST
+  
+  if (req.body.share_source_code == null) {
+    req.body.share_source_code = false;
+  }
+  const questionInfoEdit = questionInfo; 
+  questionInfoEdit.share_publicly = req.body.share_publicly;
+  questionInfoEdit.share_source_code = req.body.share_source_code;
+  console.log('questionInfoEdit', questionInfoEdit)// TEST
+  
+  const editor = new FileModifyEditor({ 
+    locals: res.locals, 
+    container: { 
+      rootPath: paths.rootPath, 
+      invalidRootPaths: paths.invalidRootPaths, 
+    }, 
+    filePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 
+    editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)), 
+    origHash,
+  });
+  console.log('editor', editor)// TEST 
+
+  const serverJob = await editor.prepareServerJob();
+  try {
+    await editor.executeWithServerJob(serverJob);
+    flash('success', 'Course configuration updated successfully');
+    //return res.redirect(req.originalUrl);
+  } catch (err) {
+    console.log('err', err)// TEST
+    //return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+  }
+  console.log('serverJob', serverJob)// TEST
 }
 
 router.post(
@@ -222,60 +279,22 @@ router.post(
           req.body.share_source_code,
       )};
 
-      res.redirect(req.originalUrl);
-
-      // TEST START
-      // TEST, new way since we're editing JSON instead of updating the DB
-      if (!(await fs.pathExists(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json')))) { 
-        throw new error.HttpStatusError(400, 'info.json does not exist'); 
-      } 
-      const paths = getPaths(req, res);
-      
-      console.log('paths', paths)// TEST
-
-      const questionInfo = JSON.parse(
-          await fs.readFile(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 'utf8'),
-      );
-
-      console.log('questionInfo', questionInfo)// TEST
-      
-      const origHash = req.body.orig_hash; 
-
-      console.log('origHash', origHash)// TEST
-      
-      const questionInfoEdit = questionInfo; 
-      questionInfoEdit.name = req.body.short_name; 
-      questionInfoEdit.title = req.body.title; 
-      questionInfoEdit.timezone = req.body.display_timezone; 
-
-      console.log('questionInfoEdit', questionInfoEdit)// TEST
-      
-      const editor = new FileModifyEditor({ 
-        locals: res.locals, 
-        container: { 
-          rootPath: paths.rootPath, 
-          invalidRootPaths: paths.invalidRootPaths, 
-        }, 
-        filePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'info.json'), 
-        editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)), 
-        origHash, 
-      });
-
-      console.log('editor', editor)// TEST 
-      // TEST END
+      //TESTING BELOW
+      editInfoJSON(req, res);//TEST
         
-      
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_public_sharing') {
       await editPublicSharingWithSource(
         res.locals.course.id,
         res.locals.question.id,
         req.body.share_source_code,
       );
+
+      //TESTING BELOW
+      editInfoJSON(req, res);//TEST
       
       
       res.redirect(req.originalUrl);
-      // TEST edit here too
-      
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
