@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-export const AIGeneratePage = ({ resLocals }: { resLocals }) => {
+
+export function AIGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -19,7 +20,7 @@ export const AIGeneratePage = ({ resLocals }: { resLocals }) => {
               <p>Please describe your question in as much detail as possible in the box below.</p>
               <form name="add-question-form" method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <input type="hidden" name="__action" value="ai_generate" />
+                <input type="hidden" name="__action" value="generate_question" />
                 <div class="form-group">
                   <label for="user-prompt-llm">Prompt:</label>
                   <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
@@ -28,11 +29,11 @@ export const AIGeneratePage = ({ resLocals }: { resLocals }) => {
               </form>
               <hr />
               <p>
-                On intitial setup, and when the example course or PrairieLearn docs change, click
-                the button below:
+                On initial setup, and when the example course or PrairieLearn docs change, click the
+                button below:
               </p>
-              <form class="" name="resync-context-form" method="POST">
-                <input type="hidden" name="__action" value="resync" />
+              <form class="" name="sync-context-form" method="POST">
+                <input type="hidden" name="__action" value="sync_context_documents" />
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button class="btn btn-primary">Resync Documents</button>
               </form>
@@ -42,4 +43,4 @@ export const AIGeneratePage = ({ resLocals }: { resLocals }) => {
       </body>
     </html>
   `.toString();
-};
+}

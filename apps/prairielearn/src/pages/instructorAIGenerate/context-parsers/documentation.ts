@@ -11,7 +11,7 @@ interface ElementSection {
 
 export interface DocumentChunk {
   text: string;
-  chunkID: string;
+  chunkId: string;
 }
 
 function extractElementSections(ast: any) {
@@ -135,7 +135,7 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
     });
 
     return {
-      chunkID: section.elementName,
+      chunkId: section.elementName,
       text: markdown,
     };
   });
