@@ -1,4 +1,4 @@
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { html, HtmlSafeString } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
@@ -61,7 +61,44 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   `.toString();
 };
 
-function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
+function deleteSharingSetModal(sharing_set, csrfToken) {
+  let body: HtmlSafeString;
+  let footer: HtmlSafeString;
+  if (sharing_set.deletable) {
+    body = html`
+      <p><strong>This action cannot be undone.</strong></p>
+      <p>Are you sure you would like to delete the sharing set "${sharing_set.name}"?</p>
+    `;
+    footer = html`
+      <input type="hidden" name="__action" value="delete_sharing_set" />
+      <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Delete Sharing Set</button>
+    `;
+  } else {
+    body = html`
+      <p><strong>Unable to delete sharing set.</strong></p>
+      <p>
+        This sharing set cannot be deleted because it has been shared and at least one question has
+        been added. Doing so would break the assessments of other courses that have imported your
+        questions.
+      </p>
+    `;
+    footer = html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    `;
+  }
+  return Modal({
+    title: 'Delete Sharing Set',
+    id: `deleteSharingSetModal-${sharing_set.id}`,
+    body,
+    footer,
+    size: 'default',
+  });
+}
+
+function chooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
   let body: HtmlSafeString;
   let footer: HtmlSafeString;
   if (canChooseSharingName) {
@@ -119,7 +156,7 @@ export const InstructorSharing = ({
 }: {
   sharingName: string | null;
   sharingToken: string;
-  sharingSets: { name: string; id: string; shared_with: string[] }[];
+  sharingSets: { name: string; id: string; shared_with: string[]; deletable: boolean }[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
   resLocals: Record<string, any>;
@@ -161,7 +198,7 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${ChooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
+                          ${chooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
                         `
                       : ''}
                   </td>
@@ -245,27 +282,50 @@ export const InstructorSharing = ({
                           (course_shared_with) => html`
                             <span class="badge color-gray1"> ${course_shared_with} </span>
                           `,
-                        )}${isCourseOwner
-                          ? html` <div class="btn-group btn-group-sm" role="group">
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-outline-dark"
-                                id="addCourseToSS-${sharing_set.id}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Add Course to Sharing Set"
-                                data-content="${addCourseToSharingSetPopover(
-                                  resLocals,
-                                  sharing_set,
-                                )}"
-                              >
-                                Add...
-                                <i class="fas fa-plus" aria-hidden="true"></i>
-                              </button>
-                            </div>`
+                        )}
+                        ${isCourseOwner
+                          ? html`
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-dark"
+                                  id="addCourseToSS-${sharing_set.id}"
+                                  data-toggle="popover"
+                                  data-container="body"
+                                  data-html="true"
+                                  data-placement="auto"
+                                  title="Add Course to Sharing Set"
+                                  data-content="${addCourseToSharingSetPopover(
+                                    resLocals,
+                                    sharing_set,
+                                  )}"
+                                >
+                                  Add...
+                                  <i class="fas fa-plus" aria-hidden="true"></i>
+                                </button>
+                              </div>
+                            `
                           : ''}
+                        <style>
+                          .align-right {
+                            float: right;
+                          }
+                        </style>
+                        <div class="align-right">
+                          <button
+                            type="button"
+                            class="btn btn-sm text-danger"
+                            id="deleteSharingSet-${sharing_set.id}"
+                            title="Delete Sharing Set"
+                            data-toggle="modal"
+                            data-target="#deleteSharingSetModal-${sharing_set.id}"
+                            data-trigger="manual"
+                          >
+                            <i class="fas fa-trash"></i>
+                            <span class="sr-only">Delete</span>
+                          </button>
+                          ${deleteSharingSetModal(sharing_set, resLocals.__csrf_token)}
+                        </div>
                       </td>
                     </tr>
                   `,
