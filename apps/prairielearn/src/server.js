@@ -1312,12 +1312,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai-generate-question', [
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
       next();
     },
-    (await import('./pages/instructorAIGenerate/instructorAIGenerate.js')).default,
+    (await import('./pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
+      .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
     function (req, res, next) {
@@ -1719,16 +1720,6 @@ export async function initExpress() {
     (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
 
-  // LLM question generation page
-
-  app.use('/pl/course/:course_id(\\d+)/ai-generate-question', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'questions';
-      next();
-    },
-    (await import('./pages/instructorAIGenerate/instructorAIGenerate.js')).default,
-  ]);
-
   // single question
 
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', [
@@ -1856,6 +1847,14 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/llm-generate-question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
+      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
     function (req, res, next) {

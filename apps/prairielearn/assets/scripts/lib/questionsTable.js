@@ -198,9 +198,9 @@ onDocumentReady(() => {
 
     tableSettings.buttons.addAIQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/ai-generate-question">
+        <a class="btn btn-secondary" href="${urlPrefix}/llm-generate-question">
           <i class="fa fa-plus" aria-hidden="true"></i>
-          Add Question with LLM
+          Generate Question with LLM
         </a>
       `.toString(),
     };

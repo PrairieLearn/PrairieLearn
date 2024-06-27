@@ -17,7 +17,7 @@ import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
-import { AIGeneratePage } from './instructorAIGenerate.html.js';
+import { AIGeneratePage } from './instructorLlmGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -196,9 +196,23 @@ async function syncContextDocuments(client: OpenAI, locals: Record<string, any>)
   return serverJob.jobSequenceId;
 }
 
+function assertCanCreateQuestion(resLocals: Record<string, any>) {
+  // Do not allow users to edit without permission
+  if (!resLocals.authz_data.has_course_permission_edit) {
+    throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+  }
+
+  // Do not allow users to edit the exampleCourse
+  if (resLocals.course.example_course) {
+    throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
+  }
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    assertCanCreateQuestion(res.locals);
+
     res.send(AIGeneratePage({ resLocals: res.locals }));
   }),
 );
@@ -206,6 +220,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    assertCanCreateQuestion(res.locals);
+
     if (!config.openAiApiKey || !config.openAiOrganization) {
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
