@@ -21,9 +21,7 @@
   height: var(--container-height);
 }
 
-/* Fix style leakage from bootstrap
-   https://github.com/excalidraw/excalidraw/issues/3825 */
-
+/* Fix style leakage from bootstrap: https://github.com/excalidraw/excalidraw/issues/3825 */
 .excalidraw-root .popover {
   border: unset;
   max-width: unset;
