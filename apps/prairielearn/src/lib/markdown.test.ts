@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import * as markdown from '../lib/markdown.js';
+import * as markdown from './markdown.js';
 
 const testMarkdownQuestion = (question, expected) => {
   const actual = markdown.processQuestion(question);
