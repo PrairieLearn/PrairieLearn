@@ -30,7 +30,7 @@
     "@types/node": "^20.14.9",
     "@types/node-fetch": "^2.6.11",
     "@types/on-headers": "^1.0.3",
-    "@types/set-cookie-parser": "^2.4.9",
+    "@types/set-cookie-parser": "^2.4.7",
     "@types/uid-safe": "^2.1.5",
     "c8": "^9.1.0",
     "chai": "^5.1.1",

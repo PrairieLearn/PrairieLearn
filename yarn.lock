@@ -3342,7 +3342,7 @@ __metadata:
     "@types/node": "npm:^20.14.9"
     "@types/node-fetch": "npm:^2.6.11"
     "@types/on-headers": "npm:^1.0.3"
-    "@types/set-cookie-parser": "npm:^2.4.9"
+    "@types/set-cookie-parser": "npm:^2.4.7"
     "@types/uid-safe": "npm:^2.1.5"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
@@ -5292,12 +5292,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/set-cookie-parser@npm:^2.4.9":
-  version: 2.4.9
-  resolution: "@types/set-cookie-parser@npm:2.4.9"
+"@types/set-cookie-parser@npm:^2.4.7":
+  version: 2.4.7
+  resolution: "@types/set-cookie-parser@npm:2.4.7"
   dependencies:
     "@types/node": "npm:*"
-  checksum: 10c0/98db3e78a5181ecc7f855816bdc9c66cd7c0299766124b537b3dd777c8a76824d1d67e9fc6ecb7ec19230940f71ffb919360d8c5520554027e85e037163ff064
+  checksum: 10c0/3c4b5168fe2e8f1f70e39de718fab79bf5386dcb3217b16936d732b985af2372eb0670190c0c5c9c3e68ace34dd6e52e9664439cec06354c278601f659c396ff
   languageName: node
   linkType: hard
 
