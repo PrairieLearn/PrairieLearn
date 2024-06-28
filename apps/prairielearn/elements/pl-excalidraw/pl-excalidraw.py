@@ -9,11 +9,11 @@ import prairielearn as pl
 
 
 class Attr(Enum):
-    ANSWER_NAME = "name"
+    ANSWER_NAME = "answers-name"
     WIDTH = "width"
     HEIGHT = "height"
-    SOURCE_FILE_NAME = "file"
-    SOURCE_DIRECTORY = "file_dir"
+    SOURCE_FILE_NAME = "source-file-name"
+    SOURCE_DIRECTORY = "directory"
 
 
 def prepare(element_html: str, _: pl.QuestionData) -> None:
@@ -77,6 +77,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             {
                 "read_only": data["panel"] != "question" or not data["editable"],
                 "initial_content": initial_content,
+                "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
+                "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
             }
         ).encode()
         return chevron.render(
@@ -84,8 +86,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             {
                 "uuid": pl.get_uuid(),
                 "name": drawing_name,
-                "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
-                "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
                 "metadata": base64.b64encode(content_bytes).decode(),
             },
         )

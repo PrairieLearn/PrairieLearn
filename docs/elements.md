@@ -319,9 +319,9 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 <p>Draw something else, with a starter diagram</p>
 
 <pl-excalidraw
-  name="vector"
-  file="starter.excalidraw"
-  file_dir="client_files_question_path"
+  answers-name="vector"
+  source-file-name="starter.excalidraw"
+  directory="client_files_question_path"
 ></pl-excalidraw>
 ```
 
@@ -329,9 +329,9 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 
 | Attribute  | Type   | Default                      | Description                                                                            |
 | ---------- | ------ | ---------------------------- | -------------------------------------------------------------------------------------- |
-| `name`     | string | -                            | Unique name to identify the widget with. Drawing submissions are saved with this name. |
-| `file`     | string | -                            | Optional file to load as the starter diagram                                           |
-| `file_dir` | string | `client_files_question_path` | Directory to load `file` from.                                                         |
+| `answers-name`     | string | -                            | Unique name to identify the widget with. Drawing submissions are saved with this name. |
+| `source-file-name`     | string | -                            | Optional file to load as the starter diagram                                           |
+| `directory` | string | `client_files_question_path` | Directory to load `file` from.                                                         |
 
 #### Example implementation
 
