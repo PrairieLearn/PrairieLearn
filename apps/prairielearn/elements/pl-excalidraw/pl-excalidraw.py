@@ -24,11 +24,47 @@ class Attr(Enum):
         return [Attr.WIDTH.value, Attr.HEIGHT.value, Attr.SOURCE_FILE_NAME.value, Attr.SOURCE_DIRECTORY.value]
 
 
-def prepare(element_html: str, _: pl.QuestionData) -> None:
+class SourceDirectory(Enum):
+    SERVER_FILES_COURSE = "serverFilesCourse"
+    CLIENT_FILES_COURSE = "clientFilesCourse"
+    CLIENT_FILES_QUESTION = "clientFilesQuestion"
+    COURSE_EXTENSIONS = "courseExtensions"
+    CURRENT_DIR = "."
+
+    @staticmethod
+    def validate(name: str):
+        if not any([name in e.value for e in SourceDirectory]):
+            raise RuntimeError(f"Unknown source directory: {name}")
+
+    @staticmethod
+    def default():
+        return SourceDirectory.CURRENT_DIR
+
+    @staticmethod
+    def as_runtime_path(s: str):
+        match SourceDirectory(s):
+            case SourceDirectory.SERVER_FILES_COURSE:
+                return "server_files_course_path"
+            case SourceDirectory.CLIENT_FILES_COURSE:
+                return "client_files_course_path"
+            case SourceDirectory.CURRENT_DIR:
+                return "question_path"
+            case SourceDirectory.CLIENT_FILES_QUESTION:
+                return "client_files_question_path"
+            case SourceDirectory.COURSE_EXTENSIONS:
+                return "course_extensions_path"
+            case item:
+                assert_never(item)
+
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, Attr.required(), Attr.optional())
+
     name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
     pl.check_answers_names(data, name)
+
+    SourceDirectory.validate(pl.get_string_attrib(element, Attr.SOURCE_DIRECTORY.value, SourceDirectory.default().value))
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -38,14 +74,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         initial_content: str = ""
 
         def load_file_content() -> str:
-            file_dir = pl.get_string_attrib(
-                element, Attr.SOURCE_DIRECTORY.value, "client_files_question_path"
-            )
-            if file_dir not in data["options"]:
-                path_suffixes = [
-                    key for key in data["options"].keys() if key.endswith("_path")
-                ]
-                raise RuntimeError(f"{file_dir=} not a valid key ({path_suffixes})")
+            file_dir = SourceDirectory.as_runtime_path(pl.get_string_attrib(
+                element,
+                Attr.SOURCE_DIRECTORY.value,
+                SourceDirectory.default().value,
+            ))
             file = Path(data["options"][file_dir]) / pl.get_string_attrib(
                 element, Attr.SOURCE_FILE_NAME.value
             )
