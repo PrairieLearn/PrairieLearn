@@ -134,7 +134,7 @@ router.post(
         institution_id: req.params.institution_id,
         keystore: null,
       });
-      flash('success', `All keys deleted.`);
+      flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
@@ -180,7 +180,7 @@ router.post(
         client_params,
         custom_fields: req.body.custom_fields,
       });
-      flash('success', `Platform updated.`);
+      flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(
@@ -204,7 +204,7 @@ router.post(
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `Name updated.`);
+      flash('success', 'Name updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
       await queryAsync(sql.update_pl_config, {
@@ -215,14 +215,14 @@ router.post(
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `PrairieLearn config updated.`);
+      flash('success', 'PrairieLearn config updated.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_instance') {
       await queryAsync(sql.remove_instance, {
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
-      flash('success', `Instance deleted.`);
+      flash('success', 'Instance deleted.');
       return res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

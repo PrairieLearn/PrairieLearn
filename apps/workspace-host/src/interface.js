@@ -653,7 +653,7 @@ async function _pullImage(workspace) {
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
         workspaceUtils
-          .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
+          .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
             Sentry.captureException(err);
@@ -878,7 +878,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
     // Only errors at this level will set host to unhealthy.
 
     try {
-      debug(`init: configuring workspace`);
+      debug('init: configuring workspace');
       workspace.launch_port = await _allocateContainerPort(workspace);
       workspace.settings = await _getWorkspaceSettings(workspace.id);
     } catch (err) {
@@ -886,7 +886,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error configuring workspace. Click "Reboot" to try again.`,
+        'Error configuring workspace. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
@@ -899,7 +899,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error pulling image. Click "Reboot" to try again.`,
+        'Error pulling image. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
@@ -912,7 +912,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error creating container. Click "Reboot" to try again.`,
+        'Error creating container. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
@@ -966,7 +966,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error starting container. Click "Reboot" to try again.`,
+        'Error starting container. Click "Reboot" to try again.',
       );
 
       // Immediately kill and remove the container, which will flush any

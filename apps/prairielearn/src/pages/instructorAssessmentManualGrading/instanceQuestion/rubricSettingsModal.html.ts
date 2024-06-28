@@ -267,7 +267,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
 }
 
 function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
-  const namePrefix = item ? `rubric_item[cur${item.id}]` : `rubric_item[new]`;
+  const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr>
       <td class="text-nowrap">

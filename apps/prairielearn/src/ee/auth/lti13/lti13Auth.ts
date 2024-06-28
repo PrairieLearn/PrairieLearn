@@ -60,7 +60,7 @@ router.post(
         ) {
           throw new error.HttpStatusError(
             403,
-            `Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.`,
+            'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
           );
         } else {
           // Error about missing UID
@@ -247,7 +247,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     // Callback arguments described at
     // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
-    myPassport.authenticate(`lti13`, ((err, user, info) => {
+    myPassport.authenticate('lti13', ((err, user, info) => {
       if (err) {
         // Replay attack fails here
         // "did not find expected authorization request details in session, req.session[\"oidc:localhost\"] is undefined"

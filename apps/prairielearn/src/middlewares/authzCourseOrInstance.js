@@ -317,7 +317,7 @@ export async function authzCourseOrInstance(req, res) {
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
   if (effectiveResult.rowCount === 0) {
-    debug(`effective user was denied access`);
+    debug('effective user was denied access');
 
     res.locals.authz_data.user = user;
     res.locals.authz_data.is_administrator = false;

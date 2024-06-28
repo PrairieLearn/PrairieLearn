@@ -42,14 +42,14 @@ export function getCheckedSignedTokenData(
   debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
   debug(`getCheckedSignedTokenData(): options = ${JSON.stringify(options)}`);
   if (!_.isString(token)) {
-    debug(`getCheckedSignedTokenData(): FAIL - token is not string`);
+    debug('getCheckedSignedTokenData(): FAIL - token is not string');
     return null;
   }
 
   // break token apart into the three components
   const match = token.split(sep);
   if (match == null) {
-    debug(`getCheckedSignedTokenData(): FAIL - could not split token`);
+    debug('getCheckedSignedTokenData(): FAIL - could not split token');
     return null;
   }
   const tokenSignature = match[0];
