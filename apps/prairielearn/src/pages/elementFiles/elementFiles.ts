@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'node:path';
 
 import { Router } from 'express';
@@ -10,6 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
+import { Course } from '../../lib/db-types.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
 import { selectCourseById } from '../../models/course.js';
 
@@ -57,7 +57,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
         res.removeHeader('Cache-Control');
       }
 
-      let elementFilesDir;
+      let elementFilesDir: string;
       if (options.coreElements) {
         elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
       } else if (options.publicQuestionEndpoint) {
@@ -75,7 +75,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
 
         elementFilesDir = path.join(coursePath, 'elements');
       } else {
-        let question_course;
+        let question_course: Course;
         if (req.params.producing_course_id) {
           const producing_course_id = z.string().parse(req.params.producing_course_id);
           const has_shared_question = await sqldb.queryRow(
