@@ -1,7 +1,7 @@
 <script>
     $(async () => {
         const module = await import("pl-excalidraw-js");
-        await module.init_sketch("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+        await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
     });
 </script>
 
