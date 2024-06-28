@@ -3,4 +3,5 @@ import './lib/changeIdButton.js';
 
 onDocumentReady(() => {
   $('[data-toggle="popover"]').popover({ sanitize: false });
+  $('[data-toggle="tooltip"]').tooltip();
 });

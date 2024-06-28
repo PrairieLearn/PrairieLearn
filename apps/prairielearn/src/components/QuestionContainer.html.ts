@@ -31,6 +31,7 @@ export function QuestionContainer({
     issues,
     variant,
     instance_question,
+    user,
     variantToken,
     __csrf_token,
     questionJsonBase64,
@@ -53,6 +54,7 @@ export function QuestionContainer({
       data-variant-id="${variant.id}"
       data-question-id="${question.id}"
       data-instance-question-id="${instance_question?.id ?? ''}"
+      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
       data-url-prefix="${urlPrefix}"
       data-question-context="${questionContext}"
@@ -491,7 +493,7 @@ function SubmitRateFooter({
     <p>
       You can still save your answer as frequently as you like.
       ${questionContext === 'student_exam'
-        ? `If your assessment ends before your last saved answer is graded, it will be automatically graded for you.`
+        ? 'If your assessment ends before your last saved answer is graded, it will be automatically graded for you.'
         : ''}
     </p>
   `;
@@ -691,7 +693,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="form-control" name="to_course_id" required>
+            <select class="custom-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option

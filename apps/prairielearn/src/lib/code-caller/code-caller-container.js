@@ -293,11 +293,11 @@ export class CodeCallerContainer {
       // was restarted, we can slightly optimize things by skipping the
       // restart. This is safe, as no user-provided code will have been
       // loaded into the Python interpreter.
-      this.debug(`exit restart() - skipping since no calls recorded since last restart`);
+      this.debug('exit restart() - skipping since no calls recorded since last restart');
       return true;
     } else if (this.state === CREATED) {
       // no need to restart if we don't have a worker
-      this.debug(`exit restart()`);
+      this.debug('exit restart()');
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);

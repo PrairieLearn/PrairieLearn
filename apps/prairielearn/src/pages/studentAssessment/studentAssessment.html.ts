@@ -24,7 +24,7 @@ export function StudentAssessment({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('studentAssessmentClient.js')}
+        ${compiledScriptTag('studentAssessmentClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

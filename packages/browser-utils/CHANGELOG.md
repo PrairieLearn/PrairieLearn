@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.1.0
+
+### Minor Changes
+
+- d28a15d: Support custom return type for parseHTMLElement
+
 ## 2.0.2
 
 ### Patch Changes

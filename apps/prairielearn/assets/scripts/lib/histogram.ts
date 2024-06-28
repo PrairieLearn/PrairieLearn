@@ -1,10 +1,10 @@
 import { scaleLinear, axisBottom, axisLeft, select } from 'd3';
 
 export function histogram(
-  selector: Element,
-  data: number[],
-  xgrid: number[],
-  options: {
+  selector: HTMLElement,
+  data?: number[],
+  xgrid?: number[],
+  options?: {
     width?: number;
     height?: number;
     xmin?: number | 'auto';
@@ -20,6 +20,11 @@ export function histogram(
     leftMargin?: number;
   },
 ) {
+  if (data === undefined) data = JSON.parse(selector.dataset.histogram ?? '[]');
+  if (xgrid === undefined) xgrid = JSON.parse(selector.dataset.xgrid ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
+  if (!data || !xgrid) return;
+
   const resolvedOptions = {
     width: 600,
     height: 371,
