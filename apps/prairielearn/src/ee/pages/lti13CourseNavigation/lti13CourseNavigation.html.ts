@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { config } from '../../../lib/config.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
@@ -20,7 +21,7 @@ export function Lti13CourseNavigationInstructor({
       <head>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'lti13_course_naviation',
+          navPage: 'lti13_course_navigation',
           pageTitle: 'Course',
         })}
       </head>
@@ -173,7 +174,7 @@ export function Lti13CourseNavigationNotReady({
       <head>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'lti13_course_naviation',
+          navPage: 'lti13_course_navigation',
           pageTitle: 'Course',
         })}
       </head>
@@ -188,6 +189,10 @@ export function Lti13CourseNavigationNotReady({
 
           <p>An instructor has not yet configured ${courseName} in PrairieLearn.</p>
           <p>Please come back later.</p>
+          <a href="${config.urlPrefix}" class="btn btn-primary">
+            <i class="fa fa-home" aria-hidden="true"></i>
+            PrairieLearn home
+          </a>
         </main>
       </body>
     </html>
@@ -207,7 +212,7 @@ export function Lti13CourseNavigationDone({
       <head>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
-          navPage: 'lti13_course_naviation',
+          navPage: 'lti13_course_navigation',
           pageTitle: 'Course',
         })}
       </head>
@@ -236,8 +241,9 @@ export function Lti13CourseNavigationDone({
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
               class="btn btn-success"
-              >Continue to your course instance</a
             >
+              Continue to your course instance
+            </a>
           </p>
         </main>
       </body>

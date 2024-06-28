@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
@@ -59,23 +59,25 @@ router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'delete_lti13_course_instance') {
-      const deleted_lti13_course_instance = await queryRow(
-        sql.delete_lti13_course_instance,
-        {
-          course_instance_id: res.locals.course_instance.id,
-          lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
-        },
-        Lti13CourseInstanceSchema,
-      );
-      await insertAuditLog({
-        authn_user_id: res.locals.authn_user.user_id,
-        table_name: 'lti13_course_instances',
-        action: 'delete',
-        institution_id: res.locals.institution.id,
-        course_id: res.locals.course.id,
-        course_instance_id: deleted_lti13_course_instance.course_instance_id,
-        row_id: deleted_lti13_course_instance.id,
-        old_state: deleted_lti13_course_instance,
+      await runInTransactionAsync(async () => {
+        const deleted_lti13_course_instance = await queryRow(
+          sql.delete_lti13_course_instance,
+          {
+            course_instance_id: res.locals.course_instance.id,
+            lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+          },
+          Lti13CourseInstanceSchema,
+        );
+        await insertAuditLog({
+          authn_user_id: res.locals.authn_user.user_id,
+          table_name: 'lti13_course_instances',
+          action: 'delete',
+          institution_id: res.locals.institution.id,
+          course_id: res.locals.course.id,
+          course_instance_id: deleted_lti13_course_instance.course_instance_id,
+          row_id: deleted_lti13_course_instance.id,
+          old_state: deleted_lti13_course_instance,
+        });
       });
 
       // Redirect away so they don't get an error page
