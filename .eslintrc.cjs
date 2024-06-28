@@ -58,6 +58,7 @@ module.exports = {
     'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
+    'import-x/no-named-as-default': 'off',
     'import-x/no-named-as-default-member': 'off',
 
     'import-x/order': [
