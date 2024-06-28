@@ -33,7 +33,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   const [lib, setLib] = React.useState(null);
   const [sceneVer, setSceneVer] = React.useState(0);
 
-  /* First time setup */
+  // First time setup
   React.useEffect(() => {
     setReadOnly(metadata.read_only);
   }, [metadata]);
