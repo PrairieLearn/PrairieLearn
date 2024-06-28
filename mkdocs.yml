@@ -30,7 +30,7 @@ nav:
       - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
-  - User Guide:
+  - Instructor Guide:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
