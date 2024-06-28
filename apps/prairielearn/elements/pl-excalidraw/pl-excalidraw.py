@@ -142,9 +142,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             drawing_name
         ].append(error_msg)
 
-    if drawing_name not in data["submitted_answers"]:
-        append_errors(f"No submission found for pl-excalidraw element {drawing_name}")
     try:
-        json.loads(data["submitted_answers"][drawing_name])
+        # Only check submissions if present. When one makes a submission using pl-excalidraw,
+        # we always save a valid answer for all pl-excalidraw elements rendered in the question.
+        # There might however be a standalone element inside pl-answer-panel without a submission;
+        # it is okay to ignore them.
+        if drawing_name in data["submitted_answers"]:
+            json.loads(data["submitted_answers"][drawing_name])
     except Exception as e:
         append_errors(f"Invalid drawing submission: {e}")

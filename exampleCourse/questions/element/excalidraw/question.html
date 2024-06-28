@@ -1,19 +1,18 @@
-<pl-question-panel>
+<pl-hide-in-panel answer="true">
+  <pl-hide-in-panel answer="true" submission="true">
     <p>You can use the element <code>pl-excalidraw</code> to draw a vector diagram. You may also insert a raster image
     (such as jpg, png) into the diagram by uploading it using the <i>Insert Image</i> button.</p>
     <hr>
     <p><b>Draw something</b></p>
-    <pl-excalidraw answers-name="vector"></pl-excalidraw>
+  </pl-hide-in-panel>
+  <pl-excalidraw answers-name="vector"></pl-excalidraw>
+  <pl-hide-in-panel answer="true" submission="true">
     <hr>
     <p><b>Draw something else, with a starter diagram</b></p>
-    <pl-excalidraw answers-name="vector-2" source-file-name="starter.excalidraw"></pl-excalidraw>
-</pl-question-panel>
+  </pl-hide-in-panel>
+  <pl-excalidraw answers-name="vector-2" source-file-name="starter.excalidraw" directory="clientFilesQuestion"></pl-excalidraw>
+</pl-hide-in-panel>
 
 <pl-answer-panel>
-    <pl-excalidraw answers-name="vector" source-file-name="vector.excalidraw" directory="clientFilesQuestion"></pl-excalidraw>
+    <pl-excalidraw answers-name="vector-answer" source-file-name="vector.excalidraw" directory="clientFilesQuestion"></pl-excalidraw>
 </pl-answer-panel>
-
-<pl-submission-panel>
-    <pl-excalidraw answers-name="vector"></pl-excalidraw>
-    <pl-excalidraw answers-name="vector-2"></pl-excalidraw>
-</pl-submission-panel>
