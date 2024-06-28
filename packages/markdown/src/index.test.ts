@@ -2,8 +2,12 @@ import { assert } from 'chai';
 
 import * as markdown from './index.js';
 
-async function testMarkdown(original: string, expected: string) {
-  const actual = await markdown.markdownToHtml(original);
+async function testMarkdown(
+  original: string,
+  expected: string,
+  options: { inline?: boolean } = {},
+) {
+  const actual = await markdown.markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
 }
 
@@ -85,6 +89,31 @@ describe('Markdown processing', () => {
     const question = 'testing with </div><p>new line';
     const expected = '<p>testing with </p><p>new line</p>';
     await testMarkdown(question, expected);
+  });
+
+  it('handles HTML closing tags that do not open properly', async () => {
+    const question = 'testing with </div><p>new line';
+    const expected = '<p>testing with </p><p>new line</p>';
+    await testMarkdown(question, expected);
+  });
+
+  it('removes p tag if content fits a single paragraph', async () => {
+    const question = 'test with **bold** and *italic* words';
+    const expected = 'test with <strong>bold</strong> and <em>italic</em> words';
+    await testMarkdown(question, expected, { inline: true });
+  });
+
+  it('keeps p tag if content has more than one paragraph', async () => {
+    const question = 'test with **bold** and *italic* words\n\nand a new paragraph';
+    const expected =
+      '<p>test with <strong>bold</strong> and <em>italic</em> words</p>\n<p>and a new paragraph</p>';
+    await testMarkdown(question, expected, { inline: true });
+  });
+
+  it('keeps external tag if it is not a paragraph', async () => {
+    const question = '* single item';
+    const expected = '<ul>\n<li>single item</li>\n</ul>';
+    await testMarkdown(question, expected, { inline: true });
   });
 
   it('sanitizes HTML script tags', async () => {
