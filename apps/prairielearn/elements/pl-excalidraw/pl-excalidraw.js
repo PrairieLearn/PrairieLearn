@@ -38,7 +38,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     setReadOnly(metadata.read_only);
   }, [metadata]);
 
-  /* Autosave */
+  // Autosave
   React.useEffect(() => {
     // No need to autosave a read-only element
     if (!lib || metadata.read_only) return;
