@@ -69,58 +69,58 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
-    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
-        drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
-        initial_content: str = ""
+    drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    initial_content: str = ""
 
-        def load_file_content() -> str:
-            file_dir = SourceDirectory.as_runtime_path(pl.get_string_attrib(
-                element,
-                Attr.SOURCE_DIRECTORY.value,
-                SourceDirectory.default().value,
-            ))
-            file = Path(data["options"][file_dir]) / pl.get_string_attrib(
-                element, Attr.SOURCE_FILE_NAME.value
-            )
-            if not file.exists():
-                raise RuntimeError(f"Unknown file path: {file}")
-            return file.read_text(encoding="utf-8")
+    def load_file_content() -> str:
+        file_dir = SourceDirectory.as_runtime_path(pl.get_string_attrib(
+            element,
+            Attr.SOURCE_DIRECTORY.value,
+            SourceDirectory.default().value,
+        ))
+        file = Path(data["options"][file_dir]) / pl.get_string_attrib(
+            element, Attr.SOURCE_FILE_NAME.value
+        )
+        if not file.exists():
+            raise RuntimeError(f"Unknown file path: {file}")
+        return file.read_text(encoding="utf-8")
 
-        match data["panel"]:
-            case "answer":
-                # Answer must have a file attribute
-                if not pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
-                    raise RuntimeError(
-                        f"Answer drawing '{drawing_name}' does not have a `file` argument"
-                    )
-                initial_content = load_file_content()
-            case "question":
-                # First try loading the submission
-                if drawing_name in data["submitted_answers"]:
-                    initial_content = (
-                        data["submitted_answers"].get(drawing_name) or initial_content
-                    )
-                # Next, try using the file attribute to load the starter diagram
-                elif pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
-                    initial_content = load_file_content()
-                # Finally, give up and mark it as empty
-                else:
-                    initial_content = ""
-            case "submission":
+    match data["panel"]:
+        case "answer":
+            # Answer must have a file attribute
+            if not pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
+                raise RuntimeError(
+                    f"Answer drawing '{drawing_name}' does not have a `file` argument"
+                )
+            initial_content = load_file_content()
+        case "question":
+            # First try loading the submission
+            if drawing_name in data["submitted_answers"]:
                 initial_content = (
                     data["submitted_answers"].get(drawing_name) or initial_content
                 )
-            case panel:
-                assert_never(panel)
+            # Next, try using the file attribute to load the starter diagram
+            elif pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
+                initial_content = load_file_content()
+            # Finally, give up and mark it as empty
+            else:
+                initial_content = ""
+        case "submission":
+            initial_content = (
+                data["submitted_answers"].get(drawing_name) or initial_content
+            )
+        case panel:
+            assert_never(panel)
 
-        content_bytes = json.dumps(
-            {
-                "read_only": data["panel"] != "question" or not data["editable"],
-                "initial_content": initial_content,
-                "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
-                "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
-            }
-        ).encode()
+    content_bytes = json.dumps(
+        {
+            "read_only": data["panel"] != "question" or not data["editable"],
+            "initial_content": initial_content,
+            "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
+            "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
+        }
+    ).encode()
+    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         return chevron.render(
             template,
             {
