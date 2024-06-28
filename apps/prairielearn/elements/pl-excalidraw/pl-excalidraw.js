@@ -77,7 +77,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     null,
     elt(
       'div',
-      { style: {width: metadata.width, height: metadata.height} },
+      { style: { width: metadata.width, height: metadata.height } },
       elt(
         ExcalidrawLib.Excalidraw,
         props,

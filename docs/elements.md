@@ -327,11 +327,11 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 
 #### Customizations
 
-| Attribute  | Type   | Default                      | Description                                                                            |
-| ---------- | ------ | ---------------------------- | -------------------------------------------------------------------------------------- |
-| `answers-name`     | string | -                            | Unique name to identify the widget with. Drawing submissions are saved with this name. |
-| `source-file-name`     | string | -                            | Optional file to load as the starter diagram                                           |
-| `directory` | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "." | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`. |
+| Attribute          | Type                                                                                             | Default | Description                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------- |
+| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name.                        |
+| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram                                                                  |
+| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`. |
 
 #### Example implementation
 

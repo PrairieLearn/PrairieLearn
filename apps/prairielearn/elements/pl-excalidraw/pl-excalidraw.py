@@ -1,12 +1,13 @@
 import base64
 import json
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
 
 import chevron
 import lxml.html
 import prairielearn as pl
 from typing_extensions import assert_never
+
 
 class Attr(Enum):
     ANSWER_NAME = "answers-name"
@@ -21,7 +22,12 @@ class Attr(Enum):
 
     @staticmethod
     def optional():
-        return [Attr.WIDTH.value, Attr.HEIGHT.value, Attr.SOURCE_FILE_NAME.value, Attr.SOURCE_DIRECTORY.value]
+        return [
+            Attr.WIDTH.value,
+            Attr.HEIGHT.value,
+            Attr.SOURCE_FILE_NAME.value,
+            Attr.SOURCE_DIRECTORY.value,
+        ]
 
 
 class SourceDirectory(Enum):
@@ -64,7 +70,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
     pl.check_answers_names(data, name)
 
-    SourceDirectory.validate(pl.get_string_attrib(element, Attr.SOURCE_DIRECTORY.value, SourceDirectory.default().value))
+    SourceDirectory.validate(
+        pl.get_string_attrib(
+            element, Attr.SOURCE_DIRECTORY.value, SourceDirectory.default().value
+        )
+    )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -73,11 +83,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     initial_content: str = ""
 
     def load_file_content() -> str:
-        file_dir = SourceDirectory.as_runtime_path(pl.get_string_attrib(
-            element,
-            Attr.SOURCE_DIRECTORY.value,
-            SourceDirectory.default().value,
-        ))
+        file_dir = SourceDirectory.as_runtime_path(
+            pl.get_string_attrib(
+                element,
+                Attr.SOURCE_DIRECTORY.value,
+                SourceDirectory.default().value,
+            )
+        )
         file = Path(data["options"][file_dir]) / pl.get_string_attrib(
             element, Attr.SOURCE_FILE_NAME.value
         )
