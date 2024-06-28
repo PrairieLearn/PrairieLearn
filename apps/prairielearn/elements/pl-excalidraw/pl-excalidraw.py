@@ -6,7 +6,7 @@ from enum import Enum
 import chevron
 import lxml.html
 import prairielearn as pl
-
+from typing_extensions import assert_never
 
 class Attr(Enum):
     ANSWER_NAME = "answers-name"
@@ -50,9 +50,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, Attr.SOURCE_FILE_NAME.value
             )
             if not file.exists():
-                raise RuntimeError(
-                    f"Drawing named {drawing_name} at {file} cannot be found"
-                )
+                raise RuntimeError(f"Unknown file path: {file}")
             return file.read_text(encoding="utf-8")
 
         match data["panel"]:
@@ -80,7 +78,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     data["submitted_answers"].get(drawing_name) or initial_content
                 )
             case panel:
-                raise RuntimeError(f"Unhandled panel type {panel}")
+                assert_never(panel)
 
         content_bytes = json.dumps(
             {
