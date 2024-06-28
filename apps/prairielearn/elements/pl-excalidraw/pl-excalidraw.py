@@ -15,11 +15,18 @@ class Attr(Enum):
     SOURCE_FILE_NAME = "source-file-name"
     SOURCE_DIRECTORY = "directory"
 
+    @staticmethod
+    def required():
+        return [Attr.ANSWER_NAME.value]
+
+    @staticmethod
+    def optional():
+        return [Attr.WIDTH.value, Attr.HEIGHT.value, Attr.SOURCE_FILE_NAME.value, Attr.SOURCE_DIRECTORY.value]
+
 
 def prepare(element_html: str, _: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, [Attr.ANSWER_NAME.value],
-                     [Attr.WIDTH.value, Attr.HEIGHT.value, Attr.SOURCE_FILE_NAME.value, Attr.SOURCE_DIRECTORY.value])
+    pl.check_attribs(element, Attr.required(), Attr.optional())
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
