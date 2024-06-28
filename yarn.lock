@@ -5705,7 +5705,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/utils@npm:7.11.0, @typescript-eslint/utils@npm:^7.14.1, @typescript-eslint/utils@npm:^7.4.0":
+"@typescript-eslint/utils@npm:7.11.0, @typescript-eslint/utils@npm:^7.4.0":
   version: 7.11.0
   resolution: "@typescript-eslint/utils@npm:7.11.0"
   dependencies:
@@ -13613,7 +13613,6 @@ __metadata:
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@typescript-eslint/eslint-plugin": "npm:^7.11.0"
     "@typescript-eslint/parser": "npm:^7.11.0"
-    "@typescript-eslint/utils": "npm:^7.14.1"
     dependency-cruiser: "npm:^16.3.2"
     eslint: "npm:^8.57.0"
     eslint-config-prettier: "npm:^9.1.0"
