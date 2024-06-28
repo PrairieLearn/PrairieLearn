@@ -27,21 +27,21 @@
     "@types/chai": "^4.3.16",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^20.13.0",
+    "@types/node": "^20.14.9",
     "@types/node-fetch": "^2.6.11",
     "@types/on-headers": "^1.0.3",
-    "@types/set-cookie-parser": "^2.4.7",
+    "@types/set-cookie-parser": "^2.4.9",
     "@types/uid-safe": "^2.1.5",
     "c8": "^9.1.0",
     "chai": "^5.1.1",
     "express": "^4.19.2",
     "fetch-cookie": "^3.0.1",
-    "mocha": "^10.4.0",
+    "mocha": "^10.5.2",
     "node-fetch": "^3.3.2",
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
+    "tsx": "^4.15.8",
+    "typescript": "^5.5.2"
   },
   "c8": {
     "reporter": [
