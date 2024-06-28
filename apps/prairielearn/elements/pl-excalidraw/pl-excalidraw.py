@@ -1,26 +1,36 @@
 import base64
 import json
 from pathlib import Path
+from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
 
 
+class Attr(Enum):
+    ANSWER_NAME = "name"
+    WIDTH = "width"
+    HEIGHT = "height"
+    SOURCE_FILE_NAME = "file"
+    SOURCE_DIRECTORY = "file_dir"
+
+
 def prepare(element_html: str, _: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ["name"], ["width", "height", "file", "file_dir"])
+    pl.check_attribs(element, [Attr.ANSWER_NAME.value],
+                     [Attr.WIDTH.value, Attr.HEIGHT.value, Attr.SOURCE_FILE_NAME.value, Attr.SOURCE_DIRECTORY.value])
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
-        drawing_name = pl.get_string_attrib(element, "name")
+        drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
         initial_content: str = ""
 
         def load_file_content() -> str:
             file_dir = pl.get_string_attrib(
-                element, "file_dir", "client_files_question_path"
+                element, Attr.SOURCE_DIRECTORY.value, "client_files_question_path"
             )
             if file_dir not in data["options"]:
                 path_suffixes = [
@@ -28,7 +38,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 ]
                 raise RuntimeError(f"{file_dir=} not a valid key ({path_suffixes})")
             file = Path(data["options"][file_dir]) / pl.get_string_attrib(
-                element, "file"
+                element, Attr.SOURCE_FILE_NAME.value
             )
             if not file.exists():
                 raise RuntimeError(
@@ -39,7 +49,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         match data["panel"]:
             case "answer":
                 # Answer must have a file attribute
-                if not pl.has_attrib(element, "file") and data["panel"] == "answer":
+                if not pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
                     raise RuntimeError(
                         f"Answer drawing '{drawing_name}' does not have a `file` argument"
                     )
@@ -51,7 +61,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         data["submitted_answers"].get(drawing_name) or initial_content
                     )
                 # Next, try using the file attribute to load the starter diagram
-                elif pl.has_attrib(element, "file"):
+                elif pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
                     initial_content = load_file_content()
                 # Finally, give up and mark it as empty
                 else:
@@ -74,8 +84,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             {
                 "uuid": pl.get_uuid(),
                 "name": drawing_name,
-                "width": pl.get_string_attrib(element, "width", "100%"),
-                "height": pl.get_string_attrib(element, "height", "800px"),
+                "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
+                "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
                 "metadata": base64.b64encode(content_bytes).decode(),
             },
         )
@@ -83,7 +93,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, "name")
+    drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
 
     def append_errors(error_msg: str):
         if drawing_name not in data["format_errors"]:
