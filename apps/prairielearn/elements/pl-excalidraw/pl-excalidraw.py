@@ -27,6 +27,8 @@ class Attr(Enum):
 def prepare(element_html: str, _: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, Attr.required(), Attr.optional())
+    name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    pl.check_answers_names(data, name)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
