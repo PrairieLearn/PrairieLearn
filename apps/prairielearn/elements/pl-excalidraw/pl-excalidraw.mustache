@@ -7,14 +7,7 @@
 
 <div>
     <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}"/>
-    <style>
-        .excalidraw-root {
-            --container-width: {{width}};
-            --container-height: {{height}};
-        }
-    </style>
-
     <div class="excalidraw-root">
-        <div id="excalidraw-{{uuid}}" class="draw-container"></div>
+        <div id="excalidraw-{{uuid}}" style="width: {{width}}; height: {{height}};" class="draw-container"></div>
     </div>
 </div>
