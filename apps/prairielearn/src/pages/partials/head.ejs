@@ -5,6 +5,9 @@
 <meta name="cookie-domain" content="<%= config.cookieDomain %>">
 <% } %>
 <%- include('title') %>
+<% if (config.serverCanonicalHost) { %>
+<base href="<%= config.serverCanonicalHost %>">
+<% } %>
 <link href="<%= node_modules_asset_path('bootstrap/dist/css/bootstrap.min.css') %>" rel="stylesheet" />
 <link href="<%= node_modules_asset_path('bootstrap-icons/font/bootstrap-icons.css') %>" rel="stylesheet" />
 <link href="<%= asset_path('stylesheets/colors.css') %>" rel="stylesheet" />
