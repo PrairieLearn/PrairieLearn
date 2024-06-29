@@ -21,8 +21,8 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:import/recommended',
-    'plugin:import/typescript',
+    'plugin:import-x/recommended',
+    'plugin:import-x/typescript',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
@@ -32,10 +32,10 @@ module.exports = {
     ecmaVersion: 13,
   },
   settings: {
-    'import/parsers': {
+    'import-x/parsers': {
       '@typescript-eslint/parser': ['.ts', '.js'],
     },
-    'import/resolver': {
+    'import-x/resolver': {
       typescript: true,
       node: true,
     },
@@ -58,9 +58,10 @@ module.exports = {
     'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
-    'import/no-named-as-default-member': 'off',
+    'import-x/no-named-as-default': 'off',
+    'import-x/no-named-as-default-member': 'off',
 
-    'import/order': [
+    'import-x/order': [
       'error',
       {
         'newlines-between': 'always',
@@ -116,10 +117,10 @@ module.exports = {
       rules: {
         // TypeScript performs similar checks, so we disable these for TS files.
         // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
-        'import/named': 'off',
-        'import/namespace': 'off',
-        'import/default': 'off',
-        'import/no-named-as-default-member': 'off',
+        'import-x/named': 'off',
+        'import-x/namespace': 'off',
+        'import-x/default': 'off',
+        'import-x/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
           ...NO_RESTRICTED_SYNTAX,

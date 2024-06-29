@@ -1,6 +1,6 @@
 // @ts-check
 
-/* eslint-disable import/order */
+/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
@@ -9,7 +9,7 @@ import * as Sentry from '@prairielearn/sentry';
 // `@sentry/tracing` must be imported before `@sentry/profiling-node`.
 import '@sentry/tracing';
 import { ProfilingIntegration } from '@sentry/profiling-node';
-/* eslint-enable import/order */
+/* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
