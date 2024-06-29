@@ -248,22 +248,24 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
           </div>
           <div class="form-group">
             <label>Your Role in the Course</label>
-            <div class="form-control">
-              <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
-              <label for="role-instructor">Official Course Instructor</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-ta" name="cr-role" value="ta" />
-              <label for="role-ta">Teaching Assistant or other course staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-admin" name="cr-role" value="admin" />
-              <label for="role-admin">Institution Administrative Staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-student" name="cr-role" value="student" />
-              <label for="role-student">Student</label>
-            </div>
+            <ul class="list-group">
+              <li class="list-group-item">
+                <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
+                <label for="role-instructor" class="mb-0">Official Course Instructor</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-ta" name="cr-role" value="ta" />
+                <label for="role-ta" class="mb-0">Teaching Assistant or other course staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-admin" name="cr-role" value="admin" />
+                <label for="role-admin" class="mb-0">Institution Administrative Staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-student" name="cr-role" value="student" />
+                <label for="role-student" class="mb-0">Student</label>
+              </li>
+            </ul>
             <div
               style="display: none;"
               class="role-comment role-comment-ta role-comment-admin form-text card"
