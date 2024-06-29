@@ -1,6 +1,5 @@
 /* eslint-env browser,jquery */
 /* global ace, showdown, MathJax, DOMPurify */
-
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
@@ -8,7 +7,7 @@ window.PLFileEditor = function (uuid, options) {
     throw new Error('File upload element ' + elementId + ' was not found!');
   }
   this.originalContents = options.originalContents || '';
-
+  
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
   this.settingsButton = this.element.find('.settings-button');
@@ -26,7 +25,149 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
   this.editor.setReadOnly(options.readOnly);
+  this.editor.setOption("dragEnabled", false);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
+
+  this.session = this.editor.getSession();
+  this.doc = this.session.getDocument();
+  this.hasRanges = options.hasRanges;
+  this.rangeList = [];
+  
+
+  let editor = this.editor,
+      doc = this.doc;
+
+function intersects(range) {
+  var cursor = editor.selection.getCursor();
+  var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
+  return range.intersects(cursorRange);
+}
+
+const applyGutterStyles = () => {
+  var lines = editor.session.getLength();
+  for (var i = 0; i < lines; i++) {
+    if (this.rangeList.some(range =>
+      i >= range.start.row && i <= range.end.row
+    )) {
+      editor.session.addGutterDecoration(i, 'readonly-gutter');
+    } else {
+      editor.session.addGutterDecoration(i, 'editable-gutter');
+    }
+  }
+}
+
+const updateGutter = () => {
+  editor.session.$decorations = [];
+  setTimeout(() => {
+    applyGutterStyles();
+  }, 0);
+}
+
+editor.on("change", updateGutter);
+editor.on("changeSelection", updateGutter);
+
+applyGutterStyles();
+
+if (this.hasRanges) {
+
+  editor.commands.on("exec", function(e) { 
+    var cursor = editor.selection.getCursor();
+    
+    var inRange = this.rangeList.some(intersects);
+    
+    let exceptions = ["gotoleft", "gotoright", "golineup", "golinedown", "gotolinestart", "gotolineend"]
+    if (inRange && !exceptions.includes(e.command.name)) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+    
+    if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && e.command.name === "backspace" && editor.selection.isEmpty()) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    var isBeforeReadonlyRange = this.rangeList.some(range => {
+      return (cursor.row === range.start.row && cursor.column === 0 && e.command.name === "del" && editor.selection.isEmpty()) ||
+             (cursor.row === range.start.row - 1 && cursor.column === editor.session.getLine(cursor.row).length && e.command.name === "del" && editor.selection.isEmpty());
+    });
+
+    if (isBeforeReadonlyRange) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+  }.bind(this));
+
+  let contentBeforeDrop;
+  let cursorBeforeDrop;
+
+  editor.container.addEventListener('dragover', function() {
+      contentBeforeDrop = editor.getValue();
+      cursorBeforeDrop = editor.getCursorPosition();
+  }.bind(this));
+
+  const isCursorBeforeOrInReadOnly = (range) => {
+    var cursor = editor.selection.getCursor();
+
+    var extendedRange = new ace.Range(
+        range.start.row, range.start.column - 1,
+        range.end.row, range.end.column
+    );
+
+    var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
+    return extendedRange.intersects(cursorRange);
+  }
+
+  editor.container.addEventListener('drop', function(e) {
+      var position = editor.renderer.screenToTextCoordinates(e.clientX, e.clientY);
+      var cursorRange = new ace.Range(position.row, position.column, position.row, position.column);
+
+      var inRange = this.rangeList.some(function(range) {
+          return range.intersects(cursorRange);
+      });
+
+      var inExtendedRange = this.rangeList.some(isCursorBeforeOrInReadOnly);
+
+      if (inRange || inExtendedRange) {
+          setTimeout(function() {
+              const contentAfterDrop = editor.getValue();
+              const addedContentLength = contentAfterDrop.length - contentBeforeDrop.length;
+              
+              const linesAfterDrop = contentAfterDrop.split('\n');
+              const linesBeforeDrop = contentBeforeDrop.split('\n');
+              const addedLinesCount = linesAfterDrop.length - linesBeforeDrop.length;
+
+
+              const startRemovingPosition = {
+                  row: cursorBeforeDrop.row,
+                  column: cursorBeforeDrop.column
+              };
+
+              let endRemovingPosition;
+              if (addedLinesCount === 0) {  
+                  endRemovingPosition = {
+                      row: cursorBeforeDrop.row,
+                      column: cursorBeforeDrop.column + addedContentLength
+                  };
+              } else {  
+                  endRemovingPosition = {
+                      row: cursorBeforeDrop.row + addedLinesCount,
+                      column: linesAfterDrop[cursorBeforeDrop.row + addedLinesCount].length - (linesBeforeDrop[cursorBeforeDrop.row].length - cursorBeforeDrop.column)
+                  };
+              }
+
+              editor.session.replace(new ace.Range(
+                  startRemovingPosition.row, startRemovingPosition.column,
+                  endRemovingPosition.row, endRemovingPosition.column
+              ), '');
+
+              editor.clearSelection();
+          }, 0);
+      }
+  }.bind(this));
+}
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
@@ -48,7 +189,9 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(12);
   }
 
-  this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  if (!(options.hasRanges)) {
+    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  }
 
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
@@ -81,6 +224,25 @@ window.PLFileEditor = function (uuid, options) {
   this.initSettingsButton(uuid);
 
   this.initRestoreOriginalButton();
+
+const addAnchor = (range) => {
+    let anchor = new ace.Range();
+    
+    anchor.start = doc.createAnchor(range.start.row, range.start.column);
+    anchor.end = doc.createAnchor(range.end.row, range.end.column);
+    this.rangeList.push(anchor);     // Add the new range to the rangeList
+  }
+
+  if (this.hasRanges) {
+    let ranges = options.ranges;
+    this.nested_ranges = JSON.parse(ranges);
+
+    this.nested_ranges.forEach(range => {
+      const [startRow, endRow] = range;
+      let anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+      addAnchor(anchor_range);
+    })
+  }
 };
 
 window.PLFileEditor.prototype.syncSettings = function () {
@@ -99,7 +261,10 @@ window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    if (this.hasRanges === false) {
+      this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+    }
   });
 };
 
@@ -213,7 +378,9 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+      this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     this.modal.modal('hide');
@@ -222,9 +389,9 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(() => {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
-    );
+      this.editor.setKeyboardHandler(
+        sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
+      );
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
@@ -244,6 +411,7 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
     this.restoreOriginalButton.show();
     this.restoreOriginalButton.focus();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
+    this.setAnchors();
   });
 
   this.restoreOriginalCancel.click(() => {
@@ -253,8 +421,30 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
+window.PLFileEditor.prototype.setAnchors = function () {
+  let doc = this.session.getDocument(); 
+
+  let newRangeList = [];
+
+  function addAnchor(range) {
+    let anchor = new ace.Range();
+    
+    anchor.start = doc.createAnchor(range.start.row, range.start.column);
+    anchor.end = doc.createAnchor(range.end.row, range.end.column);
+    newRangeList.push(anchor);
+  }
+
+  this.nested_ranges.forEach(range => {
+    const [startRow, endRow] = range;
+    let anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+    addAnchor(anchor_range);
+  })
+  this.rangeList = newRangeList;
+  
+};
 window.PLFileEditor.prototype.setEditorContents = function (contents) {
   this.editor.setValue(contents);
+  this.editor.session.getUndoManager().reset();
   this.editor.gotoLine(1, 0);
   if (this.plOptionFocus) {
     this.editor.focus();
