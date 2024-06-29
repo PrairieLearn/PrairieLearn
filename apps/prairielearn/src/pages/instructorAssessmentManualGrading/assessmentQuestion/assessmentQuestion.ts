@@ -1,30 +1,18 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { botGrade } from '../../../lib/bot-grading.js';
-import { InstanceQuestionSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 
+import { AssessmentQuestion } from './assessmentQuestion.html.js';
+import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  modified_at: z.string(),
-  assessment_open: z.boolean(),
-  uid: z.string().nullable(),
-  assigned_grader_name: z.string().nullable(),
-  last_grader_name: z.string().nullable(),
-  max_points: z.number().nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  user_or_group_name: z.string().nullable(),
-  open_issue_count: z.number().nullable(),
-});
 
 router.get(
   '/',
@@ -32,8 +20,8 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.locals.bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
-    res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
+    const botGradingEnabled = await features.enabledFromLocals('bot-grading', res.locals);
+    res.send(AssessmentQuestion({ resLocals: res.locals, botGradingEnabled }));
   }),
 );
 
@@ -50,7 +38,7 @@ router.get(
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
       },
-      InstanceQuestionRowSchema,
+      InstanceQuestionRowSchema.omit({ index: true }),
     );
     res.send({ instance_questions: result.map((row, idx) => ({ index: idx + 1, ...row })) });
   }),
@@ -111,24 +99,8 @@ router.post(
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
+          score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
-      );
-      if (result.modified_at_conflict) {
-        res.send({
-          conflict_grading_job_id: result.grading_job_id,
-          conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
-        });
-      } else {
-        res.send({});
-      }
-    } else if (req.body.__action === 'edit_question_score_perc') {
-      const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment.id,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at,
-        { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id,
       );
       if (result.modified_at_conflict) {
