@@ -1429,7 +1429,7 @@ export async function render(
 
         for (const type in elementDynamicDependencies) {
           for (const key in elementDynamicDependencies[type]) {
-            if (!_.has(dynamicDependencies[type], key)) {
+            if (!Object.hasOwn(dynamicDependencies[type], key)) {
               dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
             } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
               courseIssues.push(
@@ -1487,7 +1487,7 @@ export async function render(
             }
             for (const type in extensionDynamic) {
               for (const key in extensionDynamic[type]) {
-                if (!_.has(dynamicDependencies[type], key)) {
+                if (!Object.hasOwn(dynamicDependencies[type], key)) {
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
                 } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
                   courseIssues.push(
