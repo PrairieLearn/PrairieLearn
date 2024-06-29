@@ -161,6 +161,7 @@ export function InstructorQuestionSettings({
                       <div data-testid="shared-with">
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
+                          sourceSharedPublicly: resLocals.question.shared_publicly_with_source,
                           sharingSetsIn,
                           hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
                           sharingSetsOther,
@@ -191,15 +192,9 @@ export function InstructorQuestionSettings({
                 ? resLocals.authz_data.has_course_permission_edit &&
                   !resLocals.course.example_course
                   ? html`
-                      <hr />
-                      <a
-                        data-testid="edit-question-configuration-link"
-                        href="${resLocals.urlPrefix}/question/${resLocals.question
-                          .id}/file_edit/${infoPath}"
-                      >
-                        Edit question configuration
-                      </a>
-                      in <code>info.json</code>
+                      <tr>
+                        
+                      </tr>
                     `
                   : html`
                       <hr />
@@ -329,6 +324,19 @@ function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string
         Once this question is publicly shared, anyone will be able to view it or use it as a part of
         their course. This operation cannot be undone.
       </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          name="share_source_code"
+          id="shareSourceCodeCheckbox"
+          value="true"
+        />
+        <label class="form-check-label" for="shareSourceCodeCheckbox">
+          Share question source code? This will allow anyone to see the source code and edit it in
+          their own courses. This operation can always be undone.
+        </label>
+      </div>
       ${isEnterprise()
         ? html`
             <p>
@@ -350,6 +358,56 @@ function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button class="btn btn-primary" type="submit">Publicly Share "${qid}"</button>
+    `,
+  });
+}
+
+function EditPublicSharingModal({
+  csrfToken,
+  qid,
+  shared_publicly_with_source,
+}: {
+  csrfToken: string;
+  qid: string;
+  shared_publicly_with_source: boolean;
+}) {
+  return Modal({
+    id: 'editPublicSharingModal',
+    title: 'Edit Public Sharing',
+    body: html` <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          name="share_source_code"
+          id="shareSourceCodeCheckbox"
+          value="true"
+          ${shared_publicly_with_source ? 'checked' : ''}
+        />
+        <label class="form-check-label" for="shareSourceCodeCheckbox">
+          Share question source code? This will allow anyone to see the source code and edit it in
+          their own courses. This operation can always be undone.
+        </label>
+      </div>
+      ${isEnterprise()
+        ? html`
+            <p>
+              You retain full ownership of all shared content as described in the
+              <a href="https://www.prairielearn.com/legal/terms#2-user-content" target="_blank"
+                >Terms of Service</a
+              >. To allow PrairieLearn to share your content to other users you agree to the
+              <a
+                href="https://www.prairielearn.com/legal/terms#3-user-content-license-grant"
+                target="_blank"
+                >User Content License Grant</a
+              >.
+            </p>
+          `
+        : ''}`,
+    footer: html`
+      <input type="hidden" name="__action" value="edit_public_sharing" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button class="btn btn-primary" type="submit">Edit public sharing for "${qid}"</button>
     `,
   });
 }
@@ -432,6 +490,7 @@ function QuestionTestsForm({
 
 function QuestionSharing({
   questionSharedPublicly,
+  sourceSharedPublicly,
   sharingSetsIn,
   hasCoursePermissionOwn,
   sharingSetsOther,
@@ -439,6 +498,7 @@ function QuestionSharing({
   qid,
 }: {
   questionSharedPublicly: boolean;
+  sourceSharedPublicly: boolean;
   sharingSetsIn: SharingSetRow[];
   hasCoursePermissionOwn: boolean;
   sharingSetsOther: SharingSetRow[];
@@ -448,9 +508,31 @@ function QuestionSharing({
   if (questionSharedPublicly) {
     return html`
       <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
+        <span class="badge color-green3 mr-1">Public</span>      
+        ${sourceSharedPublicly
+        ? html`
+            <span class="badge color-blue3">Source Code</span>
+            This question and its source code are publicly shared.
+          `
+        : html`This question is publicly shared.`}
       </p>
+
+      <button
+        class="btn btn-sm btn-outline-primary"
+        type="button"
+        data-toggle="modal"
+        data-target="#editPublicSharingModal"
+      >
+        Edit Public Sharing
+      </button>
+      ${EditPublicSharingModal({
+        csrfToken: csrfToken,
+        qid: qid,
+        shared_publicly_with_source:
+          sourceSharedPublicly,
+      })}
+
+
     `;
   }
 
