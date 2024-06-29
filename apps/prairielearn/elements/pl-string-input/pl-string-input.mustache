@@ -6,32 +6,72 @@
             container: 'body',
             template: '<div class="popover pl-string-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
+        document.querySelectorAll('.multiline-input').forEach((input) => {
+            input.addEventListener('input', function () {
+            // Adjusts the height based on the feedback content. If the feedback changes, the height
+            // changes as well. This is done by resetting the height (so the scrollHeight is computed
+            // based on the minimum height) and then using the scrollHeight plus padding as the new height.
+            this.style.height = '';
+            if (this.scrollHeight) {
+                const style = window.getComputedStyle(this);
+                this.style.height =
+                this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+            }
+            });
+            input.dispatchEvent(new Event('input'));
+        });
     });
 </script>
 
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
-    <span id="pl-string-input-{{uuid}}" class="input-group pl-string-input">
+    {{#multiline}}
         {{#label}}
-        <span class="input-group-prepend">
-            <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
-        </span>
+        <label for="pl-string-input-input-{{uuid}}" class="form-label">{{{label}}}</label>
         {{/label}}
+    {{/multiline}}
+    <span id="pl-string-input-{{uuid}}" class="input-group pl-string-input">
+        {{^multiline}}
+            {{#label}}
+            <span class="input-group-prepend">
+                <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
+            </span>
+            {{/label}}
         <input
+        {{/multiline}}
+        {{#multiline}}
+        <textarea
+            wrap="soft"
+        {{/multiline}}
+            id="pl-string-input-input-{{uuid}}"
             name="{{name}}"
             type="text"
             inputmode="text"
-            class="form-control pl-string-input-input"
-            size="{{size}}"
+            class="form-control pl-string-input-input {{#multiline}}multiline-input{{/multiline}}"
+            {{^multiline}}
+                size="{{size}}"
+                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            {{/multiline}}
+            {{#multiline}}
+                cols="{{size}}"
+                rows="2"
+            {{/multiline}}
             autocomplete="off"
             autocorrect="off"
             {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
+            aria-describedby="pl-string-input-{{uuid}}-label pl-string-input-{{uuid}}-suffix"
             placeholder="{{placeholder}}"
-        />
+        {{^multiline}}
+        >
+        {{/multiline}}
+        {{#multiline}}
+        >{{raw_submitted_answer}}</textarea>
+        {{/multiline}}
         <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
-
+            {{^multiline}}
+                {{#suffix}}
+                <span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>
+                {{/suffix}}
+            {{/multiline}}
             {{#show_info}}
                 <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="String" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -70,6 +110,11 @@
             {{/parse_error}}
         </span>
     </span>
+{{#multiline}}
+    {{#suffix}}
+    <label for="pl-string-input-input-{{uuid}}" class="form-label">{{{suffix}}}</label>
+    {{/suffix}}
+{{/multiline}}
 {{#inline}}</span>{{/inline}}
 {{/question}}
 
@@ -113,9 +158,41 @@
 </span>
 {{/error}}
 {{^error}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output">{{a_sub}}</code>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{^multiline}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <code class="user-output">{{a_sub}}</code>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/multiline}}
+{{#multiline}}
+    {{#label}}
+    <label class="form-label" for="pl-string-input-submission-{{uuid}}">{{{label}}}</label>
+    {{/label}}
+    <span class="input-group">
+        <textarea
+            wrap="soft"
+            type="text"
+            inputmode="text"
+            class="form-control multiline-input"
+            style="resize:none;"
+            disabled
+            id="pl-string-input-submission-{{uuid}}"
+        >{{a_sub}}</textarea>
+    </span>
+    {{#suffix}}
+    <label class="form-label" for="pl-string-input-submission-{{uuid}}">{{{suffix}}}</label>
+    {{/suffix}}
+{{/multiline}}
+
+<!-- Show submitted answer submission was parsed from -->
+<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
+    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
+    title="Raw String" tabindex="0"
+    data-content="Invisible unicode characters are represented as
+    <code>&lt; U+xxxx &gt;</code>:<br>
+    <pre>{{escaped_submitted_answer}}</pre>">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</a>
+
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -124,9 +201,42 @@
 {{/submission}}
 
 {{#answer}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output">{{a_tru}}</code>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{^multiline}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <code class="user-output">{{a_tru}}</code>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/multiline}}
+{{#multiline}}
+    {{#label}}
+    <label class="form-label" for="pl-string-input-answer-{{uuid}}">{{{label}}}</label>
+    {{/label}}
+    <span class="input-group">
+        <textarea
+            wrap="soft"
+            type="text"
+            inputmode="text"
+            class="form-control multiline-input"
+            style="resize:none;"
+            disabled
+            id="pl-string-input-answer-{{uuid}}"
+        >{{a_tru}}</textarea>
+    </span>
+    {{#suffix}}
+    <label class="form-label" for="pl-string-input-answer-{{uuid}}">{{{suffix}}}</label>
+    {{/suffix}}
+{{/multiline}}
+
+<!-- TODO figure out why it isn't printing what I expect -->
+<!-- Show correct answer submission was parsed from -->
+<!-- Show submitted answer submission was parsed from -->
+<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
+    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
+    title="Raw String" tabindex="0"
+    data-content="Invisible unicode characters are represented as
+    <code>&lt; U+xxxx &gt;</code>:<br>
+    <pre>{{escaped_correct_answer}}</pre>">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</a>
 {{/answer}}
 
 {{#format}}
