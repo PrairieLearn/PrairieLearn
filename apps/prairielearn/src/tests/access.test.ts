@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import request from 'request';
+import fetchCookie from 'fetch-cookie';
+import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -45,7 +46,7 @@ describe('Access control', function () {
      */
 
   function cookiesStudent() {
-    const cookies = request.jar();
+    const cookies = new fetchCookie.toughCookie.CookieJar();
     cookies.setCookie('pl_test_user=test_student', siteUrl);
     return cookies;
   }
@@ -87,29 +88,18 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const getPl = function (cookies, shouldContainQA101, callback) {
-    request({ url: siteUrl, jar: cookies }, function (error, response, body) {
-      if (error) {
-        return callback(error);
-      }
-      if (response.statusCode !== 200) {
-        return callback(new Error('bad status: ' + response.statusCode));
-      }
-      page = body;
-      try {
-        $ = cheerio.load(page);
-        elemList = $('#content td a:contains("QA 101")');
-        assert.lengthOf(elemList, shouldContainQA101 ? 1 : 0);
-      } catch (err) {
-        return callback(err);
-      }
-      callback(null);
-    });
-  };
+  async function getPl(cookies, shouldContainQA101) {
+    const res = await fetchCookie(fetch, cookies)(siteUrl);
+    assert.equal(res.status, 200);
+    const page = await res.text();
+    $ = cheerio.load(page);
+    elemList = $('#content td a:contains("QA 101")');
+    assert.lengthOf(elemList, shouldContainQA101 ? 1 : 0);
+  }
 
   describe('1. GET /pl', function () {
-    it('as student should not contain QA 101', function (callback) {
-      getPl(cookiesStudent(), false, callback);
+    it('as student should not contain QA 101', async () => {
+      await getPl(cookiesStudent(), false);
     });
   });
 
@@ -127,14 +117,14 @@ describe('Access control', function () {
   });
 
   describe('4. GET /pl', function () {
-    it('as student should contain QA 101', function (callback) {
-      getPl(cookiesStudent(), true, callback);
+    it('as student should contain QA 101', async () => {
+      await getPl(cookiesStudent(), true);
     });
-    it('as student in Exam mode before course instance time period should not contain QA 101', function (callback) {
-      getPl(cookiesStudentExamBeforeCourseInstance(), false, callback);
+    it('as student in Exam mode before course instance time period should not contain QA 101', async () => {
+      await getPl(cookiesStudentExamBeforeCourseInstance(), false);
     });
-    it('as student in Exam mode after course instance time period should not contain QA 101', function (callback) {
-      getPl(cookiesStudentExamAfterCourseInstance(), false, callback);
+    it('as student in Exam mode after course instance time period should not contain QA 101', async () => {
+      await getPl(cookiesStudentExamAfterCourseInstance(), false);
     });
   });
 
@@ -149,38 +139,27 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const getAssessments = function (cookies, shouldContainE1, callback) {
-    request({ url: assessmentsUrl, jar: cookies }, function (error, response, body) {
-      if (error) {
-        return callback(error);
-      }
-      if (response.statusCode !== 200) {
-        return callback(new Error('bad status: ' + response.statusCode));
-      }
-      page = body;
-      try {
-        $ = cheerio.load(page);
-        elemList = $('td a:contains("Exam for automatic test suite")');
-        assert.lengthOf(elemList, shouldContainE1 ? 1 : 0);
-      } catch (err) {
-        return callback(err);
-      }
-      callback(null);
-    });
-  };
+  async function getAssessments(cookies, shouldContainE1) {
+    const res = await fetchCookie(fetch, cookies)(assessmentsUrl);
+    assert.equal(res.status, 200);
+    const page = await res.text();
+    $ = cheerio.load(page);
+    elemList = $('td a:contains("Exam for automatic test suite")');
+    assert.lengthOf(elemList, shouldContainE1 ? 1 : 0);
+  }
 
   describe('6. GET /pl/assessments', function () {
-    it('as student should not contain E1', function (callback) {
-      getAssessments(cookiesStudent(), false, callback);
+    it('as student should not contain E1', async () => {
+      await getAssessments(cookiesStudent(), false);
     });
-    it('as student in Exam mode before time period should not contain E1', function (callback) {
-      getAssessments(cookiesStudentExamBeforeAssessment(), false, callback);
+    it('as student in Exam mode before time period should not contain E1', async () => {
+      await getAssessments(cookiesStudentExamBeforeAssessment(), false);
     });
-    it('as student in Exam mode after time period should not contain E1', function (callback) {
-      getAssessments(cookiesStudentExamAfterAssessment(), false, callback);
+    it('as student in Exam mode after time period should not contain E1', async () => {
+      await getAssessments(cookiesStudentExamAfterAssessment(), false);
     });
-    it('as student in Exam mode should contain E1', function (callback) {
-      getAssessments(cookiesStudentExam(), true, callback);
+    it('as student in Exam mode should contain E1', async () => {
+      await getAssessments(cookiesStudentExam(), true);
     });
     it('should have the correct link for E1', function () {
       assert.nestedProperty(elemList[0], 'attribs.href');
@@ -191,31 +170,24 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const getAssessment = function (cookies, expectedStatusCode, callback) {
-    request({ url: assessmentUrl, jar: cookies }, function (error, response, body) {
-      if (error) {
-        return callback(error);
-      }
-      if (response.statusCode !== expectedStatusCode) {
-        return callback(new Error('bad status: ' + response.statusCode));
-      }
-      page = body;
-      callback(null);
-    });
-  };
+  async function getAssessment(cookies, expectedStatusCode) {
+    const res = await fetchCookie(fetch, cookies)(assessmentUrl);
+    assert.equal(res.status, expectedStatusCode);
+    page = await res.text();
+  }
 
   describe('7. GET to assessment URL', function () {
-    it('as student should return 403', function (callback) {
-      getAssessment(cookiesStudent(), 403, callback);
+    it('as student should return 403', async () => {
+      await getAssessment(cookiesStudent(), 403);
     });
-    it('as student in Exam mode before time period should return 403', function (callback) {
-      getAssessment(cookiesStudentExamBeforeAssessment(), 403, callback);
+    it('as student in Exam mode before time period should return 403', async () => {
+      await getAssessment(cookiesStudentExamBeforeAssessment(), 403);
     });
-    it('as student in Exam mode after time period should return 403', function (callback) {
-      getAssessment(cookiesStudentExamAfterAssessment(), 403, callback);
+    it('as student in Exam mode after time period should return 403', async () => {
+      await getAssessment(cookiesStudentExamAfterAssessment(), 403);
     });
-    it('as student in Exam mode should load successfully', function (callback) {
-      getAssessment(cookiesStudentExam(), 200, callback);
+    it('as student in Exam mode should load successfully', async () => {
+      await getAssessment(cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -231,79 +203,55 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
-    const form: Record<string, any> = {
+  async function postAssessment(cookies, includePassword, expectedStatusCode) {
+    const form: Record<string, string> = {
       __action: 'new_instance',
       __csrf_token,
     };
     if (includePassword) form.password = 'secret';
-    request.post(
-      {
-        url: assessmentUrl,
-        form,
-        jar: cookies,
-        followAllRedirects: true,
-      },
-      function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== expectedStatusCode) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      },
-    );
-  };
+    const res = await fetchCookie(fetch, cookies)(assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.equal(res.status, expectedStatusCode);
+    page = await res.text();
+  }
 
   describe('8. POST to assessment URL', function () {
-    it('as student should return 403', function (callback) {
-      postAssessment(cookiesStudent(), true, 403, callback);
+    it('as student should return 403', async () => {
+      await postAssessment(cookiesStudent(), true, 403);
     });
-    it('as student in Exam mode before time period should return 403', function (callback) {
-      postAssessment(cookiesStudentExamBeforeAssessment(), true, 403, callback);
+    it('as student in Exam mode before time period should return 403', async () => {
+      await postAssessment(cookiesStudentExamBeforeAssessment(), true, 403);
     });
-    it('as student in Exam mode after time period should return 403', function (callback) {
-      postAssessment(cookiesStudentExamAfterAssessment(), true, 403, callback);
+    it('as student in Exam mode after time period should return 403', async () => {
+      await postAssessment(cookiesStudentExamAfterAssessment(), true, 403);
     });
-    /*
-        it('as student in Exam mode without password should return 403', function(callback) {
-            postAssessment(cookiesStudentExam(), false, 403, callback);
-        });
-*/
-    it('as student in Exam mode should load successfully', function (callback) {
-      postAssessment(cookiesStudentExam(), true, 200, callback);
+    it('as student in Exam mode should load successfully', async () => {
+      await postAssessment(cookiesStudentExam(), true, 200);
     });
   });
 
   /**********************************************************************/
 
-  const getAssessmentInstance = function (cookies, expectedStatusCode, callback) {
-    request({ url: assessmentInstanceUrl, jar: cookies }, function (error, response, body) {
-      if (error) {
-        return callback(error);
-      }
-      if (response.statusCode !== expectedStatusCode) {
-        return callback(new Error('bad status: ' + response.statusCode));
-      }
-      page = body;
-      callback(null);
-    });
-  };
+  async function getAssessmentInstance(cookies, expectedStatusCode) {
+    const res = await fetchCookie(fetch, cookies)(assessmentInstanceUrl);
+    assert.equal(res.status, expectedStatusCode);
+    page = await res.text();
+  }
 
   describe('9. GET to assessment_instance URL', function () {
-    it('as student should return 403', function (callback) {
-      getAssessmentInstance(cookiesStudent(), 403, callback);
+    it('as student should return 403', async () => {
+      await getAssessmentInstance(cookiesStudent(), 403);
     });
-    it('as student in Exam mode before time period should return 403', function (callback) {
-      getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403, callback);
+    it('as student in Exam mode before time period should return 403', async () => {
+      await getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403);
     });
-    it('as student in Exam mode after time period should return 403', function (callback) {
-      getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403, callback);
+    it('as student in Exam mode after time period should return 403', async () => {
+      await getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403);
     });
-    it('as student in Exam mode should load successfully', function (callback) {
-      getAssessmentInstance(cookiesStudentExam(), 200, callback);
+    it('as student in Exam mode should load successfully', async () => {
+      await getAssessmentInstance(cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -327,31 +275,24 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const getInstanceQuestion = function (cookies, expectedStatusCode, callback) {
-    request({ url: q1Url, jar: cookies }, function (error, response, body) {
-      if (error) {
-        return callback(error);
-      }
-      if (response.statusCode !== expectedStatusCode) {
-        return callback(new Error('bad status: ' + response.statusCode));
-      }
-      page = body;
-      callback(null);
-    });
-  };
+  async function getInstanceQuestion(cookies, expectedStatusCode) {
+    const res = await fetchCookie(fetch, cookies)(q1Url);
+    assert.equal(res.status, expectedStatusCode);
+    page = await res.text();
+  }
 
   describe('11. GET to instance_question URL', function () {
-    it('as student should return 403', function (callback) {
-      getInstanceQuestion(cookiesStudent(), 403, callback);
+    it('as student should return 403', async () => {
+      await getInstanceQuestion(cookiesStudent(), 403);
     });
-    it('as student in Exam mode before time period should return 403', function (callback) {
-      getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403, callback);
+    it('as student in Exam mode before time period should return 403', async () => {
+      await getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
     });
-    it('as student in Exam mode after time period should return 403', function (callback) {
-      getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403, callback);
+    it('as student in Exam mode after time period should return 403', async () => {
+      await getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
     });
-    it('as student in Exam mode should load successfully', function (callback) {
-      getInstanceQuestion(cookiesStudentExam(), 200, callback);
+    it('as student in Exam mode should load successfully', async () => {
+      await getInstanceQuestion(cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -385,7 +326,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  const postInstanceQuestion = function (cookies, expectedStatusCode, callback) {
+  async function postInstanceQuestion(cookies, expectedStatusCode) {
     const submittedAnswer = {
       wx: 0,
       wy: 0,
@@ -395,32 +336,25 @@ describe('Access control', function () {
       __csrf_token,
       postData: JSON.stringify({ variant, submittedAnswer }),
     };
-    request.post(
-      { url: q1Url, form, jar: cookies, followAllRedirects: true },
-      function (error, response) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== expectedStatusCode) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        callback(null);
-      },
-    );
-  };
+    const res = await fetchCookie(fetch, cookies)(q1Url, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.equal(res.status, expectedStatusCode);
+  }
 
   describe('12. POST to instance_question URL', function () {
-    it('as student should return 403', function (callback) {
-      postInstanceQuestion(cookiesStudent(), 403, callback);
+    it('as student should return 403', async () => {
+      await postInstanceQuestion(cookiesStudent(), 403);
     });
-    it('as student in Exam mode before time period should return 403', function (callback) {
-      postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403, callback);
+    it('as student in Exam mode before time period should return 403', async () => {
+      await postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
     });
-    it('as student in Exam mode after time period should return 403', function (callback) {
-      postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403, callback);
+    it('as student in Exam mode after time period should return 403', async () => {
+      await postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
     });
-    it('as student in Exam mode should load successfully', function (callback) {
-      postInstanceQuestion(cookiesStudentExam(), 200, callback);
+    it('as student in Exam mode should load successfully', async () => {
+      await postInstanceQuestion(cookiesStudentExam(), 200);
     });
   });
 });
