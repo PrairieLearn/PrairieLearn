@@ -1,0 +1,17 @@
+{
+  "redhat.telemetry.enabled": false,
+  "security.workspace.trust.enabled": false,
+  "window.restoreWindows": "none",
+  "window.openFoldersInNewWindow": "off",
+  "update.mode": "none",
+  "workbench.enableExperiments": false,
+  "workbench.startupEditor": "none",
+  "update.showReleaseNotes": false,
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+  "telemetry.enableTelemetry": false,
+  "telemetry.telemetryLevel": "off",
+  "editor.fontSize": 16,
+  "window.menuBarVisibility": "visible",
+  "workbench.colorTheme": "Default Dark Modern"
+}

@@ -367,11 +367,10 @@ const questions: Record<string, Question> = {
     tags: ['workspace'],
     type: 'v3',
     workspaceOptions: {
-      image: 'prairielearn/workspace-vscode',
+      image: 'prairielearn/workspace-vscode-python',
       port: 8080,
-      home: '/home/coder',
-      args: '--auth none',
-      gradedFiles: ['animal.h', 'animal.c'],
+      home: '/home/coder/workspace',
+      gradedFiles: ['fibonacci.py'],
     },
   },
 };
