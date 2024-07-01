@@ -2819,7 +2819,7 @@ __metadata:
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
     bindings: "npm:^1.5.0"
-    nan: "npm:^2.19.0"
+    nan: "npm:^2.20.0"
     node-gyp: "npm:^10.1.0"
   languageName: unknown
   linkType: soft
@@ -12714,12 +12714,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0, nan@npm:^2.19.0":
+"nan@npm:^2.14.0, nan@npm:^2.17.0, nan@npm:^2.18.0":
   version: 2.19.0
   resolution: "nan@npm:2.19.0"
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/b8d05d75f92ee9d94affa50d0aa41b6c698254c848529452d7ab67c2e0d160a83f563bfe2cbd53e077944eceb48c757f83c93634c7c9ff404c9ec1ed4e5ced1a
+  languageName: node
+  linkType: hard
+
+"nan@npm:^2.20.0":
+  version: 2.20.0
+  resolution: "nan@npm:2.20.0"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/75775309a21ad179a55250d62ce47322c33ca03d8ddb5ad4c555bd820dd72484b3c59253dd9f41cc68dd63453ef04017407fbd081a549bc030d977079bb798b7
   languageName: node
   linkType: hard
 
