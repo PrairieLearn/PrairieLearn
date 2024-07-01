@@ -441,6 +441,23 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
+export const FileSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  created_by: IdSchema.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  deleted_by: IdSchema.nullable(),
+  display_filename: z.string(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  storage_filename: z.string(),
+  storage_type: z.enum(['FileSystem', 'S3']),
+  type: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type File = z.infer<typeof FileSchema>;
+
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),

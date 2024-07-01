@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
   ExamQuestionScore,
@@ -488,12 +489,14 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${renderEjs(
-            import.meta.url,
-            // TODO: convert to TypeScript component
-            "<%- include('../partials/attachFilePanel') %>",
-            resLocals,
-          )}
+          ${PersonalNotesPanel({
+            fileList: resLocals.file_list,
+            context: 'assessment',
+            courseInstanceId: resLocals.course_instance.id,
+            assessment_instance: resLocals.assessment_instance,
+            csrfToken: resLocals.__csrf_token,
+            authz_result: resLocals.authz_result,
+          })}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,
