@@ -16,7 +16,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^20.13.0",
     "prettier": "3.2.5",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.2"
   },
   "dependencies": {
     "sql-formatter": "^15.3.1"
