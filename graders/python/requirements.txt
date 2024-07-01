@@ -21,7 +21,7 @@ pygraphviz==1.13
 requests==2.32.3
 scikit-image==0.23.2
 scikit-learn==1.5.0
-scipy==1.13.1
+scipy==1.14.0
 seaborn==0.13.2
 sympy==1.12.1
 text-unidecode==1.3
