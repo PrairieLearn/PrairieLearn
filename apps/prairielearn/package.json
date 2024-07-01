@@ -122,7 +122,6 @@
     "loopbench": "^2.0.0",
     "lru-cache": "^10.2.2",
     "mathjax": "^3.2.2",
-    "mdast": "^3.0.0",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
     "mime": "^4.0.3",
