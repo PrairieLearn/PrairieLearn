@@ -11,9 +11,9 @@
     typical "^7.1.1"
 
 "@novnc/novnc@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.4.0.tgz#68adae81a741624142b518323441e852c1f34281"
-  integrity sha512-kW6ALMc5BuH08e/ond/I1naYcfjc19JYMN1EdtmgjjjzPGCjW8fMtVM3MwM6q7YLRjPlQ3orEvoKMgSS7RkEVQ==
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.5.0.tgz#7df3e4aca48eaa7c0d6f690e7dee89480232e2f1"
+  integrity sha512-4yGHOtUCnEJUCsgEt/L78eeJu00kthurLBWXFiaXfonNx0pzbs6R/3gJb1byZe6iAE8V9MF0syQb0xIL8MSOtQ==
 
 accepts@~1.3.8:
   version "1.3.8"
