@@ -2843,7 +2843,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     ioredis: "npm:^5.4.1"
-    lru-cache: "npm:^10.2.2"
+    lru-cache: "npm:^10.3.0"
     typescript: "npm:^5.4.5"
     zod: "npm:^3.23.8"
   languageName: unknown
@@ -3411,7 +3411,7 @@ __metadata:
     klaw: "npm:^4.1.0"
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
-    lru-cache: "npm:^10.2.2"
+    lru-cache: "npm:^10.3.0"
     mathjax: "npm:^3.2.2"
     mdast-util-math: "npm:^3.0.0"
     memorystream: "npm:^0.3.1"
@@ -11645,10 +11645,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0, lru-cache@npm:^10.2.2":
+"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0":
   version: 10.2.2
   resolution: "lru-cache@npm:10.2.2"
   checksum: 10c0/402d31094335851220d0b00985084288136136992979d0e015f0f1697e15d1c86052d7d53ae86b614e5b058425606efffc6969a31a091085d7a2b80a8a1e26d6
+  languageName: node
+  linkType: hard
+
+"lru-cache@npm:^10.3.0":
+  version: 10.3.0
+  resolution: "lru-cache@npm:10.3.0"
+  checksum: 10c0/02d57024d90672774d66e0b76328a8975483b782c68118078363be17b8e0efb4f2bee89d98ce87e72f42d68fe7cb4ad14b1205d43e4f9954f5c91e3be4eaceb8
   languageName: node
   linkType: hard
 
