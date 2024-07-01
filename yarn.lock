@@ -3461,7 +3461,7 @@ __metadata:
     socket.io-client: "npm:^4.7.5"
     streamifier: "npm:^0.1.1"
     strip-ansi: "npm:^7.1.0"
-    stripe: "npm:^15.8.0"
+    stripe: "npm:^16.1.0"
     tablesorter: "npm:^2.31.3"
     tar: "npm:^7.2.0"
     three: "npm:0.160.1"
@@ -15469,13 +15469,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^15.8.0":
-  version: 15.8.0
-  resolution: "stripe@npm:15.8.0"
+"stripe@npm:^16.1.0":
+  version: 16.1.0
+  resolution: "stripe@npm:16.1.0"
   dependencies:
     "@types/node": "npm:>=8.1.0"
     qs: "npm:^6.11.0"
-  checksum: 10c0/437a8257a48290c33560eff1ce27b01db6eaefa3b28b1cbc9c95dd8d7dcebaa93c7ca8b689ce7a6f809605362ccd9df131e287fa2c68a38f37adffd5e7b5fc02
+  checksum: 10c0/9eaf5e1f1ae53ef9dfa9ef2f84d248581430947559f23ecc2fa89a7e9a38f70e62e7488672797fc2296321fad0b6b6f997563fd0af2663e6b60de7492dbdad3a
   languageName: node
   linkType: hard
 
