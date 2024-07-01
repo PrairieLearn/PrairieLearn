@@ -1,7 +1,7 @@
 ansi2html==1.9.1
 chevron==0.14.0
 coloraide==3.3.1
-Faker==25.3.0
+Faker==26.0.0
 lxml==5.2.2
 matplotlib==3.9.0
 networkx==3.3
