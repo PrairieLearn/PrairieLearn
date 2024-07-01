@@ -3491,7 +3491,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^20.13.0"
     prettier: "npm:3.2.5"
-    sql-formatter: "npm:^15.3.1"
+    sql-formatter: "npm:^15.3.2"
     typescript: "npm:^5.4.5"
   languageName: unknown
   linkType: soft
@@ -15166,16 +15166,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sql-formatter@npm:^15.3.1":
-  version: 15.3.1
-  resolution: "sql-formatter@npm:15.3.1"
+"sql-formatter@npm:^15.3.2":
+  version: 15.3.2
+  resolution: "sql-formatter@npm:15.3.2"
   dependencies:
     argparse: "npm:^2.0.1"
     get-stdin: "npm:=8.0.0"
     nearley: "npm:^2.20.1"
   bin:
     sql-formatter: bin/sql-formatter-cli.cjs
-  checksum: 10c0/92b39d3497705a5b4294b0ae83a665c4eeca79345a08973e704cb6a2d0fcc8fb56b7268db0a7f1e3cba0521aa062cba5d29f45cf60a2c6a771144cb3ea1127fc
+  checksum: 10c0/43c0284a1d81c621d1563db55ad02c462558881405c76bb0e195c6fc5d1021c0ae4862786f0c08934c48b6154e59a3d0c788fdaf1c7ae644aa3e941d0ed1d1de
   languageName: node
   linkType: hard
 

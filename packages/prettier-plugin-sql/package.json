@@ -19,6 +19,6 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "sql-formatter": "^15.3.1"
+    "sql-formatter": "^15.3.2"
   }
 }
