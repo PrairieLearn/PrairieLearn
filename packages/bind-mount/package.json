@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "bindings": "^1.5.0",
-    "nan": "^2.19.0",
+    "nan": "^2.20.0",
     "node-gyp": "^10.1.0"
   },
   "scripts": {
