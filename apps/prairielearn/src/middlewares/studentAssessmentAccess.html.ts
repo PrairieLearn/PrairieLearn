@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Scorebar } from '../components/Scorebar.html.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
@@ -51,11 +52,7 @@ export function StudentAssessmentAccess({
                         )}
                       </div>
                       <div class="col-md-3 col-sm-6">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../pages/partials/scorebar') %>",
-                          { score: assessment_instance.score_perc },
-                        )}
+                        ${Scorebar(assessment_instance.score_perc)}
                       </div>
 
                       ${AssessmentStatusDescription({
