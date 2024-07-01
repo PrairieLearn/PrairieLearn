@@ -130,7 +130,7 @@
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",
-    "nodemon": "^3.1.2",
+    "nodemon": "^3.1.4",
     "numeric": "^1.2.6",
     "oauth-signature": "^1.5.0",
     "object-hash": "^3.0.0",
