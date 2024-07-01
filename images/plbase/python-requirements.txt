@@ -1,4 +1,4 @@
-ansi2html==1.9.1
+ansi2html==1.9.2
 chevron==0.14.0
 coloraide==3.3.1
 Faker==25.3.0
