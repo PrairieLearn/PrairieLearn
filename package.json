@@ -36,7 +36,7 @@
     "prettier": "3.2.5",
     "pyright": "^1.1.365",
     "s3rver": "^3.7.1",
-    "turbo": "^1.13.3",
+    "turbo": "^2.0.6",
     "typescript": "^5.4.5"
   },
   "workspaces": [
