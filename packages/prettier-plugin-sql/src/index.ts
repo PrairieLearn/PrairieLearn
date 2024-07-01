@@ -1,7 +1,8 @@
 import type { AstPath } from 'prettier';
-import { format } from 'sql-formatter';
+import { formatDialect, postgresql } from 'sql-formatter';
 
 // Loosely based on the implementation in https://github.com/un-ts/prettier/tree/master/packages/sql
+postgresql.tokenizerOptions.operators?.push('<=>');
 
 export const languages = [
   {
@@ -22,8 +23,8 @@ export const printers = {
   sql: {
     print(path: AstPath) {
       return (
-        format(path.node, {
-          language: 'postgresql',
+        formatDialect(path.node, {
+          dialect: postgresql,
           paramTypes: { named: ['$'] },
         }) + '\n'
       );
