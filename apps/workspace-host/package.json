@@ -11,10 +11,10 @@
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.588.0",
-    "@aws-sdk/client-s3": "^3.588.0",
-    "@aws-sdk/credential-providers": "^3.588.0",
-    "@aws-sdk/lib-storage": "^3.588.0",
+    "@aws-sdk/client-ecr": "^3.606.0",
+    "@aws-sdk/client-s3": "^3.606.0",
+    "@aws-sdk/credential-providers": "^3.606.0",
+    "@aws-sdk/lib-storage": "^3.606.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
