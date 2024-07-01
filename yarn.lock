@@ -2885,7 +2885,7 @@ __metadata:
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.4"
+    "@types/lodash": "npm:^4.17.6"
     "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
@@ -3195,7 +3195,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/diff": "npm:^5.2.1"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.4"
+    "@types/lodash": "npm:^4.17.6"
     "@types/node": "npm:^20.13.0"
     "@types/yargs": "npm:^17.0.32"
     async: "npm:^3.2.5"
@@ -3219,7 +3219,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/lodash": "npm:^4.17.4"
+    "@types/lodash": "npm:^4.17.6"
     "@types/mocha": "npm:^10.0.6"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^20.13.0"
@@ -3310,7 +3310,7 @@ __metadata:
     "@types/json-stable-stringify": "npm:^1.0.36"
     "@types/json-stringify-safe": "npm:^5.0.3"
     "@types/klaw": "npm:^3.0.6"
-    "@types/lodash": "npm:^4.17.4"
+    "@types/lodash": "npm:^4.17.6"
     "@types/loopbench": "npm:^1.2.4"
     "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
@@ -5135,10 +5135,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.17.4":
-  version: 4.17.4
-  resolution: "@types/lodash@npm:4.17.4"
-  checksum: 10c0/0124c64cb9fe7a0f78b6777955abd05ef0d97844d49118652eae45f8fa57bfb7f5a7a9bccc0b5a84c0a6dc09631042e4590cb665acb9d58dfd5e6543c75341ec
+"@types/lodash@npm:^4.17.6":
+  version: 4.17.6
+  resolution: "@types/lodash@npm:4.17.6"
+  checksum: 10c0/3b197ac47af9443fee8c4719c5ffde527d7febc018b827d44a6bc2523c728c7adfdd25196fdcfe3eed827993e0c41a917d0da6e78938b18b2be94164789f1117
   languageName: node
   linkType: hard
 
