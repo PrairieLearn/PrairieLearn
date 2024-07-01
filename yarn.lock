@@ -2865,7 +2865,7 @@ __metadata:
     fs-extra: "npm:^11.2.0"
     get-port: "npm:^7.1.0"
     globby: "npm:^14.0.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     node-fetch: "npm:^3.3.2"
     pretty-bytes: "npm:^6.1.1"
     tmp-promise: "npm:^3.0.3"
@@ -2886,13 +2886,13 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.4"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     fs-extra: "npm:^11.2.0"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
@@ -2905,13 +2905,13 @@ __metadata:
   resolution: "@prairielearn/csv@workspace:packages/csv"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     csv-stringify: "npm:^6.5.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     multipipe: "npm:^4.0.0"
     stream-transform: "npm:^3.3.2"
     tsx: "npm:^4.11.0"
@@ -2926,12 +2926,12 @@ __metadata:
     "@aws-sdk/client-ecr": "npm:^3.588.0"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     date-fns: "npm:^3.6.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -2943,12 +2943,12 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -2983,7 +2983,7 @@ __metadata:
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -2998,7 +2998,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3036,7 +3036,7 @@ __metadata:
     execa: "npm:^9.2.0"
     fs-extra: "npm:^11.2.0"
     logform: "npm:^2.6.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     nodemon: "npm:^3.1.2"
     sinon: "npm:^18.0.0"
     tmp-promise: "npm:^3.0.3"
@@ -3060,7 +3060,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     ejs: "npm:^3.1.10"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3074,7 +3074,7 @@ __metadata:
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3103,13 +3103,13 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
     fs-extra: "npm:^11.2.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     serialize-error: "npm:^11.0.3"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.11.0"
@@ -3160,12 +3160,12 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:^1.24.1"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^4.3.16"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3177,11 +3177,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^4.3.16"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3220,14 +3220,14 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
     "@types/lodash": "npm:^4.17.4"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^20.13.0"
     "@types/pg-cursor": "npm:^2.7.2"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.11.5"
     pg-cursor: "npm:^2.10.5"
@@ -3315,7 +3315,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
     "@types/mime": "npm:^4.0.0"
-    "@types/mocha": "npm:^10.0.6"
+    "@types/mocha": "npm:^10.0.7"
     "@types/multer": "npm:^1.4.11"
     "@types/mustache": "npm:^4.2.5"
     "@types/node": "npm:^20.13.0"
@@ -3417,7 +3417,7 @@ __metadata:
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.0.3"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     mocha-steps: "npm:^1.3.0"
     morphdom: "npm:^2.7.2"
     multer: "npm:^1.4.5-lts.1"
@@ -3504,7 +3504,7 @@ __metadata:
     "@types/node": "npm:^20.13.0"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     tsx: "npm:^4.11.0"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -3545,7 +3545,7 @@ __metadata:
     express: "npm:^4.19.2"
     express-async-handler: "npm:^1.2.0"
     fetch-cookie: "npm:^3.0.1"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     node-fetch: "npm:^3.3.2"
     on-headers: "npm:^1.0.2"
     set-cookie-parser: "npm:^2.6.0"
@@ -3607,7 +3607,7 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     ioredis: "npm:^5.4.1"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.5.2"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.2"
     tsx: "npm:^4.11.0"
@@ -5192,10 +5192,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.6":
-  version: 10.0.6
-  resolution: "@types/mocha@npm:10.0.6"
-  checksum: 10c0/4526c9e88388f9e1004c6d3937c5488a39908810f26b927173c58d52b43057f3895627dc06538e96706e08b88158885f869ec6311f6b58fd72bdef715f26d6c3
+"@types/mocha@npm:^10.0.7":
+  version: 10.0.7
+  resolution: "@types/mocha@npm:10.0.7"
+  checksum: 10c0/48a2df4dd02b6e66a11129dca6a23cf0cc3995faf8525286eb851043685bd8b7444780f4bb29a1c42df7559ed63294e5308bfce3a6b862ad2e0359cb21c21329
   languageName: node
   linkType: hard
 
@@ -6870,7 +6870,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:3.5.3, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
+"chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -12582,13 +12582,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mocha@npm:^10.4.0":
-  version: 10.4.0
-  resolution: "mocha@npm:10.4.0"
+"mocha@npm:^10.5.2":
+  version: 10.5.2
+  resolution: "mocha@npm:10.5.2"
   dependencies:
     ansi-colors: "npm:4.1.1"
     browser-stdout: "npm:1.3.1"
-    chokidar: "npm:3.5.3"
+    chokidar: "npm:^3.5.3"
     debug: "npm:4.3.4"
     diff: "npm:5.0.0"
     escape-string-regexp: "npm:4.0.0"
@@ -12609,7 +12609,7 @@ __metadata:
   bin:
     _mocha: bin/_mocha
     mocha: bin/mocha.js
-  checksum: 10c0/e572e9d8c164e98f64de7e9498608de042fd841c6a7441f456a5e216e9aed2299e2c568d9dc27f2be2de06521e6b2d1dd774ab58a243b1c7697d14aec2f0f7f7
+  checksum: 10c0/ccafc4d6b166a897cc20c6e8bf912c08ef1ac6d3e903812a501a6c0717c8df48490f11752446db8664b0b46ca76d9949d9b18ddf0a5fefb132a8343d631c4000
   languageName: node
   linkType: hard
 
