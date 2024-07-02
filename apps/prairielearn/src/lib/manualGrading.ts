@@ -3,6 +3,7 @@ import _ from 'lodash';
 import mustache from 'mustache';
 import { z } from 'zod';
 
+import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -16,7 +17,6 @@ import {
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import * as markdown from './markdown.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -143,15 +143,16 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = (
-      await markdown.processContentInline(mustache.render(item.description || '', mustache_data))
-    ).toString();
-    item.explanation_rendered = (
-      await markdown.processContent(mustache.render(item.explanation || '', mustache_data))
-    ).toString();
-    item.grader_note_rendered = (
-      await markdown.processContent(mustache.render(item.grader_note || '', mustache_data))
-    ).toString();
+    item.description_rendered = await markdownToHtml(
+      mustache.render(item.description || '', mustache_data),
+      { inline: true },
+    );
+    item.explanation_rendered = await markdownToHtml(
+      mustache.render(item.explanation || '', mustache_data),
+    );
+    item.grader_note_rendered = await markdownToHtml(
+      mustache.render(item.grader_note || '', mustache_data),
+    );
   });
 
   locals.rubric_data = rubric_data;
@@ -173,7 +174,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    submission.feedback_manual_html = await markdown.processContent(
+    submission.feedback_manual_html = await markdownToHtml(
       submission.feedback?.manual?.toString() || '',
     );
   }
