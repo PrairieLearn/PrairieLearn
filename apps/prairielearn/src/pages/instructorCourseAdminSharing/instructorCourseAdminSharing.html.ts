@@ -1,31 +1,55 @@
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { z } from 'zod';
+
+import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 
-const addSharingSetPopover = (resLocals) => {
+export const SharingSetRowSchema = z.object({
+  name: z.string(),
+  id: z.string(),
+  shared_with: z.string().array(),
+});
+type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+
+function AddSharingSetPopover({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="sharing_set_create">
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+      <input type="hidden" name="__action" value="sharing_set_create" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
-        <p class=form-text>
-          Enter the name of the sharing set you would like to create.
-        </p>
+      <div class="form-group">
+        <label for="sharing_set_name">Sharing set name</label>
+        <input
+          class="form-control form-control-sm"
+          type="text"
+          name="sharing_set_name"
+          id="sharing_set_name"
+          required
+        />
       </div>
-      <div class=form-group>
-        <input class="form-control form-control-sm" type="text" name="sharing_set_name" required/>
-      <div>
+
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#courseSharingSetAdd').popover('hide')">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="$('#courseSharingSetAdd').popover('hide')"
+        >
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary">Create Sharing Set</button>
       </div>
     </form>
-  `.toString();
-};
+  `;
+}
 
-const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
+function AddCourseToSharingSetPopover({
+  sharing_set,
+  resLocals,
+}: {
+  sharing_set: SharingSetRow;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
       <input type="hidden" name="__action" value="course_sharing_set_add" />
@@ -40,9 +64,11 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
         </div>
       </div>
       <div class="form-group">
+        <label for="course_sharing_token">Course sharing token</label>
         <input
           class="form-control form-control-sm"
           type="text"
+          id="course_sharing_token"
           name="unsafe_course_sharing_token"
           required
         />
@@ -58,24 +84,36 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
       </div>
     </form>
-  `.toString();
-};
+  `;
+}
 
-function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string) {
+function ChooseSharingNameModal({
+  canChooseSharingName,
+  csrfToken,
+}: {
+  canChooseSharingName: boolean;
+  csrfToken: string;
+}) {
   let body: HtmlSafeString;
   let footer: HtmlSafeString;
   if (canChooseSharingName) {
     body = html`
       <p class="form-text">Enter the sharing name you would like for your course.</p>
-      <div>
-        <label for="course_sharing_name">Enter Sharing Name</label>
-        <input class="form-control" type="text" name="course_sharing_name" required />
+      <div class="form-group">
+        <label for="course_sharing_name">Sharing name</label>
+        <input
+          class="form-control"
+          type="text"
+          id="course_sharing_name"
+          name="course_sharing_name"
+          required
+        />
       </div>
       <p>
-        <strong
-          >Once you have shared a question either publicly or with another course, you will no
-          longer be able to change your sharing name.</strong
-        >
+        <strong>
+          Once you have shared a question either publicly or with another course, you will no longer
+          be able to change your sharing name.
+        </strong>
         Doing so would break the assessments of other courses that have imported your questions. It
         is recommended that you choose something short but descriptive. For example, if you're
         teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you
@@ -109,7 +147,7 @@ function ChooseSharingNameModal(canChooseSharingName: boolean, csrfToken: string
   });
 }
 
-export const InstructorSharing = ({
+export function InstructorCourseAdminSharing({
   sharingName,
   sharingToken,
   sharingSets,
@@ -119,11 +157,11 @@ export const InstructorSharing = ({
 }: {
   sharingName: string | null;
   sharingToken: string;
-  sharingSets: { name: string; id: string; shared_with: string[] }[];
+  sharingSets: SharingSetRow[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
   resLocals: Record<string, any>;
-}) => {
+}) {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
   return html`
     <!doctype html>
@@ -161,7 +199,10 @@ export const InstructorSharing = ({
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${ChooseSharingNameModal(canChooseSharingName, resLocals.__csrf_token)}
+                          ${ChooseSharingNameModal({
+                            canChooseSharingName,
+                            csrfToken: resLocals.__csrf_token,
+                          })}
                         `
                       : ''}
                   </td>
@@ -221,7 +262,11 @@ export const InstructorSharing = ({
                         data-html="true"
                         data-placement="auto"
                         title="Create Sharing Set"
-                        data-content="${addSharingSetPopover(resLocals)}"
+                        data-content="${escapeHtml(
+                          AddSharingSetPopover({
+                            csrfToken: resLocals.__csrf_token,
+                          }),
+                        )}"
                       >
                         <i class="fas fa-plus" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Create Sharing Set</span>
@@ -256,9 +301,11 @@ export const InstructorSharing = ({
                                 data-html="true"
                                 data-placement="auto"
                                 title="Add Course to Sharing Set"
-                                data-content="${addCourseToSharingSetPopover(
-                                  resLocals,
-                                  sharing_set,
+                                data-content="${escapeHtml(
+                                  AddCourseToSharingSetPopover({
+                                    resLocals,
+                                    sharing_set,
+                                  }),
                                 )}"
                               >
                                 Add...
@@ -277,4 +324,4 @@ export const InstructorSharing = ({
       </body>
     </html>
   `.toString();
-};
+}
