@@ -289,7 +289,7 @@ export async function createCourseRepoJob(options, authn_user) {
     });
 
     job.info('Sync git repository to database');
-    const sync_result = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
+    const syncResult = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {
@@ -297,7 +297,7 @@ export async function createCourseRepoJob(options, authn_user) {
       const chunkChanges = await updateChunksForCourse({
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
-        courseData: sync_result.courseData,
+        courseData: syncResult.courseData,
       });
       logChunkChangesToJob(chunkChanges, job);
     }

@@ -8,7 +8,7 @@ import fetch from 'node-fetch';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { Course } from '../lib/db-types.js';
+import { Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -139,8 +139,8 @@ describe('Question Sharing', function () {
     });
 
     step('Fail to sync course when validating shared question paths', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (!result?.hadJsonErrorsOrWarnings) {
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+      if (!syncResult?.hadJsonErrorsOrWarnings) {
         throw new Error(
           'Sync of consuming course succeeded when it should have failed due to unresolved shared question path.',
         );
@@ -155,8 +155,8 @@ describe('Question Sharing', function () {
     step(
       'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
-        const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-        if (result?.hadJsonErrorsOrWarnings) {
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+        if (syncResult?.hadJsonErrorsOrWarnings) {
           throw new Error('Errors or warnings found during sync of consuming course');
         }
       },
@@ -437,9 +437,9 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = false;
     });
     step('Re-sync test course, validating shared questions', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (result === undefined || result.hadJsonErrorsOrWarnings) {
-        console.log(result);
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+      if (syncResult === undefined || syncResult.hadJsonErrorsOrWarnings) {
+        console.log(syncResult);
         throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
@@ -457,6 +457,26 @@ describe('Question Sharing', function () {
         siteUrl + publiclySharedQuestionLink.attr('href'),
       );
       assert(publiclySharedQuestionRes.ok);
+    });
+
+    step('Fail to sync if shared question is renamed', async () => {
+      const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
+      const questionTempPath = questionPath + '_temp';
+      await fs.rename(questionPath, questionTempPath);
+      await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      const question_id = await sqldb.queryOptionalRow(
+        sql.get_question_id,
+        {
+          course_id: sharingCourse.id,
+          qid: SHARING_QUESTION_QID,
+        },
+        IdSchema,
+      );
+      assert(
+        question_id !== null,
+        'Sync of consuming course should not allow renaming a shared question.',
+      );
+      await fs.rename(questionTempPath, questionPath);
     });
   });
 });

@@ -15,12 +15,14 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
+import { getInvalidRenames } from './sharing.js';
 
 const perf = makePerformance('sync');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 export interface SyncResults {
+  hardFail: boolean;
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
@@ -43,6 +45,30 @@ export async function syncDiskToSqlWithLock(
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
+
+  if (config.checkSharingOnSync) {
+    // TODO: also check if questions were un-shared in the JSON or if any
+    // sharing sets were deleted
+    const invalidRenames = await getInvalidRenames(courseId, courseData);
+    if (invalidRenames.length > 0) {
+      logger.info(
+        chalk.red(
+          `✖ Course sync completely failed. The following questions are shared and cannot be renamed/deleted: ${invalidRenames.join(', ')}`,
+        ),
+      );
+      perf.end('sync');
+      const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+      const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
+      return {
+        hardFail: true,
+        hadJsonErrors: courseDataHasErrors,
+        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+        courseId,
+        courseData,
+      };
+    }
+  }
+
   logger.info('Syncing info to database');
   await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
@@ -92,6 +118,7 @@ export async function syncDiskToSqlWithLock(
 
   perf.end('sync');
   return {
+    hardFail: false,
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
     courseId,
