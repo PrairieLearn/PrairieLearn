@@ -20,6 +20,10 @@ describe('date formatting', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 0, 1, 0));
       assert.equal(formatDate(date, 'UTC'), '2018-01-01 00:01:00 (UTC)');
     });
+    it('formats dates with milliseconds', () => {
+      const date = new Date(Date.UTC(2018, 0, 1, 4, 1, 3, 12));
+      assert.equal(formatDate(date, 'UTC', { includeMs: true }), '2018-01-01 04:01:03.012 (UTC)');
+    });
     it('formats dates without the timezone', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDate(date, 'UTC', { includeTz: false }), '2018-01-01 12:00:00');
