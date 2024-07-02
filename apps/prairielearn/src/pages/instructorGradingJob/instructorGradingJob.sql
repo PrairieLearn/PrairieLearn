@@ -13,7 +13,7 @@ SELECT
     )
   END AS aai,
   to_jsonb(gj.*) AS grading_job,
-  q.directory AS question_qid,
+  q.qid AS question_qid,
   u.uid AS user_uid
 FROM
   grading_jobs AS gj
