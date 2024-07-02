@@ -55,7 +55,6 @@ export async function init() {
       'administrators_delete_by_user_id.sql',
       'courses_insert.sql',
       'courses_update_column.sql',
-      'courses_delete.sql',
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
