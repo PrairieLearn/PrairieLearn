@@ -9,10 +9,9 @@ window.PLOrderBlocks = function (uuid, options) {
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   let fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
-  let pressedKeys = {};
 
   function initializeKeyboardHandling() {
-    let blocks = fullContainer.querySelectorAll('*.pl-order-block');
+    let blocks = fullContainer.querySelectorAll('.pl-order-block');
     blocks.forEach((block) => initializeBlockEvents(block));
   }
 
@@ -23,6 +22,12 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function getIndentation(block) {
     return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+  }
+
+  function setIndentation(block, indentation) {
+    if (indentation >= 0 && indentation <= maxIndent) {
+      block.style.marginLeft = indentation * TABWIDTH + 'px';
+    }
   }
 
   function initializeBlockEvents(block) {
@@ -37,23 +42,23 @@ window.PLOrderBlocks = function (uuid, options) {
     });
 
     block.addEventListener('keydown', (ev) => {
-      pressedKeys[ev.key] = true;
       if (!block.classList.contains('pl-order-blocks-selected')) {
         if (ev.key === 'Enter') {
           block.classList.add('pl-order-blocks-selected');
         }
       } else {
-        ev.preventDefault();
         switch (ev.key) {
           case 'ArrowDown':
             if (block.nextElementSibling) {
               block.nextElementSibling.insertAdjacentElement('afterend', block);
             }
+            ev.preventDefault();
             break;
           case 'ArrowUp':
             if (block.previousElementSibling) {
               block.previousElementSibling.insertAdjacentElement('beforebegin', block);
             }
+            ev.preventDefault();
             break;
           case 'Delete':
           case 'Backspace':
@@ -73,35 +78,34 @@ window.PLOrderBlocks = function (uuid, options) {
                 $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
               }
             }
+            ev.preventDefault();
             break;
           case 'Enter':
             if (!inDropzone(block)) {
               $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
             }
+            ev.preventDefault();
             break;
           case 'Tab':
             if (inDropzone(block) && enableIndentation) {
               let currentIndent = getIndentation(block);
-              if (pressedKeys['Shift'] && currentIndent > 0) {
-                block.style.marginLeft = (currentIndent - 1) * TABWIDTH + 'px';
-              } else if (currentIndent < maxIndent && !pressedKeys['Shift']) {
-                block.style.marginLeft = (currentIndent + 1) * TABWIDTH + 'px';
+              if (ev.shiftKey) {
+                setIndentation(block, currentIndent - 1);
+              } else {
+                setIndentation(block, currentIndent + 1);
               }
             }
+            ev.preventDefault();
             break;
           case 'Escape':
             if (block.classList.contains('pl-order-blocks-selected')) {
               block.classList.remove('pl-order-blocks-selected');
             }
-            break;
-          default:
+            ev.preventDefault();
             break;
         }
         block.focus();
       }
-    });
-    block.addEventListener('keyup', (ev) => {
-      pressedKeys[ev.key] = false;
     });
   }
 
