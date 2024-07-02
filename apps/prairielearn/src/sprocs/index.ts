@@ -25,7 +25,6 @@ export async function init() {
       'format_date_short.sql',
       'format_date_full.sql',
       'format_date_full_compact.sql',
-      'format_date_full_compact_ms.sql',
       'input_date.sql',
       'interval_hist_thresholds.sql',
       'jsonb_array_to_text_array.sql',

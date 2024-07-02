@@ -1,26 +1,14 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { IdSchema } from '../../lib/db-types.js';
-
-const GradingJobSchema = z.object({
-  id: IdSchema,
-  s3_bucket: z.string().nullable(),
-  s3_root_key: z.string().nullable(),
-  output: z.string().nullable(),
-});
+import { GradingJobSchema } from '../../lib/db-types.js';
 
 export const GradingJobQueryResultSchema = z.object({
   aai: z.record(z.any()).nullable(),
   grading_job: GradingJobSchema,
-  formatted_grading_requested_at: z.string().nullable(),
-  formatted_grading_submitted_at: z.string().nullable(),
-  formatted_grading_received_at: z.string().nullable(),
-  formatted_grading_started_at: z.string().nullable(),
-  formatted_grading_finished_at: z.string().nullable(),
-  formatted_graded_at: z.string().nullable(),
   question_qid: z.string(),
   user_uid: z.string(),
 });
@@ -33,6 +21,14 @@ export function InstructorGradingJob({
   resLocals: Record<string, any>;
   gradingJobQueryResult: GradingJobQueryResult;
 }) {
+  const formatGradingJobDate = (date: Date | null) =>
+    date
+      ? formatDate(
+          date,
+          resLocals.course_instance?.display_timezone || resLocals.course.display_timezone,
+          { includeMs: true },
+        )
+      : html`&mdash;`;
   return html`
     <!doctype html>
     <html lang="en">
@@ -65,27 +61,37 @@ export function InstructorGradingJob({
                 </tr>
                 <tr>
                   <th>Requested at</th>
-                  <td>${gradingJobQueryResult.formatted_grading_requested_at}</td>
+                  <td>
+                    ${formatGradingJobDate(gradingJobQueryResult.grading_job.grading_requested_at)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Submitted at</th>
-                  <td>${gradingJobQueryResult.formatted_grading_submitted_at}</td>
+                  <td>
+                    ${formatGradingJobDate(gradingJobQueryResult.grading_job.grading_submitted_at)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Received at</th>
-                  <td>${gradingJobQueryResult.formatted_grading_received_at}</td>
+                  <td>
+                    ${formatGradingJobDate(gradingJobQueryResult.grading_job.grading_received_at)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Started at</th>
-                  <td>${gradingJobQueryResult.formatted_grading_started_at}</td>
+                  <td>
+                    ${formatGradingJobDate(gradingJobQueryResult.grading_job.grading_started_at)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Finished at</th>
-                  <td>${gradingJobQueryResult.formatted_grading_finished_at}</td>
+                  <td>
+                    ${formatGradingJobDate(gradingJobQueryResult.grading_job.grading_finished_at)}
+                  </td>
                 </tr>
                 <tr>
                   <th>Graded at</th>
-                  <td>${gradingJobQueryResult.formatted_graded_at}</td>
+                  <td>${formatGradingJobDate(gradingJobQueryResult.grading_job.graded_at)}</td>
                 </tr>
               </tbody>
             </table>
