@@ -8,98 +8,101 @@ window.PLOrderBlocks = function (uuid, options) {
 
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  let fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
   let pressedKeys = {};
 
-  function initializeKeyboardHandling(optionsElementId, dropzoneElementId) {
-    function inDropzone(block) {
-      let parentArea = block.closest('.pl-order-blocks-connected-sortable');
-      return parentArea.classList.contains('dropzone');
-    }
-    function getIndentation(block) {
-      return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
-    }
-    let fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+  function initializeKeyboardHandling() {
     let blocks = fullContainer.querySelectorAll('*.pl-order-block');
+    blocks.forEach((block) => initializeBlockEvents(block));
+  }
 
-    for (let block of blocks) {
-      block.addEventListener('click', () => {
+  function inDropzone(block) {
+    let parentArea = block.closest('.pl-order-blocks-connected-sortable');
+    return parentArea.classList.contains('dropzone');
+  }
+
+  function getIndentation(block) {
+    return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+  }
+
+  function initializeBlockEvents(block) {
+    block.addEventListener('click', () => {
+      block.focus();
+    });
+
+    block.addEventListener('blur', () => {
+      if (block.classList.contains('pl-order-blocks-selected')) {
+        block.classList.remove('pl-order-blocks-selected');
+      }
+    });
+
+    block.addEventListener('keydown', (ev) => {
+      pressedKeys[ev.key] = true;
+      if (!block.classList.contains('pl-order-blocks-selected')) {
+        if (ev.key === 'Enter') {
+          block.classList.add('pl-order-blocks-selected');
+        }
+      } else {
+        ev.preventDefault();
+        switch (ev.key) {
+          case 'ArrowDown':
+            if (block.nextElementSibling) {
+              block.nextElementSibling.insertAdjacentElement('afterend', block);
+            }
+            break;
+          case 'ArrowUp':
+            if (block.previousElementSibling) {
+              block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+            }
+            break;
+          case 'Delete':
+          case 'Backspace':
+            if (inDropzone(block)) {
+              block.style.marginLeft = '0px';
+              if (block.hasAttribute('data-distractor-bin')) {
+                let distractorBinId = block.getAttribute('data-distractor-bin');
+                let distractorBin = fullContainer
+                  .querySelector(
+                    '.pl-order-blocks-pairing-indicator[data-distractor-bin=' +
+                      distractorBinId +
+                      ']',
+                  )
+                  .querySelector('.inner-list');
+                distractorBin.insertAdjacentElement('afterbegin', block);
+              } else {
+                $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
+              }
+            }
+            break;
+          case 'Enter':
+            if (!inDropzone(block)) {
+              $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
+            }
+            break;
+          case 'Tab':
+            if (inDropzone(block) && enableIndentation) {
+              let currentIndent = getIndentation(block);
+              if (pressedKeys['Shift'] && currentIndent > 0) {
+                block.style.marginLeft = (currentIndent - 1) * TABWIDTH + 'px';
+              } else if (currentIndent < maxIndent && !pressedKeys['Shift']) {
+                block.style.marginLeft = (currentIndent + 1) * TABWIDTH + 'px';
+              }
+            }
+            break;
+          case 'Escape':
+            if (block.classList.contains('pl-order-blocks-selected')) {
+              block.classList.remove('pl-order-blocks-selected');
+            }
+            break;
+          default:
+            break;
+        }
         block.focus();
-      });
-
-      block.addEventListener('blur', () => {
-        if (block.classList.contains('selected')) {
-          block.classList.remove('selected');
-        }
-      });
-
-      block.addEventListener('keydown', (ev) => {
-        pressedKeys[ev.key] = true;
-        if (!block.classList.contains('selected')) {
-          if (ev.key === 'Enter') {
-            block.classList.add('selected');
-          }
-        } else {
-          ev.preventDefault();
-          switch (ev.key) {
-            case 'ArrowDown':
-              if (block.nextElementSibling) {
-                block.nextElementSibling.insertAdjacentElement('afterend', block);
-              }
-              break;
-            case 'ArrowUp':
-              if (block.previousElementSibling) {
-                block.previousElementSibling.insertAdjacentElement('beforebegin', block);
-              }
-              break;
-            case 'Delete':
-            case 'Backspace':
-              if (inDropzone(block)) {
-                block.style.marginLeft = '0px';
-                if (block.hasAttribute('data-distractor-bin')) {
-                  let distractorBinId = block.getAttribute('data-distractor-bin');
-                  let distractorBin = fullContainer
-                    .querySelector(
-                      '.pl-order-blocks-pairing-indicator[data-distractor-bin=' +
-                        distractorBinId +
-                        ']',
-                    )
-                    .querySelector('.inner-list');
-                  distractorBin.insertAdjacentElement('afterbegin', block);
-                } else {
-                  $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
-                }
-              }
-              break;
-            case 'Enter':
-              if (!inDropzone(block)) {
-                $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
-              }
-              break;
-            case 'Tab':
-              if (inDropzone(block) && enableIndentation) {
-                let currentIndent = getIndentation(block);
-                if (pressedKeys['Shift'] && currentIndent > 0) {
-                  block.style.marginLeft = (currentIndent - 1) * TABWIDTH + 'px';
-                } else if (currentIndent < maxIndent && !pressedKeys['Shift']) {
-                  block.style.marginLeft = (currentIndent + 1) * TABWIDTH + 'px';
-                }
-              }
-              break;
-            case 'Escape':
-              if (block.classList.contains('selected')) {
-                block.classList.remove('selected');
-              }
-              break;
-            default:
-              break;
-          }
-          block.focus();
-        }
-      });
-      block.addEventListener('keyup', (ev) => {
-        pressedKeys[ev.key] = false;
-      });
-    }
+      }
+    });
+    block.addEventListener('keyup', (ev) => {
+      pressedKeys[ev.key] = false;
+    });
   }
 
   function setAnswer() {
