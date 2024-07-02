@@ -39,7 +39,7 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
 
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
 
-  if (syncResult.hardFail) {
+  if (syncResult.sharingSyncError) {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
@@ -61,15 +61,16 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
   }
 }
 
-export async function cleanAndResetRepository(
+async function cleanAndResetRepository(
   course: Course,
+  revision: string,
   env: NodeJS.ProcessEnv,
   job: ServerJob,
 ) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
-  await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
+  await job.exec('git', ['reset', '--hard', revision], {
     cwd: course.path,
     env,
   });
@@ -202,7 +203,7 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, gitEnv, job);
+        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -235,9 +236,18 @@ export abstract class Editor {
           );
         };
 
+        let sharingSyncError = false;
         try {
           await writeAndCommitChanges();
-
+          const result = await syncFromDisk.validateCourseData(
+            this.course.id,
+            this.course.path,
+            logger,
+          );
+          sharingSyncError = result.sharingSyncError;
+          if (sharingSyncError) {
+            throw new Error();
+          }
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
@@ -257,7 +267,7 @@ export abstract class Editor {
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, gitEnv, job);
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
             await writeAndCommitChanges();
 
@@ -276,7 +286,8 @@ export abstract class Editor {
           //
           // If pushing (or anything before pushing) failed, the reset will get
           // us back to a known good state.
-          await cleanAndResetRepository(this.course, gitEnv, job);
+          const revision = sharingSyncError ? startGitHash : `origin/${this.course.branch}`;
+          await cleanAndResetRepository(this.course, revision, gitEnv, job);
 
           // Similarly, whether or not we error, we'll a course sync.
           //

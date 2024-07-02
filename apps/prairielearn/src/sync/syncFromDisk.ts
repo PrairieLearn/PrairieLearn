@@ -22,7 +22,7 @@ const perf = makePerformance('sync');
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 export interface SyncResults {
-  hardFail: boolean;
+  sharingSyncError: boolean;
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
@@ -34,14 +34,11 @@ interface Logger {
   verbose: (msg: string) => void;
 }
 
-export async function syncDiskToSqlWithLock(
+export async function validateCourseData(
   courseId: string,
   courseDir: string,
   logger: Logger,
-): Promise<SyncResults> {
-  logger.info('Loading info.json files from course repository');
-  perf.start('sync');
-
+): Promise<{ courseData: courseDB.CourseData; sharingSyncError: boolean }> {
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
@@ -57,16 +54,36 @@ export async function syncDiskToSqlWithLock(
         ),
       );
       perf.end('sync');
-      const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
-      const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
       return {
-        hardFail: true,
-        hadJsonErrors: courseDataHasErrors,
-        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
-        courseId,
         courseData,
+        sharingSyncError: true,
       };
     }
+  }
+
+  return { courseData, sharingSyncError: false };
+}
+
+export async function syncDiskToSqlWithLock(
+  courseId: string,
+  courseDir: string,
+  logger: Logger,
+): Promise<SyncResults> {
+  logger.info('Loading info.json files from course repository');
+  perf.start('sync');
+
+  const { courseData, sharingSyncError } = await validateCourseData(courseId, courseDir, logger);
+  if (sharingSyncError) {
+    perf.end('sync');
+    const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+    const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
+    return {
+      sharingSyncError: true,
+      hadJsonErrors: courseDataHasErrors,
+      hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+      courseId,
+      courseData,
+    };
   }
 
   logger.info('Syncing info to database');
@@ -118,7 +135,7 @@ export async function syncDiskToSqlWithLock(
 
   perf.end('sync');
   return {
-    hardFail: false,
+    sharingSyncError: false,
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
     courseId,
