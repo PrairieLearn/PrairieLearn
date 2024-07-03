@@ -147,13 +147,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
 
-    def append_errors(error_msg: str):
-        if drawing_name not in data["format_errors"]:
-            data["format_errors"][drawing_name] = []
-        data["format_errors"][drawing_name] = data["format_errors"][
-            drawing_name
-        ].append(error_msg)
-
     try:
         # Only check submissions if present. When one makes a submission using pl-excalidraw,
         # we always save a valid answer for all pl-excalidraw elements rendered in the question.
@@ -162,4 +155,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if drawing_name in data["submitted_answers"]:
             json.loads(data["submitted_answers"][drawing_name])
     except Exception as e:
-        append_errors(f"Invalid drawing submission: {e}")
+        if drawing_name not in data["format_errors"]:
+            data["format_errors"][drawing_name] = []
+        data["format_errors"][drawing_name].append(f"Invalid drawing submission: {e}")
