@@ -119,7 +119,6 @@ onDocumentReady(() => {
         class: 'text-nowrap',
         sortable: true,
         sortOrder: 'desc',
-        // TODO Better type for row
         formatter: (score: number | null, row: GradebookRow) => {
           if (score == null) return '&mdash;';
 
