@@ -6,6 +6,7 @@ from pathlib import Path
 import chevron
 import lxml.html
 import prairielearn as pl
+from lxml.html import HtmlElement
 from typing_extensions import assert_never
 
 
@@ -78,26 +79,27 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
 
+def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
+    default_dir: str = SourceDirectory.default().value
+    file_dir = SourceDirectory.as_runtime_path(
+        pl.get_string_attrib(
+            element,
+            Attr.SOURCE_DIRECTORY.value,
+            default_dir,
+        )
+    )
+    file = Path(data["options"][file_dir]) / pl.get_string_attrib(
+        element, Attr.SOURCE_FILE_NAME.value
+    )
+    if not file.exists():
+        raise RuntimeError(f"Unknown file path: {file}")
+    return file.read_text(encoding="utf-8")
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
     initial_content: str = ""
-
-    def load_file_content() -> str:
-        default_dir: str = SourceDirectory.default().value
-        file_dir = SourceDirectory.as_runtime_path(
-            pl.get_string_attrib(
-                element,
-                Attr.SOURCE_DIRECTORY.value,
-                default_dir,
-            )
-        )
-        file = Path(data["options"][file_dir]) / pl.get_string_attrib(
-            element, Attr.SOURCE_FILE_NAME.value
-        )
-        if not file.exists():
-            raise RuntimeError(f"Unknown file path: {file}")
-        return file.read_text(encoding="utf-8")
 
     match data["panel"]:
         case "answer":
@@ -106,7 +108,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise RuntimeError(
                     f"Answer drawing '{drawing_name}' does not have a `file` argument"
                 )
-            initial_content = load_file_content()
+            initial_content = load_file_content(element, data)
         case "question":
             # First try loading the submission
             if drawing_name in data["submitted_answers"]:
@@ -115,7 +117,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
             # Next, try using the file attribute to load the starter diagram
             elif pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
-                initial_content = load_file_content()
+                initial_content = load_file_content(element, data)
             # Finally, give up and mark it as empty
             else:
                 initial_content = ""
