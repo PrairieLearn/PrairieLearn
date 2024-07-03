@@ -49,6 +49,16 @@ export function InstructorGradebook({
         />
         ${compiledScriptTag('instructorGradebookClient.ts')}
         ${compiledStylesheetTag('instructorGradebook.css')}
+        ${EncodedData<InstructorGradebookData>(
+          {
+            urlPrefix,
+            csvFilename,
+            csrfToken: __csrf_token,
+            hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
+            courseAssessments: courseAssessments ?? [],
+          },
+          'gradebook-data',
+        )}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -73,16 +83,6 @@ export function InstructorGradebook({
                     <span class="sr-only">Loading...</span>
                   </div>
                 </div>
-                ${EncodedData<InstructorGradebookData>(
-                  {
-                    urlPrefix,
-                    csvFilename,
-                    csrfToken: __csrf_token,
-                    hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
-                    courseAssessments: courseAssessments ?? [],
-                  },
-                  'gradebook-data',
-                )}
                 ${RoleDescriptionModal()}
               `}
         </main>
