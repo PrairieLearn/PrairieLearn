@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import request from 'request';
 
+import { idsEqual } from '../lib/id.js';
+
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -528,10 +530,9 @@ describe('Instructor assessment editing', function () {
       locals.$ = cheerio.load(page);
     });
     it('should have CSRF token for testing', function () {
-      elemList = locals.$('input[name="__csrf_token"]');
+      elemList = locals.$('#test_csrf_token');
       assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
+      locals.__csrf_token = elemList.text();
       assert.isString(locals.__csrf_token);
     });
     it('should load raw data file successfully', function (callback) {
@@ -565,7 +566,11 @@ describe('Instructor assessment editing', function () {
       );
     });
     it('should contain the correct assessment instance id in the dev user row', function () {
-      assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`], 1);
+      const score = locals.gradebookDataRow[0].scores.find((score) =>
+        idsEqual(score.assessment_id, locals.assessment_id),
+      );
+      assert.isObject(score);
+      assert.equal(score.assessment_instance_id, '1');
     });
   });
 
