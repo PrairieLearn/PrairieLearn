@@ -132,6 +132,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
         }
     ).encode()
+
+    errors = data["format_errors"].get(drawing_name, []) if data["panel"] == "submission" else []
+
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         return chevron.render(
             template,
@@ -139,6 +142,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "uuid": pl.get_uuid(),
                 "name": drawing_name,
                 "metadata": base64.b64encode(content_bytes).decode(),
+                "errors": errors,
             },
         )
 

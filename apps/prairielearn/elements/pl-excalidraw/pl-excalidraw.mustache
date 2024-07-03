@@ -6,6 +6,11 @@
 </script>
 
 <div>
+    {{#errors}}
+    <div class="alert alert-danger" role="alert">
+        {{.}}
+    </div>
+    {{/errors}}
     <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}"/>
     <div class="excalidraw-root">
         <div id="excalidraw-{{uuid}}"></div>
