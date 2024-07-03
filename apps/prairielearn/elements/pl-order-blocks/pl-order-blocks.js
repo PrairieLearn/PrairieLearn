@@ -36,8 +36,9 @@ window.PLOrderBlocks = function (uuid, options) {
     }
 
     function handleKey(ev, block, handle) {
-      // TODO add comment explaining
-      // TODO use this for all the handlers
+      // this event listener is necessary to remove the "pl-order-blocks-selected" attribute when a block goes out of focus.
+      // however, in some browsers it fires immediately after the block is moved, causing it to lose its selected attribute.
+      // removing the listener here and adding it again later ensures that the block is moved properly and retains its selected attribute.
       block.removeEventListener('blur', removeSelectedAttribute);
       handle();
       ev.preventDefault();
@@ -48,10 +49,7 @@ window.PLOrderBlocks = function (uuid, options) {
     function handleKeyPress(ev) {
       if (!block.classList.contains('pl-order-blocks-selected')) {
         if (ev.key === 'Enter') {
-          block.removeEventListener('blur', removeSelectedAttribute);
-          block.classList.add('pl-order-blocks-selected');
-          ev.preventDefault();
-          block.addEventListener('blur', removeSelectedAttribute);
+          handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
         }
       } else {
         switch (ev.key) {
@@ -63,12 +61,11 @@ window.PLOrderBlocks = function (uuid, options) {
             });
             break;
           case 'ArrowUp':
-            block.removeEventListener('blur', removeSelectedAttribute);
-            if (block.previousElementSibling) {
-              block.previousElementSibling.insertAdjacentElement('beforebegin', block);
-            }
-            ev.preventDefault();
-            block.addEventListener('blur', removeSelectedAttribute);
+            handleKey(ev, block, () => {
+              if (block.previousElementSibling) {
+                block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+              }
+            });
             break;
           case 'Delete':
           case 'Backspace':
@@ -81,29 +78,26 @@ window.PLOrderBlocks = function (uuid, options) {
             });
             break;
           case 'Enter':
-            block.removeEventListener('blur', removeSelectedAttribute);
-            if (!inDropzone(block)) {
-              $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
-            }
-            ev.preventDefault();
-            block.addEventListener('blur', removeSelectedAttribute);
+            handleKey(ev, block, () => {
+              if (!inDropzone(block)) {
+                $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
+              }
+            });
             break;
           case 'Tab':
-            block.removeEventListener('blur', removeSelectedAttribute);
-            if (inDropzone(block) && enableIndentation) {
-              const currentIndent = getIndentation(block);
-              if (ev.shiftKey) {
-                setIndentation(block, currentIndent - 1);
-              } else {
-                setIndentation(block, currentIndent + 1);
+            handleKey(ev, block, () => {
+              if (inDropzone(block) && enableIndentation) {
+                const currentIndent = getIndentation(block);
+                if (ev.shiftKey) {
+                  setIndentation(block, currentIndent - 1);
+                } else {
+                  setIndentation(block, currentIndent + 1);
+                }
               }
-            }
-            ev.preventDefault();
-            block.addEventListener('blur', removeSelectedAttribute);
+            });
             break;
           case 'Escape':
-            removeSelectedAttribute();
-            ev.preventDefault();
+            handleKey(ev, block, removeSelectedAttribute);
             break;
         }
         block.focus();
