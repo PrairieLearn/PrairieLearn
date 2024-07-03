@@ -63,91 +63,7 @@ onDocumentReady(() => {
       $('button.edit-score').popover('hide');
     },
     onResetView() {
-      $('button.edit-score')
-        .popover({
-          sanitize: false,
-          placement: 'auto',
-          container: 'body',
-          html: true,
-          content(this: Element) {
-            const that = this as HTMLButtonElement;
-            const { assessmentInstanceId, score, otherUsers } = that.dataset;
-            const parsedOtherUsers: string[] | undefined = JSON.parse(otherUsers || '[]');
-            const form = parseHTMLElement<HTMLFormElement>(
-              document,
-              html`
-                <form name="edit-total-score-perc-form" method="POST">
-                  <input type="hidden" name="__action" value="edit_total_score_perc" />
-                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <input
-                    type="hidden"
-                    name="assessment_instance_id"
-                    value="${assessmentInstanceId}"
-                  />
-                  <div class="form-group">
-                    <div class="input-group">
-                      <input type="text" class="form-control" name="score_perc" value="${score}" />
-                      <div class="input-group-append"><span class="input-group-text">%</span></div>
-                    </div>
-                  </div>
-                  ${parsedOtherUsers?.length
-                    ? html`
-                        <div class="alert alert-info">
-                          <small>
-                            This is a group assessment. Updating this grade will also update grades
-                            for:
-                          </small>
-                          <ul>
-                            ${parsedOtherUsers.map(
-                              (uid: string) => html`<li><small>${uid}</small></li>`,
-                            )}
-                          </ul>
-                        </div>
-                      `
-                    : ''}
-                  <p>
-                    <small>
-                      This change will be overwritten if further questions are answered by the
-                      student.
-                    </small>
-                  </p>
-                  <button type="button" class="btn btn-secondary mr-2 js-popover-cancel-button">
-                    Cancel
-                  </button>
-                  <button type="submit" class="btn btn-primary">Change</button>
-                </form>
-              `,
-            );
-
-            form.querySelector('.js-popover-cancel-button')?.addEventListener('click', () => {
-              $(that).popover('hide');
-            });
-
-            form.addEventListener('submit', function (event) {
-              event.preventDefault();
-              fetch(form.action, {
-                method: 'POST',
-                body: new URLSearchParams(new FormData(form, event.submitter) as any),
-              }).then(async (response) => {
-                const data: AssessmentInstanceScoreResult[] = await response.json();
-                data.forEach((score) => {
-                  $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
-                    id: score.user_id,
-                    field: `score_${score.assessment_id}`,
-                    value: score.score_perc,
-                  });
-                });
-                $(that).popover('hide');
-              });
-            });
-            return form;
-          },
-          title: 'Change total percentage score',
-          trigger: 'click',
-        })
-        .on('show.bs.popover', function () {
-          $('button.edit-score').not(this).popover('hide');
-        });
+      setupEditScorePopovers(csrfToken);
       document
         .querySelectorAll<HTMLElement>('.spinning-wheel')
         .forEach((el) => (el.style.display = 'none'));
@@ -204,32 +120,30 @@ onDocumentReady(() => {
         sortable: true,
         sortOrder: 'desc',
         // TODO Better type for row
-        formatter: (score: number, row: GradebookRow) => {
+        formatter: (score: number | null, row: GradebookRow) => {
+          if (score == null) return '&mdash;';
+
           const { assessment_instance_id, uid_other_users_group } =
             row.scores.find((s) => s.assessment_id === assessment.assessment_id) ?? {};
-          if (score == null) {
-            return '&mdash;';
-          } else {
-            const editButton = hasCourseInstancePermissionEdit
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-xs btn-secondary edit-score ml-1"
-                    data-assessment-instance-id="${assessment_instance_id}"
-                    data-score="${score}"
-                    data-other-users="${JSON.stringify(uid_other_users_group ?? [])}"
-                  >
-                    <i class="bi-pencil-square" aria-hidden="true"></i>
-                  </button>
-                `
-              : '';
-            return html`
-              <a href="${urlPrefix}/assessment_instance/${assessment_instance_id}">
-                ${Math.floor(score)}%
-              </a>
-              ${editButton}
-            `.toString();
-          }
+          const editButton = hasCourseInstancePermissionEdit
+            ? html`
+                <button
+                  type="button"
+                  class="btn btn-xs btn-secondary edit-score ml-1"
+                  data-assessment-instance-id="${assessment_instance_id}"
+                  data-score="${score}"
+                  data-other-users="${JSON.stringify(uid_other_users_group ?? [])}"
+                >
+                  <i class="bi-pencil-square" aria-hidden="true"></i>
+                </button>
+              `
+            : '';
+          return html`
+            <a href="${urlPrefix}/assessment_instance/${assessment_instance_id}">
+              ${Math.floor(score)}%
+            </a>
+            ${editButton}
+          `.toString();
         },
       })),
     ],
@@ -252,3 +166,85 @@ onDocumentReady(() => {
     $($(e.currentTarget).data('target')).modal('show');
   });
 });
+
+function setupEditScorePopovers(csrfToken: string) {
+  $('button.edit-score')
+    .popover({
+      sanitize: false,
+      placement: 'auto',
+      container: 'body',
+      html: true,
+      content(this: Element) {
+        const popoverButton = this as HTMLButtonElement;
+        const { assessmentInstanceId, score, otherUsers } = popoverButton.dataset;
+        const parsedOtherUsers: string[] | undefined = JSON.parse(otherUsers || '[]');
+        const form = parseHTMLElement<HTMLFormElement>(
+          document,
+          html`
+            <form name="edit-total-score-perc-form" method="POST">
+              <input type="hidden" name="__action" value="edit_total_score_perc" />
+              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+              <input type="hidden" name="assessment_instance_id" value="${assessmentInstanceId}" />
+              <div class="form-group">
+                <div class="input-group">
+                  <input type="text" class="form-control" name="score_perc" value="${score}" />
+                  <div class="input-group-append"><span class="input-group-text">%</span></div>
+                </div>
+              </div>
+              ${parsedOtherUsers?.length
+                ? html`
+                    <div class="alert alert-info">
+                      <small>
+                        This is a group assessment. Updating this grade will also update grades for:
+                      </small>
+                      <ul>
+                        ${parsedOtherUsers.map(
+                          (uid: string) => html`<li><small>${uid}</small></li>`,
+                        )}
+                      </ul>
+                    </div>
+                  `
+                : ''}
+              <p>
+                <small>
+                  This change will be overwritten if further questions are answered by the student.
+                </small>
+              </p>
+              <button type="button" class="btn btn-secondary mr-2 js-popover-cancel-button">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">Change</button>
+            </form>
+          `,
+        );
+
+        form.querySelector('.js-popover-cancel-button')?.addEventListener('click', () => {
+          $(popoverButton).popover('hide');
+        });
+
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          fetch(form.action, {
+            method: 'POST',
+            body: new URLSearchParams(new FormData(form, event.submitter) as any),
+          }).then(async (response) => {
+            const data: AssessmentInstanceScoreResult[] = await response.json();
+            data.forEach((score) => {
+              $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
+                id: score.user_id,
+                field: `score_${score.assessment_id}`,
+                value: score.score_perc,
+              });
+            });
+            $(popoverButton).popover('hide');
+          });
+        });
+        return form;
+      },
+      title: 'Change total percentage score',
+      trigger: 'click',
+    })
+    .on('show.bs.popover', function () {
+      $('button.edit-score').not(this).popover('hide');
+    });
+}
