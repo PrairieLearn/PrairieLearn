@@ -68,12 +68,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, Attr.required(), Attr.optional())
 
     name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    assert name is not None
     pl.check_answers_names(data, name)
 
+    default_dir: str = SourceDirectory.default().value
+
     SourceDirectory.validate(
-        pl.get_string_attrib(
-            element, Attr.SOURCE_DIRECTORY.value, SourceDirectory.default().value
-        )
+        pl.get_string_attrib(element, Attr.SOURCE_DIRECTORY.value, default_dir)
     )
 
 
@@ -83,11 +84,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     initial_content: str = ""
 
     def load_file_content() -> str:
+        default_dir: str = SourceDirectory.default().value
         file_dir = SourceDirectory.as_runtime_path(
             pl.get_string_attrib(
                 element,
                 Attr.SOURCE_DIRECTORY.value,
-                SourceDirectory.default().value,
+                default_dir,
             )
         )
         file = Path(data["options"][file_dir]) / pl.get_string_attrib(
