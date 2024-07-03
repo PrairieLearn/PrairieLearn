@@ -133,7 +133,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
     ).encode()
 
-    errors = data["format_errors"].get(drawing_name, []) if data["panel"] == "submission" else []
+    errors = (
+        data["format_errors"].get(drawing_name, [])
+        if data["panel"] == "submission"
+        else []
+    )
 
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         return chevron.render(
