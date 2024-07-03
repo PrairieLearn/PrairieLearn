@@ -31,37 +31,39 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function initializeBlockEvents(block) {
-    block.addEventListener('click', () => {
-      block.focus();
-    });
+    function removeSelectedAttribute() {
+      block.classList.remove('pl-order-blocks-selected');
+    }
 
-    block.addEventListener('blur', () => {
-      if (block.classList.contains('pl-order-blocks-selected')) {
-        block.classList.remove('pl-order-blocks-selected');
-      }
-    });
-
-    block.addEventListener('keydown', (ev) => {
+    function handleKeyPress(ev) {
       if (!block.classList.contains('pl-order-blocks-selected')) {
         if (ev.key === 'Enter') {
+          block.removeEventListener('blur', removeSelectedAttribute);
           block.classList.add('pl-order-blocks-selected');
+          ev.preventDefault();
+          block.addEventListener('blur', removeSelectedAttribute);
         }
       } else {
         switch (ev.key) {
           case 'ArrowDown':
+            block.removeEventListener('blur', removeSelectedAttribute);
             if (block.nextElementSibling) {
               block.nextElementSibling.insertAdjacentElement('afterend', block);
             }
             ev.preventDefault();
+            block.addEventListener('blur', removeSelectedAttribute);
             break;
           case 'ArrowUp':
+            block.removeEventListener('blur', removeSelectedAttribute);
             if (block.previousElementSibling) {
               block.previousElementSibling.insertAdjacentElement('beforebegin', block);
             }
             ev.preventDefault();
+            block.addEventListener('blur', removeSelectedAttribute);
             break;
           case 'Delete':
           case 'Backspace':
+            block.removeEventListener('blur', removeSelectedAttribute);
             if (inDropzone(block)) {
               block.style.marginLeft = '0px';
               if (block.hasAttribute('data-distractor-bin')) {
@@ -79,14 +81,18 @@ window.PLOrderBlocks = function (uuid, options) {
               }
             }
             ev.preventDefault();
+            block.addEventListener('blur', removeSelectedAttribute);
             break;
           case 'Enter':
+            block.removeEventListener('blur', removeSelectedAttribute);
             if (!inDropzone(block)) {
               $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
             }
             ev.preventDefault();
+            block.addEventListener('blur', removeSelectedAttribute);
             break;
           case 'Tab':
+            block.removeEventListener('blur', removeSelectedAttribute);
             if (inDropzone(block) && enableIndentation) {
               let currentIndent = getIndentation(block);
               if (ev.shiftKey) {
@@ -96,17 +102,22 @@ window.PLOrderBlocks = function (uuid, options) {
               }
             }
             ev.preventDefault();
+            block.addEventListener('blur', removeSelectedAttribute);
             break;
           case 'Escape':
-            if (block.classList.contains('pl-order-blocks-selected')) {
-              block.classList.remove('pl-order-blocks-selected');
-            }
+            removeSelectedAttribute();
             ev.preventDefault();
             break;
         }
         block.focus();
       }
+    }
+
+    block.addEventListener('click', () => {
+      block.focus();
     });
+
+    block.addEventListener('keydown', (ev) => handleKeyPress(ev));
   }
 
   function setAnswer() {
