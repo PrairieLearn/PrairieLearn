@@ -43,7 +43,7 @@ router.get(
       const courseOwners = await getCourseOwners(res.locals.course.id);
       res
         .status(403)
-        .render(InstructorGradebook({ resLocals: res.locals, courseOwners, csvFilename }));
+        .send(InstructorGradebook({ resLocals: res.locals, courseOwners, csvFilename }));
       return;
     }
 
