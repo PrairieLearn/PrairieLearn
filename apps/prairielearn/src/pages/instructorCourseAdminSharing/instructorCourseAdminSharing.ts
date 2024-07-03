@@ -7,7 +7,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getCanonicalHost } from '../../lib/url.js';
 
-import { InstructorSharing } from './instructorCourseAdminSharing.html.js';
+import {
+  InstructorCourseAdminSharing,
+  SharingSetRowSchema,
+} from './instructorCourseAdminSharing.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -32,25 +35,10 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const sharingInfo = await sqldb.queryRow(
-      sql.get_course_sharing_info,
-      {
-        course_id: res.locals.course.id,
-      },
-      z.object({
-        sharing_name: z.string().nullable(),
-        sharing_token: z.string(),
-      }),
-    );
-
     const sharingSets = await sqldb.queryRows(
       sql.select_sharing_sets,
       { course_id: res.locals.course.id },
-      z.object({
-        name: z.string(),
-        id: z.string(),
-        shared_with: z.string().array(),
-      }),
+      SharingSetRowSchema,
     );
 
     const host = getCanonicalHost(req);
@@ -62,9 +50,9 @@ router.get(
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
     res.send(
-      InstructorSharing({
-        sharingName: sharingInfo.sharing_name,
-        sharingToken: sharingInfo.sharing_token,
+      InstructorCourseAdminSharing({
+        sharingName: res.locals.course.sharing_name,
+        sharingToken: res.locals.course.sharing_token,
         sharingSets,
         publicSharingLink,
         canChooseSharingName,
@@ -104,7 +92,7 @@ router.post(
         z.string().nullable(),
       );
       if (consuming_course_id === null) {
-        throw new error.HttpStatusError(400, 'Failed to Add Course to sharing set.');
+        throw new error.HttpStatusError(400, 'Failed to add course to sharing set.');
       }
     } else if (req.body.__action === 'choose_sharing_name') {
       if (

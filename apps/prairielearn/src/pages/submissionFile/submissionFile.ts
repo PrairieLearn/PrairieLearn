@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { isBinaryFile } from 'isbinaryfile';
@@ -16,11 +15,11 @@ const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
 /**
  * Guesses the mime type for a file based on its name and contents.
  *
- * @param {string} name The file's name
- * @param {Buffer} buffer The file's contents
- * @returns {Promise<string>} The guessed mime type
+ * @param name The file's name
+ * @param buffer The file's contents
+ * @returns The guessed mime type
  */
-async function guessMimeType(name, buffer) {
+async function guessMimeType(name: string, buffer: Buffer): Promise<string> {
   const mimeType = mime.getType(name);
   if (mimeType && MEDIA_PREFIXES.some((p) => mimeType.startsWith(p))) {
     return mimeType;
