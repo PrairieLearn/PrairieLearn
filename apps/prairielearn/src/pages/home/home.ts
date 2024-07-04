@@ -50,7 +50,7 @@ router.get(
       );
     }
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.[jt]s$/, '.ejs'), res.locals);
   }),
 );
 
