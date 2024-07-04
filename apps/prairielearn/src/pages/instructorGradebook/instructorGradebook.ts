@@ -74,8 +74,7 @@ router.get(
       { course_id: res.locals.course.id, course_instance_id: res.locals.course_instance.id },
       GradebookRowSchema,
     );
-
-    res.send(JSON.stringify(userScores));
+    res.json(userScores);
   }),
 );
 
@@ -140,7 +139,7 @@ router.post(
         { assessment_instance_id: req.body.assessment_instance_id },
         AssessmentInstanceScoreResultSchema,
       );
-      res.send(JSON.stringify(updatedScores));
+      res.json(updatedScores);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
