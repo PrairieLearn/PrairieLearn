@@ -557,15 +557,10 @@ describe('Instructor assessment editing', function () {
       );
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
-    it('should contain the correct score in the dev user row', function () {
-      assert.equal(
-        locals.gradebookDataRow[0][`score_${locals.assessment_id}`],
-        assessmentSetScorePerc,
-      );
-    });
-    it('should contain the correct assessment instance id in the dev user row', function () {
+    it('should contain the correct score and assessment instance ID in the dev user row', function () {
       const score = locals.gradebookDataRow[0].scores[locals.assessment_id];
       assert.isObject(score);
+      assert.equal(score.score_perc, assessmentSetScorePerc);
       assert.equal(score.assessment_instance_id, '1');
     });
   });
