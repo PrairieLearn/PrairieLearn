@@ -104,7 +104,7 @@ router.get(
           record.uin,
           record.user_name,
           record.role,
-          ...assessments.map((a) => record.scores[a.assessment_id].score_perc ?? null),
+          ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
         ],
       });
 
