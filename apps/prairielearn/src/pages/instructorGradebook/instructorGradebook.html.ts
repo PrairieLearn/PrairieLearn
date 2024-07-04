@@ -135,18 +135,18 @@ function RoleDescriptionModal() {
     body: html`
       <ul>
         <li>
-          <strong>Staff</strong> is a member of the course staff. They can see the data of all
-          users, and depending on course settings may have permission to edit the information of
-          other users.
+          <strong>Staff</strong> is a member of the course staff. Depending on course settings, they
+          may have permission to see the data of all users, and to edit the information of other
+          users.
         </li>
         <li>
           <strong>Student</strong> is a student participating in the class. They can only see their
           own information, and can do assessments.
         </li>
         <li>
-          <strong>None</strong> is a user who at one point added the course and later removed
-          themselves. They can no longer access the course but their work done within the course has
-          been retained.
+          <strong>None</strong> is a user who at one point was part of the course but is no longer
+          enrolled in the course or part of the staff. They can no longer access the course but
+          their work done within the course has been retained.
         </li>
       </ul>
     `,
