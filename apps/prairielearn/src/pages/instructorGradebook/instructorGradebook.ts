@@ -75,19 +75,7 @@ router.get(
       GradebookRowSchema,
     );
 
-    res.send(
-      JSON.stringify(
-        userScores.map((score) => ({
-          ...score,
-          ...Object.fromEntries(
-            Object.entries(score.scores).map(([assessment_id, { score_perc }]) => [
-              `score_${assessment_id}`,
-              score_perc,
-            ]),
-          ),
-        })),
-      ),
-    );
+    res.send(JSON.stringify(userScores));
   }),
 );
 
@@ -112,15 +100,13 @@ router.get(
       const stringifier = stringifyStream({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
-        transform: (record: GradebookRow) => {
-          return [
-            record.uid,
-            record.uin,
-            record.user_name,
-            record.role,
-            ...assessments.map((a) => record.scores[a.assessment_id].score_perc ?? null),
-          ];
-        },
+        transform: (record: GradebookRow) => [
+          record.uid,
+          record.uin,
+          record.user_name,
+          record.role,
+          ...assessments.map((a) => record.scores[a.assessment_id].score_perc ?? null),
+        ],
       });
 
       res.attachment(req.params.filename);

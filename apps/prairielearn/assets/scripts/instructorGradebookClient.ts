@@ -107,7 +107,7 @@ onDocumentReady(() => {
         sortOrder: 'desc',
       },
       ...courseAssessments.map((assessment) => ({
-        field: `score_${assessment.assessment_id}`,
+        field: `scores.${assessment.assessment_id}.score_perc`,
         title: html`
           <a
             href="${urlPrefix}/assessment/${assessment.assessment_id}"
@@ -231,7 +231,7 @@ function setupEditScorePopovers(csrfToken: string) {
             data.forEach((score) => {
               $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
                 id: score.user_id,
-                field: `score_${score.assessment_id}`,
+                field: `scores.${score.assessment_id}.score_perc`,
                 value: score.score_perc,
               });
             });
