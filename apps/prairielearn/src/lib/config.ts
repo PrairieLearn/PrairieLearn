@@ -62,6 +62,7 @@ const ConfigSchema = z.object({
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
+  homePageRedirectUrl: z.string().default('/pl/login'),
   assetsPrefix: z
     .string()
     .default('/assets')
