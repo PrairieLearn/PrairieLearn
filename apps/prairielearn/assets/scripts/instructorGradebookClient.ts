@@ -123,7 +123,7 @@ onDocumentReady(() => {
           if (score == null) return '&mdash;';
 
           const { assessment_instance_id, uid_other_users_group } =
-            row.scores.find((s) => s.assessment_id === assessment.assessment_id) ?? {};
+            row.scores[assessment.assessment_id] ?? {};
           const editButton = hasCourseInstancePermissionEdit
             ? html`
                 <button

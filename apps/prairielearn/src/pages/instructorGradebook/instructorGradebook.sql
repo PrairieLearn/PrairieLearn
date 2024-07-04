@@ -146,23 +146,16 @@ SELECT
   uin,
   user_name,
   role,
-  ARRAY_AGG(
+  JSONB_OBJECT_AGG(
+    assessment_id,
     json_build_object(
       'score_perc',
       score_perc,
-      'assessment_id',
-      assessment_id,
       'assessment_instance_id',
       assessment_instance_id,
       'uid_other_users_group',
       uid_other_users_group
     )
-    ORDER BY
-      (
-        assessment_set_number,
-        assessment_order_by,
-        assessment_id
-      )
   ) AS scores
 FROM
   scores

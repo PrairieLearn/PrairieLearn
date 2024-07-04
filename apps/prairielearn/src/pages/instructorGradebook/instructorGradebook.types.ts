@@ -38,13 +38,13 @@ export const GradebookRowSchema = z.object({
   uin: UserSchema.shape.uin,
   user_name: UserSchema.shape.name,
   role: z.enum(['Staff', 'Student', 'None']),
-  scores: z
-    .object({
+  scores: z.record(
+    AssessmentSchema.shape.id,
+    z.object({
       score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
-      assessment_id: AssessmentInstanceSchema.shape.assessment_id,
       assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
       uid_other_users_group: UserSchema.shape.uid.array(),
-    })
-    .array(),
+    }),
+  ),
 });
 export type GradebookRow = z.infer<typeof GradebookRowSchema>;

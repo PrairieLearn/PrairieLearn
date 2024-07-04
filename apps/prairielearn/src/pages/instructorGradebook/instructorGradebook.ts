@@ -80,7 +80,10 @@ router.get(
         userScores.map((score) => ({
           ...score,
           ...Object.fromEntries(
-            score.scores.map((s) => [`score_${s.assessment_id}`, s.score_perc]),
+            Object.entries(score.scores).map(([assessment_id, { score_perc }]) => [
+              `score_${assessment_id}`,
+              score_perc,
+            ]),
           ),
         })),
       ),
@@ -109,13 +112,15 @@ router.get(
       const stringifier = stringifyStream({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
-        transform: (record: GradebookRow) => [
-          record.uid,
-          record.uin,
-          record.user_name,
-          record.role,
-          ...record.scores.map((s) => s.score_perc),
-        ],
+        transform: (record: GradebookRow) => {
+          return [
+            record.uid,
+            record.uin,
+            record.user_name,
+            record.role,
+            ...assessments.map((a) => record.scores[a.assessment_id].score_perc ?? null),
+          ];
+        },
       });
 
       res.attachment(req.params.filename);
