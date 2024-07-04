@@ -82,9 +82,7 @@ router.post(
         res,
         ['pl_requested_course_role', 'pl2_requested_course_role'],
         req.body.pl_requested_course_role,
-        {
-          maxAge: 60 * 60 * 1000,
-        },
+        { maxAge: 60 * 60 * 1000 },
       );
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
@@ -93,9 +91,7 @@ router.post(
         res,
         ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role'],
         req.body.pl_requested_course_instance_role,
-        {
-          maxAge: 60 * 60 * 1000,
-        },
+        { maxAge: 60 * 60 * 1000 },
       );
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
