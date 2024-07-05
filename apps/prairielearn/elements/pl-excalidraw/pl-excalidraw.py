@@ -8,7 +8,6 @@ import prairielearn as pl
 from lxml.html import HtmlElement
 from typing_extensions import assert_never
 
-
 ATTR_ANSWER_NAME = "answers-name"
 ATTR_WIDTH = "width"
 ATTR_HEIGHT = "height"
@@ -28,7 +27,12 @@ SOURCE_DIRECTORY_MAP = {
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attrs = [ATTR_ANSWER_NAME]
-    optional_attrs = [ATTR_WIDTH, ATTR_HEIGHT, ATTR_SOURCE_FILE_NAME, ATTR_SOURCE_DIRECTORY]
+    optional_attrs = [
+        ATTR_WIDTH,
+        ATTR_HEIGHT,
+        ATTR_SOURCE_FILE_NAME,
+        ATTR_SOURCE_DIRECTORY,
+    ]
     pl.check_attribs(element, required_attrs, optional_attrs)
 
     name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
@@ -40,7 +44,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
-    file_dir = SOURCE_DIRECTORY_MAP[pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")]
+    file_dir = SOURCE_DIRECTORY_MAP[
+        pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
+    ]
     file = Path(data["options"][file_dir]) / pl.get_string_attrib(
         element, ATTR_SOURCE_FILE_NAME
     )
