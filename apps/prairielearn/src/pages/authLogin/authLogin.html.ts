@@ -134,9 +134,9 @@ function LoginPageContainer({
           ? html`
               <footer class="footer small font-weight-light text-light text-center">
                 <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}"
-                    >${config.homepageFooterText}</a
-                  >
+                  <a class="text-light" href="${config.homepageFooterTextHref}">
+                    ${config.homepageFooterText}
+                  </a>
                 </div>
               </footer>
             `
