@@ -707,6 +707,14 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const QuestionGenerationContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  doc_text: z.string(),
+  doc_path: z.string(),
+  embedding: z.string(),
+  chunk_id: z.string(),
+});
+
 export const QuestionSchema = z.object({
   client_files: z.array(z.string()).nullable(),
   course_id: IdSchema,

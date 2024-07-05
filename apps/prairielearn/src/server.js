@@ -1317,7 +1317,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'questions';
       next();
     },
-    (await import('./pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
+    (await import('./ee/pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
@@ -1853,7 +1853,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'questions';
       next();
     },
-    (await import('./pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
+    (await import('./ee/pages/instructorLlmGenerateQuestion/instructorLlmGenerateQuestion.js'))
       .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [

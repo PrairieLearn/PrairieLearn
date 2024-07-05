@@ -9,16 +9,6 @@ SET
   doc_text = EXCLUDED.doc_text,
   embedding = EXCLUDED.embedding;
 
--- BLOCK select_nearby_documents
-SELECT
-  *
-FROM
-  question_generation_context_embeddings
-ORDER BY
-  embedding <=> $embedding
-LIMIT
-  $limit;
-
 -- BLOCK check_doc_chunk_exists
 SELECT
   *
