@@ -36,11 +36,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attrs, optional_attrs)
 
     name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
-    assert name is not None
     pl.check_answers_names(data, name)
 
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
-    assert source_dir in SOURCE_DIRECTORY_MAP
+    if source_dir not in SOURCE_DIRECTORY_MAP:
+        raise RuntimeError(
+            f"{source_dir=} has to be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
+        )
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
