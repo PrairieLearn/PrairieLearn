@@ -1,6 +1,5 @@
 import base64
 import json
-from enum import Enum
 from pathlib import Path
 
 import chevron
@@ -10,86 +9,40 @@ from lxml.html import HtmlElement
 from typing_extensions import assert_never
 
 
-class Attr(Enum):
-    ANSWER_NAME = "answers-name"
-    WIDTH = "width"
-    HEIGHT = "height"
-    SOURCE_FILE_NAME = "source-file-name"
-    SOURCE_DIRECTORY = "directory"
-
-    @staticmethod
-    def required():
-        return [Attr.ANSWER_NAME.value]
-
-    @staticmethod
-    def optional():
-        return [
-            Attr.WIDTH.value,
-            Attr.HEIGHT.value,
-            Attr.SOURCE_FILE_NAME.value,
-            Attr.SOURCE_DIRECTORY.value,
-        ]
+ATTR_ANSWER_NAME = "answers-name"
+ATTR_WIDTH = "width"
+ATTR_HEIGHT = "height"
+ATTR_SOURCE_FILE_NAME = "source-file-name"
+ATTR_SOURCE_DIRECTORY = "directory"
 
 
-class SourceDirectory(Enum):
-    SERVER_FILES_COURSE = "serverFilesCourse"
-    CLIENT_FILES_COURSE = "clientFilesCourse"
-    CLIENT_FILES_QUESTION = "clientFilesQuestion"
-    COURSE_EXTENSIONS = "courseExtensions"
-    CURRENT_DIR = "."
-
-    @staticmethod
-    def validate(name: str):
-        if not any([name in e.value for e in SourceDirectory]):
-            raise RuntimeError(f"Unknown source directory: {name}")
-
-    @staticmethod
-    def default():
-        return SourceDirectory.CURRENT_DIR
-
-    @staticmethod
-    def as_runtime_path(s: str):
-        match SourceDirectory(s):
-            case SourceDirectory.SERVER_FILES_COURSE:
-                return "server_files_course_path"
-            case SourceDirectory.CLIENT_FILES_COURSE:
-                return "client_files_course_path"
-            case SourceDirectory.CURRENT_DIR:
-                return "question_path"
-            case SourceDirectory.CLIENT_FILES_QUESTION:
-                return "client_files_question_path"
-            case SourceDirectory.COURSE_EXTENSIONS:
-                return "course_extensions_path"
-            case item:
-                assert_never(item)
+SOURCE_DIRECTORY_MAP = {
+    "serverFilesCourse": "server_files_course_path",
+    "clientFilesCourse": "client_files_course_path",
+    "clientFilesQuestion": "client_files_question_path",
+    "courseExtensions": "course_extensions_path",
+    ".": "question_path",
+}
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, Attr.required(), Attr.optional())
+    required_attrs = [ATTR_ANSWER_NAME]
+    optional_attrs = [ATTR_WIDTH, ATTR_HEIGHT, ATTR_SOURCE_FILE_NAME, ATTR_SOURCE_DIRECTORY]
+    pl.check_attribs(element, required_attrs, optional_attrs)
 
-    name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
     assert name is not None
     pl.check_answers_names(data, name)
 
-    default_dir: str = SourceDirectory.default().value
-
-    SourceDirectory.validate(
-        pl.get_string_attrib(element, Attr.SOURCE_DIRECTORY.value, default_dir)
-    )
+    source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
+    assert source_dir in SOURCE_DIRECTORY_MAP
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
-    default_dir: str = SourceDirectory.default().value
-    file_dir = SourceDirectory.as_runtime_path(
-        pl.get_string_attrib(
-            element,
-            Attr.SOURCE_DIRECTORY.value,
-            default_dir,
-        )
-    )
+    file_dir = SOURCE_DIRECTORY_MAP[pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")]
     file = Path(data["options"][file_dir]) / pl.get_string_attrib(
-        element, Attr.SOURCE_FILE_NAME.value
+        element, ATTR_SOURCE_FILE_NAME
     )
     if not file.exists():
         raise RuntimeError(f"Unknown file path: {file}")
@@ -98,13 +51,13 @@ def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
     initial_content: str = ""
 
     match data["panel"]:
         case "answer":
             # Answer must have a file attribute
-            if not pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
+            if not pl.has_attrib(element, ATTR_SOURCE_FILE_NAME):
                 raise RuntimeError(
                     f"Answer drawing '{drawing_name}' does not have a `file` argument"
                 )
@@ -116,7 +69,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     data["submitted_answers"].get(drawing_name) or initial_content
                 )
             # Next, try using the file attribute to load the starter diagram
-            elif pl.has_attrib(element, Attr.SOURCE_FILE_NAME.value):
+            elif pl.has_attrib(element, ATTR_SOURCE_FILE_NAME):
                 initial_content = load_file_content(element, data)
             # Finally, give up and mark it as empty
             else:
@@ -132,8 +85,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         {
             "read_only": data["panel"] != "question" or not data["editable"],
             "initial_content": initial_content,
-            "width": pl.get_string_attrib(element, Attr.WIDTH.value, "100%"),
-            "height": pl.get_string_attrib(element, Attr.HEIGHT.value, "800px"),
+            "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
+            "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
         }
     ).encode()
 
@@ -157,7 +110,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, Attr.ANSWER_NAME.value)
+    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
 
     try:
         # Only check submissions if present. When one makes a submission using pl-excalidraw,
