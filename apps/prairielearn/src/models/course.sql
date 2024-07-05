@@ -76,3 +76,37 @@ SELECT
   *
 FROM
   inserted_course;
+
+-- BLOCK delete_course
+WITH
+  updated_row AS (
+    UPDATE pl_courses AS c
+    SET
+      deleted_at = current_timestamp
+    WHERE
+      id = $course_id
+    RETURNING
+      *
+  ),
+  audit_log AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        table_name,
+        row_id,
+        action,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      'pl_courses',
+      c.id,
+      'soft_delete',
+      to_jsonb(c)
+    FROM
+      updated_row AS c
+  )
+SELECT
+  *
+FROM
+  updated_row;
