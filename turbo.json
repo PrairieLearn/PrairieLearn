@@ -1,4 +1,5 @@
 {
+  "globalEnv": ["HOST_JOBS_DIR", "JOBS_DIR"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
