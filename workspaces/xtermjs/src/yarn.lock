@@ -108,14 +108,14 @@ command-line-args@^5.2.1:
     lodash.camelcase "^4.3.0"
     typical "^4.0.0"
 
-command-line-usage@^7.0.0, command-line-usage@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/command-line-usage/-/command-line-usage-7.0.1.tgz#e540afef4a4f3bc501b124ffde33956309100655"
-  integrity sha512-NCyznE//MuTjwi3y84QVUGEOT+P5oto1e1Pk/jFPVdPPfsG03qpTIl3yw6etR+v73d0lXsoojRpvbru2sqePxQ==
+command-line-usage@^7.0.0, command-line-usage@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/command-line-usage/-/command-line-usage-7.0.2.tgz#16ea461dca216a7afd3ef8de41f526227cf46572"
+  integrity sha512-MwNFB8nxi3IVnzir+nkSIbDTU4H6ne26zqicO2eTt1wPrvdOAphPhnYqWOjxXKWYLNYDu4Z/r2ESEziEqKuOVg==
   dependencies:
     array-back "^6.2.2"
     chalk-template "^0.4.0"
-    table-layout "^3.0.0"
+    table-layout "^3.0.2"
     typical "^7.1.1"
 
 content-disposition@0.5.4:
@@ -507,7 +507,7 @@ supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-table-layout@^3.0.0:
+table-layout@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/table-layout/-/table-layout-3.0.2.tgz#69c2be44388a5139b48c59cf21e73b488021769a"
   integrity sha512-rpyNZYRw+/C+dYkcQ3Pr+rLxW4CfHpXjPDnG7lYhdRoUcZTUt+KEsX+94RGp/aVp/MQU35JCITv2T/beY4m+hw==
