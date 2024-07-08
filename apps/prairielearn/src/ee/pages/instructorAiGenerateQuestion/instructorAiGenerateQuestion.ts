@@ -72,7 +72,7 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
 
 router.use(
   asyncHandler(async (req, res, next) => {
-    if (!(await features.enabledFromLocals('llm-question-generation', res.locals))) {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
 
