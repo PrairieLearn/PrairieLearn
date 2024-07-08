@@ -27,6 +27,7 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
 
   return embedding.data[0].embedding;
 }
+
 export async function insertDocumentChunk(
   client: OpenAI,
   filepath: string,
