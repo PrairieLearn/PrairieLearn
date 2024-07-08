@@ -234,8 +234,8 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/grading_job/:job_id',
 
   // TODO: create a test course with AI generation feature flag enabled to test page
-  '/pl/course_instance/:course_instance_id/instructor/ai-generate-question',
-  '/pl/course/:course_id/ai-generate-question',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
+  '/pl/course/:course_id/ai_generate_question',
 ];
 
 function shouldSkipPath(path) {

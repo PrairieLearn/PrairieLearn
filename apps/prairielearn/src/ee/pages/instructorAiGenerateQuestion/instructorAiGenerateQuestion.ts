@@ -60,7 +60,7 @@ router.post(
     if (req.body.__action === 'generate_question') {
       const jobSequenceId = await generateQuestion(
         client,
-        res.locals.course ? res.locals.course_id : undefined,
+        res.locals.course ? res.locals.course.id : undefined,
         res.locals.authn_user.user_id,
         req.body.prompt,
       );
