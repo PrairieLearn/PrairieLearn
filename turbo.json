@@ -1,16 +1,17 @@
 {
-  "globalEnv": ["HOST_JOBS_DIR", "JOBS_DIR"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "public/build/**"]
     },
     "test": {
-      "outputs": []
+      "outputs": [],
+      "passThroughEnv": ["*"]
     },
     "test:dist": {
       "dependsOn": ["build"],
-      "outputs": []
+      "outputs": [],
+      "passThroughEnv": ["*"]
     }
   }
 }
