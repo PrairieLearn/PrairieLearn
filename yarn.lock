@@ -3283,7 +3283,7 @@ __metadata:
     uuid: "npm:^10.0.0"
     vfile: "npm:^6.0.1"
     winston: "npm:^3.13.0"
-    xml-formatter: "npm:^3.6.2"
+    xml-formatter: "npm:^3.6.3"
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.23.8"
@@ -16095,12 +16095,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xml-formatter@npm:^3.6.2":
-  version: 3.6.2
-  resolution: "xml-formatter@npm:3.6.2"
+"xml-formatter@npm:^3.6.3":
+  version: 3.6.3
+  resolution: "xml-formatter@npm:3.6.3"
   dependencies:
-    xml-parser-xo: "npm:^4.1.0"
-  checksum: 10c0/b50f085c935d0cb23e5f39cba39a1e22c511d2a247e960d7c6976236ad5bb9355f090adaa5416b074a8769493f03daf610cc0f121e5bfe85ced052401dbd14c5
+    xml-parser-xo: "npm:^4.1.2"
+  checksum: 10c0/0c2d2417e694c6706153fca75a3c696d428c5ceb4a5ae90808868a49784cd5ff9714d174acfa4e0ce61e45e2d7cc2df49c19868cf1cf6137e1f7d210ee265b5c
   languageName: node
   linkType: hard
 
@@ -16111,10 +16111,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xml-parser-xo@npm:^4.1.0":
-  version: 4.1.1
-  resolution: "xml-parser-xo@npm:4.1.1"
-  checksum: 10c0/e14ae3820a6a34f309f8126c44e57d82429eca18770ee25f9b7845bf991a5ebc2071d25d2472e418c9a399abf713ec0a1ecbefc608b933e431245e19036c73bc
+"xml-parser-xo@npm:^4.1.2":
+  version: 4.1.2
+  resolution: "xml-parser-xo@npm:4.1.2"
+  checksum: 10c0/7929b0c65c9a92f3d831d0fb0c7164fa23a8721655e79f9b26168a5835f84a281e6c41caa768d8ada5a0ad858933432aad87347b6379f330e4d3f1443a50e012
   languageName: node
   linkType: hard
 
