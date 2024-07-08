@@ -6,10 +6,10 @@ export function AIGeneratePage({ resLocals }: { resLocals: Record<string, any> }
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           navPage: 'course_admin',
           ...resLocals,
         })}
