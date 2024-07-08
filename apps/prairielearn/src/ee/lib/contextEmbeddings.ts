@@ -1,16 +1,16 @@
-import { OpenAI } from 'openai';
+import * as path from 'path';
+
 import fs from 'fs-extra';
 import klaw from 'klaw';
+import { OpenAI } from 'openai';
 
 import { loadSqlEquiv, queryRows, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
-import * as path from "path";
-import { REPOSITORY_ROOT_PATH } from "../../../lib/paths.js";
-
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -57,7 +57,7 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
  * @param filepath the filepath of the document to add
  * @param doc the document chunk to add
  * @param job the server job calling this
- * @param openAiUser the openAI userstring requesting the adding of the document chunk 
+ * @param openAiUser the openAI userstring requesting the adding of the document chunk
  * @returns none
  */
 export async function insertDocumentChunk(
@@ -94,7 +94,7 @@ export async function insertDocumentChunk(
 
 /**
  * Creates a job to synchronize predefined context (example course questions + element docs) with the vectorstore
- * @param client the openAI client to use 
+ * @param client the openAI client to use
  * @param authnUserId the openAI userstring of the user requesting the sync
  * @returns the job ID of the synchronization job
  */
@@ -107,7 +107,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
   serverJob.executeInBackground(async (job) => {
     const templateQuestionsPath = path.join(
       REPOSITORY_ROOT_PATH,
-      'exampleCourse/questions/template'
+      'exampleCourse/questions/template',
     );
     for await (const file of klaw(templateQuestionsPath)) {
       if (file.stats.isDirectory()) continue;
@@ -121,7 +121,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
         file.path,
         { text: fileText, chunkId: '' },
         job,
-        openAiUserFromAuthn(authnUserId)
+        openAiUserFromAuthn(authnUserId),
       );
     }
 
@@ -129,7 +129,13 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
     const files = await buildContextForElementDocs(fileText);
     for (const doc of files) {
-      await insertDocumentChunk(client, elementDocsPath, doc, job, openAiUserFromAuthn(authnUserId));
+      await insertDocumentChunk(
+        client,
+        elementDocsPath,
+        doc,
+        job,
+        openAiUserFromAuthn(authnUserId),
+      );
     }
   });
   return serverJob.jobSequenceId;

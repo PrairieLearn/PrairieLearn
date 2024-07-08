@@ -1,4 +1,3 @@
-
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
@@ -8,9 +7,9 @@ import * as error from '@prairielearn/error';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
 
 import { AiGeneratePage } from './instructorAiGenerateQuestion.html.js';
-import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
 
 const router = express.Router();
 
@@ -59,7 +58,12 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
-      const jobSequenceId = await generateQuestion(client, res.locals.course? res.locals.course_id : undefined, res.locals.authn_user.user_id, req.body.prompt);
+      const jobSequenceId = await generateQuestion(
+        client,
+        res.locals.course ? res.locals.course_id : undefined,
+        res.locals.authn_user.user_id,
+        req.body.prompt,
+      );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents') {
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);

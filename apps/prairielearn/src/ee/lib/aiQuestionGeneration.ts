@@ -24,7 +24,7 @@ export async function generateQuestion(
   prompt: string,
 ) {
   const serverJob = await createServerJob({
-    courseId: courseId,
+    courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
   });
