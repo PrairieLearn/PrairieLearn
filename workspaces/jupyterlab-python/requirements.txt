@@ -21,7 +21,7 @@ pyarrow==16.1.0
 pygraphviz==1.13
 requests==2.32.3
 scikit-image==0.24.0
-scikit-learn==1.5.0
+scikit-learn==1.5.1
 scipy==1.14.0
 seaborn==0.13.2
 sympy==1.12.1
