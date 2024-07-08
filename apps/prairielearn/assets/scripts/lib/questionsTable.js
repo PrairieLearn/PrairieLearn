@@ -206,7 +206,7 @@ onDocumentReady(() => {
   if (showAiGenerateQuestionButton) {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/ai-generate-question">
+        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
           <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
           Generate Question with AI
         </a>
