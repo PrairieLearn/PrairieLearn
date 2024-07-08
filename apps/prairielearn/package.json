@@ -104,7 +104,7 @@
     "generic-pool": "^3.9.0",
     "google-auth-library": "^9.11.0",
     "he": "^1.2.0",
-    "highlight.js": "^11.9.0",
+    "highlight.js": "^11.10.0",
     "htmx.org": "^1.9.12",
     "http-proxy-middleware": "^2.0.6",
     "http-status": "^1.7.4",
