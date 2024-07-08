@@ -22,7 +22,7 @@
     "chai": "^5.1.1",
     "mocha": "^10.5.2",
     "tsx": "^4.15.8",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.3"
   },
   "dependencies": {
     "lodash": "^4.17.21"

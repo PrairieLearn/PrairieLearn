@@ -15,7 +15,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^20.14.9",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.3"
   },
   "dependencies": {
     "@smithy/property-provider": "^3.1.3",
