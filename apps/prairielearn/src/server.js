@@ -1848,7 +1848,7 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/ai-generate-question', [
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
       next();
