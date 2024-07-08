@@ -1317,7 +1317,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'questions';
       next();
     },
-    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js)
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
