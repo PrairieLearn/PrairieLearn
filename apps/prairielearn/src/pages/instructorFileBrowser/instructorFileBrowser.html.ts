@@ -109,7 +109,7 @@ export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string,
                                       ${dir.name}
                                     </a>
                                   `
-                                : html` <span>${dir.name}</span> `}
+                                : html`<span>${dir.name}</span>`}
                             `,
                           ),
                           html`<span class="mx-2">/</span>`,
@@ -162,8 +162,7 @@ function FileBrowserActions({
       data-placement="auto"
       title="Upload file"
       data-content="${escapeHtml(FileUploadForm({ file: file_browser.file, csrfToken }))}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
+      data-trigger="click"
       ${file_browser.file.canUpload ? '' : 'disabled'}
     >
       <i class="fa fa-arrow-up"></i>
@@ -189,8 +188,7 @@ function FileBrowserActions({
       data-content="${escapeHtml(
         FileRenameForm({ file: file_browser.file, csrfToken, isViewingFile: true }),
       )}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
+      data-trigger="click"
       ${file_browser.file.canRename ? '' : 'disabled'}
     >
       <i class="fa fa-i-cursor"></i>
@@ -206,8 +204,7 @@ function FileBrowserActions({
       data-placement="auto"
       title="Confirm delete"
       data-content="${escapeHtml(FileDeleteForm({ file: file_browser.file, csrfToken }))}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
+      data-trigger="click"
       ${file_browser.file.canDelete ? '' : 'disabled'}
     >
       <i class="far fa-trash-alt"></i>
@@ -242,8 +239,7 @@ function DirectoryBrowserActions({
             }),
           )}
           "
-          data-trigger="manual"
-          onclick="$(this).popover('show')"
+          data-trigger="click"
         >
           <i class="fa fa-plus"></i>
           <span>Add new ${d.label.toLowerCase()} file</span>
@@ -265,8 +261,7 @@ function DirectoryBrowserActions({
           csrfToken,
         }),
       )}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
+      data-trigger="click"
     >
       <i class="fa fa-plus"></i>
       <span>Add new file</span>
@@ -377,8 +372,7 @@ function DirectoryBrowserBody({
                   title="Upload file"
                   data-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                  data-trigger="manual"
-                  onclick="$(this).popover('show')"
+                  data-trigger="click"
                   ${f.canUpload ? '' : 'disabled'}
                 >
                   <i class="fa fa-arrow-up"></i>
@@ -404,8 +398,7 @@ function DirectoryBrowserBody({
                   data-content="${escapeHtml(
                     FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                   )}"
-                  data-trigger="manual"
-                  onclick="$(this).popover('show')"
+                  data-trigger="click"
                   ${f.canRename ? '' : 'disabled'}
                 >
                   <i class="fa fa-i-cursor"></i>
@@ -421,8 +414,7 @@ function DirectoryBrowserBody({
                   data-placement="auto"
                   title="Confirm delete"
                   data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                  data-trigger="manual"
-                  onclick="$(this).popover('show')"
+                  data-trigger="click"
                   ${f.canDelete ? '' : 'disabled'}
                 >
                   <i class="far fa-trash-alt"></i>
@@ -541,7 +533,7 @@ function FileRenameForm({
       <input type="hidden" name="__action" value="rename_file" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="working_path" value="${file.dir}" />
-      ${isViewingFile ? html` <input type="hidden" name="was_viewing_file" value="true" /> ` : ''}
+      ${isViewingFile ? html`<input type="hidden" name="was_viewing_file" value="true" />` : ''}
       <input type="hidden" name="old_file_name" value="${file.name}" />
       <div class="container p-0 mb-4">
         Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is
@@ -550,11 +542,11 @@ function FileRenameForm({
         "<code>..</code>".
       </div>
       <div class="form-group">
-        <label for="renameFileInput">Path:</label>
+        <label for="renameFileInput${file.id}">Path:</label>
         <input
           type="text"
           class="form-control js-rename-input"
-          id="renameFileInput"
+          id="renameFileInput${file.id}"
           name="new_file_name"
           value="${file.name}"
           data-original-value="${file.name}"
