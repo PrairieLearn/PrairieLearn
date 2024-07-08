@@ -2675,7 +2675,7 @@ __metadata:
     node-fetch: "npm:^3.3.2"
     pretty-bytes: "npm:^6.1.1"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   bin:
     compiled-assets: dist/cli.js
@@ -2700,7 +2700,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     mocha: "npm:^10.5.2"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     zod: "npm:^3.23.8"
   languageName: unknown
@@ -2720,7 +2720,7 @@ __metadata:
     mocha: "npm:^10.5.2"
     multipipe: "npm:^4.0.0"
     stream-transform: "npm:^3.3.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2738,7 +2738,7 @@ __metadata:
     chai: "npm:^5.1.1"
     date-fns: "npm:^3.6.0"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2755,7 +2755,7 @@ __metadata:
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2790,7 +2790,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2805,7 +2805,7 @@ __metadata:
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2846,7 +2846,7 @@ __metadata:
     nodemon: "npm:^3.1.4"
     sinon: "npm:^18.0.0"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     typescript-cp: "npm:^0.1.9"
     winston: "npm:^3.13.0"
@@ -2867,7 +2867,7 @@ __metadata:
     chai: "npm:^5.1.1"
     ejs: "npm:^3.1.10"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2881,7 +2881,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2918,7 +2918,7 @@ __metadata:
     mocha: "npm:^10.5.2"
     serialize-error: "npm:^11.0.3"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     typescript-cp: "npm:^0.1.9"
     zod: "npm:^3.23.8"
@@ -2972,7 +2972,7 @@ __metadata:
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -2988,7 +2988,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -3039,7 +3039,7 @@ __metadata:
     pg-cursor: "npm:^2.11.0"
     pg-pool: "npm:^3.6.2"
     pg-protocol: "npm:^1.6.1"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     zod: "npm:^3.23.8"
   languageName: unknown
@@ -3273,7 +3273,7 @@ __metadata:
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
     tmp-promise: "npm:^3.0.3"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     typescript-cp: "npm:^0.1.9"
     tzientist: "npm:^3.2.0"
@@ -3311,7 +3311,7 @@ __metadata:
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.5.2"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -3324,7 +3324,7 @@ __metadata:
     "@sentry/node": "npm:^7.118.0"
     "@types/node": "npm:^20.14.9"
     execa: "npm:^9.3.0"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
   languageName: unknown
   linkType: soft
@@ -3356,7 +3356,7 @@ __metadata:
     on-headers: "npm:^1.0.2"
     set-cookie-parser: "npm:^2.6.0"
     source-map-support: "npm:^0.5.21"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     uid-safe: "npm:^2.1.5"
   languageName: unknown
@@ -3416,7 +3416,7 @@ __metadata:
     mocha: "npm:^10.5.2"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.4"
-    tsx: "npm:^4.15.8"
+    tsx: "npm:^4.16.2"
     typescript: "npm:^5.5.2"
     typescript-cp: "npm:^0.1.9"
     uuid: "npm:^10.0.0"
@@ -8232,7 +8232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.21.5, esbuild@npm:~0.21.4":
+"esbuild@npm:^0.21.5, esbuild@npm:~0.21.5":
   version: 0.21.5
   resolution: "esbuild@npm:0.21.5"
   dependencies:
@@ -15223,11 +15223,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.15.8":
-  version: 4.15.8
-  resolution: "tsx@npm:4.15.8"
+"tsx@npm:^4.16.2":
+  version: 4.16.2
+  resolution: "tsx@npm:4.16.2"
   dependencies:
-    esbuild: "npm:~0.21.4"
+    esbuild: "npm:~0.21.5"
     fsevents: "npm:~2.3.3"
     get-tsconfig: "npm:^4.7.5"
   dependenciesMeta:
@@ -15235,7 +15235,7 @@ __metadata:
       optional: true
   bin:
     tsx: dist/cli.mjs
-  checksum: 10c0/2e4e077e05e9ec324246f30be0b61e85c5a9c61e4dca160eec542eee410cc0fbcccf26f4d529a8d977d470dd0e13f6897cee5d5ebc3cbf6c2cdfbc5e4033b26c
+  checksum: 10c0/9df52264f88be00ca473e7d7eda43bb038cc09028514996b864db78645e9cd297c71485f0fdd4985464d6dc46424f8bef9f8c4bd56692c4fcf4d71621ae21763
   languageName: node
   linkType: hard
 

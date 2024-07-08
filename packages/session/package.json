@@ -40,7 +40,7 @@
     "node-fetch": "^3.3.2",
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.15.8",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.2"
   },
   "c8": {
