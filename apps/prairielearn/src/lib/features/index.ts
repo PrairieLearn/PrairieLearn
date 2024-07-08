@@ -8,7 +8,7 @@ const featureNames = [
   'question-sharing',
   'bot-grading',
   'disable-public-workspaces',
-  'ai-question-generation',
+  'llm-question-generation',
   // Can only be applied to institutions.
   'lti13',
   'terms-clickthrough',
