@@ -393,6 +393,17 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
+export const CourseInstanceAccessRuleSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  uids: z.string().array().nullable(),
+});
+export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
