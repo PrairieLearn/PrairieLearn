@@ -36,7 +36,7 @@
     "chai": "^5.1.1",
     "express": "^4.19.2",
     "fetch-cookie": "^3.0.1",
-    "mocha": "^10.5.2",
+    "mocha": "^10.6.0",
     "node-fetch": "^3.3.2",
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
