@@ -146,7 +146,7 @@
     "popper.js": "^1.16.1",
     "postgres-interval": "^4.0.2",
     "qrcode-svg": "^1.1.0",
-    "qs": "^6.12.1",
+    "qs": "^6.12.2",
     "quill": "^2.0.2",
     "quilljs-markdown": "^1.2.0",
     "rehype-raw": "^7.0.0",
