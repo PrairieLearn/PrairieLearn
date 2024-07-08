@@ -96,7 +96,7 @@ export async function insertDocumentChunk(
  * Creates a job to synchronize predefined context (example course questions + element docs) with the vectorstore
  * @param client the openAI client to use 
  * @param authnUserId the openAI userstring of the user requesting the sync
- * @returns the job ID of the job doing the sync
+ * @returns the job ID of the synchronization job
  */
 export async function syncContextDocuments(client: OpenAI, authnUserId: string) {
   const serverJob = await createServerJob({
