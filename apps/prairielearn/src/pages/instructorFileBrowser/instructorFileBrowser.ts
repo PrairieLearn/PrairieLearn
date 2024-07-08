@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'node:path';
 
 import { AnsiUp } from 'ansi_up';
@@ -23,10 +22,7 @@ import { InstructorFileBrowser } from './instructorFileBrowser.html.js';
 
 const router = Router();
 
-/**
- * @param {string} item
- */
-function isHidden(item) {
+function isHidden(item: string) {
   return item[0] === '.';
 }
 
@@ -133,7 +129,7 @@ async function browseFile(file_browser) {
     // that we try to guess from, as they're ambiguous (OCaml/Standard ML
     // and LiveScript/Lasso, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
-    let language = null;
+    let language: string | undefined = undefined;
     const extension = path.extname(file_browser.paths.workingPath).substring(1);
     if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
       language = extension;
@@ -180,7 +176,8 @@ router.get(
       return;
     }
 
-    let file_browser = {
+    // TODO: Use better type
+    const file_browser: any = {
       has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
       example_course: res.locals.course.example_course,
     };
@@ -201,7 +198,7 @@ router.get(
         );
       }
     } catch (err) {
-      if (/** @type {any} */ (err).code === 'ENOENT' && file_browser.paths.branch.length > 1) {
+      if (err.code === 'ENOENT' && file_browser.paths.branch.length > 1) {
         res.redirect(`${req.baseUrl}/${encodePath(file_browser.paths.branch.slice(-2)[0].path)}`);
         return;
       }
@@ -297,7 +294,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }
       if (req.body.was_viewing_file) {
@@ -337,12 +334,12 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch (err) {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }
       res.redirect(req.originalUrl);
     } else {
-      throw new Error('unknown __action: ' + req.body.__action);
+      throw new Error(`unknown __action: ${req.body.__action}`);
     }
   }),
 );
