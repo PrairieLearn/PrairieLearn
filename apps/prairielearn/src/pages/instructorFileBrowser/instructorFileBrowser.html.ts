@@ -3,7 +3,7 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
 export interface FileUploadInfo {
@@ -54,6 +54,7 @@ export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string,
           pageTitle: 'Files',
         })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
+        ${compiledScriptTag('instructorFileBrowserClient.ts')}
         <style>
           .popover {
             max-width: 50%;
@@ -61,11 +62,6 @@ export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string,
         </style>
       </head>
       <body>
-        <script>
-          $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
@@ -459,51 +455,49 @@ function DirectoryBrowserBody({
 
 function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: string }) {
   return html`
-  <form class="needs-validation" name="instructor-file-upload-form-${file.id}" method="POST" enctype="multipart/form-data" novalidate>
-  ${file.info ? html`<div class="form-group">${unsafeHtml(file.info)}</div>` : ''}
+    <form
+      class="needs-validation"
+      name="instructor-file-upload-form-${file.id}"
+      method="POST"
+      enctype="multipart/form-data"
+      novalidate
+    >
+      ${file.info ? html`<div class="form-group">${unsafeHtml(file.info)}</div>` : ''}
 
-  <div class="form-group">
-    <div class="custom-file">
-      <input type="file" name="file" class="custom-file-input" id="attachFileInput-${file.id}" required>
-      <label class="custom-file-label" for="attachFileInput-${file.id}">Choose file</label>
-      <div class="invalid-feedback">
-        Please choose a file
+      <div class="form-group">
+        <div class="custom-file">
+          <input
+            type="file"
+            name="file"
+            class="custom-file-input"
+            id="attachFileInput-${file.id}"
+            required
+          />
+          <label class="custom-file-label" for="attachFileInput-${file.id}">Choose file</label>
+          <small class="form-text text-muted">
+            Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+          </small>
+        </div>
       </div>
-      <small id="emailHelp" class="form-text text-muted">Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}</small>
-  </div>
 
-  <div class="form-group">
-    <input type="hidden" name="__action" value="upload_file">
-    <input type="hidden" name="__csrf_token" value="${csrfToken}">
-    ${
-      file.path
-        ? html`<input type="hidden" name="file_path" value="${file.path}" />`
-        : html`<input type="hidden" name="working_path" value="${file.working_path}" />`
-    }
-    <div class="text-right">
-      <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')">Cancel</button>
-      <button type="submit" class="btn btn-primary">Upload file</button>
-    </div>
-  </div>
-</form>
-
-<script>
-    $(function() {
-        // make the file inputs display the file name
-        $(document).on('change', '.custom-file-input', function () {
-          let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
-          $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-        });
-
-        $('form[name="instructor-file-upload-form-${file.id}"]').submit(function(event) {
-          if ($(this).get(0).checkValidity() === false) {
-              event.preventDefault();
-              event.stopPropagation();
-          }
-          $(this).addClass('was-validated');
-        });
-    });
-</script>
+      <div class="form-group">
+        <input type="hidden" name="__action" value="upload_file" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        ${file.path
+          ? html`<input type="hidden" name="file_path" value="${file.path}" />`
+          : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
+        <div class="text-right">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Upload file</button>
+        </div>
+      </div>
+    </form>
   `;
 }
 
@@ -559,15 +553,15 @@ function FileRenameForm({
         <label for="renameFileInput">Path:</label>
         <input
           type="text"
-          class="form-control"
+          class="form-control js-rename-input"
           id="renameFileInput"
           name="new_file_name"
           value="${file.name}"
+          data-original-value="${file.name}"
           size="${1.5 * file.name.length}"
-          pattern="(?:[-A-Za-z0-9_]+|..)(?:/(?:[-A-Za-z0-9_]+|..))*(?:.[-A-Za-z0-9_]+)?"
+          pattern="(?:[\\-A-Za-z0-9_]+|\\.\\.)(?:\\/(?:[\\-A-Za-z0-9_]+|\\.\\.))*(?:\\.[\\-A-Za-z0-9_]+)?"
           required
         />
-        <div class="invalid-feedback" id="invalidMessage-${file.id}"></div>
       </div>
       <div class="text-right">
         <button
@@ -580,42 +574,5 @@ function FileRenameForm({
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
-
-    <script>
-      $(function () {
-        const validate = function () {
-          let element = $('input[name="new_file_name"]');
-          let elementDOM = element.get(0);
-          let new_file_name = $(element).val();
-
-          if (new_file_name === '${file.name}') {
-            elementDOM.setCustomValidity('Must be changed');
-            $('#invalidMessage-${file.id}').text('Must be changed');
-            return;
-          }
-
-          elementDOM.setCustomValidity('');
-          if (elementDOM.validity.patternMismatch) {
-            $('#invalidMessage-${file.id}').text('Please match required format.');
-          } else if (elementDOM.validity.valueMissing) {
-            $('#invalidMessage-${file.id}').text('Please choose a name');
-          } else {
-            $('#invalidMessage-${file.id}').text('');
-          }
-        };
-
-        $('input[name="new_file_name"]').on('input', validate);
-        $('input[name="new_file_name"]').on('change', validate);
-
-        $('form[name="instructor-file-rename-form-${file.id}"]').submit(function (event) {
-          validate();
-          if ($(this).get(0).checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          $(this).addClass('was-validated');
-        });
-      });
-    </script>
   `;
 }
