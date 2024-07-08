@@ -5,24 +5,33 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 
-import { createEmbedding, openAiUserFromLocals, vectorToString } from './contextEmbeddings.js';
+import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Generates the HTML and Python code for a new question using an LLM
+ * @param client the OpenAI client to use
+ * @param courseId the ID of the current course
+ * @param authnUserId the authenticated user's ID
+ * @param prompt the prompt for how to generate a question
+ * @returns a server job ID for the generation task
+ */
 export async function generateQuestion(
   client: OpenAI,
-  locals: Record<string, any>,
+  courseId: string | undefined,
+  authnUserId: string,
   prompt: string,
 ) {
   const serverJob = await createServerJob({
-    courseId: locals.course ? locals.course.id : null,
+    courseId: courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
   });
 
   serverJob.executeInBackground(async (job) => {
     job.info(`prompt is ${prompt}`);
-    const embedding = await createEmbedding(client, prompt, openAiUserFromLocals(locals));
+    const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
     job.info(embedding.toString());
 
     const docs = await queryRows(
@@ -74,7 +83,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         { role: 'system', content: sysPrompt },
         { role: 'user', content: prompt },
       ],
-      user: openAiUserFromLocals(locals),
+      user: openAiUserFromAuthn(authnUserId),
     });
 
     const completionText = completion.choices[0].message.content;

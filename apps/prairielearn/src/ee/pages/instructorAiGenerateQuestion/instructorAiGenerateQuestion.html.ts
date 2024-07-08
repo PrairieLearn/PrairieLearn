@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export function AIGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
+export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
