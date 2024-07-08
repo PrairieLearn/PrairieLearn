@@ -12,7 +12,7 @@ onDocumentReady(() => {
   const {
     course_instance_ids,
     showAddQuestionButton,
-    showLlmGenerateQuestionButton,
+    showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
     plainUrlPrefix,
@@ -203,12 +203,12 @@ onDocumentReady(() => {
     };
   }
 
-  if (showLlmGenerateQuestionButton) {
-    tableSettings.buttons.llmGenerateQuestion = {
+  if (showAiGenerateQuestionButton) {
+    tableSettings.buttons.aiGenerateQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/llm-generate-question">
+        <a class="btn btn-secondary" href="${urlPrefix}/ai-generate-question">
           <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
-          Generate Question with LLM
+          Generate Question with AI
         </a>
       `.toString(),
     };

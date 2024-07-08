@@ -26,7 +26,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
-  showLlmGenerateQuestionButton = false,
+  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -37,7 +37,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
-  showLlmGenerateQuestionButton?: boolean;
+  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -53,7 +53,7 @@ export function QuestionsTable({
       {
         course_instance_ids,
         showAddQuestionButton,
-        showLlmGenerateQuestionButton,
+        showAiGenerateQuestionButton,
         qidPrefix,
         urlPrefix,
         plainUrlPrefix,

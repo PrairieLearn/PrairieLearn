@@ -40,10 +40,10 @@ router.get(
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
           courseDirExists,
-        showLlmGenerateQuestionButton:
+        showAiGenerateQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
-          (await features.enabledFromLocals('llm-question-generation', res.locals)),
+          (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),
     );

@@ -9,13 +9,13 @@ export const QuestionsPage = ({
   questions,
   course_instances,
   showAddQuestionButton,
-  showLlmGenerateQuestionButton,
+  showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageDataAnsified[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
-  showLlmGenerateQuestionButton: boolean;
+  showAiGenerateQuestionButton: boolean;
   resLocals;
 }) => {
   return html`
@@ -38,7 +38,7 @@ export const QuestionsPage = ({
             questions,
             course_instances,
             showAddQuestionButton,
-            showLlmGenerateQuestionButton,
+            showAiGenerateQuestionButton,
             showSharingSets: resLocals.question_sharing_enabled,
             current_course_instance: resLocals.course_instance,
             urlPrefix: resLocals.urlPrefix,

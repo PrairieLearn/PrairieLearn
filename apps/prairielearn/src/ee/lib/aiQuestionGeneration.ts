@@ -16,8 +16,8 @@ export async function generateQuestion(
 ) {
   const serverJob = await createServerJob({
     courseId: locals.course ? locals.course.id : null,
-    type: 'llm_question_generate',
-    description: 'Generate a question with an LLM',
+    type: 'ai_question_generate',
+    description: 'Generate a question with AI',
   });
 
   serverJob.executeInBackground(async (job) => {

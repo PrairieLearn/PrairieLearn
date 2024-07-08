@@ -17,7 +17,7 @@ import { buildContextForElementDocs } from '../../lib/context-parsers/documentat
 import { buildContextForQuestion } from '../../lib/context-parsers/template-questions.js';
 import { openAiUserFromLocals, insertDocumentChunk } from '../../lib/contextEmbeddings.js';
 
-import { AIGeneratePage } from './instructorLlmGenerateQuestion.html.js';
+import { AIGeneratePage } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -72,7 +72,7 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
 
 router.use(
   asyncHandler(async (req, res, next) => {
-    if (!(await features.enabledFromLocals('llm-question-generation', res.locals))) {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
 
