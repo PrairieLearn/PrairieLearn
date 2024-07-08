@@ -6,6 +6,25 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
+export interface FileUploadInfo {
+  id: string;
+  info?: string;
+  working_path: string;
+  path?: string;
+}
+
+export interface FileDeleteInfo {
+  id: string;
+  name: string;
+  path: string;
+}
+
+export interface FileRenameInfo {
+  id: string;
+  name: string;
+  dir: string;
+}
+
 export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string, any> }) {
   const {
     authz_data,
@@ -286,7 +305,7 @@ function FileContentPreview({ file_browser }: { file_browser: Record<string, any
       </div>
     `;
   }
-  return html` <div class="alert alert-warning" role="alert">No preview available.</div> `;
+  return html`<div class="alert alert-warning" role="alert">No preview available.</div>`;
 }
 
 function DirectoryBrowserBody({
@@ -341,7 +360,7 @@ function DirectoryBrowserBody({
                         ${f.name}
                       </a>
                     `
-                  : html` <span>${f.name}</span> `}
+                  : html`<span>${f.name}</span>`}
               </td>
               <td>
                 <a
@@ -428,7 +447,7 @@ function DirectoryBrowserBody({
                         ${d.name}
                       </a>
                     `
-                  : html` <span>${d.name}</span> `}
+                  : html`<span>${d.name}</span>`}
               </td>
             </tr>
           `,
@@ -438,7 +457,7 @@ function DirectoryBrowserBody({
   `;
 }
 
-function FileUploadForm({ file, csrfToken }: { file: Record<string, any>; csrfToken: string }) {
+function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: string }) {
   return html`
   <form class="needs-validation" name="instructor-file-upload-form-${file.id}" method="POST" enctype="multipart/form-data" novalidate>
   ${file.info ? html`<div class="form-group">${unsafeHtml(file.info)}</div>` : ''}
@@ -458,8 +477,8 @@ function FileUploadForm({ file, csrfToken }: { file: Record<string, any>; csrfTo
     <input type="hidden" name="__csrf_token" value="${csrfToken}">
     ${
       file.path
-        ? html` <input type="hidden" name="file_path" value="${file.path}" /> `
-        : html` <input type="hidden" name="working_path" value="${file.working_path}" /> `
+        ? html`<input type="hidden" name="file_path" value="${file.path}" />`
+        : html`<input type="hidden" name="working_path" value="${file.working_path}" />`
     }
     <div class="text-right">
       <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')">Cancel</button>
@@ -488,7 +507,7 @@ function FileUploadForm({ file, csrfToken }: { file: Record<string, any>; csrfTo
   `;
 }
 
-function FileDeleteForm({ file, csrfToken }: { file: Record<string, any>; csrfToken: string }) {
+function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: string }) {
   return html`
     <form name="instructor-file-delete-form-${file.id}" method="POST">
       <p>Are you sure you want to delete <strong>${file.name}</strong>?</p>
@@ -514,7 +533,7 @@ function FileRenameForm({
   csrfToken,
   isViewingFile,
 }: {
-  file: Record<string, any>;
+  file: FileRenameInfo;
   csrfToken: string;
   isViewingFile: boolean;
 }) {
