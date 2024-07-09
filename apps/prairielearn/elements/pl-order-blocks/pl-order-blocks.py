@@ -285,7 +285,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if format is FormatType.CODE:
-            inner_html = f'<pl-code language="{code_language or ""}">{inner_html}</pl-code>'
+            inner_html = f'<pl-code {f'language="{code_language}"' if code_language else ""}>{inner_html}</pl-code>'
 
         answer_data_dict: OrderBlocksAnswerData = {
             "inner_html": inner_html,
