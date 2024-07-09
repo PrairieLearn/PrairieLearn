@@ -10,7 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 
-import { InstructorGradingJob, GradingJobQueryResultSchema } from './instructorGradingJob.html.js';
+import { InstructorGradingJob, GradingJobRowSchema } from './instructorGradingJob.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -18,7 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/:job_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const gradingJobQueryResult = await sqldb.queryOptionalRow(
+    const gradingJobRow = await sqldb.queryOptionalRow(
       sql.select_job,
       {
         job_id: req.params.job_id,
@@ -27,9 +27,9 @@ router.get(
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
       },
-      GradingJobQueryResultSchema,
+      GradingJobRowSchema,
     );
-    if (gradingJobQueryResult === null) {
+    if (gradingJobRow === null) {
       throw new error.HttpStatusError(404, 'Job not found');
     }
 
@@ -39,10 +39,10 @@ router.get(
     //
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
+    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobQueryResult }));
+    res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobRow }));
   }),
 );
 
@@ -58,7 +58,7 @@ router.get(
       throw new error.HttpStatusError(404, `Unknown file ${file}`);
     }
 
-    const gradingJobQueryResult = await sqldb.queryOptionalRow(
+    const gradingJobRow = await sqldb.queryOptionalRow(
       sql.select_job,
       {
         job_id: req.params.job_id,
@@ -67,9 +67,9 @@ router.get(
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
       },
-      GradingJobQueryResultSchema,
+      GradingJobRowSchema,
     );
-    if (gradingJobQueryResult === null) {
+    if (gradingJobRow === null) {
       throw new error.HttpStatusError(404, 'Job not found');
     }
     // If the grading job is associated with an assessment instance (through a
@@ -78,11 +78,11 @@ router.get(
     //
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
+    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const grading_job = gradingJobQueryResult.grading_job;
+    const grading_job = gradingJobRow.grading_job;
 
     if (!grading_job.s3_bucket || !grading_job.s3_root_key) {
       throw new Error(`Job ${grading_job.id} does not have any files stored in S3.`);
