@@ -11,7 +11,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Generates the HTML and Python code for a new question using an LLM
- * 
+ *
  * @param client the OpenAI client to use
  * @param courseId the ID of the current course
  * @param authnUserId the authenticated user's ID

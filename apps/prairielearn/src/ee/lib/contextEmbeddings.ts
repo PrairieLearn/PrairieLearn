@@ -17,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Converts an embedding array to a pgvector-compatible string.
- * 
+ *
  * @param vec The embedding vector to convert.
  * @returns A pgvector-compatible representation of the embedding vector.
  */
@@ -27,7 +27,7 @@ export function vectorToString(vec: number[]) {
 
 /**
  * Converts a PrairieLearn authenticated user ID to a OpenAI user ID.
- * 
+ *
  * @param authnUserId The PrairieLearn authenticated user ID.
  * @returns An OpenAI user ID (for internal tracking).
  */
@@ -37,7 +37,7 @@ export function openAiUserFromAuthn(authnUserId: string): string {
 
 /**
  * Converts text to a semantic embedding.
- * 
+ *
  * @param client The OpenAI client to use.
  * @param text The document text to embed.
  * @param openAiUser The OpenAI userstring requesting the embeddng.
@@ -56,7 +56,7 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
 
 /**
  * Inserts a document chunk into the vectorstore.
- * 
+ *
  * @param client The OpenAI client to use.
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
@@ -97,7 +97,7 @@ export async function insertDocumentChunk(
 
 /**
  * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vectorstore.
- * 
+ *
  * @param client The OpenAI client to use.
  * @param authnUserId The OpenAI userstring of the user requesting the sync.
  * @returns The job ID of the synchronization job.
