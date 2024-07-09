@@ -1,15 +1,15 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import { VariantSchema } from '../../lib/db-types.js';
 import { getDynamicFile } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 
-var sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 
 export default function (options = { publicEndpoint: false }) {
   const router = Router({ mergeParams: true });
@@ -28,17 +28,20 @@ export default function (options = { publicEndpoint: false }) {
         }
       }
 
-      var variant_id = req.params.variant_id;
-      var filename = req.params[0];
-      const result = await sqldb.queryOneRowAsync(sql.select_variant, {
-        // The instance question generally won't be present if this is used on
-        // an instructor route.
-        has_instance_question: !!res.locals.instance_question,
-        instance_question_id: res.locals.instance_question?.id,
-        question_id: res.locals.question.id,
-        variant_id,
-      });
-      const variant = result.rows[0];
+      const variant_id = req.params.variant_id;
+      const filename = req.params[0];
+      const variant = await queryRow(
+        sql.select_variant,
+        {
+          // The instance question generally won't be present if this is used on
+          // an instructor route.
+          has_instance_question: !!res.locals.instance_question,
+          instance_question_id: res.locals.instance_question?.id,
+          question_id: res.locals.question.id,
+          variant_id,
+        },
+        VariantSchema,
+      );
 
       const fileData = await getDynamicFile(
         filename,

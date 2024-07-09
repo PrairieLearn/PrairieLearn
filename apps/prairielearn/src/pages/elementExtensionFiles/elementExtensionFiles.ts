@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'node:path';
 
 import { Router } from 'express';
@@ -6,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import * as chunks from '../../lib/chunks.js';
+import { getRuntimeDirectoryForCourse, ensureChunksForCourseAsync } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 
 const router = Router({ mergeParams: true });
@@ -23,7 +22,7 @@ router.get(
   '/*',
   asyncHandler(async (req, res) => {
     const filename = req.params[0];
-    let pathSpl = path.normalize(filename).split('/');
+    const pathSpl = path.normalize(filename).split('/');
     const valid =
       pathSpl[2] === CLIENT_FOLDER ||
       FILE_TYPE_EXTENSION_WHITELIST.some((extension) => filename.endsWith(extension));
@@ -47,8 +46,8 @@ router.get(
       res.removeHeader('Cache-Control');
     }
 
-    const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-    await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'elementExtensions' });
+    const coursePath = getRuntimeDirectoryForCourse(res.locals.course);
+    await ensureChunksForCourseAsync(res.locals.course.id, { type: 'elementExtensions' });
 
     const elementFilesDir = path.join(coursePath, 'elementExtensions');
     res.sendFile(filename, {
