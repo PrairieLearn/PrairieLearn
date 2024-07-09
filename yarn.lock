@@ -2649,7 +2649,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     ioredis: "npm:^5.4.1"
-    lru-cache: "npm:^10.4.0"
+    lru-cache: "npm:^11.0.0"
     typescript: "npm:^5.5.3"
     zod: "npm:^3.23.8"
   languageName: unknown
@@ -3217,7 +3217,7 @@ __metadata:
     klaw: "npm:^4.1.0"
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
-    lru-cache: "npm:^10.4.0"
+    lru-cache: "npm:^11.0.0"
     mathjax: "npm:^3.2.2"
     mdast-util-math: "npm:^3.0.0"
     memorystream: "npm:^0.3.1"
@@ -3235,7 +3235,7 @@ __metadata:
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
-    openai: "npm:^4.52.3"
+    openai: "npm:^4.52.4"
     openid-client: "npm:^5.6.5"
     parse5: "npm:^7.1.2"
     passport: "npm:^0.7.0"
@@ -3246,7 +3246,7 @@ __metadata:
     popper.js: "npm:^1.16.1"
     postgres-interval: "npm:^4.0.2"
     qrcode-svg: "npm:^1.1.0"
-    qs: "npm:^6.12.2"
+    qs: "npm:^6.12.3"
     quill: "npm:^2.0.2"
     quilljs-markdown: "npm:^1.2.0"
     rehype-raw: "npm:^7.0.0"
@@ -11181,10 +11181,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0, lru-cache@npm:^10.4.0":
+"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0":
   version: 10.4.0
   resolution: "lru-cache@npm:10.4.0"
   checksum: 10c0/2ea052e95431b50d82ac5d657e0308fed3e58031ec6153a7e019c586fc1255521273b6b14b9598745c869556338d5f31d4059f648ea2475e88df49ea140d9e07
+  languageName: node
+  linkType: hard
+
+"lru-cache@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "lru-cache@npm:11.0.0"
+  checksum: 10c0/827ff0e0739f9b0f30f92f5a5fc97c6a2bd3ae32c0452bc58cb7411d6c589d49536073027293f2d1f02d0c2e72b63b162f238df7e9ff6f4cc0345f92afec4d1d
   languageName: node
   linkType: hard
 
@@ -12585,9 +12592,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.52.3":
-  version: 4.52.3
-  resolution: "openai@npm:4.52.3"
+"openai@npm:^4.52.4":
+  version: 4.52.4
+  resolution: "openai@npm:4.52.4"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
@@ -12599,7 +12606,7 @@ __metadata:
     web-streams-polyfill: "npm:^3.2.1"
   bin:
     openai: bin/cli
-  checksum: 10c0/c066f6b861eb9ee485f2dd8b96af2ffaeb333c959e0829aa8a38f1f1711796906bcd00ac4af900df4d083b65df51e206d4b5ba66fbff4da6a761a7b1ce810a3e
+  checksum: 10c0/16e46b877c06875d29d8833b377099814a058d56200257e9246b8d9b4e884afb421398ab5e4f0a8a249858ac5e255ec162f7d1c94d3235bcf3a86b1c0ec84055
   languageName: node
   linkType: hard
 
@@ -13417,12 +13424,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:^6.11.0, qs@npm:^6.12.2":
+"qs@npm:^6.11.0":
   version: 6.12.2
   resolution: "qs@npm:6.12.2"
   dependencies:
     side-channel: "npm:^1.0.6"
   checksum: 10c0/d431fe6914aea026794c047b9c5ac5d29e96cc13dc14f3ca838f5f3061b0f1ed435d3f616508bc0e8a64fc29d13359f08bfe723aabc5f80f36d11057b2de6ebf
+  languageName: node
+  linkType: hard
+
+"qs@npm:^6.12.3":
+  version: 6.12.3
+  resolution: "qs@npm:6.12.3"
+  dependencies:
+    side-channel: "npm:^1.0.6"
+  checksum: 10c0/243ddcc8f49dab78fc51041f7f64c500b47c671c45a101a8aca565d8537cb562921da7ef1a831b4a7051596ec88bb35a0d5e25a240025e8b32c6bfb69f00bf2f
   languageName: node
   linkType: hard
 
