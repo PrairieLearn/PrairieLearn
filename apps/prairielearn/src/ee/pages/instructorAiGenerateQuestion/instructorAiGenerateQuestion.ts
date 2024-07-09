@@ -1,6 +1,7 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
@@ -15,9 +16,8 @@ import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGenera
 import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
 
 import { AiGeneratePage, GenerationResults } from './instructorAiGenerateQuestion.html.js';
-import { z } from 'zod';
 
-type IdType = z.infer<typeof IdSchema>
+type IdType = z.infer<typeof IdSchema>;
 
 const router = express.Router();
 
@@ -27,7 +27,7 @@ export async function saveGeneratedQuestion(
   res,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
-): Promise <IdType | undefined> {
+): Promise<IdType | undefined> {
   const files = {};
 
   if (htmlFileContents) {
@@ -175,7 +175,7 @@ router.post(
         genJobs[0]?.data?.python,
       );
 
-      if (qid){
+      if (qid) {
         res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
       }
     } else {
