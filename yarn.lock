@@ -3235,7 +3235,7 @@ __metadata:
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
-    openai: "npm:^4.52.3"
+    openai: "npm:^4.52.4"
     openid-client: "npm:^5.6.5"
     parse5: "npm:^7.1.2"
     passport: "npm:^0.7.0"
@@ -12585,9 +12585,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.52.3":
-  version: 4.52.3
-  resolution: "openai@npm:4.52.3"
+"openai@npm:^4.52.4":
+  version: 4.52.4
+  resolution: "openai@npm:4.52.4"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
@@ -12599,7 +12599,7 @@ __metadata:
     web-streams-polyfill: "npm:^3.2.1"
   bin:
     openai: bin/cli
-  checksum: 10c0/c066f6b861eb9ee485f2dd8b96af2ffaeb333c959e0829aa8a38f1f1711796906bcd00ac4af900df4d083b65df51e206d4b5ba66fbff4da6a761a7b1ce810a3e
+  checksum: 10c0/16e46b877c06875d29d8833b377099814a058d56200257e9246b8d9b4e884afb421398ab5e4f0a8a249858ac5e255ec162f7d1c94d3235bcf3a86b1c0ec84055
   languageName: node
   linkType: hard
 
