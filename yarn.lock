@@ -3256,6 +3256,7 @@ __metadata:
     remark-math: "npm:^6.0.0"
     remark-parse: "npm:^11.0.0"
     remark-rehype: "npm:^11.1.0"
+    remark-stringify: "npm:^11.0.0"
     request: "npm:^2.88.2"
     requirejs: "npm:^2.3.6"
     search-string: "npm:^3.1.0"
