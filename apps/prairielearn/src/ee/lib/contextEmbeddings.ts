@@ -16,29 +16,32 @@ import { buildContextForQuestion } from './context-parsers/template-questions.js
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Converts an embedding array to a pgvector-compatible string
- * @param vec the embedding vector to convert
- * @returns a pgvector-compatible representation
+ * Converts an embedding array to a pgvector-compatible string.
+ * 
+ * @param vec The embedding vector to convert.
+ * @returns A pgvector-compatible representation of the embedding vector.
  */
 export function vectorToString(vec: number[]) {
   return `[${vec.join(', ')}]`;
 }
 
 /**
- * Converts a PrairieLearn authenticated user ID to a OpenAI user ID
- * @param authnUserId the PrairieLearn authenticated user ID
- * @returns an OpenAI user ID (for internal tracking)
+ * Converts a PrairieLearn authenticated user ID to a OpenAI user ID.
+ * 
+ * @param authnUserId The PrairieLearn authenticated user ID.
+ * @returns An OpenAI user ID (for internal tracking).
  */
 export function openAiUserFromAuthn(authnUserId: string): string {
   return `user_${authnUserId}`;
 }
 
 /**
- * Converts text to a semantic embedding
- * @param client the OpenAI client to use
- * @param text the document text to embed
- * @param openAiUser the openAI userstring requesting the embeddng
- * @returns the resultat document embedding
+ * Converts text to a semantic embedding.
+ * 
+ * @param client The OpenAI client to use.
+ * @param text The document text to embed.
+ * @param openAiUser The OpenAI userstring requesting the embeddng.
+ * @returns The resultant document embedding.
  */
 export async function createEmbedding(client: OpenAI, text: string, openAiUser: string) {
   const embedding = await client.embeddings.create({
@@ -52,13 +55,13 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
 }
 
 /**
- * Inserts a document chunk into the vectorstore
- * @param client the openAI client to use
- * @param filepath the filepath of the document to add
- * @param doc the document chunk to add
- * @param job the server job calling this
- * @param openAiUser the openAI userstring requesting the adding of the document chunk
- * @returns none
+ * Inserts a document chunk into the vectorstore.
+ * 
+ * @param client The OpenAI client to use.
+ * @param filepath The filepath of the document to add.
+ * @param doc The document chunk to add.
+ * @param job The server job calling this function.
+ * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
  */
 export async function insertDocumentChunk(
   client: OpenAI,
@@ -93,10 +96,11 @@ export async function insertDocumentChunk(
 }
 
 /**
- * Creates a job to synchronize predefined context (example course questions + element docs) with the vectorstore
- * @param client the openAI client to use
- * @param authnUserId the openAI userstring of the user requesting the sync
- * @returns the job ID of the synchronization job
+ * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vectorstore.
+ * 
+ * @param client The OpenAI client to use.
+ * @param authnUserId The OpenAI userstring of the user requesting the sync.
+ * @returns The job ID of the synchronization job.
  */
 export async function syncContextDocuments(client: OpenAI, authnUserId: string) {
   const serverJob = await createServerJob({
