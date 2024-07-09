@@ -193,7 +193,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
@@ -285,13 +285,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if format is FormatType.CODE:
-            inner_html = (
-                "<pl-code"
-                + (' language="' + code_language + '"' if code_language else "")
-                + ">"
-                + inner_html
-                + "</pl-code>"
-            )
+            inner_html = f'<pl-code language="{code_language if code_language else ""}">{inner_html}</pl-code>'
 
         answer_data_dict: OrderBlocksAnswerData = {
             "inner_html": inner_html,
