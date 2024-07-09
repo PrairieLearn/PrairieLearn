@@ -373,7 +373,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
     <form name="delete-member-form" method="POST">
       <div class="form-group">
         <label for="delete-member-form-${row.group_id}">UID:</label>
-        <select class="form-control" name="user_id" id="delete-member-form-${row.group_id}">
+        <select class="custom-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
             return html` <option value="${user.user_id}">${user.uid}</option> `;
           })}

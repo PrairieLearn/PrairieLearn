@@ -1312,6 +1312,14 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
     function (req, res, next) {
       res.locals.navSubPage = 'syncs';
@@ -1839,6 +1847,14 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
     function (req, res, next) {
@@ -2553,7 +2569,7 @@ if (esMain(import.meta) && config.startServer) {
             userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
+          logger.info('Waiting for job to finish...');
           await jobPromise;
           (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
