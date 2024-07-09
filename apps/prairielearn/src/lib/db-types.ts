@@ -393,6 +393,17 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
+export const CourseInstanceAccessRuleSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  uids: z.string().array().nullable(),
+});
+export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
@@ -706,6 +717,14 @@ export const PlanGrantSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const QuestionGenerationContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  doc_text: z.string(),
+  doc_path: z.string(),
+  embedding: z.string(),
+  chunk_id: z.string(),
+});
 
 export const QuestionSchema = z.object({
   client_files: z.array(z.string()).nullable(),
