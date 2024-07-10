@@ -1,5 +1,8 @@
 # noble is the codename for Ubuntu 24.04 LTS
 FROM codercom/code-server:4.90.3-noble
+# Skip code-server:4.91.0-noble and delay updating beyond this until
+# code-server catches up to vscode 1.91.1 because of possible issues on
+# macOS. See: https://github.com/microsoft/vscode/issues/219893
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
