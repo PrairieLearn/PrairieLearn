@@ -4,6 +4,9 @@ FROM codercom/code-server:4.90.3-noble
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
 # This speeds up container loading time drastically and avoids timeouts.
+# With Ubuntu-derived base images, this may be a no-op, because recent Ubuntu
+# images have a default "ubuntu" user 1000:1000, and in that case, the
+# "coder" user may already be configured as 1001:1001.
 USER root
 RUN OLD_UID=$(id -u coder) && \
     OLD_GID=$(id -g coder) && \
