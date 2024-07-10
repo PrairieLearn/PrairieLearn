@@ -18,6 +18,7 @@
       </script>
     <%- include('../partials/navbar'); %>
     <main id="content" class="container-fluid">
+      <%# This is the last reference to the partial below. Once this is converted to HTML.TS, the partial below can be deleted. %>
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
 
       <% if (!authz_data.has_course_permission_edit) { %>

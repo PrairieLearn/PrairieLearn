@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
@@ -105,11 +106,13 @@ export function InstructorAssessmentInstance({
             csrfToken: resLocals.__csrf_token,
             groupWork: resLocals.assessment.group_work,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            { ...resLocals },
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${resLocals.assessment_instance_label} Summary:

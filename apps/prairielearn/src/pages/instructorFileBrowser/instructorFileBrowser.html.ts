@@ -3,6 +3,12 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  AssessmentSyncErrorsAndWarnings,
+  CourseInstanceSyncErrorsAndWarnings,
+  CourseSyncErrorsAndWarnings,
+  QuestionSyncErrorsAndWarnings,
+} from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
@@ -32,17 +38,34 @@ export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string,
     file_browser,
     navPage,
     course,
+    urlPrefix,
     __csrf_token: csrfToken,
   } = resLocals;
-  const syncErrorsPartial =
+  const syncErrorsAndWarnings =
     navPage === 'course_admin'
-      ? 'courseSyncErrorsAndWarnings'
+      ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
       : navPage === 'instance_admin'
-        ? 'courseInstanceSyncErrorsAndWarnings'
+        ? CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course,
+            urlPrefix,
+          })
         : navPage === 'assessment'
-          ? 'assessmentSyncErrorsAndWarnings'
+          ? AssessmentSyncErrorsAndWarnings({
+              authz_data,
+              assessment: resLocals.assessment,
+              courseInstance: resLocals.course_instance,
+              course,
+              urlPrefix,
+            })
           : navPage === 'question'
-            ? 'questionSyncErrorsAndWarnings'
+            ? QuestionSyncErrorsAndWarnings({
+                authz_data,
+                question: resLocals.question,
+                course,
+                urlPrefix,
+              })
             : '';
 
   return html`
@@ -64,11 +87,7 @@ export function InstructorFileBrowser({ resLocals }: { resLocals: Record<string,
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            `<%- include('../partials/${syncErrorsPartial}') %>`,
-            resLocals,
-          )}
+          ${syncErrorsAndWarnings}
           ${!authz_data.has_course_permission_view
             ? html`
                 <div class="card mb-4">
