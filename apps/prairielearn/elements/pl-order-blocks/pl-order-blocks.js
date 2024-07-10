@@ -36,13 +36,14 @@ window.PLOrderBlocks = function (uuid, options) {
     }
 
     function handleKey(ev, block, handle) {
-      // this event listener is necessary to remove the "pl-order-blocks-selected" attribute when a block goes out of focus.
-      // however, in some browsers it fires immediately after the block is moved, causing it to lose its selected attribute.
-      // removing the listener here and adding it again later ensures that the block is moved properly and retains its selected attribute.
+      // When we manipulate the location of the block, the focus is automatically removed by the browser,
+      // so we immediately refocus it. In some browsers, the blur even will still fire in this case even
+      // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
       block.removeEventListener('blur', removeSelectedAttribute);
       handle();
       ev.preventDefault();
       block.addEventListener('blur', removeSelectedAttribute);
+      block.focus();
       setAnswer();
     }
 
@@ -80,7 +81,7 @@ window.PLOrderBlocks = function (uuid, options) {
           case 'Enter':
             handleKey(ev, block, () => {
               if (!inDropzone(block)) {
-                $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
+                $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
               }
             });
             break;
@@ -100,7 +101,6 @@ window.PLOrderBlocks = function (uuid, options) {
             handleKey(ev, block, removeSelectedAttribute);
             break;
         }
-        block.focus();
       }
     }
 
