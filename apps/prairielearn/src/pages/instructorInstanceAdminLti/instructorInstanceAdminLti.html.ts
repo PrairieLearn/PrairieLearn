@@ -2,7 +2,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../../lib/config.js';
-import type { User } from '../../lib/db-types.js';
+import type { LtiCredentials, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 
 export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<string, any> }) {
@@ -106,14 +106,10 @@ function LtiCredentialsCard({
   lti_credentials,
   csrfToken,
 }: {
-  lti_credentials: {
-    id: string;
-    course_instance_id: string | null;
-    consumer_key: string | null;
-    secret: string | null;
+  lti_credentials: (Omit<LtiCredentials, 'deleted_at'> & {
     created: string | null;
     deleted: string | null;
-  }[];
+  })[];
   csrfToken: string;
 }) {
   return html`
