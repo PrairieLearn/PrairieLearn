@@ -182,7 +182,7 @@ router.get(
       example_course: res.locals.course.example_course,
     };
 
-    file_browser.paths = getPaths(req, res);
+    file_browser.paths = getPaths(req.params[0], res.locals);
 
     try {
       const stats = await fs.lstat(file_browser.paths.workingPath);
@@ -218,7 +218,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
