@@ -7,6 +7,8 @@ import { contains } from '@prairielearn/path-utils';
 
 import { encodePath } from './uri-util.js';
 
+/** @typedef {ReturnType<typeof getPaths>} Paths */
+
 /**
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
