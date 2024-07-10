@@ -9,6 +9,12 @@ import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextE
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Generates the common preamble with general PrairieLearn information for the LLM
+ *
+ * @param context Relevant example documents, formatted into one string.
+ * @returns A string, the prompt preamble.
+ */
 function promptPreamble(context: string): string {
   return `# Introduction
         
@@ -37,6 +43,13 @@ function promptPreamble(context: string): string {
         `;
 }
 
+/**
+ * Builds the context string, consisting of relevant documents.
+ * @param client The OpenAI client to use.
+ * @param prompt The user's question generation prompt.
+ * @param authnUserId The user's authenticated user ID.
+ * @returns A string of all relevant context documents.
+ */
 async function makeContext(client: OpenAI, prompt: string, authnUserId): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
 
@@ -51,6 +64,11 @@ async function makeContext(client: OpenAI, prompt: string, authnUserId): Promise
   return context;
 }
 
+/**
+ * Extracts the generated HTML and Python code from an OpenAI completion into job parameters.
+ * @param completion The completion to extract from.
+ * @param job The job whose data we want to extract into.
+ */
 function extractFromCompletion(completion, job: ServerJob): void {
   const completionText = completion.choices[0].message.content;
 
