@@ -154,3 +154,37 @@ export async function deleteCourse({
     throw new Error('Course to delete not found');
   }
 }
+
+export async function insertCourse({
+  institution_id,
+  short_name,
+  title,
+  display_timezone,
+  path,
+  repository,
+  branch,
+  authn_user_id,
+}: Pick<
+  Course,
+  'institution_id' | 'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch'
+> & {
+  authn_user_id: string;
+}): Promise<Course> {
+  return await queryRow(
+    sql.insert_course,
+    {
+      institution_id,
+      short_name,
+      title,
+      display_timezone,
+      path,
+      repository,
+      branch,
+      authn_user_id,
+    },
+    CourseSchema,
+  ).catch((err) => {
+    console.log(err);
+    throw err;
+  });
+}
