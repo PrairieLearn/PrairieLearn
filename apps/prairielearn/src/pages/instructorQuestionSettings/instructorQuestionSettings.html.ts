@@ -3,11 +3,13 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { config } from '../../lib/config.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -363,6 +365,7 @@ function DeleteQuestionModal({
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
 }) {
+  const plainUrlPrefix = config.urlPrefix;
   return Modal({
     id: 'deleteQuestionModal',
     title: 'Delete question',
@@ -379,16 +382,13 @@ function DeleteQuestionModal({
                 return html`
                   <li class="list-group-item">
                     <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
-                    ${a_with_q.assessments.map(function (a) {
-                      return html`
-                        <a
-                          href="/pl/course_instance/${a_with_q.course_instance_id}/instructor/assessment/${a.assessment_id}"
-                          class="badge color-${a.color} color-hover"
-                        >
-                          ${a.label}
-                        </a>
-                      `;
-                    })}
+                    ${a_with_q.assessments.map((assessment) =>
+                      AssessmentBadge({
+                        plainUrlPrefix,
+                        course_instance_id: a_with_q.course_instance_id,
+                        assessment,
+                      }),
+                    )}
                   </li>
                 `;
               })}
