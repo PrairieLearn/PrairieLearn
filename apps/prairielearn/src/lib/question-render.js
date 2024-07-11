@@ -165,7 +165,7 @@ async function render(
  * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
-function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
+export function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
   const urls = {};
 
   if (!instance_question) {
@@ -215,7 +215,7 @@ function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
   return urls;
 }
 
-function buildLocals(
+export function buildLocals(
   variant,
   question,
   instance_question,

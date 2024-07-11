@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
   ExamQuestionScore,
@@ -552,12 +553,14 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${renderEjs(
-            import.meta.url,
-            // TODO: convert to TypeScript component
-            "<%- include('../partials/attachFilePanel') %>",
-            resLocals,
-          )}
+          ${PersonalNotesPanel({
+            fileList: resLocals.file_list,
+            context: 'assessment',
+            courseInstanceId: resLocals.course_instance.id,
+            assessment_instance: resLocals.assessment_instance,
+            csrfToken: resLocals.__csrf_token,
+            authz_result: resLocals.authz_result,
+          })}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,
@@ -720,7 +723,7 @@ function RowLabel({
   let lockedPopoverText: string | null = null;
   if (instance_question.sequence_locked) {
     lockedPopoverText = instance_question.prev_sequence_locked
-      ? `A previous question must be completed before you can access this one.`
+      ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
   } else if (!(instance_question.group_role_permissions?.can_view ?? true)) {
     lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;

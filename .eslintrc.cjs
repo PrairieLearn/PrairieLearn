@@ -105,6 +105,10 @@ module.exports = {
     // This was enabled when we upgraded to `@typescript-eslint/*` v6.
     // TODO: fix the violations so we can enable this rule.
     '@typescript-eslint/no-dynamic-delete': 'off',
+
+    // Blocks double-quote strings (unless a single quote is present in the
+    // string) and backticks (unless there is a tag or substitution in place).
+    quotes: ['error', 'single', { avoidEscape: true }],
   },
   overrides: [
     {
