@@ -2,16 +2,10 @@
 <html lang="en">
 
 <head>
-    <%
-    let pageTitle = 'Edit';
-    if (locals.fileEdit) {
-      pageTitle += ` ${fileEdit.fileName}`;
-    }
-    %>
-    <%- include('../partials/head', {pageTitle: pageTitle}); %>
+    <%- include('../partials/head', {pageTitle: `Edit ${locals.fileEdit?.fileName}`}); %>
+    <!-- This is typically imported in the compiled asset, but the way ace handles modes/themes by dynamically loading scripts requires it to be loaded directly from ace-builds -->
     <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
-    <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
-    <script src="<%= compiled_script_path('instructorFileEditorClient.js') %>"></script>
+    <script src="<%= compiled_script_path('instructorFileEditorClient.ts') %>"></script>
 </head>
 
 <body>
@@ -74,33 +68,6 @@
 
         <script>
             $(function() {
-                new window.InstructorFileEditor({
-                    contents: "<%- fileEdit.editContents %>",
-                    <% if (fileEdit.aceMode) { %>
-                    aceMode: "<%= fileEdit.aceMode %>",
-                    <% } %>
-                    origHash: "<%- fileEdit.origHash %>",
-                    diskHash: "<%- fileEdit.diskHash %>",
-                    elementId: "file-editor-<%= fileEdit.uuid %>-draft",
-                    saveElementId: "file-editor-<%= fileEdit.uuid %>-save-button",
-                    <% if (fileEdit.alertChoice) { %>
-                    altElementId: "file-editor-<%= fileEdit.uuid %>-disk",
-                    buttonsContainerElementId: "buttons-<%= fileEdit.uuid %>",
-                    choiceAlertElementId: "file-editor-<%= fileEdit.uuid %>-choicealert",
-                    <% } %>
-                });
-
-                <% if (fileEdit.alertChoice) { %>
-                new window.InstructorFileEditor({
-                    contents: "<%- fileEdit.diskContents %>",
-                    <% if (fileEdit.aceMode) { %>
-                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
-                    <% } %>
-                    elementId: "file-editor-<%= fileEdit.uuid %>-disk",
-                    readOnly: true,
-                });
-                <% } %>
-
                 <% if (fileEdit.alertResults) { %>
                     let showDetailElement = $("#results-<%= fileEdit.uuid %>-button");
                     showDetailElement.click(() => {
@@ -225,7 +192,20 @@
                         <% } %>
                     </div>
 
-                    <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col">
+                    <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col js-file-editor"
+                        data-contents="<%= fileEdit.editContents %>"
+                        <% if (fileEdit.aceMode) { %>
+                        data-ace-mode="<%= fileEdit.aceMode %>"
+                        <% } %>
+                        data-orig-hash="<%= fileEdit.origHash %>"
+                        data-disk-hash="<%= fileEdit.diskHash %>"
+                        data-save-element-id="file-editor-<%= fileEdit.uuid %>-save-button"
+                        <% if (fileEdit.alertChoice) { %>
+                        data-alt-element-id="file-editor-<%= fileEdit.uuid %>-disk",
+                        data-buttons-container-element-id="buttons-<%= fileEdit.uuid %>",
+                        data-choice-alert-element-id="file-editor-<%= fileEdit.uuid %>-choicealert",
+                        <% } %>
+                    >
                         <div class="card p-0">
                             <% if (fileEdit.alertChoice) { %>
                             <div class="card-header text-center">
@@ -243,7 +223,13 @@
                         </div>
                     </div>
                     <% if (fileEdit.alertChoice) { %>
-                    <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col">
+                    <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col js-file-editor"
+                        data-contents="<%= fileEdit.diskContents %>"
+                        data-read-only="true"
+                        <% if (fileEdit.aceMode) { %>
+                        data-ace-mode="<%= fileEdit.aceMode %>"
+                        <% } %>
+                        >
                         <div class="card p-0">
                             <div class="card-header text-center">
                                 <h4 class="mb-4">Their version</h4>
