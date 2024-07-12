@@ -498,66 +498,30 @@ function verifyEdit(
     locals.file_edit_orig_hash = elemList[0].attribs.value;
     assert.isString(locals.file_edit_orig_hash);
   });
-  it('should have a script with draft file contents', function (callback) {
-    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
-      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
-        if (elem.children.length > 0) {
-          if ('data' in elem.children[0]) {
-            const match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms,
-            );
-            if (match != null) {
-              locals.fileContents = b64Util.b64DecodeUnicode(match[1]);
-              return callback(null);
-            }
-          }
-        }
-      }
-    }
-    return callback(new Error('found no script with draft file contents'));
-  });
-  it('should match expected draft file contents', function () {
-    assert.strictEqual(locals.fileContents, expectedDraftContents);
+  it('editor element should match expected draft file contents', function () {
+    const editor = locals.$('#file-editor-draft');
+    assert.lengthOf(editor, 1);
+    const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+    assert.strictEqual(fileContents, expectedDraftContents);
   });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
-    elemList = locals.$('form[name="editor-form"] div[id^="results-"]');
+    elemList = locals.$('form[name="editor-form"] #results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);
     } else {
       assert.lengthOf(elemList, 0);
     }
   });
-  it(`should have a script with disk file contents - ${expectedToFindChoice}`, function (callback) {
-    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
-      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
-        if (elem.children.length > 0) {
-          if ('data' in elem.children[0]) {
-            const match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms,
-            );
-            if (match != null) {
-              if (expectedToFindChoice) {
-                locals.diskContents = b64Util.b64DecodeUnicode(match[1]);
-                return callback(null);
-              } else {
-                return callback(new Error('found a script with disk file contents'));
-              }
-            }
-          }
-        }
-      }
-    }
+  it(`should ${expectedToFindChoice ? '' : 'not '}have an editor with disk file contents`, function () {
+    const editor = locals.$('#file-editor-disk');
     if (expectedToFindChoice) {
-      return callback(new Error('found no script with disk file contents'));
+      assert.lengthOf(editor, 1);
+      const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+      assert.strictEqual(fileContents, expectedDiskContents);
     } else {
-      return callback(null);
+      assert.lengthOf(editor, 0);
     }
   });
-  if (expectedToFindChoice) {
-    it('should match expected disk file contents', function () {
-      assert.strictEqual(locals.diskContents, expectedDiskContents);
-    });
-  }
 }
 
 function editGet(
