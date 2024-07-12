@@ -171,4 +171,29 @@ onDocumentReady(() => {
       choiceAlertElementId: element.dataset.choiceAlertElementId,
     });
   });
+
+  const showDetail = document.getElementById('results');
+  if (showDetail) {
+    const showDetailButton = document.getElementById('results-button');
+    $(showDetail).on('hide.bs.collapse', () => {
+      if (showDetailButton) showDetailButton.textContent = 'Show details';
+    });
+    $(showDetail).on('show.bs.collapse', () => {
+      if (showDetailButton) showDetailButton.textContent = 'Hide details';
+    });
+  }
+
+  const helpBox = document.getElementById('help');
+  if (helpBox) {
+    const helpButton = document.getElementById('help-button');
+    const helpButtonLabel = document.getElementById('help-button-label');
+    $(helpBox).on('hide.bs.collapse', () => {
+      if (helpButtonLabel) helpButtonLabel.textContent = 'Show help';
+      if (helpButton) helpButton.ariaExpanded = 'false';
+    });
+    $(helpBox).on('show.bs.collapse', () => {
+      if (helpButtonLabel) helpButtonLabel.textContent = 'Hide help';
+      if (helpButton) helpButton.ariaExpanded = 'true';
+    });
+  }
 });

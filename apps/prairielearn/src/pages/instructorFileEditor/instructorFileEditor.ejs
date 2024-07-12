@@ -66,29 +66,6 @@
         </div>
         <% } %>
 
-        <script>
-            $(function() {
-                <% if (fileEdit.alertResults) { %>
-                    let showDetailElement = $("#results-button");
-                    showDetailElement.click(() => {
-                        showDetailElement.text(showDetailElement.text() == "Show detail" ? "Hide detail" : "Show detail");
-                    });
-                <% } %>
-
-                const helpBox = $('#help');
-                const helpButton =  $('#help-button');
-                const helpButtonLabel = $('#help-button-label');
-                helpBox.on('hide.bs.collapse', function () {
-                    helpButtonLabel.text('Show help');
-                    helpButton.attr('aria-expanded', 'false');
-                });
-                helpBox.on('show.bs.collapse', function () {
-                    helpButtonLabel.text('Hide help');
-                    helpButton.attr('aria-expanded', 'true');
-                });
-            });
-        </script>
-
         <form name="editor-form" method="POST">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 
