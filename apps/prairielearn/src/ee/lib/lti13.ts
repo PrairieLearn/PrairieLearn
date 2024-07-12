@@ -100,6 +100,8 @@ export class Lti13Claim {
 
     // Check to see that it's not expired
     this.assertValid();
+
+    console.log(JSON.stringify(this.claims, null, 2));
   }
 
   // Accessors
@@ -122,6 +124,11 @@ export class Lti13Claim {
   get target_link_uri() {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
+  }
+
+  get lineitems() {
+    this.assertValid();
+    return this.claims['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']?.lineitems;
   }
 
   // Functions
