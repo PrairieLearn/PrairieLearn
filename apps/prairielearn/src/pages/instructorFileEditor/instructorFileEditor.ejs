@@ -69,15 +69,15 @@
         <script>
             $(function() {
                 <% if (fileEdit.alertResults) { %>
-                    let showDetailElement = $("#results-<%= fileEdit.uuid %>-button");
+                    let showDetailElement = $("#results-button");
                     showDetailElement.click(() => {
                         showDetailElement.text(showDetailElement.text() == "Show detail" ? "Hide detail" : "Show detail");
                     });
                 <% } %>
 
-                const helpBox = $('#help-<%= fileEdit.uuid %>');
-                const helpButton =  $('#help-<%= fileEdit.uuid %>-button');
-                const helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
+                const helpBox = $('#help');
+                const helpButton =  $('#help-button');
+                const helpButtonLabel = $('#help-button-label');
                 helpBox.on('hide.bs.collapse', function () {
                     helpButtonLabel.text('Show help');
                     helpButton.attr('aria-expanded', 'false');
@@ -113,25 +113,25 @@
                               <% }); %>
                             </span>
                         </div>
-                        <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
+                        <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons">
                             <button
                                 type="button"
-                                id="help-<%= fileEdit.uuid %>-button"
+                                id="help-button"
                                 class="btn btn-light btn-sm"
                                 data-toggle="collapse"
-                                data-target="#help-<%= fileEdit.uuid %>"
+                                data-target="#help"
                                 aria-expanded="false">
                                 <i class="far fa-question-circle" aria-hidden="true"></i>
-                                <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
+                                <span id="help-button-label">Show help</span>
                             </button>
-                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-light btn-sm" disabled>
+                            <button id="file-editor-save-button" name="__action" value="save_and_sync" class="btn btn-light btn-sm" disabled>
                                 <i class="fas fa-save" aria-hidden="true"></i>
                                 Save and sync
                             </button>
                         </div>
                     </div>
                 </div>
-                <div class="collapse" id="help-<%= fileEdit.uuid %>">
+                <div class="collapse" id="help">
                     <div class="card-body">
                         You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
                         <% if (config.fileEditorUseGit) { %>
@@ -160,7 +160,7 @@
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
                                 <div class="col-auto">
-                                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="collapse" data-target="#results-<%= fileEdit.uuid %>" id="results-<%= fileEdit.uuid %>-button">Show detail</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="collapse" data-target="#results" id="results-button">Show detail</button>
                                 </div>
                                 <% } %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -168,7 +168,7 @@
                                 </button>
                             </div>
                             <% if (fileEdit.jobSequenceId != null) { %>
-                            <div class="row collapse mt-4" id="results-<%= fileEdit.uuid %>">
+                            <div class="row collapse mt-4" id="results">
                                 <div class="card card-body">
                                     <%- include('../partials/jobSequenceResults', {job_sequence: fileEdit.jobSequence, job_sequence_enable_live_update: false}); %>
                                 </div>
@@ -178,7 +178,7 @@
                         <% } %>
 
                         <% if (fileEdit.alertChoice) { %>
-                        <div id="file-editor-<%= fileEdit.uuid %>-choicealert" class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+                        <div id="file-editor-choicealert" class="alert alert-danger alert-dismissible fade show m-2" role="alert">
                             <% if (fileEdit.hasSameHash) { %>
                             You were editing this file and made changes. You may choose either to continue editing or to discard your changes.
                             <% } else { %>
@@ -192,18 +192,18 @@
                         <% } %>
                     </div>
 
-                    <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col js-file-editor"
+                    <div id="file-editor-draft" class="col js-file-editor"
                         data-contents="<%= fileEdit.editContents %>"
                         <% if (fileEdit.aceMode) { %>
                         data-ace-mode="<%= fileEdit.aceMode %>"
                         <% } %>
                         data-orig-hash="<%= fileEdit.origHash %>"
                         data-disk-hash="<%= fileEdit.diskHash %>"
-                        data-save-element-id="file-editor-<%= fileEdit.uuid %>-save-button"
+                        data-save-element-id="file-editor-save-button"
                         <% if (fileEdit.alertChoice) { %>
-                        data-alt-element-id="file-editor-<%= fileEdit.uuid %>-disk",
-                        data-buttons-container-element-id="buttons-<%= fileEdit.uuid %>",
-                        data-choice-alert-element-id="file-editor-<%= fileEdit.uuid %>-choicealert",
+                        data-alt-element-id="file-editor-disk",
+                        data-buttons-container-element-id="buttons",
+                        data-choice-alert-element-id="file-editor-choicealert",
                         <% } %>
                     >
                         <div class="card p-0">
@@ -223,7 +223,7 @@
                         </div>
                     </div>
                     <% if (fileEdit.alertChoice) { %>
-                    <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col js-file-editor"
+                    <div id="file-editor-disk" class="col js-file-editor"
                         data-contents="<%= fileEdit.diskContents %>"
                         data-read-only="true"
                         <% if (fileEdit.aceMode) { %>

@@ -9,7 +9,6 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -62,7 +61,6 @@ router.get(
     const fullPath = paths.workingPath;
     const relPath = paths.workingPathRelativeToCourse;
     let fileEdit = {
-      uuid: uuidv4(),
       userID: res.locals.user.user_id,
       authnUserId: res.locals.authn_user.user_id,
       courseID: res.locals.course.id,
