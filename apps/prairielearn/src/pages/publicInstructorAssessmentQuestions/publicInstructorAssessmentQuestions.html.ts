@@ -57,14 +57,12 @@ export function InstructorAssessmentQuestions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${//TEST renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        }
-          ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}}
+        ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${// TEST renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        }
-          <main id="content" class="container-fluid">
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
             title: 'Confirm reset question variants',
