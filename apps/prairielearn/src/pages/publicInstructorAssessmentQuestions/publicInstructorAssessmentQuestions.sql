@@ -1,3 +1,11 @@
+-- BLOCK select_assessment_by_id
+SELECT
+  *
+FROM
+  assessments
+where
+  id = $assessment_id;
+
 -- BLOCK questions
 WITH
   issue_count AS (

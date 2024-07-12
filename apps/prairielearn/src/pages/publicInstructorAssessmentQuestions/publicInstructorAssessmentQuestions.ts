@@ -3,14 +3,28 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+
+import { Assessment, AssessmentSchema } from '../../db-types.js';
 
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+
+import { selectCourseById } from '../../models/course.js';
 
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
 } from './publicInstructorAssessmentQuestions.html.js';
+
+async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
+  return await queryRow(
+    sql.select_course_by_id,
+    {
+      assessment_id,
+    },
+    AssessmentSchema,
+  );
+}
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
@@ -20,6 +34,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     console.log('In publicInstructorAssessmentQuestions.ts'); // TEST
+    res.locals.course = await selectCourseById(req.params.course_id);
+    res.locals.assessment = await selectAssessmentById(req.params.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
       {
