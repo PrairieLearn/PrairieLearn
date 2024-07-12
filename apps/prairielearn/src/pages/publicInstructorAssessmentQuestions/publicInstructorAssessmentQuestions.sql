@@ -1,4 +1,3 @@
--- MICHAEL TEST, copy of unpublic version for now
 -- BLOCK questions
 WITH
   issue_count AS (

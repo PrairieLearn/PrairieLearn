@@ -945,17 +945,6 @@ export async function initExpress() {
         .default,
     ],
   );
-  app.use( // MICHAEL TEST, why isn't this working?
-    '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'questions';
-        next();
-      },
-      (await import('./pages/publicInstructorAssessmentQuestions/publicInstructorAssessmentQuestions.js'))
-        .default,
-    ],
-  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
     [
@@ -2032,6 +2021,18 @@ export async function initExpress() {
       publicQuestionEndpoint: true,
       coreElements: false,
     }),
+  );
+  app.use( // TEST
+    '/pl/public/course/:course_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
+    [
+      function (req, res, next) {
+        console.log('TEST accessed'); // TEST
+        res.locals.navSubPage = 'questions';
+        next();
+      },
+      (await import('./pages/publicInstructorAssessmentQuestions/publicInstructorAssessmentQuestions.js')) // TEST
+        .default,
+    ],
   );
 
   // Client files for questions

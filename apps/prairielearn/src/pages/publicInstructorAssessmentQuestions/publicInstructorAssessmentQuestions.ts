@@ -1,4 +1,3 @@
-// MICHAEL TEST, copy of unpublic version for now
 import { AnsiUp } from 'ansi_up';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -9,7 +8,7 @@ import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
-  PublicInstructorAssessmentQuestions,
+  InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
 } from './publicInstructorAssessmentQuestions.html.js';
 
@@ -20,6 +19,7 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    console.log('In publicInstructorAssessmentQuestions.ts'); // TEST
     const questionRows = await queryRows(
       sql.questions,
       {
@@ -33,7 +33,7 @@ router.get(
       if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
       return row;
     });
-    res.send(PublicInstructorAssessmentQuestions({ resLocals: res.locals, questions }));
+    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );
 

@@ -1,4 +1,3 @@
-// MICHAEL TEST, copy of unpublic version for now
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
@@ -47,7 +46,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-export function PublicInstructorAssessmentQuestions({
+export function InstructorAssessmentQuestions({
   resLocals,
   questions,
 }: {
@@ -58,12 +57,14 @@ export function PublicInstructorAssessmentQuestions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')} // TODO: see if this works
+        ${//TEST renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        }
+          ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
+        ${// TEST renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        }
+          <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
             title: 'Confirm reset question variants',
@@ -110,7 +111,7 @@ export function PublicInstructorAssessmentQuestions({
     </html>
   `.toString();
 }
-
+//TEST
 function AssessmentQuestionsTable({
   questions,
   urlPrefix,
@@ -147,7 +148,6 @@ function AssessmentQuestionsTable({
         <thead>
           <tr>
             <th><span class="sr-only">Name</span></th>
-            <th>TEST. Hello there</th>
             <th>QID</th>
             <th>Topic</th>
             <th>Tags</th>
