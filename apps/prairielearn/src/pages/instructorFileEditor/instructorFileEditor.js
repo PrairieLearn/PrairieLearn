@@ -36,13 +36,13 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.send(InstructorFileEditor({ resLocals: res.locals }));
+      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.send(InstructorFileEditor({ resLocals: res.locals }));
+      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
