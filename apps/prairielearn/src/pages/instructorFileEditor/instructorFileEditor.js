@@ -23,6 +23,8 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
+import { InstructorFileEditor } from './instructorFileEditor.html.js';
+
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileEditor');
@@ -34,13 +36,13 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
@@ -179,7 +181,7 @@ router.get(
 
     res.locals.fileEdit = fileEdit;
     res.locals.fileEdit.paths = paths;
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorFileEditor({ resLocals: res.locals }));
   }),
 );
 
