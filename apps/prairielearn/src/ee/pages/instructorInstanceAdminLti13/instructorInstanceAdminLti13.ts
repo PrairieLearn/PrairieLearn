@@ -6,8 +6,9 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types.js';
-import { createServerJob, ServerJob } from '../../../lib/server-jobs.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import { get_lineitems } from '../../lib/lti13.js';
 
 import {
   AssessmentRowSchema,
@@ -129,12 +130,7 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await get_lineitems(
-          req.body.unsafe_lti13_course_instance_id,
-          res.locals.course_instance.id,
-          job,
-          res.locals.authn_user.user_id,
-        );
+        await get_lineitems(instance, job, res.locals.authn_user.user_id);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else {
@@ -142,56 +138,5 @@ router.post(
     }
   }),
 );
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-export async function get_lineitems(
-  lti13_course_instance_id: number,
-  course_instance_id: number,
-  job: ServerJob,
-  authn_user_id: number,
-) {
-  const params = {
-    course_instance_id,
-    lti13_course_instance_id,
-  };
-
-  job.info('Polling for line items');
-
-  /*
-  // Make this a more targetted single row query
-  const lti13_course_instance_result = await queryAsync(sql.get_course_instance, params);
-
-  const lti13_course_instance = lti13_course_instance_result.rows[0];
-  //console.log(JSON.stringify(lti13_course_instance, null, 3));
-
-  const url = lti13_course_instance.ags_lineitems;
-
-  // Validate here, error before moving on if we're missing things
-
-  const token = await access_token(lti13_instance_id);
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  //console.log(response);
-  const data = await response.json();
-
-  for (const item of data) {
-    console.log(item);
-
-    await queryAsync(sql.update_lineitem, {
-      lti13_instance_id,
-      course_instance_id,
-      lineitem_id: item.id,
-      assessment_id: item?.resourceId,
-      lineitem: JSON.stringify(item),
-      active: true,
-    });
-  }
-
-  job.info(JSON.stringify(data, null, 3));
-  */
-}
 
 export default router;

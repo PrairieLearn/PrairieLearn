@@ -1,13 +1,28 @@
+import { join } from 'path';
+
 import type { Request } from 'express';
 import _ from 'lodash';
+import fetch from 'node-fetch';
+import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
 
 import { features } from '../../lib/features/index.js';
+import { ServerJob } from '../../lib/server-jobs.js';
+import { selectLti13Instance } from '../models/lti13Instance.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const TOKEN_SCOPES = [
+  'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+  //'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+  'https://purl.imsglobal.org/spec/lti-ags/scope/score',
+  //'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
+  //'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+  //'https://canvas.instructure.com/lti/public_jwk/scope/update',
+];
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -217,4 +232,95 @@ export async function validateLti13CourseInstance(
     },
     z.boolean(),
   );
+}
+
+export async function access_token(lti13_instance_id: string) {
+  const lti13_instance = await selectLti13Instance(lti13_instance_id);
+
+  let tokenSet: TokenSet = lti13_instance.access_tokenset;
+
+  if (
+    lti13_instance.access_token_expires_at &&
+    lti13_instance.access_token_expires_at > new Date()
+  ) {
+    console.log('Token is valid');
+  } else {
+    console.log('Token expired');
+
+    const issuer = new Issuer(lti13_instance.issuer_params);
+    const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+
+    tokenSet = await client.grant({
+      grant_type: 'client_credentials',
+      scope: TOKEN_SCOPES.join(' '),
+    });
+
+    // Store the token for reuse
+
+    const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+
+    await queryAsync(sql.update_token, {
+      lti13_instance_id,
+      tokenSet,
+      expires_at: new Date(expires_at),
+    });
+  }
+  console.log(tokenSet);
+  return tokenSet.access_token;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+export async function get_lineitems(instance: any, job: ServerJob, authn_user_id: number) {
+  console.log(instance);
+
+  const token = await access_token(instance.lti13_instance.id);
+
+  job.info(`Token: ${token}`);
+  job.info('Polling for line items');
+
+  const response = await fetch(instance.lti13_course_instance.lineitems, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await response.json();
+  console.log(data);
+
+  job.info(data.toString());
+
+  /*
+  // Make this a more targetted single row query
+  const lti13_course_instance_result = await queryAsync(sql.get_course_instance, params);
+
+  const lti13_course_instance = lti13_course_instance_result.rows[0];
+  //console.log(JSON.stringify(lti13_course_instance, null, 3));
+
+  const url = lti13_course_instance.ags_lineitems;
+
+  // Validate here, error before moving on if we're missing things
+
+  const token = await access_token(lti13_instance_id);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  //console.log(response);
+  const data = await response.json();
+
+  for (const item of data) {
+    console.log(item);
+
+    await queryAsync(sql.update_lineitem, {
+      lti13_instance_id,
+      course_instance_id,
+      lineitem_id: item.id,
+      assessment_id: item?.resourceId,
+      lineitem: JSON.stringify(item),
+      active: true,
+    });
+  }
+
+  job.info(JSON.stringify(data, null, 3));
+  */
 }
