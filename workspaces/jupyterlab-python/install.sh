@@ -15,8 +15,10 @@ NEW_UID=1001
 NEW_GID=1001
 groupmod -g $NEW_GID $GROUP_NAME
 usermod -u $NEW_UID -g $NEW_GID $USER_NAME
-find /home -user $OLD_UID -execdir chown -h $NEW_UID {} +
-find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
+for d in /home /tmp ; do
+    find $d -user $OLD_UID -execdir chown -h $NEW_UID {} +
+    find $d -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
+done
 
 # Install dependencies and various libraries
 apt-get update && apt-get -y upgrade
