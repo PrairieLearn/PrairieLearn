@@ -153,7 +153,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
-    insertAuditLog({
+    await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
       table_name: 'pl_courses',
@@ -194,7 +194,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
-    insertAuditLog({
+    await insertAuditLog({
       authn_user_id,
       action: 'insert',
       table_name: 'pl_courses',
