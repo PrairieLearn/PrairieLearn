@@ -2,6 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
+import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
@@ -374,22 +375,7 @@ function scorebarFormatter(
   const buttonId = `editQuestionScorePerc${row.id}`;
 
   return html`<div class="d-inline-block align-middle">
-      ${score == null
-        ? ''
-        : html`<div class="progress bg" style="min-width: 10em; max-width: 20em;">
-            <div
-              class="progress-bar bg-success"
-              style="width: ${Math.floor(Math.min(100, score))}%"
-            >
-              ${score >= 50 ? `${Math.floor(score)}%` : ''}
-            </div>
-            <div
-              class="progress-bar bg-danger"
-              style="width: ${100 - Math.floor(Math.min(100, score))}%"
-            >
-              ${score >= 50 ? '' : `${Math.floor(score)}%`}
-            </div>
-          </div>`}
+      ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
     </div>
     ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
