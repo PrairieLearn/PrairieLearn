@@ -148,14 +148,21 @@ export async function deleteCourse({
   course_id: string;
   authn_user_id: string;
 }) {
-  const deletedCourse = await queryOptionalRow(
-    sql.delete_course,
-    { course_id, authn_user_id },
-    CourseSchema,
-  );
-  if (deletedCourse == null) {
-    throw new Error('Course to delete not found');
-  }
+  await runInTransactionAsync(async () => {
+    const deletedCourse = await queryOptionalRow(sql.delete_course, { course_id }, CourseSchema);
+    if (deletedCourse == null) {
+      throw new Error('Course to delete not found');
+    }
+    insertAuditLog({
+      authn_user_id,
+      action: 'soft_delete',
+      table_name: 'pl_courses',
+      row_id: course_id,
+      new_state: deletedCourse,
+      course_id,
+      institution_id: deletedCourse.institution_id,
+    });
+  });
 }
 
 export async function insertCourse({
@@ -190,7 +197,7 @@ export async function insertCourse({
     insertAuditLog({
       authn_user_id,
       action: 'insert',
-      table_name: 'courses',
+      table_name: 'pl_courses',
       row_id: course.id,
       new_state: course,
       institution_id,
