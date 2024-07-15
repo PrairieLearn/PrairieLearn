@@ -24,7 +24,7 @@ class InstructorFileEditor {
     contents?: string;
   }) {
     this.element = element;
-    this.diskHash = this.element.querySelector<HTMLInputElement>(
+    this.diskHash = element.querySelector<HTMLInputElement>(
       'input[name=file_edit_orig_hash]',
     )?.value;
     const editorElement = element.querySelector<HTMLElement>('.editor');
@@ -56,7 +56,7 @@ class InstructorFileEditor {
       },
     });
 
-    this.editor.getSession().on('change', this.onChange.bind(this));
+    this.editor.getSession().on('change', () => this.onChange());
   }
 
   setEditorContents(contents: string) {
@@ -113,13 +113,8 @@ class InstructorFileEditor {
   }
 
   takeOver() {
-    // Allow editing "My version" again
     this.editor.setReadOnly(false);
-
-    // Enable "save and sync" button again by checking diff on text hash
     this.checkDiff();
-
-    // Allow the editor to resize itself, filling the whole container
     this.editor.resize();
   }
 }
@@ -157,17 +152,8 @@ onDocumentReady(() => {
   }
 
   document.querySelector<HTMLButtonElement>('button[id=choose]')?.addEventListener('click', () => {
-    //
-    // This is what happens when the user clicks "Choose my version"
-    //
-
-    // Get rid of the editor containing "Their version"
     diskEditorElement?.remove();
-
-    // Get rid of header that presents the version labels and choice buttons
     document.querySelector('.choose-container')?.remove();
-
-    // Dismiss alert that says the user needs to make a choice
     document.getElementById('file-editor-choicealert')?.remove();
 
     // Show div that contains "Show help" and "Save and sync" buttons
@@ -177,27 +163,29 @@ onDocumentReady(() => {
   });
 
   const showDetail = document.getElementById('results');
-  if (showDetail) {
-    const showDetailButton = document.getElementById('results-button');
-    $(showDetail).on('hide.bs.collapse', () => {
-      if (showDetailButton) showDetailButton.textContent = 'Show detail';
-    });
-    $(showDetail).on('show.bs.collapse', () => {
-      if (showDetailButton) showDetailButton.textContent = 'Hide detail';
-    });
+  const showDetailButton = document.getElementById('results-button');
+  if (showDetail && showDetailButton) {
+    $(showDetail)
+      .on('hide.bs.collapse', () => {
+        showDetailButton.textContent = 'Show detail';
+      })
+      .on('show.bs.collapse', () => {
+        showDetailButton.textContent = 'Hide detail';
+      });
   }
 
   const helpBox = document.getElementById('help');
-  if (helpBox) {
-    const helpButton = document.getElementById('help-button');
-    const helpButtonLabel = document.getElementById('help-button-label');
-    $(helpBox).on('hide.bs.collapse', () => {
-      if (helpButtonLabel) helpButtonLabel.textContent = 'Show help';
-      if (helpButton) helpButton.ariaExpanded = 'false';
-    });
-    $(helpBox).on('show.bs.collapse', () => {
-      if (helpButtonLabel) helpButtonLabel.textContent = 'Hide help';
-      if (helpButton) helpButton.ariaExpanded = 'true';
-    });
+  const helpButton = document.getElementById('help-button');
+  const helpButtonLabel = document.getElementById('help-button-label');
+  if (helpBox && helpButton && helpButtonLabel) {
+    $(helpBox)
+      .on('hide.bs.collapse', () => {
+        helpButtonLabel.textContent = 'Show help';
+        helpButton.ariaExpanded = 'false';
+      })
+      .on('show.bs.collapse', () => {
+        helpButtonLabel.textContent = 'Hide help';
+        helpButton.ariaExpanded = 'true';
+      });
   }
 });
