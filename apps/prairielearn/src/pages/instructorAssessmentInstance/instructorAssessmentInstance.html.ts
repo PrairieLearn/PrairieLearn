@@ -6,6 +6,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
@@ -214,9 +215,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Score</th>
                   <td class="align-middle" style="width: 20%;">
-                    ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                      score: resLocals.assessment_instance.score_perc,
-                    })}
+                    ${Scorebar(resLocals.assessment_instance.score_perc)}
                   </td>
                   <td class="align-middle" style="width: 100%;">
                     ${resLocals.authz_data.has_course_instance_permission_edit
@@ -394,9 +393,7 @@ export function InstructorAssessmentInstance({
                           : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
-                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                          score: instance_question.score_perc,
-                        })}
+                        ${Scorebar(instance_question.score_perc)}
                       </td>
                       <td class="align-middle" style="width: 1em;">
                         ${resLocals.authz_data.has_course_instance_permission_edit
