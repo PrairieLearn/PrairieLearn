@@ -49,6 +49,7 @@
     <%# User and logout %>
     <%
     let displayedName;
+    console.log(locals.authz_data, locals.authn_user);
     if (locals.authz_data) {
       if (locals.authz_data.user.name) {
         displayedName = authz_data.user.name;
@@ -56,7 +57,7 @@
         displayedName = authz_data.user.uid;
       }
 
-      if (authz_data.mode != 'Public') {
+      if (authz_data.mode != null && authz_data.mode != 'Public') {
         displayedName += ' (' + authz_data.mode + ')';
       }
     } else if (locals.authn_user) {
