@@ -258,22 +258,13 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                           id="file-editor-draft"
                           class="col js-file-editor"
                           data-contents="${fileEdit.editContents}"
-                          ${fileEdit.aceMode ? html`data-ace-mode="${fileEdit.aceMode}"` : ''}
-                          data-orig-hash="${fileEdit.origHash}"
-                          data-disk-hash="${fileEdit.diskHash}"
-                          data-save-element-id="file-editor-save-button"
-                          ${fileEdit.alertChoice
-                            ? html`
-                                data-alt-element-id="file-editor-disk",
-                                data-buttons-container-element-id="buttons",
-                                data-choice-alert-element-id="file-editor-choicealert",
-                              `
-                            : ''}
+                          data-ace-mode="${fileEdit.aceMode}"
+                          data-read-only="${fileEdit.alertChoice}"
                         >
                           <div class="card p-0">
                             ${fileEdit.alertChoice
                               ? html`
-                                  <div class="card-header text-center">
+                                  <div class="card-header text-center choose-container">
                                     <h4 class="mb-4">My version</h4>
                                     <button id="choose" class="btn btn-primary" type="button">
                                       Choose my version (continue editing)
@@ -295,7 +286,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               <input
                                 type="hidden"
                                 name="file_edit_orig_hash"
-                                value="${fileEdit.origHash}"
+                                value="${fileEdit.diskHash}"
                               />
                               <input type="hidden" name="file_edit_contents" />
                               <div class="editor"></div>
@@ -308,8 +299,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                 id="file-editor-disk"
                                 class="col js-file-editor"
                                 data-contents="${fileEdit.diskContents}"
-                                data-read-only="true"
-                                ${fileEdit.aceMode ? html`data-ace-mode="${fileEdit.aceMode}"` : ''}
+                                data-ace-mode="${fileEdit.aceMode}"
                               >
                                 <div class="card p-0">
                                   <div class="card-header text-center">
