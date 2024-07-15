@@ -9,13 +9,11 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
   return html`
     <!doctype html>
     <html lang="en">
-      <head>
+      <head data-ace-base-path="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}">
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: `Edit ${fileEdit?.fileName}`,
         })}
-        <!-- This is typically imported in the compiled asset, but the way ace handles modes/themes by dynamically loading scripts requires it to be loaded directly from ace-builds -->
-        <script src="${nodeModulesAssetPath('ace-builds/src-min-noconflict/ace.js')}"></script>
         ${compiledScriptTag('instructorFileEditorClient.ts')}
       </head>
 

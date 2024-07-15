@@ -125,6 +125,16 @@ class InstructorFileEditor {
 }
 
 onDocumentReady(() => {
+  // ace loads modes/themes dynamically as needed, but its unable to identify
+  // the base path implicitly when using compiled assets. We explicitly set the
+  // base path for modes/themes here based on the data attribute set in the head
+  // tag, which is computed server-side based on the asset path for the
+  // ace-builds module.
+  const { aceBasePath } = document.head.dataset;
+  ace.config.set('modePath', aceBasePath);
+  ace.config.set('workerPath', aceBasePath);
+  ace.config.set('themePath', aceBasePath);
+
   const draftEditorElement = document.querySelector<HTMLElement>('#file-editor-draft');
   const draftEditor = draftEditorElement
     ? new InstructorFileEditor({
