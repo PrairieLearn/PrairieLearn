@@ -1,6 +1,7 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 declare global {
@@ -466,24 +467,8 @@ onDocumentReady(() => {
     `.toString();
   }
 
-  function scorebarFormatter(score: number) {
-    if (score != null) {
-      return html`
-        <div class="progress bg" style="min-width: 5em; max-width: 20em;">
-          <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
-            ${score >= 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-          <div
-            class="progress-bar bg-danger"
-            style="width: ${100 - Math.floor(Math.min(100, score))}%"
-          >
-            ${score < 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-        </div>
-      `;
-    } else {
-      return '';
-    }
+  function scorebarFormatter(score: number | null) {
+    return Scorebar(score).toString();
   }
 
   function listFormatter(list: string[]) {
