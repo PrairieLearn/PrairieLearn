@@ -1,6 +1,6 @@
 // @ts-check
 
-/* eslint-disable import/order */
+/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
@@ -9,7 +9,7 @@ import * as Sentry from '@prairielearn/sentry';
 // `@sentry/tracing` must be imported before `@sentry/profiling-node`.
 import '@sentry/tracing';
 import { ProfilingIntegration } from '@sentry/profiling-node';
-/* eslint-enable import/order */
+/* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -52,6 +52,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
+import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
@@ -1312,6 +1313,14 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
     function (req, res, next) {
       res.locals.navSubPage = 'syncs';
@@ -1363,13 +1372,16 @@ export async function initExpress() {
       next();
     },
     asyncHandler(async (req, res, next) => {
-      // The navigation tabs rely on this value to know when to show/hide the
-      // billing tab, so we need to load it for all instance admin pages.
+      // The navigation tabs rely on these values to know when to show/hide themselves
+      // so we need to load it for all instance admin pages.
       const hasCourseInstanceBilling = await features.enabledFromLocals(
         'course-instance-billing',
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1437,6 +1449,11 @@ export async function initExpress() {
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
     ]);
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
+      (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
+        .default,
+    );
   }
 
   // Global client files
@@ -1839,6 +1856,14 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
     function (req, res, next) {
@@ -2553,7 +2578,7 @@ if (esMain(import.meta) && config.startServer) {
             userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
+          logger.info('Waiting for job to finish...');
           await jobPromise;
           (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
