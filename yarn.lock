@@ -2907,13 +2907,13 @@ __metadata:
     "@types/chai": "npm:^4.3.16"
     "@types/hast": "npm:^3.0.4"
     "@types/mdast": "npm:^4.0.4"
-    "@types/mocha": "npm:^10.0.6"
-    "@types/node": "npm:^20.13.0"
+    "@types/mocha": "npm:^10.0.7"
+    "@types/node": "npm:^20.14.10"
     "@types/unist": "npm:^3.0.2"
     c8: "npm:^9.1.0"
     chai: "npm:^5.1.1"
     mdast-util-math: "npm:^3.0.0"
-    mocha: "npm:^10.4.0"
+    mocha: "npm:^10.6.0"
     rehype-raw: "npm:^7.0.0"
     rehype-sanitize: "npm:^6.0.0"
     rehype-stringify: "npm:^10.0.0"
@@ -2921,9 +2921,9 @@ __metadata:
     remark-math: "npm:^6.0.0"
     remark-parse: "npm:^11.0.0"
     remark-rehype: "npm:^11.1.0"
-    tsx: "npm:^4.11.0"
-    typescript: "npm:^5.4.5"
-    unified: "npm:^11.0.4"
+    tsx: "npm:^4.16.2"
+    typescript: "npm:^5.5.3"
+    unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
     vfile: "npm:^6.0.1"
   languageName: unknown
@@ -5044,7 +5044,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.6, @types/mocha@npm:^10.0.7":
+"@types/mocha@npm:^10.0.7":
   version: 10.0.7
   resolution: "@types/mocha@npm:10.0.7"
   checksum: 10c0/48a2df4dd02b6e66a11129dca6a23cf0cc3995faf8525286eb851043685bd8b7444780f4bb29a1c42df7559ed63294e5308bfce3a6b862ad2e0359cb21c21329
@@ -5102,12 +5102,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.14.9":
-  version: 20.14.9
-  resolution: "@types/node@npm:20.14.9"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.14.10, @types/node@npm:^20.14.9":
+  version: 20.14.10
+  resolution: "@types/node@npm:20.14.10"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/911ffa444dc032897f4a23ed580c67903bd38ea1c5ec99b1d00fa10b83537a3adddef8e1f29710cbdd8e556a61407ed008e06537d834e48caf449ce59f87d387
+  checksum: 10c0/0b06cff14365c2d0085dc16cc8cbea5c40ec09cfc1fea966be9eeecf35562760bfde8f88e86de6edfaf394501236e229d9c1084fad04fb4dec472ae245d8ae69
   languageName: node
   linkType: hard
 
@@ -5124,15 +5124,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10c0/e985f50684def801801069e236165ee511f9195fc04ad4a2af7642d86aeaeaf7bfe34c147f894a48618a5c71c15b388ca91341a244792149543a712e38351988
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^20.13.0":
-  version: 20.14.10
-  resolution: "@types/node@npm:20.14.10"
-  dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10c0/0b06cff14365c2d0085dc16cc8cbea5c40ec09cfc1fea966be9eeecf35562760bfde8f88e86de6edfaf394501236e229d9c1084fad04fb4dec472ae245d8ae69
   languageName: node
   linkType: hard
 
@@ -12071,7 +12062,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mocha@npm:^10.4.0, mocha@npm:^10.6.0":
+"mocha@npm:^10.6.0":
   version: 10.6.0
   resolution: "mocha@npm:10.6.0"
   dependencies:
@@ -15195,7 +15186,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.11.0, tsx@npm:^4.16.2":
+"tsx@npm:^4.16.2":
   version: 4.16.2
   resolution: "tsx@npm:4.16.2"
   dependencies:
@@ -15419,7 +15410,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.4.5, typescript@npm:^5.5.3":
+"typescript@npm:^5.5.3":
   version: 5.5.3
   resolution: "typescript@npm:5.5.3"
   bin:
@@ -15429,7 +15420,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.5.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.5.3#optional!builtin<compat/typescript>":
   version: 5.5.3
   resolution: "typescript@patch:typescript@npm%3A5.5.3#optional!builtin<compat/typescript>::version=5.5.3&hash=b45daf"
   bin:
@@ -15511,7 +15502,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unified@npm:^11.0.0, unified@npm:^11.0.4, unified@npm:^11.0.5":
+"unified@npm:^11.0.0, unified@npm:^11.0.5":
   version: 11.0.5
   resolution: "unified@npm:11.0.5"
   dependencies:
