@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import onHeaders from 'on-headers';
 
 const router = Router();
 
@@ -12,16 +13,14 @@ router.all('/*', function (req, res, next) {
   // Added for backwards compatibility with older browsers.
   res.header('X-Frame-Options', 'DENY');
 
-  const originalResType: typeof res.type = res.type.bind(res);
-  res.type = (type) => {
-    if (type === 'application/pdf') {
+  onHeaders(res, function () {
+    if (this.getHeader('Content-Type') === 'application/pdf') {
       // Loosen CSP restrictions for PDF files, as they can cause issues if the file
       // is embedded, and are not expected to cause issues with XSS.
       res.header('Content-Security-Policy', "frame-ancestors 'self';");
       res.header('X-Frame-Options', 'SAMEORIGIN');
     }
-    return originalResType(type);
-  };
+  });
 
   next();
 });
