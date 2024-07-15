@@ -1,12 +1,22 @@
 /* eslint-env browser, jquery */
 
 import _ from 'lodash';
+
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
-    decodeData('questions-table-data');
+  const {
+    course_instance_ids,
+    showAddQuestionButton,
+    showAiGenerateQuestionButton,
+    qidPrefix,
+    urlPrefix,
+    plainUrlPrefix,
+  } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -76,15 +86,11 @@ onDocumentReady(() => {
   };
 
   window.topicFormatter = function (topic, question) {
-    return html`<span class="badge color-${question.topic.color}"
-      >${question.topic.name}</span
-    >`.toString();
+    return TopicBadge(question.topic).toString();
   };
 
   window.tagsFormatter = function (tags, question) {
-    return _.map(question.tags ?? [], (tag) =>
-      html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
-    ).join(' ');
+    return TagBadgeList(question.tags).toString();
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
@@ -194,6 +200,17 @@ onDocumentReady(() => {
       event: () => {
         $('form[name=add-question-form]').submit();
       },
+    };
+  }
+
+  if (showAiGenerateQuestionButton) {
+    tableSettings.buttons.aiGenerateQuestion = {
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
+          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Generate Question with AI
+        </a>
+      `.toString(),
     };
   }
 

@@ -47,9 +47,20 @@
     </p>
   </pl-question-panel>
   
-  <pl-rich-text-editor file-name="woodchuck.html" source-file-name="woodchuck-initial.html">
+  <pl-rich-text-editor file-name="woodchuck.html" source-file-name="woodchuck-initial.html" counter="word">
   </pl-rich-text-editor>
   
+  <hr>
+
+  <pl-question-panel>
+    <p>A character or word counter can be turned on by setting <code>counter="character"</code> or
+    <code>counter="word"</code> respectively. The default setting, <code>counter="none"</code>,
+    disables the counter.</p>
+
+    <pl-rich-text-editor file-name="character-count-demo.html" source-file-name="woodchuck-initial.html" counter="character">
+    </pl-rich-text-editor>
+  </pl-question-panel>
+
   <hr>
 
   <pl-question-panel>

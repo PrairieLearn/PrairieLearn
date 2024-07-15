@@ -1,16 +1,18 @@
 import * as express from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { regradeAllAssessmentInstances } from '../../lib/regrading';
 import * as sqldb from '@prairielearn/postgres';
+
+import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+
 import {
   InstructorAssessmentRegrading,
   RegradingJobSequenceSchema,
-} from './instructorAssessmentRegrading.html';
+} from './instructorAssessmentRegrading.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

@@ -34,7 +34,7 @@ def union_drawing_items(e1, e2):
 
     newobj = []
     for item in obj1:
-        if not item["id"] in new_ids:
+        if item["id"] not in new_ids:
             newobj.append(item)
     for item in obj2:
         newobj.append(item)
@@ -294,9 +294,10 @@ def render(element_html, data):
             element, "snap-to-grid", defaults.element_defaults["snap-to-grid"]
         ),
         "grid_size": grid_size,
-        "editable": (data["panel"] == "question" and not preview_mode),
+        "editable": (
+            data["panel"] == "question" and data["editable"] and not preview_mode
+        ),
         "base_url": data["options"]["base_url"],
-        "client_files": "/pl/static/elements/pl-drawing/clientFilesElement/",
         "element_client_files": data["options"]["client_files_extensions_url"],
         "render_scale": pl.get_float_attrib(
             element, "render-scale", defaults.element_defaults["render-scale"]

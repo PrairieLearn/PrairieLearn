@@ -1,16 +1,17 @@
 import { isFuture, isValid, parseISO } from 'date-fns';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as infofile from '../infofile';
-import { features } from '../../lib/features/index';
-import { makePerformance } from '../performance';
-import { Assessment, CourseInstanceData } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
+import { config } from '../../lib/config.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
+import { Assessment, CourseInstanceData } from '../course-db.js';
+import * as infofile from '../infofile.js';
+import { makePerformance } from '../performance.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const perf = makePerformance('assessments');
 
 type AssessmentInfoFile = infofile.InfoFile<Assessment>;
@@ -434,7 +435,7 @@ export async function sync(
         if (qids.length > 0) {
           infofile.addError(
             assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+            "You have attempted to import a question with '@', but question sharing is not enabled for your course.",
           );
         }
       }

@@ -1,50 +1,27 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
   tids,
   studentLink,
-  studentLinkQRCode,
   infoAssessmentPath,
 }: {
   resLocals: Record<string, any>;
   tids: string[];
   studentLink: string;
-  studentLinkQRCode: string;
   infoAssessmentPath: string;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
-        <script>
-          $(() => {
-            let clipboard = new ClipboardJS('.btn-copy');
-            clipboard.on('success', (e) => {
-              $(e.trigger)
-                .popover({
-                  content: 'Copied!',
-                  placement: 'bottom',
-                })
-                .popover('show');
-              window.setTimeout(function () {
-                $(e.trigger).popover('hide');
-              }, 1000);
-            });
-            $('.js-student-link-qrcode-button').popover({
-              content: $('#js-student-link-qrcode'),
-              html: true,
-              trigger: 'click',
-              container: 'body',
-            });
-          });
-        </script>
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
@@ -53,17 +30,10 @@ export function InstructorAssessmentSettings({
       </head>
 
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -109,34 +79,12 @@ export function InstructorAssessmentSettings({
                     <span class="pr-2">${resLocals.assessment.tid}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            id="changeAidButton"
-                            class="btn btn-xs btn-secondary"
-                            type="button"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change AID"
-                            data-content="${renderEjs(
-                              __filename,
-                              "<%= include('../partials/changeIdForm'), %>",
-                              {
-                                id_label: 'AID',
-                                buttonID: 'changeAidButton',
-                                id_old: resLocals.assessment.tid,
-                                ids: tids,
-                                ...resLocals,
-                              },
-                            )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change AID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'AID',
+                          currentValue: resLocals.assessment.tid,
+                          otherValues: tids,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                   </td>
                 </tr>
@@ -186,15 +134,11 @@ export function InstructorAssessmentSettings({
                           type="button"
                           title="Student Link QR Code"
                           aria-label="Student Link QR Code"
-                          class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button"
+                          class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                          data-qr-code-content="${studentLink}"
                         >
                           <i class="fas fa-qrcode"></i>
                         </button>
-                        <div class="d-none">
-                          <div id="js-student-link-qrcode">
-                            <center>${unsafeHtml(studentLinkQRCode)}</center>
-                          </div>
-                        </div>
                       </div>
                     </span>
                   </td>

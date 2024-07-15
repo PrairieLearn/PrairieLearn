@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Topic } from '../../lib/db-types';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { Topic } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTopics({
   resLocals,
@@ -14,13 +15,13 @@ export function InstructorCourseAdminTopics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -41,11 +42,7 @@ export function InstructorCourseAdminTopics({
                     return html`
                       <tr>
                         <td class="align-middle">${topic.number}</td>
-                        <td class="align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/topic'); %>", {
-                            topic,
-                          })}
-                        </td>
+                        <td class="align-middle">${TopicBadge(topic)}</td>
                         <td class="align-middle">${topic.color}</td>
                         <td class="align-middle">${topic.description}</td>
                       </tr>

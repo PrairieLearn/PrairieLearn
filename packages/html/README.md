@@ -6,21 +6,21 @@ Utilities for easily rendering HTML from within JavaScript.
 
 The `html` tagged template literal can be used to render HTML while ensuring that any interpolated values are properly escaped.
 
-By convention, HTML templates are located in `*.html.tmpl.js` files.
+By convention, HTML templates are located in `*.html.ts` files.
 
-```js
-// Hello.html.tmpl.js
-const { hmtl } = require('@prairielearn/html');
+```ts
+// Hello.html.ts
+import { html } from '@prairielearn/html';
 
-module.exports.Hello = function Hello({ name }) {
+export function Hello({ name }: { name: string }) {
   return html`<div>Hello, ${name}!</div>`;
-};
+}
 ```
 
 This can then be used to render a string:
 
-```js
-const { Hello } = require('./Hello');
+```ts
+import { Hello } from './Hello.html.ts';
 
 console.log(Hello({ name: 'Anjali' }).toString());
 // Prints "<div>Hello, Anjali!</div>"
@@ -30,8 +30,8 @@ console.log(Hello({ name: 'Anjali' }).toString());
 
 If you want to pre-escape some HTML, you can wrap it in `escapeHtml` to avoid escaping it twice. This is useful if you want to inline some HTML into an attribute, for instance with a Bootstrap popover.
 
-```js
-const { html, escapeHtml } = require('@prairielearn/html');
+```ts
+import { html, escapeHtml } from '@prairielearn/html';
 
 console.log(html`
   <button data-bs-toggle="popover" data-bs-content="${escapeHtml(html`<div>Content here</div>`)}">

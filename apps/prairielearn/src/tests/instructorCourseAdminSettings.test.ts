@@ -1,21 +1,24 @@
-import { config } from '../lib/config';
 import * as path from 'path';
-import * as fs from 'fs-extra';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+
+import { assert } from 'chai';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
-import execa = require('execa');
 
-import * as helperServer from './helperServer';
-import { fetchCheerio } from './helperClient';
-import { assert } from 'chai';
-import { selectCourseById } from '../models/course';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions';
-import { getOrCreateUser, withUser } from './utils/auth';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
 
-const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import { getOrCreateUser, withUser } from './utils/auth.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const baseDir = tmp.dirSync().name;
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
@@ -108,6 +111,7 @@ describe('Editing course settings', () => {
       uid: 'viewer@example.com',
       name: 'Viewer User',
       uin: 'viewer',
+      email: 'viewer@example.com',
     });
     await insertCoursePermissionsByUserUid({
       course_id: '1',

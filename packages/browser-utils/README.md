@@ -32,7 +32,7 @@ const elements = parseHTML(
     <div>Goodbye, world</div>
   `,
 );
-const div = parseHTMLElement(document, html`<div>Hello, world</div>`);
+const div = parseHTMLElement<HTMLDivElement>(document, html`<div>Hello, world</div>`);
 ```
 
 ### `EncodedData` and `decodeData`
@@ -90,7 +90,3 @@ document.querySelectorAll('.js-delete-course').forEach((el) => {
   });
 });
 ```
-
-## Development
-
-Unlike most other `@prairielearn` packages, this one is built with [`tsup`](https://tsup.egoist.dev/), which is used to generate both CJS and ESM output. The latter is important for ensuring that tree-shaking works correctly when building client bundles, which is important for minimizing bundle sizes.

@@ -1,10 +1,11 @@
 import { type Response } from 'express';
+
 import { callRow } from '@prairielearn/postgres';
 
-import { ModeSchema, type User } from '../../lib/db-types';
-import { HttpRedirect } from '../../lib/redirect';
-import { setCookie } from '../../lib/cookie';
-import { features } from '../../lib/features';
+import { setCookie } from '../../lib/cookie.js';
+import { EnumModeSchema, type User } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
+import { HttpRedirect } from '../../lib/redirect.js';
 
 function hasUserAcceptedTerms(user: User): boolean {
   // At the moment, we only have one revision of our terms and conditions, so
@@ -35,7 +36,7 @@ export async function shouldRedirectToTermsPage(user: User, ip: string) {
   });
   if (!featureEnabled) return false;
 
-  const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], ModeSchema);
+  const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], EnumModeSchema);
   return mode === 'Public';
 }
 

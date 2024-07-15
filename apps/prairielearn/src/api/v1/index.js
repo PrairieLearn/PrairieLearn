@@ -19,51 +19,51 @@ function authzHasCourseInstanceView(req, res, next) {
 }
 
 // Pretty-print all JSON responses
-router.use(require('./prettyPrintJson').default);
+router.use((await import('./prettyPrintJson.js')).default);
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id(\\d+)', [
-  require('../../middlewares/authzCourseOrInstance').default,
+  (await import('../../middlewares/authzCourseOrInstance.js')).default,
   // Asserts that the user has either course preview or course instance student
   // data access. If a route provides access to student data, you should also
   // include the `authzHasCourseInstanceView` middleware to ensure that access
   // to student data is properly limited.
-  require('../../middlewares/authzHasCoursePreviewOrInstanceView').default,
-  require('./endpoints/courseInstanceInfo').default,
+  (await import('../../middlewares/authzHasCoursePreviewOrInstanceView.js')).default,
+  (await import('./endpoints/courseInstanceInfo/index.js')).default,
 ]);
 
 // ROUTES
 router.use(
   '/course_instances/:course_instance_id(\\d+)/assessments',
-  require('./endpoints/courseInstanceAssessments').default,
+  (await import('./endpoints/courseInstanceAssessments/index.js')).default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/assessment_instances',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceAssessmentInstances').default,
+  (await import('./endpoints/courseInstanceAssessmentInstances/index.js')).default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/submissions',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceSubmissions').default,
+  (await import('./endpoints/courseInstanceSubmissions/index.js')).default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/gradebook',
   authzHasCourseInstanceView,
-  require('./endpoints/courseInstanceGradebook').default,
+  (await import('./endpoints/courseInstanceGradebook/index.js')).default,
 );
 router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
-  require('./endpoints/courseInstanceAccessRules').default,
+  (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
 );
 
 // If no earlier routes matched, 404 the route
-router.use(require('./notFound').default);
+router.use((await import('./notFound.js')).default);
 
 // The Sentry error handler must come before our own.
 router.use(Sentry.Handlers.errorHandler());
 
 // Handle errors independently from the normal PL error handling
-router.use(require('./error').default);
+router.use((await import('./error.js')).default);
 
 export default router;

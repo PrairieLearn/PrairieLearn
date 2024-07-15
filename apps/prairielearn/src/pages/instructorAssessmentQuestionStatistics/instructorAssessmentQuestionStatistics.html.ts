@@ -1,8 +1,11 @@
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { assetPath, nodeModulesAssetPath } from '../../lib/assets';
+import { html, unsafeHtml } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -12,10 +15,9 @@ import {
   QuestionSchema,
   TopicSchema,
   ZoneSchema,
-} from '../../lib/db-types';
-import { formatFloat } from '../../lib/format';
-import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions';
-import { Modal } from '../../components/Modal.html';
+} from '../../lib/db-types.js';
+import { formatFloat } from '../../lib/format.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
   course_short_name: CourseSchema.shape.short_name,
@@ -45,26 +47,20 @@ export function InstructorAssessmentQuestionStatistics({
   rows: AssessmentQuestionStatsRow[];
   resLocals: Record<string, any>;
 }) {
+  const histminiOptions = { width: 60, height: 20, ymax: 1 };
+
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-        <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
-        <script src="${assetPath('localscripts/scatter.js')}"></script>
-        <script src="${assetPath('localscripts/histmini.js')}"></script>
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -112,32 +108,19 @@ export function InstructorAssessmentQuestionStatistics({
                   <div class="card-body">
                     <div
                       id="difficultyDiscriminationScatter"
-                      class="scatter"
-                      data-scatter-xvalues="${JSON.stringify(
-                        rows.map((q) => q.mean_question_score),
-                      )}"
-                      data-scatter-yvalues="${JSON.stringify(rows.map((q) => q.discrimination))}"
-                      data-scatter-labels="${JSON.stringify(
-                        rows.map((q) => q.assessment_question_number),
-                      )}"
+                      class="js-scatter"
+                      data-xdata="${JSON.stringify(rows.map((q) => q.mean_question_score))}"
+                      data-ydata="${JSON.stringify(rows.map((q) => q.discrimination))}"
+                      data-options="${JSON.stringify({
+                        xgrid: _.range(0, 110, 10),
+                        ygrid: _.range(0, 110, 10),
+                        xlabel: 'mean score / %',
+                        ylabel: 'discrimination / %',
+                        radius: 2,
+                        topMargin: 30,
+                        labels: rows.map((q) => q.assessment_question_number),
+                      })}"
                     ></div>
-                    <script>
-                      $(function () {
-                        const xdata = $('#difficultyDiscriminationScatter').data('scatter-xvalues');
-                        const ydata = $('#difficultyDiscriminationScatter').data('scatter-yvalues');
-                        const labels = $('#difficultyDiscriminationScatter').data('scatter-labels');
-                        const options = {
-                          xgrid: _.range(0, 110, 10),
-                          ygrid: _.range(0, 110, 10),
-                          xlabel: 'mean score / %',
-                          ylabel: 'discrimination / %',
-                          radius: 2,
-                          topMargin: 30,
-                          labels: labels,
-                        };
-                        scatter('#difficultyDiscriminationScatter', xdata, ydata, options);
-                      });
-                    </script>
                   </div>
                   <div class="card-footer">
                     <small>
@@ -195,7 +178,7 @@ export function InstructorAssessmentQuestionStatistics({
                 </thead>
                 <tbody>
                   ${rows.map(
-                    (row, i) => html`
+                    (row) => html`
                       <tr>
                         <td>
                           <a href="${resLocals.urlPrefix}/question/${row.question_id}/">
@@ -203,14 +186,14 @@ export function InstructorAssessmentQuestionStatistics({
                           </a>
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
+                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
                             score: row.mean_question_score
                               ? Math.round(row.mean_question_score)
                               : null,
                           })}
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(__filename, "<%- include('../partials/scorebar') %>", {
+                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
                             score: row.discrimination ? Math.round(row.discrimination) : null,
                           })}
                         </td>
@@ -224,20 +207,15 @@ export function InstructorAssessmentQuestionStatistics({
                         ${(row.number ?? 0) > 0
                           ? html`
                               <td class="text-center">
-                                <div id="scoreHist${i}" class="miniHist"></div>
-                              </td>
-                              <script>
-                                $(function () {
-                                  // TODO: Store data on 'data-' attribute
-                                  var data = [${(row.quintile_question_scores ?? []).join(',')}];
-                                  var options = {
-                                    width: 60,
-                                    height: 20,
+                                <div
+                                  class="js-histmini"
+                                  data-data="${JSON.stringify(row.quintile_question_scores)}"
+                                  data-options="${JSON.stringify({
+                                    ...histminiOptions,
                                     ymax: 100,
-                                  };
-                                  histmini('#scoreHist${i}', data, options);
-                                });
-                              </script>
+                                  })}"
+                                ></div>
+                              </td>
                             `
                           : html`<td class="text-center"></td>`}
                         <td class="align-middle text-nowrap" style="width: 1em;">
@@ -343,7 +321,7 @@ export function InstructorAssessmentQuestionStatistics({
                   </tr>
                 </thead>
                 <tbody>
-                  ${rows.map(function (row, i) {
+                  ${rows.map(function (row) {
                     return html`
                       <tr>
                         <td style="white-space: nowrap;">
@@ -376,11 +354,14 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.first_submission_score_hist !== null
                                   ? html`
                                       <div
-                                        id="firstSubmissionScoreHist${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(
                                           row.first_submission_score_hist,
                                         )}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          normalize: true,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
@@ -395,11 +376,14 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.last_submission_score_hist !== null
                                   ? html`
                                       <div
-                                        id="lastSubmissionScoreHist${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(
                                           row.last_submission_score_hist,
                                         )}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          normalize: true,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
@@ -414,11 +398,12 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.max_submission_score_hist !== null
                                   ? html`
                                       <div
-                                        id="maxSubmissionScoreHist${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
-                                          row.max_submission_score_hist,
-                                        )}"
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(row.max_submission_score_hist)}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          normalize: true,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
@@ -433,11 +418,14 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.average_submission_score_hist !== null
                                   ? html`
                                       <div
-                                        id="submissionScoreArray${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(
                                           row.average_submission_score_hist,
                                         )}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          normalize: true,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
@@ -446,11 +434,11 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.submission_score_array_averages !== null
                                   ? html`
                                       <div
-                                        id="submissionScoreArray${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(
                                           row.submission_score_array_averages,
                                         )}"
+                                        data-options="${JSON.stringify(histminiOptions)}"
                                       ></div>
                                     `
                                   : ''}
@@ -459,11 +447,11 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.incremental_submission_score_array_averages !== null
                                   ? html`
                                       <div
-                                        id="incrementalSubmissionScoreArray${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(
                                           row.incremental_submission_score_array_averages,
                                         )}"
+                                        data-options="${JSON.stringify(histminiOptions)}"
                                       ></div>
                                     `
                                   : ''}
@@ -474,11 +462,14 @@ export function InstructorAssessmentQuestionStatistics({
                                       ${row.incremental_submission_points_array_averages != null
                                         ? html`
                                             <div
-                                              id="incrementalSubmissionPointsArray${i}"
-                                              class="miniHist"
-                                              data-histmini-values="${JSON.stringify(
+                                              class="js-histmini"
+                                              data-data="${JSON.stringify(
                                                 row.incremental_submission_points_array_averages,
                                               )}"
+                                              data-options="${JSON.stringify({
+                                                ...histminiOptions,
+                                                ymax: row.max_points,
+                                              })}"
                                             ></div>
                                           `
                                         : ''}
@@ -495,11 +486,12 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.number_submissions_hist !== null
                                   ? html`
                                       <div
-                                        id="numberSubmissionsHist${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
-                                          row.number_submissions_hist,
-                                        )}"
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(row.number_submissions_hist)}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          normalize: true,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
@@ -508,73 +500,16 @@ export function InstructorAssessmentQuestionStatistics({
                                 ${row.quintile_question_scores !== null
                                   ? html`
                                       <div
-                                        id="quintileQuestionScoresHist${i}"
-                                        class="miniHist"
-                                        data-histmini-values="${JSON.stringify(
-                                          row.quintile_question_scores,
-                                        )}"
+                                        class="js-histmini"
+                                        data-data="${JSON.stringify(row.quintile_question_scores)}"
+                                        data-options="${JSON.stringify({
+                                          ...histminiOptions,
+                                          ymax: 100,
+                                        })}"
                                       ></div>
                                     `
                                   : ''}
                               </td>
-                              <script>
-                                $(function () {
-                                  const options = {
-                                    width: 60,
-                                    height: 20,
-                                    ymax: 1,
-                                  };
-                                  histmini(
-                                    '#firstSubmissionScoreHist${i}',
-                                    $('#firstSubmissionScoreHist${i}').data('histmini-values'),
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#lastSubmissionScoreHist${i}',
-                                    $('#lastSubmissionScoreHist${i}').data('histmini-values'),
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#maxSubmissionScoreHist${i}',
-                                    $('#maxSubmissionScoreHist${i}').data('histmini-values'),
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#averageSubmissionScoreHist${i}',
-                                    $('#averageSubmissionScoreHist${i}').data('histmini-values'),
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#submissionScoreArray${i}',
-                                    $('#submissionScoreArray${i}').data('histmini-values'),
-                                    options,
-                                  );
-                                  histmini(
-                                    '#incrementalSubmissionScoreArray${i}',
-                                    $('#incrementalSubmissionScoreArray${i}').data(
-                                      'histmini-values',
-                                    ),
-                                    options,
-                                  );
-                                  histmini(
-                                    '#incrementalSubmissionPointsArray${i}',
-                                    $('#incrementalSubmissionPointsArray${i}').data(
-                                      'histmini-values',
-                                    ),
-                                    _.defaults({ ymax: ${row.max_points} }, options),
-                                  );
-                                  histmini(
-                                    '#numberSubmissionsHist${i}',
-                                    $('#numberSubmissionsHist${i}').data('histmini-values'),
-                                    _.defaults({ normalize: true }, options),
-                                  );
-                                  histmini(
-                                    '#quintileQuestionScoresHist${i}',
-                                    $('#quintileQuestionScoresHist${i}').data('histmini-values'),
-                                    _.defaults({ ymax: 100 }, options),
-                                  );
-                                });
-                              </script>
                             `
                           : html`
                               <td

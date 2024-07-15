@@ -15,6 +15,9 @@ markdown_extensions:
   # allows indented code blocks inside lists
   - pymdownx.superfences
 
+  - toc:
+      permalink: true
+
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
@@ -49,7 +52,7 @@ nav:
       - 'Java autograder': 'java-grader/index.md'
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question Sharing': 'questionSharing.md'
+      - 'Question sharing': 'questionSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'

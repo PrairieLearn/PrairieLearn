@@ -1,5 +1,5 @@
 // @ts-check
-import AnsiUp from 'ansi_up';
+import { AnsiUp } from 'ansi_up';
 
 /**
  * @param {import('express').Request} req

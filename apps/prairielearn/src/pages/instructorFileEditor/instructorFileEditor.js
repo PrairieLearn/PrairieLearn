@@ -1,28 +1,31 @@
 // @ts-check
-import * as express from 'express';
-const asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+
+import * as modelist from 'ace-code/src/ext/modelist.js';
+import { AnsiUp } from 'ansi_up';
+import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
-import AnsiUp from 'ansi_up';
-const sha256 = require('crypto-js/sha256');
-import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
-import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
-import * as modelist from 'ace-code/src/ext/modelist';
-import { idsEqual } from '../../lib/id';
-import { getPaths } from '../../lib/instructorFiles';
-import { getCourseOwners } from '../../lib/course';
+import { v4 as uuidv4 } from 'uuid';
+
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { FileModifyEditor } from '../../lib/editors';
+import * as sqldb from '@prairielearn/postgres';
+
+import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
+import { getCourseOwners } from '../../lib/course.js';
+import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
+import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
+import { idsEqual } from '../../lib/id.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileEditor');
 
 router.get(
@@ -32,13 +35,13 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
       return;
     }
 
@@ -178,7 +181,7 @@ router.get(
 
     res.locals.fileEdit = fileEdit;
     res.locals.fileEdit.paths = paths;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
 
@@ -204,21 +207,6 @@ router.post(
     if (req.body.__action === 'save_and_sync') {
       debug('Save and sync');
 
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container,
-        filePath: paths.workingPath,
-        editContents: req.body.file_edit_contents,
-        origHash: req.body.file_edit_orig_hash,
-      });
-
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      editor.assertCanEdit();
-
       debug('Write draft file edit to db and to file store');
       const editID = await writeDraftEdit({
         userID: res.locals.user.user_id,
@@ -231,6 +219,14 @@ router.post(
         uid: res.locals.user.uid,
         user_name: res.locals.user.name,
         editContents: req.body.file_edit_contents,
+      });
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container,
+        filePath: paths.workingPath,
+        editContents: req.body.file_edit_contents,
+        origHash: req.body.file_edit_orig_hash,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -256,7 +252,7 @@ function getHash(contents) {
 }
 
 async function readDraftEdit(fileEdit) {
-  debug(`Looking for previously saved drafts`);
+  debug('Looking for previously saved drafts');
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -276,7 +272,7 @@ async function readDraftEdit(fileEdit) {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
   } else {
-    debug(`Found no saved drafts`);
+    debug('Found no saved drafts');
   }
 
   // We are choosing to soft-delete all drafts *before* reading the

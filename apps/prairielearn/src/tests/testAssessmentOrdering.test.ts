@@ -1,20 +1,21 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 import {
   getCourseData,
   COURSE_INSTANCE_ID,
   writeCourseToTempDirectory,
   overwriteAndSyncCourseData,
-} from './sync/util';
+} from './sync/util.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);

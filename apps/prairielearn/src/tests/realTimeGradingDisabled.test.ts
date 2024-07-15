@@ -1,13 +1,14 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with real-time grading disabled', function () {
   this.timeout(60000);
@@ -29,7 +30,7 @@ describe('Exam assessment with real-time grading disabled', function () {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });

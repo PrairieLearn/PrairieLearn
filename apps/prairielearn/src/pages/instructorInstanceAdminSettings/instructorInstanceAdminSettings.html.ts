@@ -1,69 +1,38 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
-  studentLinkQRCode,
   infoCourseInstancePath,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
-  studentLinkQRCode: string;
   infoCourseInstancePath: string;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
-        <script>
-          $(() => {
-            let clipboard = new ClipboardJS('.btn-copy');
-            clipboard.on('success', (e) => {
-              $(e.trigger)
-                .popover({
-                  content: 'Copied!',
-                  placement: 'bottom',
-                })
-                .popover('show');
-              window.setTimeout(function () {
-                $(e.trigger).popover('hide');
-              }, 1000);
-            });
-            $('.js-student-link-qrcode-button').popover({
-              content: $('#js-student-link-qrcode'),
-              html: true,
-              trigger: 'click',
-              container: 'body',
-            });
-          });
-        </script>
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
           }
         </style>
       </head>
-
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container">
           ${renderEjs(
-            __filename,
+            import.meta.url,
             "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
             resLocals,
           )}
@@ -83,36 +52,15 @@ export function InstructorInstanceAdminSettings({
                     <span class="pr-2">${resLocals.course_instance.short_name}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            id="changeCiidButton"
-                            class="btn btn-xs btn-secondary"
-                            type="button"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change CIID"
-                            data-content="${renderEjs(
-                              __filename,
-                              "<%= include('../partials/changeIdForm') %>",
-                              {
-                                ...resLocals,
-                                id_label: 'CIID',
-                                buttonID: 'changeCiidButton',
-                                id_old: resLocals.course_instance.short_name,
-                                ids: shortNames,
-                                changeIdFormHelpText:
-                                  'The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple versions, like <code>Fa19honors</code>.',
-                              },
-                            )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change CIID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'CIID',
+                          currentValue: resLocals.course_instance.short_name,
+                          otherValues: shortNames,
+                          extraHelpText: html`The recommended format is <code>Fa19</code> or
+                            <code>Fall2019</code>. Add suffixes if there are multiple versions, like
+                            <code>Fa19honors</code>.`,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                   </td>
                 </tr>
@@ -147,17 +95,13 @@ export function InstructorInstanceAdminSettings({
                           type="button"
                           title="Student Link QR Code"
                           aria-label="Student Link QR Code"
-                          class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button"
+                          class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                          data-qr-code-content="${studentLink}"
                         >
                           <i class="fas fa-qrcode"></i>
                         </button>
                       </div>
                     </span>
-                    <div class="d-none">
-                      <div id="js-student-link-qrcode">
-                        <center>${unsafeHtml(studentLinkQRCode)}</center>
-                      </div>
-                    </div>
                   </td>
                 </tr>
               </tbody>

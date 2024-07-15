@@ -1,17 +1,19 @@
 import { assert } from 'chai';
 
-import * as helperDb from '../../tests/helperDb';
-import * as helperCourse from '../../tests/helperCourse';
-import { ensureEnrollment } from '../../models/enrollment';
+import { queryRow } from '@prairielearn/postgres';
+
+import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import * as helperCourse from '../../tests/helperCourse.js';
+import * as helperDb from '../../tests/helperDb.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
+
 import {
   getEnrollmentCountsForCourse,
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
-} from './enrollment';
-import { getOrCreateUser } from '../../tests/utils/auth';
-import { ensurePlanGrant } from './plan-grants';
-import { queryRow } from '@prairielearn/postgres';
-import { CourseInstanceSchema } from '../../lib/db-types';
+} from './enrollment.js';
+import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
@@ -37,7 +39,7 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      `INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *`,
+      "INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *",
       {},
       CourseInstanceSchema,
     );
@@ -46,16 +48,19 @@ describe('getEnrollmentCountsForInstitution', () => {
       uid: 'free@example.com',
       name: 'Free Student',
       uin: 'free1',
+      email: 'free@example.com',
     });
     const paidUser1 = await getOrCreateUser({
       uid: 'paid1@example.com',
       name: 'Paid Student 1',
       uin: 'paid1',
+      email: 'paid1@example.com',
     });
     const paidUser2 = await getOrCreateUser({
       uid: 'paid2@example.com',
       name: 'Paid Student 2',
       uin: 'paid2',
+      email: 'paid2@example.com',
     });
 
     await ensureEnrollment({
@@ -137,6 +142,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
@@ -151,6 +157,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -176,6 +183,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -219,6 +227,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
@@ -233,6 +242,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
@@ -258,6 +268,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uid: 'student@example.com',
       name: 'Example Student',
       uin: 'student',
+      email: 'student@example.com',
     });
 
     await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });

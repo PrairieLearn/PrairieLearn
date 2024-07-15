@@ -1,6 +1,7 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
 
 export const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),
@@ -34,10 +35,10 @@ export function AdministratorQueries({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'queries',

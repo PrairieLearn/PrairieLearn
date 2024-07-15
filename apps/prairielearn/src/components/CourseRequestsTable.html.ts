@@ -1,8 +1,8 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseRequestRow } from '../lib/course-request';
-import { Institution } from '../lib/db-types';
+import { CourseRequestRow } from '../lib/course-request.js';
+import { Institution } from '../lib/db-types.js';
 
 export function CourseRequestsTable({
   rows,
@@ -170,7 +170,7 @@ export function CourseRequestsTable({
                                       <td>${job.authn_user_name}</td>
                                       <td>
                                         ${renderEjs(
-                                          __filename,
+                                          import.meta.url,
                                           "<%- include('../pages/partials/jobStatus') %>",
                                           { status: job.status },
                                         )}
@@ -231,7 +231,7 @@ function CourseRequestApproveForm({
         <label>Institution:</label>
         <select
           name="institution_id"
-          class="form-control"
+          class="custom-select"
           onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
         >
           ${institutions.map((i) => {

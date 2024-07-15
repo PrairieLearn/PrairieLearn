@@ -1,11 +1,13 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import * as crypto from 'node:crypto';
-import * as sqldb from '@prairielearn/postgres';
+
+import asyncHandler from 'express-async-handler';
+
 import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
   let token;

@@ -185,18 +185,16 @@ def prepare_data(
     # modify the source data.
     data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
 
-    # `base_url` and associated values are only present during the render phase.
+    # `*_url` options are only present during the render phase.
     if phase == "render":
         client_files_element_url = (
-            pathlib.Path(data["options"]["base_url"])
-            / "elements"
+            pathlib.Path(data["options"]["course_element_files_url"])
             / element_info["name"]
             / "clientFilesElement"
         ).as_posix()
         client_files_extensions_url = {
             extension: (
-                pathlib.Path(data["options"]["base_url"])
-                / "elementExtensions"
+                pathlib.Path(data["options"]["course_element_extension_files_url"])
                 / element_info["name"]
                 / extension
                 / "clientFilesExtension"

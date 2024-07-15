@@ -1,22 +1,25 @@
-import { type Response } from 'express';
-import * as fs from 'fs-extra';
 import * as path from 'node:path';
+
+import { type Response } from 'express';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-
-import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { Course, Question } from './db-types';
-import { selectCoursesWithEditAccess } from '../models/course';
-import { idsEqual } from './id';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { selectCoursesWithEditAccess } from '../models/course.js';
+
+import { config } from './config.js';
+import { Course, Question } from './db-types.js';
+import { idsEqual } from './id.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function setQuestionCopyTargets(res: Response) {
   // Avoid querying for editable courses if we won't be able to copy this
   // question anyways.
-  if (!res.locals.course.template_course) {
+  if (!res.locals.course.template_course && !res.locals.question.shared_publicly_with_source) {
     return;
   }
 
@@ -33,7 +36,7 @@ export async function setQuestionCopyTargets(res: Response) {
         !idsEqual(course.id, res.locals.course.id),
     )
     .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+      const copyUrl = `/pl/course/${course.id}/copy_public_question`;
 
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.

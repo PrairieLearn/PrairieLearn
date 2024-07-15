@@ -1,80 +1,66 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as _ from 'lodash';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
-import { getCourseOwners } from '../../lib/course';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { getCourseOwners } from '../../lib/course.js';
+
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    getCourseOwners(res.locals.course.id)
-      .then((owners) => {
-        res.locals.course_owners = owners;
-        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      })
-      .catch((err) => next(err));
-    return;
-  }
-  var params = {
-    course_instance_id: res.locals.course_instance.id,
-  };
-
-  sqldb.query(sql.lti_data, params, function (err, result) {
-    if (ERR(err, next)) return;
-    _.assign(res.locals, result.rows[0]);
-
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
-
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(new error.HttpStatusError(403, 'Access denied (must be a course Editor)'));
-  }
-  var params;
-  if (req.body.__action === 'lti_new_cred') {
-    params = {
-      key: 'K' + randomString(),
-      secret: 'S' + randomString(),
-      course_instance_id: res.locals.course_instance.id,
-    };
-    sqldb.query(sql.insert_cred, params, function (err, _result) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'lti_del_cred') {
-    params = {
-      id: req.body.lti_link_id,
-      ci_id: res.locals.course_instance.id,
-    };
-    sqldb.query(sql.delete_cred, params, function (err, _result) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'lti_link_target') {
-    var newAssessment = null;
-    if (req.body.newAssessment !== '') {
-      newAssessment = req.body.newAssessment;
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
+      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      return;
     }
 
-    params = {
-      assessment_id: newAssessment,
-      id: req.body.lti_link_id,
-      ci_id: res.locals.course_instance.id,
-    };
-    sqldb.query(sql.update_link, params, function (err, _result) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
+    const result = await sqldb.queryAsync(sql.lti_data, {
+      course_instance_id: res.locals.course_instance.id,
     });
-  } else {
-    return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
-  }
-});
+    _.assign(res.locals, result.rows[0]);
+
+    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
+    }
+
+    if (req.body.__action === 'lti_new_cred') {
+      await sqldb.queryAsync(sql.insert_cred, {
+        key: 'K' + randomString(),
+        secret: 'S' + randomString(),
+        course_instance_id: res.locals.course_instance.id,
+      });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'lti_del_cred') {
+      await sqldb.queryAsync(sql.delete_cred, {
+        id: req.body.lti_link_id,
+        ci_id: res.locals.course_instance.id,
+      });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'lti_link_target') {
+      await sqldb.queryAsync(sql.update_link, {
+        assessment_id: req.body.newAssessment || null,
+        id: req.body.lti_link_id,
+        ci_id: res.locals.course_instance.id,
+      });
+      res.redirect(req.originalUrl);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
 
 export default router;
 

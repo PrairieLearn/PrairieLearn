@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseRequestRow } from '../../lib/course-request';
-import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types';
-import { config } from '../../lib/config';
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.html';
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
+import { config } from '../../lib/config.js';
+import { CourseRequestRow } from '../../lib/course-request.js';
+import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types.js';
 
 export const CourseWithInstitutionSchema = CourseSchema.extend({
   institution: InstitutionSchema,
@@ -29,7 +30,7 @@ export function AdministratorCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
       </head>
       <body>
         <script>
@@ -37,7 +38,7 @@ export function AdministratorCourses({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',
           navSubPage: 'courses',
@@ -224,7 +225,7 @@ function CourseInsertForm({
         <label>Institution:</label>
         <select
           name="institution_id"
-          class="form-control"
+          class="custom-select"
           onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
         >
           ${institutions.map((i) => {
