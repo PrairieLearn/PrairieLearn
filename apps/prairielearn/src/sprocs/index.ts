@@ -53,7 +53,6 @@ export async function init() {
       'authz_course_instance.sql',
       'administrators_insert_by_user_uid.sql',
       'administrators_delete_by_user_id.sql',
-      'courses_insert.sql',
       'courses_update_column.sql',
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
