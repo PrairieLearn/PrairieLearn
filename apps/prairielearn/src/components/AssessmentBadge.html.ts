@@ -12,8 +12,8 @@ export function AssessmentBadge({
 } & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
   | {
       urlPrefix: string;
-      plainUrlPrefix?: unknown;
-      course_instance_id?: unknown;
+      plainUrlPrefix?: undefined;
+      course_instance_id?: undefined;
     }
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {

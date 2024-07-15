@@ -365,7 +365,6 @@ function DeleteQuestionModal({
   assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
 }) {
-  const plainUrlPrefix = config.urlPrefix;
   return Modal({
     id: 'deleteQuestionModal',
     title: 'Delete question',
@@ -384,7 +383,7 @@ function DeleteQuestionModal({
                     <h6>${a_with_q.short_name} (${a_with_q.long_name})</h6>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadge({
-                        plainUrlPrefix,
+                        plainUrlPrefix: config.urlPrefix,
                         course_instance_id: a_with_q.course_instance_id,
                         assessment,
                       }),
