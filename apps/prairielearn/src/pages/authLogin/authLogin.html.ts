@@ -121,7 +121,9 @@ function LoginPageContainer({
           <div class="login-container">
             <div>
               <h1 class="text-center">
-                <a href="https://www.prairielearn.com/" target="_blank" class="text-body">PrairieLearn</a>
+                <a href="https://www.prairielearn.com/" target="_blank" class="text-body">
+                  PrairieLearn
+                </a>
               </h1>
               <h2 class="text-center subheader mb-5">
                 Sign in ${service ? `to continue to ${service}` : ''}
