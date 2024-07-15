@@ -4,7 +4,13 @@ import { promisify } from 'util';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryAsync,
+  queryRows,
+  queryOptionalRow,
+} from '@prairielearn/postgres';
 
 import { Course, CourseSchema } from '../lib/db-types.js';
 
@@ -130,4 +136,21 @@ export async function selectCoursesWithEditAccess({
 
 export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
   return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
+}
+
+export async function deleteCourse({
+  course_id,
+  authn_user_id,
+}: {
+  course_id: string;
+  authn_user_id: string;
+}) {
+  const deletedCourse = await queryOptionalRow(
+    sql.delete_course,
+    { course_id, authn_user_id },
+    CourseSchema,
+  );
+  if (deletedCourse == null) {
+    throw new Error('Course to delete not found');
+  }
 }

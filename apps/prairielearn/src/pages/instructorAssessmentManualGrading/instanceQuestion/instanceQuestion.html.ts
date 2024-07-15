@@ -4,6 +4,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
+import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
@@ -91,9 +92,15 @@ export function InstanceQuestion({
               </div>
 
               ${resLocals.file_list.length > 0
-                ? renderEjs(import.meta.url, "<%- include('../../partials/attachFilePanel') %>", {
-                    ...resLocals,
-                    question_context: 'manual_grading',
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant.id,
+                    csrfToken: resLocals.__csrf_token,
+                    allowNewUploads: false,
                   })
                 : ''}
               ${InstructorInfoPanel({
