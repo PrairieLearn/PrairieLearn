@@ -11,12 +11,12 @@
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.606.0",
-    "@aws-sdk/client-ecr": "^3.606.0",
-    "@aws-sdk/client-s3": "^3.606.0",
-    "@aws-sdk/client-sqs": "^3.606.0",
-    "@aws-sdk/credential-providers": "^3.606.0",
-    "@aws-sdk/lib-storage": "^3.606.0",
+    "@aws-sdk/client-auto-scaling": "^3.609.0",
+    "@aws-sdk/client-ecr": "^3.609.0",
+    "@aws-sdk/client-s3": "^3.609.0",
+    "@aws-sdk/client-sqs": "^3.609.0",
+    "@aws-sdk/credential-providers": "^3.609.0",
+    "@aws-sdk/lib-storage": "^3.609.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -45,11 +45,11 @@
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "chai-as-promised": "^8.0.0",
-    "mocha": "^10.5.2",
+    "mocha": "^10.6.0",
     "nodemon": "^3.1.4",
     "sinon": "^18.0.0",
-    "tsx": "^4.15.8",
-    "typescript": "^5.5.2",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
     "typescript-cp": "^0.1.9"
   },
   "c8": {

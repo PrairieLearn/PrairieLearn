@@ -9,8 +9,14 @@ import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
-    decodeData('questions-table-data');
+  const {
+    course_instance_ids,
+    showAddQuestionButton,
+    showAiGenerateQuestionButton,
+    qidPrefix,
+    urlPrefix,
+    plainUrlPrefix,
+  } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -194,6 +200,17 @@ onDocumentReady(() => {
       event: () => {
         $('form[name=add-question-form]').submit();
       },
+    };
+  }
+
+  if (showAiGenerateQuestionButton) {
+    tableSettings.buttons.aiGenerateQuestion = {
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
+          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Generate Question with AI
+        </a>
+      `.toString(),
     };
   }
 
