@@ -151,19 +151,21 @@ onDocumentReady(() => {
     });
   }
 
-  document.querySelector<HTMLButtonElement>('button[id=choose]')?.addEventListener('click', () => {
-    diskEditorElement?.remove();
-    document.querySelector('.choose-container')?.remove();
-    document.getElementById('file-editor-choicealert')?.remove();
+  document
+    .querySelector<HTMLButtonElement>('#choose-my-version-button')
+    ?.addEventListener('click', () => {
+      document
+        .querySelectorAll('.js-version-choice-content')
+        .forEach((element) => element.remove());
 
-    // Show div that contains "Show help" and "Save and sync" buttons
-    $('#buttons').collapse('show');
+      // Show div that contains "Show help" and "Save and sync" buttons
+      $('#buttons').collapse('show');
 
-    draftEditor?.takeOver();
-  });
+      draftEditor?.takeOver();
+    });
 
-  const showDetail = document.getElementById('results');
-  const showDetailButton = document.getElementById('results-button');
+  const showDetail = document.getElementById('job-sequence-results');
+  const showDetailButton = document.getElementById('job-sequence-results-button');
   if (showDetail && showDetailButton) {
     $(showDetail)
       .on('hide.bs.collapse', () => {

@@ -187,8 +187,8 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                               type="button"
                                               class="btn btn-secondary btn-sm"
                                               data-toggle="collapse"
-                                              data-target="#results"
-                                              id="results-button"
+                                              data-target="#job-sequence-results"
+                                              id="job-sequence-results-button"
                                             >
                                               Show detail
                                             </button>
@@ -206,7 +206,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                   </div>
                                   ${fileEdit.jobSequenceId != null
                                     ? html`
-                                        <div class="row collapse mt-4" id="results">
+                                        <div class="row collapse mt-4" id="job-sequence-results">
                                           <div class="card card-body">
                                             ${renderEjs(
                                               import.meta.url,
@@ -227,16 +227,17 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                           ${fileEdit.alertChoice
                             ? html`
                                 <div
-                                  id="file-editor-choicealert"
-                                  class="alert alert-danger alert-dismissible fade show m-2"
+                                  class="alert alert-danger alert-dismissible fade show m-2 js-version-choice-content"
                                   role="alert"
                                 >
                                   ${fileEdit.hasSameHash
-                                    ? 'You were editing this file and made changes. You may choose either to continue editing or to discard your changes.'
-                                    : 'Both you and another user made changes to this file. You may choose either to continue editing your draft or to discard your changes.'}
-                                  In particular, if you click <strong>Choose my version</strong> and
-                                  then click <strong>Save and sync</strong>, you will overwrite the
-                                  version of this file that is on disk. If you instead click
+                                    ? 'You were editing this file and made changes.'
+                                    : 'Both you and another user made changes to this file.'}
+                                  You may choose either to continue editing your draft or to discard
+                                  your changes. In particular, if you click
+                                  <strong>Choose my version</strong> and then click
+                                  <strong>Save and sync</strong>, you will overwrite the version of
+                                  this file that is on disk. If you instead click
                                   <strong>Choose their version</strong>, any changes you have made
                                   to this file will be lost.
                                   <button
@@ -254,7 +255,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
 
                         <div
                           id="file-editor-draft"
-                          class="col js-file-editor"
+                          class="col"
                           data-contents="${fileEdit.editContents}"
                           data-ace-mode="${fileEdit.aceMode}"
                           data-read-only="${fileEdit.alertChoice}"
@@ -262,9 +263,13 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                           <div class="card p-0">
                             ${fileEdit.alertChoice
                               ? html`
-                                  <div class="card-header text-center choose-container">
+                                  <div class="card-header text-center js-version-choice-content">
                                     <h4 class="mb-4">My version</h4>
-                                    <button id="choose" class="btn btn-primary" type="button">
+                                    <button
+                                      id="choose-my-version-button"
+                                      class="btn btn-primary"
+                                      type="button"
+                                    >
                                       Choose my version (continue editing)
                                     </button>
                                   </div>
@@ -295,7 +300,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                           ? html`
                               <div
                                 id="file-editor-disk"
-                                class="col js-file-editor"
+                                class="col js-version-choice-content"
                                 data-contents="${fileEdit.diskContents}"
                                 data-ace-mode="${fileEdit.aceMode}"
                               >
