@@ -10,9 +10,12 @@ import {
   queryAsync,
   queryRows,
   queryOptionalRow,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { Course, CourseSchema } from '../lib/db-types.js';
+
+import { insertAuditLog } from './audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -170,21 +173,29 @@ export async function insertCourse({
 > & {
   authn_user_id: string;
 }): Promise<Course> {
-  return await queryRow(
-    sql.insert_course,
-    {
-      institution_id,
-      short_name,
-      title,
-      display_timezone,
-      path,
-      repository,
-      branch,
+  return await runInTransactionAsync(async () => {
+    const course = await queryRow(
+      sql.insert_course,
+      {
+        institution_id,
+        short_name,
+        title,
+        display_timezone,
+        path,
+        repository,
+        branch,
+      },
+      CourseSchema,
+    );
+    insertAuditLog({
       authn_user_id,
-    },
-    CourseSchema,
-  ).catch((err) => {
-    console.log(err);
-    throw err;
+      action: 'insert',
+      table_name: 'courses',
+      row_id: course.id,
+      new_state: course,
+      institution_id,
+      course_id: course.id,
+    });
+    return course;
   });
 }

@@ -112,50 +112,25 @@ FROM
   updated_row;
 
 -- BLOCK insert_course
-WITH
-  new_row AS (
-    INSERT INTO
-      pl_courses AS c (
-        short_name,
-        title,
-        display_timezone,
-        path,
-        repository,
-        branch,
-        institution_id
-      )
-    VALUES
-      (
-        $short_name,
-        $title,
-        $display_timezone,
-        $path,
-        $repository,
-        $branch,
-        $institution_id
-      )
-    RETURNING
-      *
-  ),
-  audit_log AS (
-    INSERT INTO
-      audit_logs (
-        authn_user_id,
-        table_name,
-        row_id,
-        action,
-        new_state
-      )
-    SELECT
-      $authn_user_id,
-      'pl_courses',
-      new_row.id,
-      'insert',
-      to_jsonb(new_row)
-    FROM
-      new_row
+INSERT INTO
+  pl_courses AS c (
+    short_name,
+    title,
+    display_timezone,
+    path,
+    repository,
+    branch,
+    institution_id
   )
-SELECT
-  *
-FROM
-  new_row;
+VALUES
+  (
+    $short_name,
+    $title,
+    $display_timezone,
+    $path,
+    $repository,
+    $branch,
+    $institution_id
+  )
+RETURNING
+  *;
