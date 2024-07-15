@@ -3113,7 +3113,6 @@ __metadata:
     "@types/jquery": "npm:^3.5.30"
     "@types/js-cookie": "npm:^3.0.6"
     "@types/jsdom": "npm:^21.1.7"
-    "@types/json-stable-stringify": "npm:^1.0.36"
     "@types/json-stringify-safe": "npm:^5.0.3"
     "@types/klaw": "npm:^3.0.6"
     "@types/lodash": "npm:^4.17.6"
@@ -3191,6 +3190,7 @@ __metadata:
     express-session: "npm:^1.18.0"
     fabric: "npm:4.6.0-browser"
     fast-glob: "npm:^3.3.2"
+    fast-json-stable-stringify: "npm:^2.1.0"
     fetch-cookie: "npm:^3.0.1"
     file-type: "npm:^19.0.0"
     filesize: "npm:^10.1.2"
@@ -3213,7 +3213,6 @@ __metadata:
     jquery-ui-touch-punch: "npm:^0.2.3"
     js-cookie: "npm:^3.0.5"
     jsdom: "npm:^24.1.0"
-    json-stable-stringify: "npm:^1.1.1"
     json-stringify-safe: "npm:^5.0.1"
     klaw: "npm:^4.1.0"
     lodash: "npm:^4.17.21"
@@ -4927,13 +4926,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/json-stable-stringify@npm:^1.0.36":
-  version: 1.0.36
-  resolution: "@types/json-stable-stringify@npm:1.0.36"
-  checksum: 10c0/c2f0d0075bd04681d664a7ac4ef5078289b2f790f9737cd3457b5cc199d39df2efe132e04574ad5f89c9ae50096d44c9ca5ec4aebcd6005b969009f725dbcb79
-  languageName: node
-  linkType: hard
-
 "@types/json-stringify-safe@npm:^5.0.3":
   version: 5.0.3
   resolution: "@types/json-stringify-safe@npm:5.0.3"
@@ -6388,7 +6380,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"call-bind@npm:^1.0.5, call-bind@npm:^1.0.7":
+"call-bind@npm:^1.0.7":
   version: 1.0.7
   resolution: "call-bind@npm:1.0.7"
   dependencies:
@@ -8591,7 +8583,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-json-stable-stringify@npm:^2.0.0":
+"fast-json-stable-stringify@npm:^2.0.0, fast-json-stable-stringify@npm:^2.1.0":
   version: 2.1.0
   resolution: "fast-json-stable-stringify@npm:2.1.0"
   checksum: 10c0/7f081eb0b8a64e0057b3bb03f974b3ef00135fbf36c1c710895cd9300f13c94ba809bb3a81cf4e1b03f6e5285610a61abbd7602d0652de423144dfee5a389c9b
@@ -10054,13 +10046,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"isarray@npm:^2.0.5":
-  version: 2.0.5
-  resolution: "isarray@npm:2.0.5"
-  checksum: 10c0/4199f14a7a13da2177c66c31080008b7124331956f47bca57dd0b6ea9f11687aa25e565a2c7a2b519bc86988d10398e3049a1f5df13c9f6b7664154690ae79fd
-  languageName: node
-  linkType: hard
-
 "isarray@npm:~1.0.0":
   version: 1.0.0
   resolution: "isarray@npm:1.0.0"
@@ -10331,18 +10316,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-stable-stringify@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "json-stable-stringify@npm:1.1.1"
-  dependencies:
-    call-bind: "npm:^1.0.5"
-    isarray: "npm:^2.0.5"
-    jsonify: "npm:^0.0.1"
-    object-keys: "npm:^1.1.1"
-  checksum: 10c0/3801e3eeccbd030afb970f54bea690a079cfea7d9ed206a1b17ca9367f4b7772c764bf77a48f03e56b50e5f7ee7d11c52339fe20d8d7ccead003e4ca69e4cfde
-  languageName: node
-  linkType: hard
-
 "json-stringify-safe@npm:^5.0.1, json-stringify-safe@npm:~5.0.1":
   version: 5.0.1
   resolution: "json-stringify-safe@npm:5.0.1"
@@ -10381,13 +10354,6 @@ __metadata:
     graceful-fs:
       optional: true
   checksum: 10c0/4f95b5e8a5622b1e9e8f33c96b7ef3158122f595998114d1e7f03985649ea99cb3cd99ce1ed1831ae94c8c8543ab45ebd044207612f31a56fd08462140e46865
-  languageName: node
-  linkType: hard
-
-"jsonify@npm:^0.0.1":
-  version: 0.0.1
-  resolution: "jsonify@npm:0.0.1"
-  checksum: 10c0/7f5499cdd59a0967ed35bda48b7cec43d850bbc8fb955cdd3a1717bb0efadbe300724d5646de765bb7a99fc1c3ab06eb80d93503c6faaf99b4ff50a3326692f6
   languageName: node
   linkType: hard
 
@@ -12081,13 +12047,6 @@ __metadata:
   version: 1.13.1
   resolution: "object-inspect@npm:1.13.1"
   checksum: 10c0/fad603f408e345c82e946abdf4bfd774260a5ed3e5997a0b057c44153ac32c7271ff19e3a5ae39c858da683ba045ccac2f65245c12763ce4e8594f818f4a648d
-  languageName: node
-  linkType: hard
-
-"object-keys@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "object-keys@npm:1.1.1"
-  checksum: 10c0/b11f7ccdbc6d406d1f186cdadb9d54738e347b2692a14439ca5ac70c225fa6db46db809711b78589866d47b25fc3e8dee0b4c722ac751e11180f9380e3d8601d
   languageName: node
   linkType: hard
 
