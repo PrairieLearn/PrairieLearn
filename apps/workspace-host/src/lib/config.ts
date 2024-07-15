@@ -58,7 +58,10 @@ const ConfigSchema = z.object({
   workspaceMaxGradedFilesCount: z.number().default(100),
   /** Controls the maximum size of all graded files in bytes. */
   workspaceMaxGradedFilesSize: z.number().default(100 * 1024 * 1024),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   /**
    * How long to wait for a workspace container to start. If the container
    * doesn't complete a health check within this period, it is marked as
