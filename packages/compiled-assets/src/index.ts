@@ -9,12 +9,16 @@ import { globby } from 'globby';
 
 import { html, HtmlSafeString } from '@prairielearn/html';
 
+import { forbidPackages } from './forbid-packages-plugin.js';
+
 const DEFAULT_OPTIONS = {
   dev: process.env.NODE_ENV !== 'production',
   sourceDirectory: './assets',
   buildDirectory: './public/build',
   publicPath: '/build/',
 };
+
+const FORBIDDEN_PACKAGES = ['@prairielearn/postgres', '@prairielearn/config'];
 
 type AssetsManifest = Record<string, string>;
 
@@ -74,6 +78,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      plugins: [forbidPackages(FORBIDDEN_PACKAGES)],
     });
 
     esbuildServer = await esbuildContext.serve();
@@ -209,6 +214,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
     outbase: sourceDirectory,
     outdir: buildDirectory,
     metafile: true,
+    plugins: [forbidPackages(FORBIDDEN_PACKAGES)],
   });
 
   return buildResult.metafile;
