@@ -444,10 +444,9 @@ describe('Instructor assessment editing', function () {
       locals.$ = cheerio.load(page);
     });
     it('should have CSRF token for testing', function () {
-      elemList = locals.$('input[name="__csrf_token"]');
+      elemList = locals.$('#test_csrf_token');
       assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
+      locals.__csrf_token = elemList.text();
       assert.isString(locals.__csrf_token);
     });
     it('should load raw data file successfully', async () => {
@@ -467,14 +466,11 @@ describe('Instructor assessment editing', function () {
       );
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
-    it('should contain the correct score in the dev user row', function () {
-      assert.equal(
-        locals.gradebookDataRow[0][`score_${locals.assessment_id}`],
-        assessmentSetScorePerc,
-      );
-    });
-    it('should contain the correct assessment instance id in the dev user row', function () {
-      assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`], 1);
+    it('should contain the correct score and assessment instance ID in the dev user row', function () {
+      const score = locals.gradebookDataRow[0].scores[locals.assessment_id];
+      assert.isObject(score);
+      assert.equal(score.score_perc, assessmentSetScorePerc);
+      assert.equal(score.assessment_instance_id, '1');
     });
   });
 
