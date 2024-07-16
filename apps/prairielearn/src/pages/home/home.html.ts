@@ -165,9 +165,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
               <tr>
                 <td class="w-50 align-middle">
                   ${course.do_link
-                    ? html`
-                        <a href="${config.urlPrefix}/course/${course.id}"> ${course.label} </a>
-                      `
+                    ? html`<a href="${config.urlPrefix}/course/${course.id}">${course.label}</a>`
                     : course.label}
                 </td>
                 <td>
