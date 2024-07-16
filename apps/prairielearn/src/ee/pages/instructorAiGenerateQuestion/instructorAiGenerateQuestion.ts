@@ -120,7 +120,7 @@ router.post(
           GenerationResults(data.data.html, data.data.python, jobSeq.jobSequenceId, res.locals),
         );
       } else {
-        throw new error.HttpStatusError(500, `Job Sequence ${jobSeq.jobSequenceId} failed.`);
+        throw new error.HttpStatusError(500, `Job sequence ${jobSeq.jobSequenceId} failed.`);
       }
     } else if (req.body.__action === 'sync_context_documents') {
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
