@@ -31,7 +31,9 @@ nav:
       - 'Requesting your course space': 'requestCourse.md'
       - 'Creating content in the browser': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
-  - User Guide:
+  - Student Guide:
+      - 'Accessibility': 'student-guide/accessibility.md'
+  - Instructor Guide:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
