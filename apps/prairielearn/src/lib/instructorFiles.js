@@ -5,8 +5,6 @@ import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-import { encodePath } from './uri-util.js';
-
 /** @typedef {ReturnType<typeof getPaths>} InstructorFilePaths */
 
 /**
