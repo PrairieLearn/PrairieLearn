@@ -59,21 +59,12 @@ export function Home({
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
                       </span>
-                      <span>
-                        <p class="h6 d-inline-block my-0 ml-n1">
-                          <span
-                            class="btn btn-xs my-0 align-text-bottom font-weight-bold text-uppercase disabled"
-                          >
-                            Students
-                          </span>
-                        </p>
-                        <a
-                          href="${config.urlPrefix}/enroll"
-                          class="btn btn-xs my-0 align-text-bottom btn-outline-primary"
-                        >
-                          Enroll course
-                        </a>
+                      <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+                        Students
                       </span>
+                      <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
+                        Enroll course
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -84,27 +75,21 @@ export function Home({
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-tie fa-stack-1x text-light"></i>
                       </span>
-                      <span>
-                        <p class="h6 d-inline-block my-0 ml-n1">
-                          <span
-                            class="btn btn-xs my-0 align-text-bottom font-weight-bold text-uppercase disabled"
-                          >
-                            Instructors
-                          </span>
-                        </p>
-                        <a
-                          href="${config.urlPrefix}/request_course"
-                          class="btn btn-xs my-0 align-text-bottom btn-outline-primary"
-                        >
-                          Request course
-                        </a>
-                        <a
-                          href="https://prairielearn.readthedocs.io/en/latest"
-                          class="btn btn-xs my-0 align-text-bottom btn-outline-primary"
-                        >
-                          View docs
-                        </a>
+                      <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+                        Instructors
                       </span>
+                      <a
+                        href="${config.urlPrefix}/request_course"
+                        class="btn btn-xs btn-outline-primary"
+                      >
+                        Request course
+                      </a>
+                      <a
+                        href="https://prairielearn.readthedocs.io/en/latest"
+                        class="btn btn-xs btn-outline-primary ml-2"
+                      >
+                        View docs
+                      </a>
                     </div>
                   </div>
                 </div>
