@@ -35,12 +35,10 @@ function isHidden(item: string) {
 
 async function browseDirectory({
   paths,
-  has_course_permission_edit,
-  example_course,
+  hasEditPermission: hasEditPermission,
 }: {
   paths: InstructorFilePaths;
-  has_course_permission_edit: boolean;
-  example_course: boolean;
+  hasEditPermission: boolean;
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const ansiUp = new AnsiUp();
@@ -69,11 +67,11 @@ async function browseDirectory({
           path: relative_path,
           encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
           dir: paths.workingPath,
-          canEdit: editable && has_course_permission_edit && !example_course,
-          canUpload: has_course_permission_edit && !example_course,
+          canEdit: editable && hasEditPermission,
+          canUpload: hasEditPermission,
           canDownload: true, // we already know the user is a course Viewer (checked on GET)
-          canRename: movable && has_course_permission_edit && !example_course,
-          canDelete: movable && has_course_permission_edit && !example_course,
+          canRename: movable && hasEditPermission,
+          canDelete: movable && hasEditPermission,
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
@@ -107,12 +105,10 @@ async function browseDirectory({
 
 async function browseFile({
   paths,
-  has_course_permission_edit,
-  example_course,
+  hasEditPermission,
 }: {
   paths: InstructorFilePaths;
-  has_course_permission_edit: boolean;
-  example_course: boolean;
+  hasEditPermission: boolean;
 }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
@@ -124,10 +120,10 @@ async function browseFile({
     encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
     dir: path.dirname(paths.workingPath),
     canEdit: false, // will be overridden only if the file is a text file
-    canUpload: has_course_permission_edit && !example_course,
+    canUpload: hasEditPermission,
     canDownload: true, // we already know the user is a course Viewer (checked on GET)
-    canRename: movable && has_course_permission_edit && !example_course,
-    canDelete: movable && has_course_permission_edit && !example_course,
+    canRename: movable && hasEditPermission,
+    canDelete: movable && hasEditPermission,
     canView: !paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
     isBinary: await isBinaryFile(paths.workingPath),
     isImage: false,
@@ -153,7 +149,7 @@ async function browseFile({
     }
 
     file.isText = true;
-    file.canEdit = has_course_permission_edit && !example_course;
+    file.canEdit = hasEditPermission;
 
     const fileContents = await fs.readFile(paths.workingPath);
     const stringifiedContents = fileContents.toString('utf8');
@@ -200,6 +196,8 @@ router.get(
     }
 
     const paths = getPaths(req.params[0], res.locals);
+    const hasEditPermission =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     try {
       const stats = await fs.lstat(paths.workingPath);
@@ -209,11 +207,7 @@ router.get(
             resLocals: res.locals,
             paths,
             isFile: false,
-            directoryListings: await browseDirectory({
-              paths,
-              has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-              example_course: res.locals.course.example_course,
-            }),
+            directoryListings: await browseDirectory({ paths, hasEditPermission }),
           }),
         );
       } else if (stats.isFile()) {
@@ -222,11 +216,7 @@ router.get(
             resLocals: res.locals,
             paths,
             isFile: true,
-            fileInfo: await browseFile({
-              paths,
-              has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-              example_course: res.locals.course.example_course,
-            }),
+            fileInfo: await browseFile({ paths, hasEditPermission }),
           }),
         );
       } else {
