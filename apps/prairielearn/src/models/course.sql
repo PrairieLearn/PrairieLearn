@@ -78,35 +78,34 @@ FROM
   inserted_course;
 
 -- BLOCK delete_course
-WITH
-  updated_row AS (
-    UPDATE pl_courses AS c
-    SET
-      deleted_at = current_timestamp
-    WHERE
-      id = $course_id
-    RETURNING
-      *
-  ),
-  audit_log AS (
-    INSERT INTO
-      audit_logs (
-        authn_user_id,
-        table_name,
-        row_id,
-        action,
-        new_state
-      )
-    SELECT
-      $authn_user_id,
-      'pl_courses',
-      c.id,
-      'soft_delete',
-      to_jsonb(c)
-    FROM
-      updated_row AS c
+UPDATE pl_courses AS c
+SET
+  deleted_at = current_timestamp
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
+-- BLOCK insert_course
+INSERT INTO
+  pl_courses AS c (
+    short_name,
+    title,
+    display_timezone,
+    path,
+    repository,
+    branch,
+    institution_id
   )
-SELECT
-  *
-FROM
-  updated_row;
+VALUES
+  (
+    $short_name,
+    $title,
+    $display_timezone,
+    $path,
+    $repository,
+    $branch,
+    $institution_id
+  )
+RETURNING
+  *;

@@ -1,33 +1,26 @@
-// @ts-check
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOneRowAsync } from '@prairielearn/postgres';
 
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-const router = express.Router();
+const sql = loadSqlEquiv(import.meta.url);
+const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.navPage = 'home';
-    res.locals.isAuthenticated = !!res.locals.authn_user;
-
-    if (!res.locals.isAuthenticated) {
-      res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
-      return;
-    }
 
     // Potentially prompt the user to accept the terms before proceeding.
     if (isEnterprise()) {
       await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
     }
 
-    const result = await sqldb.queryOneRowAsync(sql.select_home, {
+    const result = await queryOneRowAsync(sql.select_home, {
       user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
       req_date: res.locals.req_date,
@@ -52,7 +45,7 @@ router.get(
       );
     }
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(import.meta.filename.replace(/\.[jt]s$/, '.ejs'), res.locals);
   }),
 );
 
