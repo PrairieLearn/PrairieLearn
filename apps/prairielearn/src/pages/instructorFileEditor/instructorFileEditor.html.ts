@@ -3,6 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, any> }) {
   const { fileEdit, authz_data, course_owners, course, __csrf_token } = resLocals;
@@ -101,8 +102,9 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                     ? html`
                                         <a
                                           class="text-white"
-                                          href="${fileEdit.paths
-                                            .urlPrefix}/file_view/${dir.encodedPath}"
+                                          href="${fileEdit.paths.urlPrefix}/file_view/${encodePath(
+                                            dir.path,
+                                          )}"
                                         >
                                           ${dir.name}
                                         </a>
