@@ -49,156 +49,15 @@ export function Home({
         </header>
 
         <main class="flex-grow-1">
-          <div class="bg-white my-0">
-            <div class="container">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="card rounded-pill my-1">
-                    <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-1x mr-1" aria-hidden="true">
-                        <i class="fas fa-circle fa-stack-2x text-secondary"></i>
-                        <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
-                      </span>
-                      <span class="small p-2 font-weight-bold text-uppercase text-secondary">
-                        Students
-                      </span>
-                      <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
-                        Enroll course
-                      </a>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="card rounded-pill my-1">
-                    <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-1x mr-1" aria-hidden="true">
-                        <i class="fas fa-circle fa-stack-2x text-secondary"></i>
-                        <i class="fas fa-user-tie fa-stack-1x text-light"></i>
-                      </span>
-                      <span class="small p-2 font-weight-bold text-uppercase text-secondary">
-                        Instructors
-                      </span>
-                      <a
-                        href="${config.urlPrefix}/request_course"
-                        class="btn btn-xs btn-outline-primary"
-                      >
-                        Request course
-                      </a>
-                      <a
-                        href="https://prairielearn.readthedocs.io/en/latest"
-                        class="btn btn-xs btn-outline-primary ml-2"
-                      >
-                        View docs
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          ${ActionsHeader()}
 
           <div id="content" class="container py-5">
-            ${config.devMode ? DevModeCard() : ''}
-            ${instructorCourses.length > 0
-              ? html`
-                  <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                      Courses with instructor access
-                    </div>
-
-                    <table class="table table-sm table-hover table-striped">
-                      <tbody>
-                        ${instructorCourses.map(
-                          (course) => html`
-                            <tr>
-                              <td class="w-50 align-middle">
-                                ${course.do_link
-                                  ? html`
-                                      <a href="${config.urlPrefix}/course/${course.id}">
-                                        ${course.label}
-                                      </a>
-                                    `
-                                  : course.label}
-                              </td>
-                              <td>
-                                ${course.course_instances.map(
-                                  (course_instance) => html`
-                                    <a
-                                      class="btn btn-outline-primary btn-sm my-1"
-                                      href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
-                                    >
-                                      ${course_instance.label}
-                                    </a>
-                                  `,
-                                )}
-                              </td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                `
-              : ''}
-
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex align-items-center">
-                ${instructorCourses.length > 0 ? 'Courses with student access' : 'Courses'}
-                ${authn_provider_name !== 'LTI'
-                  ? html`
-                      <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
-                        <i class="fa fa-edit" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add or remove courses</span>
-                      </a>
-                    `
-                  : ''}
-              </div>
-
-              ${studentCourses.length === 0
-                ? instructorCourses.length > 0
-                  ? html`
-                      <div class="card-body">
-                        No courses found with student access. Courses with instructor access are
-                        found in the list above.
-                        ${authn_provider_name !== 'LTI'
-                          ? 'Use the "Add or remove courses" button to add a course as a student.'
-                          : ''}
-                      </div>
-                    `
-                  : config.devMode
-                    ? html`
-                        <div class="card-body">
-                          No courses loaded. Click <strong>"Load from disk"</strong> above and then
-                          click <strong>"PrairieLearn"</strong> in the top left corner to come back
-                          to this page.
-                        </div>
-                      `
-                    : html`
-                        <div class="card-body">
-                          No courses found.
-                          ${authn_provider_name !== 'LTI'
-                            ? 'Use the "Add or remove courses" button to add one.'
-                            : ''}
-                        </div>
-                      `
-                : html`
-                    <table class="table table-sm table-hover table-striped">
-                      <tbody>
-                        ${studentCourses.map(
-                          (course_instance) => html`
-                            <tr>
-                              <td>
-                                <a href="${config.urlPrefix}/course_instance/${course_instance.id}">
-                                  ${course_instance.label}
-                                </a>
-                              </td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  `}
-            </div>
+            ${DevModeCard()} ${InstructorCoursesCard({ instructorCourses })}
+            ${StudentCoursesCard({
+              studentCourses,
+              hasInstructorCourses: instructorCourses.length > 0,
+              canAddCourses: authn_provider_name !== 'LTI',
+            })}
           </div>
         </main>
 
@@ -206,9 +65,9 @@ export function Home({
           ? html`
               <footer class="footer font-weight-light text-light text-center small">
                 <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}"
-                    >${config.homepageFooterText}</a
-                  >
+                  <a class="text-light" href="${config.homepageFooterTextHref}">
+                    ${config.homepageFooterText}
+                  </a>
                 </div>
               </footer>
             `
@@ -218,7 +77,55 @@ export function Home({
   `.toString();
 }
 
+function ActionsHeader() {
+  return html`
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card rounded-pill my-1">
+            <div class="card-body d-flex align-items-center p-2">
+              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+                <i class="fas fa-circle fa-stack-2x text-secondary"></i>
+                <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
+              </span>
+              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+                Students
+              </span>
+              <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
+                Enroll course
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card rounded-pill my-1">
+            <div class="card-body d-flex align-items-center p-2">
+              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+                <i class="fas fa-circle fa-stack-2x text-secondary"></i>
+                <i class="fas fa-user-tie fa-stack-1x text-light"></i>
+              </span>
+              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+                Instructors
+              </span>
+              <a href="${config.urlPrefix}/request_course" class="btn btn-xs btn-outline-primary">
+                Request course
+              </a>
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest"
+                class="btn btn-xs btn-outline-primary ml-2"
+              >
+                View docs
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function DevModeCard() {
+  if (!config.devMode) return '';
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">Development Mode</div>
@@ -239,6 +146,113 @@ function DevModeCard() {
           for information on creating questions and assessments.
         </p>
       </div>
+    </div>
+  `;
+}
+
+function InstructorCoursesCard({ instructorCourses }: { instructorCourses: InstructorCourse[] }) {
+  if (instructorCourses.length === 0) return '';
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">Courses with instructor access</div>
+
+      <table class="table table-sm table-hover table-striped">
+        <tbody>
+          ${instructorCourses.map(
+            (course) => html`
+              <tr>
+                <td class="w-50 align-middle">
+                  ${course.do_link
+                    ? html`
+                        <a href="${config.urlPrefix}/course/${course.id}"> ${course.label} </a>
+                      `
+                    : course.label}
+                </td>
+                <td>
+                  ${course.course_instances.map(
+                    (course_instance) => html`
+                      <a
+                        class="btn btn-outline-primary btn-sm my-1"
+                        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
+                      >
+                        ${course_instance.label}
+                      </a>
+                    `,
+                  )}
+                </td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function StudentCoursesCard({
+  studentCourses,
+  hasInstructorCourses,
+  canAddCourses,
+}: {
+  studentCourses: StudentCourse[];
+  hasInstructorCourses: boolean;
+  canAddCourses: boolean;
+}) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        ${hasInstructorCourses ? 'Courses with student access' : 'Courses'}
+        ${canAddCourses
+          ? html`
+              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
+                <i class="fa fa-edit" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Add or remove courses</span>
+              </a>
+            `
+          : ''}
+      </div>
+
+      ${studentCourses.length === 0
+        ? hasInstructorCourses
+          ? html`
+              <div class="card-body">
+                No courses found with student access. Courses with instructor access are found in
+                the list above.
+                ${canAddCourses
+                  ? 'Use the "Add or remove courses" button to add a course as a student.'
+                  : ''}
+              </div>
+            `
+          : config.devMode
+            ? html`
+                <div class="card-body">
+                  No courses loaded. Click <strong>"Load from disk"</strong> above and then click
+                  <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
+                </div>
+              `
+            : html`
+                <div class="card-body">
+                  No courses found.
+                  ${canAddCourses ? 'Use the "Add or remove courses" button to add one.' : ''}
+                </div>
+              `
+        : html`
+            <table class="table table-sm table-hover table-striped">
+              <tbody>
+                ${studentCourses.map(
+                  (course_instance) => html`
+                    <tr>
+                      <td>
+                        <a href="${config.urlPrefix}/course_instance/${course_instance.id}">
+                          ${course_instance.label}
+                        </a>
+                      </td>
+                    </tr>
+                  `,
+                )}
+              </tbody>
+            </table>
+          `}
     </div>
   `;
 }
