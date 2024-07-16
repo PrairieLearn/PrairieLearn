@@ -3,12 +3,28 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryAsync,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import {
+  AssessmentSchema,
+  Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
+} from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
-import { get_lineitems } from '../../lib/lti13.js';
+import {
+  get_lineitems,
+  create_lineitem,
+  delete_lineitem,
+  disassociate_lineitem,
+} from '../../lib/lti13.js';
 
 import {
   AssessmentRowSchema,
@@ -61,9 +77,15 @@ router.get(
       AssessmentRowSchema,
     );
 
-    console.log(assessments);
+    const result = await queryAsync(sql.select_lineitems, {
+      lti13_course_instance_id: instance.lti13_course_instance.id,
+    });
 
+    const lineitems = result.rows;
+
+    console.log(assessments);
     console.log(instance);
+    console.log(lineitems);
 
     res.send(
       InstructorInstanceAdminLti13({
@@ -71,6 +93,7 @@ router.get(
         instance,
         instances,
         assessments,
+        lineitems,
       }),
     );
   }),
@@ -79,6 +102,8 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
+    console.log(req.body);
+
     const instance = await queryRow(
       sql.select_lti13_instance,
       {
@@ -126,13 +151,42 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'get lineitems from LTI';
+      serverJobOptions.description = 'Synchronize lineitems from LTI';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
         await get_lineitems(instance, job, res.locals.authn_user.user_id);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+    } else if (req.body.__action === 'create_lineitem') {
+      serverJobOptions.description = 'create lineitem from PL assessment';
+      const serverJob = await createServerJob(serverJobOptions);
+
+      serverJob.executeInBackground(async (job) => {
+        const assessment = await queryRow(
+          sql.select_assessment,
+          {
+            assessment_id: req.body.assessment_id,
+            course_instance_id: instance.lti13_course_instance.course_instance_id,
+          },
+          AssessmentSchema,
+        );
+
+        const assessment_url = `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`;
+        await create_lineitem(instance, job, assessment, assessment_url);
+      });
+      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+    } else if (req.body.__action === 'delete_lineitem') {
+      serverJobOptions.description = 'delete lineitem in LMS';
+      const serverJob = await createServerJob(serverJobOptions);
+
+      serverJob.executeInBackground(async (job) => {
+        await delete_lineitem(instance, job, req.body.lineitem_id);
+      });
+      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+    } else if (req.body.__action === 'disassociate_lineitem') {
+      await disassociate_lineitem(instance, req.body.lineitem_id);
+      return res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

@@ -725,6 +725,14 @@ export const LtiCredentialsSchema = z.object({
 });
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
 
+export const Lti13Lineitems = z.object({
+  lti13_course_instance_id: IdSchema,
+  assessment_id: IdSchema.nullable(),
+  lineitem_id: z.string(),
+  lineitem: z.record(z.string(), z.any()).nullable(),
+});
+export type Lti13Lineitems = z.infer<typeof Lti13Lineitems>;
+
 export const NewsItemSchema = z.object({
   author: z.string().nullable(),
   date: DateFromISOString,

@@ -29,8 +29,9 @@ WHERE
   course_instance_id = $course_instance_id
   AND id = $lti13_course_instance_id
 RETURNING
-  *
-  -- BLOCK select_assessments
+  *;
+
+-- BLOCK select_assessments
 SELECT
   a.*,
   aset.abbreviation,
@@ -87,3 +88,23 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
+
+-- BLOCK select_lineitems
+SELECT
+  *
+FROM
+  lti13_lineitems
+WHERE
+  lti13_course_instance_id = $lti13_course_instance_id
+ORDER BY
+  lineitem_id;
+
+-- BLOCK select_assessment
+SELECT
+  *
+FROM
+  assessments
+WHERE
+  id = $assessment_id
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;

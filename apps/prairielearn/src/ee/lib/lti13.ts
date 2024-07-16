@@ -1,5 +1,3 @@
-import { join } from 'path';
-
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch from 'node-fetch';
@@ -7,8 +5,9 @@ import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { Assessment, DateFromISOString } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -23,6 +22,23 @@ const TOKEN_SCOPES = [
   //'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
   //'https://canvas.instructure.com/lti/public_jwk/scope/update',
 ];
+
+export const Lti13LineitemSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  scoreMaximum: z.number(),
+  resourceId: z.string().optional(),
+  resourceLinkId: z.string().optional(),
+  tag: z.string().optional(),
+  startDateTime: DateFromISOString.optional(),
+  endDateTime: DateFromISOString.optional(),
+  gradesReleased: z.boolean().optional(),
+  'https://canvas.instructure.com/lti/submission_type': z.object({
+    type: z.enum(['none', 'external_tool']).optional(),
+    external_tool_url: z.string().optional(),
+  }),
+});
+export type Lti13LineitemType = z.infer<typeof Lti13LineitemSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -271,11 +287,8 @@ export async function access_token(lti13_instance_id: string) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 export async function get_lineitems(instance: any, job: ServerJob, authn_user_id: number) {
-  console.log(instance);
-
   const token = await access_token(instance.lti13_instance.id);
 
-  job.info(`Token: ${token}`);
   job.info('Polling for line items');
 
   const response = await fetch(instance.lti13_course_instance.lineitems, {
@@ -283,44 +296,109 @@ export async function get_lineitems(instance: any, job: ServerJob, authn_user_id
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = await response.json();
-  console.log(data);
+  const data = (await response.json()) as Lti13LineitemType[];
 
-  job.info(data.toString());
+  job.info(JSON.stringify(data, null, 2));
 
-  /*
-  // Make this a more targetted single row query
-  const lti13_course_instance_result = await queryAsync(sql.get_course_instance, params);
+  await runInTransactionAsync(async () => {
+    await queryAsync(sql.create_lineitems_temp, {});
 
-  const lti13_course_instance = lti13_course_instance_result.rows[0];
-  //console.log(JSON.stringify(lti13_course_instance, null, 3));
+    for (const item of data) {
+      console.log(item);
 
-  const url = lti13_course_instance.ags_lineitems;
+      await queryAsync(sql.insert_lineitems_temp, {
+        lti13_course_instance_id: instance.lti13_course_instance.id,
+        lineitem_id: item.id,
+        lineitem: JSON.stringify(item),
+      });
+    }
 
-  // Validate here, error before moving on if we're missing things
-
-  const token = await access_token(lti13_instance_id);
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  //console.log(response);
-  const data = await response.json();
-
-  for (const item of data) {
-    console.log(item);
-
-    await queryAsync(sql.update_lineitem, {
-      lti13_instance_id,
-      course_instance_id,
-      lineitem_id: item.id,
-      assessment_id: item?.resourceId,
-      lineitem: JSON.stringify(item),
-      active: true,
+    await queryAsync(sql.sync_lti13_lineitems, {
+      lti13_course_instance_id: instance.lti13_course_instance.id,
     });
-  }
 
-  job.info(JSON.stringify(data, null, 3));
-  */
+    job.info(`Finishing up for user ${authn_user_id}`);
+  });
+}
+
+export async function create_lineitem(
+  instance: any,
+  job: ServerJob,
+  assessment: Assessment,
+  assessment_url: string,
+) {
+  //job.info(JSON.stringify(assessment, null, 2));
+
+  const createBody: Lti13LineitemType = {
+    id: 'new_lineitem',
+    scoreMaximum: 100,
+    label: assessment.title ?? 'Unknown title',
+    resourceId: assessment.id,
+    // tag ???
+    // startDateTime null
+    // endDateTime null
+    'https://canvas.instructure.com/lti/submission_type': {
+      type: 'external_tool',
+      external_tool_url: assessment_url,
+    },
+  };
+
+  job.info(`Creating assessment for ${assessment.title}`);
+
+  const token = await access_token(instance.lti13_instance.id);
+  const response = await fetch(instance.lti13_course_instance.lineitems, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
+    },
+    body: JSON.stringify(createBody),
+  });
+
+  const item = (await response.json()) as Lti13LineitemType;
+
+  job.info('Associating PrairieLearn assessment with LMS assignment');
+
+  await queryAsync(sql.update_lineitem_with_assessment, {
+    lti13_course_instance_id: instance.lti13_course_instance.id,
+    lineitem_id: item.id,
+    lineitem: JSON.stringify(item),
+    assessment_id: assessment.id,
+  });
+
+  job.info('Done.');
+}
+
+export async function delete_lineitem(instance: any, job: ServerJob, lineitem_id: string) {
+  // Validate line_item is part of course?
+
+  job.info(`Asking the LMS to remove assignment with ID ${lineitem_id}`);
+
+  const token = await access_token(instance.lti13_instance.id);
+  const response = await fetch(lineitem_id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
+    },
+  });
+
+  console.log(response);
+  const item = await response.text();
+
+  job.info(JSON.stringify(item));
+
+  // Status 204 No Content ???
+
+  await queryAsync(sql.delete_lineitem, {
+    lti13_course_instance_id: instance.lti13_course_instance.id,
+    lineitem_id,
+  });
+}
+
+export async function disassociate_lineitem(instance: any, lineitem_id: string) {
+  await queryAsync(sql.disassociate_lineitem, {
+    lti13_course_instance_id: instance.lti13_course_instance.id,
+    lineitem_id,
+  });
 }

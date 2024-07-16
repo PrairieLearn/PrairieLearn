@@ -29,13 +29,19 @@ export function InstructorInstanceAdminLti13({
   instance,
   instances,
   assessments,
+  lineitems,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13FullInstance;
   instances: Lti13FullInstance[];
   assessments: AssessmentRow[];
+  lineitems: any;
 }): string {
   const { urlPrefix } = resLocals;
+  const lineitems_unlinked = lineitems.filter((item) => {
+    return item.assessment_id === null;
+  });
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -81,38 +87,43 @@ export function InstructorInstanceAdminLti13({
                   </select>
                   Quick links:
                   <ul>
-                    <li><a href="#assessments">Assessments</a></li>
+                    <li><a href="#assessments">PrairieLearn Assessments</a></li>
+                    <li><a href="#assignments">Unpaired Assignments in LMS</a></li>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
                   Created at: ${instance.lti13_course_instance.created_at.toDateString()}
                 </div>
                 <div class="col-10">
-                  <h3 id="assessments">Assessments</h3>
+                  <h3 id="assessments">PrairieLearn Assessments</h3>
 
                   <form method="POST">
                     <input type="hidden" name="__action" value="poll_lti13_assessments" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button class="btn btn-success">Poll LMS for assessment info</button>
+                    <button class="btn btn-success">
+                      Poll ${instance.lti13_instance.name} for assessment info
+                    </button>
                   </form>
 
                   <div class="table-responsive">
                     <table class="table table-sm table-hover">
                       <thead>
                         <tr>
-                          <th style="width: 1%"><span class="sr-only">Label</span></th>
-                          <th><span class="sr-only">Title</span></th>
-                          <th>AID</th>
-                          <th>LTI status</th>
-                          <th>LTI actions</th>
+                          <th colspan="2">PrairieLearn Assessment</th>
+                          <th>${instance.lti13_instance.name} Assignment</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        ${assessments.map(
-                          (row) => html`
+                        ${assessments.map((row) => {
+                          const lineitems_linked = lineitems.filter((item) => {
+                            return item.assessment_id === row.id;
+                          });
+
+                          return html`
                             ${row.start_new_assessment_group
                               ? html`
                                   <tr>
-                                    <th colspan="5">${row.assessment_group_heading}</th>
+                                    <th colspan="4">${row.assessment_group_heading}</th>
                                   </tr>
                                 `
                               : ''}
@@ -133,15 +144,54 @@ export function InstructorInstanceAdminLti13({
                                     : ''}</a
                                 >
                               </td>
-                              <td class="align-middle">${row.tid}</td>
-                              <td></td>
-                              <td></td>
+                              <td>
+                                ${lineitems_linked.map((item) =>
+                                  lineItem(item, resLocals.__csrf_token),
+                                )}
+                              </td>
+                              <td>
+                                <form method="POST">
+                                  <input
+                                    type="hidden"
+                                    name="__csrf_token"
+                                    value="${resLocals.__csrf_token}"
+                                  />
+                                  <input type="hidden" name="assessment_id" value="${row.id}" />
+                                  ${lineitems_linked.length === 0
+                                    ? html`<button
+                                        class="btn btn-sm btn-success"
+                                        name="__action"
+                                        value="create_lineitem"
+                                      >
+                                        Create ${instance.lti13_instance.name} assignment
+                                      </button>`
+                                    : html`
+                                        <!-- <button
+                                        class="btn btn-info"
+                                        name="__action"
+                                        value="send_grades"
+                                      >
+                                        Send grades to ${instance.lti13_instance.name}
+                                      </button>
+                                      -->
+                                      `}
+                                </form>
+                              </td>
                             </tr>
-                          `,
-                        )}
+                          `;
+                        })}
                       </tbody>
                     </table>
                   </div>
+
+                  <h3 id="assignments">Unpaired Assignments in LMS</h3>
+                  <p>
+                    The following lineitems are available but not associated with a PrairieLearn
+                    assessment.
+                  </p>
+                  ${lineitems_unlinked.map((item) =>
+                    lineItem(item, resLocals.__csrf_token, assessments),
+                  )}
 
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
@@ -163,4 +213,41 @@ export function InstructorInstanceAdminLti13({
       </body>
     </html>
   `.toString();
+}
+
+function lineItem(item, csrf: string, assessments: AssessmentRow[] = []) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${csrf}" />
+      <input type="hidden" name="lineitem_id" value="${item.lineitem_id}" />
+      <span title="${item.lineitem_id}"> ${item.lineitem.label}:</span>
+      ${item.lineitem.scoreMaximum} max points
+      ${item.assessment_id
+        ? html`<button class="btn btn-xs btn-warning" name="__action" value="disassociate_lineitem">
+            Disassociate
+          </button>`
+        : html`<div class="input-group">
+            <select name="assessment_id" class="custom-select">
+              ${assessments.map((a) => {
+                return html`<option value="${a.id}">${a.title}</option>`;
+              })}
+            </select>
+            <div class="input-group-append">
+              <button class="btn btn-info" name="__action" value="associate_lineitem">
+                Associate lineitem with assessment
+              </button>
+            </div>
+          </div> `}
+      <button class="btn btn-xs btn-danger" name="__action" value="delete_lineitem">
+        Delete from LMS
+      </button>
+      <button
+        class="btn btn-xs"
+        onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
+      >
+        ...
+      </button>
+      <pre class="lineitem-detail" style="display:none;">${JSON.stringify(item, null, 2)}</pre>
+    </form>
+  `;
 }
