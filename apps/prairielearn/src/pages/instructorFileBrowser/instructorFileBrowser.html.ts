@@ -7,13 +7,12 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { User } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
+import { encodePath } from '../../lib/uri-util.js';
 
 export interface FileInfo {
   id: number;
   name: string;
-  encodedName: string;
   path: string;
-  encodedPath: string;
   dir: string;
   canEdit: boolean;
   canUpload: boolean;
@@ -31,9 +30,7 @@ export interface FileInfo {
 export interface DirectoryEntry {
   id: string | number;
   name: string;
-  encodedName: string;
   path: string;
-  encodedPath: string;
   canView: boolean;
 }
 
@@ -187,7 +184,7 @@ export function InstructorFileBrowser({
                           ? html`
                               <a
                                 class="text-white"
-                                href="${paths.urlPrefix}/file_view/${dir.encodedPath}"
+                                href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
                               >
                                 ${dir.name}
                               </a>
@@ -227,11 +224,12 @@ function FileBrowserActions({
   fileInfo: FileInfo;
   csrfToken: string;
 }) {
+  const encodedPath = encodePath(fileInfo.path);
   return html`
     <a
       tabindex="0"
       class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
-      href="${paths.urlPrefix}/file_edit/${fileInfo.encodedPath}"
+      href="${paths.urlPrefix}/file_edit/${encodedPath}"
     >
       <i class="fa fa-edit"></i>
       <span>Edit</span>
@@ -254,7 +252,9 @@ function FileBrowserActions({
     </button>
     <a
       class="btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}"
-      href="${paths.urlPrefix}/file_download/${fileInfo.encodedPath}?attachment=${fileInfo.encodedName}"
+      href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+        fileInfo.name,
+      )}"
     >
       <i class="fa fa-arrow-down"></i>
       <span>Download</span>
@@ -395,6 +395,7 @@ function DirectoryBrowserBody({
   directoryListings: DirectoryListings;
   csrfToken: string;
 }) {
+  const encodedPath = encodePath(f.path);
   return html`
     <table class="table table-sm table-hover">
       <tbody>
@@ -435,13 +436,13 @@ function DirectoryBrowserBody({
                     : ''}
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 ${f.canView
-                  ? html`<a href="${paths.urlPrefix}/file_view/${f.encodedPath}">${f.name}</a>`
+                  ? html`<a href="${paths.urlPrefix}/file_view/${encodedPath}">${f.name}</a>`
                   : html`<span>${f.name}</span>`}
               </td>
               <td>
                 <a
                   class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_edit/${f.encodedPath}"
+                  href="${paths.urlPrefix}/file_edit/${encodedPath}"
                 >
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
@@ -465,7 +466,9 @@ function DirectoryBrowserBody({
                 </button>
                 <a
                   class="btn btn-xs btn-secondary ${f.canDownload ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_download/${f.encodedPath}?attachment=${f.encodedName}"
+                  href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
+                    f.name,
+                  )}"
                 >
                   <i class="fa fa-arrow-down"></i>
                   <span>Download</span>
@@ -514,7 +517,7 @@ function DirectoryBrowserBody({
               <td colspan="2">
                 <i class="fa fa-folder fa-fw"></i>
                 ${d.canView
-                  ? html`<a href="${paths.urlPrefix}/file_view/${d.encodedPath}">${d.name}</a>`
+                  ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}">${d.name}</a>`
                   : html`<span>${d.name}</span>`}
               </td>
             </tr>

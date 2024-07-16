@@ -61,9 +61,7 @@ async function browseDirectory({
           id: file.index,
           name: file.name,
           isFile: true,
-          encodedName: encodePath(file.name),
           path: relative_path,
-          encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
           dir: paths.workingPath,
           canEdit: editable && paths.hasEditPermission,
           canUpload: paths.hasEditPermission,
@@ -83,9 +81,7 @@ async function browseDirectory({
           id: file.index,
           name: file.name,
           isFile: false,
-          encodedName: encodePath(file.name),
           path: path.relative(paths.coursePath, filepath),
-          encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
@@ -107,9 +103,7 @@ async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<Fi
   const file: FileInfo = {
     id: 0,
     name: path.basename(paths.workingPath),
-    encodedName: encodePath(path.basename(paths.workingPath)),
     path: path.relative(paths.coursePath, filepath),
-    encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
     dir: path.dirname(paths.workingPath),
     canEdit: false, // will be overridden only if the file is a text file
     canUpload: paths.hasEditPermission,
