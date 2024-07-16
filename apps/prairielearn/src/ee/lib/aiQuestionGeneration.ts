@@ -3,7 +3,7 @@ import { OpenAI } from 'openai';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
-import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { ServerJob, createServerJob, ServerJobResult } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 
@@ -45,12 +45,13 @@ function promptPreamble(context: string): string {
 
 /**
  * Builds the context string, consisting of relevant documents.
+ *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-async function makeContext(client: OpenAI, prompt: string, authnUserId): Promise<string> {
+async function makeContext(client: OpenAI, prompt: string, authnUserId: string): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
 
   const docs = await queryRows(
@@ -66,10 +67,14 @@ async function makeContext(client: OpenAI, prompt: string, authnUserId): Promise
 
 /**
  * Extracts the generated HTML and Python code from an OpenAI completion into job parameters.
+ *
  * @param completion The completion to extract from.
  * @param job The job whose data we want to extract into.
  */
-function extractFromCompletion(completion, job: ServerJob): void {
+function extractFromCompletion(
+  completion: OpenAI.Chat.Completions.ChatCompletion,
+  job: ServerJob,
+): void {
   const completionText = completion.choices[0].message.content;
 
   job.info(`completion is ${completionText}`);
@@ -107,7 +112,7 @@ export async function generateQuestion(
   courseId: string | undefined,
   authnUserId: string,
   prompt: string,
-) {
+): Promise<{ jobSequenceId: string; jobData: ServerJobResult }> {
   const serverJob = await createServerJob({
     courseId,
     type: 'ai_question_generate',
@@ -145,7 +150,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['context'] = context;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, completionPromise: jobPromise };
+  const jobData = await jobPromise;
+  return { jobSequenceId: serverJob.jobSequenceId, jobData };
 }
 
 /**
@@ -168,7 +174,7 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-) {
+): Promise<{ jobSequenceId: string; jobData: ServerJobResult }> {
   const serverJob = await createServerJob({
     courseId,
     type: 'llm_question_regen',
@@ -232,5 +238,6 @@ export async function regenerateQuestion(
     job.data['context'] = context;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, completionPromise: jobPromise };
+  const jobData = await jobPromise;
+  return { jobSequenceId: serverJob.jobSequenceId, jobData };
 }

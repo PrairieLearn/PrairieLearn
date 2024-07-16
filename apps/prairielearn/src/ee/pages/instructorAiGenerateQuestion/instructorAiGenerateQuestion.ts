@@ -114,7 +114,7 @@ router.post(
         req.body.prompt,
       );
 
-      const data = await jobSeq.completionPromise;
+      const data = jobSeq.jobData;
       if (data) {
         res.send(
           GenerationResults(data.data.html, data.data.python, jobSeq.jobSequenceId, res.locals),
@@ -148,7 +148,7 @@ router.post(
         genJobs[0]?.data?.python,
       );
 
-      const data = await jobSeq.completionPromise;
+      const data = jobSeq.jobData;
       if (data) {
         res.send(
           GenerationResults(data.data.html, data.data.python, jobSeq.jobSequenceId, res.locals),
