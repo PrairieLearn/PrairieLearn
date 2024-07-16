@@ -67,6 +67,10 @@ export function StudentAssessmentInstance({
         ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+          ...resLocals,
+          navPage: 'assessment_instance',
+        })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
               instance_questions: resLocals.instance_questions,
@@ -77,10 +81,7 @@ export function StudentAssessmentInstance({
         ${userCanDeleteAssessmentInstance
           ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
           : ''}
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessment_instance',
-        })}
+
         <main id="content" class="container">
           ${userCanDeleteAssessmentInstance
             ? html`
