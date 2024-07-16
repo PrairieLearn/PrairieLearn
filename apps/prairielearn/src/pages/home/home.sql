@@ -1,4 +1,4 @@
--- BLOCK select_home
+-- BLOCK select_instructor_courses
 WITH
   example_courses AS (
     SELECT

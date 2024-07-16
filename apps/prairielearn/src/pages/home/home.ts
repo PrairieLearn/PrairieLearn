@@ -23,7 +23,7 @@ router.get(
     }
 
     const instructorCourses = await queryRows(
-      sql.select_home,
+      sql.select_instructor_courses,
       {
         user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
