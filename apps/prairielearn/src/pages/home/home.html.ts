@@ -1,7 +1,9 @@
-import { html } from '@prairielearn/html';
-import { config } from '../../lib/config.js';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
+
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { config } from '../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({

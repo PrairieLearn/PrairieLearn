@@ -6,6 +6,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
+
 import { Home, InstructorCourseSchema, StudentCourseSchema } from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
