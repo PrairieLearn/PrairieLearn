@@ -891,6 +891,10 @@ export class QuestionAddEditor extends Editor {
       await fs.remove(path.join(toPath, 'question.html'));
       await fs.remove(path.join(toPath, 'server.py'));
 
+      if ('info.json' in this.files) {
+        await fs.remove(path.join(toPath, 'info.json'));
+      }
+
       debug('Load files from text');
       for (const file of Object.keys(this.files)) {
         const newPath = path.join(toPath, file);

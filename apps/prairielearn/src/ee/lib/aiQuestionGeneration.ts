@@ -119,7 +119,7 @@ export async function generateQuestion(
     description: 'Generate a question with AI',
   });
 
-  const jobPromise = serverJob.execute(async (job) => {
+  const jobData = await serverJob.execute(async (job) => {
     job.info(`prompt is ${prompt}`);
 
     const context = await makeContext(client, prompt, authnUserId);
@@ -150,7 +150,6 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['context'] = context;
   });
 
-  const jobData = await jobPromise;
   return { jobSequenceId: serverJob.jobSequenceId, jobData };
 }
 
@@ -181,7 +180,7 @@ export async function regenerateQuestion(
     description: 'Revise a question using the LLM',
   });
 
-  const jobPromise = serverJob.execute(async (job) => {
+  const jobData = await serverJob.execute(async (job) => {
     job.info(`prompt is ${revisionPrompt}`);
 
     const context = await makeContext(client, originalPrompt, authnUserId);
@@ -238,6 +237,5 @@ export async function regenerateQuestion(
     job.data['context'] = context;
   });
 
-  const jobData = await jobPromise;
   return { jobSequenceId: serverJob.jobSequenceId, jobData };
 }
