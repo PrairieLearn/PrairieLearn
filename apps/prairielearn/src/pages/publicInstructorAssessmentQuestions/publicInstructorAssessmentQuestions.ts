@@ -5,11 +5,9 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { Assessment, AssessmentSchema } from '../../db-types.js';
-
-import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-
+import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
 import { selectCourseById } from '../../models/course.js';
+import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
   InstructorAssessmentQuestions,
