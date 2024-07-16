@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
-import request from 'request';
+import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -218,7 +218,7 @@ describe('Homework assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let res, page, elemList;
+  let page, elemList;
 
   const startAssessment = function () {
     describe('the locals object', function () {
@@ -259,18 +259,10 @@ describe('Homework assessment', function () {
     });
 
     describe('GET ' + locals.assessmentsUrl, function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentsUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentsUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
@@ -289,24 +281,16 @@ describe('Homework assessment', function () {
     });
 
     describe('GET to assessment URL', function () {
-      it('should load successfully', function (callback) {
+      it('should load successfully', async () => {
         locals.preStartTime = Date.now();
-        request(locals.assessmentUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postStartTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should redirect to the correct path', function () {
-        locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+        const res = await fetch(locals.assessmentUrl);
+        locals.postStartTime = Date.now();
+        assert.equal(res.status, 200);
+        page = await res.text();
+
+        // Ensure we redirected to the correct path.
+        locals.assessmentInstanceUrl = res.url;
+        assert.equal(res.url, locals.siteUrl + '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', async () => {
         const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
@@ -336,18 +320,10 @@ describe('Homework assessment', function () {
     });
 
     describe('GET to assessment_instance URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentInstanceUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentInstanceUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
@@ -1157,18 +1133,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesCourse"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to clientFilesCourse/data.txt', function (callback) {
+      it('should download something with the link to clientFilesCourse/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function () {
         assert.equal(page, 'This data is specific to the course.');
@@ -1179,18 +1148,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the force-download link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the force-download link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -1199,18 +1161,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the new tab link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the new tab link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -1221,18 +1176,11 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/data.txt', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is generated by code.');
@@ -1243,22 +1191,14 @@ describe('Homework assessment', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/figure.png', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/figure.png', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request({ url: fileUrl, encoding: null }, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.arrayBuffer();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
-        // assert.equal(page,'This data is generated by code.')
-        assert.equal(page.slice(0, 8).toString('hex'), '89504e470d0a1a0a');
+        assert.equal(Buffer.from(page.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
       });
     });
   });
@@ -1326,19 +1266,11 @@ describe('Homework assessment', function () {
   });
 
   describe('student gradebook page', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async () => {
       const gradebookUrl = locals.courseInstanceBaseUrl + '/gradebook';
-      request(gradebookUrl, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        res = response;
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(gradebookUrl);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
