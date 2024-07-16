@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import http from 'node:http';
+import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import { assert } from 'chai';
@@ -123,6 +125,7 @@ const courseInstanceQuestionHtmlEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionHtmlPath)}`;
 const courseInstanceQuestionPythonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
+const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
 const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
@@ -297,6 +300,10 @@ describe('test file editor', function () {
       });
     });
 
+    describe('disallow edits outside course directory', function () {
+      badGet(badPathUrl, 500, false);
+    });
+
     describe('verify file handlers', function () {
       verifyFileData.forEach((element) => {
         doFiles(element);
@@ -318,7 +325,45 @@ describe('test file editor', function () {
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
     it(`should load with status ${expected_status}`, async () => {
-      const res = await fetch(url);
+      // `fetch()` pre-normalizes the URL, which means we can't use it to test
+      // path traversal attacks. In this specific case, we'll use `http.request()`
+      // directly to avoid this normalization.
+      const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+        (resolve, reject) => {
+          // We deliberately use the deprecated `node:url#parse()` instead of
+          // `new URL()` to avoid path normalization.
+          const parsedUrl = nodeUrl.parse(url);
+          const req = http.request(
+            {
+              hostname: 'localhost',
+              port: config.serverPort,
+              path: parsedUrl.path,
+              method: 'GET',
+            },
+            (res) => {
+              let data = '';
+
+              res.on('data', (chunk) => {
+                data += chunk;
+              });
+
+              res.on('end', () => {
+                resolve({
+                  status: res.statusCode ?? 500,
+                  text: () => Promise.resolve(data),
+                });
+              });
+            },
+          );
+
+          req.on('error', (err) => {
+            reject(err);
+          });
+
+          req.end();
+        },
+      );
+
       assert.equal(res.status, expected_status);
       page = await res.text();
     });
