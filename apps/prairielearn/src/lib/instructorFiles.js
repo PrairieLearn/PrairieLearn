@@ -168,8 +168,6 @@ export function getPaths(requestedPath, locals) {
       name: path.basename(curPath),
       path: path.relative(coursePath, curPath),
       canView: contains(rootPath, curPath),
-      // Kept while in use in instructorFileEditor, to be replaced with a call to encodePath there once converted from EJS
-      encodedPath: encodePath(path.relative(coursePath, curPath)),
     },
     ...path
       .relative(coursePath, workingPath)
@@ -181,8 +179,6 @@ export function getPaths(requestedPath, locals) {
           name: path.basename(curPath),
           path: path.relative(coursePath, curPath),
           canView: contains(rootPath, curPath),
-          // Kept while in use in instructorFileEditor, to be replaced with a call to encodePath there once converted from EJS
-          encodedPath: encodePath(path.relative(coursePath, curPath)),
         };
       }),
   ];
