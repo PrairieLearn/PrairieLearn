@@ -217,7 +217,7 @@ export async function regenerateQuestion(
 
     job.info(`system prompt is: ${sysPrompt}`);
 
-    //TODO [very important]: normalize to prevent prompt injection attacks
+    // TODO [very important]: normalize to prevent prompt injection attacks
 
     const completion = await client.chat.completions.create({
       model: 'gpt-3.5-turbo',
