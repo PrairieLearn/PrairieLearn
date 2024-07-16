@@ -15,7 +15,7 @@ import { contains } from '@prairielearn/path-utils';
 import { getCourseOwners } from '../../lib/course.js';
 import * as editorUtil from '../../lib/editorUtil.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
-import { getPaths, type Paths } from '../../lib/instructorFiles.js';
+import { getPaths, type InstructorFilePaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 
 import {
@@ -38,7 +38,7 @@ async function browseDirectory({
   has_course_permission_edit,
   example_course,
 }: {
-  paths: Paths;
+  paths: InstructorFilePaths;
   has_course_permission_edit: boolean;
   example_course: boolean;
 }): Promise<DirectoryListings> {
@@ -110,7 +110,7 @@ async function browseFile({
   has_course_permission_edit,
   example_course,
 }: {
-  paths: Paths;
+  paths: InstructorFilePaths;
   has_course_permission_edit: boolean;
   example_course: boolean;
 }): Promise<FileInfo> {

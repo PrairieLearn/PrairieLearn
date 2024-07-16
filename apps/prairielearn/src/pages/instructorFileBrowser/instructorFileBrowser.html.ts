@@ -6,7 +6,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { User } from '../../lib/db-types.js';
-import type { Paths } from '../../lib/instructorFiles.js';
+import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 
 export interface FileInfo {
   id: number;
@@ -136,7 +136,7 @@ export function InstructorFileBrowser({
   isFile,
   fileInfo,
   directoryListings,
-}: { resLocals: Record<string, any>; paths: Paths } & (
+}: { resLocals: Record<string, any>; paths: InstructorFilePaths } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
@@ -223,7 +223,7 @@ function FileBrowserActions({
   fileInfo,
   csrfToken,
 }: {
-  paths: Paths;
+  paths: InstructorFilePaths;
   fileInfo: FileInfo;
   csrfToken: string;
 }) {
@@ -296,7 +296,13 @@ function FileBrowserActions({
   `;
 }
 
-function DirectoryBrowserActions({ paths, csrfToken }: { paths: Paths; csrfToken: string }) {
+function DirectoryBrowserActions({
+  paths,
+  csrfToken,
+}: {
+  paths: InstructorFilePaths;
+  csrfToken: string;
+}) {
   return html`
     ${paths.specialDirs?.map(
       (d) => html`
@@ -346,7 +352,13 @@ function DirectoryBrowserActions({ paths, csrfToken }: { paths: Paths; csrfToken
   `;
 }
 
-function FileContentPreview({ paths, fileInfo }: { paths: Paths; fileInfo: FileInfo }) {
+function FileContentPreview({
+  paths,
+  fileInfo,
+}: {
+  paths: InstructorFilePaths;
+  fileInfo: FileInfo;
+}) {
   if (fileInfo.isImage) {
     return html`
       <img
@@ -379,7 +391,7 @@ function DirectoryBrowserBody({
   directoryListings: directoryListings,
   csrfToken,
 }: {
-  paths: Paths;
+  paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
   csrfToken: string;
 }) {

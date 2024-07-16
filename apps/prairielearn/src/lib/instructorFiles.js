@@ -7,7 +7,7 @@ import { contains } from '@prairielearn/path-utils';
 
 import { encodePath } from './uri-util.js';
 
-/** @typedef {ReturnType<typeof getPaths>} Paths */
+/** @typedef {ReturnType<typeof getPaths>} InstructorFilePaths */
 
 /**
  * @param {Record<string, any>} locals
