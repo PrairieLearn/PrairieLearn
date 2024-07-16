@@ -6,6 +6,7 @@ import { formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
@@ -233,9 +234,7 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
         : row.score_stat_number > 0
           ? html`
               <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-                ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                  score: Math.round(row.score_stat_mean),
-                })}
+                ${Scorebar(Math.round(row.score_stat_mean))}
               </div>
             `
           : html`&mdash;`}

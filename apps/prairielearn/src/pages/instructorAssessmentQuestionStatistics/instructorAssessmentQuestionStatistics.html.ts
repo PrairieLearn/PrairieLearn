@@ -5,6 +5,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Modal } from '../../components/Modal.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
@@ -189,16 +190,12 @@ export function InstructorAssessmentQuestionStatistics({
                           </a>
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
-                            score: row.mean_question_score
-                              ? Math.round(row.mean_question_score)
-                              : null,
-                          })}
+                          ${Scorebar(
+                            row.mean_question_score ? Math.round(row.mean_question_score) : null,
+                          )}
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
-                            score: row.discrimination ? Math.round(row.discrimination) : null,
-                          })}
+                          ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
                         </td>
                         <td class="text-center">
                           ${(row.max_auto_points ?? 0) > 0 ||
