@@ -60,9 +60,7 @@ async function makeContext(client: OpenAI, prompt: string, authnUserId: string):
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  const contextDocs = docs.map((doc) => doc.doc_text);
-  const context = contextDocs.join('\n\n');
-  return context;
+  return docs.map((doc) => doc.doc_text).join('\n\n');
 }
 
 /**
