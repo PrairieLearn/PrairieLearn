@@ -137,7 +137,7 @@ export function InstructorFileBrowser({
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { authz_data, navPage, course, __csrf_token: csrfToken } = resLocals;
+  const { navPage, __csrf_token: csrfToken } = resLocals;
   const syncErrorsPartial =
     navPage === 'course_admin'
       ? 'courseSyncErrorsAndWarnings'
@@ -395,7 +395,6 @@ function DirectoryBrowserBody({
   directoryListings: DirectoryListings;
   csrfToken: string;
 }) {
-  const encodedPath = encodePath(f.path);
   return html`
     <table class="table table-sm table-hover">
       <tbody>
@@ -436,13 +435,13 @@ function DirectoryBrowserBody({
                     : ''}
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 ${f.canView
-                  ? html`<a href="${paths.urlPrefix}/file_view/${encodedPath}">${f.name}</a>`
+                  ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}">${f.name}</a>`
                   : html`<span>${f.name}</span>`}
               </td>
               <td>
                 <a
                   class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_edit/${encodedPath}"
+                  href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
                 >
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
@@ -466,9 +465,9 @@ function DirectoryBrowserBody({
                 </button>
                 <a
                   class="btn btn-xs btn-secondary ${f.canDownload ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
-                    f.name,
-                  )}"
+                  href="${paths.urlPrefix}/file_download/${encodePath(
+                    f.path,
+                  )}?attachment=${encodeURIComponent(f.name)}"
                 >
                   <i class="fa fa-arrow-down"></i>
                   <span>Download</span>
