@@ -201,7 +201,7 @@ export function InstructorFileBrowser({
                 <div class="col-auto">
                   ${isFile
                     ? FileBrowserActions({ paths, fileInfo, csrfToken })
-                    : authz_data.has_course_permission_edit && !course.example_course
+                    : paths.hasEditPermission
                       ? DirectoryBrowserActions({ paths, csrfToken })
                       : ''}
                 </div>

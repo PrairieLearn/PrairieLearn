@@ -80,6 +80,9 @@ export function getPaths(requestedPath, locals) {
   const coursePath = locals.course.path;
   /** @type {string} */
   const courseId = locals.course.id;
+  /** @type {boolean} */
+  const hasEditPermission =
+    locals.authz_data.has_course_permission_edit && !locals.course.example_course;
 
   const { rootPath, invalidRootPaths, cannotMove, clientDir, serverDir, testsDir, urlPrefix } =
     getContextPaths(locals);
@@ -185,6 +188,7 @@ export function getPaths(requestedPath, locals) {
   return {
     coursePath,
     courseId,
+    hasEditPermission,
     rootPath,
     invalidRootPaths,
     cannotMove,

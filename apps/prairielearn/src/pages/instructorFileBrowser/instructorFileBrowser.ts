@@ -35,10 +35,8 @@ function isHidden(item: string) {
 
 async function browseDirectory({
   paths,
-  hasEditPermission: hasEditPermission,
 }: {
   paths: InstructorFilePaths;
-  hasEditPermission: boolean;
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const ansiUp = new AnsiUp();
@@ -67,11 +65,11 @@ async function browseDirectory({
           path: relative_path,
           encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
           dir: paths.workingPath,
-          canEdit: editable && hasEditPermission,
-          canUpload: hasEditPermission,
+          canEdit: editable && paths.hasEditPermission,
+          canUpload: paths.hasEditPermission,
           canDownload: true, // we already know the user is a course Viewer (checked on GET)
-          canRename: movable && hasEditPermission,
-          canDelete: movable && hasEditPermission,
+          canRename: movable && paths.hasEditPermission,
+          canDelete: movable && paths.hasEditPermission,
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
@@ -103,13 +101,7 @@ async function browseDirectory({
   };
 }
 
-async function browseFile({
-  paths,
-  hasEditPermission,
-}: {
-  paths: InstructorFilePaths;
-  hasEditPermission: boolean;
-}): Promise<FileInfo> {
+async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {
@@ -120,10 +112,10 @@ async function browseFile({
     encodedPath: encodePath(path.relative(paths.coursePath, filepath)),
     dir: path.dirname(paths.workingPath),
     canEdit: false, // will be overridden only if the file is a text file
-    canUpload: hasEditPermission,
+    canUpload: paths.hasEditPermission,
     canDownload: true, // we already know the user is a course Viewer (checked on GET)
-    canRename: movable && hasEditPermission,
-    canDelete: movable && hasEditPermission,
+    canRename: movable && paths.hasEditPermission,
+    canDelete: movable && paths.hasEditPermission,
     canView: !paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
     isBinary: await isBinaryFile(paths.workingPath),
     isImage: false,
@@ -149,7 +141,7 @@ async function browseFile({
     }
 
     file.isText = true;
-    file.canEdit = hasEditPermission;
+    file.canEdit = paths.hasEditPermission;
 
     const fileContents = await fs.readFile(paths.workingPath);
     const stringifiedContents = fileContents.toString('utf8');
@@ -196,8 +188,6 @@ router.get(
     }
 
     const paths = getPaths(req.params[0], res.locals);
-    const hasEditPermission =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     try {
       const stats = await fs.lstat(paths.workingPath);
@@ -207,7 +197,7 @@ router.get(
             resLocals: res.locals,
             paths,
             isFile: false,
-            directoryListings: await browseDirectory({ paths, hasEditPermission }),
+            directoryListings: await browseDirectory({ paths }),
           }),
         );
       } else if (stats.isFile()) {
@@ -216,7 +206,7 @@ router.get(
             resLocals: res.locals,
             paths,
             isFile: true,
-            fileInfo: await browseFile({ paths, hasEditPermission }),
+            fileInfo: await browseFile({ paths }),
           }),
         );
       } else {
