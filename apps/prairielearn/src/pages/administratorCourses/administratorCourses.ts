@@ -10,7 +10,7 @@ import {
   selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request.js';
-import { deleteCourse, selectCourseById } from '../../models/course.js';
+import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
@@ -40,16 +40,16 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'courses_insert') {
-      await sqldb.callAsync('courses_insert', [
-        req.body.institution_id,
-        req.body.short_name,
-        req.body.title,
-        req.body.display_timezone,
-        req.body.path,
-        req.body.repository,
-        req.body.branch,
-        res.locals.authn_user.user_id,
-      ]);
+      await insertCourse({
+        institution_id: req.body.institution_id,
+        short_name: req.body.short_name,
+        title: req.body.title,
+        display_timezone: req.body.display_timezone,
+        path: req.body.path,
+        repository: req.body.repository,
+        branch: req.body.branch,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
       await sqldb.callAsync('courses_update_column', [
