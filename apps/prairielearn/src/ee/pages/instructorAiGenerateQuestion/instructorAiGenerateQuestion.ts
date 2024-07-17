@@ -174,7 +174,7 @@ router.post(
       if (result.qid) {
         res.redirect(res.locals.urlPrefix + '/question/' + result.qid + '/settings');
       } else {
-        res.redirect(result.redirect);
+        res.redirect(result.redirect ? result.redirect : '');
       }
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
