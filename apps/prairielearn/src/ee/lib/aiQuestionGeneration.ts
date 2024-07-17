@@ -3,7 +3,7 @@ import { OpenAI } from 'openai';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
-import { ServerJob, createServerJob, ServerJobResult } from '../../lib/server-jobs.js';
+import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 
@@ -110,7 +110,11 @@ export async function generateQuestion(
   courseId: string | undefined,
   authnUserId: string,
   prompt: string,
-): Promise<{ jobSequenceId: string; jobResult: ServerJobResult }> {
+): Promise<{
+  jobSequenceId: string;
+  htmlResult: string | undefined;
+  pythonResult: string | undefined;
+}> {
   const serverJob = await createServerJob({
     courseId,
     type: 'ai_question_generate',
@@ -149,7 +153,11 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['completion'] = completion;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, jobResult: jobData };
+  return {
+    jobSequenceId: serverJob.jobSequenceId,
+    htmlResult: jobData.data.html,
+    pythonResult: jobData.data.python,
+  };
 }
 
 /**
@@ -172,7 +180,11 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-): Promise<{ jobSequenceId: string; jobResult: ServerJobResult }> {
+): Promise<{
+  jobSequenceId: string;
+  htmlResult: string | undefined;
+  pythonResult: string | undefined;
+}> {
   const serverJob = await createServerJob({
     courseId,
     type: 'llm_question_regen',
@@ -236,5 +248,9 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['context'] = context;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, jobResult: jobData };
+  return {
+    jobSequenceId: serverJob.jobSequenceId,
+    htmlResult: jobData.data.html,
+    pythonResult: jobData.data.python,
+  };
 }

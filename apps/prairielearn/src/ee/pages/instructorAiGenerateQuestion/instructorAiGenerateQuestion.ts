@@ -10,6 +10,7 @@ import { QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionAddEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
+import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
@@ -24,7 +25,7 @@ export async function saveGeneratedQuestion(
   res,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
-): Promise<{ qid?: string; redirect?: string }> {
+): Promise<string> {
   const files = {};
 
   if (htmlFileContents) {
@@ -45,7 +46,7 @@ export async function saveGeneratedQuestion(
   try {
     await editor.executeWithServerJob(serverJob);
   } catch (err) {
-    return { redirect: res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId };
+    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
   }
 
   const result = await queryRow(
@@ -54,7 +55,7 @@ export async function saveGeneratedQuestion(
     QuestionSchema,
   );
 
-  return { qid: result.id };
+  return result.id;
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -110,10 +111,14 @@ router.post(
         req.body.prompt,
       );
 
-      const data = result.jobResult;
-      if (data) {
+      if (result.htmlResult) {
         res.send(
-          GenerationResults(data.data.html, data.data.python, result.jobSequenceId, res.locals),
+          GenerationResults(
+            result.htmlResult,
+            result.pythonResult,
+            result.jobSequenceId,
+            res.locals,
+          ),
         );
       } else {
         throw new error.HttpStatusError(500, `Job sequence ${result.jobSequenceId} failed.`);
@@ -144,10 +149,14 @@ router.post(
         genJobs[0]?.data?.python,
       );
 
-      const data = result.jobResult;
-      if (data) {
+      if (result.htmlResult) {
         res.send(
-          GenerationResults(data.data.html, data.data.python, result.jobSequenceId, res.locals),
+          GenerationResults(
+            result.htmlResult,
+            result.pythonResult,
+            result.jobSequenceId,
+            res.locals,
+          ),
         );
       } else {
         res.redirect('/pl/jobSequence/' + result.jobSequenceId);
@@ -165,17 +174,13 @@ router.post(
         );
       }
 
-      const result = await saveGeneratedQuestion(
+      const qid = await saveGeneratedQuestion(
         res,
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
       );
 
-      if (result.qid) {
-        res.redirect(res.locals.urlPrefix + '/question/' + result.qid + '/settings');
-      } else {
-        res.redirect(result.redirect ? result.redirect : '');
-      }
+      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
