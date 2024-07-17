@@ -50,24 +50,25 @@ router.get(
         /** @type {import('@aws-sdk/client-ecr').DescribeImagesCommandOutput} */
         let data;
         try {
-          data = await ecr.describeImages({ repositoryName: repository.getRepository() });
+          data = await ecr.describeImages({
+            repositoryName: repository.getRepository(),
+            imageIds: [{ imageTag: repository.getTag() }],
+          });
         } catch (err) {
           if (err.name === 'InvalidParameterException') {
             image.invalid = true;
             return;
-          } else if (err.name === 'RepositoryNotFoundException') {
+          } else if (
+            err.name === 'RepositoryNotFoundException' ||
+            err.name === 'ImageNotFoundException'
+          ) {
             image.imageSyncNeeded = true;
             return;
           }
           throw err;
         }
 
-        const repoName = repository.getCombined(true);
-        const ecrInfo = data.imageDetails?.find((imageDetails) =>
-          imageDetails.imageTags?.some(
-            (tag) => `${imageDetails.repositoryName}:${tag}` === repoName,
-          ),
-        );
+        const ecrInfo = data.imageDetails?.[0];
 
         // Put info from ECR into image for EJS
         image.digest = ecrInfo?.imageDigest ?? '';
