@@ -888,6 +888,8 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    // The template question contains tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1054,6 +1056,12 @@ export class QuestionCopyEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+
+    // When copying from an example/template course, drop the tags, as they're
+    // likely not relevant to the target course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
