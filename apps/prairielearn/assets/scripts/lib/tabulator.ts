@@ -1,6 +1,3 @@
-import { parseHTMLElement } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
-import { v4 as uuid } from 'uuid';
 import {
   Tabulator,
   FormatModule,
@@ -13,6 +10,10 @@ import {
   ResizeTableModule,
   Options,
 } from 'tabulator-tables';
+import { v4 as uuid } from 'uuid';
+
+import { parseHTMLElement } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 Tabulator.registerModule([
   FormatModule, // custom formatters
