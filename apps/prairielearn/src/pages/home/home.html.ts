@@ -9,7 +9,7 @@ import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,
   label: z.string(),
-  do_link: z.boolean(),
+  can_open_course: z.boolean(),
   course_instances: z.array(
     z.object({
       id: CourseInstanceSchema.shape.id,
@@ -164,7 +164,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
             (course) => html`
               <tr>
                 <td class="w-50 align-middle">
-                  ${course.do_link
+                  ${course.can_open_course
                     ? html`<a href="${config.urlPrefix}/course/${course.id}">${course.label}</a>`
                     : course.label}
                 </td>

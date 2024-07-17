@@ -7,7 +7,7 @@ WITH
       c.title,
       c.id,
       c.example_course,
-      TRUE AS do_link,
+      TRUE AS can_open_course,
       coalesce(
         jsonb_agg(
           jsonb_build_object('label', ci.long_name, 'id', ci.id)
@@ -94,7 +94,7 @@ WITH
       (
         $is_administrator
         OR cp.course_role > 'None'
-      ) AS do_link,
+      ) AS can_open_course,
       coalesce(ici.course_instances, '[]'::jsonb) AS course_instances
     FROM
       pl_courses AS c
