@@ -29,7 +29,6 @@ import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flashMiddleware, flash } from '@prairielearn/flash';
@@ -48,6 +47,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
+import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, setLocalsFromConfig } from './lib/config.js';
@@ -121,7 +121,6 @@ export async function initExpress() {
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     res.locals.compiled_script_path = assets.compiledScriptPath;
     res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    res.locals.encoded_data = EncodedData;
     next();
   });
   app.use(function (req, res, next) {
@@ -138,7 +137,7 @@ export async function initExpress() {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: 'prairielearn_session',
+        name: 'pl2_session',
         writeNames: ['prairielearn_session', 'pl2_session'],
         // Ensure that the legacy session cookie doesn't have a domain specified.
         // We can only safely set domains on the new session cookie.
@@ -151,12 +150,17 @@ export async function initExpress() {
     }),
   );
 
+  // This middleware helps ensure that sessions remain alive (un-expired) as
+  // long as users are somewhat frequently active. See the documentation for
+  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
   app.use((req, res, next) => {
-    // If the session is going to expire in the near future, we'll extend it
-    // automatically for the user.
-    //
-    // TODO: make this configurable?
-    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+    // Compute the number of milliseconds until the session expires.
+    const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
+
+    if (
+      sessionTtl <
+      (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
+    ) {
       req.session.setExpiration(config.sessionStoreExpireSeconds);
     }
 
@@ -581,7 +585,7 @@ export async function initExpress() {
       res.locals.navPage = 'news';
       next();
     },
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   ]);
   app.use('/pl/news_item', [
     function (req, res, next) {
@@ -592,7 +596,7 @@ export async function initExpress() {
       res.locals.navSubPage = 'news_item';
       next();
     },
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   ]);
   app.use(
     '/pl/request_course',
@@ -638,20 +642,11 @@ export async function initExpress() {
 
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
-    app.use('/pl/loadFromDisk', [
-      function (req, res, next) {
-        res.locals.navPage = 'load_from_disk';
-        next();
-      },
+    app.use(
+      '/pl/loadFromDisk',
       (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    ]);
-    app.use('/pl/jobSequence', [
-      function (req, res, next) {
-        res.locals.navPage = 'job_sequence';
-        next();
-      },
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
-    ]);
+    );
+    app.use('/pl/jobSequence', (await import('./pages/jobSequence/jobSequence.js')).default);
   }
 
   // Redirect plain course instance page either to student or instructor assessments page
@@ -711,11 +706,11 @@ export async function initExpress() {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -745,11 +740,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1220,7 +1215,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/loadFromDisk',
@@ -1293,6 +1288,14 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
     function (req, res, next) {
       res.locals.navSubPage = 'syncs';
@@ -1344,13 +1347,16 @@ export async function initExpress() {
       next();
     },
     asyncHandler(async (req, res, next) => {
-      // The navigation tabs rely on this value to know when to show/hide the
-      // billing tab, so we need to load it for all instance admin pages.
+      // The navigation tabs rely on these values to know when to show/hide themselves
+      // so we need to load it for all instance admin pages.
       const hasCourseInstanceBilling = await features.enabledFromLocals(
         'course-instance-billing',
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1418,6 +1424,11 @@ export async function initExpress() {
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
     ]);
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
+      (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
+        .default,
+    );
   }
 
   // Global client files
@@ -1592,7 +1603,7 @@ export async function initExpress() {
     );
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+      (await import('./pages/jobSequence/jobSequence.js')).default,
     );
   }
 
@@ -1680,11 +1691,11 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/news_items/news_items.js')).default,
+    (await import('./pages/newsItems/newsItems.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/news_item/news_item.js')).default,
+    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course pages require the effective user to have permission
@@ -1821,6 +1832,14 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateQuestion/instructorAiGenerateQuestion.js'))
+      .default,
+  ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
     function (req, res, next) {
       res.locals.navSubPage = 'syncs';
@@ -1867,14 +1886,14 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/jobSequence',
-    (await import('./pages/instructorJobSequence/instructorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/grading_job',
     (await import('./pages/instructorGradingJob/instructorGradingJob.js')).default,
   );
 
-  // These routes are used to initiate a copy of a question with publicly shared source
+  // This route is used to initiate a copy of a question with publicly shared source
   // or a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
@@ -1883,11 +1902,6 @@ export async function initExpress() {
   // which don't exist on chunk servers
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
-    (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
-  );
-  // TODO: remove this route once all links are updated to reference the one above
-  app.use(
-    '/pl/course/:course_id(\\d+)/copy_template_course_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
@@ -2061,7 +2075,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/administrator/jobSequence',
-    (await import('./pages/administratorJobSequence/administratorJobSequence.js')).default,
+    (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
     '/pl/administrator/courseRequests',
@@ -2487,7 +2501,7 @@ if (esMain(import.meta) && config.startServer) {
             userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
+          logger.info('Waiting for job to finish...');
           await jobPromise;
           (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
             logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);

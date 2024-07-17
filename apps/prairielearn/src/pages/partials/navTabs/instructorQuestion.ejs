@@ -21,4 +21,10 @@
     urlSuffix:      '/question/'+question.id+'/statistics',
     iconClasses:    'fas fa-chart-bar',
     tabLabel:       'Statistics'}) %>
+<%- include('navTab', {
+    activeSubPage:  'issues',
+    urlSuffix:      '/course_admin/issues?q=is%3Aopen+qid%3A'+encodeURIComponent(question.qid),
+    iconClasses:    'fas fa-bug',
+    tabLabel:       'Issues',
+    htmlSuffix:     include("../issueBadge", {count: open_issue_count, suppressLink: true, className: 'ml-2'})}) %>
 <% } %>

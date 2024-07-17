@@ -1693,7 +1693,7 @@ If a vector is expected as a correct answer, but the author does not want to ass
 #### To insert an arc vector:
 
 ```html
-<pl-drawing-button type="pl-arc-vector-CWW"></pl-drawing-button>
+<pl-drawing-button type="pl-arc-vector-CCW"></pl-drawing-button>
 <pl-drawing-button type="pl-arc-vector-CW"></pl-drawing-button>
 ```
 

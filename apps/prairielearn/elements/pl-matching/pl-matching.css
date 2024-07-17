@@ -47,3 +47,7 @@
   background-color: rgba(0, 0, 0, 0.03);
   margin-right: 0.5rem;
 }
+
+.pl-matching-container-bottom {
+  display: block;
+}

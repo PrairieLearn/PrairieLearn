@@ -48,7 +48,7 @@ router.get(
     // Do not allow users to edit files in bad locations (e.g., outside the
     // current course, outside the current course instance, etc.). Do this by
     // wrapping everything in getPaths, which throws an error on a bad path.
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
 
     // We could also check if the file exists, if the file actually is a
     // file and not a directory, if the file is non-binary, etc., and try
@@ -193,7 +193,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
 
     const container = {
       rootPath: paths.rootPath,
@@ -252,7 +252,7 @@ function getHash(contents) {
 }
 
 async function readDraftEdit(fileEdit) {
-  debug(`Looking for previously saved drafts`);
+  debug('Looking for previously saved drafts');
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -272,7 +272,7 @@ async function readDraftEdit(fileEdit) {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
   } else {
-    debug(`Found no saved drafts`);
+    debug('Found no saved drafts');
   }
 
   // We are choosing to soft-delete all drafts *before* reading the
