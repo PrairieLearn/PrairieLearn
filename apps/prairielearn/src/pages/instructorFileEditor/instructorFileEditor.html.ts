@@ -10,7 +10,11 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
   return html`
     <!doctype html>
     <html lang="en">
-      <head data-ace-base-path="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}">
+      <head>
+        <meta
+          name="ace-base-path"
+          content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+        />
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
           ...resLocals,
           pageTitle: `Edit ${fileEdit?.fileName}`,
