@@ -143,7 +143,7 @@ export function InstructorFileBrowser({
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { navPage, __csrf_token: csrfToken, urlPrefix } = resLocals;
+  const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
   const syncErrorsAndWarnings =
     navPage === 'course_admin'
       ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
