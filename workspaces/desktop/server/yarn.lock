@@ -113,7 +113,17 @@ command-line-args@^5.2.1:
     lodash.camelcase "^4.3.0"
     typical "^4.0.0"
 
-command-line-usage@^7.0.0, command-line-usage@^7.0.1:
+command-line-args@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/command-line-args/-/command-line-args-6.0.0.tgz#e4703592b0846a9ac440a5a1e2ffc0f89707701e"
+  integrity sha512-zDdHxHzlCp/gA1gy0VtPK3YL0Aob3ijJdwZ7H3HSl55hh8EziLtRlyj/od8EGRJfX8IjussC/mQkScl2Ms5Suw==
+  dependencies:
+    array-back "^6.2.2"
+    find-replace "^5.0.1"
+    lodash.camelcase "^4.3.0"
+    typical "^7.1.1"
+
+command-line-usage@^7.0.0:
   version "7.0.1"
   resolved "https://registry.yarnpkg.com/command-line-usage/-/command-line-usage-7.0.1.tgz#e540afef4a4f3bc501b124ffde33956309100655"
   integrity sha512-NCyznE//MuTjwi3y84QVUGEOT+P5oto1e1Pk/jFPVdPPfsG03qpTIl3yw6etR+v73d0lXsoojRpvbru2sqePxQ==
@@ -121,6 +131,16 @@ command-line-usage@^7.0.0, command-line-usage@^7.0.1:
     array-back "^6.2.2"
     chalk-template "^0.4.0"
     table-layout "^3.0.0"
+    typical "^7.1.1"
+
+command-line-usage@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/command-line-usage/-/command-line-usage-7.0.2.tgz#16ea461dca216a7afd3ef8de41f526227cf46572"
+  integrity sha512-MwNFB8nxi3IVnzir+nkSIbDTU4H6ne26zqicO2eTt1wPrvdOAphPhnYqWOjxXKWYLNYDu4Z/r2ESEziEqKuOVg==
+  dependencies:
+    array-back "^6.2.2"
+    chalk-template "^0.4.0"
+    table-layout "^3.0.2"
     typical "^7.1.1"
 
 content-disposition@0.5.4:
@@ -250,6 +270,13 @@ find-replace@^3.0.0:
   integrity sha512-6Tb2myMioCAgv5kfvP5/PkZZ/ntTpVK39fHY7WkWBgvbeE+VHd/tZuZ4mrC+bxh4cfOZeYKVPaJIZtZXV7GNCQ==
   dependencies:
     array-back "^3.0.1"
+
+find-replace@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/find-replace/-/find-replace-5.0.1.tgz#28bbcf985b5274f6edd5e087c1e4e26a08b0da21"
+  integrity sha512-o5/Y8HrCNRuFF5rdNTkX8Vhv6kTFTV0t1zIoigwlCdbkA9qaapRzxvWPND2VvlFa9LBI05Q1i8ml/saMqkOJUQ==
+  dependencies:
+    array-back "^6.2.2"
 
 follow-redirects@^1.0.0:
   version "1.15.6"
@@ -541,7 +568,7 @@ supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-table-layout@^3.0.0:
+table-layout@^3.0.0, table-layout@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/table-layout/-/table-layout-3.0.2.tgz#69c2be44388a5139b48c59cf21e73b488021769a"
   integrity sha512-rpyNZYRw+/C+dYkcQ3Pr+rLxW4CfHpXjPDnG7lYhdRoUcZTUt+KEsX+94RGp/aVp/MQU35JCITv2T/beY4m+hw==
