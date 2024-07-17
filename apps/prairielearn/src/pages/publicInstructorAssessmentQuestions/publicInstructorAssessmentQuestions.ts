@@ -14,6 +14,7 @@ import {
   AssessmentQuestionRowSchema,
 } from './publicInstructorAssessmentQuestions.html.js';
 
+// TEST, put in different file (like assessments.ts)?
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   /*return await queryRow(
     sql.select_assessment_by_id,

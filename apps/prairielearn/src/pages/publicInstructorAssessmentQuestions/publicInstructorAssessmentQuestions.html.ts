@@ -61,7 +61,6 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -86,22 +85,17 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
+              ${// TEST, used to be: ${resLocals.assessment_set.title}
+                console.log('remove, TEST')} 
+              ${resLocals.assessment.number}: Questions 
             </div>
             ${AssessmentQuestionsTable({
               questions,
               assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
-              hasCourseInstancePermissionEdit:
-                resLocals.authz_data.has_course_instance_permission_edit,
             })}
           </div>
         </main>
@@ -114,12 +108,10 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
-  hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
-  hasCourseInstancePermissionEdit: boolean;
 }) {
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
@@ -155,7 +147,6 @@ function AssessmentQuestionsTable({
             <th width="100">Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
-            <th class="text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -300,38 +291,6 @@ function AssessmentQuestionsTable({
                         )}`;
                       })
                     : ''}
-                </td>
-                <td class="text-right">
-                  <div class="dropdown js-question-actions">
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-xs dropdown-toggle"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Action <span class="caret"></span>
-                    </button>
-
-                    <div class="dropdown-menu">
-                      ${hasCourseInstancePermissionEdit
-                        ? html`
-                            <button
-                              class="dropdown-item"
-                              data-toggle="modal"
-                              data-target="#resetQuestionVariantsModal"
-                              data-assessment-question-id="${question.id}"
-                            >
-                              Reset question variants
-                            </button>
-                          `
-                        : html`
-                            <button class="dropdown-item disabled" disabled>
-                              Must have editor permission
-                            </button>
-                          `}
-                    </div>
-                  </div>
                 </td>
               </tr>
             `;
