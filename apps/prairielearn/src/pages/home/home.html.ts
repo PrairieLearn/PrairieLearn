@@ -8,12 +8,13 @@ import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,
-  label: z.string(),
+  short_name: CourseSchema.shape.short_name,
+  title: CourseSchema.shape.title,
   can_open_course: z.boolean(),
   course_instances: z.array(
     z.object({
       id: CourseInstanceSchema.shape.id,
-      label: CourseInstanceSchema.shape.long_name,
+      long_name: CourseInstanceSchema.shape.long_name,
     }),
   ),
 });
@@ -21,7 +22,9 @@ export type InstructorCourse = z.infer<typeof InstructorCourseSchema>;
 
 export const StudentCourseSchema = z.object({
   id: CourseInstanceSchema.shape.id,
-  label: z.string(),
+  course_short_name: CourseSchema.shape.short_name,
+  course_title: CourseSchema.shape.title,
+  long_name: CourseInstanceSchema.shape.long_name,
 });
 export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
@@ -165,8 +168,10 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
               <tr>
                 <td class="w-50 align-middle">
                   ${course.can_open_course
-                    ? html`<a href="${config.urlPrefix}/course/${course.id}">${course.label}</a>`
-                    : course.label}
+                    ? html`<a href="${config.urlPrefix}/course/${course.id}">
+                        ${course.short_name}: ${course.title}
+                      </a>`
+                    : `${course.short_name}: ${course.title}`}
                 </td>
                 <td>
                   ${course.course_instances.map(
@@ -175,7 +180,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                         class="btn btn-outline-primary btn-sm my-1"
                         href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
                       >
-                        ${course_instance.label}
+                        ${course_instance.long_name}
                       </a>
                     `,
                   )}
@@ -240,11 +245,12 @@ function StudentCoursesCard({
             <table class="table table-sm table-hover table-striped">
               <tbody>
                 ${studentCourses.map(
-                  (course_instance) => html`
+                  (courseInstance) => html`
                     <tr>
                       <td>
-                        <a href="${config.urlPrefix}/course_instance/${course_instance.id}">
-                          ${course_instance.label}
+                        <a href="${config.urlPrefix}/course_instance/${courseInstance.id}">
+                          ${courseInstance.course_short_name}: ${courseInstance.course_title},
+                          ${courseInstance.long_name}
                         </a>
                       </td>
                     </tr>

@@ -2,7 +2,6 @@
 WITH
   example_courses AS (
     SELECT
-      c.short_name || ': ' || c.title AS label,
       c.short_name,
       c.title,
       c.id,
@@ -10,7 +9,7 @@ WITH
       TRUE AS can_open_course,
       coalesce(
         jsonb_agg(
-          jsonb_build_object('label', ci.long_name, 'id', ci.id)
+          jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
           ORDER BY
             d.start_date DESC NULLS LAST,
             d.end_date DESC NULLS LAST,
@@ -43,7 +42,7 @@ WITH
     SELECT
       c.id,
       jsonb_agg(
-        jsonb_build_object('label', ci.long_name, 'id', ci.id)
+        jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
         ORDER BY
           d.start_date DESC NULLS LAST,
           d.end_date DESC NULLS LAST,
@@ -86,7 +85,6 @@ WITH
   ),
   instructor_courses AS (
     SELECT
-      c.short_name || ': ' || c.title AS label,
       c.short_name,
       c.title,
       c.id,
@@ -138,7 +136,9 @@ ORDER BY
 
 -- BLOCK select_student_courses
 SELECT
-  c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
+  c.short_name AS course_short_name,
+  c.title AS course_title,
+  ci.long_name,
   ci.id
 FROM
   users AS u
