@@ -10,6 +10,8 @@ import type {
   InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
+type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
+
 onDocumentReady(() => {
   const {
     hasCourseInstancePermissionEdit,
@@ -30,7 +32,8 @@ onDocumentReady(() => {
   $('#grading-table').bootstrapTable({
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
-    dataField: 'instance_questions',
+    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
+      res.instance_questions.map((row, index) => ({ ...row, index })),
     escape: true,
     uniqueId: 'id',
     idField: 'id',
@@ -119,12 +122,12 @@ onDocumentReady(() => {
           searchable: false,
           sortable: true,
           switchable: false,
-          formatter: (_value: number, row: InstanceQuestionRow) =>
+          formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
             html`<a
                 href="${urlPrefix}/assessment/${row.assessment_question
                   .assessment_id}/manual_grading/instance_question/${row.id}"
               >
-                Instance ${row.index}
+                Instance ${row.index + 1}
                 ${row.open_issue_count
                   ? html`<span class="badge badge-pill badge-danger">${row.open_issue_count}</span>`
                   : ''}

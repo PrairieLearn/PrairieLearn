@@ -32,15 +32,15 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const result = await queryRows(
+    const instance_questions = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
       },
-      InstanceQuestionRowSchema.omit({ index: true }),
+      InstanceQuestionRowSchema,
     );
-    res.send({ instance_questions: result.map((row, idx) => ({ index: idx + 1, ...row })) });
+    res.send({ instance_questions });
   }),
 );
 
