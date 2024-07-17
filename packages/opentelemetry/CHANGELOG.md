@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 2.1.0
+
+### Minor Changes
+
+- ee7b9af: Only enable AWS resource detector in production-like environments
+
 ## 2.0.3
 
 ### Patch Changes
