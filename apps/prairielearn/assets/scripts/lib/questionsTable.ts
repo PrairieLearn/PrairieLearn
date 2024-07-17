@@ -1,21 +1,22 @@
-import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
-import { type CellComponent, type FormatterParams } from 'tabulator-tables';
-import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
+import { type CellComponent, type FormatterParams } from 'tabulator-tables';
 
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
+
+import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
-
-import { defaultTabulator, selectFilterOnSearch } from './tabulator.js';
 import type {
   Topic,
   Tag,
   SharingSet,
   AssessmentsFormatForQuestion,
 } from '../../../src/lib/db-types.js';
-import type { QuestionsPageDataAnsified } from '../../../src/models/questions.js';
 import { idsEqual } from '../../../src/lib/id.js';
-import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types.js';
+import type { QuestionsPageDataAnsified } from '../../../src/models/questions.js';
+
+import { defaultTabulator, selectFilterOnSearch } from './tabulator.js';
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances, showSharingSets, urlPrefix, qidPrefix } =
