@@ -34,14 +34,14 @@ export function EditError({
         <main id="content" class="container">
           <script>
             $(function () {
-              const button = document.querySelector('#results-some-uuid-button');
-              button.addEventListener('click', () => {
-                button.textContent = document
-                  .querySelector('#results-some-uuid')
-                  .classList.contains('show')
-                  ? 'Show detail'
-                  : 'Hide detail';
-              });
+              const button = document.querySelector('#job-sequence-results-button');
+              $('#job-sequence-results')
+                .on('show.bs.collapse', () => {
+                  button.textContent = 'Hide detail';
+                })
+                .on('hide.bs.collapse', () => {
+                  button.textContent = 'Show detail';
+                });
             });
           </script>
 
@@ -54,8 +54,8 @@ export function EditError({
                     type="button"
                     class="btn btn-light btn-sm"
                     data-toggle="collapse"
-                    data-target="#results-some-uuid"
-                    id="results-some-uuid-button"
+                    data-target="#job-sequence-results"
+                    id="job-sequence-results-button"
                   >
                     Show detail
                   </button>
@@ -88,7 +88,7 @@ export function EditError({
             </div>
           </div>
 
-          <div class="collapse" id="results-some-uuid">
+          <div class="collapse" id="job-sequence-results">
             ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults'); %>", {
               ...resLocals,
               job_sequence: jobSequence,
