@@ -2899,6 +2899,36 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/markdown@workspace:^, @prairielearn/markdown@workspace:packages/markdown":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/markdown@workspace:packages/markdown"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/chai": "npm:^4.3.16"
+    "@types/hast": "npm:^3.0.4"
+    "@types/mdast": "npm:^4.0.4"
+    "@types/mocha": "npm:^10.0.7"
+    "@types/node": "npm:^20.14.10"
+    "@types/unist": "npm:^3.0.2"
+    c8: "npm:^10.1.2"
+    chai: "npm:^5.1.1"
+    mdast-util-math: "npm:^3.0.0"
+    mocha: "npm:^10.6.0"
+    rehype-raw: "npm:^7.0.0"
+    rehype-sanitize: "npm:^6.0.0"
+    rehype-stringify: "npm:^10.0.0"
+    remark-gfm: "npm:^4.0.0"
+    remark-math: "npm:^6.0.0"
+    remark-parse: "npm:^11.0.0"
+    remark-rehype: "npm:^11.1.0"
+    tsx: "npm:^4.16.2"
+    typescript: "npm:^5.5.3"
+    unified: "npm:^11.0.5"
+    unist-util-visit: "npm:^5.0.0"
+    vfile: "npm:^6.0.1"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/migrations@workspace:^, @prairielearn/migrations@workspace:packages/migrations":
   version: 0.0.0-use.local
   resolution: "@prairielearn/migrations@workspace:packages/migrations"
@@ -3074,6 +3104,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/html-ejs": "workspace:^"
     "@prairielearn/logger": "workspace:^"
+    "@prairielearn/markdown": "workspace:^"
     "@prairielearn/migrations": "workspace:^"
     "@prairielearn/named-locks": "workspace:^"
     "@prairielearn/opentelemetry": "workspace:^"
@@ -3108,7 +3139,6 @@ __metadata:
     "@types/express-session": "npm:^1.18.0"
     "@types/folder-hash": "npm:^4.0.4"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/hast": "npm:^3.0.4"
     "@types/jju": "npm:^1.4.5"
     "@types/jquery": "npm:^3.5.30"
     "@types/js-cookie": "npm:^3.0.6"
@@ -3139,7 +3169,6 @@ __metadata:
     "@types/streamifier": "npm:^0.1.2"
     "@types/tar": "npm:^6.1.13"
     "@types/tmp": "npm:^0.2.6"
-    "@types/unist": "npm:^3.0.2"
     "@types/unzipper": "npm:^0.10.9"
     "@types/uuid": "npm:^10.0.0"
     "@viz-js/viz": "npm:^3.6.0"
@@ -3218,7 +3247,6 @@ __metadata:
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.0.0"
     mathjax: "npm:^3.2.2"
-    mdast-util-math: "npm:^3.0.0"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.0.3"
@@ -3249,13 +3277,7 @@ __metadata:
     qs: "npm:^6.12.3"
     quill: "npm:^2.0.2"
     quilljs-markdown: "npm:^1.2.0"
-    rehype-raw: "npm:^7.0.0"
-    rehype-sanitize: "npm:6.0.0"
-    rehype-stringify: "npm:^10.0.0"
-    remark-gfm: "npm:^4.0.0"
-    remark-math: "npm:^6.0.0"
     remark-parse: "npm:^11.0.0"
-    remark-rehype: "npm:^11.1.0"
     remark-stringify: "npm:^11.0.0"
     requirejs: "npm:^2.3.6"
     search-string: "npm:^3.1.0"
@@ -3281,7 +3303,6 @@ __metadata:
     unist-util-visit: "npm:^5.0.0"
     unzipper: "npm:^0.12.1"
     uuid: "npm:^10.0.0"
-    vfile: "npm:^6.0.1"
     winston: "npm:^3.13.0"
     xml-formatter: "npm:^3.6.3"
     xml2js: "npm:^0.6.2"
@@ -5057,12 +5078,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.14.9":
-  version: 20.14.9
-  resolution: "@types/node@npm:20.14.9"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.14.10, @types/node@npm:^20.14.9":
+  version: 20.14.10
+  resolution: "@types/node@npm:20.14.10"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/911ffa444dc032897f4a23ed580c67903bd38ea1c5ec99b1d00fa10b83537a3adddef8e1f29710cbdd8e556a61407ed008e06537d834e48caf449ce59f87d387
+  checksum: 10c0/0b06cff14365c2d0085dc16cc8cbea5c40ec09cfc1fea966be9eeecf35562760bfde8f88e86de6edfaf394501236e229d9c1084fad04fb4dec472ae245d8ae69
   languageName: node
   linkType: hard
 
@@ -12987,7 +13008,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rehype-sanitize@npm:6.0.0":
+"rehype-sanitize@npm:^6.0.0":
   version: 6.0.0
   resolution: "rehype-sanitize@npm:6.0.0"
   dependencies:
