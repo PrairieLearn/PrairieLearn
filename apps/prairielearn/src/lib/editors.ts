@@ -888,6 +888,8 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    // The template question contains tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1131,6 +1133,12 @@ export class QuestionTransferEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
