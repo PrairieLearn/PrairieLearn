@@ -1057,12 +1057,6 @@ export class QuestionCopyEditor extends Editor {
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
 
-    // When copying from an example/template course, drop the tags, as they're
-    // likely not relevant to the target course.
-    if (this.course.example_course || this.course.template_course) {
-      delete infoJson.tags;
-    }
-
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
@@ -1139,6 +1133,12 @@ export class QuestionTransferEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
