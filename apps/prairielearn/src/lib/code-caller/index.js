@@ -188,7 +188,7 @@ export async function withCodeCaller(course, fn) {
   }
 
   if (pool.available === 0 && !config.workerUseQueue) {
-    debug(`getPythonCaller(): no workers available, waiting to error`);
+    debug('getPythonCaller(): no workers available, waiting to error');
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         reject(new Error('Server is overloaded. Please try again.'));

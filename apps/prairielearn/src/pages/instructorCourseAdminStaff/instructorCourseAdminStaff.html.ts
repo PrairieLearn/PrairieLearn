@@ -297,7 +297,7 @@ function CoursePermissionsInsertForm({
       <div class="form-group">
         <label for="addUsersInputCourseRole">Course content access for all new users:</label>
         <select
-          class="form-control form-control-sm"
+          class="custom-select custom-select-sm"
           id="addUsersInputCourseRole"
           name="course_role"
           required
@@ -317,7 +317,7 @@ function CoursePermissionsInsertForm({
               >
               <div class="input-group">
                 <select
-                  class="form-control form-control-sm"
+                  class="custom-select custom-select-sm"
                   id="addUsersInputCourseInstance"
                   name="course_instance_id"
                 >
@@ -327,7 +327,7 @@ function CoursePermissionsInsertForm({
                   )}
                 </select>
                 <select
-                  class="form-control form-control-sm"
+                  class="custom-select custom-select-sm"
                   id="addUsersInputCourseInstanceRole"
                   name="course_instance_role"
                 >

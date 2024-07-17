@@ -24,7 +24,7 @@ if [ -n "$PID" ]; then
 fi
 
 mkdir -p ./s3rver
-node_modules/.bin/s3rver --directory ./s3rver --port 5000 --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store --configure-bucket workspace-logs > /dev/null &
+node_modules/.bin/s3rver --address 127.0.0.1 --port 5000 --directory ./s3rver --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store --configure-bucket workspace-logs > /dev/null &
 
 # wait for s3rver to start
 until lsof -i :5000 > /dev/null ; do sleep 1 ; done

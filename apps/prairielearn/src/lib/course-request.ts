@@ -95,7 +95,7 @@ export async function createCourseFromRequest(req, res) {
 
   try {
     await sendCourseRequestMessage(
-      `*Creating course*\n` +
+      '*Creating course*\n' +
         `Course rubric: ${req.body.repository_short_name}\n` +
         `Course title: ${req.body.title}\n` +
         `Approved by: ${res.locals.authn_user.name}`,

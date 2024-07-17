@@ -22,7 +22,7 @@ Since your course content is a Git repository hosted on GitHub, you can work dir
 
 To get started, ensure you have access to your course's repository. You may need to request access from an owner of the repository. Next, follow the [local installation instructions](installing.md) to get PrairieLearn running on your computer. From there, you can edit your course content in your preferred file editor and preview the changes locally.
 
-We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged, an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that your must have "Editor" or "Owner" permissions in the course to sync the repository.
+We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged, an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that you must have "Editor" or "Owner" permissions in the course to sync the repository.
 
 If you're new to Git, the following resources can help get you started:
 

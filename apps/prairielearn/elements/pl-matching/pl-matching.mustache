@@ -13,12 +13,12 @@
 }
 </style>
 {{#question}}
-<div id="pl-matching-{{uuid}}" class="pl-matching-container">
+<div id="pl-matching-{{uuid}}" class="pl-matching-container pl-matching-container-{{options_placement}}">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
         <div class="pl-matching-statement-select">
-            <select name="{{name}}" class="form-control">
+            <select name="{{name}}" class="custom-select" {{^editable}}disabled{{/editable}}>
                 {{#options}}
                     <option {{selected}} value="{{index}}">{{value}}</option>
                 {{/options}}
