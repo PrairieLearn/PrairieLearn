@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, HtmlSafeString } from '@prairielearn/html';
 
-import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import type { QuestionsPageDataAnsified } from '../models/questions.js';
@@ -9,13 +9,11 @@ import type { QuestionsPageDataAnsified } from '../models/questions.js';
 import type { EncodedQuestionsData } from './QuestionsTable.types.js';
 
 export function QuestionsTableHead() {
+  // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
+  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
   return html`
     ${compiledScriptTag('instructorQuestionsClient.ts')}
     ${compiledStylesheetTag('questionsTable.css')}
-    <link
-      rel="stylesheet"
-      href="${nodeModulesAssetPath('tabulator-tables/dist/css/tabulator_bootstrap4.min.css')}"
-    />
   `;
 }
 

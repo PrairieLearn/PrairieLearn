@@ -1,4 +1,4 @@
-/* @import 'tabulator-tables/dist/css/tabulator_bootstrap4.min.css'; */
+@import 'tabulator-tables/dist/css/tabulator_bootstrap4.min.css';
 
 .tabulator {
   /* Override the tabulator typical overflow (needed for sticky header) */
