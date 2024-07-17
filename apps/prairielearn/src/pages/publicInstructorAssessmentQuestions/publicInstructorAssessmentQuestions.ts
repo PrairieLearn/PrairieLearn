@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
-import { selectCourseByInstanceId } from '../../models/course.js';
+import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
@@ -31,10 +31,15 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log('In publicInstructorAssessmentQuestions.ts'); // TEST
-    res.locals.course = await selectCourseByInstanceId(req.params.course_instance_id);
-    console.log(`course is ${res.locals.course}`); // TEST
-    res.locals.assessment = await selectAssessmentById(req.params.assessment_id);
+    console.log(`req.params.course_instance_id:`, res.locals.course_instance_id); // TEST
+    console.log(`req.params.assessment_id:`, req.params.assessment_id); // TEST
+
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
+    const course = await selectCourseById(courseId); // TEST, req.params
+    console.log('course:', course); // TEST
+    res.locals.course = course; // TEST, req.params
+    console.log('res.locals.assessment_id:', res.locals.assessment_id); // TEST
+    res.locals.assessment = await selectAssessmentById(res.locals.assessment_id); // TEST, req.params
     const questionRows = await queryRows(
       sql.questions,
       {

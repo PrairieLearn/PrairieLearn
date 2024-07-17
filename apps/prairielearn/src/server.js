@@ -2027,8 +2027,9 @@ export async function initExpress() {
     // TEST
     '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
-      function (req, res, next) {
-        console.log('TEST accessed'); // TEST
+      function (req, res, next) {  
+        res.locals.course_instance_id = req.params.course_instance_id; // TEST
+        res.locals.assessment_id = req.params.assessment_id; // TEST
         res.locals.navSubPage = 'questions';
         next();
       },
