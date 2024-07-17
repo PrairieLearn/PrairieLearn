@@ -63,7 +63,7 @@ router.post(
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
-      const paths = getPaths(req, res);
+      const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
