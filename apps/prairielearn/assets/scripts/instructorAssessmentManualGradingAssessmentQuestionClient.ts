@@ -284,7 +284,7 @@ function gradingTagDropdown(courseStaff: User[]) {
       </button>
       <div class="dropdown-menu dropdown-menu-right">
         <div class="dropdown-header">Assign for grading</div>
-        ${courseStaff.map(
+        ${courseStaff?.map(
           (grader) => html`
             <button
               class="dropdown-item"
