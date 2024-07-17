@@ -2,14 +2,15 @@ import { assert } from 'chai';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+
+import { type EnumMode } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
-import { type Mode } from '../../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkAssessmentAccess(params: {
   assessment_id: string;
-  authz_mode: Mode;
+  authz_mode: EnumMode;
   course_role: string;
   course_instance_role: string;
   user_id: string;
@@ -160,7 +161,7 @@ describe('sproc check_assessment_access* tests', function () {
     });
 
     describe('with checked-in reservation', () => {
-      before(`create checked-in reservation for student`, async () => {
+      before('create checked-in reservation for student', async () => {
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
 

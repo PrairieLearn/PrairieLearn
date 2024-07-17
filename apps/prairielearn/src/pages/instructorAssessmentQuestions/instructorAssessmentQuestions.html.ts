@@ -1,7 +1,12 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { z } from 'zod';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+
+import { Modal } from '../../components/Modal.html.js';
+import { TagBadgeList } from '../../components/TagBadge.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -11,7 +16,6 @@ import {
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
-import { Modal } from '../../components/Modal.html.js';
 
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
@@ -26,19 +30,11 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   sync_errors: QuestionSchema.shape.sync_errors,
   sync_warnings_ansified: z.string().optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema.nullable(),
+  topic: TopicSchema,
   qid: QuestionSchema.shape.qid,
   start_new_zone: z.boolean().nullable(),
   start_new_alternative_group: z.boolean().nullable(),
-  tags: z
-    .array(
-      z.object({
-        color: TagSchema.shape.color,
-        id: TagSchema.shape.id,
-        name: TagSchema.shape.name,
-      }),
-    )
-    .nullable(),
+  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
   title: QuestionSchema.shape.title,
   zone_best_questions: ZoneSchema.shape.best_questions,
   zone_has_best_questions: z.boolean().nullable(),
@@ -62,26 +58,9 @@ export function InstructorAssessmentQuestions({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-        <script src="${nodeModulesAssetPath('d3/dist/d3.min.js')}"></script>
-        <script src="${assetPath('localscripts/histmini.js')}"></script>
         ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
       </head>
-      <script></script>
       <body>
-        <script>
-          $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-
-            $('.js-sync-popover[data-toggle="popover"]')
-              .popover({
-                sanitize: false,
-              })
-              .on('show.bs.popover', function () {
-                $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-              });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${Modal({
@@ -180,7 +159,7 @@ function AssessmentQuestionsTable({
           </tr>
         </thead>
         <tbody>
-          ${questions.map((question, iRow) => {
+          ${questions.map((question) => {
             return html`
               ${question.start_new_zone
                 ? html`
@@ -269,16 +248,8 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>
-                  ${renderEjs(import.meta.url, "<%- include('../partials/topic'); %>", {
-                    topic: question.topic,
-                  })}
-                </td>
-                <td>
-                  ${renderEjs(import.meta.url, "<%- include('../partials/tags'); %>", {
-                    tags: question.tags,
-                  })}
-                </td>
+                <td>${TopicBadge(question.topic)}</td>
+                <td>${TagBadgeList(question.tags)}</td>
                 <td>
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,
@@ -309,28 +280,13 @@ function AssessmentQuestionsTable({
                   ${question.number_submissions_hist
                     ? html`
                         <div
-                          id="attemptsHist${iRow}"
-                          class="miniHist"
-                          data-number-submissions="${JSON.stringify(
-                            question.number_submissions_hist,
-                          )}"
+                          class="js-histmini"
+                          data-data="${JSON.stringify(question.number_submissions_hist)}"
+                          data-options="${JSON.stringify({ width: 60, height: 20 })}"
                         ></div>
                       `
                     : ''}
                 </td>
-                <script>
-                  $(function () {
-                    var options = {
-                      width: 60,
-                      height: 20,
-                    };
-                    histmini(
-                      '#attemptsHist${iRow}',
-                      $('#attemptsHist${iRow}').data('number-submissions'),
-                      options,
-                    );
-                  });
-                </script>
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {

@@ -1,5 +1,7 @@
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { z } from 'zod';
+
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+
 import { type CourseInstance, CourseInstanceSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 

@@ -3,6 +3,9 @@ import { type CellComponent, type FormatterParams } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
+import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+
 import { defaultTabulator, selectFilterOnSearch } from './tabulator.js';
 import type {
   Topic,
@@ -39,10 +42,7 @@ onDocumentReady(() => {
       {
         field: 'topic',
         title: 'Topic',
-        formatter: (cell) =>
-          html`<span class="badge color-${(cell.getValue() as Topic).color}">
-            ${(cell.getValue() as Topic).name}
-          </span>`.toString(),
+        formatter: (cell) => TopicBadge(cell.getValue()).toString(),
         sorter: (a: Topic, b: Topic) => (a.name ?? '').localeCompare(b.name ?? ''),
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Topics)',
@@ -54,12 +54,7 @@ onDocumentReady(() => {
       {
         field: 'tags',
         title: 'Tags',
-        formatter: (cell) =>
-          (cell.getValue() as Tag[] | null)
-            ?.map((tag) =>
-              html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
-            )
-            .join(' ') ?? '',
+        formatter: (cell) => TagBadgeList(cell.getValue()).toString(),
         headerSort: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Tags)',

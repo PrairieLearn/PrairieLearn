@@ -1,25 +1,28 @@
 // @ts-check
-import * as express from 'express';
-import asyncHandler from 'express-async-handler';
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
-import fs from 'fs-extra';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import debugfn from 'debug';
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+
+import * as modelist from 'ace-code/src/ext/modelist.js';
 import { AnsiUp } from 'ansi_up';
 import sha256 from 'crypto-js/sha256.js';
-import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
-import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
+import debugfn from 'debug';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
-import * as modelist from 'ace-code/src/ext/modelist.js';
+import { v4 as uuidv4 } from 'uuid';
+
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+
+import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
+import { getCourseOwners } from '../../lib/course.js';
+import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
+import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { getCourseOwners } from '../../lib/course.js';
-import { logger } from '@prairielearn/logger';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -45,7 +48,7 @@ router.get(
     // Do not allow users to edit files in bad locations (e.g., outside the
     // current course, outside the current course instance, etc.). Do this by
     // wrapping everything in getPaths, which throws an error on a bad path.
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
 
     // We could also check if the file exists, if the file actually is a
     // file and not a directory, if the file is non-binary, etc., and try
@@ -190,7 +193,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
 
     const container = {
       rootPath: paths.rootPath,
@@ -204,21 +207,6 @@ router.post(
     if (req.body.__action === 'save_and_sync') {
       debug('Save and sync');
 
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container,
-        filePath: paths.workingPath,
-        editContents: req.body.file_edit_contents,
-        origHash: req.body.file_edit_orig_hash,
-      });
-
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      editor.assertCanEdit();
-
       debug('Write draft file edit to db and to file store');
       const editID = await writeDraftEdit({
         userID: res.locals.user.user_id,
@@ -231,6 +219,14 @@ router.post(
         uid: res.locals.user.uid,
         user_name: res.locals.user.name,
         editContents: req.body.file_edit_contents,
+      });
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container,
+        filePath: paths.workingPath,
+        editContents: req.body.file_edit_contents,
+        origHash: req.body.file_edit_orig_hash,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -256,7 +252,7 @@ function getHash(contents) {
 }
 
 async function readDraftEdit(fileEdit) {
-  debug(`Looking for previously saved drafts`);
+  debug('Looking for previously saved drafts');
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -276,7 +272,7 @@ async function readDraftEdit(fileEdit) {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
   } else {
-    debug(`Found no saved drafts`);
+    debug('Found no saved drafts');
   }
 
   // We are choosing to soft-delete all drafts *before* reading the

@@ -1,10 +1,11 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag } from '../../../lib/assets.js';
+import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 export function AdministratorInstitutionLti13({
   institution,
@@ -185,7 +186,7 @@ function LTI13Instance(
             </label>
           </div>
 
-          <select class="form-control" id="choosePlatform" name="platform">
+          <select class="custom-select" id="choosePlatform" name="platform">
             ${platform_defaults.map((d) => {
               return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
                 ${d.platform}
@@ -339,7 +340,23 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
             <strong>MUST</strong> never change for a given individual, even if they change their
-            name or email.
+            name or UID.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="name_attribute">Email attribute</label>
+          <input
+            type="text"
+            class="form-control"
+            name="email_attribute"
+            id="email_attribute"
+            value="${instance.email_attribute}"
+            aria-describedby="emailAttributeHelp"
+          />
+          <small id="emailAttributeHelp" class="form-text text-muted">
+            This attribute should contain the email address of the user. If present, PrairieLearn
+            will use this to send email to the user.
           </small>
         </div>
 

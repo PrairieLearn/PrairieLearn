@@ -11,7 +11,7 @@ WHERE
 -- BLOCK select_enrollment_counts
 SELECT
   ci.id AS course_instance_id,
-  COUNT(e.user_id) AS number
+  COUNT(e.user_id)::integer AS enrollment_count
 FROM
   course_instances AS ci
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)

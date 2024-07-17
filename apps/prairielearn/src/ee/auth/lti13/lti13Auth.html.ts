@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Lti13Instance } from '../../../lib/db-types.js';
+
 import { LoadUserAuth } from '../../../lib/authn.js';
+import { Lti13Instance } from '../../../lib/db-types.js';
 
 export const Lti13Test = ({
   resLocals,
@@ -39,6 +40,7 @@ export const Lti13Test = ({
             <li><b>UID:</b> ${userInfo.uid} (<code>${lti13_instance.uid_attribute}</code>)
             <li><b>UIN:</b> ${userInfo.uin} (<code>${lti13_instance.uin_attribute}</code>)
             <li><b>Name:</b> ${userInfo.name} (<code>${lti13_instance.name_attribute}</code>)
+            <li><b>Email:</b> ${userInfo.email} (<code>${lti13_instance.email_attribute}</code>)
           </ul>
           <h2>All LTI 1.3 claims</h1>
           <pre><code>${JSON.stringify(lti13_claims, null, 2)}</code></pre>

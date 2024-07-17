@@ -1,9 +1,11 @@
 import { z } from 'zod';
+
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
 import { Modal } from '../../components/Modal.html.js';
 import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -269,11 +271,7 @@ export function AddFeatureGrantModalBody({
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-institution"
-          name="institution_id"
-        >
+        <select class="custom-select" id="feature-grant-institution" name="institution_id">
           <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
@@ -294,7 +292,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -316,7 +314,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}

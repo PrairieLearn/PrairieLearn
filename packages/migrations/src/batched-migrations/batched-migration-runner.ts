@@ -1,8 +1,14 @@
-import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
-import { logger } from '@prairielearn/logger';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
+import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
+
+import {
+  BatchedMigrationJobRowSchema,
+  BatchedMigrationJobStatus,
+  BatchedMigrationJobRow,
+} from './batched-migration-job.js';
 import {
   BatchedMigrationStatus,
   BatchedMigrationRow,
@@ -10,11 +16,6 @@ import {
   BatchedMigrationStatusSchema,
   BatchedMigrationImplementation,
 } from './batched-migration.js';
-import {
-  BatchedMigrationJobRowSchema,
-  BatchedMigrationJobStatus,
-  BatchedMigrationJobRow,
-} from './batched-migration-job.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
@@ -75,7 +76,7 @@ export class BatchedMigrationRunner {
     // Safety check: if there are any pending jobs, don't mark this
     // migration as finished.
     if (await this.hasIncompleteJobs(migration)) {
-      this.log(`Incomplete jobs found, not marking as finished`);
+      this.log('Incomplete jobs found, not marking as finished');
       return;
     }
 

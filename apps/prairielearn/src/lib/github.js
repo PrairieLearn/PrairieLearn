@@ -1,17 +1,20 @@
 // @ts-check
-import { Octokit } from '@octokit/rest';
-import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { config } from './config.js';
+import { Octokit } from '@octokit/rest';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
-import { updateCourseCommitHash } from '../models/course.js';
-import { syncDiskToSql } from '../sync/syncFromDisk.js';
-import { sendCourseRequestMessage } from './opsbot.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
-import { createServerJob } from './server-jobs.js';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+
+import { insertCourse, updateCourseCommitHash } from '../models/course.js';
+import { syncDiskToSql } from '../sync/syncFromDisk.js';
+
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { config } from './config.js';
+import { sendCourseRequestMessage } from './opsbot.js';
+import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -249,18 +252,17 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Insert the course into the courses table
     job.info('Adding course to database');
-    const inserted_course = (
-      await sqldb.callAsync('courses_insert', [
-        options.institution_id,
-        options.short_name,
-        options.title,
-        options.display_timezone,
-        options.path,
-        `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`,
-        branch,
-        authn_user.user_id,
-      ])
-    ).rows[0];
+    const repository = `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`;
+    const inserted_course = await insertCourse({
+      institution_id: options.institution_id,
+      short_name: options.short_name,
+      title: options.title,
+      display_timezone: options.display_timezone,
+      path: options.path,
+      repository,
+      branch,
+      authn_user_id: authn_user.user_id,
+    });
     job.verbose('Inserted course into database:');
     job.verbose(JSON.stringify(inserted_course, null, 4));
 
@@ -279,7 +281,7 @@ export async function createCourseRepoJob(options, authn_user) {
     }
 
     job.info('Clone from remote git repository');
-    await job.exec('git', ['clone', inserted_course.repository, inserted_course.path], {
+    await job.exec('git', ['clone', repository, inserted_course.path], {
       // Executed in the root directory, but this shouldn't really matter.
       cwd: '/',
       env: git_env,

@@ -1,4 +1,5 @@
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+
 import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types.js';
 import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
 

@@ -1,18 +1,21 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type CourseInstance } from '../../lib/db-types.js';
+
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { QuestionsPageDataAnsified } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
   course_instances,
   showAddQuestionButton,
+  showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageDataAnsified[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
+  showAiGenerateQuestionButton: boolean;
   resLocals;
 }) => {
   return html`
@@ -35,6 +38,7 @@ export const QuestionsPage = ({
             questions,
             course_instances,
             showAddQuestionButton,
+            showAiGenerateQuestionButton,
             showSharingSets: resLocals.question_sharing_enabled,
             current_course_instance: resLocals.course_instance,
             urlPrefix: resLocals.urlPrefix,

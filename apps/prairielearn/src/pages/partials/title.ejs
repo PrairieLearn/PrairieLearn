@@ -55,7 +55,7 @@
             courseName += ', ' + course_instance.short_name;
         }
         navTrace.push(courseName);
-    } else if (typeof navPage !== 'undefined' && !navPageIgnore.includes(navPage)) {
+    } else if (typeof navPage !== 'undefined' && !navPageIgnore.includes(navPage) && !displayedTitle) {
         navTrace.push(displayFriendlyPage(navPage));
     }
 %>

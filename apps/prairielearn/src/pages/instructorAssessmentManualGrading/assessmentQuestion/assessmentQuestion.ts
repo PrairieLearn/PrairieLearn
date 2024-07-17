@@ -1,11 +1,14 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import * as manualGrading from '../../../lib/manualGrading.js';
+import { botGrade } from '../../../lib/bot-grading.js';
 import { InstanceQuestionSchema } from '../../../lib/db-types.js';
-import { z } from 'zod';
+import { features } from '../../../lib/features/index.js';
+import * as manualGrading from '../../../lib/manualGrading.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -29,6 +32,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+    res.locals.bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
     res.render(import.meta.filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
   }),
 );
@@ -135,6 +139,23 @@ router.post(
       } else {
         res.send({});
       }
+    } else if (req.body.__action === 'bot_grade_assessment') {
+      // check if bot grading is enabled
+      const bot_grading_enabled = await features.enabledFromLocals('bot-grading', res.locals);
+      if (!bot_grading_enabled) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const jobSequenceId = await botGrade({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+      });
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -1,6 +1,7 @@
+import crypto from 'node:crypto';
+
 import type { Request } from 'express';
 import uid from 'uid-safe';
-import crypto from 'node:crypto';
 
 import { SessionStore } from './store.js';
 

@@ -1,10 +1,12 @@
-import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { EncodedQuestionsData } from './QuestionsTable.types.js';
-import { type CourseInstance } from '../lib/db-types.js';
-import { QuestionsPageDataAnsified } from '../models/questions.js';
+import { html, HtmlSafeString } from '@prairielearn/html';
+
 import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+import type { QuestionsPageDataAnsified } from '../models/questions.js';
+
+import type { EncodedQuestionsData } from './QuestionsTable.types.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -18,6 +20,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
+  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -28,6 +31,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
+  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -87,6 +91,14 @@ export function QuestionsTable({
                   <i class="fas fa-plus"></i> Add Question
                 </button>
               </form>`
+            : ''}
+          ${showAiGenerateQuestionButton
+            ? html`
+                <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
+                  <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                  Generate Question with AI
+                </a>
+              `
             : ''}
         </div>
       </div>

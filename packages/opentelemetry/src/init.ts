@@ -1,6 +1,24 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { metrics } from '@opentelemetry/api';
+import { hrTimeToMilliseconds } from '@opentelemetry/core';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
+import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
+import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
+import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
+import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
+import {
+  detectResourcesSync,
+  processDetector,
+  envDetector,
+  Resource,
+} from '@opentelemetry/resources';
 import {
   PeriodicExportingMetricReader,
   MeterProvider,
@@ -21,33 +39,8 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import {
-  detectResourcesSync,
-  processDetector,
-  envDetector,
-  Resource,
-} from '@opentelemetry/resources';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { metrics } from '@opentelemetry/api';
-import { hrTimeToMilliseconds } from '@opentelemetry/core';
-
-// Exporters go here.
-import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/exporter-trace-otlp-http';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
-
-// Instrumentations go here.
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
-import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
-import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-
-// Resource detectors go here.
-import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -290,7 +283,22 @@ export async function init(config: OpenTelemetryConfig) {
   // and ultimately tells us how to configure OpenTelemetry.
 
   let resource = detectResourcesSync({
-    detectors: [awsEc2Detector, processDetector, envDetector],
+    // The AWS resource detector always tries to reach out to the EC2 metadata
+    // service endpoint. When running locally, or otherwise in a non-AWS environment,
+    // this will typically fail immediately wih `EHOSTDOWN`, but will sometimes wait
+    // 5 seconds before failing with a network timeout error. This causes problems
+    // when running tests, as 5 seconds is longer than Mocha lets tests and hooks run
+    // for by default. This causes nondeterministic test failures when the EC2 metadata
+    // request fails with a network timeout.
+    //
+    // To work around this, the AWS resource detector is only enabled when running in
+    // a production environment. In general this is reasonable, as we only care about
+    // AWS resource detection in production-like environments.
+    detectors: [
+      process.env.NODE_ENV === 'production' ? awsEc2Detector : null,
+      processDetector,
+      envDetector,
+    ].filter((d) => !!d),
   });
 
   if (config.serviceName) {

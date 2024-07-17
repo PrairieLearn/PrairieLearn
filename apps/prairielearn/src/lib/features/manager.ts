@@ -1,6 +1,8 @@
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
-import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
+
+import { z } from 'zod';
+
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../config.js';
 

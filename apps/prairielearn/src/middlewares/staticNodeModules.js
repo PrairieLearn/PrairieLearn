@@ -1,6 +1,7 @@
 // @ts-check
-import * as express from 'express';
 import * as path from 'node:path';
+
+import * as express from 'express';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 

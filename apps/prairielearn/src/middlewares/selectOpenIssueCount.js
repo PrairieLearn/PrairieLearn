@@ -1,5 +1,6 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
 
 var sql = sqldb.loadSqlEquiv(import.meta.url);

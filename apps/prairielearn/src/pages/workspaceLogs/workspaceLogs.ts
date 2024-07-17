@@ -1,12 +1,14 @@
+import { S3 } from '@aws-sdk/client-s3';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
-import { S3 } from '@aws-sdk/client-s3';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+
 import {
   WorkspaceLogRow,
   WorkspaceLogRowSchema,

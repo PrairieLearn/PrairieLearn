@@ -1,9 +1,11 @@
-import _ from 'lodash';
-import * as cron from '../cron/index.js';
 import { assert } from 'chai';
+import _ from 'lodash';
+
 import * as sqldb from '@prairielearn/postgres';
 
+import * as cron from '../cron/index.js';
 import { config } from '../lib/config.js';
+
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

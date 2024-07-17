@@ -1,6 +1,6 @@
 // @ts-check
-import chalkLib from 'chalk';
-export const chalk = new chalkLib.Instance({ level: 3 });
+import { Chalk } from 'chalk';
+export const chalk = new Chalk({ level: 3 });
 
 /**
  * This function should be used instead of `chalk.dim`, as `ansi_up` doesn't

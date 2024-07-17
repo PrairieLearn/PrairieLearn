@@ -1,18 +1,19 @@
-import _ from 'lodash';
 import fg from 'fast-glob';
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 
-import * as questionServers from '../question-servers/index.js';
-import { writeCourseIssues } from './issues.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
+import * as questionServers from '../question-servers/index.js';
+
 import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types.js';
 import { idsEqual } from './id.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { writeCourseIssues } from './issues.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
