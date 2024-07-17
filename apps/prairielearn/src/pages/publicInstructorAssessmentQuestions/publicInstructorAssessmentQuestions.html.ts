@@ -57,7 +57,7 @@ export function InstructorAssessmentQuestions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}}
+        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
         ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
@@ -88,8 +88,7 @@ export function InstructorAssessmentQuestions({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${// TEST, used to be: ${resLocals.assessment_set.title}
-                console.log('remove, TEST')} 
+              ${resLocals.assessment.title}
               ${resLocals.assessment.number}: Questions 
             </div>
             ${AssessmentQuestionsTable({
@@ -119,19 +118,6 @@ function AssessmentQuestionsTable({
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
-  function maxPoints({ max_auto_points, max_manual_points, points_list, init_points }) {
-    if (max_auto_points || !max_manual_points) {
-      if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points]).map((p) => p - max_manual_points).join(',');
-      }
-      if (assessmentType === 'Homework') {
-        return `${init_points - max_manual_points}/${max_auto_points}`;
-      }
-    } else {
-      return html`&mdash;`;
-    }
-  }
-
   return html`
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -141,11 +127,7 @@ function AssessmentQuestionsTable({
             <th>QID</th>
             <th>Topic</th>
             <th>Tags</th>
-            <th>Auto Points</th>
-            <th>Manual Points</th>
             ${showAdvanceScorePercCol ? html`<th>Advance Score</th>` : ''}
-            <th width="100">Mean score</th>
-            <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
           </tr>
         </thead>
@@ -241,43 +223,6 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
-                <td>
-                  ${maxPoints({
-                    max_auto_points: question.max_auto_points,
-                    max_manual_points: question.max_manual_points,
-                    points_list: question.points_list,
-                    init_points: question.init_points,
-                  })}
-                </td>
-                <td>${question.max_manual_points || '—'}</td>
-                ${showAdvanceScorePercCol
-                  ? html`
-                      <td
-                        class="${question.assessment_question_advance_score_perc === 0
-                          ? 'text-muted'
-                          : ''}"
-                        data-testid="advance-score-perc"
-                      >
-                        ${question.assessment_question_advance_score_perc}%
-                      </td>
-                    `
-                  : ''}
-                <td>
-                  ${question.mean_question_score
-                    ? `${question.mean_question_score.toFixed(3)} %`
-                    : ''}
-                </td>
-                <td class="text-center">
-                  ${question.number_submissions_hist
-                    ? html`
-                        <div
-                          class="js-histmini"
-                          data-data="${JSON.stringify(question.number_submissions_hist)}"
-                          data-options="${JSON.stringify({ width: 60, height: 20 })}"
-                        ></div>
-                      `
-                    : ''}
-                </td>
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
