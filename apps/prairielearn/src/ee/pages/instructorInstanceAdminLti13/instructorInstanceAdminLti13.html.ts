@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
@@ -100,7 +101,8 @@ export function InstructorInstanceAdminLti13({
                     <input type="hidden" name="__action" value="poll_lti13_assessments" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <button class="btn btn-success">
-                      Poll ${instance.lti13_instance.name} for assessment info
+                      Poll ${instance.lti13_instance.name} for
+                      ${instance.lti13_course_instance.context_label} external assessment info
                     </button>
                   </form>
 
@@ -163,7 +165,8 @@ export function InstructorInstanceAdminLti13({
                                         name="__action"
                                         value="create_lineitem"
                                       >
-                                        Create ${instance.lti13_instance.name} assignment
+                                        Create ${instance.lti13_course_instance.context_label}
+                                        assignment
                                       </button>`
                                     : html`
                                         <!-- <button
@@ -186,8 +189,16 @@ export function InstructorInstanceAdminLti13({
 
                   <h3 id="assignments">Unpaired Assignments in LMS</h3>
                   <p>
-                    The following lineitems are available but not associated with a PrairieLearn
-                    assessment.
+                    ${lineitems_unlinked.length === 0
+                      ? html`
+                          There are no unpaired assignments in ${instance.lti13_instance.name}
+                          ${instance.lti13_course_instance.context_label}.
+                        `
+                      : html`
+                          The following assignments are available but not associated with a
+                          PrairieLearn assessment.
+                        `}
+                    To query for changes from the LMS, use the Poll button at the top of the page.
                   </p>
                   ${lineitems_unlinked.map((item) =>
                     lineItem(item, resLocals.__csrf_token, assessments),
@@ -216,25 +227,31 @@ export function InstructorInstanceAdminLti13({
 }
 
 function lineItem(item, csrf: string, assessments: AssessmentRow[] = []) {
+  const inputUuid = uuidv4();
   return html`
     <form method="POST">
       <input type="hidden" name="__csrf_token" value="${csrf}" />
       <input type="hidden" name="lineitem_id" value="${item.lineitem_id}" />
-      <span title="${item.lineitem_id}"> ${item.lineitem.label}:</span>
-      ${item.lineitem.scoreMaximum} max points
+      <span title="${item.lineitem_id}">${item.lineitem.label}</span>
       ${item.assessment_id
         ? html`<button class="btn btn-xs btn-warning" name="__action" value="disassociate_lineitem">
             Disassociate
           </button>`
         : html`<div class="input-group">
-            <select name="assessment_id" class="custom-select">
+            <div class="input-group-prepend">
+              <label class="input-group-text" for="${inputUuid}">
+                Associate ${item.lineitem.label} with
+              </label>
+            </div>
+            <select name="assessment_id" class="custom-select" id="${inputUuid}">
+              <option selected disabled>Pick a PrairieLearn assessment...</option>
               ${assessments.map((a) => {
-                return html`<option value="${a.id}">${a.title}</option>`;
+                return html`<option value="${a.id}">${a.label}: ${a.title}</option>`;
               })}
             </select>
             <div class="input-group-append">
               <button class="btn btn-info" name="__action" value="associate_lineitem">
-                Associate lineitem with assessment
+                Associate
               </button>
             </div>
           </div> `}

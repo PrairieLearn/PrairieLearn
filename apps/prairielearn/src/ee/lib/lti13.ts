@@ -1,13 +1,20 @@
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { Response } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryAsync,
+  queryOptionalRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { Assessment, DateFromISOString } from '../../lib/db-types.js';
+import { DateFromISOString, Lti13Lineitems } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -259,9 +266,9 @@ export async function access_token(lti13_instance_id: string) {
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > new Date()
   ) {
-    console.log('Token is valid');
+    return tokenSet.access_token;
   } else {
-    console.log('Token expired');
+    //console.log('Token missing or expired');
 
     const issuer = new Issuer(lti13_instance.issuer_params);
     const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
@@ -280,31 +287,31 @@ export async function access_token(lti13_instance_id: string) {
       tokenSet,
       expires_at: new Date(expires_at),
     });
+    return tokenSet.access_token;
   }
-  console.log(tokenSet);
-  return tokenSet.access_token;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-export async function get_lineitems(instance: any, job: ServerJob, authn_user_id: number) {
+export async function sync_lineitems(instance: any, job: ServerJob) {
   const token = await access_token(instance.lti13_instance.id);
 
-  job.info('Polling for line items');
+  job.info(
+    `Polling for external assignments in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+  );
 
   const response = await fetch(instance.lti13_course_instance.lineitems, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
+  checkStatus(response);
 
   const data = (await response.json()) as Lti13LineitemType[];
-
-  job.info(JSON.stringify(data, null, 2));
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
 
     for (const item of data) {
-      console.log(item);
+      job.info(`* ${item.label}`);
 
       await queryAsync(sql.insert_lineitems_temp, {
         lti13_course_instance_id: instance.lti13_course_instance.id,
@@ -313,37 +320,51 @@ export async function get_lineitems(instance: any, job: ServerJob, authn_user_id
       });
     }
 
-    await queryAsync(sql.sync_lti13_lineitems, {
-      lti13_course_instance_id: instance.lti13_course_instance.id,
-    });
+    const output = await queryRow(
+      sql.sync_lti13_lineitems,
+      {
+        lti13_course_instance_id: instance.lti13_course_instance.id,
+      },
+      z.object({
+        added: z.string(),
+        updated: z.string(),
+        deleted: z.string(),
+      }),
+    );
 
-    job.info(`Finishing up for user ${authn_user_id}`);
+    job.info(
+      `\nSummary of PrairieLearn changes: ${output.added} added, ${output.updated} updated, ${output.deleted} deleted.`,
+    );
+    job.info('Done.');
   });
 }
 
 export async function create_lineitem(
   instance: any,
   job: ServerJob,
-  assessment: Assessment,
-  assessment_url: string,
+  assessment: {
+    label: string;
+    id: string;
+    url: string;
+  },
 ) {
-  //job.info(JSON.stringify(assessment, null, 2));
-
   const createBody: Lti13LineitemType = {
-    id: 'new_lineitem',
+    id: 'new_lineitem', // will be ignored/overwritten by the LMS platform
     scoreMaximum: 100,
-    label: assessment.title ?? 'Unknown title',
+    label: assessment.label,
     resourceId: assessment.id,
     // tag ???
     // startDateTime null
     // endDateTime null
     'https://canvas.instructure.com/lti/submission_type': {
       type: 'external_tool',
-      external_tool_url: assessment_url,
+      external_tool_url: assessment.url,
     },
   };
 
-  job.info(`Creating assessment for ${assessment.title}`);
+  job.info(
+    `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+  );
 
   const token = await access_token(instance.lti13_instance.id);
   const response = await fetch(instance.lti13_course_instance.lineitems, {
@@ -355,9 +376,10 @@ export async function create_lineitem(
     body: JSON.stringify(createBody),
   });
 
+  checkStatus(response);
   const item = (await response.json()) as Lti13LineitemType;
 
-  job.info('Associating PrairieLearn assessment with LMS assignment');
+  job.info('Associating PrairieLearn assessment with new assignment');
 
   await queryAsync(sql.update_lineitem_with_assessment, {
     lti13_course_instance_id: instance.lti13_course_instance.id,
@@ -383,17 +405,20 @@ export async function delete_lineitem(instance: any, job: ServerJob, lineitem_id
     },
   });
 
+  /*
+  // Canvas docs say it should return a LineItem object, but in practice this seems
+  // to return 204 No Content in a successful delete and an error otherwise.
   console.log(response);
   const item = await response.text();
-
-  job.info(JSON.stringify(item));
-
-  // Status 204 No Content ???
+  console.log(item);
+  */
+  checkStatus(response);
 
   await queryAsync(sql.delete_lineitem, {
     lti13_course_instance_id: instance.lti13_course_instance.id,
     lineitem_id,
   });
+  job.info('Done.');
 }
 
 export async function disassociate_lineitem(instance: any, lineitem_id: string) {
@@ -401,4 +426,35 @@ export async function disassociate_lineitem(instance: any, lineitem_id: string) 
     lti13_course_instance_id: instance.lti13_course_instance.id,
     lineitem_id,
   });
+}
+
+export async function associate_lineitem(
+  instance: any,
+  lineitem_id: string,
+  assessment_id: string | number,
+) {
+  const result = await queryOptionalRow(
+    sql.associate_lineitem,
+    {
+      lti13_course_instance_id: instance.lti13_course_instance.id,
+      lineitem_id,
+      assessment_id,
+    },
+    Lti13Lineitems,
+  );
+
+  if (result === null) {
+    throw new HttpStatusError(400, 'Unable to associate lineitem');
+  }
+}
+
+function checkStatus(response: Response) {
+  const hint = ` -- Try polling the LMS for updated assessment info and retry.`;
+  //console.log(response);
+  if (response.ok) {
+    return response;
+  } else {
+    // TODO: Check for throttling here
+    throw new HttpStatusError(response.status, response.statusText + hint);
+  }
 }

@@ -15,15 +15,17 @@ import {
   AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
+  Lti13Lineitems,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  get_lineitems,
+  sync_lineitems,
   create_lineitem,
   delete_lineitem,
   disassociate_lineitem,
+  associate_lineitem,
 } from '../../lib/lti13.js';
 
 import {
@@ -77,15 +79,13 @@ router.get(
       AssessmentRowSchema,
     );
 
-    const result = await queryAsync(sql.select_lineitems, {
-      lti13_course_instance_id: instance.lti13_course_instance.id,
-    });
-
-    const lineitems = result.rows;
-
-    console.log(assessments);
-    console.log(instance);
-    console.log(lineitems);
+    const lineitems = await queryRows(
+      sql.select_lineitems,
+      {
+        lti13_course_instance_id: instance.lti13_course_instance.id,
+      },
+      Lti13Lineitems,
+    );
 
     res.send(
       InstructorInstanceAdminLti13({
@@ -102,7 +102,7 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    console.log(req.body);
+    //console.log(req.body);
 
     const instance = await queryRow(
       sql.select_lti13_instance,
@@ -151,11 +151,11 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'Synchronize lineitems from LTI';
+      serverJobOptions.description = 'Synchronize external assignments from LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await get_lineitems(instance, job, res.locals.authn_user.user_id);
+        await sync_lineitems(instance, job);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'create_lineitem') {
@@ -169,11 +169,18 @@ router.post(
             assessment_id: req.body.assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
           },
-          AssessmentSchema,
+          AssessmentSchema.extend({
+            label: z.string(),
+          }),
         );
 
-        const assessment_url = `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`;
-        await create_lineitem(instance, job, assessment, assessment_url);
+        const assessment_metadata = {
+          label: `${assessment.label}: ${assessment.title}`,
+          id: assessment.id,
+          url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+        };
+
+        await create_lineitem(instance, job, assessment_metadata);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'delete_lineitem') {
@@ -186,6 +193,9 @@ router.post(
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'disassociate_lineitem') {
       await disassociate_lineitem(instance, req.body.lineitem_id);
+      return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'associate_lineitem') {
+      await associate_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
