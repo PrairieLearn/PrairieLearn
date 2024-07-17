@@ -729,7 +729,7 @@ export const Lti13Lineitems = z.object({
   lti13_course_instance_id: IdSchema,
   assessment_id: IdSchema.nullable(),
   lineitem_id: z.string(),
-  lineitem: z.record(z.string(), z.any()).nullable(),
+  lineitem: z.record(z.string(), z.any()),
 });
 export type Lti13Lineitems = z.infer<typeof Lti13Lineitems>;
 

@@ -9,6 +9,7 @@ import {
   Lti13Instance,
   AssessmentSchema,
   AssessmentSetSchema,
+  Lti13Lineitems,
 } from '../../../lib/db-types.js';
 
 interface Lti13FullInstance {
@@ -36,7 +37,7 @@ export function InstructorInstanceAdminLti13({
   instance: Lti13FullInstance;
   instances: Lti13FullInstance[];
   assessments: AssessmentRow[];
-  lineitems: any;
+  lineitems: Lti13Lineitems[];
 }): string {
   const { urlPrefix } = resLocals;
   const lineitems_unlinked = lineitems.filter((item) => {
@@ -226,7 +227,7 @@ export function InstructorInstanceAdminLti13({
   `.toString();
 }
 
-function lineItem(item, csrf: string, assessments: AssessmentRow[] = []) {
+function lineItem(item: Lti13Lineitems, csrf: string, assessments: AssessmentRow[] = []) {
   const inputUuid = uuidv4();
   return html`
     <form method="POST">
