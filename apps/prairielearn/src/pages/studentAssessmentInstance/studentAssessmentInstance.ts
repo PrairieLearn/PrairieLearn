@@ -267,7 +267,7 @@ router.post(
         res.locals.authn_user.user_id,
       );
 
-      flash('success', 'Regenerated your assessment instance.');
+      flash('success', 'Your previous assessment instance was deleted.');
       res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
       next(new HttpStatusError(400, `unknown __action: ${req.body.__action}`));
