@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+
 import { Modal } from './Modal.html.js';
 
 export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {

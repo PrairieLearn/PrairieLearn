@@ -2,6 +2,10 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  RegenerateInstanceModal,
+  RegenerateInstanceAlert,
+} from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
@@ -10,10 +14,6 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.j
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import {
-  RegenerateInstanceModal,
-  RegenerateInstanceAlert,
-} from '../../components/AssessmentRegenerate.html.js';
 
 export function StudentInstanceQuestion({
   resLocals,
