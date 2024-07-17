@@ -21,7 +21,6 @@ export const ImageRowSchema = z.object({
   imageSyncNeeded: z.boolean().optional(),
   invalid: z.boolean().optional(),
   digest: z.string().optional(),
-  digest_full: z.string().optional(),
   size: z.number().optional(),
   pushed_at: z.date().nullish(),
 });
@@ -200,7 +199,11 @@ function ImageTable({
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  <pre class="mb-0" title="${image.digest_full}">${image.digest}</pre>
+                  <code class="mb-0" title="${image.digest}">
+                    ${(image.digest?.length ?? 0) <= 24
+                      ? image.digest
+                      : `${image.digest?.substring(0, 24)}...`}
+                  </code>
                 </td>
                 <td>${image.size ? filesize(image.size) : ''}</td>
                 <td>

@@ -70,11 +70,7 @@ router.get(
         );
 
         // Put info from ECR into image for EJS
-        image.digest_full = ecrInfo?.imageDigest ?? '';
-        image.digest =
-          image.digest_full.length > 24
-            ? `${image.digest_full.substring(0, 24)}...`
-            : image.digest_full;
+        image.digest = ecrInfo?.imageDigest ?? '';
         image.pushed_at = ecrInfo?.imagePushedAt;
         image.imageSyncNeeded = image.pushed_at == null;
         image.size = ecrInfo?.imageSizeInBytes ?? 0;
