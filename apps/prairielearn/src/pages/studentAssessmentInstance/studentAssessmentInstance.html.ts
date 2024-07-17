@@ -98,42 +98,6 @@ export function StudentAssessmentInstance({
                   to pick up any changes to the underlying assessment or if you want to get a fresh
                   set of questions.
 
-                  <form method="POST" class="ml-auto mr-3 d-none">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <div class="dropdown">
-                      <button
-                        class="btn btn-warning dropdown-toggle"
-                        type="button"
-                        data-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        Actions
-                      </button>
-
-                      <div class="dropdown-menu dropdown-menu-right">
-                        <button
-                          type="submit"
-                          class="dropdown-item"
-                          name="__action"
-                          value="regenerate_instance"
-                        >
-                          <i class="fas fa-arrows-rotate"></i>
-                          Regenerate assessment instance
-                        </button>
-
-                        <button
-                          type="submit"
-                          class="dropdown-item"
-                          name="__action"
-                          value="delete_instance"
-                        >
-                          <i class="fas fa-times"></i>
-                          Delete assessment instance
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-
                   <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                   </button>

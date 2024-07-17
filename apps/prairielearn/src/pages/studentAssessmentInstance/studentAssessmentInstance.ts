@@ -256,10 +256,7 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
-    } else if (
-      req.body.__action === 'regenerate_instance' ||
-      req.body.__action === 'delete_instance'
-    ) {
+    } else if (req.body.__action === 'regenerate_instance') {
       if (!canDeleteAssessmentInstance(res.locals)) {
         throw new error.HttpStatusError(403, 'Access denied');
       }
@@ -270,16 +267,8 @@ router.post(
         res.locals.authn_user.user_id,
       );
 
-      // The only difference between "regenerate" and "delete" is that the former
-      // redirect back to the same assessment, thus generating a new instance, while
-      // the latter redirects to the list of assessments.
-      if (req.body.__action === 'regenerate_instance') {
-        flash('success', 'Regenerated your assessment instance.');
-        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
-      } else {
-        flash('success', 'Deleted your assessment instance.');
-        res.redirect(`${res.locals.urlPrefix}/assessments/`);
-      }
+      flash('success', 'Regenerated your assessment instance.');
+      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
       next(new HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
