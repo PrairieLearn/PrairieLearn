@@ -98,7 +98,7 @@ router.post(
     } else if (req.body.__action === 'status') {
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
-    } else if (req.body.__action === 'syncSingleImage') {
+    } else if (req.body.__action === 'syncImage') {
       const questionId = await queryOptionalRow(
         sql.check_question_with_image,
         { course_id: res.locals.course.id, image: req.body.single_image },

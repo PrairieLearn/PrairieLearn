@@ -215,7 +215,7 @@ function ImageTable({
                     ? html`
                         <form method="POST">
                           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <input type="hidden" name="__action" value="syncSingleImage" />
+                          <input type="hidden" name="__action" value="syncImage" />
                           <input type="hidden" name="single_image" value="${image.image}" />
                           <button type="submit" class="btn btn-xs btn-primary">
                             <i class="fa fa-sync" aria-hidden="true"></i> Sync
