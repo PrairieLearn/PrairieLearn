@@ -938,7 +938,6 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {
-        console.log('stuff and things');
         res.locals.navSubPage = 'questions';
         next();
       },
@@ -2024,12 +2023,11 @@ export async function initExpress() {
     }),
   );
   app.use(
-    // TEST
     '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {  
-        res.locals.course_instance_id = req.params.course_instance_id; // TEST
-        res.locals.assessment_id = req.params.assessment_id; // TEST
+        res.locals.course_instance_id = req.params.course_instance_id;
+        res.locals.assessment_id = req.params.assessment_id;
         res.locals.navSubPage = 'questions';
         next();
       },
@@ -2037,7 +2035,7 @@ export async function initExpress() {
         await import(
           './pages/publicInstructorAssessmentQuestions/publicInstructorAssessmentQuestions.js'
         )
-      ).default, // TEST
+      ).default,
     ],
   );
 

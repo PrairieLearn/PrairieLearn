@@ -93,8 +93,9 @@ export function InstructorAssessmentQuestions({
             </div>
             ${AssessmentQuestionsTable({
               questions,
-              assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
+              course_id: resLocals.course.id,
+              course_instance_id: resLocals.assessment.course_instance_id,
             })}
           </div>
         </main>
@@ -102,21 +103,19 @@ export function InstructorAssessmentQuestions({
     </html>
   `.toString();
 }
-//TEST
 function AssessmentQuestionsTable({
   questions,
   urlPrefix,
-  assessmentType,
+  course_id,
+  course_instance_id,
 }: {
   questions: AssessmentQuestionRow[];
-  assessmentType: string;
   urlPrefix: string;
+  course_id: string;
+  course_instance_id: string;
 }) {
-  // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol =
-    questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
 
-  const nTableCols = showAdvanceScorePercCol ? 12 : 11;
+  const nTableCols = 4;
 
   return html`
     <div class="table-responsive">
@@ -127,7 +126,6 @@ function AssessmentQuestionsTable({
             <th>QID</th>
             <th>Topic</th>
             <th>Tags</th>
-            ${showAdvanceScorePercCol ? html`<th>Advance Score</th>` : ''}
             <th>Other Assessments</th>
           </tr>
         </thead>
@@ -170,7 +168,7 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/question/${question.question_id}/">
+                  <a href="${urlPrefix}/course/${course_id}/question/${question.question_id}/">
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
                       : html`
@@ -226,11 +224,12 @@ function AssessmentQuestionsTable({
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
+                        const urlPrefixAssessments = `${urlPrefix}/course_instance/${course_instance_id}`
                         return html`${renderEjs(
                           import.meta.url,
                           "<%- include('../partials/assessment'); %>",
                           {
-                            urlPrefix,
+                            urlPrefix: urlPrefixAssessments,
                             assessment,
                           },
                         )}`;

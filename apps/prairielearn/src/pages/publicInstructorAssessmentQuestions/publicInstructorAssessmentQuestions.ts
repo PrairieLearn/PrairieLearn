@@ -16,22 +16,13 @@ import {
 
 // TEST, put in different file (like assessments.ts)?
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
-  /*return await queryRow(
-    sql.select_assessment_by_id,
-    {
-      assessment_id,
-    },
-    AssessmentSchema,
-  );*/
-  const result = await queryRow(
+  return await queryRow(
     sql.select_assessment_by_id,
     {
       assessment_id,
     },
     AssessmentSchema,
   );
-  console.log('result:', result); // TEST
-  return result;
 }
 
 const ansiUp = new AnsiUp();
@@ -41,14 +32,10 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log(`req.params.course_instance_id:`, res.locals.course_instance_id); // TEST
-    console.log(`req.params.assessment_id:`, req.params.assessment_id); // TEST
 
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
     const course = await selectCourseById(courseId); // TEST, req.params
-    console.log('course:', course); // TEST
     res.locals.course = course; // TEST, req.params
-    console.log('res.locals.assessment_id:', res.locals.assessment_id); // TEST
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id); // TEST, req.params
     const questionRows = await queryRows(
       sql.questions,
