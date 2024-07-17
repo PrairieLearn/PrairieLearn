@@ -1,7 +1,6 @@
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch from 'node-fetch';
-import { Response } from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
@@ -449,7 +448,7 @@ export async function associate_lineitem(
 }
 
 function checkStatus(response: Response) {
-  const hint = ` -- Try polling the LMS for updated assessment info and retry.`;
+  const hint = ' -- Try polling the LMS for updated assessment info and retry.';
   //console.log(response);
   if (response.ok) {
     return response;
