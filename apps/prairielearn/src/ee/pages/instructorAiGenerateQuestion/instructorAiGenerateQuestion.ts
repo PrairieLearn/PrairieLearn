@@ -161,7 +161,7 @@ router.post(
       ) {
         throw new error.HttpStatusError(
           403,
-          `Course for job sequence ${req.body.unsafe_sequence_job_id} does not match the current course.`,
+          `Job sequence ${req.body.unsafe_sequence_job_id} not found.`,
         );
       }
 
