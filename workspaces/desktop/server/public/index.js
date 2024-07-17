@@ -1,4 +1,4 @@
-import RFB from './novnc/core/rfb.js';
+import RFB from './novnc/lib/rfb.js';
 import { Spinner } from './spinjs/spin.js';
 
 const poll_ms = 500;
