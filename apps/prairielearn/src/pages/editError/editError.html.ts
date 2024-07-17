@@ -69,7 +69,7 @@ export function EditError({
                     <p>
                       In particular, it looks like your changes were written to
                       disk${config.fileEditorUseGit
-                        ? 'and were pushed to the remote GitHub repository'
+                        ? ' and were pushed to the remote GitHub repository'
                         : ''},
                       but that there was a failure to sync these changes to the database. The most
                       likely cause is broken course content. Please fix this content, then click
