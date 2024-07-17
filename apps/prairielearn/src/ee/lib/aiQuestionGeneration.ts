@@ -17,30 +17,30 @@ const sql = loadSqlEquiv(import.meta.url);
  */
 function promptPreamble(context: string): string {
   return `# Introduction
-        
-        You are an assistant that helps instructors write questions for PrairieLearn.
-        
-        A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It also includes PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
-        
-        A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions. \`server.py\` may be omitted if it's not necessary.
-        
-        ## Generating random parameters
-        
-        \`server.py\` may define a \`generate\` function. \`generate\` has a single parameter \`data\` which can be modified by reference. It has the following properties:
-        
-        - \`params\`: A dictionary. Random parameters, choices, etc. can be written here for later retrieval.
-        
-        ## Using random parameters
-        
-        Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
-        
-        # Context
-        
-        Here is some context that may help you respond to the user. This context may include example questions, documentation, or other information that may be helpful.
-        
-        ${context}
-        
-        `;
+
+You are an assistant that helps instructors write questions for PrairieLearn.
+
+A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It also includes PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
+
+A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions. \`server.py\` may be omitted if it's not necessary.
+
+## Generating random parameters
+
+\`server.py\` may define a \`generate\` function. \`generate\` has a single parameter \`data\` which can be modified by reference. It has the following properties:
+
+- \`params\`: A dictionary. Random parameters, choices, etc. can be written here for later retrieval.
+
+## Using random parameters
+
+Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
+
+# Context
+
+Here is some context that may help you respond to the user. This context may include example questions, documentation, or other information that may be helpful.
+
+${context}
+
+`;
 }
 
 /**
@@ -110,7 +110,7 @@ export async function generateQuestion(
   courseId: string | undefined,
   authnUserId: string,
   prompt: string,
-): Promise<{ jobSequenceId: string; jobData: ServerJobResult }> {
+): Promise<{ jobSequenceId: string; jobResult: ServerJobResult }> {
   const serverJob = await createServerJob({
     courseId,
     type: 'ai_question_generate',
@@ -146,9 +146,10 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['prompt'] = prompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
+    job.data['completion'] = completion;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, jobData };
+  return { jobSequenceId: serverJob.jobSequenceId, jobResult: jobData };
 }
 
 /**
@@ -171,7 +172,7 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-): Promise<{ jobSequenceId: string; jobData: ServerJobResult }> {
+): Promise<{ jobSequenceId: string; jobResult: ServerJobResult }> {
   const serverJob = await createServerJob({
     courseId,
     type: 'llm_question_regen',
@@ -183,37 +184,37 @@ export async function regenerateQuestion(
 
     const context = await makeContext(client, originalPrompt, authnUserId);
     const sysPrompt = `
-        ${promptPreamble(context)}
-        # Previous Generations
+${promptPreamble(context)}
+# Previous Generations
 
-        A user previously used the assistant to generate a question with following prompt:
+A user previously used the assistant to generate a question with following prompt:
 
-        ${originalPrompt}
+${originalPrompt}
 
-        You generated the following:
+You generated the following:
 
-       ${
-         originalHTML === undefined
-           ? ''
-           : `\`\`\`html
-        ${originalHTML}
-        \`\`\``
-       }
+${
+  originalHTML === undefined
+    ? ''
+    : `\`\`\`html
+${originalHTML}
+\`\`\``
+}
 
-      ${
-        originalPython === undefined
-          ? ''
-          : `\`\`\`python
-        ${originalPython}
-        \`\`\``
-      }
-        
-        # Prompt
-        
-        A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-        
-        Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
-        `;
+${
+  originalPython === undefined
+    ? ''
+    : `\`\`\`python
+${originalPython}
+\`\`\``
+}
+
+# Prompt
+
+A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+
+Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
+`;
 
     job.info(`system prompt is: ${sysPrompt}`);
 
@@ -235,5 +236,5 @@ export async function regenerateQuestion(
     job.data['context'] = context;
   });
 
-  return { jobSequenceId: serverJob.jobSequenceId, jobData };
+  return { jobSequenceId: serverJob.jobSequenceId, jobResult: jobData };
 }

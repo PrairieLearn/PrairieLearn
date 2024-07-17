@@ -1,13 +1,12 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { QuestionSchema, IdSchema } from '../../../lib/db-types.js';
+import { QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionAddEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -17,8 +16,6 @@ import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
 
 import { AiGeneratePage, GenerationResults } from './instructorAiGenerateQuestion.html.js';
 
-type IdType = z.infer<typeof IdSchema>;
-
 const router = express.Router();
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -27,7 +24,7 @@ export async function saveGeneratedQuestion(
   res,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
-): Promise<IdType | undefined> {
+): Promise<{ qid?: string; redirect?: string }> {
   const files = {};
 
   if (htmlFileContents) {
@@ -48,8 +45,7 @@ export async function saveGeneratedQuestion(
   try {
     await editor.executeWithServerJob(serverJob);
   } catch (err) {
-    res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-    return;
+    return { redirect: res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId };
   }
 
   const result = await queryRow(
@@ -58,7 +54,7 @@ export async function saveGeneratedQuestion(
     QuestionSchema,
   );
 
-  return result.id;
+  return { qid: result.id };
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -106,26 +102,26 @@ router.post(
       organization: config.openAiOrganization,
     });
 
-    if (req.body.__action === 'ai_generate') {
-      const jobSeq = await generateQuestion(
+    if (req.body.__action === 'generate_question') {
+      const result = await generateQuestion(
         client,
         res.locals.course ? res.locals.course.id : undefined,
         res.locals.authn_user.user_id,
         req.body.prompt,
       );
 
-      const data = jobSeq.jobData;
+      const data = result.jobResult;
       if (data) {
         res.send(
-          GenerationResults(data.data.html, data.data.python, jobSeq.jobSequenceId, res.locals),
+          GenerationResults(data.data.html, data.data.python, result.jobSequenceId, res.locals),
         );
       } else {
-        throw new error.HttpStatusError(500, `Job sequence ${jobSeq.jobSequenceId} failed.`);
+        throw new error.HttpStatusError(500, `Job sequence ${result.jobSequenceId} failed.`);
       }
     } else if (req.body.__action === 'sync_context_documents') {
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
       res.redirect('/pl/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'ai_regen') {
+    } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
       if (
         genJobs.length !== 1 ||
@@ -134,11 +130,11 @@ router.post(
       ) {
         throw new error.HttpStatusError(
           403,
-          `Course for job sequence ${req.body.unsafe_sequence_job_id} does not match the current course.`,
+          `Job sequence ${req.body.unsafe_sequence_job_id} not found.`,
         );
       }
 
-      const jobSeq = await regenerateQuestion(
+      const result = await regenerateQuestion(
         client,
         res.locals?.course?.course_id,
         res.locals.authn_user.user_id,
@@ -148,13 +144,13 @@ router.post(
         genJobs[0]?.data?.python,
       );
 
-      const data = jobSeq.jobData;
+      const data = result.jobResult;
       if (data) {
         res.send(
-          GenerationResults(data.data.html, data.data.python, jobSeq.jobSequenceId, res.locals),
+          GenerationResults(data.data.html, data.data.python, result.jobSequenceId, res.locals),
         );
       } else {
-        res.redirect('/pl/jobSequence/' + jobSeq.jobSequenceId);
+        res.redirect('/pl/jobSequence/' + result.jobSequenceId);
       }
     } else if (req.body.__action === 'save_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
@@ -169,14 +165,16 @@ router.post(
         );
       }
 
-      const qid = await saveGeneratedQuestion(
+      const result = await saveGeneratedQuestion(
         res,
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
       );
 
-      if (qid) {
-        res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
+      if (result.qid) {
+        res.redirect(res.locals.urlPrefix + '/question/' + result.qid + '/settings');
+      } else {
+        res.redirect(result.redirect);
       }
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

@@ -26,7 +26,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                 hx-disabled-elt="button"
               >
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <input type="hidden" name="__action" value="ai_generate" />
+                <input type="hidden" name="__action" value="generate_question" />
                 <div class="form-group">
                   <label for="user-prompt-llm">Prompt:</label>
                   <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
@@ -113,7 +113,7 @@ ${generatedPython}
         hx-disabled-elt="button"
       >
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <input type="hidden" name="__action" value="ai_regen" />
+        <input type="hidden" name="__action" value="regenerate_question" />
         <input type="hidden" name="unsafe_sequence_job_id" value="${seqId}" />
         <div class="form-group">
           <label for="user-prompt-llm">What needs to be changed?</label>
