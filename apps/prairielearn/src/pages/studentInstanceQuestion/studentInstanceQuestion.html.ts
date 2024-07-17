@@ -10,8 +10,18 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.j
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
+import {
+  RegenerateInstanceModal,
+  RegenerateInstanceAlert,
+} from '../../components/AssessmentRegenerate.html.js';
 
-export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
+export function StudentInstanceQuestion({
+  resLocals,
+  userCanDeleteAssessmentInstance,
+}: {
+  resLocals: Record<string, any>;
+  userCanDeleteAssessmentInstance: boolean;
+}) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
 
@@ -62,7 +72,11 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
           ...resLocals,
           navPage: '',
         })}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="row">
             <div class="col-lg-9 col-sm-12">
               ${resLocals.variant == null
