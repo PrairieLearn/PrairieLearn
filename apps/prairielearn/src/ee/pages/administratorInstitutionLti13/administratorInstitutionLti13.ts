@@ -19,6 +19,13 @@ import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
+const lti13_instance_defaults = {
+  name_attr: 'name',
+  uid_attr: 'email',
+  uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+  email_attr: 'email',
+};
+
 // Middleware to check for feature and access
 router.use(
   asyncHandler(async (req, res, next) => {
@@ -186,10 +193,8 @@ router.post(
       const new_li = await queryRows(
         sql.insert_instance,
         {
+          ...lti13_instance_defaults,
           institution_id: req.params.institution_id,
-          name_attr: 'name',
-          uid_attr: 'email',
-          uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
         },
         z.string(),
       );
