@@ -15,13 +15,22 @@ import {
 } from './publicInstructorAssessmentQuestions.html.js';
 
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
-  return await queryRow(
-    sql.select_course_by_id,
+  /*return await queryRow(
+    sql.select_assessment_by_id,
+    {
+      assessment_id,
+    },
+    AssessmentSchema,
+  );*/
+  const result = await queryRow(
+    sql.select_assessment_by_id,
     {
       assessment_id,
     },
     AssessmentSchema,
   );
+  console.log('result:', result); // TEST
+  return result;
 }
 
 const ansiUp = new AnsiUp();
