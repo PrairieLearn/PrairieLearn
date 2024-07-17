@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
-import { selectCourseById } from '../../models/course.js';
+import { selectCourseByInstanceId } from '../../models/course.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
@@ -32,7 +32,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     console.log('In publicInstructorAssessmentQuestions.ts'); // TEST
-    res.locals.course = await selectCourseById(req.params.course_id);
+    res.locals.course = await selectCourseByInstanceId(req.params.course_instance_id);
+    console.log(`course is ${res.locals.course}`); // TEST
     res.locals.assessment = await selectAssessmentById(req.params.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
