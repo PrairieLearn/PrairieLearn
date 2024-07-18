@@ -209,7 +209,7 @@ async function controlContainer(
     }
 
     const contentDisposition = res.headers.get('content-disposition');
-    if (contentDisposition == null) throw new Error(`Content-Disposition is null`);
+    if (contentDisposition == null) throw new Error('Content-Disposition is null');
     const match = contentDisposition.match(/^attachment; filename="(.*)"$/);
     if (!match) throw new Error(`Content-Disposition format error: ${contentDisposition}`);
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
@@ -547,7 +547,7 @@ export async function generateWorkspaceFiles({
           if (!('contents' in file)) {
             fileGenerationErrors.push({
               file: file.name,
-              msg: `Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.`,
+              msg: 'Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.',
               data: file,
             });
           }

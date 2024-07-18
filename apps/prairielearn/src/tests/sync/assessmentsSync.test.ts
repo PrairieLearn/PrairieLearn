@@ -1394,6 +1394,21 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records an error if an access rule specifies an examUuid but not mode=Exam', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"/,
+    );
+  });
+
   it('records an error if a question specifies neither an ID nor an alternative', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
@@ -2026,7 +2041,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.equal(
       syncedAssessment?.sync_errors,
-      `"multipleInstance" cannot be used for Homework-type assessments`,
+      '"multipleInstance" cannot be used for Homework-type assessments',
     );
   });
 

@@ -81,7 +81,6 @@ router.get(
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(sql.questions, {
         assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
       });
 
       const stringifier = stringifyStream({
