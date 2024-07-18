@@ -3,6 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
@@ -35,11 +36,12 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <div class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/questionSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${QuestionSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            question: resLocals.question,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
         </div>
         <main id="content" class="container">
           <div class="row">

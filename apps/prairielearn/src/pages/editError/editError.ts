@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -7,6 +6,8 @@ import { logger } from '@prairielearn/logger';
 
 import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
+
+import { EditError } from './editError.html.js';
 
 const router = Router();
 
@@ -18,35 +19,34 @@ router.get(
     }
 
     const job_sequence_id = req.params.job_sequence_id;
-    const course_id = res.locals.course ? res.locals.course.id : null;
-    const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
+    const course_id = res.locals.course?.id ?? null;
+    const jobSequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
 
-    if (job_sequence.status === 'Running') {
+    if (jobSequence.status === 'Running') {
       // All edits wait for the corresponding job sequence to finish before
       // proceeding, so something bad must have happened to get to this page
       // with a sequence that is still running.
       throw new Error('Edit is still in progress (job sequence is still running)');
-    } else if (job_sequence.status !== 'Error') {
+    } else if (jobSequence.status !== 'Error') {
       throw new Error('Edit did not fail');
     }
 
-    res.locals.failedSync = false;
+    let failedSync = false;
 
-    if (job_sequence.legacy) {
+    if (jobSequence.legacy) {
       // Legacy job sequences should no longer exist.
       logger.warn(
         `Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`,
       );
     } else {
-      const job = job_sequence.jobs[0];
+      const job = jobSequence.jobs[0];
 
       if (job.data.saveSucceeded && !job.data.syncSucceeded) {
-        res.locals.failedSync = true;
+        failedSync = true;
       }
     }
 
-    res.locals.job_sequence = job_sequence;
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(EditError({ resLocals: res.locals, jobSequence, failedSync }));
   }),
 );
 

@@ -175,7 +175,7 @@ describe('Instructor assessment editing', function () {
   describe('7. edit-question-points form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionPointsButton',
+        '#instanceQuestionList td:contains("addNumbers") ~ td [id^=editQuestionPoints]',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -241,7 +241,7 @@ describe('Instructor assessment editing', function () {
   describe('9. edit-question-score-perc form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionScorePercButton',
+        '#instanceQuestionList td:contains("addNumbers") ~ td [id^=editQuestionScore]',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -264,7 +264,7 @@ describe('Instructor assessment editing', function () {
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__action = elemList[0].attribs.value;
       assert.isString(locals.__action);
-      assert.equal(locals.__action, 'edit_question_score_perc');
+      assert.equal(locals.__action, 'edit_question_points');
     });
     it('data-content should have an instance_question_id', function () {
       elemList = locals.data$('form input[name="instance_question_id"]');
