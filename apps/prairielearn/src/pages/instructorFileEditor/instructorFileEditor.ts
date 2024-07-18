@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'path';
 
 import * as modelist from 'ace-code/src/ext/modelist.js';
@@ -9,7 +8,6 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -22,11 +20,45 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import {
+  getJobSequenceWithFormattedOutput,
+  type JobSequenceWithFormattedOutput,
+} from '../../lib/server-jobs.js';
+
+import { InstructorFileEditor } from './instructorFileEditor.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileEditor');
+
+interface FileEdit {
+  userID: string;
+  authnUserId: string;
+  courseID: string;
+  coursePath: string;
+  dirName: string;
+  fileName: string;
+  fileNameForDisplay: string;
+  aceMode: string;
+  jobSequence?: JobSequenceWithFormattedOutput;
+  diskContents?: string;
+  diskHash?: string;
+  jobSequenceId?: string;
+  sync_errors?: string | null;
+  sync_errors_ansified?: string | null;
+  sync_warnings?: string | null;
+  sync_warnings_ansified?: string | null;
+  alertChoice?: boolean;
+  didSave?: boolean;
+  didSync?: boolean;
+  fileID?: string;
+  editID?: string;
+  editContents?: string;
+  editHash?: string;
+  origHash?: string;
+  alertResults?: boolean;
+  hasSameHash?: boolean;
+}
 
 router.get(
   '/*',
@@ -35,13 +67,13 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get edit permissions.
       res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
-      res.status(403).render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
       return;
     }
 
@@ -61,8 +93,7 @@ router.get(
 
     const fullPath = paths.workingPath;
     const relPath = paths.workingPathRelativeToCourse;
-    let fileEdit = {
-      uuid: uuidv4(),
+    const fileEdit: FileEdit = {
       userID: res.locals.user.user_id,
       authnUserId: res.locals.authn_user.user_id,
       courseID: res.locals.course.id,
@@ -71,7 +102,9 @@ router.get(
       fileName: path.basename(relPath),
       fileNameForDisplay: path.normalize(relPath),
       aceMode: modelist.getModeForPath(relPath).mode,
-      jobSequence: /** @type {any} */ (null),
+      alertChoice: false,
+      didSave: false,
+      didSync: false,
     };
 
     debug('Read from db');
@@ -102,9 +135,11 @@ router.get(
     const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
     const ansiUp = new AnsiUp();
     fileEdit.sync_errors = data.errors;
-    fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
+    fileEdit.sync_errors_ansified =
+      fileEdit.sync_errors && ansiUp.ansi_to_html(fileEdit.sync_errors);
     fileEdit.sync_warnings = data.warnings;
-    fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
+    fileEdit.sync_warnings_ansified =
+      fileEdit.sync_warnings && ansiUp.ansi_to_html(fileEdit.sync_warnings);
 
     if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
       // Because of the redirect, if the job sequence ends up failing to save,
@@ -114,10 +149,6 @@ router.get(
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
       return;
     }
-
-    fileEdit.alertChoice = false;
-    fileEdit.didSave = false;
-    fileEdit.didSync = false;
 
     if (fileEdit.jobSequence) {
       // No draft is older than 24 hours, so it is safe to assume that no
@@ -181,7 +212,7 @@ router.get(
 
     res.locals.fileEdit = fileEdit;
     res.locals.fileEdit.paths = paths;
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstructorFileEditor({ resLocals: res.locals }));
   }),
 );
 
@@ -247,11 +278,11 @@ router.post(
   }),
 );
 
-function getHash(contents) {
+function getHash(contents: string) {
   return sha256(contents).toString();
 }
 
-async function readDraftEdit(fileEdit) {
+async function readDraftEdit(fileEdit: FileEdit) {
   debug('Looking for previously saved drafts');
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
@@ -287,7 +318,7 @@ async function readDraftEdit(fileEdit) {
   });
   debug(`Deleted ${result.rowCount} previously saved drafts`);
   for (const row of result.rows) {
-    if (idsEqual(row.file_id, fileEdit.fileID)) {
+    if (fileEdit.fileID != null && idsEqual(row.file_id, fileEdit.fileID)) {
       debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
     } else {
       debug(`Remove file_id=${row.file_id} from file store`);
@@ -295,7 +326,7 @@ async function readDraftEdit(fileEdit) {
     }
   }
 
-  if (fileEdit.editID) {
+  if (fileEdit.editID && fileEdit.fileID) {
     debug('Read contents of file edit');
     const result = await getFile(fileEdit.fileID);
     const contents = b64EncodeUnicode(result.contents.toString('utf8'));
@@ -307,7 +338,7 @@ async function readDraftEdit(fileEdit) {
   }
 }
 
-async function updateJobSequenceId(edit_id, job_sequence_id) {
+async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
   await sqldb.queryAsync(sql.update_job_sequence_id, {
     id: edit_id,
     job_sequence_id,
@@ -315,7 +346,18 @@ async function updateJobSequenceId(edit_id, job_sequence_id) {
   debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
-async function writeDraftEdit(fileEdit) {
+async function writeDraftEdit(fileEdit: {
+  userID: string;
+  authnUserID: string;
+  courseID: string;
+  dirName: string;
+  fileName: string;
+  origHash: string;
+  coursePath: string;
+  uid: string;
+  user_name: string;
+  editContents: string;
+}) {
   const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
